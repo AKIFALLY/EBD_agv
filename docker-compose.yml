@@ -1,0 +1,57 @@
+services:
+  #ros_fleet:
+  #  image: docker.io/yazelin/ros:latest
+  #  container_name: ros_fleet
+  #  networks:
+  #    bridge_network:
+  #      ipv4_address: 192.168.100.100  # 固定 IP
+  #  environment:
+  #    - DISPLAY=host.docker.internal:0
+  #    #- ZENOH_ROUTER_CONFIG_URI=/app/routerconfig.json5 # 這個檔案 fleet 當作主router 只要設定agv連過來就好
+  #    - RMW_IMPLEMENTATION=rmw_zenoh_cpp # 設定 ros rmw 使用 zenoh
+  #  volumes:
+  #    - C:/RosAGV/app:/app:rw
+  #  tty: true
+  #  stdin_open: true
+
+  ros_agv1:
+    image: yazelin/ros:latest
+    #image: docker.io/yazelin/ros:latest
+    #build: .
+    container_name: ros_agv1
+    networks:
+      bridge_network:
+        ipv4_address: 192.168.100.101  # 固定 IP
+    environment:
+      - DISPLAY=host.docker.internal:0
+      - ZENOH_ROUTER_CONFIG_URI=/app/routerconfig.json5 # 這個檔案內要設定zenoh router的連線目標 "tcp/192.168.100.100:7447"
+      - RMW_IMPLEMENTATION=rmw_zenoh_cpp # 設定 ros rmw 使用 zenoh
+    volumes:
+      - C:/RosAGV/app:/app:rw
+    ports:
+      - "8080:8000"           # 将宿主机的 8080 端口映射到容器的 8000 端口
+    tty: true
+    stdin_open: true
+    privileged: true  # 根據需要可以設置這個
+  #ros_agv2:
+  #  image: yazelin/ros:latest
+  #  container_name: ros_agv2
+  #  networks:
+  #    bridge_network:
+  #      ipv4_address: 192.168.100.102  # 固定 IP
+  #  environment:
+  #    - DISPLAY=host.docker.internal:0
+  #    - ZENOH_ROUTER_CONFIG_URI=/app/routerconfig.json5 # 這個檔案內要設定zenoh router的連線目標 "tcp/192.168.100.100:7447"
+  #    - RMW_IMPLEMENTATION=rmw_zenoh_cpp # 設定 ros rmw 使用 zenoh
+  #  volumes:
+  #    - C:/RosAGV/app:/app:rw
+  #  tty: true
+  #  stdin_open: true
+
+networks:
+  bridge_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
+          gateway: 192.168.100.1

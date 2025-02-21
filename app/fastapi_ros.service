@@ -1,0 +1,35 @@
+#這個檔案要放在/etc/systemd/system/ 裡
+#docker環境無法使用 systemd 服務
+# 重新載入
+# sudo systemctl daemon-reload
+# 動啟 Web
+# sudo systemctl start fastapi_ros
+# 開機自動啟動
+# sudo systemctl enable fastapi_ros
+# 確認運行狀態
+# sudo systemctl status fastapi_ros
+
+#其他管理指令
+#指令	作用
+#sudo systemctl start fastapi_ros	啟動 Web API
+#sudo systemctl stop fastapi_ros	停止 Web API
+#sudo systemctl restart fastapi_ros	重新啟動 Web API
+#sudo systemctl status fastapi_ros	查看狀態
+#sudo journalctl -u fastapi_ros -f	監控 Log
+#sudo systemctl disable fastapi_ros	停止開機自動啟動
+
+[Unit]
+Description=FastAPI ROS 2 Web Server
+After=network.target
+
+[Service]
+User=root  # (請換成你的 Linux 用戶名，避免使用 root)
+WorkingDirectory=/app/web_api_ws  # 你的 Web API 目錄
+ExecStart=/bin/bash -c 'source /opt/ros/jazzy/setup.bash && source /app/ecs_ws/install/setup.bash && source /app/web_api/install/setup.bash && ros2 run web_api api_server'
+Restart=always
+RestartSec=3
+StandardOutput=append:/var/log/fastapi_ros.log
+StandardError=append:/var/log/fastapi_ros.log
+
+[Install]
+WantedBy=multi-user.target

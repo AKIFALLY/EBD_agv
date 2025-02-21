@@ -1,0 +1,17 @@
+/sick
+**/build/
+**/install/
+**/log/
+**/__pycache__/
+
+# 忽略 Python 編譯產生的檔案
+__pycache__/
+*.pyc
+*.pyo
+
+# 忽略 .$ 開頭的檔案 Drawio暫存檔
+.$*
+
+# 忽略 Windows 產生的 Thumbs.db
+Thumbs.db
+**/Thumbs.db

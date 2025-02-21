@@ -1,0 +1,70 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/25.0.2 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="25.0.2">
+  <diagram name="第1頁" id="4tANNtsLBpdLqCmV56ZK">
+    <mxGraphModel dx="2074" dy="1196" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="Q9iPHOfr7dvrfTHSd22k-1" target="Q9iPHOfr7dvrfTHSd22k-3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-1" value="CTFMS&lt;div&gt;(rmf-free_fleet)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="109" y="240" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="Q9iPHOfr7dvrfTHSd22k-2" target="Q9iPHOfr7dvrfTHSd22k-1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="Q9iPHOfr7dvrfTHSd22k-2" target="Q9iPHOfr7dvrfTHSd22k-6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-2" value="RMF" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="339" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-3" value="CTAGV/AMR" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="109" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="Q9iPHOfr7dvrfTHSd22k-6" target="Q9iPHOfr7dvrfTHSd22k-7" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-6" value="Others" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
+          <mxGeometry x="599" y="240" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-7" value="AGV / AMR / Robot" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
+          <mxGeometry x="599" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="Q9iPHOfr7dvrfTHSd22k-11" target="Q9iPHOfr7dvrfTHSd22k-2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-11" value="RMF-Web" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="339" y="80" width="120" height="20" as="geometry" />
+        </mxCell>
+        <UserObject label="github.com/open-rmf/free_fleet" link="github.com/open-rmf/free_fleet" id="Q9iPHOfr7dvrfTHSd22k-14">
+          <mxCell style="text;whiteSpace=wrap;" parent="1" vertex="1">
+            <mxGeometry x="229" y="270" width="200" height="40" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="github.com/open-rmf/rmf" link="github.com/open-rmf/rmf" id="Q9iPHOfr7dvrfTHSd22k-15">
+          <mxCell style="text;whiteSpace=wrap;" parent="1" vertex="1">
+            <mxGeometry x="469" y="120" width="160" height="40" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="github.com/open-rmf/rmf-web" link="github.com/open-rmf/rmf-web" id="Q9iPHOfr7dvrfTHSd22k-16">
+          <mxCell style="text;whiteSpace=wrap;" parent="1" vertex="1">
+            <mxGeometry x="469" y="80" width="190" height="40" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-17" value="以free_fleet為基礎開發CT車隊管理" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="229" y="240" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-18" value="controller 硬體控制目前先自行設計" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="229" y="370" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-19" value="導航參考 nav2" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="284" y="340" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Q9iPHOfr7dvrfTHSd22k-20" value="SLAM 先用SICK 之後測試slam toolbox" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="219" y="410" width="230" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

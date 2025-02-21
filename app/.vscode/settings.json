@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages",
+        "/app/keyence_plc_ws/src/keyence_plc",
+        "/app/ecs_ws/install/interfaces/lib/python3.12/site-packages",
+        "/app/ecs_ws/src/ecs",
+    ]
+}

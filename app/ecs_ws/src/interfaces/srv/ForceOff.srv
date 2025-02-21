@@ -1,0 +1,8 @@
+# Request
+string device_type
+string address
+
+---
+# Response
+bool success
+string message
