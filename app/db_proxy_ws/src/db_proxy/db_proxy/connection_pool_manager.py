@@ -48,7 +48,9 @@ class ConnectionPoolManager:
 
     def get_session(self) -> Session:
         session = Session(self.engine)
-        session.exec(text("SET TIME ZONE 'Asia/Taipei'")) # set timezone 為 +8 時區
+        # 只在 PostgreSQL 資料庫中設定時區
+        if 'postgresql' in str(self.engine.url):
+            session.exec(text("SET TIME ZONE 'Asia/Taipei'"))  # set timezone 為 +8 時區
         return session
 
     def shutdown(self):

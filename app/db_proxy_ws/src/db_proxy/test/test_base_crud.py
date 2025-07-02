@@ -42,7 +42,7 @@ def test_create_and_get_by_id(session, crud):
     created = crud.create(session, obj)
     assert created.id is not None
     assert created.created_at is not None
-    assert created.updated_at is None
+    assert created.updated_at is not None
 
     found = crud.get_by_id(session, created.id)
     assert found is not None
