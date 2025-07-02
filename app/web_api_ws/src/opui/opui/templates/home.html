@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% block title %}opui - 操作{% endblock %}
+{% block content %}
+<style>
+    .panel-left {
+        background-color: #eee;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+
+    }
+
+    .panel-right {
+        background-color: #ddd;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+
+    }
+
+    .num-btn,
+    .room-btn,
+    .button,
+    .product-btn {
+        font-size: 1.25rem;
+    }
+
+    .call-empty-left {
+        position: absolute;
+        left: 1rem;
+        top: 1rem;
+        z-index: 100;
+    }
+
+    .dispatch-full-left {
+        position: absolute;
+        left: 1rem;
+        bottom: 1rem;
+        z-index: 100;
+    }
+
+    .call-empty-right {
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+        z-index: 100;
+    }
+
+    .dispatch-full-right {
+        position: absolute;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 100;
+    }
+
+    .matrix-space {
+        padding: 1px;
+    }
+
+    .matrix-space[data-size="S"] {
+        display: flex;
+        flex-direction: column;
+        height: 4rem;
+    }
+
+    .matrix-space[data-size="L"] {
+        display: flex;
+        flex-direction: column;
+        height: 8rem;
+    }
+
+    .matrix-space .button {
+        flex: 1;
+        border-radius: 0;
+        --bulma-button-border-width: 0px !important;
+    }
+
+    .rounded-left-top {
+        border-top-left-radius: 10px !important;
+    }
+
+    .rounded-right-top {
+        border-top-right-radius: 10px !important;
+    }
+
+    .rounded-left-bottom {
+        border-bottom-left-radius: 10px !important;
+    }
+
+    .rounded-right-bottom {
+        border-bottom-right-radius: 10px !important;
+    }
+</style>
+
+
+<section class="hero is-fullheight-with-navbar">
+    <div class="columns is-gapless is-flex-grow-1">
+
+        <!-- 左半 -->
+        <div class="column panel-left" data-panel="left">
+            <div class="call-empty-left">
+                <button class="button is-info" data-call-empty="left">叫車</button>
+            </div>
+            <div class="dispatch-full-left">
+                <button class="button is-warning" data-dispatch-full="left">派車</button>
+            </div>
+            <!-- 上層 -->
+            <div class="level m-1 mt-4">
+                <div class="level-item">
+                    <button class="button is-link is-light product-btn" data-product-side="left"></button>
+                </div>
+            </div>
+            <!-- 數量設定 -->
+            <div class="box is-flex-grow-1 m-1">
+                <div class="title is-5 has-text-centered m-1">料架編號</div>
+                <div class="field has-addons rack-selected is-justify-content-center" data-side="left">
+                    <p class="control">
+                        <button class="button">XXX
+                        </button>
+                    </p>
+                    <p class="control">
+                        <button class="button">YYY
+                        </button>
+                    </p>
+                    <p class="control">
+                        <button class="button">ZZZ
+                        </button>
+                    </p>
+                </div>
+                <div class="title is-5 has-text-centered m-1">設定數量</div>
+                <div class="columns is-flex-grow-1 m-1">
+                    <div class="column">
+                        <div class="columns is-multiline is-mobile">
+                            {% for i in range(1, 17) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 1 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 4 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 13 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 16 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="left" data-size="S"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="left" data-size="S">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+
+
+                            {% for i in range(1, 9) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 1 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 4 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 5 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 8 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="left" data-size="L"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="left" data-size="L">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="is-divider-vertical" style="width:2px;background:#eee;margin:0 0.5rem;"></div>
+                    <div class="column">
+                        <div class="columns is-multiline is-mobile">
+                            {% for i in range(17, 33) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 17 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 20 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 29 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 32 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="left" data-size="S"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="left">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+
+
+                            {% for i in range(9, 17) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 9 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 12 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 13 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 16 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="left" data-size="L"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="left" data-size="L">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <!--</div>-->
+                <!-- 房號設定 -->
+                <!--<div class="box is-flex-grow-1">-->
+                <h4 class="title is-5 has-text-centered m-1">設定房號</h4>
+                <div class="columns is-mobile m-1">
+                    {% for i in range(1, 6) %}
+                    <div class="column is-one-fifth">
+                        <button class="button is-fullwidth room-btn" data-room="{{ i }}" data-side="left" disabled>{{ i
+                            }}</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 右半 -->
+        <div class="column panel-right" data-panel="right">
+
+            <div class="call-empty-right">
+                <button class="button is-info" data-call-empty="right">叫車</button>
+            </div>
+            <div class="dispatch-full-right">
+                <button class="button is-warning" data-dispatch-full="right">派車</button>
+            </div>
+            <!-- 上層 -->
+            <div class="level m-1 mt-4">
+                <div class="level-item">
+                    <button class="button is-link is-light product-btn" data-product-side="right"></button>
+                </div>
+            </div>
+            <!-- 數量設定 -->
+            <div class="box is-flex-grow-1 m-1">
+                <h4 class="title is-5 has-text-centered m-1">料架編號</h4>
+                <div class="field has-addons rack-selected is-justify-content-center" data-side="right">
+                </div>
+                <h4 class="title is-5 has-text-centered m-1">設定數量</h4>
+                <div class="columns m-1" data-side="right">
+                    <div class="column">
+                        <div class="columns is-multiline is-mobile">
+                            {% for i in range(1, 17) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 1 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 4 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 13 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 16 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="right" data-size="S"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="right">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+
+
+                            {% for i in range(1, 9) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 1 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 4 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 5 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 8 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="right" data-size="L"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="right">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="is-divider-vertical" style="width:2px;background:#eee;margin:0 0.5rem;"></div>
+                    <div class="column">
+                        <div class="columns is-multiline is-mobile">
+                            {% for i in range(17, 33) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 17 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 20 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 29 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 32 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="right" data-size="S"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="right">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+
+
+                            {% for i in range(9, 17) %}
+                            {# 判斷邊角按鈕 #}
+                            {% set extra_class = "" %}
+                            {% if i == 9 %}
+                            {% set extra_class = "rounded-left-top" %}
+                            {% elif i == 12 %}
+                            {% set extra_class = "rounded-right-top" %}
+                            {% elif i == 13 %}
+                            {% set extra_class = "rounded-left-bottom" %}
+                            {% elif i == 16 %}
+                            {% set extra_class = "rounded-right-bottom" %}
+                            {% endif %}
+
+                            <div class="column is-one-quarter matrix-space" data-side="right" data-size="L"
+                                data-num="{{ i }}">
+                                <button class="button is-fullwidth num-btn {{ extra_class }}" data-num="{{ i }}"
+                                    data-side="right">
+                                    {{ i }}
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!--</div>-->
+                <!-- 房號設定 -->
+                <!--<div class="box is-flex-grow-1">-->
+                <h4 class="title is-5 has-text-centered m-1">設定房號</h4>
+                <div class="columns is-mobile m-1">
+                    {% for i in range(1, 6) %}
+                    <div class="column is-one-fifth">
+                        <button class="button is-fullwidth room-btn" data-room="{{ i }}" data-side="right" disabled>{{ i
+                            }}</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

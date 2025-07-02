@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}編輯用戶{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-half">
+                <div class="box">
+                    <h1 class="title">編輯用戶</h1>
+                    <p class="subtitle">用戶 ID: {{ edit_user.id }}</p>
+
+                    <form method="post" action="/users/{{ edit_user.id }}/edit">
+                        <div class="field">
+                            <label class="label">用戶名 *</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" name="username" value="{{ edit_user.username }}"
+                                    required>
+                                <span class="icon is-small is-left">
+                                    <i class="mdi mdi-account"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">郵箱</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="email" name="email" value="{{ edit_user.email or '' }}">
+                                <span class="icon is-small is-left">
+                                    <i class="mdi mdi-email"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">全名</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" name="full_name"
+                                    value="{{ edit_user.full_name or '' }}">
+                                <span class="icon is-small is-left">
+                                    <i class="mdi mdi-account-card-details"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">角色 *</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="role" required>
+                                        <option value="user" {% if edit_user.role=='user' %}selected{% endif %}>用戶
+                                        </option>
+                                        <option value="operator" {% if edit_user.role=='operator' %}selected{% endif %}>
+                                            操作員</option>
+                                        <option value="admin" {% if edit_user.role=='admin' %}selected{% endif %}>管理員
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="is_active" value="on" {% if edit_user.is_active
+                                        %}checked{% endif %}>
+                                    啟用用戶
+                                </label>
+                            </div>
+                            <p class="help">停用的用戶無法登入系統</p>
+                        </div>
+
+                        <div class="box">
+                            <h4 class="title is-6">用戶信息</h4>
+                            <div class="content">
+                                <p><strong>創建時間:</strong> {{ edit_user.created_at.strftime('%Y-%m-%d %H:%M:%S') if
+                                    edit_user.created_at else '未知' }}</p>
+                                <p><strong>最後更新:</strong> {{ edit_user.updated_at.strftime('%Y-%m-%d %H:%M:%S') if
+                                    edit_user.updated_at else '從未更新' }}</p>
+                                <p><strong>最後登入:</strong> {{ edit_user.last_login.strftime('%Y-%m-%d %H:%M:%S') if
+                                    edit_user.last_login else '從未登入' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-primary" type="submit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-content-save"></i>
+                                    </span>
+                                    <span>保存更改</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a class="button is-light" href="/users">
+                                    <span class="icon">
+                                        <i class="mdi mdi-cancel"></i>
+                                    </span>
+                                    <span>取消</span>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

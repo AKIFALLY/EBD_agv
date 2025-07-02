@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-two-thirds">
+                <div class="box">
+                    <h1 class="title is-4">
+                        <span class="icon">
+                            <i class="mdi mdi-archive"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                    
+                    <form method="post" action="{{ form_action }}">
+                        <div class="columns">
+                            <div class="column">
+                                <!-- 貨架名稱 -->
+                                <div class="field">
+                                    <label class="label">貨架名稱</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="name" 
+                                               value="{{ rack.name if rack else '' }}" 
+                                               placeholder="請輸入貨架名稱" required>
+                                    </div>
+                                </div>
+
+                                <!-- AGV ID -->
+                                <div class="field">
+                                    <label class="label">AGV</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select name="agv_id">
+                                                <option value="">請選擇 AGV</option>
+                                                {% for agv in agvs %}
+                                                <option value="{{ agv.id }}" 
+                                                        {{ 'selected' if rack and rack.agv_id == agv.id else '' }}>
+                                                    {{ agv.name }} (ID: {{ agv.id }})
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 位置 ID -->
+                                <div class="field">
+                                    <label class="label">位置</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select name="location_id">
+                                                <option value="">請選擇位置</option>
+                                                {% for location in locations %}
+                                                <option value="{{ location.id }}" 
+                                                        {{ 'selected' if rack and rack.location_id == location.id else '' }}>
+                                                    {{ location.name or ("位置 " + location.id|string) }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 產品 ID -->
+                                <div class="field">
+                                    <label class="label">產品</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select name="product_id">
+                                                <option value="">請選擇產品</option>
+                                                {% for product in products %}
+                                                <option value="{{ product.id }}" 
+                                                        {{ 'selected' if rack and rack.product_id == product.id else '' }}>
+                                                    {{ product.name }} ({{ product.size }})
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="column">
+                                <!-- 狀態 -->
+                                <div class="field">
+                                    <label class="label">狀態</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select name="status_id" required>
+                                                {% for status in rack_statuses %}
+                                                <option value="{{ status.id }}" 
+                                                        {{ 'selected' if rack and rack.status_id == status.id else ('selected' if not rack and status.id == 1 else '') }}>
+                                                    {{ status.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 方向 -->
+                                <div class="field">
+                                    <label class="label">方向</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select name="direction">
+                                                <option value="0" {{ 'selected' if rack and rack.direction == 0 else ('selected' if not rack else '') }}>0°</option>
+                                                <option value="90" {{ 'selected' if rack and rack.direction == 90 else '' }}>90°</option>
+                                                <option value="-90" {{ 'selected' if rack and rack.direction == -90 else '' }}>-90°</option>
+                                                <option value="180" {{ 'selected' if rack and rack.direction == 180 else '' }}>180°</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 布林值選項 -->
+                                <div class="field">
+                                    <label class="label">狀態選項</label>
+                                    
+                                    <div class="field">
+                                        <div class="control">
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="is_carry" value="1" 
+                                                       {{ 'checked' if rack and rack.is_carry else '' }}>
+                                                正在搬運
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="field">
+                                        <div class="control">
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="is_in_map" value="1" 
+                                                       {{ 'checked' if rack and rack.is_in_map else '' }}>
+                                                在地圖中
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="field">
+                                        <div class="control">
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="is_docked" value="1" 
+                                                       {{ 'checked' if rack and rack.is_docked else '' }}>
+                                                已對接
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 按鈕區域 -->
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-primary" type="submit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-content-save"></i>
+                                    </span>
+                                    <span>{{ "更新" if rack else "創建" }}</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a class="button is-light" href="/racks">
+                                    <span class="icon">
+                                        <i class="mdi mdi-arrow-left"></i>
+                                    </span>
+                                    <span>返回</span>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 貨架信息顯示（編輯時） -->
+                {% if rack %}
+                <div class="box">
+                    <h2 class="title is-5">貨架信息</h2>
+                    <div class="content">
+                        <div class="columns">
+                            <div class="column">
+                                <p><strong>貨架 ID:</strong> {{ rack.id }}</p>
+                                <p><strong>AGV ID:</strong> {{ rack.agv_id or '未分配' }}</p>
+                                <p><strong>位置 ID:</strong> {{ rack.location_id or '未設置' }}</p>
+                                <p><strong>產品 ID:</strong> {{ rack.product_id or '無產品' }}</p>
+                            </div>
+                            <div class="column">
+                                <p><strong>狀態 ID:</strong> {{ rack.status_id }}</p>
+                                <p><strong>方向:</strong> {{ rack.direction }}°</p>
+                                <p><strong>正在搬運:</strong> {{ '是' if rack.is_carry else '否' }}</p>
+                                <p><strong>在地圖中:</strong> {{ '是' if rack.is_in_map else '否' }}</p>
+                                <p><strong>已對接:</strong> {{ '是' if rack.is_docked else '否' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

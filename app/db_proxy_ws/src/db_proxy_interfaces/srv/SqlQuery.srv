@@ -1,0 +1,6 @@
+# srv/GenericQuery.srv
+string query_string
+---
+string json_result
+bool success
+string message

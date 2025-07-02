@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block extra_head %}
+<link href="/static/css/deviceFormPage.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-devices"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/devices">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表單包裝在 box 中 -->
+        <div class="box">
+            <form method="post" action="{{ form_action }}" id="deviceForm">
+                <!-- 隱藏的JSON數據字段 -->
+                <input type="hidden" name="device_json" id="deviceJsonInput">
+
+                <div class="columns">
+                    <div class="column is-one-third">
+                        <!-- 設備基本信息 -->
+                        <h2 class="subtitle">設備基本信息</h2>
+
+                        <!-- 設備名稱 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-format-title"></i>
+                                    </span>
+                                    <span>設備名稱 *</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="text" id="deviceName"
+                                    value="{{ device.name if device else '' }}" placeholder="請輸入設備名稱" required>
+                            </div>
+                        </div>
+
+                        <!-- 描述 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-text"></i>
+                                    </span>
+                                    <span>描述</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <textarea class="textarea" id="deviceDescription"
+                                    placeholder="請輸入設備描述">{{ device.description if device else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- 位置選擇 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-map-marker"></i>
+                                    </span>
+                                    <span>位置</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select id="deviceLocationId">
+                                        <option value="">請選擇位置</option>
+                                        {% for location in locations %}
+                                        <option value="{{ location.id }}" {% if device and
+                                            device.location_id==location.id %}selected{% endif %}>
+                                            {{ location.name }}{% if location.description %} - {{ location.description
+                                            }}{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-two-thirds">
+                        <!-- 端口和信號管理 -->
+                        <h2 class="subtitle">端口和信號管理</h2>
+
+                        <!-- 端口列表 -->
+                        <div id="portsContainer">
+                            {% if device and device.ports %}
+                            {% for port in device.ports %}
+                            <div class="port-item box" style="margin-bottom: 1rem;">
+                                <div class="columns">
+                                    <div class="column is-half">
+                                        <div class="field">
+                                            <label class="label is-small">端口名稱</label>
+                                            <div class="control">
+                                                <input class="input is-small port-name" type="text"
+                                                    value="{{ port.name }}" placeholder="端口名稱">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="column is-half">
+                                        <div class="field">
+                                            <label class="label is-small">端口描述</label>
+                                            <div class="control">
+                                                <input class="input is-small port-description" type="text"
+                                                    value="{{ port.description }}" placeholder="端口描述">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 信號列表 -->
+                                <div class="signals-container">
+                                    <label class="label is-small">信號列表</label>
+                                    {% for signal in port.signals %}
+                                    <div class="signal-item" style="margin-bottom: 0.5rem;">
+                                        <div class="columns is-mobile">
+                                            <div class="column is-3">
+                                                <input class="input is-small signal-name" type="text"
+                                                    value="{{ signal.name }}" placeholder="信號名稱">
+                                            </div>
+                                            <div class="column is-2">
+                                                <input class="input is-small signal-value" type="text"
+                                                    value="{{ signal.value }}" placeholder="值">
+                                            </div>
+                                            <div class="column is-2">
+                                                <input class="input is-small signal-type" type="text"
+                                                    value="{{ signal.type_of_value }}" placeholder="類型">
+                                            </div>
+                                            <div class="column is-4">
+                                                <input class="input is-small signal-dm" type="text"
+                                                    value="{{ signal.dm_address or '' }}" placeholder="DM地址">
+                                            </div>
+                                            <div class="column is-1">
+                                                <button type="button" class="button is-small is-danger remove-signal">
+                                                    <i class="mdi mdi-delete"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    <button type="button" class="button is-small is-info add-signal">
+                                        <i class="mdi mdi-plus"></i> 添加信號
+                                    </button>
+                                </div>
+
+                                <button type="button" class="button is-small is-danger remove-port"
+                                    style="margin-top: 0.5rem;">
+                                    <i class="mdi mdi-delete"></i> 刪除端口
+                                </button>
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <button type="button" class="button is-info" id="addPortBtn">
+                            <i class="mdi mdi-plus"></i> 添加端口
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 操作按鈕 -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-content-save"></i>
+                            </span>
+                            <span>保存設備</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a class="button is-light" href="/devices">
+                            <span class="icon">
+                                <i class="mdi mdi-cancel"></i>
+                            </span>
+                            <span>取消</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- JavaScript 功能已移至 /static/js/deviceFormPage.js -->
+{% endblock %}

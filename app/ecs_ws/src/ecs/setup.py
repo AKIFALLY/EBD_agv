@@ -23,7 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'plc_service = ecs.plc_service:main',  # ROS node's entry point
+            'ecs_core = ecs.ecs_core:main',  # ROS node's entry point
+            'door_controller_node_mqtt = ecs.door_controller_node_mqtt:main',  # ROS node's entry point
         ],
     },
 )

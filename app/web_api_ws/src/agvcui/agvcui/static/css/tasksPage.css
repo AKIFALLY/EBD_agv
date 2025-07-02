@@ -1,0 +1,23 @@
+/* 任務管理頁面 - 使用 Bulma 預設樣式 */
+
+/* 僅保留必要的 JSON 參數顯示樣式 */
+.task-parameters-dropdown .dropdown-content {
+    min-width: 300px;
+}
+
+.task-parameters-dropdown pre {
+    max-height: 180px;
+    overflow: auto;
+    font-size: 0.75rem;
+}
+
+/* 響應式調整 */
+@media screen and (max-width: 768px) {
+    .task-parameters-dropdown .dropdown-content {
+        min-width: 250px;
+    }
+
+    .task-parameters-dropdown pre {
+        font-size: 0.7rem;
+    }
+}

@@ -1,0 +1,28 @@
+/* 信號值更新動畫 - 簡化版本 */
+.signal-updated {
+    animation: signalUpdate 0.8s ease-out;
+    position: relative;
+}
+
+@keyframes signalUpdate {
+    0% {
+        background-color: #e8f4fd;
+        box-shadow: 0 0 5px rgba(50, 115, 220, 0.3);
+    }
+
+    100% {
+        background-color: transparent;
+        box-shadow: none;
+    }
+}
+
+/* 信號值顏色 */
+.signal-value .tag {
+    transition: all 0.3s ease;
+}
+
+/* 確保動畫在表格中正常顯示 */
+.table td.signal-updated {
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}

@@ -1,0 +1,70 @@
+<!-- 刪除確認模態框 -->
+{% if current_user and current_user.role == 'admin' %}
+<div class="modal" id="deleteModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">確認刪除</p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>您確定要刪除 <strong id="deleteItemName"></strong> 嗎？</p>
+            <p class="has-text-danger">此操作無法撤銷！</p>
+        </section>
+        <footer class="modal-card-foot">
+            <form id="deleteForm" method="post">
+                <button class="button is-danger" type="submit">確認刪除</button>
+                <button class="button" type="button" onclick="closeDeleteModal()">取消</button>
+            </form>
+        </footer>
+    </div>
+</div>
+
+<script>
+// 刪除模態框功能
+function openDeleteModal(action, id, name) {
+    const modal = document.getElementById('deleteModal');
+    const form = document.getElementById('deleteForm');
+    const itemName = document.getElementById('deleteItemName');
+    
+    // 設置表單動作
+    form.action = `/${action}/${id}/delete`;
+    
+    // 設置項目名稱
+    itemName.textContent = name;
+    
+    // 顯示模態框
+    modal.classList.add('is-active');
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.classList.remove('is-active');
+}
+
+// 綁定刪除按鈕事件
+document.addEventListener('DOMContentLoaded', function() {
+    // 綁定所有刪除按鈕
+    document.querySelectorAll('[data-delete-action]').forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.dataset.deleteAction;
+            const id = this.dataset.deleteId;
+            const name = this.dataset.deleteName;
+            openDeleteModal(action, id, name);
+        });
+    });
+    
+    // 綁定模態框關閉事件
+    document.querySelectorAll('.modal .delete, .modal-background').forEach(element => {
+        element.addEventListener('click', closeDeleteModal);
+    });
+    
+    // ESC 鍵關閉模態框
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDeleteModal();
+        }
+    });
+});
+</script>
+{% endif %}

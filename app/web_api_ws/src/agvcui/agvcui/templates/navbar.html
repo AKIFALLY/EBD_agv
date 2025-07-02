@@ -1,0 +1,129 @@
+<nav class="navbar is-light">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="/">
+            <strong>Agvc UI</strong>
+        </a>
+    </div>
+    <div class="navbar-menu">
+        <div class="navbar-start">
+            <a class="navbar-item" href="/map">
+                Map
+            </a>
+            <a class="navbar-item" href="/tasks">
+                Tasks
+            </a>
+            <a class="navbar-item" href="/agvs">
+                AGVs
+            </a>
+            <a class="navbar-item" href="/devices">
+                Devices
+            </a>
+            <a class="navbar-item" href="/signals">
+                Signals
+            </a>
+            <div class="navbar-item has-dropdown is-hoverable">
+                <a class="navbar-link">
+                    Logs
+                </a>
+                <div class="navbar-dropdown is-boxed">
+                    <a class="navbar-item" href="/rosout_logs">
+                        Rosout logs
+                    </a>
+                    <a class="navbar-item" href="/runtime_logs">
+                        Runtime logs
+                    </a>
+                    <a class="navbar-item" href="/audit_logs">
+                        Audit logs
+                    </a>
+                </div>
+            </div>
+            <div class="navbar-item has-dropdown is-hoverable">
+                <a class="navbar-link">
+                    User
+                </a>
+                <div class="navbar-dropdown is-boxed">
+                    <a class="navbar-item" href="/clients">
+                        Clients
+                    </a>
+                    <a class="navbar-item" href="/racks">
+                        Racks
+                    </a>
+                    <a class="navbar-item" href="/products">
+                        Products
+                    </a>
+                    <a class="navbar-item" href="/carriers">
+                        Carriers
+                    </a>
+                </div>
+            </div>
+            <div class="navbar-item has-dropdown is-hoverable">
+                <a class="navbar-link">
+                    Help
+                </a>
+                <div class="navbar-dropdown is-boxed">
+                    <a class="navbar-item" href="http://0.0.0.0:8000/docs" target="_blank">
+                        WebApi
+                    </a>
+                    <a class="navbar-item" href="http://0.0.0.0:8002/" target="_blank">
+                        Opui
+                    </a>
+                    <a class="navbar-item" href="http://192.168.11.206:5000/" target="_blank">
+                        Kuka fleet
+                    </a>
+                    <hr class="navbar-divider">
+                    <a class="navbar-item" href="https://ching-tech.com/">
+                        Version 1.0.0
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="navbar-end">
+            <!-- 已登入用戶區域 -->
+            <div class="navbar-item has-dropdown is-hoverable" id="user-dropdown" style="display: none;">
+                <a class="navbar-link">
+                    <span class="icon">
+                        <i class="mdi mdi-account-circle"></i>
+                    </span>
+                    <span id="user-display-name">用戶</span>
+                    <span class="tag is-small is-primary ml-1" id="admin-badge" style="display: none;">管理員</span>
+                </a>
+                <div class="navbar-dropdown is-boxed is-right">
+                    <div class="navbar-item">
+                        <div class="content">
+                            <p class="is-size-7 has-text-grey" id="user-info">
+                                <strong>用戶:</strong> <span id="user-username">-</span><br>
+                                <strong>角色:</strong> <span id="user-role">-</span><br>
+                                <strong>狀態:</strong> <span id="user-status">-</span>
+                            </p>
+                        </div>
+                    </div>
+                    <hr class="navbar-divider">
+                    <a class="navbar-item" href="/users" id="user-management-link" style="display: none;">
+                        <span class="icon">
+                            <i class="mdi mdi-account-group"></i>
+                        </span>
+                        <span>用戶管理</span>
+                    </a>
+                    <hr class="navbar-divider" id="user-management-divider" style="display: none;">
+                    <a class="navbar-item" href="#" id="logout-btn">
+                        <span class="icon">
+                            <i class="mdi mdi-logout"></i>
+                        </span>
+                        <span>登出</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 未登入用戶區域 -->
+            <div class="navbar-item" id="login-area" style="display: none;">
+                <div class="buttons">
+                    <a class="button is-primary" href="/login">
+                        <span class="icon">
+                            <i class="mdi mdi-login"></i>
+                        </span>
+                        <span>登入</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+</nav>

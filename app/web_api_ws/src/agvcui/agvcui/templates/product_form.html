@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-half">
+                <div class="box">
+                    <h1 class="title is-4">{{ form_title }}</h1>
+
+                    <form method="post" action="{{ form_action }}">
+                        <!-- 產品名稱 -->
+                        <div class="field">
+                            <label class="label">產品名稱</label>
+                            <div class="control">
+                                <input class="input" type="text" name="name"
+                                    value="{{ product.name if product else '' }}" placeholder="請輸入產品名稱" required>
+                            </div>
+                        </div>
+
+                        <!-- 產品尺寸 -->
+                        <div class="field">
+                            <label class="label">產品尺寸</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="size" required>
+                                        <option value="">請選擇尺寸</option>
+                                        <option value="S" {{ 'selected' if product and product.size=='S' else '' }}>S
+                                            (小型)</option>
+                                        <option value="L" {{ 'selected' if product and product.size=='L' else '' }}>L
+                                            (大型)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 製程設置 -->
+                        <div class="field">
+                            <label class="label">製程 ID</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="process_settings_id" required>
+                                        <option value="">請選擇製程設置</option>
+                                        {% for ps in process_settings %}
+                                        <option value="{{ ps.id }}" {{ 'selected' if product and
+                                            product.process_settings_id==ps.id else '' }}>
+                                            {{ ps.description or ("製程 " + ps.id|string) }} (泡藥 {{ ps.soaking_times }} 次)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 按鈕區域 -->
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-primary" type="submit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-content-save"></i>
+                                    </span>
+                                    <span>{{ "更新" if product else "創建" }}</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a class="button is-light" href="/products">
+                                    <span class="icon">
+                                        <i class="mdi mdi-arrow-left"></i>
+                                    </span>
+                                    <span>返回</span>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 產品信息顯示（編輯時） -->
+                {% if product %}
+                <div class="box">
+                    <h2 class="title is-5">產品信息</h2>
+                    <div class="content">
+                        <p><strong>產品 ID:</strong> {{ product.id }}</p>
+                        <p><strong>創建時間:</strong> {{ product.created_at.strftime('%Y-%m-%d %H:%M:%S') if
+                            product.created_at else '-' }}</p>
+                        <p><strong>更新時間:</strong> {{ product.updated_at.strftime('%Y-%m-%d %H:%M:%S') if
+                            product.updated_at else '-' }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

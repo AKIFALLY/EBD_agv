@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block extra_head %}
+<link href="/static/css/deviceFormPage.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-devices"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/devices">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <div class="columns">
+                <div class="column is-one-third">
+                    <h2 class="subtitle">設備基本信息</h2>
+                    <div class="field">
+                        <label class="label">
+                            <span class="icon-text">
+                                <span class="icon">
+                                    <i class="mdi mdi-format-title"></i>
+                                </span>
+                                <span>設備名稱</span>
+                            </span>
+                        </label>
+                        <div class="control">
+                            <span>{{ device.name }}</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">
+                            <span class="icon-text">
+                                <span class="icon">
+                                    <i class="mdi mdi-text"></i>
+                                </span>
+                                <span>描述</span>
+                            </span>
+                        </label>
+                        <div class="control">
+                            <span>{{ device.description or "" }}</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">
+                            <span class="icon-text">
+                                <span class="icon">
+                                    <i class="mdi mdi-map-marker"></i>
+                                </span>
+                                <span>位置</span>
+                            </span>
+                        </label>
+                        <div class="control">
+                            <span>
+                                {% if device.location_id %}
+                                {{ locations | selectattr("id", "equalto", device.location_id) | map(attribute="name") |
+                                first }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-two-thirds">
+                    <h2 class="subtitle">端口和信號</h2>
+                    <div id="portsContainer">
+                        {% if device and device.ports %}
+                        {% for port in device.ports %}
+                        <div class="port-item box" style="margin-bottom: 1rem;">
+                            <div class="columns">
+                                <div class="column is-half">
+                                    <div class="field">
+                                        <label class="label is-small">端口名稱</label>
+                                        <div class="control">
+                                            <span>{{ port.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="column is-half">
+                                    <div class="field">
+                                        <label class="label is-small">端口描述</label>
+                                        <div class="control">
+                                            <span>{{ port.description }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="signals-container">
+                                <label class="label is-small">信號列表</label>
+                                {% if port.signals %}
+                                <ul>
+                                    {% for signal in port.signals %}
+                                    <li>
+                                        <span class="has-text-weight-semibold">{{ signal.name }}</span>
+                                        <span class="tag is-light">{{ signal.value }}</span>
+                                        <span class="tag is-info">{{ signal.type_of_value }}</span>
+                                        {% if signal.dm_address %}
+                                        <span class="tag is-light">{{ signal.dm_address }}</span>
+                                        {% endif %}
+                                        {% if signal.description %}
+                                        <span class="has-text-grey is-size-7">{{ signal.description }}</span>
+                                        {% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <span>無信號</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <span>無端口</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

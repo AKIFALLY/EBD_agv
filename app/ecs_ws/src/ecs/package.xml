@@ -12,6 +12,7 @@
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
+  <exec_depend>plc_proxy</exec_depend>
   <exec_depend>keyence_plc</exec_depend>
 
   <export>

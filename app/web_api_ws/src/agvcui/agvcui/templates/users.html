@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}用戶管理{% endblock %}
+
+{% block extra_head %}
+<link href="/static/css/usersPage.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-account-multiple"></i>
+                        </span>
+                        用戶管理
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-primary" href="/users/create">
+                        <span class="icon">
+                            <i class="mdi mdi-account-plus"></i>
+                        </span>
+                        <span>新增用戶</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用戶名</th>
+                        <th>全名</th>
+                        <th>郵箱</th>
+                        <th>角色</th>
+                        <th>狀態</th>
+                        <th>創建時間</th>
+                        <th>最後登入</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                                <div>
+                                    <strong>{{ user.username }}</strong>
+                                    {% if user.role == 'admin' %}
+                                    <span class="tag is-danger is-small ml-1">
+                                        <span class="user-role-icon"></span>管理員
+                                    </span>
+                                    {% elif user.role == 'operator' %}
+                                    <span class="tag is-info is-small ml-1">
+                                        <span class="user-role-icon"></span>操作員
+                                    </span>
+                                    {% else %}
+                                    <span class="tag is-success is-small ml-1">
+                                        <span class="user-role-icon"></span>用戶
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.full_name or '-' }}</td>
+                        <td>{{ user.email or '-' }}</td>
+                        <td>
+                            {% if user.role == 'admin' %}
+                            <span class="tag is-danger is-small">
+                                <span class="user-role-icon"></span>管理員
+                            </span>
+                            {% elif user.role == 'operator' %}
+                            <span class="tag is-info is-small">
+                                <span class="user-role-icon"></span>操作員
+                            </span>
+                            {% else %}
+                            <span class="tag is-success is-small">
+                                <span class="user-role-icon"></span>用戶
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="tag is-success is-small">啟用</span>
+                            {% else %}
+                            <span class="tag is-danger is-small">停用</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }}</td>
+                        <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '從未登入' }}</td>
+                        <td>
+                            <div class="buttons are-small">
+                                <a class="button is-info is-small" href="/users/{{ user.id }}/edit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </span>
+                                    <span>編輯</span>
+                                </a>
+                                {% if user.id != current_user.id %}
+                                <button class="button is-danger is-small" data-delete-action="users"
+                                    data-delete-id="{{ user.id }}" data-delete-name="{{ user.username }}">
+                                    <span class="icon">
+                                        <i class="mdi mdi-delete"></i>
+                                    </span>
+                                    <span>刪除</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="user-stats">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+            <!-- 分頁信息 -->
+            {% set start_item = (current_page - 1) * 20 + 1 %}
+            {% set end_item = [current_page * 20, total_count]|min %}
+            <div class="has-text-grey is-size-7">
+                顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }}
+                頁)
+            </div>
+        </div>
+
+        <!-- 智能分頁 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered mt-4 user-pagination" role="navigation" aria-label="pagination">
+            {% if current_page > 1 %}
+            <a class="pagination-previous" href="/users?page={{ current_page - 1 }}">上一頁</a>
+            {% endif %}
+            {% if current_page < total_pages %} <a class="pagination-next" href="/users?page={{ current_page + 1 }}">
+                下一頁</a>
+                {% endif %}
+
+                <ul class="pagination-list">
+                    {% set start_page = [1, current_page - 2]|max %}
+                    {% set end_page = [total_pages, current_page + 2]|min %}
+
+                    <!-- 第一頁 -->
+                    {% if start_page > 1 %}
+                    <li><a class="pagination-link" href="/users?page=1">1</a></li>
+                    {% if start_page > 2 %}
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- 當前頁附近的頁碼 -->
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current">{{ page_num }}</a></li>
+                    {% else %}
+                    <li><a class="pagination-link" href="/users?page={{ page_num }}">{{ page_num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- 最後一頁 -->
+                    {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li><span
+                            class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        <li><a class="pagination-link" href="/users?page={{ total_pages }}">{{ total_pages }}</a></li>
+                        {% endif %}
+                </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- 刪除確認模態框 -->
+<div class="modal" id="deleteModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">確認刪除</p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>您確定要刪除用戶 <strong id="deleteUsername"></strong> 嗎？</p>
+            <p class="has-text-danger">此操作無法撤銷！</p>
+        </section>
+        <footer class="modal-card-foot">
+            <form id="deleteForm" method="post">
+                <button class="button is-danger" type="submit">確認刪除</button>
+                <button class="button" type="button">取消</button>
+            </form>
+        </footer>
+    </div>
+</div>
+
+<!-- JavaScript 功能已移至 /static/js/deleteModal.js -->
+{% endblock %}

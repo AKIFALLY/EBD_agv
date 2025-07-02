@@ -1,0 +1,31 @@
+<nav class="navbar is-black has-shadow" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="/">
+            <strong>opui</strong>
+        </a>
+    </div>
+
+    <div class="navbar-start">
+        <a class="navbar-item" href="/">操作</a>
+        <a class="navbar-item" href="/setting">設定</a>
+    </div>
+
+    <!-- 絕對置中的機器編號 -->
+    <div class="navbar-item is-absolute-center">
+        <span class="has-text-white has-text-weight-bold" id="nav-machine-number"> </span>
+    </div>
+</nav>
+
+<style>
+    .is-absolute-center {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        /* 讓點擊穿透，除非你需要互動 */
+    }
+</style>

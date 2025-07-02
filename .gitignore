@@ -1,11 +1,12 @@
 /sick
-**/build/
-**/install/
-**/log/
-**/__pycache__/
+/kuka
+**/build/*
+**/install/*
+**/log/*
+**/__pycache__/*
 
 # 忽略 Python 編譯產生的檔案
-__pycache__/
+__pycache__/*
 *.pyc
 *.pyo
 
@@ -15,3 +16,7 @@ __pycache__/
 # 忽略 Windows 產生的 Thumbs.db
 Thumbs.db
 **/Thumbs.db
+
+.vscode/*
+
+*.log

@@ -1,0 +1,7 @@
+# Request
+string command
+bool onoff
+
+---
+# Response
+bool success

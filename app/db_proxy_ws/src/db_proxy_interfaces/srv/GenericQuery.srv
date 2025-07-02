@@ -1,0 +1,12 @@
+# Request
+string table_name
+string[] columns
+string[] data
+string condition
+string mode   # "select", "insert", "update", "delete"
+
+---
+# Response
+bool success
+string[] results  # select: json string per row, others: maybe just one msg
+string message    # error or "ok"

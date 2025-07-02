@@ -1,0 +1,352 @@
+/* 用戶表單頁面專用樣式 */
+
+/* 表單容器樣式 */
+.user-form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+}
+
+/* 表單標題樣式 */
+.user-form-title {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #363636;
+    border-bottom: 2px solid #f14668;
+    padding-bottom: 1rem;
+}
+
+.user-form-title .icon {
+    color: #f14668;
+    margin-right: 0.5rem;
+}
+
+/* 表單字段樣式 */
+.user-form-field {
+    margin-bottom: 1.5rem;
+}
+
+.user-form-field .label {
+    font-weight: 600;
+    color: #363636;
+    margin-bottom: 0.5rem;
+}
+
+.user-form-field .label.required::after {
+    content: " *";
+    color: #f14668;
+}
+
+/* 輸入框樣式 */
+.user-form-input {
+    border-radius: 6px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.user-form-input:focus {
+    border-color: #f14668;
+    box-shadow: 0 0 0 0.125em rgba(241, 70, 104, 0.25);
+    outline: none;
+}
+
+.user-form-input.is-danger {
+    border-color: #f14668;
+    background-color: #fef7f7;
+}
+
+.user-form-input.is-success {
+    border-color: #48c78e;
+    background-color: #f7fef9;
+}
+
+/* 選擇框樣式 */
+.user-form-select {
+    border-radius: 6px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.user-form-select:focus {
+    border-color: #f14668;
+    box-shadow: 0 0 0 0.125em rgba(241, 70, 104, 0.25);
+    outline: none;
+}
+
+/* 複選框樣式 */
+.user-form-checkbox {
+    transform: scale(1.2);
+    margin-right: 0.5rem;
+    accent-color: #f14668;
+}
+
+.user-form-checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 500;
+    color: #363636;
+}
+
+.user-form-checkbox-label:hover {
+    color: #f14668;
+}
+
+/* 幫助文字樣式 */
+.user-form-help {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.user-form-help.is-danger {
+    color: #f14668;
+    font-weight: 500;
+}
+
+.user-form-help.is-success {
+    color: #48c78e;
+    font-weight: 500;
+}
+
+/* 錯誤訊息樣式 */
+.user-form-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: #dc2626;
+}
+
+.user-form-error .icon {
+    color: #dc2626;
+    margin-right: 0.5rem;
+}
+
+/* 成功訊息樣式 */
+.user-form-success {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: #166534;
+}
+
+.user-form-success .icon {
+    color: #166534;
+    margin-right: 0.5rem;
+}
+
+/* 按鈕樣式 */
+.user-form-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.user-form-submit {
+    background: linear-gradient(135deg, #f14668 0%, #ff6b9d 100%);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.user-form-submit:hover {
+    background: linear-gradient(135deg, #d63447 0%, #e55a7a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(241, 70, 104, 0.3);
+}
+
+.user-form-submit:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.user-form-cancel {
+    background: #6c757d;
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-form-cancel:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    color: #fff;
+}
+
+/* 密碼強度指示器 */
+.password-strength {
+    margin-top: 0.5rem;
+    height: 4px;
+    background-color: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.password-strength-weak .password-strength-bar {
+    width: 33%;
+    background-color: #f14668;
+}
+
+.password-strength-medium .password-strength-bar {
+    width: 66%;
+    background-color: #ffdd57;
+}
+
+.password-strength-strong .password-strength-bar {
+    width: 100%;
+    background-color: #48c78e;
+}
+
+/* 表單驗證樣式 */
+.user-form-field.has-error .user-form-input {
+    border-color: #f14668;
+    background-color: #fef7f7;
+}
+
+.user-form-field.has-success .user-form-input {
+    border-color: #48c78e;
+    background-color: #f7fef9;
+}
+
+/* 響應式設計 */
+@media screen and (max-width: 768px) {
+    .user-form-container {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .user-form-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .user-form-submit,
+    .user-form-cancel {
+        width: 100%;
+    }
+}
+
+/* 表單載入狀態 */
+.user-form-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.user-form-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f14668;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 表單提示樣式 */
+.user-form-hint {
+    background-color: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: #1565c0;
+}
+
+.user-form-hint .icon {
+    color: #1976d2;
+    margin-right: 0.5rem;
+}
+
+/* 角色選擇樣式 */
+.role-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.role-option {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.role-option:hover {
+    border-color: #f14668;
+    background-color: #fef7f7;
+}
+
+.role-option.selected {
+    border-color: #f14668;
+    background-color: #f14668;
+    color: #fff;
+}
+
+.role-option .icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.role-option .title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.role-option .description {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}

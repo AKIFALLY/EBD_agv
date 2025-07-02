@@ -1,0 +1,105 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ~/agvc/nginx:/etc/nginx/conf.d:ro
+    restart: always
+    networks:
+      bridge_network:
+        ipv4_address: 192.168.100.252 # 固定 IP
+
+  agvc_server:
+    image: yazelin/agvc:latest
+    #build: .
+    container_name: agvc_server
+    restart: always
+    networks:
+      bridge_network:
+        ipv4_address: 192.168.100.100 # 固定 IP
+    environment:
+      - DISPLAY=$DISPLAY
+      - ZENOH_ROUTER_CONFIG_URI=/app/routerconfig.json5 # 這個檔案內要設定zenoh router的連線目標 "tcp/192.168.100.100:7447"
+      - RMW_IMPLEMENTATION=rmw_zenoh_cpp # 設定 ros rmw 使用 zenoh
+    volumes:
+      - ~/RosAGV/app:/app:rw # RosAGV 將宿主機的 C:/RosAGV/app 掛載到容器的 /app 目錄
+      #- ~/agvc:/app/agvc:rw # agvc 將宿主機的 C:/agvc 掛載到容器的 /agvc 目錄
+      #- ~/agvc/opui/dist:/app/ui/opui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
+      #- ~/agvc/agvcui/dist:/app/ui/agvcui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw # (ubuntu 需要)將宿主機的 /tmp/.X11-unix 掛載到容器的 /tmp/.X11-unix 目錄
+    ports:
+      - 7447:7447 # 7447 zenoh router
+      - 2200:2200 # 2200 ssh server
+      - 8000:8000 # 8000 fastapi server
+      - 3000:3000 # 3000 webui (agvc.ui)
+      - 3001:3001 # 3001 opui (op.ui)
+      - 8001:8001 # 8001 fastapi server
+      - 8002:8002 # 8002 fastapi server
+      - 5173:5173 # 5173 vue app tester server
+    tty: true
+    stdin_open: true
+    privileged: true # 根據需要可以設置這個
+  #mosquitto:
+  #  image: eclipse-mosquitto:latest
+  #  #build: .
+  #  container_name: mosquitto_mqtt
+  #  restart: always    
+  #  networks:
+  #    bridge_network:
+  #      ipv4_address: 192.168.100.253  # 固定 IP
+  #  volumes:
+  #    - ~/agvc/mosquitto/config:/mosquitto/config:rw
+  #    - ~/agvc/mosquitto/data:/mosquitto/data:rw
+  #    - ~/agvc/mosquitto/log:/mosquitto/log:rw
+  #  ports:
+  #    - 1883:1883           # MQTT
+  #    - 9001:9001           # MQTT Websocket
+  #  tty: true
+  #  stdin_open: true
+  #  privileged: true  # 根據需要可以設置這個
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    restart: always
+    networks:
+      bridge_network:
+        ipv4_address: 192.168.100.254 # 固定 IP
+    environment:
+      POSTGRES_USER: postgres # 系統管理員帳號
+      POSTGRES_PASSWORD: password # 系統管理員密碼
+      POSTGRES_DB: postgres # 預設資料庫
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # PostgreSQL 数据存储
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_container
+    restart: always
+    networks:
+      bridge_network:
+        ipv4_address: 192.168.100.101 # 固定 IP
+    environment:
+      PGADMIN_DEFAULT_EMAIL: yazelin@ching-tech.com # 登入 pgAdmin 的帳號
+      PGADMIN_DEFAULT_PASSWORD: password # 登入 pgAdmin 的密碼
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin # ✅ pgAdmin 配置存儲
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+    # ✅ 定義 pgAdmin 數據卷
+
+networks:
+  bridge_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
+          gateway: 192.168.100.1

@@ -1,3 +1,4 @@
+import os
 class StringToNumberConverter:
     @staticmethod
     def convert(value: str):
@@ -62,4 +63,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    param_file = os.path.join(
+        '/app',
+        'ecs_config',  # 指定 'config' 資料夾
+        'params.yaml'  # YAML 配置文件
+    )
+    print(param_file)
+    #main()

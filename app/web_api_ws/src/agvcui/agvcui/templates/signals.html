@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}信號管理{% endblock %}
+
+{% block extra_head %}
+<link href="/static/css/signalsPage.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-pulse"></i>
+                        </span>
+                        信號管理
+                    </h1>
+                </div>
+                <div class="level-item">
+                    {% if selected_eqp %}
+                    <span class="tag is-info is-medium">
+                        <span class="icon">
+                            <i class="mdi mdi-devices"></i>
+                        </span>
+                        <span>{{ selected_eqp.name }} ({{ total_count }} 個信號)</span>
+                    </span>
+                    {% else %}
+                    <span class="tag is-light is-medium">
+                        <span class="icon">
+                            <i class="mdi mdi-view-list"></i>
+                        </span>
+                        <span>所有信號 ({{ total_count }} 個)</span>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 設備選擇器 -->
+        <div class="box">
+            <div class="field">
+                <label class="label">
+                    <span class="icon-text">
+                        <span class="icon">
+                            <i class="mdi mdi-filter"></i>
+                        </span>
+                        <span>按設備篩選</span>
+                    </span>
+                </label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="eqpSelector">
+                            <option value="">所有設備</option>
+                            {% for eqp in eqps_with_counts %}
+                            <option value="{{ eqp.id }}" {% if selected_eqp_id==eqp.id %}selected{% endif %}>
+                                {{ eqp.name }} ({{ eqp.signal_count }} 個信號)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>信號名稱</th>
+                        <th>設備 ID</th>
+                        <th>端口 ID</th>
+                        <th>描述</th>
+                        <th>當前值</th>
+                        <th>數據類型</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for signal in signals %}
+                    <tr data-signal-id="{{ signal.id }}">
+                        <td><strong>{{ signal.id }}</strong></td>
+                        <td>
+                            <div class="has-text-weight-medium">{{ signal.name }}</div>
+                            {% if signal.description %}
+                            <div class="has-text-grey is-size-7 mt-1">{{ signal.description[:30] }}{% if
+                                signal.description|length > 30 %}...{% endif %}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if signal.eqp_id %}
+                            <span class="tag is-info">{{ signal.eqp_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if signal.eqp_port_id %}
+                            <span class="tag is-primary">{{ signal.eqp_port_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="has-text-grey">{{ signal.description or '-' }}</span></td>
+                        <td class="signal-value">
+                            {% if signal.value is not none %}
+                            {% if signal.type_of_value and signal.type_of_value.lower() in ['bool', 'boolean'] %}
+                            {% if signal.value == 1 or signal.value == '1' or signal.value == true or signal.value ==
+                            'true' %}
+                            <span class="tag is-success">
+                                <span class="icon">
+                                    <i class="mdi mdi-check-circle"></i>
+                                </span>
+                                <span>TRUE (1)</span>
+                            </span>
+                            {% elif signal.value == 0 or signal.value == '0' or signal.value == false or signal.value ==
+                            'false' %}
+                            <span class="tag is-danger">
+                                <span class="icon">
+                                    <i class="mdi mdi-close-circle"></i>
+                                </span>
+                                <span>FALSE (0)</span>
+                            </span>
+                            {% else %}
+                            <span class="tag is-warning">{{ signal.value }}</span>
+                            {% endif %}
+                            {% elif signal.type_of_value and signal.type_of_value.lower() in ['int', 'integer',
+                            'number'] %}
+                            {% if signal.value|int > 0 %}
+                            <span class="tag is-info">{{ signal.value }}</span>
+                            {% elif signal.value|int == 0 %}
+                            <span class="tag is-light">{{ signal.value }}</span>
+                            {% else %}
+                            <span class="tag is-warning">{{ signal.value }}</span>
+                            {% endif %}
+                            {% elif signal.type_of_value and signal.type_of_value.lower() in ['float', 'double',
+                            'decimal'] %}
+                            {% if signal.value|float > 0 %}
+                            <span class="tag is-info">{{ signal.value }}</span>
+                            {% elif signal.value|float == 0 %}
+                            <span class="tag is-light">{{ signal.value }}</span>
+                            {% else %}
+                            <span class="tag is-warning">{{ signal.value }}</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="tag is-success">{{ signal.value }}</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="tag is-light">無值</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if signal.type_of_value %}
+                            {% if signal.type_of_value.lower() in ['bool', 'boolean'] %}
+                            <span class="tag is-primary">
+                                <span class="icon">
+                                    <i class="mdi mdi-toggle-switch"></i>
+                                </span>
+                                <span>布爾值</span>
+                            </span>
+                            {% elif signal.type_of_value.lower() in ['int', 'integer', 'number'] %}
+                            <span class="tag is-info">
+                                <span class="icon">
+                                    <i class="mdi mdi-numeric"></i>
+                                </span>
+                                <span>整數</span>
+                            </span>
+                            {% elif signal.type_of_value.lower() in ['float', 'double', 'decimal'] %}
+                            <span class="tag is-warning">
+                                <span class="icon">
+                                    <i class="mdi mdi-decimal"></i>
+                                </span>
+                                <span>浮點數</span>
+                            </span>
+                            {% elif signal.type_of_value.lower() in ['string', 'str', 'text'] %}
+                            <span class="tag is-success">
+                                <span class="icon">
+                                    <i class="mdi mdi-format-text"></i>
+                                </span>
+                                <span>字符串</span>
+                            </span>
+                            {% else %}
+                            <span class="tag is-light">{{ signal.type_of_value }}</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="tag is-light">未知</span>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+        <!-- 分頁信息 -->
+        {% set start_item = (current_page - 1) * 20 + 1 %}
+        {% set end_item = [current_page * 20, total_count]|min %}
+        <div class="has-text-grey is-size-7 mb-2">
+            顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }} 頁)
+        </div>
+
+        <!-- 智能分頁 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            {% set base_url = "/signals" %}
+            {% set eqp_param = "?eqp_id=" + selected_eqp_id|string if selected_eqp_id else "" %}
+
+            {% if current_page > 1 %}
+            {% set prev_url = base_url + eqp_param + ("&" if selected_eqp_id else "?") + "page=" + (current_page -
+            1)|string %}
+            <a class="pagination-previous" href="{{ prev_url }}">上一頁</a>
+            {% endif %}
+
+            {% if current_page < total_pages %} {% set next_url=base_url + eqp_param + ("&" if selected_eqp_id else "?"
+                ) + "page=" + (current_page + 1)|string %} <a class="pagination-next" href="{{ next_url }}">下一頁</a>
+                {% endif %}
+
+                <ul class="pagination-list">
+                    {% set start_page = [1, current_page - 2]|max %}
+                    {% set end_page = [total_pages, current_page + 2]|min %}
+
+                    <!-- 第一頁 -->
+                    {% if start_page > 1 %}
+                    {% set first_url = base_url + eqp_param + ("&" if selected_eqp_id else "?") + "page=1" %}
+                    <li><a class="pagination-link" href="{{ first_url }}">1</a></li>
+                    {% if start_page > 2 %}
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- 當前頁附近的頁碼 -->
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current">{{ page_num }}</a></li>
+                    {% else %}
+                    {% set page_url = base_url + eqp_param + ("&" if selected_eqp_id else "?") + "page=" +
+                    page_num|string %}
+                    <li><a class="pagination-link" href="{{ page_url }}">{{ page_num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- 最後一頁 -->
+                    {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li><span
+                            class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        {% set last_url = base_url + eqp_param + ("&" if selected_eqp_id else "?") + "page=" +
+                        total_pages|string %}
+                        <li><a class="pagination-link" href="{{ last_url }}">{{ total_pages }}</a></li>
+                        {% endif %}
+                </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- JavaScript 功能已移至 /static/js/signalsPage.js -->
+
+
+{% endblock %}

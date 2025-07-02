@@ -1,0 +1,10 @@
+# Request
+string device_type
+string start_address
+int32 count
+
+---
+# Response
+bool success
+uint8[] values
+string message

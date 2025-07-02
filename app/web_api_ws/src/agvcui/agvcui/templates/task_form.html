@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-clipboard-text"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/tasks">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表單包裝在 box 中 -->
+        <div class="box">
+            <form method="post" action="{{ form_action }}" accept-charset="UTF-8">
+                <div class="columns">
+                    <div class="column is-half">
+                        <!-- 任務名稱 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-format-title"></i>
+                                    </span>
+                                    <span>任務名稱 *</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="text" name="name" value="{{ task.name if task else '' }}"
+                                    placeholder="請輸入任務名稱" required>
+                            </div>
+                        </div>
+
+                        <!-- 任務描述 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-text"></i>
+                                    </span>
+                                    <span>任務描述</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <textarea class="textarea" name="description"
+                                    placeholder="請輸入任務描述">{{ task.description if task else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- 父任務 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-file-tree"></i>
+                                    </span>
+                                    <span>父任務</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="parent_task_id">
+                                        <option value="">無父任務（根任務）</option>
+                                        {% for parent_task in available_parent_tasks %}
+                                        <option value="{{ parent_task.id }}" {% if task and
+                                            task.parent_task_id==parent_task.id %}selected{% endif %}>
+                                            ID: {{ parent_task.id }} - {{ parent_task.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="help">選擇此任務的父任務，建立任務間的依賴關係</p>
+                        </div>
+
+                        <!-- 任務代碼 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-barcode"></i>
+                                    </span>
+                                    <span>任務代碼 (Mission Code)</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="text" name="mission_code"
+                                    value="{{ task.mission_code if task.mission_code else '' }}"
+                                    placeholder="請輸入 Kuka 系統的任務代碼">
+                            </div>
+                            <p class="help">用於 Kuka 系統回報狀態時的任務識別碼</p>
+                        </div>
+
+                        <!-- 工作類型 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-briefcase"></i>
+                                    </span>
+                                    <span>工作類型</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="work_id">
+                                        <option value="">請選擇工作類型</option>
+                                        {% for work in works %}
+                                        <option value="{{ work.id }}" {% if task and task.work_id==work.id %}selected{%
+                                            endif %}>
+                                            {{ work.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任務狀態 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-flag"></i>
+                                    </span>
+                                    <span>任務狀態</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="status_id">
+                                        <option value="">請選擇任務狀態</option>
+                                        {% for status in task_statuses %}
+                                        <option value="{{ status.id }}" {% if task and task.status_id==status.id
+                                            %}selected{% endif %}>
+                                            {{ status.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-half">
+                        <!-- 房間 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-home"></i>
+                                    </span>
+                                    <span>房間</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="room_id">
+                                        <option value="">請選擇房間</option>
+                                        {% for room in rooms %}
+                                        <option value="{{ room.id }}" {% if task and task.room_id==room.id %}selected{%
+                                            endif %}>
+                                            {{ room.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 節點 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-map-marker"></i>
+                                    </span>
+                                    <span>目標節點</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="node_id">
+                                        <option value="">請選擇目標節點</option>
+                                        {% for node in nodes %}
+                                        <option value="{{ node.id }}" {% if task and task.node_id==node.id %}selected{%
+                                            endif %}>
+                                            {{ node.name or 'Node ' + node.id|string }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AGV -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-robot"></i>
+                                    </span>
+                                    <span>指定 AGV</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="agv_id">
+                                        <option value="">請選擇 AGV</option>
+                                        {% for agv in agvs %}
+                                        <option value="{{ agv.id }}" {% if task and task.agv_id==agv.id %}selected{%
+                                            endif %}>
+                                            {{ agv.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 優先級 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-priority-high"></i>
+                                    </span>
+                                    <span>優先級</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="number" name="priority"
+                                    value="{{ task.priority if task else 0 }}" min="0" max="100" placeholder="0-100">
+                            </div>
+                            <p class="help">數值越高優先級越高</p>
+                        </div>
+
+                        <!-- 參數 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-code-json"></i>
+                                    </span>
+                                    <span>參數 (JSON)</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <textarea class="textarea" name="parameters" rows="6"
+                                    placeholder='{"room_id": 2, "rack_id": 1, "eqp_id": 1}'>{{ task.parameters | tojson_chinese(indent=2) if task and task.parameters else '' }}</textarea>
+                            </div>
+                            <p class="help">請輸入有效的 JSON 格式參數，例如：{"room_id": 2, "rack_id": 1}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按鈕 -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-content-save"></i>
+                            </span>
+                            <span>保存</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a class="button is-light" href="/tasks">
+                            <span class="icon">
+                                <i class="mdi mdi-cancel"></i>
+                            </span>
+                            <span>取消</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

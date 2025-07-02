@@ -1,0 +1,5 @@
+int32 traffic_id
+string name
+string points
+---
+bool success

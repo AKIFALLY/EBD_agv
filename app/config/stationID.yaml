@@ -1,0 +1,8 @@
+StationID:
+    LoaderBox: 1   #傳入箱
+    UnloaderBox: 2 #傳出箱
+    Washing: 3    # 清洗箱
+    Soaking01: 4  # 藥泡01
+    Soaking02: 5  # 藥泡02
+    Prebaking: 6  # 預烘
+    

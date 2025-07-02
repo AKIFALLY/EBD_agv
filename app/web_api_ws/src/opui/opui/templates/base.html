@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>{% block title %}操作面板{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
+    <link rel="stylesheet" href="/static/css/opui-bulma-extend.css" />
+    <!-- Socket.IO 前端 library -->
+    <script src="/static/js/lib/socket.io.min.js"></script>
+    <script type="module" src="/static/index.js"></script>
+
+
+</head>
+
+<body>
+    <main class="main-root">
+        {% include "navbar.html" %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bulma 訊息元件，置中上方，預設隱藏 -->
+    <div id="error-message" class="notification is-primary is-light"
+        style="display:none;position:fixed;top:2rem;left:50%;transform:translateX(-50%);z-index:1000;min-width:320px;max-width:90vw;text-align:center;">
+        <button class="delete" type="button" onclick="this.parentElement.style.display='none'"></button>
+        <span id="error-message-content"></span>
+    </div>
+    <!-- Bulma 訊息元件，置中下方，預設隱藏 -->
+    <div id="notify-message" class="notification is-primary is-light"
+        style="display:none;position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:1000;min-width:320px;max-width:90vw;text-align:center;">
+        <button class="delete" type="button" onclick="this.parentElement.style.display='none'"></button>
+        <span id="notify-message-content"></span>
+    </div>
+
+    <!-- 恢復原廠 modal -->
+    <div class="modal" id="factory-restore-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">確認恢復原廠設定</p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <p>此操作將清除所有本機設定並重置為原廠預設值，且會斷線重連。確定要繼續嗎？</p>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-danger m-2" id="factory-restore-confirm">確定</button>
+                <button class="button m-4" id="factory-restore-cancel">取消</button>
+            </footer>
+        </div>
+    </div>
+</body>
+
+</html>

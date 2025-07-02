@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}產品管理{% endblock %}
+
+{% block extra_head %}
+<link href="/static/css/productsPage.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-safety-goggles"></i>
+                        </span>
+                        產品管理
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    {% if current_user and current_user.role in ['operator', 'admin'] %}
+                    <a class="button is-primary" href="/products/create">
+                        <span class="icon">
+                            <i class="mdi mdi-plus"></i>
+                        </span>
+                        <span>新增產品</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜尋和篩選區域 -->
+        <div class="box">
+            <form method="get" action="/products" id="filterForm">
+                <div class="field is-grouped">
+                    <div class="control is-expanded">
+                        <input class="input" type="text" name="search" placeholder="搜尋產品名稱..."
+                            value="{{ request.query_params.get('search', '') }}">
+                    </div>
+                    <div class="control">
+                        <div class="select">
+                            <select name="size_filter">
+                                <option value="">所有尺寸</option>
+                                <option value="S" {{ 'selected' if request.query_params.get('size_filter')=='S' else ''
+                                    }}>S (小型)</option>
+                                <option value="L" {{ 'selected' if request.query_params.get('size_filter')=='L' else ''
+                                    }}>L (大型)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="control">
+                        <div class="select">
+                            <select name="sort_by">
+                                <option value="id" {{ 'selected' if request.query_params.get('sort_by')=='id' else ''
+                                    }}>按 ID 排序
+                                </option>
+                                <option value="name" {{ 'selected' if request.query_params.get('sort_by')=='name'
+                                    else '' }}>
+                                    按名稱排序</option>
+                                <option value="created_at" {{ 'selected' if
+                                    request.query_params.get('sort_by')=='created_at' else '' }}>按創建時間排序</option>
+                                <option value="updated_at" {{ 'selected' if
+                                    request.query_params.get('sort_by')=='updated_at' else '' }}>按更新時間排序</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-magnify"></i>
+                            </span>
+                            <span>搜尋</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <button class="button is-light" type="button" data-clear-filters>
+                            <span class="icon">
+                                <i class="mdi mdi-filter-remove"></i>
+                            </span>
+                            <span>清除</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="box">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>產品名稱</th>
+                        <th>尺寸</th>
+                        <th>製程 ID</th>
+                        <th>創建時間</th>
+                        <th>更新時間</th>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <th>操作</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td><strong>{{ product.id }}</strong></td>
+                        <td>
+                            <div class="has-text-weight-medium">{{ product.name or '未命名' }}</div>
+                        </td>
+                        <td>
+                            {% if product.size == 'S' %}
+                            <span class="tag is-success">{{ product.size }}</span>
+                            {% elif product.size == 'L' %}
+                            <span class="tag is-danger">{{ product.size }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.process_settings_id %}
+                            <span class="tag is-primary">{{ product.process_settings_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="has-text-grey is-family-monospace is-size-7">{{
+                                product.created_at.strftime('%Y-%m-%d %H:%M') if
+                                product.created_at else '-' }}</span></td>
+                        <td><span class="has-text-grey is-family-monospace is-size-7">{{
+                                product.updated_at.strftime('%Y-%m-%d %H:%M') if
+                                product.updated_at else '-' }}</span></td>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <td>
+                            <div class="buttons are-small">
+                                <a class="button is-info is-small" href="/products/{{ product.id }}/edit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </span>
+                                    <span>編輯</span>
+                                </a>
+                                {% if current_user.role == 'admin' %}
+                                <button class="button is-danger is-small" data-delete-action="products"
+                                    data-delete-id="{{ product.id }}"
+                                    data-delete-name="{{ product.name or product.id }}">
+                                    <span class="icon">
+                                        <i class="mdi mdi-delete"></i>
+                                    </span>
+                                    <span>刪除</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+
+        <!-- 分頁信息 -->
+        {% set start_item = (current_page - 1) * 20 + 1 %}
+        {% set end_item = [current_page * 20, total_count]|min %}
+        <div class="has-text-grey is-size-7 mb-2">
+            顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }} 頁)
+        </div>
+
+        <!-- 智能分頁 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            {% if current_page > 1 %}
+            <a class="pagination-previous" href="/products?page={{ current_page - 1 }}">上一頁</a>
+            {% endif %}
+            {% if current_page < total_pages %} <a class="pagination-next" href="/products?page={{ current_page + 1 }}">
+                下一頁</a>
+                {% endif %}
+
+                <ul class="pagination-list">
+                    {% set start_page = [1, current_page - 2]|max %}
+                    {% set end_page = [total_pages, current_page + 2]|min %}
+
+                    <!-- 第一頁 -->
+                    {% if start_page > 1 %}
+                    <li><a class="pagination-link" href="/products?page=1">1</a></li>
+                    {% if start_page > 2 %}
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- 當前頁附近的頁碼 -->
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current">{{ page_num }}</a></li>
+                    {% else %}
+                    <li><a class="pagination-link" href="/products?page={{ page_num }}">{{ page_num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- 最後一頁 -->
+                    {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li><span
+                            class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        <li><a class="pagination-link" href="/products?page={{ total_pages }}">{{ total_pages }}</a>
+                        </li>
+                        {% endif %}
+                </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- 刪除功能已移至統一的 deleteModal.js -->
+{% endblock %}

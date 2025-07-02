@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}審計日誌{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-file-document-outline"></i>
+                        </span>
+                        審計日誌
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- 篩選表單 -->
+        <div class="box">
+            <form method="get" action="/audit_logs">
+                <div class="field is-grouped is-flex-wrap-wrap">
+                    <div class="control">
+                        <div class="select">
+                            <select name="operation_type">
+                                <option value="">所有操作類型</option>
+                                <option value="view" {% if filters.operation_type == 'view' %}selected{% endif %}>查看</option>
+                                <option value="create" {% if filters.operation_type == 'create' %}selected{% endif %}>創建</option>
+                                <option value="update" {% if filters.operation_type == 'update' %}selected{% endif %}>更新</option>
+                                <option value="delete" {% if filters.operation_type == 'delete' %}selected{% endif %}>刪除</option>
+                                <option value="move" {% if filters.operation_type == 'move' %}selected{% endif %}>移動</option>
+                                <option value="assign" {% if filters.operation_type == 'assign' %}selected{% endif %}>分配</option>
+                                <option value="control" {% if filters.operation_type == 'control' %}selected{% endif %}>控制</option>
+                                <option value="navigate" {% if filters.operation_type == 'navigate' %}selected{% endif %}>導航</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="control">
+                        <div class="select">
+                            <select name="resource_type">
+                                <option value="">所有資源類型</option>
+                                <option value="task" {% if filters.resource_type == 'task' %}selected{% endif %}>任務</option>
+                                <option value="rack" {% if filters.resource_type == 'rack' %}selected{% endif %}>貨架</option>
+                                <option value="carrier" {% if filters.resource_type == 'carrier' %}selected{% endif %}>載具</option>
+                                <option value="agv" {% if filters.resource_type == 'agv' %}selected{% endif %}>AGV</option>
+                                <option value="equipment" {% if filters.resource_type == 'equipment' %}selected{% endif %}>設備</option>
+                                <option value="node" {% if filters.resource_type == 'node' %}selected{% endif %}>節點</option>
+                                <option value="map" {% if filters.resource_type == 'map' %}selected{% endif %}>地圖</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="control">
+                        <input class="input" type="text" name="username" placeholder="使用者名稱" value="{{ filters.username or '' }}">
+                    </div>
+                    <div class="control">
+                        <input class="input" type="date" name="start_time" value="{{ filters.start_time or '' }}">
+                    </div>
+                    <div class="control">
+                        <input class="input" type="date" name="end_time" value="{{ filters.end_time or '' }}">
+                    </div>
+                    <div class="control">
+                        <button class="button is-primary" type="submit">篩選</button>
+                    </div>
+                    <div class="control">
+                        <a class="button" href="/audit_logs">清除</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 審計日誌表格 -->
+        <div class="box">
+            <div class="table-container">
+                <table class="table is-fullwidth is-hoverable">
+                    <thead>
+                        <tr>
+                            <th>時間</th>
+                            <th>使用者</th>
+                            <th>操作類型</th>
+                            <th>資源類型</th>
+                            <th>資源 ID</th>
+                            <th>詳細資訊</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>
+                                <span class="has-text-grey-dark">
+                                    {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '-' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="tag is-info is-light">
+                                    {{ log.username or '未知' }}
+                                </span>
+                                {% if log.user_role %}
+                                <br><small class="has-text-grey">{{ log.user_role }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="tag 
+                                    {% if log.operation_type == 'create' %}is-success
+                                    {% elif log.operation_type == 'update' %}is-warning
+                                    {% elif log.operation_type == 'delete' %}is-danger
+                                    {% elif log.operation_type == 'view' %}is-info
+                                    {% else %}is-light{% endif %}">
+                                    {{ log.operation_type }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="tag is-light">{{ log.resource_type }}</span>
+                            </td>
+                            <td>
+                                <code>{{ log.resource_id or '-' }}</code>
+                            </td>
+                            <td>
+                                {% if log.details %}
+                                <details>
+                                    <summary class="has-text-link">查看詳情</summary>
+                                    <pre class="has-background-light p-2 mt-2">{{ log.details | tojson_chinese(2) }}</pre>
+                                </details>
+                                {% else %}
+                                <span class="has-text-grey">無</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分頁 -->
+            {% if total_pages > 1 %}
+            <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+                <ul class="pagination-list">
+                    {% for page_num in range(1, total_pages + 1) %}
+                    <li>
+                        <a class="pagination-link {% if page_num == current_page %}is-current{% endif %}"
+                           href="?page={{ page_num }}{% if filters.operation_type %}&operation_type={{ filters.operation_type }}{% endif %}{% if filters.resource_type %}&resource_type={{ filters.resource_type }}{% endif %}{% if filters.username %}&username={{ filters.username }}{% endif %}{% if filters.start_time %}&start_time={{ filters.start_time }}{% endif %}{% if filters.end_time %}&end_time={{ filters.end_time }}{% endif %}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            <div class="has-text-grey is-size-7 mt-2 has-text-centered">
+                共 {{ total }} 筆記錄，第 {{ current_page }} / {{ total_pages }} 頁
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

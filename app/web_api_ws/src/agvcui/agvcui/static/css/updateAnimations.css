@@ -1,0 +1,114 @@
+/**
+ * 統一的更新動畫樣式
+ * 適用於所有頁面的資料更新視覺反饋
+ */
+
+/* 通用更新動畫類別 */
+.field-updated,
+.agv-field-updated,
+.signal-updated,
+.task-updated {
+    animation: fieldUpdate 0.8s ease-out;
+    position: relative;
+}
+
+/* 統一的更新動畫關鍵幀 */
+@keyframes fieldUpdate {
+    0% {
+        background-color: #e8f4fd;
+        box-shadow: 0 0 5px rgba(50, 115, 220, 0.3);
+    }
+
+    100% {
+        background-color: transparent;
+        box-shadow: none;
+    }
+}
+
+/* 表格中的動畫適配 */
+.table td.field-updated,
+.table td.agv-field-updated,
+.table td.signal-updated,
+.table td.task-updated {
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+/* 卡片中的動畫適配 */
+.card .field-updated,
+.box .field-updated {
+    border-radius: 6px;
+    margin: 2px;
+}
+
+/* 標籤元素的過渡效果 */
+.field-updated .tag,
+.agv-field-updated .tag,
+.signal-updated .tag,
+.task-updated .tag {
+    transition: all 0.3s ease;
+}
+
+/* 進度條的過渡效果 */
+.field-updated .progress,
+.agv-field-updated .progress {
+    transition: all 0.3s ease;
+}
+
+/* 響應式動畫調整 */
+@media screen and (max-width: 768px) {
+
+    .field-updated,
+    .agv-field-updated,
+    .signal-updated,
+    .task-updated {
+        animation-duration: 0.6s;
+    }
+
+    @keyframes fieldUpdate {
+        0% {
+            background-color: #e8f4fd;
+            box-shadow: 0 0 3px rgba(50, 115, 220, 0.2);
+        }
+
+        100% {
+            background-color: transparent;
+            box-shadow: none;
+        }
+    }
+}
+
+/* 深色主題支援（如果需要） */
+@media (prefers-color-scheme: dark) {
+    @keyframes fieldUpdate {
+        0% {
+            background-color: rgba(50, 115, 220, 0.2);
+            box-shadow: 0 0 5px rgba(50, 115, 220, 0.4);
+        }
+
+        100% {
+            background-color: transparent;
+            box-shadow: none;
+        }
+    }
+}
+
+/* 減少動畫偏好設定支援 */
+@media (prefers-reduced-motion: reduce) {
+
+    .field-updated,
+    .agv-field-updated,
+    .signal-updated,
+    .task-updated {
+        animation: none;
+        background-color: #e8f4fd;
+        transition: background-color 0.3s ease;
+    }
+
+    .field-updated:hover,
+    .agv-field-updated:hover,
+    .signal-updated:hover,
+    .task-updated:hover {
+        background-color: transparent;
+    }
+}

@@ -1,0 +1,28 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
+  <diagram name="第1頁" id="Z1LXzRNofQgXQfWNUPag">
+    <mxGraphModel dx="499" dy="283" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="256" pageHeight="256" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="BqULE28IfRfWVv9971cK-1" value="" style="rounded=0;html=1;fillColor=none;strokeColor=none;whiteSpace=wrap;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry width="256" height="256" as="geometry" />
+        </mxCell>
+        <mxCell id="CwYVYS-0pHgSQNh3y6zq-1" value="K" style="text;html=1;align=center;verticalAlign=middle;rounded=1;fontSize=320;fontFamily=Courier New;fontStyle=1;fontColor=none;strokeWidth=10;strokeColor=none;fillColor=default;gradientColor=#CCCCCC;shadow=1;horizontal=1;labelPosition=center;verticalLabelPosition=middle;noLabel=1;whiteSpace=wrap;" parent="1" vertex="1">
+          <mxGeometry x="8" y="8" width="240" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="BqULE28IfRfWVv9971cK-13" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="60" y="10.2002479255612" width="153.06046510895663" height="232.34407013772" as="geometry" />
+        </mxCell>
+        <mxCell id="BqULE28IfRfWVv9971cK-12" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;fixedSize=1;rotation=-121.3;size=24.492830491334416;fontColor=none;noLabel=1;strokeColor=none;fillColor=#FF8000;shadow=1;" vertex="1" parent="BqULE28IfRfWVv9971cK-13">
+          <mxGeometry x="13.650000000000006" y="133.1697520744388" width="161" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="BqULE28IfRfWVv9971cK-8" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;fixedSize=1;rotation=-50;size=33.59672681273577;fontColor=none;noLabel=1;strokeColor=none;fillColor=#FF8000;shadow=1;" vertex="1" parent="BqULE28IfRfWVv9971cK-13">
+          <mxGeometry x="-13" y="61.7997520744388" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="BqULE28IfRfWVv9971cK-7" value="" style="rounded=0;fontColor=none;noLabel=1;strokeColor=none;fillColor=#FF8000;shadow=1;" vertex="1" parent="BqULE28IfRfWVv9971cK-13">
+          <mxGeometry y="25.7997520744388" width="40" height="185" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,7 @@
+# Request
+string command
+string parameter
+
+---
+# Response
+bool success

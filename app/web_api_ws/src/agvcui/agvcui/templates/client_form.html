@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-tablet-cellphone"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button" href="/clients">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="columns">
+            <div class="column is-8">
+                <div class="box">
+                    <form method="post" action="{{ form_action }}">
+                        <div class="field">
+                            <label class="label">客戶端 ID</label>
+                            <div class="control">
+                                <input class="input" type="text" value="{{ client.id }}" readonly>
+                                <p class="help">客戶端 ID 無法修改</p>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">關聯機器</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="machine_id">
+                                        <option value="">請選擇機器</option>
+                                        {% for machine in machines %}
+                                        <option value="{{ machine.id }}" 
+                                            {% if client.machine_id == machine.id %}selected{% endif %}>
+                                            機器 {{ machine.id }}
+                                            {% if machine.name %} - {{ machine.name }}{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <p class="help">選擇此客戶端關聯的射出機</p>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">用戶代理</label>
+                            <div class="control">
+                                <textarea class="textarea" name="user_agent" rows="3" 
+                                    placeholder="瀏覽器用戶代理字串">{{ client.user_agent or '' }}</textarea>
+                                <p class="help">平板設備的瀏覽器資訊</p>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">創建時間</label>
+                            <div class="control">
+                                <input class="input" type="text" 
+                                    value="{{ client.created_at.strftime('%Y-%m-%d %H:%M:%S') if client.created_at else '未知' }}" 
+                                    readonly>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">最後更新時間</label>
+                            <div class="control">
+                                <input class="input" type="text" 
+                                    value="{{ client.updated_at.strftime('%Y-%m-%d %H:%M:%S') if client.updated_at else '未知' }}" 
+                                    readonly>
+                            </div>
+                        </div>
+
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-primary" type="submit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-content-save"></i>
+                                    </span>
+                                    <span>儲存變更</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a class="button" href="/clients">取消</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="column is-4">
+                <div class="box">
+                    <h4 class="title is-5">OP 設定預覽</h4>
+                    {% if client.op %}
+                    <div class="content">
+                        <h6 class="subtitle is-6">OP1 (左側)</h6>
+                        {% set left_op = client.op.get('left', {}) %}
+                        <p><strong>當前產品:</strong> 產品 {{ (left_op.get('productSelected', 0) + 1) }}</p>
+                        
+                        <h6 class="subtitle is-6">OP2 (右側)</h6>
+                        {% set right_op = client.op.get('right', {}) %}
+                        <p><strong>當前產品:</strong> 產品 {{ (right_op.get('productSelected', 0) + 1) }}</p>
+                        
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-warning is-small is-fullwidth" 
+                                    onclick="resetOpSettings('{{ client.id }}')">
+                                    <span class="icon">
+                                        <i class="mdi mdi-refresh"></i>
+                                    </span>
+                                    <span>重置 OP 設定</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="has-text-grey">無 OP 設定資料</p>
+                    {% endif %}
+                </div>
+
+                <div class="box">
+                    <h4 class="title is-5">危險操作</h4>
+                    <div class="content">
+                        <p class="has-text-danger">
+                            <strong>注意:</strong> 以下操作無法撤銷
+                        </p>
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-danger is-small is-fullwidth" 
+                                    onclick="deleteClient('{{ client.id }}')">
+                                    <span class="icon">
+                                        <i class="mdi mdi-delete"></i>
+                                    </span>
+                                    <span>刪除客戶端</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+async function resetOpSettings(clientId) {
+    if (!confirm('確定要重置此客戶端的所有 OP 設定嗎？此操作無法撤銷！')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/clients/${clientId}/reset`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            alert('OP 設定已重置');
+            location.reload();
+        } else {
+            alert('重置失敗');
+        }
+    } catch (error) {
+        console.error('重置失敗:', error);
+        alert('重置失敗');
+    }
+}
+
+function deleteClient(clientId) {
+    if (!confirm('確定要刪除此客戶端嗎？此操作無法撤銷！')) {
+        return;
+    }
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/clients/${clientId}/delete`;
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %}

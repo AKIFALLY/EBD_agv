@@ -1,0 +1,22 @@
+/* 設備管理頁面 - 使用 Bulma 預設樣式 */
+
+/* 僅保留必要的端口列表樣式 */
+.device-ports-container {
+    max-width: 300px;
+}
+
+.device-ports {
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+/* 響應式設計 */
+@media screen and (max-width: 768px) {
+    .device-ports-container {
+        max-width: 200px;
+    }
+
+    .device-ports {
+        max-height: 60px;
+    }
+}

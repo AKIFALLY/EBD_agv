@@ -1,9 +1,0 @@
-# Request
-string device_type
-string start_address
-string[] values
-
----
-# Response
-bool success
-string message

@@ -1,0 +1,6 @@
+# srv/UpdateRack.srv
+Rack rack
+---
+Rack rack
+bool success
+string message

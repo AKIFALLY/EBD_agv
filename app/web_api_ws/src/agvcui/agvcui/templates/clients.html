@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}客戶端管理{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-tablet-cellphone"></i>
+                        </span>
+                        客戶端管理
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <div class="content">
+                        <p class="has-text-grey is-size-7">
+                            <span class="icon">
+                                <i class="mdi mdi-information"></i>
+                            </span>
+                            客戶端由 OPUI 平板自動註冊，無需手動新增
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>機器 ID</th>
+                        <th>用戶代理</th>
+                        <th>最後活動</th>
+                        <th>OP 狀態</th>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <th>操作</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td><strong>{{ client.id }}</strong></td>
+                        <td>
+                            {% if client.machine_id %}
+                            <span class="tag is-info">機器 {{ client.machine_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if client.user_agent %}
+                            <span class="has-text-grey" title="{{ client.user_agent }}">
+                                {{ client.user_agent[:30] }}{% if client.user_agent|length > 30 %}...{% endif %}
+                            </span>
+                            {% else %}
+                            <span class="tag is-light">未知</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if client.updated_at %}
+                            {% set time_diff = (now - client.updated_at).total_seconds() %}
+                            {% if time_diff < 300 %} <span class="tag is-success is-small">5分鐘內</span>
+                                {% elif time_diff < 1800 %} <span class="tag is-warning is-small">30分鐘內</span>
+                                    {% else %}
+                                    <span class="tag is-danger is-small">超過30分鐘</span>
+                                    {% endif %}
+                                    <div class="has-text-grey is-size-7 mt-1">{{ client.updated_at.strftime('%H:%M:%S')
+                                        }}</div>
+                                    {% else %}
+                                    <span class="tag is-light">未知</span>
+                                    {% endif %}
+                        </td>
+                        <td>
+                            {% if client.op %}
+                            {% set left_op = client.op.get('left', {}) %}
+                            {% set right_op = client.op.get('right', {}) %}
+                            <div class="tags">
+                                <span class="tag is-small is-info">OP1: 產品{{ (left_op.get('productSelected', 0) + 1)
+                                    }}</span>
+                                <span class="tag is-small is-link">OP2: 產品{{ (right_op.get('productSelected', 0) + 1)
+                                    }}</span>
+                            </div>
+                            {% else %}
+                            <span class="tag is-light is-small">無設定</span>
+                            {% endif %}
+                        </td>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <td>
+                            <div class="buttons are-small">
+                                <button class="button is-primary is-small" data-toggle-client="{{ client.id }}">
+                                    <span class="icon">
+                                        <i class="mdi mdi-chevron-down"></i>
+                                    </span>
+                                    <span>查看詳情</span>
+                                </button>
+                                <a class="button is-info is-small" href="/clients/{{ client.id }}/edit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </span>
+                                    <span>編輯</span>
+                                </a>
+                                {% if current_user.role == 'admin' %}
+                                <button class="button is-danger is-small" data-delete-action="clients"
+                                    data-delete-id="{{ client.id }}"
+                                    data-delete-name="{{ client.machine_id or client.id }}">
+                                    <span class="icon">
+                                        <i class="mdi mdi-delete"></i>
+                                    </span>
+                                    <span>刪除</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    <!-- 詳細資訊展開行 -->
+                    <tr id="details-{{ client.id }}" style="display: none;">
+                        <td
+                            colspan="{% if current_user and current_user.role in ['operator', 'admin'] %}6{% else %}5{% endif %}">
+                            <div class="box">
+                                <div id="details-content-{{ client.id }}">
+                                    <div class="has-text-centered">
+                                        <span class="icon">
+                                            <i class="mdi mdi-loading mdi-spin"></i>
+                                        </span>
+                                        載入中...
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+
+        <!-- 分頁信息 -->
+        {% set start_item = (current_page - 1) * 20 + 1 %}
+        {% set end_item = [current_page * 20, total_count]|min %}
+        <div class="has-text-grey is-size-7 mb-2">
+            顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }} 頁)
+        </div>
+
+        <!-- 智能分頁 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            {% if current_page > 1 %}
+            <a class="pagination-previous" href="/clients?page={{ current_page - 1 }}">上一頁</a>
+            {% endif %}
+            {% if current_page < total_pages %} <a class="pagination-next" href="/clients?page={{ current_page + 1 }}">
+                下一頁</a>
+                {% endif %}
+
+                <ul class="pagination-list">
+                    {% set start_page = [1, current_page - 2]|max %}
+                    {% set end_page = [total_pages, current_page + 2]|min %}
+
+                    <!-- 第一頁 -->
+                    {% if start_page > 1 %}
+                    <li><a class="pagination-link" href="/clients?page=1">1</a></li>
+                    {% if start_page > 2 %}
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- 當前頁附近的頁碼 -->
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current">{{ page_num }}</a></li>
+                    {% else %}
+                    <li><a class="pagination-link" href="/clients?page={{ page_num }}">{{ page_num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- 最後一頁 -->
+                    {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li><span
+                            class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        <li><a class="pagination-link" href="/clients?page={{ total_pages }}">{{ total_pages }}</a></li>
+                        {% endif %}
+                </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- 刪除確認模態框 -->
+{% if current_user and current_user.role == 'admin' %}
+<div class="modal" id="deleteModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">確認刪除</p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>您確定要刪除客戶端 <strong id="deleteClientName"></strong> 嗎？</p>
+            <p class="has-text-danger">此操作無法撤銷！</p>
+        </section>
+        <footer class="modal-card-foot">
+            <form id="deleteForm" method="post">
+                <button class="button is-danger" type="submit">確認刪除</button>
+                <button class="button" type="button">取消</button>
+            </form>
+        </footer>
+    </div>
+</div>
+
+<!-- JavaScript 功能已移至 /static/js/deleteModal.js -->
+{% endif %}
+{% endblock %}

@@ -1,144 +1,57 @@
 import os
 import signal
 import uvicorn
+import logging  # ✅ 加入 logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
-from ecs.plc_client import PlcClient
+from plc_proxy.plc_client_node import PlcClientNode
+from ecs.door_controller_config import DoorControllerConfig
+from ecs.door_logic import DoorLogic
+from db_proxy.connection_pool_manager import ConnectionPoolManager
+from traffic_manager.traffic_controller import TrafficController
+from web_api.routers.plc import create_plc_router
+from web_api.routers.traffic import create_traffic_router
+from web_api.routers.door import create_door_router
+from web_api.routers.map_importer import create_map_importer_router
+from web_api.routers.kuka import create_kuka_router
 
-
-class ForceInput(BaseModel):
-    device_type: str
-    key: str
-
-
-class SingleDataInput(BaseModel):
-    device_type: str
-    key: str
-    value: str
-
-
-class ContinuousDataInput(BaseModel):
-    device_type: str
-    start_key: str
-    values: List[str]
+# ✅ 設定 logging（可以放最上面）
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)  # logger 物件
 
 
 class ApiServer:
     def __init__(self):
         self.app = FastAPI()
-        self.plc_client = PlcClient()
+        self.plc_client = PlcClientNode('plc_client', 'agvc')
+        self.door_config = DoorControllerConfig()
+        self.door_config.load_config_yaml("/app/config/door_config.yaml")
+        self.door_controller = DoorLogic(self.plc_client, self.door_config)
+
+        # 還沒有實作
+        self.db_pool = ConnectionPoolManager(
+            'postgresql+psycopg2://agvc:password@192.168.100.254/agvc')
+        self.traffic_controller = TrafficController(self.db_pool)
 
         # 註冊 API 端點
         self.setup_routes()
+        # 註冊 PLC API 端點
+        self.app.include_router(create_plc_router(self.plc_client))
+        # 註冊交管區 API 端點
+        self.app.include_router(create_traffic_router(self.traffic_controller))
+        # 註冊門控制 API 端點
+        self.app.include_router(create_door_router(self.door_controller))
+        # Map Importer API 端點
+        self.app.include_router(create_map_importer_router(self.db_pool))
+        # 註冊 Kuka API 端點
+        self.app.include_router(create_kuka_router(self.db_pool))
 
     def setup_routes(self):
         """定義 API 端點"""
-
-        @self.app.get("/get_data/{device_type}/{key}")
-        async def get_data(device_type: str, key: str):
-            try:
-                rsp = self.plc_client.read_data(device_type, key)
-                print(rsp)
-                if not rsp.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to reading data from PLC {rsp.message}",
-                    )
-                if not rsp.value:
-                    raise HTTPException(status_code=404, detail="Key not found in PLC")
-                return {"key": key, "value": rsp.value}
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500, detail=f"Error reading from PLC: {e}"
-                )
-
-        @self.app.get("/get_continuous_data/{device_type}/{start_key}/{count}")
-        async def get_continuous_data(device_type: str, start_key: str, count: int):
-            try:
-                rsp = self.plc_client.read_continuous_data(
-                    device_type, start_key, count
-                )
-                print(rsp)
-                if not rsp.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to reading continuous data from PLC {rsp.message}",
-                    )
-                if not rsp.values:
-                    raise HTTPException(status_code=404, detail="Key not found in PLC")
-                return {"start_key": start_key, "count": count, "values": rsp.values}
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Error reading continuous data from PLC: {e}",
-                )
-
-        @self.app.post("/set_data")
-        async def set_data(data: SingleDataInput):
-            try:
-                rsp = self.plc_client.write_data(data.device_type, data.key, data.value)
-                print(rsp)
-                if not rsp.success:
-                    raise HTTPException(
-                        status_code=500, detail=f"Failed to write to PLC {rsp.message}"
-                    )
-                return {"message": "Data written to PLC successfully"}
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500, detail=f"Error writing to PLC: {e}"
-                )
-
-        @self.app.post("/set_continuous_data")
-        async def set_continuous_data(data: ContinuousDataInput):
-            try:
-                rsp = self.plc_client.write_continuous_data(
-                    data.device_type, data.start_key, data.values
-                )
-                print(rsp)
-                if not rsp.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to write continuous data to PLC {rsp.message}",
-                    )
-                return {"message": "Continuous data written to PLC successfully"}
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500, detail=f"Error writing continuous data to PLC: {e}"
-                )
-
-        @self.app.post("/force_on")
-        async def force_on(data: ForceInput):
-            try:
-                rsp = self.plc_client.force_on(data.device_type, data.key)
-                print(rsp)
-                if not rsp.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to force_on to PLC {rsp.message}",
-                    )
-                return {"message": "force_on to PLC successfully"}
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500, detail=f"Error force_on to PLC: {e}"
-                )
-
-        @self.app.post("/force_off")
-        async def force_off(data: ForceInput):
-            try:
-                rsp = self.plc_client.force_off(data.device_type, data.key)
-                print(rsp)
-                if not rsp.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to force_off to PLC {rsp.message}",
-                    )
-                return {"message": "force_off to PLC successfully"}
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500, detail=f"Error force_off to PLC: {e}"
-                )
-
         @self.app.get("/shutdown")
         async def shutdown():
             """關閉伺服器"""
@@ -147,7 +60,13 @@ class ApiServer:
 
     def run(self):
         """啟動 API 伺服器"""
-        uvicorn.run(self.app, host="0.0.0.0", port=8000)
+#        uvicorn.run(self.app, host="0.0.0.0", port=8000)
+        uvicorn.run(self.app, host="0.0.0.0", port=8000,
+                    log_level="debug")  # ✅ 加 log_level
+
+    def shutdown(self):
+        """Shutdown the TrafficControllerClient"""
+        # self.traffic_controller_client.shutdown()
 
 
 def main():

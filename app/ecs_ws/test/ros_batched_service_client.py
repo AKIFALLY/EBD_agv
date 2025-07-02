@@ -1,3 +1,9 @@
+#import debugpy
+#print("Waiting for debugger to attach...")
+#debugpy.listen(("0.0.0.0", 5678))  # 監聽 Debug 連線
+#debugpy.wait_for_client()  # 等待 VS Code 連線
+#print("Debugger attached!")
+
 import rclpy
 from rclpy.node import Node
 from interfaces.srv import ReadContinuousData  # 引入適當的服務
@@ -21,6 +27,7 @@ class BatchedServiceClient(Node):
         self.total_requests = 10000  # 總共請求數
         self.batch_size = 10  # 每次發送的請求數量
         self.pending_futures = []  # 儲存所有的future物件
+        self.lost_data_count = 0  # 記錄丟失數據的次數
 
         self.send_next_batch()  # 發送第一批請求
 
@@ -44,6 +51,17 @@ class BatchedServiceClient(Node):
         try:
             response = future.result()
             #print(len(response.values))
+            if len(response.values) == 1:
+                char = response.values[0]
+                if char:  # 確保字符不為空
+                    self.get_logger().warn(f"Character: {char}")
+                    self.get_logger().warn(f"ASCII Value: {ord(char)}")  # 顯示字符的 ASCII 數值
+                else:
+                    self.get_logger().warn("Received an empty string.")
+            elif len(response.values) != 200:                
+                self.get_logger().warn("lost data ,len(response.values) != 200")
+                self.lost_data_count += 1  # 記錄丟失數據的次數
+
             #self.get_logger().info(f'Response {response}')
             response_time = time.time()
             time_taken_ms = (response_time - request_time) * 1000  # 計算回應時間（毫秒）
@@ -69,12 +87,17 @@ class BatchedServiceClient(Node):
         fastest = min(self.response_times)
         slowest = max(self.response_times)
         average = sum(self.response_times) / len(self.response_times)
+        lost_data_percentage = (self.lost_data_count / self.total_requests) * 100  # 計算丟失數據百分比
+
         self.get_logger().info(f'Sum response time: {sum(self.response_times)} ms')
         self.get_logger().info(f'len response : {len(self.response_times)}')
         
         self.get_logger().info(f'Fastest response time: {fastest:.2f} ms')
         self.get_logger().info(f'Slowest response time: {slowest:.2f} ms')
         self.get_logger().info(f'Average response time: {average:.2f} ms')
+        self.get_logger().info(f'Lost data: {self.lost_data_count} requests')
+        self.get_logger().info(f'Lost data percentage: {lost_data_percentage:.2f}%')
+
         total_time = (time.time() - self.start_time) * 1000
         self.get_logger().info(f'Total time to complete all requests: {total_time:.2f} ms')
 

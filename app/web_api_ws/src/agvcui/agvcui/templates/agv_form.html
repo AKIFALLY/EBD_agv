@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-robot"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/agvs">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表單包裝在 box 中 -->
+        <div class="box">
+            <form method="post" action="{{ form_action }}">
+                <div class="columns">
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label">名稱 *</label>
+                            <div class="control">
+                                <input class="input" type="text" name="name" value="{{ agv.name if agv else '' }}"
+                                    placeholder="輸入 AGV 名稱" required>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">描述</label>
+                            <div class="control">
+                                <textarea class="textarea" name="description"
+                                    placeholder="輸入 AGV 描述">{{ agv.description if agv and agv.description else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">型號 *</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="model" required>
+                                        <option value="">選擇型號</option>
+                                        <option value="KUKA400i" {{ 'selected' if agv and agv.model=='KUKA400i' else ''
+                                            }}>KUKA400i</option>
+                                        <option value="Cargo" {{ 'selected' if agv and agv.model=='Cargo' else '' }}>
+                                            Cargo</option>
+                                        <option value="Loader" {{ 'selected' if agv and agv.model=='Loader' else '' }}>
+                                            Loader</option>
+                                        <option value="Unloader" {{ 'selected' if agv and agv.model=='Unloader' else ''
+                                            }}>Unloader</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">X 座標 *</label>
+                            <div class="control">
+                                <input class="input" type="number" step="0.01" name="x"
+                                    value="{{ agv.x if agv else '0.0' }}" placeholder="0.0" required>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Y 座標 *</label>
+                            <div class="control">
+                                <input class="input" type="number" step="0.01" name="y"
+                                    value="{{ agv.y if agv else '0.0' }}" placeholder="0.0" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-half">
+
+                        <div class="field">
+                            <label class="label">方向 (度) *</label>
+                            <div class="control">
+                                <input class="input" type="number" step="0.1" name="heading"
+                                    value="{{ agv.heading if agv else '0.0' }}" placeholder="0.0" min="0" max="360"
+                                    required>
+                            </div>
+                            <p class="help">範圍: 0-360 度</p>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">電量 (%)</label>
+                            <div class="control">
+                                <input class="input" type="number" step="0.1" name="battery"
+                                    value="{{ agv.battery if agv and agv.battery is not none else '' }}"
+                                    placeholder="100.0" min="0" max="100">
+                            </div>
+                            <p class="help">範圍: 0-100%，留空表示未知</p>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">狀態</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="status_id">
+                                        <option value="">選擇狀態</option>
+                                        <option value="1" {{ 'selected' if agv and agv.status_id==1 else '' }}>離場
+                                        </option>
+                                        <option value="2" {{ 'selected' if agv and agv.status_id==2 else '' }}>離線
+                                        </option>
+                                        <option value="3" {{ 'selected' if agv and agv.status_id==3 else '' }}>空閒
+                                        </option>
+                                        <option value="4" {{ 'selected' if agv and agv.status_id==4 else '' }}>任務中
+                                        </option>
+                                        <option value="5" {{ 'selected' if agv and agv.status_id==5 else '' }}>充電中
+                                        </option>
+                                        <option value="6" {{ 'selected' if agv and agv.status_id==6 else '' }}>更新中
+                                        </option>
+                                        <option value="7" {{ 'selected' if agv and agv.status_id==7 else '' }}>異常
+                                        </option>
+                                        <option value="8" {{ 'selected' if agv and agv.status_id==8 else '' }}>維護中
+                                        </option>
+                                        <option value="9" {{ 'selected' if agv and agv.status_id==9 else '' }}>待機
+                                        </option>
+                                        <option value="10" {{ 'selected' if agv and agv.status_id==10 else '' }}>初始化
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="help">選擇 AGV 的當前狀態</p>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">最後節點 ID</label>
+                            <div class="control">
+                                <input class="input" type="number" name="last_node_id"
+                                    value="{{ agv.last_node_id if agv and agv.last_node_id else '' }}"
+                                    placeholder="輸入節點 ID">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="enable" value="1" {{ 'checked' if not agv or
+                                        agv.enable==1 else '' }}>
+                                    啟用此 AGV
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按鈕 -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-content-save"></i>
+                            </span>
+                            <span>{{ '更新' if agv else '新增' }}</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a class="button is-light" href="/agvs">
+                            <span class="icon">
+                                <i class="mdi mdi-cancel"></i>
+                            </span>
+                            <span>取消</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

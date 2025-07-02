@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-package-variant"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button" href="/carriers">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="columns">
+            <div class="column is-8">
+                <div class="box">
+                    <form method="post" action="{{ form_action }}">
+                        {% if carrier %}
+                        <div class="field">
+                            <label class="label">載具 ID</label>
+                            <div class="control">
+                                <input class="input" type="text" value="{{ carrier.id }}" readonly>
+                                <p class="help">載具 ID 無法修改</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="field">
+                            <label class="label">位置設定</label>
+                            <div class="control">
+                                <div class="tabs is-boxed">
+                                    <ul>
+                                        <li class="location-tab" data-location="room">
+                                            <a>
+                                                <span class="icon"><i class="mdi mdi-home"></i></span>
+                                                <span>房間</span>
+                                            </a>
+                                        </li>
+                                        <li class="location-tab" data-location="rack">
+                                            <a>
+                                                <span class="icon"><i class="mdi mdi-view-grid"></i></span>
+                                                <span>貨架</span>
+                                            </a>
+                                        </li>
+                                        <li class="location-tab" data-location="port">
+                                            <a>
+                                                <span class="icon"><i class="mdi mdi-power-plug"></i></span>
+                                                <span>設備端口</span>
+                                            </a>
+                                        </li>
+                                        <li class="location-tab" data-location="none">
+                                            <a>
+                                                <span class="icon"><i class="mdi mdi-help-circle"></i></span>
+                                                <span>未分配</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 房間設定 -->
+                        <div class="location-content" id="room-content" style="display: none;">
+                            <div class="field">
+                                <label class="label">房間</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="room_id">
+                                            <option value="">請選擇房間</option>
+                                            {% for room in rooms %}
+                                            <option value="{{ room.id }}" {% if carrier and carrier.room_id==room.id
+                                                %}selected{% endif %}>
+                                                {{ room.name or '房間 ' + room.id|string }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 貨架設定 -->
+                        <div class="location-content" id="rack-content" style="display: none;">
+                            <div class="field">
+                                <label class="label">貨架</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="rack_id" id="rack-select">
+                                            <option value="">請選擇貨架</option>
+                                            {% for rack in racks %}
+                                            <option value="{{ rack.id }}" {% if carrier and carrier.rack_id==rack.id
+                                                %}selected{% endif %}>
+                                                {{ rack.name or '貨架 ' + rack.id|string }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">格位索引</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="rack_index"
+                                        value="{{ carrier.rack_index if carrier else '' }}" min="1" max="32"
+                                        placeholder="1-32 (S產品) 或 1-16 (L產品)">
+                                    <p class="help">
+                                        S產品: 1-16 (A面), 17-32 (B面)<br>
+                                        L產品: 1-8 (A面), 9-16 (B面)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 設備端口設定 -->
+                        <div class="location-content" id="port-content" style="display: none;">
+                            <div class="field">
+                                <label class="label">設備端口</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="port_id">
+                                            <option value="">請選擇設備端口</option>
+                                            {% for port in ports %}
+                                            <option value="{{ port.id }}" {% if carrier and carrier.port_id==port.id
+                                                %}selected{% endif %}>
+                                                {{ port.eqp.name if port.eqp else '設備' }} - {{ port.name or '端口 ' +
+                                                port.id|string }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 未分配設定 -->
+                        <div class="location-content" id="none-content" style="display: none;">
+                            <div class="notification is-info is-light">
+                                <span class="icon">
+                                    <i class="mdi mdi-information"></i>
+                                </span>
+                                載具將不分配到任何位置
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">狀態</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="status_id">
+                                        {% for status in carrier_statuses %}
+                                        <option value="{{ status.id }}" {% if carrier and carrier.status_id==status.id
+                                            %}selected{% endif %}>
+                                            {{ status.name }}
+                                            {% if status.description %} - {{ status.description }}{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-primary" type="submit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-content-save"></i>
+                                    </span>
+                                    <span>儲存</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a class="button" href="/carriers">取消</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="column is-4">
+                {% if carrier %}
+                <div class="box">
+                    <h4 class="title is-5">載具資訊</h4>
+                    <div class="content">
+                        <p><strong>載具 ID:</strong> {{ carrier.id }}</p>
+                        <p><strong>當前位置:</strong>
+                            {% if carrier.room_id %}
+                            <span class="tag is-info">房間 {{ carrier.room_id }}</span>
+                            {% elif carrier.rack_id %}
+                            <span class="tag is-primary">貨架 {{ carrier.rack_id }}</span>
+                            {% if carrier.rack_index %}
+                            <span class="tag is-success">格位 {{ carrier.rack_index }}</span>
+                            {% endif %}
+                            {% elif carrier.port_id %}
+                            <span class="tag is-warning">端口 {{ carrier.port_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未分配</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>當前狀態:</strong>
+                            <span class="tag {{ get_status_color(carrier.status_id) }}">
+                                {{ get_status_name(carrier.status_id) }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="box">
+                    <h4 class="title is-5">貨架格位說明</h4>
+                    <div class="content">
+                        <h6 class="subtitle is-6">S 產品 (32格)</h6>
+                        <ul>
+                            <li>A面: 格位 1-16 (4排 × 4列)</li>
+                            <li>B面: 格位 17-32 (4排 × 4列)</li>
+                        </ul>
+
+                        <h6 class="subtitle is-6">L 產品 (16格)</h6>
+                        <ul>
+                            <li>A面: 格位 1-8 (2排 × 4列)</li>
+                            <li>B面: 格位 9-16 (2排 × 4列)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // 位置類型切換
+    document.querySelectorAll('.location-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            const location = this.dataset.location;
+
+            // 更新標籤狀態
+            document.querySelectorAll('.location-tab').forEach(t => t.classList.remove('is-active'));
+            this.classList.add('is-active');
+
+            // 顯示對應內容
+            document.querySelectorAll('.location-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(location + '-content').style.display = 'block';
+
+            // 清除其他位置的表單值
+            if (location !== 'room') {
+                document.querySelector('select[name="room_id"]').value = '';
+            }
+            if (location !== 'rack') {
+                document.querySelector('select[name="rack_id"]').value = '';
+                document.querySelector('input[name="rack_index"]').value = '';
+            }
+            if (location !== 'port') {
+                document.querySelector('select[name="port_id"]').value = '';
+            }
+        });
+    });
+
+    // 處理 URL 參數預設值
+    function handlePresetValues() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const rackId = urlParams.get('rack_id');
+        const rackIndex = urlParams.get('rack_index');
+
+        if (rackId) {
+            console.log('處理預設值 - rack_id:', rackId, 'rack_index:', rackIndex);
+
+            // 自動選擇貨架標籤
+            document.querySelector('[data-location="rack"]').click();
+
+            // 設定貨架選擇
+            const rackSelect = document.querySelector('select[name="rack_id"]');
+            if (rackSelect) {
+                rackSelect.value = rackId;
+                console.log('設定貨架選擇為:', rackId);
+            }
+
+            // 如果有格位索引，也設定它
+            if (rackIndex) {
+                const rackIndexInput = document.querySelector('input[name="rack_index"]');
+                if (rackIndexInput) {
+                    rackIndexInput.value = rackIndex;
+                    console.log('設定格位索引為:', rackIndex);
+                }
+            }
+
+            return true; // 表示已處理預設值
+        }
+
+        return false; // 表示沒有預設值需要處理
+    }
+
+    // 初始化顯示當前位置
+    {% if carrier %}
+    {% if carrier.room_id %}
+    document.querySelector('[data-location="room"]').click();
+    {% elif carrier.rack_id %}
+    document.querySelector('[data-location="rack"]').click();
+    {% elif carrier.port_id %}
+    document.querySelector('[data-location="port"]').click();
+    {% else %}
+    document.querySelector('[data-location="none"]').click();
+    {% endif %}
+    {% else %}
+    // 新增載具時，先檢查是否有預設值
+    if (!handlePresetValues()) {
+        // 沒有預設值時，預設選擇未分配
+        document.querySelector('[data-location="none"]').click();
+    }
+    {% endif %}
+</script>
+{% endblock %}

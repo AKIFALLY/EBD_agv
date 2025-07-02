@@ -1,0 +1,205 @@
+FROM osrf/ros:jazzy-desktop-full
+LABEL Name=rclnodejs Version=0.0.1
+
+# UTF8 中文顯示
+RUN apt-get update && apt-get install -y locales \
+    && locale-gen zh_TW.UTF-8 \
+    && update-locale LANG=zh_TW.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 確保所有指令在非互動模式下執行
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 以下開始使用 bash (才可以用 source 指令)
+SHELL ["/bin/bash", "-c"]
+
+# 更新系統並安裝必要工具
+RUN apt-get update && apt-get install -y \
+    git \
+    cargo \
+    software-properties-common \
+    python3-venv \
+    && apt-add-repository universe \
+    && apt-get update \
+    && apt-get install -y clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# 建立工作空間並下載 rmw_zenoh 原始碼
+RUN mkdir -p ~/ws_rmw_zenoh/src && \
+    cd ~/ws_rmw_zenoh/src && \
+    git clone https://github.com/ros2/rmw_zenoh.git -b $ROS_DISTRO
+
+# 安裝依賴項
+WORKDIR /root/ws_rmw_zenoh
+
+# 設定環境變數並建置專案
+RUN apt-get update \
+    && source /opt/ros/$ROS_DISTRO/setup.bash \
+    && rosdep update \
+    && rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y \
+    && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    && rm -rf /var/lib/apt/lists/*
+
+#zenoh安裝至/opt
+WORKDIR /opt
+RUN cp -r ~/ws_rmw_zenoh /opt \
+    && rm -rf ~/ws_rmw_zenoh
+
+# 安裝一些常用工具 ifconfig , ping , debugpy ,ssh server, gpiod, python3-libgpiod,rsync
+RUN apt-get update && apt-get install -y \
+    net-tools \
+    iputils-ping \
+    telnet \
+    python3-debugpy \
+    openssh-server \
+    gpiod \
+    python3-libgpiod \
+    rsync \
+    lsof \
+    usbutils \
+    ros-jazzy-joy-linux \
+    && rm -rf /var/lib/apt/lists/*
+
+# 建立 Python 虛擬環境
+RUN python3 -m venv /opt/pyvenv_env
+
+# 啟用虛擬環境並安裝 FastAPI,PyGame 相關套件
+RUN source /opt/pyvenv_env/bin/activate && \
+    pip install --upgrade pip && \
+    pip install fastapi uvicorn pydantic && \
+    pip install pygame && \
+    pip install sqlalchemy && \
+    pip install psycopg2 && \
+    pip install paho-mqtt && \
+    pip install requests && \
+    pip install networkx && \
+    pip install sqlmodel && \
+    pip install jinja2 && \
+    pip install python-socketio && \
+    pip install python-multipart
+
+
+# 設定 Python 虛擬環境的 PYTHONPATH
+RUN echo 'export PYTHONPATH=/opt/pyvenv_env/lib/python3.12/site-packages:$PYTHONPATH' >> ~/.bashrc
+
+# 設定 ROS 環境與 rmw_zenoh 環境到 .bashrc
+RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc && \
+    echo "source /opt/ws_rmw_zenoh/install/setup.bash" >> ~/.bashrc
+
+# 設定 自動 source 環境至 .bashrc
+RUN echo "source /app/setup.bash" >> ~/.bashrc
+
+# 設定 root 密碼為 36274806 , 開啟 root 登入 , 開啟密碼登入 , 開啟 2200 port
+RUN sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#Port 22/Port 2200/' /etc/ssh/sshd_config && \
+    echo "root:36274806" | chpasswd
+
+# 確保 SSH 服務可運行
+RUN mkdir /var/run/sshd
+
+# 產生 SSH 主機金鑰
+RUN ssh-keygen -A
+
+# 開放端口：2200（SSH）、1883（Mosquitto）9001（Mosquitto WebSocket）、1433（SQL Server）
+#EXPOSE 2200 1883 9001 1433 
+EXPOSE 2200 
+
+
+
+# 安裝 Node.js。
+# 不安裝 Mosquitto（MQTT 代理）。
+# 不安裝 SQL Server 2022（Developer 版）。
+# 配置 SSH 服務 並設置端口為 2200。
+# 開放端口 2200、1883（Mosquitto）、9001（Mosquitto WebSocket）。
+# 不安裝 1433（SQL Server）。
+
+# 更新 apt 並安裝必要工具
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg2 \
+    apt-transport-https \
+    lsb-release \
+    sudo \
+    ca-certificates \
+    libldap2 \
+    && rm -rf /var/lib/apt/lists/*
+
+
+#=========================================
+#Install MSSQL Server 2022 on Ubuntu 24.04
+# 安裝 Microsoft 的套件源，並安裝 SQL Server
+#RUN curl https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/trusted.gpg.d/microsoft.asc && \
+#    curl -fsSL https://packages.microsoft.com/config/ubuntu/22.04/mssql-server-2022.list | tee /etc/apt/sources.list.d/mssql-server-2022.list && \
+#    apt-get update && apt-get install -y \
+#    mssql-server \
+#    && rm -rf /var/lib/apt/lists/*
+#            
+##   :: Need to download & install libldap-2.5
+#RUN curl -OL https://archive.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.5-0_2.5.18+dfsg-0ubuntu0.22.04.3_amd64.deb && \
+#    apt-get update && apt-get install -y ./libldap-2.5-0_2.5.18+dfsg-0ubuntu0.22.04.3_amd64.deb \
+#    && rm -rf /var/lib/apt/lists/*
+#
+#ENV ACCEPT_EULA=Y
+## 安裝 SQL Server tools
+#RUN curl https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/trusted.gpg.d/microsoft.asc && \
+#    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | tee /etc/apt/sources.list.d/mssql-release.list && \
+#    apt-get update && apt-get install -y \
+#    mssql-tools18 \
+#    && rm -rf /var/lib/apt/lists/*
+#RUN sudo apt-get update && \
+#    apt-get install -y msodbcsql18 \
+#    && rm -rf /var/lib/apt/lists/*
+#
+#
+#RUN echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc && \
+#    source ~/.bashrc
+
+## 安裝 Mosquitto 和其他工具
+#RUN apt-get update && apt-get install -y \
+#    mosquitto \
+#    mosquitto-clients \
+#    && rm -rf /var/lib/apt/lists/*
+#
+## 設定 Mosquitto 支援 WebSockets
+#RUN echo "listener 1883" > /etc/mosquitto/mosquitto.conf && \
+#    echo "protocol mqtt" >> /etc/mosquitto/mosquitto.conf && \
+#    echo "listener 9001" >> /etc/mosquitto/mosquitto.conf && \
+#    echo "protocol websockets" >> /etc/mosquitto/mosquitto.conf && \
+#    echo "allow_anonymous true" >> /etc/mosquitto/mosquitto.conf
+
+
+
+# 安裝 Node.js 最新 LTS 版本
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get update && apt-get install -y nodejs && \
+    npm install -g npm@latest \
+    && rm -rf /var/lib/apt/lists/*
+
+## 複製 entrypoint.sh 到容器中
+#COPY entrypoint.sh /entrypoint.sh
+#
+## 賦予執行權限
+#RUN chmod +x /entrypoint.sh
+#
+## 設定容器啟動時執行 entrypoint.sh
+#ENTRYPOINT ["/entrypoint.sh"]
+
+# 開放端口：2200（SSH）、1883（Mosquitto）9001（Mosquitto WebSocket）、1433（SQL Server）
+#EXPOSE 2200 1883 9001 1433 
+
+WORKDIR /webui
+
+# 新增使用者 ct 並設定密碼，賦予 sudo 權限
+RUN apt-get update && apt-get install -y sudo && \
+    useradd -m -s /bin/bash ct && \
+    echo "ct:36274806" | chpasswd && \
+    usermod -aG sudo ct && \
+    echo "ct ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# 設定 自動 source 環境至 .bashrc
+RUN echo "source /webui/setup.bash" >> ~/.bashrc
+
+# **容器啟動時自動執行**
+ENTRYPOINT [ "/bin/bash","-c" ]
+CMD ["/app/startup.agvc.bash && tail -f /dev/null"]

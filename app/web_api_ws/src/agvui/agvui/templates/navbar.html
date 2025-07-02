@@ -1,0 +1,44 @@
+<style>
+    .is-connected {
+        color: lightgreen;
+    }
+
+    .is-disconnected {
+        color: coral;
+    }
+
+    .navbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        position: relative;
+    }
+
+    .navbar-menu {
+        display: flex !important;
+        flex-grow: 1;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+    }
+
+    .navbar-brand,
+    .navbar-start,
+    .navbar-end {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+</style>
+<nav class="navbar is-black has-shadow" role="navigation" aria-label="main navigation">
+    <!-- 🔧 加入 navbar-menu 才能 override 成水平 -->
+    <div class="navbar-menu is-active">
+        <div class="navbar-start">
+            <a class="navbar-item" href="/">
+                <span class="mdi mdi-wifi is-disconnected"></span>
+                <strong>agvui</strong>
+            </a>
+            <a class="navbar-item" href="/">Agv</a>
+
+        </div>
+    </div>
+</nav>

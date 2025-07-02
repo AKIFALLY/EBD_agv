@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Network Connectivity on Boot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/ct/RosAGV/check_network.sh
+
+[Install]
+WantedBy=multi-user.target

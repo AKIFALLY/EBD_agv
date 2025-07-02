@@ -1,0 +1,83 @@
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgb(100, 200, 255) 0%, rgb(255, 180, 100) 100%);
+}
+
+.login-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header .title {
+    color: #363636;
+    margin-bottom: 0.5rem;
+}
+
+.login-header .subtitle {
+    color: #4a4a4a;
+}
+
+.login-form .field {
+    margin-bottom: 1.5rem;
+}
+
+.login-form .button {
+    width: 100%;
+    height: 3rem;
+    font-weight: 600;
+}
+
+.error-message {
+    background-color: #ffebee;
+    border: 1px solid #f44336;
+    color: #c62828;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dbdbdb;
+    color: #7a7a7a;
+    font-size: 0.875rem;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.logo-container img {
+    width: 80px;
+    height: 80px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    transition: transform 0.3s ease;
+}
+
+.logo-container img:hover {
+    transform: scale(1.05);
+}
+
+.login-card {
+    transition: transform 0.3s ease-out;
+    will-change: transform;
+}
+
+.login-card.mouse-move {
+    transition: transform 0.1s ease-out;
+}

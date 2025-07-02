@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}AGV 管理{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-robot"></i>
+                        </span>
+                        AGV 管理
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    {% if current_user and current_user.role in ['admin'] %}
+                    <a class="button is-primary" href="/agvs/create">
+                        <span class="icon">
+                            <i class="mdi mdi-plus"></i>
+                        </span>
+                        <span>新增 AGV</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <div class="table-container">
+                <table class="table is-fullwidth is-striped is-hoverable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名稱</th>
+                            <th>型號</th>
+                            <th>位置 (X, Y)</th>
+                            <th>方向</th>
+                            <th>電量</th>
+                            <th>狀態</th>
+                            <th>啟用</th>
+                            <th>最後節點</th>
+                            {% if current_user and current_user.role in ['admin'] %}
+                            <th>操作</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agv in agvs %}
+                        <tr>
+                            <td>
+                                <span class="tag is-info">{{ agv.id }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ agv.name }}</strong>
+                                {% if agv.description %}
+                                <br>
+                                <small class="has-text-grey">{{ agv.description }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="tag is-light">{{ agv.model }}</span>
+                            </td>
+                            <td>
+                                <span class="has-text-grey-dark">
+                                    ({{ "%.2f"|format(agv.x) }}, {{ "%.2f"|format(agv.y) }})
+                                </span>
+                            </td>
+                            <td>
+                                <span class="has-text-grey-dark">{{ "%.1f"|format(agv.heading) }}°</span>
+                            </td>
+                            <td>
+                                {% if agv.battery is not none %}
+                                <div class="field">
+                                    <div class="control">
+                                        <progress class="progress is-small 
+                                            {% if agv.battery >= 80 %}is-success
+                                            {% elif agv.battery >= 50 %}is-warning
+                                            {% else %}is-danger{% endif %}" value="{{ agv.battery }}" max="100">{{
+                                            agv.battery }}%</progress>
+                                    </div>
+                                    <p class="is-size-7 has-text-centered">{{ "%.1f"|format(agv.battery) }}%</p>
+                                </div>
+                                {% else %}
+                                <span class="has-text-grey">未知</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if agv.status_id is none %}
+                                <span class="tag is-light">未設定</span>
+                                {% elif agv.status_id == 1 %}
+                                <span class="tag is-dark">離場</span>
+                                {% elif agv.status_id == 2 %}
+                                <span class="tag is-danger">離線</span>
+                                {% elif agv.status_id == 3 %}
+                                <span class="tag is-success">空閒</span>
+                                {% elif agv.status_id == 4 %}
+                                <span class="tag is-info">任務中</span>
+                                {% elif agv.status_id == 5 %}
+                                <span class="tag is-warning">充電中</span>
+                                {% elif agv.status_id == 6 %}
+                                <span class="tag is-link">更新中</span>
+                                {% elif agv.status_id == 7 %}
+                                <span class="tag is-danger">異常</span>
+                                {% elif agv.status_id == 8 %}
+                                <span class="tag is-warning">維護中</span>
+                                {% elif agv.status_id == 9 %}
+                                <span class="tag is-light">待機</span>
+                                {% elif agv.status_id == 10 %}
+                                <span class="tag is-info">初始化</span>
+                                {% else %}
+                                <span class="tag is-light">未知 ({{ agv.status_id }})</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if agv.enable == 1 %}
+                                <span class="tag is-success">
+                                    <span class="icon">
+                                        <i class="mdi mdi-check"></i>
+                                    </span>
+                                    <span>啟用</span>
+                                </span>
+                                {% else %}
+                                <span class="tag is-danger">
+                                    <span class="icon">
+                                        <i class="mdi mdi-close"></i>
+                                    </span>
+                                    <span>停用</span>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if agv.last_node_id %}
+                                <span class="tag is-light">節點 {{ agv.last_node_id }}</span>
+                                {% else %}
+                                <span class="has-text-grey">-</span>
+                                {% endif %}
+                            </td>
+                            {% if current_user and current_user.role in ['admin'] %}
+                            <td>
+                                <div class="buttons are-small">
+                                    <a class="button is-info is-small" href="/agvs/{{ agv.id }}/edit">
+                                        <span class="icon">
+                                            <i class="mdi mdi-pencil"></i>
+                                        </span>
+                                        <span>編輯</span>
+                                    </a>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if agvs|length == 0 %}
+            <div class="has-text-centered py-6">
+                <span class="icon is-large has-text-grey-light">
+                    <i class="mdi mdi-robot mdi-48px"></i>
+                </span>
+                <p class="title is-5 has-text-grey">目前沒有 AGV</p>
+                <p class="subtitle is-6 has-text-grey">
+                    {% if current_user and current_user.role in ['admin'] %}
+                    點擊上方的「新增 AGV」按鈕來新增第一個 AGV
+                    {% else %}
+                    請聯繫管理員新增 AGV
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+
+        <div class="has-text-grey is-size-7">
+            顯示第 1 - {{ agvs|length }} 項，共 {{ total_count }} 項 (第 1 / 1 頁)
+        </div>
+    </div>
+</section>
+
+<!-- AGV 頁面樣式 -->
+<link href="/static/css/agvsPage.css" rel="stylesheet" />
+
+<!-- AGV 頁面 JavaScript -->
+<script type="module">
+    import { agvsPage } from '/static/js/agvsPage.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        agvsPage.setup();
+    });
+</script>
+
+{% endblock %}

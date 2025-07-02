@@ -1,0 +1,9 @@
+uint64 id
+string name
+string description
+string model
+float64 x
+float64 y
+float64 heading
+uint64 last_node_id
+uint64 enable

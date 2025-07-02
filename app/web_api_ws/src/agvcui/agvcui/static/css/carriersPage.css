@@ -1,0 +1,105 @@
+/* 載具管理頁面 - 貨架視覺化樣式 */
+
+.rack-grid {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.rack-side {
+    border-radius: 6px;
+    padding: 0.5rem;
+    background: white;
+}
+
+/* 參考 OPUI 的網格布局設計 */
+.matrix-space {
+    padding: 1px;
+}
+
+.matrix-space[data-size="S"] {
+    display: flex;
+    flex-direction: column;
+    height: 4rem;
+}
+
+.matrix-space[data-size="L"] {
+    display: flex;
+    flex-direction: column;
+    height: 8rem;
+}
+
+.matrix-space .button {
+    flex: 1;
+    border-radius: 0;
+    --bulma-button-border-width: 0px !important;
+    --bulma-button-outer-shadow-a: 0.05 !important;
+    font-size: 1.25rem;
+}
+
+/* 使用 Bulma 預設按鈕顏色，與 OPUI 一致 */
+.rack-slot.empty {
+    /* 使用 Bulma 預設按鈕顏色 */
+}
+
+.rack-slot.occupied {
+    background-color: rgba(140, 240, 140, 0.8);
+    /* OPUI 的 is-selected 顏色 */
+    color: #363636;
+    /* 深色文字，確保可讀性 */
+    font-weight: bold;
+}
+
+.rack-slot.occupied:hover {
+    background-color: rgba(140, 240, 140, 0.9);
+    /* hover 時稍微深一點 */
+}
+
+/* 圓角設計 - 參考 OPUI */
+.rounded-left-top {
+    border-top-left-radius: 10px !important;
+}
+
+.rounded-right-top {
+    border-top-right-radius: 10px !important;
+}
+
+.rounded-left-bottom {
+    border-bottom-left-radius: 10px !important;
+}
+
+.rounded-right-bottom {
+    border-bottom-right-radius: 10px !important;
+}
+
+.rack-slot .slot-content {
+    font-size: 0.7rem;
+    line-height: 1;
+    text-align: center;
+}
+
+/* 收合展開樣式 */
+.is-clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.collapsible-content {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.collapsible-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.toggle-icon.rotated {
+    transform: rotate(180deg);
+}

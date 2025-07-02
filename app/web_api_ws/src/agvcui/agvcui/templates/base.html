@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}My App{% endblock %}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
+    <link rel="stylesheet" href="/static/css/agvcui-bulma-extend.css" />
+
+    <!-- 頁面專用 CSS -->
+    {% block extra_head %}{% endblock %}
+
+    <!-- Socket.IO 前端 library -->
+    <script src="/static/js/lib/socket.io.min.js"></script>
+    <script src="/static/js/lib/axios.min.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script type="module" src="/static/index.js"></script>
+
+
+
+</head>
+
+<body>
+
+    {% include "navbar.html" %}
+
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- 通用刪除確認模態框 -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">確認刪除</p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <p>您確定要刪除 <strong id="deleteEntityName"></strong> 嗎？</p>
+                <p class="has-text-danger">此操作無法撤銷。</p>
+            </section>
+            <footer class="modal-card-foot">
+                <form id="deleteForm" method="post">
+                    <button class="button is-danger" type="submit">
+                        <span class="icon">
+                            <i class="mdi mdi-delete"></i>
+                        </span>
+                        <span>確認刪除</span>
+                    </button>
+                </form>
+                <button class="button" type="button">取消</button>
+            </footer>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Socket.IO 測試頁面</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h1>Socket.IO 測試</h1>
+    <input id="msg" placeholder="輸入訊息..." />
+    <button onclick="sendMessage()">送出</button>
+    <ul id="log"></ul>
+
+    <script>
+        const socket = io();
+
+        socket.on('connect', () => {
+            log('已連線到伺服器');
+        });
+
+        socket.on('server_message', msg => {
+            log('伺服器：' + msg);
+        });
+
+        socket.on('chat_message', msg => {
+            log('伺服器回應：' + msg);
+        });
+
+        function sendMessage() {
+            const msg = document.getElementById('msg').value;
+            socket.emit('chat_message', msg);
+            log('你送出：' + msg);
+        }
+
+        function log(message) {
+            const li = document.createElement('li');
+            li.textContent = message;
+            document.getElementById('log').appendChild(li);
+        }
+    </script>
+</body>
+
+</html>

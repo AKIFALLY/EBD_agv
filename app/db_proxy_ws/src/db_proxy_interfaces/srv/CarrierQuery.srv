@@ -1,0 +1,15 @@
+uint64 id
+uint64 room_id
+uint64 rack_id
+uint64 port_id
+uint64 port_id_min  # port_id 最小值
+uint64 port_id_max  # port_id 最大值
+uint64 rack_index
+uint64 status_id
+int32 sort_order # 0 = 不排序, 1 = 升冪, -1 = 降冪
+
+
+---
+Carrier[] datas
+bool success
+string message

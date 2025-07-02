@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <title>登入 - AGVC UI</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
+    <link rel="stylesheet" href="/static/css/agvcui-bulma-extend.css" />
+    <link href="/static/css/loginPage.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-container">
+                <img src="/static/CTLogo.svg" alt="CT Logo" />
+            </div>
+            <div class="login-header">
+                <h2 class="title is-4">AGVC 系統登入</h2>
+                <p class="subtitle is-6">請輸入您的登入資訊</p>
+            </div>
+
+            {% if error %}
+            <div class="error-message">
+                <span class="icon">
+                    <i class="mdi mdi-alert-circle"></i>
+                </span>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="/login" class="login-form">
+                <input type="hidden" name="redirect" value="{{ redirect }}">
+
+                <div class="field">
+                    <label class="label">用戶名</label>
+                    <div class="control has-icons-left">
+                        <input class="input is-medium" type="text" name="username" placeholder="請輸入用戶名"
+                            autocomplete="username" required>
+                        <span class="icon is-small is-left">
+                            <i class="mdi mdi-account"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">密碼</label>
+                    <div class="control has-icons-left">
+                        <input class="input is-medium" type="password" name="password" placeholder="請輸入密碼"
+                            autocomplete="current-password" required>
+                        <span class="icon is-small is-left">
+                            <i class="mdi mdi-lock"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-primary is-medium" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-login"></i>
+                            </span>
+                            <span>登入</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="login-footer">
+                <p>預設管理員帳號: admin / admin123</p>
+                <p>如需初始化管理員帳號，請訪問 <a href="/init-admin" target="_blank">/init-admin</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO 前端 library -->
+    <script src="/static/js/lib/socket.io.min.js"></script>
+
+    <!-- JavaScript 載入 -->
+    <script type="module" src="/static/index.js"></script>
+    <script type="module" src="/static/js/loginPage.js"></script>
+</body>
+
+</html>

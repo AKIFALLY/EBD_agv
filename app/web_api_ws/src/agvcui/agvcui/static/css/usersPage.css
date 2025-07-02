@@ -1,0 +1,22 @@
+/* 用戶管理頁面簡化樣式 */
+
+/* 表格單元格垂直對齊 */
+.table td {
+    vertical-align: middle;
+}
+
+/* 用戶頭像樣式 */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #3e8ed0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}

@@ -1,0 +1,4 @@
+int32 traffic_id
+int32 agv_id
+---
+bool success

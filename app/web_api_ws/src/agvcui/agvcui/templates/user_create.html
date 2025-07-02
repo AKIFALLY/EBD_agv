@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}新增用戶{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-half">
+                <div class="box">
+                    <h1 class="title">新增用戶</h1>
+
+                    {% if error %}
+                    <div class="notification is-danger">
+                        <button class="delete"></button>
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="/users/create">
+                        <div class="field">
+                            <label class="label">用戶名 *</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" name="username" placeholder="請輸入用戶名" required>
+                                <span class="icon is-small is-left">
+                                    <i class="mdi mdi-account"></i>
+                                </span>
+                            </div>
+                            <p class="help">用戶名必須唯一</p>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">密碼 *</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="password" name="password" placeholder="請輸入密碼" required>
+                                <span class="icon is-small is-left">
+                                    <i class="mdi mdi-lock"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">郵箱</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="email" name="email" placeholder="請輸入郵箱">
+                                <span class="icon is-small is-left">
+                                    <i class="mdi mdi-email"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">全名</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" name="full_name" placeholder="請輸入全名">
+                                <span class="icon is-small is-left">
+                                    <i class="mdi mdi-account-card-details"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">角色 *</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="role" required>
+                                        <option value="user">用戶</option>
+                                        <option value="operator">操作員</option>
+                                        <option value="admin">管理員</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="help">
+                                <strong>用戶</strong>: 基本查看權限<br>
+                                <strong>操作員</strong>: 可執行操作<br>
+                                <strong>管理員</strong>: 完整權限
+                            </p>
+                        </div>
+
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-primary" type="submit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-content-save"></i>
+                                    </span>
+                                    <span>創建用戶</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a class="button is-light" href="/users">
+                                    <span class="icon">
+                                        <i class="mdi mdi-cancel"></i>
+                                    </span>
+                                    <span>取消</span>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- JavaScript 功能已移至 /static/js/notify.js -->
+{% endblock %}

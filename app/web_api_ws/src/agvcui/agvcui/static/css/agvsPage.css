@@ -1,0 +1,201 @@
+/* AGV 頁面樣式 */
+
+/* 表格樣式 */
+.table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* 電量進度條樣式 */
+.progress {
+    height: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+/* AGV 狀態標籤樣式 */
+.tag.is-success {
+    background-color: #48c774;
+    color: white;
+}
+
+.tag.is-warning {
+    background-color: #ffdd57;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.tag.is-danger {
+    background-color: #f14668;
+    color: white;
+}
+
+.tag.is-info {
+    background-color: #3298dc;
+    color: white;
+}
+
+/* 表單樣式 */
+.field .help {
+    font-size: 0.75rem;
+    color: #7a7a7a;
+}
+
+/* 響應式表格 */
+@media screen and (max-width: 768px) {
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .table {
+        font-size: 0.875rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.5em;
+    }
+}
+
+/* 空狀態樣式 */
+.has-text-grey-light {
+    color: #dbdbdb !important;
+}
+
+/* 按鈕群組樣式 */
+.field.is-grouped .control:not(:last-child) {
+    margin-right: 0.5rem;
+}
+
+/* 進度條容器樣式 */
+.progress-container {
+    min-width: 80px;
+}
+
+/* 標籤容器樣式 */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+/* 操作按鈕樣式 */
+.button.is-small {
+    height: 2rem;
+    padding: 0 0.5rem;
+}
+
+/* 表格標題樣式 */
+.table thead th {
+    border-bottom: 2px solid #dbdbdb;
+    font-weight: 600;
+    color: #363636;
+}
+
+/* 數值顯示樣式 */
+.has-text-grey-dark {
+    color: #4a4a4a !important;
+}
+
+/* 圖示樣式 */
+.icon.is-large {
+    font-size: 3rem;
+}
+
+/* 卡片樣式 */
+.box {
+    box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0px 0 1px rgba(10, 10, 10, 0.02);
+}
+
+/* 標題樣式 */
+.title .icon {
+    margin-right: 0.5rem;
+}
+
+/* 副標題樣式 */
+.subtitle .icon {
+    margin-right: 0.25rem;
+}
+
+/* 表格行樣式 */
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+/* 表格單元格對齊 */
+.table td {
+    vertical-align: middle;
+}
+
+/* 進度條文字樣式 */
+.progress+p {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+}
+
+/* 表單容器樣式 */
+.container .box {
+    margin-top: 2rem;
+}
+
+/* 表單標題樣式 */
+.box .title {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #dbdbdb;
+    padding-bottom: 1rem;
+}
+
+/* 表單欄位樣式 */
+.field:not(:last-child) {
+    margin-bottom: 1.5rem;
+}
+
+/* 選擇框樣式 */
+.select select {
+    border-color: #dbdbdb;
+}
+
+.select select:focus {
+    border-color: #3273dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
+}
+
+/* 輸入框樣式 */
+.input:focus,
+.textarea:focus {
+    border-color: #3273dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
+}
+
+/* 複選框樣式 */
+.checkbox input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+/* 按鈕群組樣式 */
+.field.is-grouped {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dbdbdb;
+}
+
+/* AGV 更新動畫效果 - 簡化版本 */
+.agv-field-updated {
+    animation: agvFieldUpdate 0.8s ease-out;
+    position: relative;
+}
+
+@keyframes agvFieldUpdate {
+    0% {
+        background-color: #e8f4fd;
+        box-shadow: 0 0 5px rgba(50, 115, 220, 0.3);
+    }
+
+    100% {
+        background-color: transparent;
+        box-shadow: none;
+    }
+}
+
+/* 確保動畫在表格中正常顯示 */
+.table td.agv-field-updated {
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}

@@ -32,8 +32,8 @@ def read_dm7600_10_words(plc):
 
 
 if __name__ == "__main__":
-    plc = KeyencePlcCom("192.168.0.103", 8501)
-
+    plc = KeyencePlcCom("192.168.0.100", 8501)
+    plc.connect()
     print("\n=== 讀取 DM7600 開始的 100 個 word ===")
     read_dm7600_10_words(plc)
 

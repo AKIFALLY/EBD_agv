@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+{% block title %}任務管理{% endblock %}
+
+{% block extra_head %}
+<link href="/static/css/tasksPage.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-format-list-checks"></i>
+                        </span>
+                        任務管理
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    {% if current_user and current_user.role in ['operator', 'admin'] %}
+                    <a class="button is-primary" href="/tasks/create">
+                        <span class="icon">
+                            <i class="mdi mdi-plus"></i>
+                        </span>
+                        <span>新增任務</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AGV 過濾提示 -->
+        {% if agv_id %}
+        <div class="notification is-info is-light">
+            <button class="delete" onclick="window.location.href='/tasks'"></button>
+            <span class="icon">
+                <i class="mdi mdi-filter"></i>
+            </span>
+            <span>正在顯示 AGV ID {{ agv_id }} 的任務</span>
+            <a href="/tasks" class="button is-small is-info ml-2">
+                <span class="icon">
+                    <i class="mdi mdi-close"></i>
+                </span>
+                <span>清除過濾</span>
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- 切換視圖按鈕 -->
+        <div class="field is-grouped mb-4">
+            <div class="control">
+                <div class="buttons has-addons">
+                    <button class="button is-primary" id="listViewBtn">
+                        <span class="icon">
+                            <i class="mdi mdi-format-list-bulleted"></i>
+                        </span>
+                        <span>列表視圖</span>
+                    </button>
+                    <button class="button" id="hierarchyViewBtn">
+                        <span class="icon">
+                            <i class="mdi mdi-file-tree"></i>
+                        </span>
+                        <span>階層視圖</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 列表視圖 -->
+        <div class="box" id="listView">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>任務名稱</th>
+                        <th>父任務</th>
+                        <th>任務代碼</th>
+                        <th>AGV</th>
+                        <th>工作 ID</th>
+                        <th>房間</th>
+                        <th>參數</th>
+                        <th>狀態</th>
+                        <th>創建時間</th>
+                        <th>更新時間</th>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <th>操作</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr title="{{ task.description or '無描述' }}" data-task-id="{{ task.id }}" {% if task.parent_task_id
+                        %}data-parent-id="{{ task.parent_task_id }}" {% endif %}>
+                        <td><strong>{{ task.id }}</strong></td>
+                        <td>
+                            <div class="has-text-weight-medium">{{ task.name }}</div>
+                            {% if task.description %}
+                            <div class="has-text-grey is-size-7 mt-1">{{ task.description[:50] }}{% if
+                                task.description|length > 50 %}...{% endif %}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.parent_task_id %}
+                            <span class="tag is-info is-light">
+                                <span class="icon">
+                                    <i class="mdi mdi-arrow-up"></i>
+                                </span>
+                                <span>{{ task.parent_task_id }}</span>
+                            </span>
+                            {% else %}
+                            <span class="tag is-light">
+                                <span class="icon">
+                                    <i class="mdi mdi-minus"></i>
+                                </span>
+                                <span>根任務</span>
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.mission_code %}
+                            <span class="tag is-info">
+                                <span class="icon">
+                                    <i class="mdi mdi-barcode"></i>
+                                </span>
+                                <span>{{ task.mission_code }}</span>
+                            </span>
+                            {% else %}
+                            <span class="tag is-light">未設定</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.agv and task.agv.name %}
+                            <span class="tag is-success">
+                                <span class="icon">
+                                    <i class="mdi mdi-robot"></i>
+                                </span>
+                                <span>{{ task.agv.name }}</span>
+                            </span>
+                            {% elif task.agv_id %}
+                            <span class="tag is-warning">AGV {{ task.agv_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未分配</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.work_id %}
+                            <span class="tag is-link">{{ task.work_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.room_id %}
+                            <span class="tag is-primary">{{ task.room_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.parameters %}
+                            <div class="dropdown is-hoverable task-parameters-dropdown">
+                                <div class="dropdown-trigger">
+                                    <button class="button is-small is-info" aria-haspopup="true"
+                                        aria-controls="dropdown-menu-{{ task.id }}">
+                                        <span class="icon">
+                                            <i class="mdi mdi-code-json"></i>
+                                        </span>
+                                        <span>JSON</span>
+                                        <span class="icon is-small">
+                                            <i class="mdi mdi-chevron-down"></i>
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu" id="dropdown-menu-{{ task.id }}" role="menu">
+                                    <div class="dropdown-content">
+                                        <div class="dropdown-item">
+                                            <pre>{{ task.parameters | tojson_chinese(indent=2) }}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="tag is-light">無參數</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.status_id == 1 %}
+                            <span class="tag is-warning">待處理</span>
+                            {% elif task.status_id == 2 %}
+                            <span class="tag is-info">進行中</span>
+                            {% elif task.status_id == 3 %}
+                            <span class="tag is-success">已完成</span>
+                            {% elif task.status_id == 4 %}
+                            <span class="tag is-danger">已取消</span>
+                            {% else %}
+                            <span class="tag is-light">{{ task.status_id or '未知' }}</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="has-text-grey is-family-monospace is-size-7">{{
+                                task.created_at.strftime('%Y-%m-%d %H:%M') if task.created_at
+                                else '-' }}</span></td>
+                        <td><span class="has-text-grey is-family-monospace is-size-7">{{
+                                task.updated_at.strftime('%Y-%m-%d %H:%M') if task.updated_at
+                                else '-' }}</span></td>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <td>
+                            <div class="buttons are-small">
+                                <a class="button is-info is-small" href="/tasks/{{ task.id }}/edit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </span>
+                                    <span>編輯</span>
+                                </a>
+                                {% if current_user.role == 'admin' %}
+                                <button class="button is-danger is-small" data-delete-action="tasks"
+                                    data-delete-id="{{ task.id }}" data-delete-name="{{ task.name }}">
+                                    <span class="icon">
+                                        <i class="mdi mdi-delete"></i>
+                                    </span>
+                                    <span>刪除</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 階層視圖 -->
+        <div class="box is-hidden" id="hierarchyView">
+            <div class="content">
+                <h4 class="title is-5">
+                    <span class="icon">
+                        <i class="mdi mdi-file-tree"></i>
+                    </span>
+                    任務階層結構
+                </h4>
+                <div id="taskHierarchy">
+                    <!-- 階層結構將通過 JavaScript 動態生成 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+        <!-- 分頁信息 -->
+        {% set start_item = (current_page - 1) * 20 + 1 %}
+        {% set end_item = [current_page * 20, total_count]|min %}
+        <div class="has-text-grey is-size-7">
+            顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }}
+            頁)
+        </div>
+
+        <!-- 智能分頁 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            {% if current_page > 1 %}
+            <a class="pagination-previous"
+                href="/tasks?page={{ current_page - 1 }}{% if agv_id %}&agv_id={{ agv_id }}{% endif %}">上一頁</a>
+            {% endif %}
+            {% if current_page < total_pages %} <a class="pagination-next"
+                href="/tasks?page={{ current_page + 1 }}{% if agv_id %}&agv_id={{ agv_id }}{% endif %}">
+                下一頁</a>
+                {% endif %}
+
+                <ul class="pagination-list">
+                    {% set start_page = [1, current_page - 2]|max %}
+                    {% set end_page = [total_pages, current_page + 2]|min %}
+
+                    <!-- 第一頁 -->
+                    {% if start_page > 1 %}
+                    <li><a class="pagination-link"
+                            href="/tasks?page=1{% if agv_id %}&agv_id={{ agv_id }}{% endif %}">1</a></li>
+                    {% if start_page > 2 %}
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- 當前頁附近的頁碼 -->
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current">{{ page_num }}</a></li>
+                    {% else %}
+                    <li><a class="pagination-link"
+                            href="/tasks?page={{ page_num }}{% if agv_id %}&agv_id={{ agv_id }}{% endif %}">{{ page_num
+                            }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- 最後一頁 -->
+                    {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li><span
+                            class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        <li><a class="pagination-link"
+                                href="/tasks?page={{ total_pages }}{% if agv_id %}&agv_id={{ agv_id }}{% endif %}">{{
+                                total_pages }}</a></li>
+                        {% endif %}
+                </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- 刪除確認模態框 -->
+{% if current_user and current_user.role == 'admin' %}
+<div class="modal" id="deleteModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">確認刪除</p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>您確定要刪除任務 <strong id="deleteTaskName"></strong> 嗎？</p>
+            <p class="has-text-danger">此操作無法撤銷！</p>
+        </section>
+        <footer class="modal-card-foot">
+            <form id="deleteForm" method="post">
+                <button class="button is-danger" type="submit">確認刪除</button>
+                <button class="button" type="button">取消</button>
+            </form>
+        </footer>
+    </div>
+</div>
+
+<!-- JavaScript 功能已移至 /static/js/deleteModal.js -->
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const listViewBtn = document.getElementById('listViewBtn');
+        const hierarchyViewBtn = document.getElementById('hierarchyViewBtn');
+        const listView = document.getElementById('listView');
+        const hierarchyView = document.getElementById('hierarchyView');
+        const taskHierarchy = document.getElementById('taskHierarchy');
+
+        // 視圖切換
+        listViewBtn.addEventListener('click', function () {
+            listViewBtn.classList.add('is-primary');
+            hierarchyViewBtn.classList.remove('is-primary');
+            listView.classList.remove('is-hidden');
+            hierarchyView.classList.add('is-hidden');
+        });
+
+        hierarchyViewBtn.addEventListener('click', function () {
+            hierarchyViewBtn.classList.add('is-primary');
+            listViewBtn.classList.remove('is-primary');
+            hierarchyView.classList.remove('is-hidden');
+            listView.classList.add('is-hidden');
+            generateHierarchy();
+        });
+
+        // 生成階層結構
+        function generateHierarchy() {
+            const tasks = [];
+            const rows = document.querySelectorAll('tbody tr[data-task-id]');
+
+            // 收集所有任務資料
+            rows.forEach(row => {
+                const taskId = parseInt(row.dataset.taskId);
+                const parentId = row.dataset.parentId ? parseInt(row.dataset.parentId) : null;
+                const name = row.querySelector('td:nth-child(2) .has-text-weight-medium').textContent;
+
+                // 正確提取 AGV 資訊 (第5欄)
+                const agvCell = row.querySelector('td:nth-child(5)');
+                const agvTag = agvCell.querySelector('.tag');
+                const agv = agvTag ? agvTag.textContent.trim() : '未分配';
+
+                // 正確提取狀態資訊 (第9欄)
+                const statusCell = row.querySelector('td:nth-child(9)');
+                const statusTag = statusCell.querySelector('.tag');
+                const status = statusTag ? statusTag.textContent.trim() : '未知';
+
+                tasks.push({
+                    id: taskId,
+                    parentId: parentId,
+                    name: name,
+                    status: status,
+                    agv: agv,
+                    children: []
+                });
+            });
+
+            // 建立階層結構
+            const taskMap = {};
+            const rootTasks = [];
+
+            tasks.forEach(task => {
+                taskMap[task.id] = task;
+            });
+
+            tasks.forEach(task => {
+                if (task.parentId && taskMap[task.parentId]) {
+                    taskMap[task.parentId].children.push(task);
+                } else {
+                    rootTasks.push(task);
+                }
+            });
+
+            // 渲染階層結構
+            taskHierarchy.innerHTML = '';
+            if (rootTasks.length === 0) {
+                taskHierarchy.innerHTML = '<p class="has-text-grey">沒有找到任務資料</p>';
+                return;
+            }
+
+            rootTasks.forEach(task => {
+                taskHierarchy.appendChild(createTaskNode(task, 0));
+            });
+        }
+
+        // 創建任務節點
+        function createTaskNode(task, level) {
+            const div = document.createElement('div');
+            div.className = 'task-node';
+            div.style.marginLeft = (level * 20) + 'px';
+            div.style.marginBottom = '10px';
+            div.style.padding = '10px';
+            div.style.border = '1px solid #dbdbdb';
+            div.style.borderRadius = '4px';
+            div.style.backgroundColor = level === 0 ? '#f5f5f5' : '#ffffff';
+
+            const statusColor = getStatusColor(task.status);
+
+            div.innerHTML = `
+            <div class="level is-mobile">
+                <div class="level-left">
+                    <div class="level-item">
+                        <span class="icon has-text-${level === 0 ? 'primary' : 'info'}">
+                            <i class="mdi mdi-${level === 0 ? 'folder' : 'file'}"></i>
+                        </span>
+                        <strong>ID: ${task.id}</strong>
+                        <span class="ml-2">${task.name}</span>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <span class="tag ${statusColor}">${task.status}</span>
+                        ${task.agv ? `<span class="tag is-light ml-1">${task.agv}</span>` : ''}
+                        ${task.children.length > 0 ? `<span class="tag is-info is-light ml-1">${task.children.length} 子任務</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+            // 添加子任務
+            task.children.forEach(child => {
+                div.appendChild(createTaskNode(child, level + 1));
+            });
+
+            return div;
+        }
+
+        // 取得狀態顏色
+        function getStatusColor(status) {
+            switch (status) {
+                case '已完成': return 'is-success';
+                case '進行中': return 'is-info';
+                case '待處理': return 'is-warning';
+                case '已取消': return 'is-danger';
+                default: return 'is-light';
+            }
+        }
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+
+{
+      "forward": "3708",
+      "backward": "3709",
+      "rotate_left": "3712",
+      "rotate_right": "3713",
+      "shift_left": "3801",
+      "shift_right": "3802",
+      "break": "3714",
+      "enable": "3715",
+      "auto1": "4001",
+      "auto2": "0",
+      "stop": "3701",
+      "reset": "302",
+      "send_mission_from": "2990",
+      "send_mission_to": "2991",
+      "send_mission_magic": "2993",
+      "cancel_mission": "7001",
+      "traffic_stop": "7002",
+      }
+           

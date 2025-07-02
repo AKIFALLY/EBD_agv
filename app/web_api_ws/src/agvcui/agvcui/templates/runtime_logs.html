@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Runtime Logs{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-console-line"></i>
+                        </span>
+                        Runtime 日誌
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <span class="tag is-info">
+                        <span class="icon">
+                            <i class="mdi mdi-database"></i>
+                        </span>
+                        <span>總計 {{ total_count }} 條記錄</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 篩選器 -->
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon-text">
+                    <span class="icon">
+                        <i class="mdi mdi-filter"></i>
+                    </span>
+                    <span>日誌篩選</span>
+                </span>
+            </h2>
+
+            <form method="get" action="/runtime_logs" id="filterForm">
+                <div class="columns">
+                    <div class="column is-2">
+                        <!-- 日誌級別篩選 -->
+                        <div class="field">
+                            <label class="label is-small">日誌級別</label>
+                            <div class="control">
+                                <div class="select is-fullwidth is-small">
+                                    <select name="level" id="levelFilter">
+                                        <option value="">全部級別</option>
+                                        <option value="10" {% if filters.level==10 %}selected{% endif %}>DEBUG</option>
+                                        <option value="20" {% if filters.level==20 %}selected{% endif %}>INFO</option>
+                                        <option value="30" {% if filters.level==30 %}selected{% endif %}>WARN</option>
+                                        <option value="40" {% if filters.level==40 %}selected{% endif %}>ERROR</option>
+                                        <option value="50" {% if filters.level==50 %}selected{% endif %}>FATAL</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-2">
+                        <!-- 節點名稱篩選 -->
+                        <div class="field">
+                            <label class="label is-small">節點名稱</label>
+                            <div class="control">
+                                <div class="select is-fullwidth is-small">
+                                    <select name="node_name" id="nodeNameFilter">
+                                        <option value="">全部節點</option>
+                                        {% for node in node_names %}
+                                        <option value="{{ node }}" {% if filters.node_name==node %}selected{% endif %}>
+                                            {{ node }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-2">
+                        <!-- 開始時間 -->
+                        <div class="field">
+                            <label class="label is-small">開始時間</label>
+                            <div class="control">
+                                <input class="input is-small" type="datetime-local" name="start_time"
+                                    value="{{ filters.start_time or '' }}" id="startTimeFilter">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-2">
+                        <!-- 結束時間 -->
+                        <div class="field">
+                            <label class="label is-small">結束時間</label>
+                            <div class="control">
+                                <input class="input is-small" type="datetime-local" name="end_time"
+                                    value="{{ filters.end_time or '' }}" id="endTimeFilter">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-3">
+                        <!-- 消息內容篩選 -->
+                        <div class="field">
+                            <label class="label is-small">消息內容</label>
+                            <div class="control">
+                                <input class="input is-small" type="text" name="message_filter" placeholder="搜尋消息內容..."
+                                    value="{{ filters.message_filter or '' }}" id="messageFilter">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column is-1">
+                        <!-- 操作按鈕 -->
+                        <div class="field">
+                            <label class="label is-small">&nbsp;</label>
+                            <div class="control">
+                                <div class="buttons">
+                                    <button class="button is-primary is-small" type="submit">
+                                        <span class="icon">
+                                            <i class="mdi mdi-magnify"></i>
+                                        </span>
+                                        <span>篩選</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="buttons">
+                            <button class="button is-light is-small" type="button" data-clear-filters>
+                                <span class="icon">
+                                    <i class="mdi mdi-filter-remove"></i>
+                                </span>
+                                <span>清除篩選</span>
+                            </button>
+                            <button class="button is-info is-small" type="button" data-quick-filter="last_hour">
+                                <span class="icon">
+                                    <i class="mdi mdi-clock-outline"></i>
+                                </span>
+                                <span>最近1小時</span>
+                            </button>
+                            <button class="button is-info is-small" type="button" data-quick-filter="today">
+                                <span class="icon">
+                                    <i class="mdi mdi-calendar-today"></i>
+                                </span>
+                                <span>今天</span>
+                            </button>
+                            <button class="button is-warning is-small" type="button" data-quick-filter="errors_only">
+                                <span class="icon">
+                                    <i class="mdi mdi-alert-circle"></i>
+                                </span>
+                                <span>僅錯誤</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 表格包裝在 box 中 -->
+        <div class="box">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>時間戳</th>
+                        <th>級別</th>
+                        <th>節點名稱</th>
+                        <th>消息</th>
+                        <th>檔案</th>
+                        <th>函數</th>
+                        <th>行號</th>
+                        <th>創建時間</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr title="{{ log.message }}">
+                        <td>{{ log.id }}</td>
+                        <td>
+                            <span class="tag is-light">
+                                <span class="icon">
+                                    <i class="mdi mdi-clock-outline"></i>
+                                </span>
+                                <span>{{ log.timestamp.strftime('%H:%M:%S') if log.timestamp else '-' }}</span>
+                            </span>
+                        </td>
+                        <td>
+                            {% if log.level == 10 %}
+                            <span class="tag is-light">
+                                <span class="icon">
+                                    <i class="mdi mdi-bug"></i>
+                                </span>
+                                <span>DEBUG</span>
+                            </span>
+                            {% elif log.level == 20 %}
+                            <span class="tag is-info">
+                                <span class="icon">
+                                    <i class="mdi mdi-information"></i>
+                                </span>
+                                <span>INFO</span>
+                            </span>
+                            {% elif log.level == 30 %}
+                            <span class="tag is-warning">
+                                <span class="icon">
+                                    <i class="mdi mdi-alert"></i>
+                                </span>
+                                <span>WARN</span>
+                            </span>
+                            {% elif log.level == 40 %}
+                            <span class="tag is-danger">
+                                <span class="icon">
+                                    <i class="mdi mdi-alert-circle"></i>
+                                </span>
+                                <span>ERROR</span>
+                            </span>
+                            {% elif log.level == 50 %}
+                            <span class="tag is-dark">
+                                <span class="icon">
+                                    <i class="mdi mdi-skull"></i>
+                                </span>
+                                <span>FATAL</span>
+                            </span>
+                            {% else %}
+                            <span class="tag">{{ log.level }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="tag is-success">
+                                <span class="icon">
+                                    <i class="mdi mdi-cog"></i>
+                                </span>
+                                <span>{{ log.name or '-' }}</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="has-text-weight-medium">{{ log.message or '-' }}</span>
+                        </td>
+                        <td>{{ log.file or '-' }}</td>
+                        <td>{{ log.function or '-' }}</td>
+                        <td>{{ log.line or '-' }}</td>
+                        <td>
+                            <span class="tag is-light">
+                                {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+        <!-- 分頁信息 -->
+        {% set start_item = (current_page - 1) * 20 + 1 %}
+        {% set end_item = [current_page * 20, total_count]|min %}
+        <div class="has-text-grey is-size-7 mb-2">
+            顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }} 頁)
+        </div>
+
+        <!-- 智能分頁 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            <!-- 上一頁按鈕 -->
+            {% if current_page > 1 %}
+            <a class="pagination-previous" href="{{ build_pagination_url(current_page - 1) }}">上一頁</a>
+            {% endif %}
+
+            <!-- 下一頁按鈕 -->
+            {% if current_page < total_pages %} <a class="pagination-next"
+                href="{{ build_pagination_url(current_page + 1) }}">下一頁</a>
+                {% endif %}
+
+                <!-- 頁碼列表 -->
+                <ul class="pagination-list">
+                    {% set start_page = [1, current_page - 2]|max %}
+                    {% set end_page = [total_pages, current_page + 2]|min %}
+
+                    <!-- 第一頁 -->
+                    {% if start_page > 1 %}
+                    <li><a class="pagination-link" href="{{ build_pagination_url(1) }}">1</a></li>
+                    {% if start_page > 2 %}
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- 當前頁附近的頁碼 -->
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current">{{ page_num }}</a></li>
+                    {% else %}
+                    <li><a class="pagination-link" href="{{ build_pagination_url(page_num) }}">{{ page_num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- 最後一頁 -->
+                    {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li><span
+                            class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        <li><a class="pagination-link" href="{{ build_pagination_url(total_pages) }}">{{ total_pages
+                                }}</a></li>
+                        {% endif %}
+                </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- JavaScript 功能已移至 /static/js/runtimeLogsPage.js -->
+{% endblock %}

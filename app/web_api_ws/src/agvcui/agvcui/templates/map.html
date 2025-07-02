@@ -1,0 +1,217 @@
+<script src="/static/js/lib/leaflet.js"></script>
+<script src="/static/js/lib/leaflet.rotatedMarker.js"></script>
+<script src="/static/js/lib/leaflet.polylineDecorator.js"></script>
+<script src="/static/js/lib/Control.FullScreen.js"></script>
+<link rel="stylesheet" href="/static/css/Control.FullScreen.css" />
+<link rel="stylesheet" href="/static/css/leaflet.css" />
+<link href="/static/css/mapPage.css" rel="stylesheet" />
+
+{% extends "base.html" %}
+{% block title %}Agvc UI - Map{% endblock %}
+
+{% block content %}
+<section class="hero is-fullheight is-light map-container">
+    <div id="map" class="map">
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- 地圖工具列 -->
+    <div class="map-toolbar">
+        <button class="button" id="map-tool-tasks" title="任務管理">
+            <span class="icon">
+                <i class="mdi mdi-format-list-checks"></i>
+            </span>
+        </button>
+        <button class="button" id="map-tool-racks" title="貨架管理">
+            <span class="icon">
+                <i class="mdi mdi-view-grid"></i>
+            </span>
+        </button>
+        <button class="button" id="map-tool-carriers" title="載具管理">
+            <span class="icon">
+                <i class="mdi mdi-package-variant"></i>
+            </span>
+        </button>
+        <button class="button" id="map-tool-agvs" title="AGV 管理">
+            <span class="icon">
+                <i class="mdi mdi-robot"></i>
+            </span>
+        </button>
+        <button class="button" id="map-tool-legend" title="圖例">
+            <span class="icon">
+                <i class="mdi mdi-information"></i>
+            </span>
+        </button>
+    </div>
+
+    <!-- 側邊面板 -->
+    <div class="map-sidebar" id="map-sidebar">
+        <div class="map-sidebar-header">
+            <h4 class="title is-5" id="sidebar-title">詳細資訊</h4>
+            <button class="map-sidebar-close" id="sidebar-close">
+                <i class="mdi mdi-close"></i>
+            </button>
+        </div>
+        <div class="map-sidebar-content" id="sidebar-content">
+            <!-- 任務管理模板 -->
+            <div id="tasks-template" style="display: none;">
+                <div class="map-info-card">
+                    <div class="map-info-card-header">
+                        <span class="map-info-card-title">任務管理</span>
+                    </div>
+                    <p>點擊地圖上的節點或設備來查看相關任務</p>
+                    <div class="map-quick-actions" id="tasks-actions" style="display: none;">
+                        <button class="button is-primary" onclick="mapInteraction.createTask()">
+                            <span class="icon"><i class="mdi mdi-plus"></i></span>
+                            <span>新增任務</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="tasks-list">
+                    <!-- 動態載入任務列表 -->
+                </div>
+            </div>
+
+            <!-- 貨架管理模板 -->
+            <div id="racks-template" style="display: none;">
+                <div class="map-info-card">
+                    <div class="map-info-card-header">
+                        <span class="map-info-card-title">貨架管理</span>
+                    </div>
+                    <p>點擊地圖上的貨架來查看詳細資訊</p>
+                    <div class="map-quick-actions" id="racks-actions" style="display: none;">
+                        <button class="button is-primary" onclick="mapInteraction.createRack()">
+                            <span class="icon"><i class="mdi mdi-plus"></i></span>
+                            <span>新增貨架</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="racks-list">
+                    <!-- 動態載入貨架列表 -->
+                </div>
+            </div>
+
+            <!-- 載具管理模板 -->
+            <div id="carriers-template" style="display: none;">
+                <div class="map-info-card">
+                    <div class="map-info-card-header">
+                        <span class="map-info-card-title">載具管理</span>
+                    </div>
+                    <p>點擊地圖上的貨架來查看載具分佈</p>
+                    <div class="map-quick-actions" id="carriers-actions" style="display: none;">
+                        <button class="button is-primary" onclick="mapInteraction.createCarrier()">
+                            <span class="icon"><i class="mdi mdi-plus"></i></span>
+                            <span>新增載具</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="carriers-list">
+                    <!-- 動態載入載具列表 -->
+                </div>
+            </div>
+
+            <!-- AGV 管理模板 -->
+            <div id="agvs-template" style="display: none;">
+                <div class="map-info-card">
+                    <div class="map-info-card-header">
+                        <span class="map-info-card-title">AGV 管理</span>
+                    </div>
+                    <p>查看所有 AGV 的狀態和位置資訊</p>
+                    <div class="map-quick-actions" id="agvs-actions" style="display: none;">
+                        <button class="button is-primary" onclick="mapInteraction.createAgv()">
+                            <span class="icon"><i class="mdi mdi-plus"></i></span>
+                            <span>新增 AGV</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="agvs-list">
+                    <!-- 動態載入 AGV 列表 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右鍵選單 -->
+    <div id="map-context-menu" class="dropdown-content"
+        style="position: absolute; display: none; z-index: 9999; background: white; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+        <a class="dropdown-item" onclick="handleMenu('add-marker')">
+            <span class="icon"><i class="mdi mdi-map-marker-plus"></i></span>
+            <span>Add Marker</span>
+        </a>
+        <a class="dropdown-item" onclick="handleMenu('zoom-in')">
+            <span class="icon"><i class="mdi mdi-magnify-plus"></i></span>
+            <span>Zoom In</span>
+        </a>
+        <a class="dropdown-item" onclick="handleMenu('center')">
+            <span class="icon"><i class="mdi mdi-crosshairs-gps"></i></span>
+            <span>Center Here</span>
+        </a>
+    </div>
+
+    <!-- 彈出視窗 -->
+    <div id="map-popup" class="map-popup" style="display: none;">
+        <div class="map-popup-header">
+            <h5 class="title is-6" id="popup-title">標題</h5>
+            <button class="map-popup-close" id="popup-close">
+                <i class="mdi mdi-close"></i>
+            </button>
+        </div>
+        <div class="map-popup-content" id="popup-content">
+            <!-- 動態內容 -->
+        </div>
+        <div class="map-quick-actions" id="popup-actions" style="display: none;">
+            <!-- 動態按鈕 -->
+        </div>
+    </div>
+
+    <!-- 資訊面板 -->
+    <div id="info-panel" class="hidden" style="
+      position: absolute;
+      top: calc( var(--bulma-navbar-height) + 1rem);
+      right: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+    ">
+        <em>Click a node to see info</em>
+    </div>
+
+    <!-- 地圖圖例 -->
+    <div id="map-legend" class="map-legend" style="display: none;">
+        <div class="map-legend-title">圖例</div>
+        <div class="map-legend-item">
+            <div class="map-legend-icon" style="background: #48c774;"></div>
+            <span>正常運行</span>
+        </div>
+        <div class="map-legend-item">
+            <div class="map-legend-icon" style="background: #ffdd57;"></div>
+            <span>警告狀態</span>
+        </div>
+        <div class="map-legend-item">
+            <div class="map-legend-icon" style="background: #f14668;"></div>
+            <span>錯誤狀態</span>
+        </div>
+        <div class="map-legend-item">
+            <div class="map-legend-icon" style="background: #3273dc;"></div>
+            <span>處理中</span>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="module">
+    import { mapPage } from '/static/js/mapPage.js';
+
+    // 開發環境載入測試腳本
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        import('/static/js/mapIntegrationTest.js');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        mapPage.setup();
+    });
+</script>
+{% endblock %}
