@@ -18,7 +18,7 @@
 }
 
 .tag.is-warning {
-    background-color: #ffdd57;
+    background-color: #ffcc00;
     color: rgba(0, 0, 0, 0.7);
 }
 
@@ -176,26 +176,4 @@
     border-top: 1px solid #dbdbdb;
 }
 
-/* AGV 更新動畫效果 - 簡化版本 */
-.agv-field-updated {
-    animation: agvFieldUpdate 0.8s ease-out;
-    position: relative;
-}
-
-@keyframes agvFieldUpdate {
-    0% {
-        background-color: #e8f4fd;
-        box-shadow: 0 0 5px rgba(50, 115, 220, 0.3);
-    }
-
-    100% {
-        background-color: transparent;
-        box-shadow: none;
-    }
-}
-
-/* 確保動畫在表格中正常顯示 */
-.table td.agv-field-updated {
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
+/* AGV 頁面動畫效果已移至 updateAnimations.css 統一管理 */

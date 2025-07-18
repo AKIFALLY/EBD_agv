@@ -1,6 +1,6 @@
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 # 只需匯入 SQLModel 與 model
-from db_proxy.models import ProcessSettings, Product, Work, Task, TaskStatus, AGV, AGVContext, TrafficZone, Node, NodeType, Room, Machine, RackStatus, Rack, LocationStatus, Location, Carrier, CarrierStatus, Eqp, EqpPort, EqpSignal, RosoutLog, RuntimeLog, AuditLog
+from db_proxy.models import ProcessSettings, Product, Work, Task, TaskStatus, AGV, AGVContext, TrafficZone, Node, NodeType, Room, Machine, RackStatus, Rack, LocationStatus, Location, Carrier, CarrierStatus, Eqp, EqpPort, EqpSignal, RosoutLog, RuntimeLog, AuditLog, KukaNode, KukaEdge, License
 from sqlmodel import select
 from sqlalchemy import text
 # from db_proxy_interfaces.srv import AcquireTrafficArea, ReleaseTrafficArea, AddTrafficArea  # Define custom services
@@ -129,7 +129,9 @@ def reset_all_sequences(session):
         'eqp_signal',
         'traffic_zone',
         'agv_context',
-        'audit_log'
+        'audit_log',
+        'kuka_node',
+        'kuka_edge'
     ]
 
     for table_name in tables_with_id_sequences:

@@ -7,6 +7,7 @@ class Rack(SQLModel, table=True):
     __tablename__ = "rack"
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
+    room_id: Optional[int] = Field(default=None, foreign_key="room.id")  # 這個rack要搬去哪個房間
     agv_id: Optional[int] = Field(default=None, foreign_key="agv.id")
     location_id: Optional[int] = Field(default=None, foreign_key="location.id")
     product_id: Optional[int] = Field(default=None, foreign_key="product.id")

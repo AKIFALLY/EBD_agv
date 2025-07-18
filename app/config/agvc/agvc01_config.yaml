@@ -1,0 +1,74 @@
+# AGVC01 主節點專屬配置檔案（精簡版）
+# 僅包含實際使用的核心功能配置
+
+# ============================================================================
+# 設備基本資訊
+# ============================================================================
+device_info:
+  device_id: "agvc01"
+  device_type: "primary_controller"
+  role: "primary"
+  description: "AGVC 主節點 - 完整服務控制器"
+
+# ============================================================================
+# 系統參數
+# ============================================================================
+agvc_parameters:
+  system_role: "primary_controller"
+  max_concurrent_connections: 200
+  max_concurrent_tasks: 20
+
+# ============================================================================
+# 資料庫配置
+# ============================================================================
+database_config:
+  postgresql:
+    role: "master"
+    host: "localhost"
+    port: 5432
+    database: "agvc"
+    username: "agvc"
+    password: "password"
+    max_connections: 100
+
+# ============================================================================
+# Web API 配置
+# ============================================================================
+web_api_config:
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 4
+
+# ============================================================================
+# ROS 2 節點配置
+# ============================================================================
+ros_nodes:
+  agvc_database_node:
+    package: "db_proxy"
+    executable: "agvc_database_node"
+    namespace: "/agvc01"
+    parameters:
+      db_url: "postgresql+psycopg2://agvc:password@localhost/agvc"
+      
+  web_api_node:
+    package: "web_api"
+    executable: "api_server"
+    namespace: "/agvc01"
+    parameters:
+      host: "0.0.0.0"
+      port: 8000
+
+# ============================================================================
+# 服務啟動配置
+# ============================================================================
+service_startup:
+  startup_sequence:
+    - "postgresql"
+    - "nginx"
+    - "zenoh_router"
+    - "db_proxy_ws"
+    - "web_api_ws"
+    - "ecs_ws"
+    - "rcs_ws"
+    - "wcs_ws"

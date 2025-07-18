@@ -3,6 +3,41 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from agvcui.auth import get_current_user_from_token
 from typing import List
+import os
+
+
+# 靜態資源檔案副檔名清單 - 這些檔案自動跳過身份驗證
+STATIC_FILE_EXTENSIONS = {
+    # 樣式檔案
+    '.css', '.scss', '.sass',
+    # 腳本檔案
+    '.js', '.ts', '.map',
+    # 圖片檔案
+    '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.bmp', '.tiff',
+    # 字體檔案
+    '.woff', '.woff2', '.ttf', '.eot', '.otf',
+    # 其他常見靜態資源
+    '.json', '.xml', '.txt', '.pdf', '.zip', '.tar', '.gz',
+    # 音視頻檔案
+    '.mp3', '.mp4', '.wav', '.avi', '.mov', '.wmv',
+    # 文檔檔案
+    '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'
+}
+
+
+def is_static_file(path: str) -> bool:
+    """
+    檢查路徑是否為靜態資源檔案
+
+    Args:
+        path: 請求路徑
+
+    Returns:
+        bool: 如果是靜態檔案則返回 True
+    """
+    # 獲取檔案副檔名（轉為小寫）
+    _, ext = os.path.splitext(path.lower())
+    return ext in STATIC_FILE_EXTENSIONS
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -24,6 +59,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
         print(f"🔍 中間件處理路徑: {path}")
+
+        # 🚀 優先檢查：靜態資源檔案自動放行
+        if is_static_file(path):
+            print(f"📁 靜態檔案自動放行: {path}")
+            response = await call_next(request)
+            return response
 
         # 檢查是否為公開路徑（精確匹配或以路徑開頭，但排除根路徑的特殊情況）
         is_public = False

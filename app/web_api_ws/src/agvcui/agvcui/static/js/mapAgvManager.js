@@ -10,7 +10,7 @@ export const mapAgvManager = (() => {
         // 監聽 agvsStore 的變化
         if (window.agvsStore) {
             window.agvsStore.on('change', handleAgvsChange);
-            console.log('mapAgvManager: 已訂閱 agvsStore 變化');
+            console.debug('mapAgvManager: 已訂閱 agvsStore 變化');
         }
     }
 
@@ -19,7 +19,7 @@ export const mapAgvManager = (() => {
         if (!newState?.agvs) return;
 
         const agvs = newState.agvs || [];
-        console.log(`mapAgvManager: 收到 AGV 更新，共 ${agvs.length} 個 AGV`);
+        console.debug(`mapAgvManager: 收到 AGV 更新，共 ${agvs.length} 個 AGV`);
 
         // 更新本地資料
         agvData.clear();
@@ -30,7 +30,7 @@ export const mapAgvManager = (() => {
         // 如果側邊面板正在顯示 AGV 列表，只更新內容
         const agvsList = document.getElementById('agvs-list');
         if (agvsList && agvsList.children.length > 0) {
-            console.log('mapAgvManager: 更新側邊面板 AGV 列表內容');
+            console.debug('mapAgvManager: 更新側邊面板 AGV 列表內容');
             updateAgvsListContent(agvsList, agvs);
         }
     }
@@ -48,7 +48,7 @@ export const mapAgvManager = (() => {
                     agvData.set(agv.id, agv);
                 });
 
-                console.log(`Loaded ${agvs.length} AGVs from store`);
+                console.debug(`Loaded ${agvs.length} AGVs from store`);
             } else {
                 console.warn('agvsStore not available');
             }
@@ -234,7 +234,7 @@ export const mapAgvManager = (() => {
             return;
         }
 
-        console.log('顯示 AGV 詳細資訊:', agv);
+        console.debug('顯示 AGV 詳細資訊:', agv);
 
         // 跳轉到 AGV 編輯頁面
         window.open(`/agvs/${agvId}/edit`, '_blank');

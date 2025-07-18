@@ -30,7 +30,7 @@ class RackVisionPositionState(State):
 
         self.node.get_logger().info("Robot Exit RackVisionPosition 狀態")
         # 讀取PGNO狀態
-        context.robot.read_pgno()
+        context.robot.read_robot_status()
         # 根據當前步驟進行狀態處理
         match self.step:
             case RobotContext.IDLE:

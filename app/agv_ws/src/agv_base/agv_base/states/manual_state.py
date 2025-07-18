@@ -26,8 +26,6 @@ class ManualState(State):
 
         self.to_idle_state = False
 
-        
-
         # 按鈕功能對應表
         self.button_command_map = {
             # Example: No command for A button pressed
@@ -150,14 +148,14 @@ class ManualState(State):
             self.direction = new_direction
         else:
             pass
-            #self.node.get_logger().info("無效的軸移動指令")
+            # self.node.get_logger().info("無效的軸移動指令")
         self.current_direction()
 
     def current_direction(self):
         """獲取當前狀態"""
         if self.direction == DIRECTION_NONE:
             pass
-            #self.node.get_logger().info("現在方向: None")
+            # self.node.get_logger().info("現在方向: None")
         elif self.direction == DIRECTION_FORWARD:
             self.node.get_logger().info("現在方向: Forward")
         elif self.direction == DIRECTION_BACKWARD:
@@ -170,21 +168,18 @@ class ManualState(State):
     def handle(self, context):
         """處理狀態更新"""
         if self.node.agv_status.AGV_ALARM:
-            self.node.get_logger().info("AGV_有警報，返回 Idle 狀態")
+            self.node.get_logger().error("AGV_有警報，返回 Idle 狀態")
             from agv_base.states.error_state import ErrorState
             context.set_state(ErrorState(self.node))
-
-
 
         if not self.node.agv_status.AGV_MANUAL:
             self.node.get_logger().info("AGV_手動模式關閉，返回 Idle 狀態")
             from agv_base.states.idle_state import IdleState
             context.set_state(IdleState(self.node))
         #  如果有警報，則跳到警報 狀態
-        
 
         # 測試用切換狀態
-        #if self.to_idle_state:
+        # if self.to_idle_state:
         #    self.node.get_logger().info("AGV_測試切換到 Idle 狀態")
         #    from agv_base.states.idle_state import IdleState
         #    context.set_state(IdleState(self.node))

@@ -1,6 +1,9 @@
 {% extends "base.html" %}
-
 {% block title %}AGV 管理{% endblock %}
+<!-- AGV 頁面樣式 -->
+{% block extra_head %}
+<link href="/static/css/agvsPage.css" rel="stylesheet" />
+{% endblock %}
 
 {% block content %}
 <section class="section">
@@ -65,67 +68,70 @@
                             <td>
                                 <span class="tag is-light">{{ agv.model }}</span>
                             </td>
-                            <td>
-                                <span class="has-text-grey-dark">
+                            <td data-field="position">
+                                <span class="has-text-grey-dark" id="position-{{ agv.id }}">
                                     ({{ "%.2f"|format(agv.x) }}, {{ "%.2f"|format(agv.y) }})
                                 </span>
                             </td>
-                            <td>
-                                <span class="has-text-grey-dark">{{ "%.1f"|format(agv.heading) }}°</span>
+                            <td data-field="heading">
+                                <span class="has-text-grey-dark" id="heading-{{ agv.id }}">{{ "%.1f"|format(agv.heading)
+                                    }}°</span>
                             </td>
-                            <td>
+                            <td data-field="battery">
                                 {% if agv.battery is not none %}
-                                <div class="field">
+                                <div class="field" id="battery-{{ agv.id }}">
                                     <div class="control">
-                                        <progress class="progress is-small 
+                                        <progress class="progress is-small
                                             {% if agv.battery >= 80 %}is-success
                                             {% elif agv.battery >= 50 %}is-warning
-                                            {% else %}is-danger{% endif %}" value="{{ agv.battery }}" max="100">{{
+                                            {% else %}is-danger{% endif %}" value="{{ agv.battery }}" max="100"
+                                            id="battery-progress-{{ agv.id }}">{{
                                             agv.battery }}%</progress>
                                     </div>
-                                    <p class="is-size-7 has-text-centered">{{ "%.1f"|format(agv.battery) }}%</p>
+                                    <p class="is-size-7 has-text-centered" id="battery-text-{{ agv.id }}">{{
+                                        "%.1f"|format(agv.battery) }}%</p>
                                 </div>
                                 {% else %}
-                                <span class="has-text-grey">未知</span>
+                                <span class="has-text-grey" id="battery-{{ agv.id }}">未知</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-field="status">
                                 {% if agv.status_id is none %}
-                                <span class="tag is-light">未設定</span>
+                                <span class="tag is-light" id="status-{{ agv.id }}">未設定</span>
                                 {% elif agv.status_id == 1 %}
-                                <span class="tag is-dark">離場</span>
+                                <span class="tag is-dark" id="status-{{ agv.id }}">離場</span>
                                 {% elif agv.status_id == 2 %}
-                                <span class="tag is-danger">離線</span>
+                                <span class="tag is-danger" id="status-{{ agv.id }}">離線</span>
                                 {% elif agv.status_id == 3 %}
-                                <span class="tag is-success">空閒</span>
+                                <span class="tag is-success" id="status-{{ agv.id }}">空閒</span>
                                 {% elif agv.status_id == 4 %}
-                                <span class="tag is-info">任務中</span>
+                                <span class="tag is-info" id="status-{{ agv.id }}">任務中</span>
                                 {% elif agv.status_id == 5 %}
-                                <span class="tag is-warning">充電中</span>
+                                <span class="tag is-warning" id="status-{{ agv.id }}">充電中</span>
                                 {% elif agv.status_id == 6 %}
-                                <span class="tag is-link">更新中</span>
+                                <span class="tag is-link" id="status-{{ agv.id }}">更新中</span>
                                 {% elif agv.status_id == 7 %}
-                                <span class="tag is-danger">異常</span>
+                                <span class="tag is-danger" id="status-{{ agv.id }}">異常</span>
                                 {% elif agv.status_id == 8 %}
-                                <span class="tag is-warning">維護中</span>
+                                <span class="tag is-warning" id="status-{{ agv.id }}">維護中</span>
                                 {% elif agv.status_id == 9 %}
-                                <span class="tag is-light">待機</span>
+                                <span class="tag is-light" id="status-{{ agv.id }}">待機</span>
                                 {% elif agv.status_id == 10 %}
-                                <span class="tag is-info">初始化</span>
+                                <span class="tag is-info" id="status-{{ agv.id }}">初始化</span>
                                 {% else %}
-                                <span class="tag is-light">未知 ({{ agv.status_id }})</span>
+                                <span class="tag is-light" id="status-{{ agv.id }}">未知 ({{ agv.status_id }})</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-field="enable">
                                 {% if agv.enable == 1 %}
-                                <span class="tag is-success">
+                                <span class="tag is-success" id="enable-{{ agv.id }}">
                                     <span class="icon">
                                         <i class="mdi mdi-check"></i>
                                     </span>
                                     <span>啟用</span>
                                 </span>
                                 {% else %}
-                                <span class="tag is-danger">
+                                <span class="tag is-danger" id="enable-{{ agv.id }}">
                                     <span class="icon">
                                         <i class="mdi mdi-close"></i>
                                     </span>
@@ -133,12 +139,15 @@
                                 </span>
                                 {% endif %}
                             </td>
-                            <td>
-                                {% if agv.last_node_id %}
-                                <span class="tag is-light">節點 {{ agv.last_node_id }}</span>
-                                {% else %}
-                                <span class="has-text-grey">-</span>
-                                {% endif %}
+                            <td data-field="last_node">
+                                <span id="last-node-{{ agv.id }}">
+                                    {% if agv.last_node_id %}
+                                    <span class="tag is-light" id="last-node-tag-{{ agv.id }}">節點 {{ agv.last_node_id
+                                        }}</span>
+                                    {% else %}
+                                    <span class="has-text-grey" id="last-node-tag-{{ agv.id }}">-</span>
+                                    {% endif %}
+                                </span>
                             </td>
                             {% if current_user and current_user.role in ['admin'] %}
                             <td>
@@ -184,17 +193,5 @@
         </div>
     </div>
 </section>
-
-<!-- AGV 頁面樣式 -->
-<link href="/static/css/agvsPage.css" rel="stylesheet" />
-
-<!-- AGV 頁面 JavaScript -->
-<script type="module">
-    import { agvsPage } from '/static/js/agvsPage.js';
-
-    document.addEventListener('DOMContentLoaded', () => {
-        agvsPage.setup();
-    });
-</script>
 
 {% endblock %}

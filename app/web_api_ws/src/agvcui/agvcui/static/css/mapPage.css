@@ -744,6 +744,48 @@
     width: 6rem;
     height: 6rem;
     transition: all 0.3s ease;
+    position: relative;
+    /* 為切換按鈕提供定位基準 */
+}
+
+/* 貨架切換按鈕 */
+.rack-toggle-btn {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    width: 1rem;
+    height: 1rem;
+    background: rgba(50, 115, 220, 0.9);
+    border: 1px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+    /* 確保在所有貨架元素之上 */
+    transition: all 0.2s ease;
+    font-size: 8px;
+    color: white;
+    /* 預設隱藏 */
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* 當滑鼠懸停在 .rack 上時顯示切換按鈕 */
+.rack:hover .rack-toggle-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+.rack-toggle-btn:hover {
+    background: rgba(50, 115, 220, 1);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(50, 115, 220, 0.4);
+}
+
+.rack-toggle-btn:active {
+    transform: scale(0.95);
 }
 
 .rack-static {
@@ -756,6 +798,10 @@
     background-color: #444;
     width: 6rem;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+    /* 確保切換按鈕可見 */
+    /* 為切換按鈕提供定位基準 */
 }
 
 .rack-moving {
@@ -769,6 +815,10 @@
     border-color: #444;
     border-radius: 0.5rem;
     color: rgba(100, 200, 255, 1);
+    position: relative;
+    overflow: visible;
+    /* 確保切換按鈕可見 */
+    /* 為切換按鈕提供定位基準 */
     width: 2rem;
     height: 2rem;
 }
@@ -779,7 +829,8 @@
     justify-content: center;
     background: #f0f0f0;
     height: 2rem;
-    z-index: 11;
+    z-index: 5;
+    /* 降低 z-index，讓 AGV 可以在上層 */
     flex-direction: row;
     color: rgba(100, 200, 255, 1);
     border-color: #444;
@@ -809,7 +860,8 @@
 }
 
 .rack-title {
-    z-index: 10;
+    z-index: 4;
+    /* 降低 z-index，讓 AGV 可以在上層 */
     color: #fff;
     border-width: 0;
     height: 2rem;
@@ -975,9 +1027,31 @@
 }
 
 .map-popup-content {
-    padding: 1rem;
+    padding: 0.75rem;
     max-height: 400px;
     overflow-y: auto;
+}
+
+/* 彈出視窗表格樣式 */
+.popup-table {
+    margin-bottom: 0 !important;
+}
+
+.popup-table td {
+    padding: 0.4rem 0.5rem !important;
+    border: none !important;
+    vertical-align: middle !important;
+}
+
+.popup-table .popup-label {
+    font-weight: 600;
+    color: #4a4a4a;
+    width: 30%;
+    white-space: nowrap;
+}
+
+.popup-table tbody tr:hover {
+    background-color: rgba(245, 245, 245, 0.5);
 }
 
 .map-popup-close {
@@ -1021,6 +1095,58 @@
     padding: 1rem;
     margin-bottom: 1rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.map-info-card:hover {
+    border-color: #3273dc;
+    box-shadow: 0 4px 12px rgba(50, 115, 220, 0.15);
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+/* 任務項目樣式 */
+.task-item {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.task-item:hover {
+    border-color: #3273dc;
+    box-shadow: 0 2px 8px rgba(50, 115, 220, 0.15);
+    transform: translateY(-1px);
+}
+
+.task-item:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.task-item .level {
+    margin-bottom: 0;
+}
+
+.task-item .title {
+    margin-bottom: 0.25rem;
+    color: #363636;
+    font-weight: 600;
+}
+
+.task-item .subtitle {
+    margin-bottom: 0;
+    color: #666;
+}
+
+.task-item .tag {
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .map-info-card-header {
@@ -1059,7 +1185,7 @@
 }
 
 .status-dot.is-warning {
-    background-color: #ffdd57;
+    background-color: #ffcc00;
 }
 
 .status-dot.is-danger {
@@ -1164,9 +1290,9 @@
 }
 
 .grid-slot.is-maintenance {
-    background-color: #ffdd57;
+    background-color: #ffcc00;
     color: #363636;
-    border-color: #ffdd57;
+    border-color: #ffcc00;
 }
 
 .grid-slot.is-error {

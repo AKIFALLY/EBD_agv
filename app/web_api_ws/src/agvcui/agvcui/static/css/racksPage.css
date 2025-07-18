@@ -1,1 +1,41 @@
-/* 貨架管理頁面 - 使用 Bulma 預設樣式 */
+/* 貨架管理頁面樣式 */
+
+/* 表格樣式 */
+.table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* 貨架狀態標籤樣式 */
+.tag.is-success {
+    background-color: #48c774;
+    color: white;
+}
+
+.tag.is-warning {
+    background-color: #ffcc00;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.tag.is-danger {
+    background-color: #f14668;
+    color: white;
+}
+
+.tag.is-info {
+    background-color: #3298dc;
+    color: white;
+}
+
+.tag.is-primary {
+    background-color: #00d1b2;
+    color: white;
+}
+
+.tag.is-light {
+    background-color: #f5f5f5;
+    color: #363636;
+}
+
+/* Racks 頁面動畫效果已移至 updateAnimations.css 統一管理 */
+
+/* 響應式調整（動畫相關已移至 updateAnimations.css） */

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=K-Studio 2.13
+Exec=wine "/home/ct/kuka/KUKA.AMR Studio 2.3.3/KUKA.AMR Studio 2.3.3.exe "
+Type=Application
+StartupNotify=true
+Path=/home/ct/kuka/KUKA.AMR Studio 2.3.3
+Icon=/home/ct/RosAGV/shortcut/K-Studio-Icon.drawio.png
+Categories=Utility;

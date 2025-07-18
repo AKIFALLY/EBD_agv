@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}工作類型管理{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/worksPage.css">
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 頁面標題 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-briefcase-outline"></i>
+                        </span>
+                        工作類型管理
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                {% if current_user and current_user.role in ['operator', 'admin'] %}
+                <div class="level-item">
+                    <a href="/works/create" class="button is-primary">
+                        <span class="icon">
+                            <i class="mdi mdi-plus"></i>
+                        </span>
+                        <span>新增工作類型</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 搜尋表單 -->
+        <div class="box">
+            <form method="get" action="/works">
+                <div class="field has-addons">
+                    <div class="control is-expanded">
+                        <input class="input" type="text" name="search" placeholder="搜尋工作類型名稱或描述..." value="{{ search }}"
+                            id="search-input">
+                    </div>
+                    <div class="control">
+                        <button class="button is-info" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-magnify"></i>
+                            </span>
+                            <span>搜尋</span>
+                        </button>
+                    </div>
+                    {% if search %}
+                    <div class="control">
+                        <a href="/works" class="button is-light">
+                            <span class="icon">
+                                <i class="mdi mdi-close"></i>
+                            </span>
+                            <span>清除</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- 工作類型列表 -->
+        <div class="box">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>
+                            <a href="?sort_by=id&sort_order={{ 'asc' if sort_by == 'id' and sort_order == 'desc' else 'desc' }}{% if search %}&search={{ search }}{% endif %}&page={{ current_page }}"
+                                class="has-text-dark">
+                                ID
+                                {% if sort_by == 'id' %}
+                                <span class="icon is-small">
+                                    <i class="mdi mdi-chevron-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                </span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?sort_by=name&sort_order={{ 'asc' if sort_by == 'name' and sort_order == 'desc' else 'desc' }}{% if search %}&search={{ search }}{% endif %}&page={{ current_page }}"
+                                class="has-text-dark">
+                                名稱
+                                {% if sort_by == 'name' %}
+                                <span class="icon is-small">
+                                    <i class="mdi mdi-chevron-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                </span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>描述</th>
+                        <th>參數</th>
+                        <th>相關任務數</th>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <th>操作</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for work in works %}
+                    <tr id="work-row-{{ work.id }}" data-work-id="{{ work.id }}">
+                        <td><strong id="work-id-{{ work.id }}">{{ work.id }}</strong></td>
+                        <td>
+                            <div class="has-text-weight-medium" id="work-name-{{ work.id }}">{{ work.name }}</div>
+                        </td>
+                        <td>
+                            <div id="work-description-{{ work.id }}">
+                                {% if work.description %}
+                                {{ work.description }}
+                                {% else %}
+                                <span class="has-text-grey-light">無描述</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div id="work-parameters-{{ work.id }}">
+                                {% if work.parameters %}
+                                <div class="dropdown is-hoverable work-parameters-dropdown">
+                                    <div class="dropdown-trigger">
+                                        <button class="button is-small is-info" aria-haspopup="true"
+                                            aria-controls="dropdown-menu-{{ work.id }}">
+                                            <span class="icon">
+                                                <i class="mdi mdi-code-json"></i>
+                                            </span>
+                                            <span>JSON</span>
+                                            <span class="icon is-small">
+                                                <i class="mdi mdi-chevron-down"></i>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div class="dropdown-menu" id="dropdown-menu-{{ work.id }}" role="menu">
+                                        <div class="dropdown-content">
+                                            <div class="dropdown-item">
+                                                <pre>{{ work.parameters | tojson_chinese(indent=2) }}</pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="has-text-grey-light">無參數</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="tag is-info" id="work-task-count-{{ work.id }}">
+                                {{ work.tasks|length if work.tasks else 0 }} 個任務
+                            </span>
+                        </td>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <td>
+                            <div class="buttons are-small">
+                                {% if current_user.role in ['operator', 'admin'] %}
+                                <a href="/works/{{ work.id }}/edit" class="button is-info is-small">
+                                    <span class="icon">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </span>
+                                    <span>編輯</span>
+                                </a>
+                                {% endif %}
+                                {% if current_user.role == 'admin' %}
+                                <button class="button is-danger is-small"
+                                    onclick="confirmDelete({{ work.id }}, '{{ work.name }}')">
+                                    <span class="icon">
+                                        <i class="mdi mdi-delete"></i>
+                                    </span>
+                                    <span>刪除</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if not works %}
+            <div class="has-text-centered py-6">
+                <span class="icon is-large has-text-grey-light">
+                    <i class="mdi mdi-briefcase-outline mdi-48px"></i>
+                </span>
+                <p class="has-text-grey">
+                    {% if search %}
+                    沒有找到符合條件的工作類型
+                    {% else %}
+                    尚未建立任何工作類型
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 查詢時間信息 -->
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+
+        <!-- 分頁控制 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+            {% set base_params = "sort_by=" + sort_by + "&sort_order=" + sort_order %}
+            {% if search %}{% set base_params = base_params + "&search=" + search %}{% endif %}
+
+            {% if current_page > 1 %}
+            <a class="pagination-previous" href="?page={{ current_page - 1 }}&{{ base_params }}">上一頁</a>
+            {% endif %}
+            {% if current_page < total_pages %} <a class="pagination-next"
+                href="?page={{ current_page + 1 }}&{{ base_params }}">下一頁</a>
+                {% endif %}
+
+                <ul class="pagination-list">
+                    {% for page_num in range(1, total_pages + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current" aria-label="Page {{ page_num }}" aria-current="page">{{
+                            page_num }}</a></li>
+                    {% elif page_num == 1 or page_num == total_pages or (page_num >= current_page - 2 and page_num
+                    <= current_page + 2) %} <li><a class="pagination-link" href="?page={{ page_num }}&{{ base_params }}"
+                            aria-label="Goto page {{ page_num }}">{{
+                            page_num }}</a></li>
+                        {% elif page_num == current_page - 3 or page_num == current_page + 3 %}
+                        <li><span class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        {% endfor %}
+                </ul>
+        </nav>
+        {% endif %}
+
+        <!-- 分頁信息 -->
+        {% set start_item = (current_page - 1) * 20 + 1 %}
+        {% set end_item = [current_page * 20, total_count]|min %}
+        <div class="has-text-grey is-size-7">
+            顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }} 頁)
+        </div>
+    </div>
+</section>
+
+<!-- 刪除確認模態框 -->
+{% if current_user and current_user.role == 'admin' %}
+<div class="modal" id="deleteModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">確認刪除</p>
+            <button class="delete" aria-label="close" onclick="closeDeleteModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>您確定要刪除工作類型 "<span id="deleteWorkName"></span>" 嗎？</p>
+            <p class="has-text-danger">此操作無法復原！</p>
+        </section>
+        <footer class="modal-card-foot">
+            <form id="deleteForm" method="post">
+                <button class="button is-danger" type="submit">確認刪除</button>
+                <button class="button" type="button" onclick="closeDeleteModal()">取消</button>
+            </form>
+        </footer>
+    </div>
+</div>
+
+<script>
+    function confirmDelete(workId, workName) {
+        document.getElementById('deleteWorkName').textContent = workName;
+        document.getElementById('deleteForm').action = `/works/${workId}/delete`;
+        document.getElementById('deleteModal').classList.add('is-active');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('is-active');
+    }
+</script>
+{% endif %}
+
+<!-- Works 頁面 JavaScript 模組已移至 index.js 統一管理 -->
+
+
+{% endblock %}

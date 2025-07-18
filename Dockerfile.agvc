@@ -188,7 +188,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
 # 開放端口：2200（SSH）、1883（Mosquitto）9001（Mosquitto WebSocket）、1433（SQL Server）
 #EXPOSE 2200 1883 9001 1433 
 
-WORKDIR /webui
+WORKDIR /app
 
 # 新增使用者 ct 並設定密碼，賦予 sudo 權限
 RUN apt-get update && apt-get install -y sudo && \
@@ -198,7 +198,7 @@ RUN apt-get update && apt-get install -y sudo && \
     echo "ct ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # 設定 自動 source 環境至 .bashrc
-RUN echo "source /webui/setup.bash" >> ~/.bashrc
+#RUN echo "source /webui/setup.bash" >> ~/.bashrc
 
 # **容器啟動時自動執行**
 ENTRYPOINT [ "/bin/bash","-c" ]

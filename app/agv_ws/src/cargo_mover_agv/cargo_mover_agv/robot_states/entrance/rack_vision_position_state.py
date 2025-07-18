@@ -9,11 +9,11 @@ class RackVisionPositionState(BaseVisionPositionState):
 
     def enter(self):
         self.node.get_logger().info("Robot Entrance 目前狀態: RackVisionPosition")
-        self._reset_common_state()
+        self._reset_state()
 
     def leave(self):
         self.node.get_logger().info("Robot Entrance 離開 RackVisionPosition 狀態")
-        self._reset_common_state()
+        self._reset_state()
 
     def handle(self, context: RobotContext):
         # 確認拍照位置是上層還是下層

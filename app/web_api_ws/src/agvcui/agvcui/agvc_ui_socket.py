@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from agvcui.db import node_all, edge_all, kuka_node_all, kuka_edge_all
 from agvcui.db import signal_all, carrier_all, rack_all, task_all
 from agvcui.db import machine_all, room_all
-from agvcui.db import get_all_agvs
+from agvcui.db import get_all_agvs, get_all_locations
 from agvcui.db import modify_log_all_objects
 
 
@@ -41,6 +41,7 @@ class AgvcUiSocket:
         print("🔌 使用者連線:", sid)
         # print("🔌 使用者連線environ:", environ)
         await self.notify_map(sid)  # first create map node edge
+        await self.notify_locations(sid)  # 新增 locations 資料傳送
         await self.notify_machines(sid)
         await self.notify_rooms(sid)
         # 初次連線傳送一次必要資訊
@@ -165,6 +166,11 @@ class AgvcUiSocket:
                    "kukaNodes": kuka_nodes, "kukaEdges": kuka_edges,
                    "agvs": agvs}  # 包含 AGV 資料
         await self.sio.emit("map_info", jsonable_encoder(payload), room=sid)
+
+    async def notify_locations(self, sid):
+        locations = get_all_locations()
+        payload = {"locations": locations}
+        await self.sio.emit("location_list", jsonable_encoder(payload), room=sid)
 
     async def notify_agvs(self, sid):
         agvs = get_all_agvs()

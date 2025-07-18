@@ -13,6 +13,7 @@ from agv_base.states.idle_state import IdleState
 from agv_base.agv_status import AgvStatus
 from agv_interfaces.msg import AgvStatus as AgvStatusMsg
 
+
 class AgvNodebase(Node):
     def __init__(self, node_name='agv_node_base', **kwargs):
         super().__init__(node_name=node_name, **kwargs)
@@ -34,7 +35,7 @@ class AgvNodebase(Node):
         self.base_context = BaseContext(IdleState(self))  # 初始狀態為 Idle
         # 50ms 執行一次主迴圈(read plc data , context.handle)
         self.timer = self.create_timer(0.05, self.main_loop_timer)
-        self.timer_to_write_status = self.create_timer(1.5 , self.toWriteStatus)
+        self.timer_to_write_status = self.create_timer(1.5, self.toWriteStatus)
         self._status_publisher = self.create_publisher(AgvStatusMsg, "/agv/status", 10)
         self.clock = Clock()  # 建立 ROS 2 時鐘
         self.start_time = self.clock.now()  # 記錄請求開始時間
@@ -45,9 +46,9 @@ class AgvNodebase(Node):
         self._thread = None
         self.plc_heartbeat = 0  # PLC 心跳計數器
         self.BaseState = 0  # 狀態機狀態
-        self.writing_status = False# 狀態寫入 PLC 標誌
-        self.count =0  # 計數器，用於執行次數
-        
+        self.writing_status = False  # 狀態寫入 PLC 標誌
+        self.count = 0  # 計數器，用於執行次數
+
         # self.start(one_cycle_ms=50)
         self.last_one_sec = int(time.time() * 1000)  # 取得現在時間（ms）
 
@@ -103,11 +104,11 @@ class AgvNodebase(Node):
         elapsed = now - self.last_one_sec  # 經過的毫秒數
         if elapsed >= 1000:
             self.last_one_sec = now  # 更新上次執行時間
-            #1000 # 1秒發佈一次狀態
+            # 1000 # 1秒發佈一次狀態
             self.publish_agv_status()
 
         try:
-            #self.get_logger().info(f"requesting!{self.requesting}")
+            # self.get_logger().info(f"requesting!{self.requesting}")
             if self.requesting:
                 self.count += 1
             self.read_plc_data()
@@ -148,12 +149,13 @@ class AgvNodebase(Node):
                 res, sa),
         )
         # self.get_logger().info(f"📡 發送請求到 PLC: DM {start_address}，請求數量: 200")
+
     def publish_agv_status(self):
         try:
             msg = AgvStatusMsg()
             msg.agv_id = self.agv_status.AGV_ID or ""
-            msg.slam_x  = self.agv_status.AGV_SLAM_X or 0
-            msg.slam_y  = self.agv_status.AGV_SLAM_Y or 0
+            msg.slam_x = self.agv_status.AGV_SLAM_X or 0
+            msg.slam_y = self.agv_status.AGV_SLAM_Y or 0
             msg.slam_theta = self.agv_status.AGV_SLAM_THETA or 0
             msg.power = self.agv_status.POWER or 0.0
             msg.x_speed = self.agv_status.AGV_X_SPEED or 0
@@ -182,6 +184,7 @@ class AgvNodebase(Node):
             self.get_logger().error("Error publishing AGV_PLC data")
             pass
     # 讀取AGV_PLC資料回傳
+
     def response_callback(self, response, start_address):
         try:
             end_time = self.clock.now()  # 取得回應時間
@@ -214,9 +217,9 @@ class AgvNodebase(Node):
     def toWriteStatus(self):
         """寫入AGV狀態到PLC"""
         self.plc_heartbeat += 1
-       
-        #write_countinuous_byte
-        if self.writing_status:#寫入狀態標誌為 True，則不執行寫入
+
+        # write_countinuous_byte
+        if self.writing_status:  # 寫入狀態標誌為 True，則不執行寫入
             return
         # 根據當前狀態設定 BaseState
         if self.base_context.state.__class__.__name__ == "IdleState":
@@ -227,30 +230,28 @@ class AgvNodebase(Node):
             self.BaseState = 3
         elif self.base_context.state.__class__.__name__ == "ErrorState":
             self.BaseState = 4
-        #寫入資料到DM7800
+        # 寫入資料到DM7800
         valuedata = [str(self.plc_heartbeat), str(self.BaseState)]
         try:
             self.plc_client.async_write_continuous_data(
-            device_type='DM',
-            start_address='7800',
-            values=valuedata,
-            callback=self.plc_write_status_callback
+                device_type='DM',
+                start_address='7800',
+                values=valuedata,
+                callback=self.plc_write_status_callback
             )
             self.writing_status = True  # 設置寫入狀態標誌
-            #self.get_logger().info("✅ AGV 狀態已寫入 PLC (DM7800)")
+            # self.get_logger().info("✅ AGV 狀態已寫入 PLC (DM7800)")
         except Exception as e:
             self.get_logger().error(f"寫入 PLC 狀態失敗: {str(e)}")
             return
 
-
     def plc_write_status_callback(self, response):
         self.writing_status = False  # 重置寫入狀態標誌
         if response.success:
-            #self.get_logger().info("✅ 狀態寫入PLC成功")
+            # self.get_logger().info("✅ 狀態寫入PLC成功")
             pass
         else:
             self.get_logger().warn("⚠️ 狀態寫入PLC失敗")
-
 
     def destroy_node(self):
         self.stop()

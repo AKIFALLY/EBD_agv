@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, ClassVar
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime
@@ -27,6 +27,67 @@ class TaskStatus(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     description: Optional[str] = None
+
+    # 任務狀態常數定義
+    # 主要狀態
+    REQUESTING: ClassVar[int] = 0          # 請求中 (UI-請求執行任務)
+    PENDING: ClassVar[int] = 1             # 待處理 (WCS-任務已接受，待處理)
+    READY_TO_EXECUTE: ClassVar[int] = 2    # 待執行 (RCS-任務已派發，待執行)
+    EXECUTING: ClassVar[int] = 3           # 執行中 (AGV-任務正在執行)
+    COMPLETED: ClassVar[int] = 4           # 已完成 (AGV-任務已完成)
+    CANCELLING: ClassVar[int] = 5          # 取消中 (任務取消)
+    ERROR: ClassVar[int] = 6               # 錯誤 (錯誤)
+
+    # 取消相關狀態
+    WCS_CANCELLING: ClassVar[int] = 51     # WCS-取消中 (WCS-任務取消中，待處理)
+    RCS_CANCELLING: ClassVar[int] = 52     # RCS-取消中 (RCS-任務取消中，取消中)
+    AGV_CANCELLING: ClassVar[int] = 53     # AGV-取消中 (AGV-取消完成)
+    CANCELLED: ClassVar[int] = 54          # 已取消 (任務已取消)
+
+    # 狀態碼對應的中文描述
+    STATUS_DESCRIPTIONS: ClassVar[Dict[int, str]] = {
+        0: "請求中",
+        1: "待處理",
+        2: "待執行",
+        3: "執行中",
+        4: "已完成",
+        5: "取消中",
+        6: "錯誤",
+        51: "WCS-取消中",
+        52: "RCS-取消中",
+        53: "AGV-取消中",
+        54: "已取消"
+    }
+
+    # 狀態碼對應的英文名稱
+    STATUS_NAMES: ClassVar[Dict[int, str]] = {
+        0: "REQUESTING",
+        1: "PENDING",
+        2: "READY_TO_EXECUTE",
+        3: "EXECUTING",
+        4: "COMPLETED",
+        5: "CANCELLING",
+        6: "ERROR",
+        51: "WCS_CANCELLING",
+        52: "RCS_CANCELLING",
+        53: "AGV_CANCELLING",
+        54: "CANCELLED"
+    }
+
+    @classmethod
+    def get_description(cls, status_code: int) -> str:
+        """取得狀態碼對應的中文描述"""
+        return cls.STATUS_DESCRIPTIONS.get(status_code, "未知狀態")
+
+    @classmethod
+    def get_name(cls, status_code: int) -> str:
+        """取得狀態碼對應的英文名稱"""
+        return cls.STATUS_NAMES.get(status_code, "UNKNOWN")
+
+    @classmethod
+    def is_valid_status(cls, status_code: int) -> bool:
+        """檢查狀態碼是否有效"""
+        return status_code in cls.STATUS_DESCRIPTIONS
 
     model_config = ConfigDict(from_attributes=True)  # 告訴 Pydantic 這是 ORM 模型
 

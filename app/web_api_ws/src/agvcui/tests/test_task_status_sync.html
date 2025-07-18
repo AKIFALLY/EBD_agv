@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任務狀態同步測試</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+    <style>
+        .test-section {
+            margin-bottom: 2rem;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .status-item {
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-result {
+            margin-top: 1rem;
+        }
+        .test-pass {
+            color: #48c774;
+        }
+        .test-fail {
+            color: #f14668;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <h1 class="title">任務狀態同步測試</h1>
+            <p class="subtitle">驗證前端任務狀態顯示與資料庫定義的一致性</p>
+
+            <!-- 資料庫狀態定義 -->
+            <div class="test-section">
+                <h2 class="title is-4">資料庫狀態定義</h2>
+                <div class="content">
+                    <p>根據 <code>13_works_tasks.py</code> 中的定義：</p>
+                </div>
+                <div id="database-status" class="status-grid"></div>
+            </div>
+
+            <!-- 前端狀態顯示 -->
+            <div class="test-section">
+                <h2 class="title is-4">前端狀態顯示</h2>
+                <div id="frontend-status" class="status-grid"></div>
+            </div>
+
+            <!-- 統計邏輯測試 -->
+            <div class="test-section">
+                <h2 class="title is-4">統計邏輯測試</h2>
+                <div class="columns">
+                    <div class="column">
+                        <h3 class="title is-5">測試資料</h3>
+                        <div id="test-data"></div>
+                    </div>
+                    <div class="column">
+                        <h3 class="title is-5">統計結果</h3>
+                        <div id="statistics-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 測試結果 -->
+            <div class="test-section">
+                <h2 class="title is-4">測試結果</h2>
+                <div id="test-results" class="test-result"></div>
+            </div>
+
+            <!-- 執行測試按鈕 -->
+            <div class="test-section">
+                <button id="run-tests" class="button is-primary is-large">
+                    <span class="icon">
+                        <i class="mdi mdi-play"></i>
+                    </span>
+                    <span>執行測試</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { 
+            TASK_STATUS, 
+            getTaskStatusInfo, 
+            getTaskStatusStatistics,
+            isActiveStatus,
+            isPendingStatus,
+            isExecutingStatus
+        } from '../agvcui/static/js/taskStatus.js';
+
+        // 資料庫狀態定義（來自 13_works_tasks.py）
+        const DATABASE_STATUS = [
+            {id: 0, name: "請求中", description: "UI-請求執行任務"},
+            {id: 1, name: "待處理", description: "WCS-任務已接受，待處理"},
+            {id: 2, name: "待執行", description: "RCS-任務已派發，待執行"},
+            {id: 3, name: "執行中", description: "AGV-任務正在執行"},
+            {id: 4, name: "已完成", description: "AGV-任務已完成"},
+            {id: 5, name: "取消中", description: "任務取消"},
+            {id: 51, name: "WCS-取消中", description: "WCS-任務取消中，待處理"},
+            {id: 52, name: "RCS-取消中", description: "RCS-任務取消中，取消中"},
+            {id: 53, name: "AGV-取消中", description: "AGV-取消完成"},
+            {id: 54, name: "已取消", description: "任務已取消"},
+            {id: 6, name: "錯誤", description: "錯誤"}
+        ];
+
+        // 測試任務資料
+        const TEST_TASKS = [
+            {id: 1, status_id: 0, name: "測試任務1"},
+            {id: 2, status_id: 1, name: "測試任務2"},
+            {id: 3, status_id: 2, name: "測試任務3"},
+            {id: 4, status_id: 3, name: "測試任務4"},
+            {id: 5, status_id: 4, name: "測試任務5"},
+            {id: 6, status_id: 5, name: "測試任務6"},
+            {id: 7, status_id: 54, name: "測試任務7"},
+            {id: 8, status_id: 6, name: "測試任務8"}
+        ];
+
+        function displayDatabaseStatus() {
+            const container = document.getElementById('database-status');
+            container.innerHTML = DATABASE_STATUS.map(status => `
+                <div class="status-item">
+                    <div class="has-text-weight-bold">ID: ${status.id}</div>
+                    <div class="title is-6">${status.name}</div>
+                    <div class="subtitle is-7">${status.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function displayFrontendStatus() {
+            const container = document.getElementById('frontend-status');
+            container.innerHTML = DATABASE_STATUS.map(status => {
+                const frontendStatus = getTaskStatusInfo(status.id);
+                return `
+                    <div class="status-item">
+                        <div class="has-text-weight-bold">ID: ${status.id}</div>
+                        <div class="title is-6">
+                            <span class="tag ${frontendStatus.color}">${frontendStatus.name}</span>
+                        </div>
+                        <div class="subtitle is-7">${frontendStatus.description}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function displayTestData() {
+            const container = document.getElementById('test-data');
+            container.innerHTML = `
+                <table class="table is-striped is-narrow">
+                    <thead>
+                        <tr>
+                            <th>任務ID</th>
+                            <th>狀態ID</th>
+                            <th>狀態名稱</th>
+                            <th>任務名稱</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${TEST_TASKS.map(task => {
+                            const statusInfo = getTaskStatusInfo(task.status_id);
+                            return `
+                                <tr>
+                                    <td>${task.id}</td>
+                                    <td>${task.status_id}</td>
+                                    <td><span class="tag ${statusInfo.color}">${statusInfo.name}</span></td>
+                                    <td>${task.name}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function displayStatistics() {
+            const stats = getTaskStatusStatistics(TEST_TASKS);
+            const container = document.getElementById('statistics-result');
+            
+            container.innerHTML = `
+                <div class="columns is-multiline">
+                    <div class="column is-half">
+                        <div class="box">
+                            <h4 class="title is-6">基本統計</h4>
+                            <p>總任務數：<strong>${stats.total}</strong></p>
+                            <p>活躍任務：<strong>${stats.active}</strong></p>
+                            <p>已完成：<strong>${stats.completed}</strong></p>
+                            <p>錯誤：<strong>${stats.error}</strong></p>
+                            <p>已取消：<strong>${stats.cancelled}</strong></p>
+                        </div>
+                    </div>
+                    <div class="column is-half">
+                        <div class="box">
+                            <h4 class="title is-6">詳細狀態</h4>
+                            <p>請求中：<strong>${stats.requesting}</strong></p>
+                            <p>待處理：<strong>${stats.pending}</strong></p>
+                            <p>待執行：<strong>${stats.ready}</strong></p>
+                            <p>執行中：<strong>${stats.executing}</strong></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="box">
+                    <h4 class="title is-6">Dashboard 統計邏輯</h4>
+                    <p>總任務：<strong>${stats.total}</strong></p>
+                    <p>待執行（待處理+待執行）：<strong>${stats.pending + stats.ready}</strong></p>
+                    <p>執行中：<strong>${stats.executing}</strong></p>
+                </div>
+            `;
+        }
+
+        function runTests() {
+            const results = [];
+            
+            // 測試1：狀態定義一致性
+            let statusConsistencyPass = true;
+            DATABASE_STATUS.forEach(dbStatus => {
+                const frontendStatus = getTaskStatusInfo(dbStatus.id);
+                if (frontendStatus.name !== dbStatus.name) {
+                    statusConsistencyPass = false;
+                    results.push({
+                        test: '狀態定義一致性',
+                        pass: false,
+                        message: `狀態 ${dbStatus.id}: 資料庫="${dbStatus.name}", 前端="${frontendStatus.name}"`
+                    });
+                }
+            });
+            
+            if (statusConsistencyPass) {
+                results.push({
+                    test: '狀態定義一致性',
+                    pass: true,
+                    message: '所有狀態定義與資料庫一致'
+                });
+            }
+
+            // 測試2：統計邏輯正確性
+            const stats = getTaskStatusStatistics(TEST_TASKS);
+            const expectedActive = 4; // 狀態 0,1,2,3
+            const expectedPending = 2; // 狀態 1,2
+            const expectedExecuting = 1; // 狀態 3
+            
+            results.push({
+                test: '活躍任務統計',
+                pass: stats.active === expectedActive,
+                message: `預期: ${expectedActive}, 實際: ${stats.active}`
+            });
+            
+            results.push({
+                test: '待執行任務統計',
+                pass: (stats.pending + stats.ready) === expectedPending,
+                message: `預期: ${expectedPending}, 實際: ${stats.pending + stats.ready}`
+            });
+            
+            results.push({
+                test: '執行中任務統計',
+                pass: stats.executing === expectedExecuting,
+                message: `預期: ${expectedExecuting}, 實際: ${stats.executing}`
+            });
+
+            // 顯示測試結果
+            const container = document.getElementById('test-results');
+            const passCount = results.filter(r => r.pass).length;
+            const totalCount = results.length;
+            
+            container.innerHTML = `
+                <div class="notification ${passCount === totalCount ? 'is-success' : 'is-warning'}">
+                    <h3 class="title is-5">測試完成：${passCount}/${totalCount} 通過</h3>
+                </div>
+                ${results.map(result => `
+                    <div class="notification ${result.pass ? 'is-success' : 'is-danger'} is-light">
+                        <strong class="${result.pass ? 'test-pass' : 'test-fail'}">
+                            ${result.pass ? '✓' : '✗'} ${result.test}
+                        </strong>
+                        <br>
+                        ${result.message}
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        // 初始化頁面
+        document.addEventListener('DOMContentLoaded', () => {
+            displayDatabaseStatus();
+            displayFrontendStatus();
+            displayTestData();
+            displayStatistics();
+            
+            document.getElementById('run-tests').addEventListener('click', runTests);
+        });
+    </script>
+</body>
+</html>

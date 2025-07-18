@@ -49,7 +49,13 @@ class BaseCRUD:
             setattr(obj, "updated_at", datetime.now(timezone.utc))
 
         session.add(obj)
-        session.commit()
+        try:
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print('===create error===')
+            print(e)
+            raise e
         session.refresh(obj)
         return obj
 
@@ -84,7 +90,14 @@ class BaseCRUD:
 
         # 使用 merge 方法更新資料
         result = session.merge(obj)
-        session.commit()
+
+        try:
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print('===update error===')
+            print(e)
+            raise e
         session.refresh(result)
         return result
 

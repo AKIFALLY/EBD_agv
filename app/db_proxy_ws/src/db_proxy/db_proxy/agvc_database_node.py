@@ -421,6 +421,7 @@ class AGVCDatabaseNode(Node):
         from datetime import datetime, timezone
         current_time = datetime.now(timezone.utc)
         if new_task.id is None or new_task.id == 0:  # 新建任務
+            new_task.id = None
             new_task.created_at = current_time
         new_task.updated_at = current_time
 

@@ -1,0 +1,28 @@
+# Loader02 AGV 專屬配置檔案（精簡版）
+device_info:
+  device_id: "loader02"
+  device_type: "loader"
+  description: "裝載型 AGV #2"
+  room_id: 2
+
+agv_parameters:
+  max_speed: 2.0
+  max_payload: 800
+  safety_distance: 0.4
+
+sensors:
+  joystick:
+    enabled: true
+    device: "/dev/input/js0"
+    topic: "/loader02/joy"
+    deadzone: 0.1
+
+ros_nodes:
+  agv_core_node:
+    package: "loader_agv"
+    executable: "agv_core_node"
+    namespace: "/loader02"
+    parameters:
+      room_id: 2
+      agv_type: "loader"
+      device_id: "loader02"

@@ -6,7 +6,6 @@ uint64 node_id
 string name
 string description
 uint64 agv_id
-string agv_name
 uint8 priority
 string parameters  # JSON string
 string created_at

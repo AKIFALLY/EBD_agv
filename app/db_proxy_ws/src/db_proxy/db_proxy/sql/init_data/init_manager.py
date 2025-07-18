@@ -54,6 +54,12 @@ initialize_traffic_zones = _import_module_function(
     "16_traffic_zone", "initialize_traffic_zones")
 initialize_agv_status = _import_module_function(
     "17_agv_status", "init_agv_status")
+initialize_kuka_map = _import_module_function(
+    "18_kuka_map", "initialize_kuka_map")
+initialize_ct_map = _import_module_function(
+    "19_ct_map", "initialize_ct_map")
+initialize_license = _import_module_function(
+    "20_license", "initialize_license")
 
 
 def initialize_all_data(session):
@@ -85,11 +91,14 @@ def initialize_all_data(session):
         initialize_agv_status(session)
         initialize_process_settings(session)
         initialize_traffic_zones(session)
+        initialize_license(session)
         print()
 
         # 第二階段：節點資料
         print("🗺️ 第二階段：節點資料")
         initialize_nodes(session)
+        initialize_kuka_map(session)  # KUKA 地圖資料匯入
+        initialize_ct_map(session)    # CT 地圖資料匯入
         print()
 
         # 第三階段：機器和房間資料

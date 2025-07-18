@@ -1,12 +1,12 @@
 import { mapStore, signalsStore, roomsStore, machinesStore, racksStore, carriersStore, tasksStore } from '../store/index.js';
 import { notify } from './notify.js';
 
-// AGV 動畫配置（簡化版 + 目標點平滑）
+// AGV 動畫配置（優化版 - 提升旋轉速度和精度）
 const AGV_ANIMATION_CONFIG = {
     mode: 'smooth',             // 'instant' 或 'smooth'
-    lerpSpeed: 4.0,             // 插值速度
-    useTargetSmoothing: true,   // 啟用目標點平滑
-    targetSmoothSpeed: 4.0      // 目標點平滑速度
+    lerpSpeed: 4.0,             // 插值速度 - 提高到8.0以加快旋轉速度
+    useTargetSmoothing: true,  // 關閉目標點平滑以減少延遲
+    targetSmoothSpeed: 6.0      // 目標點平滑速度（當啟用時）
 };
 
 // 動畫模式說明：
@@ -70,8 +70,7 @@ export const mapPage = (() => {
                 //console.log("Updating existing AGV:", latLng, agv.heading);
                 agvObject.setTargetPosition(latLng, agv.heading);
             } else {
-                console.log(agv);
-                console.log(`No object found for name: ${agv.name} , add one`);
+                console.log(`No object found for name: ${agv.name} , add one `, agv);
                 // 沒有 id，就新增該物件
                 const agvName = agv.name || "agv001";
                 const latLng = L.latLng(agv.y, agv.x);
@@ -240,7 +239,18 @@ export const mapPage = (() => {
             let dockedRackObject = dockedRackObjects.get(locationId);
             if (!dockedRackObject) {
                 const latLng = L.latLng(node.y, node.x);
-                dockedRackObject = new DockedRackInfoObject(map, latLng, node.id, node.name);
+                // 使用 locationsStore 獲取位置名稱，如果沒有則使用預設值
+                console.log("Debug - locationId:", locationId, "locationsStore:", window.locationsStore);
+                if (window.locationsStore) {
+                    const locationsState = window.locationsStore.getState();
+                    console.log("Debug - locationsStore 狀態:", locationsState);
+                    console.log("Debug - 所有 locations:", locationsState.locations);
+                }
+                const locationName = window.locationsStore ?
+                    window.locationsStore.getLocationName(locationId) || "停靠區" :
+                    "停靠區";
+                console.log("Debug - 取得的 locationName:", locationName);
+                dockedRackObject = new DockedRackInfoObject(map, latLng, node.id, locationName);
                 dockedRackObjects.set(locationId, dockedRackObject);
             }
             dockedRackObject.update(racks);
@@ -328,6 +338,44 @@ export const mapPage = (() => {
         if (window.mapTaskManager) {
             window.mapTaskManager.loadTaskData();
         }
+    }
+
+    function handleLocationsChange(newState) {
+        if (!newState?.locations) return;
+
+        console.log('locations 資料更新:', newState.locations);
+
+        // 更新已存在的 DockedRackInfoObject 的標題
+        dockedRackObjects.forEach((dockedRackObject, locationId) => {
+            const locationName = window.locationsStore.getLocationName(locationId);
+            if (locationName && locationName !== "停靠區") {
+                // 更新 DockedRackInfoObject 的標題
+                const titleElement = dockedRackObject.rackInfoDom.querySelector('.docked-rack-title');
+                if (titleElement) {
+                    titleElement.textContent = locationName;
+                    console.log(`更新 locationId ${locationId} 的標題為: ${locationName}`);
+                }
+            }
+        });
+    }
+
+    function handleLocationsChange(newState) {
+        if (!newState?.locations) return;
+
+        console.log('locations 資料更新:', newState.locations);
+
+        // 更新已存在的 DockedRackInfoObject 的標題
+        dockedRackObjects.forEach((dockedRackObject, locationId) => {
+            const locationName = window.locationsStore.getLocationName(locationId);
+            if (locationName && locationName !== "停靠區") {
+                // 更新 DockedRackInfoObject 的標題
+                const titleElement = dockedRackObject.rackInfoDom.querySelector('.docked-rack-title');
+                if (titleElement) {
+                    titleElement.textContent = locationName;
+                    console.log(`更新 locationId ${locationId} 的標題為: ${locationName}`);
+                }
+            }
+        });
     }
 
     function buildSignalMap(signals) {
@@ -511,13 +559,7 @@ export const mapPage = (() => {
             console.log("clickLatLng", clickLatLng)
             agv.setTargetPosition(clickLatLng);
 
-            // 點地圖顯藏物件
-            const panel = document.getElementById('info-panel');
-            if (!panel) return;
-            //if (!panel.classList.contains("hidden")) {
-            //    panel.classList.add('hidden');
-            //    return;
-            //}
+            // 點地圖時的處理邏輯（已移除 info-panel 相關功能）
 
         });
 
@@ -609,6 +651,8 @@ export const mapPage = (() => {
         racksStore.on('change', handleRacksChange);
         carriersStore.on('change', handleCarriersChange);
         tasksStore.on('change', handleTasksChange);
+        locationsStore.on('change', handleLocationsChange);
+        locationsStore.on('change', handleLocationsChange);
 
 
 

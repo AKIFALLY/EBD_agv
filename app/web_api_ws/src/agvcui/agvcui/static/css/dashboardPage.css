@@ -1,0 +1,1720 @@
+/**
+ * Dashboard 頁面專用樣式
+ * 響應式卡片佈局和視覺效果
+ */
+
+/* ========== Dashboard 容器佈局 ========== */
+.dashboard-container {
+    padding: 1.5rem;
+    min-height: calc(100vh - 3.25rem);
+    /* 扣除 navbar 高度 */
+}
+
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-title {
+    color: #363636;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.dashboard-subtitle {
+    color: #4a4a4a;
+    margin-top: 0.5rem;
+}
+
+/* ========== 響應式卡片網格 ========== */
+.dashboard-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* 全寬度卡片樣式 */
+.dashboard-card-full-width {
+    grid-column: 1 / -1;
+    /* 佔據整行 */
+}
+
+/* 半寬度卡片樣式 - 用於任務卡片 */
+.dashboard-card-half-width {
+    grid-column: span 2;
+    /* 佔據一半寬度 */
+}
+
+/* 大螢幕：4欄網格 */
+@media screen and (min-width: 1216px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* 半寬度卡片在大螢幕上佔據2欄 */
+    .dashboard-card-half-width {
+        grid-column: span 2;
+    }
+}
+
+
+
+/* 手機：1欄網格 */
+@media screen and (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .dashboard-container {
+        padding: 1rem;
+    }
+}
+
+/* ========== Dashboard 卡片樣式 ========== */
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    border: 1px solid #e8e8e8;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+/* 預設所有卡片都是摺疊狀態 */
+.dashboard-card.dashboard-card-compact {
+    cursor: pointer;
+}
+
+.dashboard-card:not(.dashboard-card-expanded) .dashboard-detail-content {
+    display: none;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* ========== 摘要模式卡片樣式 ========== */
+.dashboard-card-compact {
+    padding: 1rem;
+    min-height: 120px;
+    max-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.dashboard-card-compact .dashboard-card-header {
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-card-compact .dashboard-card-title {
+    font-size: 0.9rem;
+}
+
+.dashboard-card-compact .dashboard-card-icon {
+    font-size: 1rem;
+}
+
+/* 摘要內容區域 */
+.dashboard-summary-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dashboard-summary-metrics {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+}
+
+.dashboard-summary-metric {
+    text-align: center;
+    flex: 1;
+}
+
+.dashboard-summary-metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    color: #363636;
+}
+
+.dashboard-summary-metric-label {
+    font-size: 0.75rem;
+    color: #7a7a7a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 摘要狀態指示器 */
+.dashboard-summary-status {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.dashboard-summary-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #dbdbdb;
+    transition: background-color 0.3s ease;
+}
+
+/* 狀態顏色 */
+.dashboard-summary-status-dot.success {
+    background-color: #4caf50;
+}
+
+.dashboard-summary-status-dot.warning {
+    background-color: #ff9800;
+}
+
+.dashboard-summary-status-dot.info {
+    background-color: #2196f3;
+}
+
+.dashboard-summary-status-dot.danger {
+    background-color: #f44336;
+}
+
+/* 展開/收合狀態 */
+.dashboard-card-expanded {
+    max-height: none;
+    min-height: auto;
+}
+
+.dashboard-card-expanded .dashboard-summary-content {
+    display: none;
+}
+
+/* 展開按鈕 */
+.dashboard-expand-button {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: #7a7a7a;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.dashboard-expand-button:hover {
+    background-color: #f5f5f5;
+    color: #363636;
+}
+
+.dashboard-expand-button.expanded {
+    transform: rotate(180deg);
+}
+
+/* 詳細內容區域 */
+.dashboard-detail-content {
+    display: none;
+    margin-top: 1rem;
+    animation: slideDown 0.3s ease;
+}
+
+.dashboard-card-expanded .dashboard-detail-content {
+    display: block;
+}
+
+/* 載入狀態在摘要模式下的處理 */
+.dashboard-card-compact .dashboard-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e8e8e8;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dashboard-card-compact .dashboard-loading .icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== 響應式設計 - 摘要模式 ========== */
+@media (max-width: 768px) {
+    .dashboard-card-compact {
+        min-height: 100px;
+        max-height: 100px;
+        padding: 0.75rem;
+    }
+
+    .dashboard-summary-metrics {
+        gap: 0.5rem;
+    }
+
+    .dashboard-summary-metric-value {
+        font-size: 1.25rem;
+    }
+
+    .dashboard-summary-metric-label {
+        font-size: 0.7rem;
+    }
+
+    .dashboard-expand-button {
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-card-compact {
+        min-height: 90px;
+        max-height: 90px;
+        padding: 0.5rem;
+    }
+
+    .dashboard-summary-metrics {
+        gap: 0.25rem;
+    }
+
+    .dashboard-summary-metric-value {
+        font-size: 1rem;
+    }
+
+    .dashboard-summary-metric-label {
+        font-size: 0.65rem;
+    }
+
+    .dashboard-card-compact .dashboard-card-title {
+        font-size: 0.8rem;
+    }
+
+    /* 極小螢幕上的設備兩欄佈局 */
+    .dashboard-equipment-container.dashboard-equipment-two-column {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .dashboard-card-compact .dashboard-equipment-container.dashboard-equipment-two-column {
+        display: grid !important;
+        gap: 0.5rem;
+    }
+}
+
+/* 卡片標題區 */
+.dashboard-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.dashboard-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #363636;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dashboard-card-icon {
+    font-size: 1.25rem;
+    color: #3273dc;
+}
+
+/* 主要指標區 */
+.dashboard-metric {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.dashboard-metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-metric-label {
+    font-size: 0.875rem;
+    color: #7a7a7a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 狀態指示器 */
+.dashboard-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.dashboard-status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.dashboard-status-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* 狀態顏色 */
+.status-success {
+    color: #23d160;
+}
+
+.status-success .dashboard-status-dot {
+    background-color: #23d160;
+}
+
+.status-warning {
+    color: #ffcc00;
+}
+
+.status-warning .dashboard-status-dot {
+    background-color: #ffcc00;
+}
+
+.status-danger {
+    color: #ff3860;
+}
+
+.status-danger .dashboard-status-dot {
+    background-color: #ff3860;
+}
+
+.status-info {
+    color: #3273dc;
+}
+
+.status-info .dashboard-status-dot {
+    background-color: #3273dc;
+}
+
+/* 趨勢區域 */
+.dashboard-trend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: #7a7a7a;
+}
+
+.dashboard-trend-value {
+    font-weight: 500;
+}
+
+.dashboard-trend-up {
+    color: #23d160;
+}
+
+.dashboard-trend-down {
+    color: #ff3860;
+}
+
+/* 進度條樣式 */
+.dashboard-progress {
+    margin-top: 1rem;
+}
+
+.dashboard-progress .progress {
+    height: 8px;
+    border-radius: 4px;
+}
+
+.dashboard-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #7a7a7a;
+    margin-bottom: 0.5rem;
+}
+
+/* ========== 特殊卡片類型 ========== */
+
+/* 大數值卡片 */
+.dashboard-card.is-large-metric .dashboard-metric-value {
+    font-size: 3.5rem;
+}
+
+/* 列表卡片 */
+.dashboard-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.dashboard-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.dashboard-list-item:last-child {
+    border-bottom: none;
+}
+
+.dashboard-list-item-text {
+    font-size: 0.875rem;
+    color: #4a4a4a;
+}
+
+.dashboard-list-item-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #363636;
+}
+
+/* ========== 載入狀態 ========== */
+.dashboard-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    color: #7a7a7a;
+}
+
+.dashboard-loading .icon {
+    animation: spin 1s linear infinite;
+}
+
+/* ========== 錯誤狀態 ========== */
+.dashboard-error {
+    text-align: center;
+    color: #ff3860;
+    padding: 1rem;
+}
+
+.dashboard-error .icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ========== 動畫效果 ========== */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ========== 任務表格樣式 ========== */
+.dashboard-task-table-container {
+    /* 移除捲軸功能 - 改為自動高度 */
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #fafafa;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+}
+
+/* 任務階層結構容器 */
+.dashboard-task-hierarchy-container {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #fafafa;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+}
+
+.dashboard-task-table {
+    font-size: 0.875rem;
+    margin-bottom: 0 !important;
+    background-color: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-task-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.dashboard-task-table td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.dashboard-task-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.dashboard-task-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 任務狀態標籤 */
+.task-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.task-status-pending {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.task-status-running {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+/* 任務 ID 樣式 */
+.task-id {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* 任務名稱樣式 */
+.task-name {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* 時間顯示樣式 */
+.task-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* 空狀態樣式 */
+.dashboard-task-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.dashboard-task-empty .icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* ========== 任務階層結構樣式 ========== */
+.task-hierarchy-node {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid #dbdbdb;
+    border-radius: 6px;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.task-hierarchy-node:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.task-hierarchy-node.level-0 {
+    background-color: #f5f5f5;
+    border-left: 4px solid #3273dc;
+}
+
+.task-hierarchy-node.level-1 {
+    margin-left: 1.25rem;
+    border-left: 3px solid #48c774;
+}
+
+.task-hierarchy-node.level-2 {
+    margin-left: 2.5rem;
+    border-left: 2px solid #ffdd57;
+}
+
+.task-hierarchy-node.level-3 {
+    margin-left: 3.75rem;
+    border-left: 2px solid #ff3860;
+}
+
+.task-hierarchy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.task-hierarchy-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.task-hierarchy-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.task-hierarchy-details {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.task-children-count {
+    background-color: #e8f4fd;
+    color: #3273dc;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+/* ========== 設備狀態卡片樣式 ========== */
+.dashboard-equipment-container {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* 當有兩欄佈局類別時，覆蓋預設的flex佈局 */
+.dashboard-equipment-container.dashboard-equipment-two-column {
+    display: grid !important;
+}
+
+.equipment-section {
+    background-color: #fafafa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e8e8e8;
+}
+
+.equipment-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #363636;
+    border-bottom: 2px solid #e8e8e8;
+    padding-bottom: 0.5rem;
+}
+
+.equipment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* ========== 設備兩欄佈局 ========== */
+.dashboard-equipment-container.dashboard-equipment-two-column {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.equipment-section-left,
+.equipment-section-right {
+    margin-bottom: 0;
+}
+
+/* 兩欄佈局中的區塊樣式 */
+.dashboard-equipment-two-column .equipment-section-left {
+    border-right: 1px solid #e8e8e8;
+    padding-right: 0.75rem;
+}
+
+.dashboard-equipment-two-column .equipment-section-right {
+    padding-left: 0.75rem;
+}
+
+.equipment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.equipment-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: #3273dc;
+}
+
+.equipment-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.equipment-item-name {
+    font-weight: 600;
+    color: #363636;
+    font-size: 0.875rem;
+}
+
+.equipment-item-details {
+    font-size: 0.75rem;
+    color: #666;
+    display: flex;
+    gap: 1rem;
+}
+
+.equipment-item-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.equipment-status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.equipment-status-badge.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.equipment-status-badge.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.equipment-status-badge.status-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.equipment-status-badge.status-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.equipment-status-badge.status-light {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+/* 設備空狀態樣式 */
+.dashboard-equipment-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.dashboard-equipment-empty .icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.dashboard-equipment-empty p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* ========== Rack 資訊卡片樣式 ========== */
+.dashboard-rack-info-container {
+    max-height: 350px;
+    overflow-y: auto;
+    margin-top: 1rem;
+}
+
+.dashboard-rack-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dashboard-rack-item {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.dashboard-rack-item:hover {
+    background-color: #e9ecef;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-rack-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-rack-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dashboard-rack-title .icon {
+    color: #6c757d;
+}
+
+.dashboard-rack-carrier-count {
+    background-color: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.dashboard-rack-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.dashboard-rack-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-rack-detail-label {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.dashboard-rack-detail-value {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Rack 狀態標籤 */
+.rack-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rack-status-in-map {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.rack-status-not-in-map {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.rack-status-carry {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.rack-status-not-carry {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Rack 空狀態樣式 */
+.dashboard-rack-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.dashboard-rack-empty .icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* 個別 AGV 卡片樣式 */
+.dashboard-agv-individual-card {
+    min-height: 200px;
+}
+
+.dashboard-agv-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+}
+
+.dashboard-agv-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.dashboard-agv-detail-label {
+    font-weight: 500;
+    color: #4a4a4a;
+}
+
+.dashboard-agv-detail-value {
+    color: #363636;
+    font-family: 'Courier New', monospace;
+}
+
+/* AGV 狀態標籤 */
+.agv-status-badge,
+.agv-battery-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.agv-status-badge.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.agv-status-badge.status-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.agv-battery-badge.status-success {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.agv-battery-badge.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* 個別貨架卡片樣式 */
+.dashboard-rack-individual-card {
+    min-height: 220px;
+}
+
+.dashboard-rack-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+}
+
+.dashboard-rack-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.dashboard-rack-detail-label {
+    font-weight: 500;
+    color: #4a4a4a;
+}
+
+.dashboard-rack-detail-value {
+    color: #363636;
+    font-family: 'Courier New', monospace;
+}
+
+/* 貨架狀態標籤 */
+.rack-carrier-badge,
+.rack-status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.rack-carrier-badge.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.rack-carrier-badge.status-light {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.rack-status-badge.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.rack-status-badge.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.rack-status-badge.status-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.dashboard-task-empty p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* ========== 房間狀態卡片樣式 ========== */
+.dashboard-rooms-container {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.room-section {
+    background-color: #fafafa;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid #3273dc;
+    transition: all 0.2s ease;
+}
+
+.room-section:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: #3273dc;
+}
+
+.room-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e8e8e8;
+}
+
+.room-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #363636;
+}
+
+.room-section-title .icon {
+    color: #3273dc;
+}
+
+.room-section-status {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.room-carriers-count {
+    font-size: 0.875rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.room-status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.room-status-badge.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.room-status-badge.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.room-status-badge.status-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.room-section-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.room-info-group {
+    background-color: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 0.75rem;
+}
+
+.room-info-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #363636;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.room-info-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.room-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.room-info-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.room-info-value {
+    color: #363636;
+    font-weight: 600;
+}
+
+.room-logistics-status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.logistics-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.logistics-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.logistics-status {
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.logistics-status.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.logistics-status.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.logistics-status.status-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* 房間空狀態樣式 */
+.dashboard-rooms-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.dashboard-rooms-empty .icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.dashboard-rooms-empty p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* ========== 響應式調整 ========== */
+/* 中等螢幕：平板 (769px - 1215px) */
+@media screen and (min-width: 769px) and (max-width: 1215px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 半寬度卡片在平板上佔據全寬 */
+    .dashboard-card-half-width {
+        grid-column: 1 / -1;
+    }
+}
+
+/* 小螢幕：手機 */
+@media screen and (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* 所有卡片在手機上都是全寬 */
+    .dashboard-card-half-width,
+    .dashboard-card-full-width {
+        grid-column: 1 / -1;
+    }
+
+    .dashboard-card {
+        padding: 1rem;
+    }
+
+    /* 任務階層結構在手機上的調整 */
+    .task-hierarchy-node {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .task-hierarchy-node.level-1 {
+        margin-left: 0.75rem;
+    }
+
+    .task-hierarchy-node.level-2 {
+        margin-left: 1.5rem;
+    }
+
+    .task-hierarchy-node.level-3 {
+        margin-left: 2.25rem;
+    }
+
+    .task-hierarchy-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .task-hierarchy-title {
+        font-size: 0.875rem;
+    }
+
+    .task-hierarchy-details {
+        font-size: 0.75rem;
+    }
+
+    /* 設備狀態卡片響應式調整 */
+    .dashboard-equipment-container {
+        gap: 1rem;
+    }
+
+    /* 兩欄佈局在平板上改為單欄 */
+    .dashboard-equipment-container.dashboard-equipment-two-column {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .equipment-section {
+        padding: 0.75rem;
+    }
+
+    .equipment-section-left,
+    .equipment-section-right {
+        margin-bottom: 1.5rem;
+    }
+
+    .equipment-section-right {
+        margin-bottom: 0;
+    }
+
+    /* 在單欄佈局時移除邊框和內邊距 */
+    .dashboard-equipment-two-column .equipment-section-left {
+        border-right: none;
+        padding-right: 0;
+    }
+
+    .dashboard-equipment-two-column .equipment-section-right {
+        padding-left: 0;
+    }
+
+    .equipment-section-title {
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* 摘要模式下的兩欄佈局調整 */
+    .dashboard-card-compact .dashboard-equipment-container.dashboard-equipment-two-column {
+        display: grid !important;
+        gap: 1rem;
+    }
+
+    .equipment-list {
+        max-height: 200px;
+        gap: 0.5rem;
+    }
+
+    .equipment-item {
+        padding: 0.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .equipment-item-name {
+        font-size: 0.8rem;
+    }
+
+    .equipment-item-details {
+        font-size: 0.7rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .equipment-item-status {
+        align-self: stretch;
+        justify-content: flex-start;
+    }
+
+    .equipment-status-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .dashboard-metric-value {
+        font-size: 2rem;
+    }
+
+    .dashboard-card.is-large-metric .dashboard-metric-value {
+        font-size: 2.5rem;
+    }
+
+    .dashboard-card-header {
+        margin-bottom: 0.75rem;
+    }
+
+    /* 房間狀態卡片響應式調整 */
+    .dashboard-rooms-container {
+        max-height: 400px;
+        gap: 1rem;
+    }
+
+    .room-section {
+        padding: 0.75rem;
+    }
+
+    .room-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .room-section-status {
+        align-self: stretch;
+        justify-content: space-between;
+    }
+
+    .room-section-content {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .room-info-group {
+        padding: 0.5rem;
+    }
+
+    .room-info-title {
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .room-info-item,
+    .logistics-item {
+        font-size: 0.75rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .room-carriers-count {
+        font-size: 0.8rem;
+    }
+
+    .room-status-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+    }
+
+    .logistics-status {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.4rem;
+    }
+
+    .dashboard-task-empty {
+        padding: 1.5rem 0.5rem;
+    }
+
+    /* Rack 資訊卡片響應式調整 */
+    .dashboard-rack-info-container {
+        max-height: 280px;
+    }
+
+    .dashboard-rack-item {
+        padding: 0.75rem;
+    }
+
+    .dashboard-rack-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .dashboard-rack-title {
+        font-size: 0.875rem;
+    }
+
+    .dashboard-rack-carrier-count {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .dashboard-rack-details {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .dashboard-rack-detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .rack-status-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* 個別 AGV 卡片響應式調整 */
+    .dashboard-agv-individual-card .dashboard-agv-details {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .dashboard-agv-individual-card .dashboard-agv-detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .agv-status-badge,
+    .agv-battery-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* 個別貨架卡片響應式調整 */
+    .dashboard-rack-individual-card .dashboard-rack-details {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .dashboard-rack-individual-card .dashboard-rack-detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .rack-carrier-badge,
+    .rack-status-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+}
+
+/* 極小螢幕：小手機 (max-width: 480px) */
+@media screen and (max-width: 480px) {
+    .dashboard-grid {
+        gap: 0.75rem;
+        padding: 0.5rem;
+    }
+
+    .dashboard-card {
+        padding: 0.75rem;
+    }
+
+    .dashboard-card-header {
+        margin-bottom: 0.75rem;
+    }
+
+    .dashboard-card-title {
+        font-size: 0.875rem;
+    }
+
+    .dashboard-card-icon {
+        font-size: 1rem;
+    }
+
+    /* 任務階層結構在極小螢幕上的調整 */
+    .task-hierarchy-node {
+        padding: 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    .task-hierarchy-content {
+        gap: 0.25rem;
+    }
+
+    .task-hierarchy-name {
+        font-size: 0.75rem;
+    }
+
+    .task-hierarchy-details {
+        font-size: 0.65rem;
+    }
+
+    /* 設備列表在極小螢幕上的調整 */
+    .equipment-section {
+        padding: 0.5rem;
+    }
+
+    .equipment-section-title {
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .equipment-item {
+        padding: 0.4rem;
+        gap: 0.4rem;
+    }
+
+    .equipment-item-name {
+        font-size: 0.75rem;
+    }
+
+    .equipment-item-details {
+        font-size: 0.65rem;
+    }
+
+    .equipment-status-badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.3rem;
+    }
+
+    /* 房間狀態在極小螢幕上的調整 */
+    .room-section {
+        padding: 0.5rem;
+    }
+
+    .room-section-title {
+        font-size: 0.875rem;
+    }
+
+    .room-carriers-count {
+        font-size: 0.75rem;
+    }
+
+    .room-status-badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.4rem;
+    }
+
+    .room-info-title {
+        font-size: 0.75rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .room-info-item,
+    .logistics-item {
+        font-size: 0.7rem;
+    }
+
+    .logistics-status {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.3rem;
+    }
+}

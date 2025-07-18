@@ -20,3 +20,33 @@
     min-height: 3.25rem;
     /* Bulma navbar 預設高度 */
 }
+
+/* Navbar 漢堡選單優化 */
+.navbar-burger {
+    height: 3.25rem;
+    width: 3.25rem;
+}
+
+/* 在小螢幕上優化 navbar 下拉選單 */
+@media screen and (max-width: 1023px) {
+    .navbar-menu {
+        box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);
+    }
+
+    .navbar-item.has-dropdown .navbar-dropdown {
+        display: none;
+    }
+
+    .navbar-item.has-dropdown.is-active .navbar-dropdown {
+        display: block;
+    }
+
+    .navbar-dropdown {
+        border-radius: 6px;
+        margin-top: 0.5rem;
+    }
+
+    .navbar-dropdown .navbar-item {
+        padding-left: 2rem;
+    }
+}

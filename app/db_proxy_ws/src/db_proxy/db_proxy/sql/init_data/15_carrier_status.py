@@ -9,7 +9,7 @@ from db_proxy.sql.db_install import insert_data_if_not_exists_name_and_not_exist
 def initialize_carrier_status(session):
     """初始化載具狀態資料"""
     print("📋 初始化載具狀態資料...")
-    
+
     carrier_status_data = [
         {
             "id": 1,
@@ -58,11 +58,102 @@ def initialize_carrier_status(session):
             "name": "已完成",
             "description": "載具處理完成",
             "color": "is-link"
-        }
+        },
+        {
+            "id": 101,
+            "name": "進入入口傳送箱",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 301,
+            "name": "準備進入清洗機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 302,
+            "name": "進入清洗機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 303,
+            "name": "清洗機處理完成",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 401,
+            "name": "準備進入強化機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 402,
+            "name": "進入強化機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 403,
+            "name": "強化機處理完成",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 501,
+            "name": "準備進入預烘乾機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 502,
+            "name": "進入預烘乾機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 503,
+            "name": "預烘乾機處理完成",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 601,
+            "name": "準備進入烘乾機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 602,
+            "name": "進入烘乾機處理中",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 603,
+            "name": "烘乾機處理完成",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 201,
+            "name": "準備進入出入口傳送箱",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+        {
+            "id": 202,
+            "name": "進入出入口傳送箱",
+            "description": "載具正在處理製程",
+            "color": "is-primary"
+        },
+
     ]
-    
+
     insert_data_if_not_exists_name_and_not_exists_id(
         session, carrier_status_data, CarrierStatus
     )
-    
+
     print(f"   ✅ 載具狀態資料: {len(carrier_status_data)} 筆")

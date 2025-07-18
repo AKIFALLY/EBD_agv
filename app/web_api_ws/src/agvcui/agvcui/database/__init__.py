@@ -84,6 +84,10 @@ __all__ = [
     'task_all', 'get_tasks', 'count_tasks', 'get_task_by_id', 'create_task',
     'update_task', 'delete_task', 'work_all', 'task_status_all',
 
+    # Work 操作
+    'get_works', 'count_works', 'get_work_by_id', 'create_work',
+    'update_work', 'delete_work',
+
     # AGV 操作
     'get_agvs', 'count_agvs', 'get_agv_by_id', 'update_agv', 'delete_agv', 'create_agv',
 

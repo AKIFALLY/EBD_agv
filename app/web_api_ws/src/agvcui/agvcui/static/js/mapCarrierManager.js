@@ -20,13 +20,13 @@ export const mapCarrierManager = (() => {
         // 監聽 carriersStore 的變化
         if (window.carriersStore) {
             window.carriersStore.on('change', handleCarriersChange);
-            console.log('mapCarrierManager: 已訂閱 carriersStore 變化');
+            console.debug('mapCarrierManager: 已訂閱 carriersStore 變化');
         }
 
         // 監聽 racksStore 的變化
         if (window.racksStore) {
             window.racksStore.on('change', handleRacksChange);
-            console.log('mapCarrierManager: 已訂閱 racksStore 變化');
+            console.debug('mapCarrierManager: 已訂閱 racksStore 變化');
         }
     }
 
@@ -35,7 +35,7 @@ export const mapCarrierManager = (() => {
         if (!newState?.carriers) return;
 
         const carriers = newState.carriers || [];
-        console.log(`mapCarrierManager: 收到載具更新，共 ${carriers.length} 個載具`);
+        console.debug(`mapCarrierManager: 收到載具更新，共 ${carriers.length} 個載具`);
 
         // 更新本地資料
         carrierData.clear();
@@ -46,7 +46,7 @@ export const mapCarrierManager = (() => {
         // 如果側邊面板正在顯示載具列表，只更新內容
         const carriersList = document.getElementById('carriers-list');
         if (carriersList && carriersList.children.length > 0) {
-            console.log('mapCarrierManager: 更新側邊面板載具列表內容');
+            console.debug('mapCarrierManager: 更新側邊面板載具列表內容');
             updateCarriersListContent(carriersList, carriers);
         }
     }
@@ -56,7 +56,7 @@ export const mapCarrierManager = (() => {
         if (!newState?.racks) return;
 
         const racks = newState.racks || [];
-        console.log(`mapCarrierManager: 收到貨架更新，共 ${racks.length} 個貨架`);
+        console.debug(`mapCarrierManager: 收到貨架更新，共 ${racks.length} 個貨架`);
 
         // 更新本地資料
         rackData.clear();
@@ -78,7 +78,7 @@ export const mapCarrierManager = (() => {
                     carrierData.set(carrier.id, carrier);
                 });
 
-                console.log(`Loaded ${carriers.length} carriers from store`);
+                console.debug(`Loaded ${carriers.length} carriers from store`);
             } else {
                 console.warn('carriersStore not available');
             }
@@ -100,7 +100,7 @@ export const mapCarrierManager = (() => {
                     rackData.set(rack.id, rack);
                 });
 
-                console.log(`Loaded ${racks.length} racks from store for carrier manager`);
+                console.debug(`Loaded ${racks.length} racks from store for carrier manager`);
             } else {
                 console.warn('racksStore not available for carrier manager');
             }
@@ -115,7 +115,7 @@ export const mapCarrierManager = (() => {
             // 暫時使用空資料，因為沒有對應的 store
             // 如果需要，可以從 machinesStore 或其他地方獲取
             eqpPortData.clear();
-            console.log('EqpPort data loading skipped - no corresponding store available');
+            console.debug('EqpPort data loading skipped - no corresponding store available');
         } catch (error) {
             console.error('Error loading eqp port data:', error);
         }
@@ -309,7 +309,7 @@ export const mapCarrierManager = (() => {
     function moveCarrier(carrierId) {
         mapPermissions.executeWithPermission('edit_carrier', () => {
             // 可以實作載具移動邏輯
-            console.log('Move carrier:', carrierId);
+            console.debug('Move carrier:', carrierId);
             // 例如：顯示移動對話框或打開移動頁面
         });
     }
@@ -324,7 +324,7 @@ export const mapCarrierManager = (() => {
 
                     if (response.ok) {
                         carrierData.delete(parseInt(carrierId));
-                        console.log(`Carrier ${carrierId} deleted`);
+                        console.debug(`Carrier ${carrierId} deleted`);
 
                         // 關閉彈出視窗
                         mapInteraction.closePopup();
@@ -368,7 +368,7 @@ export const mapCarrierManager = (() => {
                         carrier.status_id = statusId;
                     }
 
-                    console.log(`Carrier ${carrierId} status updated to ${statusId}`);
+                    console.debug(`Carrier ${carrierId} status updated to ${statusId}`);
                 } else {
                     console.error('Failed to update carrier status');
                 }
@@ -394,7 +394,7 @@ export const mapCarrierManager = (() => {
                 });
 
                 if (response.ok) {
-                    console.log(`Batch updated ${carrierIds.length} carriers`);
+                    console.debug(`Batch updated ${carrierIds.length} carriers`);
                     // 重新載入資料
                     loadCarrierData();
                 } else {

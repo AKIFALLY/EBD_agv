@@ -1,0 +1,43 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.17 Chrome/128.0.6613.36 Electron/32.0.1 Safari/537.36" version="24.7.17">
+  <diagram name="第1頁" id="2NI_F1Nik2b3ZVO7AZwg">
+    <mxGraphModel dx="845" dy="723" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="256" pageHeight="256" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-15" value="" style="group" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="11" y="11" width="490" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-3" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#80c6ee;strokeColor=none;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry width="490" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-8" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.pie;startAngle=0.75;endAngle=0;strokeColor=none;fillColor=#DDDDDD;aspect=fixed;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry width="490" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-9" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.pie;startAngle=0.25159149638245415;endAngle=0.5015914963824541;strokeColor=none;fillColor=#DDDDDD;aspect=fixed;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry width="490" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-2" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#DDDDDD;strokeColor=none;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry x="90" y="90" width="310" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-4" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.pie;startAngle=0.75;endAngle=0;strokeColor=none;fillColor=#00A0E9;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry x="90" y="90" width="310" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-5" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.pie;startAngle=0.25159149638245415;endAngle=0.5015914963824541;strokeColor=none;fillColor=#00A0E9;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry x="90" y="90" width="310" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-18" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.rect;fillColor2=none;strokeWidth=1;size=20;indent=5;fillColor=#171C61;strokeColor=none;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry x="252.5" y="175" width="130" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-19" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.rect;fillColor2=none;strokeWidth=1;size=20;indent=5;fillColor=#171C61;strokeColor=none;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry x="290" y="175" width="55" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-16" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.partConcEllipse;startAngle=0.32679437601038525;endAngle=0.1663852650955564;arcWidth=0.19;fillColor=#171C61;strokeColor=none;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry x="102.5" y="175" width="140" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="nnnV5gVnf2aRr4k5HPXh-21" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.pie;startAngle=0.5;endAngle=0;fillColor=#171C61;strokeColor=none;" parent="nnnV5gVnf2aRr4k5HPXh-15" vertex="1">
+          <mxGeometry x="102.5" y="175" width="140" height="140" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

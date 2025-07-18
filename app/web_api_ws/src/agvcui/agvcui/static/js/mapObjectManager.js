@@ -24,7 +24,7 @@ export const mapObjectManager = (() => {
 
     // 設置 AGV 物件互動
     function setupAgvInteraction(agvObject) {
-        console.log('Setting up AGV interaction for:', agvObject.id, 'name:', agvObject.name, 'className:', agvObject.el?.className);
+        console.debug('Setting up AGV interaction for:', agvObject.id, 'name:', agvObject.name, 'className:', agvObject.el?.className);
 
         // 檢查 AGV 物件是否有必要的屬性
         if (!agvObject.addClickHandler) {
@@ -33,39 +33,37 @@ export const mapObjectManager = (() => {
         }
 
         agvObject.addClickHandler((obj, e) => {
-            console.log('AGV clicked:', obj.id, 'name:', obj.name, 'agvId:', obj.agvId);
+            console.debug('AGV clicked:', obj.id, 'name:', obj.name, 'agvId:', obj.agvId);
             const agvData = obj.getData();
             const agvId = obj.agvId || obj.id; // 使用 agvId 或 fallback 到 id
             const title = `AGV: ${obj.name || 'Unknown'}`;
 
             const content = `
-                    <div class="field">
-                        <label class="label">AGV ID</label>
-                        <div class="control">
-                            <span class="tag is-info">${obj.id || 'N/A'}</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">名稱</label>
-                        <div class="control">
-                            <span>${obj.name || 'N/A'}</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">位置</label>
-                        <div class="control">
-                            <span>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">狀態</label>
-                        <div class="control">
-                            <span class="status-indicator">
-                                <span class="status-dot is-success"></span>
-                                運行中
-                            </span>
-                        </div>
-                    </div>
+                <table class="table is-narrow is-fullwidth popup-table">
+                    <tbody>
+                        <tr>
+                            <td class="popup-label">AGV ID</td>
+                            <td><span class="tag is-info">${obj.id || 'N/A'}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="popup-label">名稱</td>
+                            <td>${obj.name || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td class="popup-label">位置</td>
+                            <td>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td class="popup-label">狀態</td>
+                            <td>
+                                <span class="status-indicator">
+                                    <span class="status-dot is-success"></span>
+                                    運行中
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             `;
 
             const actions = [];
@@ -102,30 +100,26 @@ export const mapObjectManager = (() => {
             const title = `設備: ${obj.eqp_id}`;
 
             const content = `
-                    <div class="field">
-                        <label class="label">設備 ID</label>
-                        <div class="control">
-                            <span class="tag is-primary">${obj.eqp_id}</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">類型</label>
-                        <div class="control">
-                            <span>${getEquipmentTypeName(obj)}</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">位置</label>
-                        <div class="control">
-                            <span>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">端口狀態</label>
-                        <div class="control">
-                            <div id="port-status-${obj.eqp_id}">載入中...</div>
-                        </div>
-                    </div>
+                <table class="table is-narrow is-fullwidth popup-table">
+                    <tbody>
+                        <tr>
+                            <td class="popup-label">設備 ID</td>
+                            <td><span class="tag is-primary">${obj.eqp_id}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="popup-label">類型</td>
+                            <td>${getEquipmentTypeName(obj)}</td>
+                        </tr>
+                        <tr>
+                            <td class="popup-label">位置</td>
+                            <td>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td class="popup-label">端口狀態</td>
+                            <td><div id="port-status-${obj.eqp_id}">載入中...</div></td>
+                        </tr>
+                    </tbody>
+                </table>
             `;
 
             const actions = [];
@@ -155,23 +149,27 @@ export const mapObjectManager = (() => {
 
     // 設置貨架物件互動
     function setupRackInteraction(rackObject) {
-        console.log('Setting up Rack interaction for:', rackObject.id);
+        console.debug('Setting up Rack interaction for:', rackObject.id);
         rackObject.addClickHandler((obj, e) => {
-            console.log('Rack clicked:', obj.id);
+            console.debug('Rack clicked:', obj.id);
 
-            // 保留原有的切換功能
-            obj.setMini(!obj.isMiniMode);
+            // 移除切換功能，現在由切換按鈕處理
+            // obj.setMini(!obj.isMiniMode);
 
-            // 使用 mapRackManager 來顯示貨架詳細資訊
-            mapRackManager.showRackPopup(obj, obj.latlng);
+            // 只顯示貨架詳細資訊彈出視窗
+            if (window.mapRackManager && typeof window.mapRackManager.showRackPopup === 'function') {
+                window.mapRackManager.showRackPopup(obj, obj.latlng);
+            } else {
+                console.warn('mapRackManager.showRackPopup not available');
+            }
         });
     }
 
     // 設置節點物件互動
     function setupNodeInteraction(nodeObject) {
-        console.log('Setting up Node interaction for:', nodeObject.id);
+        console.debug('Setting up Node interaction for:', nodeObject.id);
         nodeObject.addClickHandler((obj, e) => {
-            console.log('Node clicked:', obj.id);
+            console.debug('Node clicked:', obj.id);
 
             // 從 mapStore 獲取完整的節點資料
             let fullNodeData = null;
@@ -191,64 +189,61 @@ export const mapObjectManager = (() => {
             const title = `節點: ${nodeData.name || obj.nodeId}`;
 
             let content = `
-                    <div class="field">
-                        <label class="label">節點 ID</label>
-                        <div class="control">
-                            <span class="tag is-info">${obj.nodeId}</span>
-                        </div>
-                    </div>
+                <table class="table is-narrow is-fullwidth popup-table">
+                    <tbody>
+                        <tr>
+                            <td class="popup-label">節點 ID</td>
+                            <td><span class="tag is-info">${obj.nodeId}</span></td>
+                        </tr>
             `;
 
             // 如果有 UUID，顯示 UUID
             if (nodeData.uuid) {
                 content += `
-                    <div class="field">
-                        <label class="label">UUID</label>
-                        <div class="control">
-                            <span class="tag is-light">${nodeData.uuid}</span>
-                        </div>
-                    </div>
+                        <tr>
+                            <td class="popup-label">UUID</td>
+                            <td><span class="tag is-light">${nodeData.uuid}</span></td>
+                        </tr>
                 `;
             }
 
             // 如果有名稱，顯示名稱
             if (nodeData.name) {
                 content += `
-                    <div class="field">
-                        <label class="label">名稱</label>
-                        <div class="control">
-                            <span>${nodeData.name}</span>
-                        </div>
-                    </div>
+                        <tr>
+                            <td class="popup-label">名稱</td>
+                            <td>${nodeData.name}</td>
+                        </tr>
                 `;
             }
 
             content += `
-                    <div class="field">
-                        <label class="label">類型</label>
-                        <div class="control">
-                            <span>${getNodeTypeName(nodeData.node_type_id)}</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">位置</label>
-                        <div class="control">
-                            <span>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</span>
-                        </div>
-                    </div>
+                <table class="table is-narrow is-fullwidth popup-table">
+                    <tbody>
+                        <tr>
+                            <td class="popup-label">類型</td>
+                            <td>${getNodeTypeName(nodeData.node_type_id)}</td>
+                        </tr>
+                        <tr>
+                            <td class="popup-label">位置</td>
+                            <td>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</td>
+                        </tr>
             `;
 
             // 如果有描述，顯示描述
             if (nodeData.description) {
                 content += `
-                    <div class="field">
-                        <label class="label">描述</label>
-                        <div class="control">
-                            <span>${nodeData.description}</span>
-                        </div>
-                    </div>
+                        <tr>
+                            <td class="popup-label">描述</td>
+                            <td>${nodeData.description}</td>
+                        </tr>
                 `;
             }
+
+            content += `
+                    </tbody>
+                </table>
+            `;
 
             const actions = [];
 
@@ -344,7 +339,7 @@ export const mapObjectManager = (() => {
     // AGV 相關操作
     function viewAgvTasks(agvId) {
         mapPermissions.executeWithPermission('view_tasks', () => {
-            console.log('Opening tasks page for AGV:', agvId);
+            console.debug('Opening tasks page for AGV:', agvId);
 
             // 記錄查看任務操作
             mapAuditLogger.logView(mapAuditLogger.RESOURCE_TYPES.TASK, null, {
@@ -381,14 +376,14 @@ export const mapObjectManager = (() => {
             });
 
             // 可以在彈出視窗顯示詳細資訊
-            console.log('View equipment details:', eqpId);
+            console.debug('View equipment details:', eqpId);
             // 或者打開設備管理頁面
             window.open(`/devices/${eqpId}`, '_blank');
         });
     }
 
     function controlEquipment(eqpId) {
-        console.log('Control equipment:', eqpId);
+        console.debug('Control equipment:', eqpId);
         alert('目前沒有控制設備功能')
         return;
         mapPermissions.executeWithPermission('control_equipment', () => {
@@ -399,7 +394,7 @@ export const mapObjectManager = (() => {
             });
 
             // 顯示設備控制面板
-            console.log('Control equipment:', eqpId);
+            console.debug('Control equipment:', eqpId);
             // 可以實作設備控制邏輯
         });
     }
@@ -443,6 +438,129 @@ export const mapObjectManager = (() => {
         });
     }
 
+    // 設置邊線物件互動
+    function setupEdgeInteraction(edgeObject) {
+        console.debug('Setting up Edge interaction for:', edgeObject.id);
+        // 邊線物件的互動設定會在 LineObject 中直接處理
+    }
+
+    // 處理邊線點擊事件
+    function handleEdgeClick(edgeObj, e) {
+        console.debug('Edge clicked:', edgeObj.id);
+
+        // 從 mapStore 獲取完整的邊線資料
+        let fullEdgeData = null;
+        let fromNodeData = null;
+        let toNodeData = null;
+
+        if (window.mapStore) {
+            const mapState = window.mapStore.getState();
+
+            // 先在 kukaEdges 中查找
+            fullEdgeData = mapState.kukaEdges?.find(e => e.name === edgeObj.id);
+
+            // 如果沒找到，再在 edges 中查找
+            if (!fullEdgeData) {
+                fullEdgeData = mapState.edges?.find(e => e.name === edgeObj.id);
+            }
+
+            // 如果找到邊線資料，獲取起點和終點節點資料
+            if (fullEdgeData) {
+                // 查找起點節點
+                fromNodeData = mapState.kukaNodes?.find(n => n.id === fullEdgeData.from_id) ||
+                    mapState.nodes?.find(n => n.id === fullEdgeData.from_id);
+
+                // 查找終點節點
+                toNodeData = mapState.kukaNodes?.find(n => n.id === fullEdgeData.to_id) ||
+                    mapState.nodes?.find(n => n.id === fullEdgeData.to_id);
+            }
+        }
+
+        const edgeData = fullEdgeData || edgeObj.getData();
+        const title = `邊線: ${edgeData.name || edgeObj.id}`;
+
+        let content = `
+            <table class="table is-narrow is-fullwidth popup-table">
+                <tbody>
+                    <tr>
+                        <td class="popup-label">邊線 ID</td>
+                        <td><span class="tag is-info">${edgeData.name || edgeObj.id}</span></td>
+                    </tr>
+        `;
+
+        // 如果有起點節點資料，顯示起點
+        if (fromNodeData) {
+            content += `
+                    <tr>
+                        <td class="popup-label">起點</td>
+                        <td>${fromNodeData.name || fromNodeData.id}</td>
+                    </tr>
+            `;
+        } else if (edgeData.from_id) {
+            content += `
+                    <tr>
+                        <td class="popup-label">起點 ID</td>
+                        <td>${edgeData.from_id}</td>
+                    </tr>
+            `;
+        }
+
+        // 如果有終點節點資料，顯示終點
+        if (toNodeData) {
+            content += `
+                    <tr>
+                        <td class="popup-label">終點</td>
+                        <td>${toNodeData.name || toNodeData.id}</td>
+                    </tr>
+            `;
+        } else if (edgeData.to_id) {
+            content += `
+                    <tr>
+                        <td class="popup-label">終點 ID</td>
+                        <td>${edgeData.to_id}</td>
+                    </tr>
+            `;
+        }
+
+        // 如果有權重，顯示權重
+        if (edgeData.weight !== undefined && edgeData.weight !== null) {
+            content += `
+                    <tr>
+                        <td class="popup-label">權重</td>
+                        <td>${edgeData.weight}</td>
+                    </tr>
+            `;
+        }
+
+        // 如果有描述，顯示描述
+        if (edgeData.description) {
+            content += `
+                    <tr>
+                        <td class="popup-label">描述</td>
+                        <td>${edgeData.description}</td>
+                    </tr>
+            `;
+        }
+
+        content += `
+                </tbody>
+            </table>
+        `;
+
+        const actions = [];
+
+        // 可以添加邊線相關的操作按鈕
+        // actions.push({
+        //     text: '編輯邊線',
+        //     icon: 'mdi-pencil',
+        //     class: 'is-primary',
+        //     onclick: `mapObjectManager.editEdge('${edgeObj.id}')`,
+        //     permission: 'edit_edge'
+        // });
+
+        mapInteraction.showPopup(edgeObj.latlng, title, content, actions);
+    }
+
     // 節點相關操作
     function createTaskAtNode(nodeId) {
         mapPermissions.executeWithPermission('create_task', () => {
@@ -464,6 +582,7 @@ export const mapObjectManager = (() => {
         setupEquipmentInteraction,
         setupRackInteraction,
         setupNodeInteraction,
+        setupEdgeInteraction,
 
         // AGV 相關操作
         viewAgvTasks,
@@ -479,7 +598,10 @@ export const mapObjectManager = (() => {
         addCarrierToRack,
 
         // 節點相關操作
-        createTaskAtNode
+        createTaskAtNode,
+
+        // 邊線相關操作
+        handleEdgeClick
     };
 
     return publicMethods;

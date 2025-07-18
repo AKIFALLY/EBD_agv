@@ -67,16 +67,25 @@ export const agvsPage = (() => {
         tbody.innerHTML = '';
 
         if (agvs.length === 0) {
-            // 顯示空狀態
+            // 顯示空狀態（優化版本 - 使用 DOM 創建而非 innerHTML）
             const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = `
-                <td colspan="10" class="has-text-centered py-6">
-                    <span class="icon is-large has-text-grey-light">
-                        <i class="mdi mdi-robot mdi-48px"></i>
-                    </span>
-                    <p class="title is-5 has-text-grey">目前沒有 AGV</p>
-                </td>
-            `;
+            const emptyCell = document.createElement('td');
+            emptyCell.setAttribute('colspan', '10');
+            emptyCell.className = 'has-text-centered py-6';
+
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'icon is-large has-text-grey-light';
+            const icon = document.createElement('i');
+            icon.className = 'mdi mdi-robot mdi-48px';
+            iconSpan.appendChild(icon);
+
+            const title = document.createElement('p');
+            title.className = 'title is-5 has-text-grey';
+            title.textContent = '目前沒有 AGV';
+
+            emptyCell.appendChild(iconSpan);
+            emptyCell.appendChild(title);
+            emptyRow.appendChild(emptyCell);
             tbody.appendChild(emptyRow);
         } else {
             // 按 ID 排序
@@ -101,7 +110,7 @@ export const agvsPage = (() => {
         // 獲取狀態樣式
         const statusInfo = getStatusInfo(agv.status_id);
         const enableInfo = getEnableInfo(agv.enable);
-        const batteryInfo = getBatteryInfo(agv.battery);
+        const batteryInfo = getBatteryInfo(agv.battery, agv.id);
 
         row.innerHTML = `
             <td>
@@ -115,21 +124,21 @@ export const agvsPage = (() => {
                 <span class="tag is-light">${agv.model}</span>
             </td>
             <td data-field="position">
-                <span class="has-text-grey-dark">
+                <span class="has-text-grey-dark" id="position-${agv.id}">
                     (${agv.x.toFixed(2)}, ${agv.y.toFixed(2)})
                 </span>
             </td>
             <td data-field="heading">
-                <span class="has-text-grey-dark">${agv.heading.toFixed(1)}°</span>
+                <span class="has-text-grey-dark" id="heading-${agv.id}">${agv.heading.toFixed(1)}°</span>
             </td>
             <td data-field="battery">
                 ${batteryInfo}
             </td>
             <td data-field="status">
-                <span class="tag ${statusInfo.color}">${statusInfo.name}</span>
+                <span class="tag ${statusInfo.color}" id="status-${agv.id}">${statusInfo.name}</span>
             </td>
             <td data-field="enable">
-                <span class="tag ${enableInfo.class}">
+                <span class="tag ${enableInfo.class}" id="enable-${agv.id}">
                     <span class="icon">
                         <i class="mdi ${enableInfo.icon}"></i>
                     </span>
@@ -137,7 +146,9 @@ export const agvsPage = (() => {
                 </span>
             </td>
             <td data-field="last_node">
-                ${agv.last_node_id ? `<span class="tag is-light">節點 ${agv.last_node_id}</span>` : '<span class="has-text-grey">-</span>'}
+                <span id="last-node-${agv.id}">
+                    ${agv.last_node_id ? `<span class="tag is-light" id="last-node-tag-${agv.id}">節點 ${agv.last_node_id}</span>` : '<span class="has-text-grey" id="last-node-tag-${agv.id}">-</span>'}
+                </span>
             </td>
             <td>
                 <div class="buttons are-small">
@@ -164,90 +175,129 @@ export const agvsPage = (() => {
         // 獲取狀態樣式
         const statusInfo = getStatusInfo(agv.status_id);
         const enableInfo = getEnableInfo(agv.enable);
-        const batteryInfo = getBatteryInfo(agv.battery);
 
-        // 更新位置（帶變化檢測）
-        const positionCell = row.querySelector('[data-field="position"] span');
-        if (positionCell) {
-            const oldPosition = positionCell.textContent;
+        // 更新位置（帶變化檢測和詳細 debug）
+        const positionElement = document.getElementById(`position-${agv.id}`);
+        if (positionElement) {
+            const oldPosition = positionElement.textContent.trim();
             const newPosition = `(${agv.x.toFixed(2)}, ${agv.y.toFixed(2)})`;
+
+            console.debug(`AGV ${agv.id} 位置檢測: 舊值="${oldPosition}", 新值="${newPosition}"`);
+
             if (oldPosition !== newPosition) {
-                positionCell.textContent = newPosition;
-                addUpdateAnimation(positionCell.parentElement);
+                positionElement.textContent = newPosition;
+                // 統一動畫目標：應用到 td 元素
+                const tdElement = positionElement.closest('td[data-field="position"]');
+                addUpdateAnimation(tdElement);
                 hasChanges = true;
-                console.debug(`AGV ${agv.name} 位置更新: ${oldPosition} → ${newPosition}`);
+                console.debug(`AGV ${agv.name} 位置更新: "${oldPosition}" → "${newPosition}"`);
+            } else {
+                console.debug(`AGV ${agv.id} 位置無變化，跳過動畫`);
             }
         }
 
-        // 更新方向（帶變化檢測）
-        const headingCell = row.querySelector('[data-field="heading"] span');
-        if (headingCell) {
-            const oldHeading = headingCell.textContent;
+        // 更新方向（帶變化檢測和詳細 debug）
+        const headingElement = document.getElementById(`heading-${agv.id}`);
+        if (headingElement) {
+            const oldHeading = headingElement.textContent.trim();
             const newHeading = `${agv.heading.toFixed(1)}°`;
+
+            console.debug(`AGV ${agv.id} 方向檢測: 舊值="${oldHeading}", 新值="${newHeading}"`);
+
             if (oldHeading !== newHeading) {
-                headingCell.textContent = newHeading;
-                addUpdateAnimation(headingCell.parentElement);
+                headingElement.textContent = newHeading;
+                // 統一動畫目標：應用到 td 元素
+                const tdElement = headingElement.closest('td[data-field="heading"]');
+                addUpdateAnimation(tdElement);
                 hasChanges = true;
-                console.debug(`AGV ${agv.name} 方向更新: ${oldHeading} → ${newHeading}`);
+                console.debug(`AGV ${agv.name} 方向更新: "${oldHeading}" → "${newHeading}"`);
+            } else {
+                console.debug(`AGV ${agv.id} 方向無變化，跳過動畫`);
             }
         }
 
-        // 更新電量（帶變化檢測）
-        const batteryCell = row.querySelector('[data-field="battery"]');
-        if (batteryCell) {
-            const oldBatteryText = extractBatteryValue(batteryCell);
-            const newBatteryText = agv.battery !== null && agv.battery !== undefined ?
-                agv.battery.toFixed(1) : null;
+        // 更新電量（優化版本 - 只更新數值，不重建結構）
+        const batteryProgressElement = document.getElementById(`battery-progress-${agv.id}`);
+        const batteryTextElement = document.getElementById(`battery-text-${agv.id}`);
 
-            if (oldBatteryText !== newBatteryText) {
-                batteryCell.innerHTML = batteryInfo;
-                addUpdateAnimation(batteryCell);
+        if (batteryProgressElement && batteryTextElement) {
+            const oldBatteryValue = parseFloat(batteryProgressElement.getAttribute('value'));
+            const newBatteryValue = agv.battery !== null && agv.battery !== undefined ? agv.battery : null;
+
+            if (newBatteryValue !== null && oldBatteryValue !== newBatteryValue) {
+                // 更新進度條數值和樣式
+                batteryProgressElement.setAttribute('value', newBatteryValue);
+
+                // 更新進度條顏色樣式
+                let progressClass = 'is-success';
+                if (newBatteryValue < 50) {
+                    progressClass = 'is-danger';
+                } else if (newBatteryValue < 80) {
+                    progressClass = 'is-warning';
+                }
+
+                // 移除舊的顏色類別並添加新的
+                batteryProgressElement.className = batteryProgressElement.className.replace(/is-(success|warning|danger)/g, '');
+                batteryProgressElement.classList.add(progressClass);
+
+                // 更新文字顯示
+                batteryTextElement.textContent = `${newBatteryValue.toFixed(1)}%`;
+
+                // 統一動畫目標：應用到 td 元素
+                const batteryTdElement = batteryProgressElement.closest('td[data-field="battery"]');
+                addUpdateAnimation(batteryTdElement);
                 hasChanges = true;
-                console.debug(`AGV ${agv.name} 電量更新: ${oldBatteryText}% → ${newBatteryText}%`);
+                console.debug(`AGV ${agv.name} 電量更新: ${oldBatteryValue}% → ${newBatteryValue}%`);
             }
         }
 
         // 更新狀態（帶變化檢測）
-        const statusCell = row.querySelector('[data-field="status"] span');
-        if (statusCell) {
-            const oldStatus = statusCell.textContent;
+        const statusElement = document.getElementById(`status-${agv.id}`);
+        if (statusElement) {
+            const oldStatus = statusElement.textContent;
             const newStatus = statusInfo.name;
             if (oldStatus !== newStatus) {
-                statusCell.className = `tag ${statusInfo.color}`;
-                statusCell.textContent = statusInfo.name;
-                addUpdateAnimation(statusCell.parentElement);
+                statusElement.className = `tag ${statusInfo.color}`;
+                statusElement.textContent = statusInfo.name;
+                // 統一動畫目標：應用到 td 元素
+                const statusTdElement = statusElement.closest('td[data-field="status"]');
+                addUpdateAnimation(statusTdElement);
                 hasChanges = true;
                 console.debug(`AGV ${agv.name} 狀態更新: ${oldStatus} → ${newStatus}`);
             }
         }
 
         // 更新啟用狀態（帶變化檢測）
-        const enableCell = row.querySelector('[data-field="enable"] span.tag');
-        const enableText = row.querySelector('[data-field="enable"] span.tag span:last-child');
-        if (enableCell && enableText) {
-            const oldEnable = enableText.textContent;
-            const newEnable = enableInfo.text;
-            if (oldEnable !== newEnable) {
-                const enableIcon = row.querySelector('[data-field="enable"] i');
-                enableCell.className = `tag ${enableInfo.class}`;
-                enableIcon.className = `mdi ${enableInfo.icon}`;
-                enableText.textContent = enableInfo.text;
-                addUpdateAnimation(enableCell.parentElement);
-                hasChanges = true;
-                console.debug(`AGV ${agv.name} 啟用狀態更新: ${oldEnable} → ${newEnable}`);
+        const enableElement = document.getElementById(`enable-${agv.id}`);
+        if (enableElement) {
+            const enableText = enableElement.querySelector('span:last-child');
+            if (enableText) {
+                const oldEnable = enableText.textContent;
+                const newEnable = enableInfo.text;
+                if (oldEnable !== newEnable) {
+                    const enableIcon = enableElement.querySelector('i');
+                    enableElement.className = `tag ${enableInfo.class}`;
+                    enableIcon.className = `mdi ${enableInfo.icon}`;
+                    enableText.textContent = enableInfo.text;
+                    // 統一動畫目標：應用到 td 元素
+                    const enableTdElement = enableElement.closest('td[data-field="enable"]');
+                    addUpdateAnimation(enableTdElement);
+                    hasChanges = true;
+                    console.debug(`AGV ${agv.name} 啟用狀態更新: ${oldEnable} → ${newEnable}`);
+                }
             }
         }
 
-        // 更新最後節點（帶變化檢測）
-        const lastNodeCell = row.querySelector('[data-field="last_node"]');
-        if (lastNodeCell) {
-            const oldNode = extractNodeValue(lastNodeCell);
+        // 更新最後節點（優化版本 - 只更新標籤內容，不重建結構）
+        const lastNodeTagElement = document.getElementById(`last-node-tag-${agv.id}`);
+        if (lastNodeTagElement) {
+            const oldNode = extractNodeValue(lastNodeTagElement.parentElement);
             const newNode = agv.last_node_id;
             if (oldNode !== newNode) {
-                lastNodeCell.innerHTML = agv.last_node_id ?
-                    `<span class="tag is-light">節點 ${agv.last_node_id}</span>` :
-                    '<span class="has-text-grey">-</span>';
-                addUpdateAnimation(lastNodeCell);
+                updateLastNodeTag(lastNodeTagElement, agv.last_node_id);
+                // 統一動畫目標：應用到 td 元素
+                const nodeTdElement = lastNodeTagElement.closest('td[data-field="last_node"]');
+                addUpdateAnimation(nodeTdElement);
                 hasChanges = true;
                 console.debug(`AGV ${agv.name} 節點更新: ${oldNode} → ${newNode}`);
             }
@@ -259,24 +309,23 @@ export const agvsPage = (() => {
         }
     }
 
-    // 添加更新動畫效果
+    // 添加更新動畫效果（帶防重疊機制）
     function addUpdateAnimation(element) {
         if (!element) return;
+
+        // 檢查是否已經在播放動畫
+        if (element.classList.contains('agv-field-updated')) {
+            console.debug('AGV 動畫進行中，跳過重複添加');
+            return;
+        }
 
         element.classList.add('agv-field-updated');
         setTimeout(() => {
             element.classList.remove('agv-field-updated');
-        }, 1000);
+        }, 1000); // 與 CSS 動畫持續時間一致
     }
 
-    // 從電量欄位提取數值
-    function extractBatteryValue(batteryCell) {
-        const progressElement = batteryCell.querySelector('progress');
-        if (progressElement) {
-            return progressElement.getAttribute('value');
-        }
-        return null;
-    }
+
 
     // 從節點欄位提取節點 ID
     function extractNodeValue(nodeCell) {
@@ -287,6 +336,21 @@ export const agvsPage = (() => {
             return match ? parseInt(match[1]) : null;
         }
         return null;
+    }
+
+    /**
+     * 優化的最後節點標籤更新（只更新內容和樣式，不重建結構）
+     * @param {Element} tagElement - 節點標籤元素
+     * @param {number} nodeId - 節點 ID
+     */
+    function updateLastNodeTag(tagElement, nodeId) {
+        if (nodeId) {
+            tagElement.className = 'tag is-light';
+            tagElement.textContent = `節點 ${nodeId}`;
+        } else {
+            tagElement.className = 'has-text-grey';
+            tagElement.textContent = '-';
+        }
     }
 
 
@@ -300,8 +364,8 @@ export const agvsPage = (() => {
         }
     }
 
-    // 獲取電量資訊
-    function getBatteryInfo(battery) {
+    // 獲取電量資訊（優化版本 - 添加唯一 ID）
+    function getBatteryInfo(battery, agvId) {
         if (battery === null || battery === undefined) {
             return '<span class="has-text-grey">未知</span>';
         }
@@ -316,24 +380,32 @@ export const agvsPage = (() => {
         return `
             <div class="field">
                 <div class="control">
-                    <progress class="progress is-small ${progressClass}" 
+                    <progress class="progress is-small ${progressClass}"
+                              id="battery-progress-${agvId}"
                               value="${battery}" max="100">${battery}%</progress>
                 </div>
-                <p class="is-size-7 has-text-centered">${battery.toFixed(1)}%</p>
+                <p class="is-size-7 has-text-centered" id="battery-text-${agvId}">${battery.toFixed(1)}%</p>
             </div>
         `;
     }
 
-    // 更新總數顯示
+    // 更新總數顯示（優化版本 - 只更新文字內容）
     function updateTotalCount(count) {
         const countElement = document.querySelector('.subtitle .level-item p');
         if (countElement) {
-            countElement.innerHTML = `
-                <span class="icon">
-                    <i class="mdi mdi-information"></i>
-                </span>
-                總計 ${count} 個 AGV
-            `;
+            // 檢查是否需要更新
+            const currentText = countElement.textContent.trim();
+            const newText = `總計 ${count} 個 AGV`;
+
+            if (!currentText.includes(newText)) {
+                // 重新構建內容，保持圖標結構
+                countElement.innerHTML = `
+                    <span class="icon">
+                        <i class="mdi mdi-information"></i>
+                    </span>
+                    ${newText}
+                `;
+            }
         }
     }
 

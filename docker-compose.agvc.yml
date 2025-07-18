@@ -5,7 +5,8 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ~/agvc/nginx:/etc/nginx/conf.d:ro
+  #    - ~/agvc/nginx:/etc/nginx/conf.d:ro
+      - ~/RosAGV/nginx:/etc/nginx/conf.d:ro
     restart: always
     networks:
       bridge_network:
@@ -19,15 +20,24 @@ services:
     networks:
       bridge_network:
         ipv4_address: 192.168.100.100 # 固定 IP
+        mac_address: "02:42:00:00:00:01" # 固定 MAC 地址（Docker 範圍內唯一 docker自動產生會是02:42開頭）
     environment:
-      - DISPLAY=$DISPLAY
-      - ZENOH_ROUTER_CONFIG_URI=/app/routerconfig.json5 # 這個檔案內要設定zenoh router的連線目標 "tcp/192.168.100.100:7447"
-      - RMW_IMPLEMENTATION=rmw_zenoh_cpp # 設定 ros rmw 使用 zenoh
+      CONTAINER_TYPE: "agvc"
+      DISPLAY: $DISPLAY
+      ZENOH_ROUTER_CONFIG_URI: "/app/routerconfig.json5" # 這個檔案內要設定zenoh router的連線目標 "tcp/192.168.100.100:7447"
+      RMW_IMPLEMENTATION: "rmw_zenoh_cpp" # 設定 ros rmw 使用 zenoh
     volumes:
       - ~/RosAGV/app:/app:rw # RosAGV 將宿主機的 C:/RosAGV/app 掛載到容器的 /app 目錄
       #- ~/agvc:/app/agvc:rw # agvc 將宿主機的 C:/agvc 掛載到容器的 /agvc 目錄
       #- ~/agvc/opui/dist:/app/ui/opui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
       #- ~/agvc/agvcui/dist:/app/ui/agvcui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
+      # 掛載重要配置檔案到容器內的 /app/host 目錄 (唯讀模式)
+      - ~/RosAGV/docker-compose.agvc.yml:/app/host/docker-compose.agvc.yml:ro
+      - ~/RosAGV/docker-compose.yml:/app/host/docker-compose.yml:ro
+      - ~/RosAGV/Dockerfile:/app/host/Dockerfile:ro
+      - ~/RosAGV/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
+      - ~/RosAGV/README.md:/app/host/README.md:rw
+      - ~/RosAGV/.augment-guidelines:/app/host/.augment-guidelines:rw
       - /tmp/.X11-unix:/tmp/.X11-unix:rw # (ubuntu 需要)將宿主機的 /tmp/.X11-unix 掛載到容器的 /tmp/.X11-unix 目錄
     ports:
       - 7447:7447 # 7447 zenoh router

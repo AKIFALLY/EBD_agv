@@ -9,14 +9,13 @@ class CleanerVisionPositionState(BaseVisionPositionState):
 
     def enter(self):
         self.node.get_logger().info("Robot Take Cleaner 目前狀態: CleanerVisionPosition")
-        self._reset_common_state()
+        self._reset_state()
 
     def leave(self):
         self.node.get_logger().info("Robot Take Cleaner 離開 CleanerVisionPosition 狀態")
-        self._reset_common_state()
+        self._reset_state()
 
     def handle(self, context: RobotContext):
-        context.rack_photo_up_or_down_buffer = None
         self.node.get_logger().info("Robot Take Cleaner 清洗台視覺定位中 狀態")
 
         from loader_agv.robot_states.take_cleaner.cleaner_check_have_state import CleanerCheckHaveState

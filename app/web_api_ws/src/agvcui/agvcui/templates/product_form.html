@@ -5,15 +5,38 @@
 {% block content %}
 <section class="section">
     <div class="container">
-        <div class="columns is-centered">
-            <div class="column is-half">
-                <div class="box">
-                    <h1 class="title is-4">{{ form_title }}</h1>
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-package-variant"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/products">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
 
-                    <form method="post" action="{{ form_action }}">
+        <!-- 表單包裝在 box 中 -->
+        <div class="box">
+            <form method="post" action="{{ form_action }}">
+                <div class="columns">
+                    <div class="column is-half">
                         <!-- 產品名稱 -->
                         <div class="field">
-                            <label class="label">產品名稱</label>
+                            <label class="label">產品名稱 *</label>
                             <div class="control">
                                 <input class="input" type="text" name="name"
                                     value="{{ product.name if product else '' }}" placeholder="請輸入產品名稱" required>
@@ -73,24 +96,23 @@
                                 </a>
                             </div>
                         </div>
-                    </form>
-                </div>
-
-                <!-- 產品信息顯示（編輯時） -->
-                {% if product %}
-                <div class="box">
-                    <h2 class="title is-5">產品信息</h2>
-                    <div class="content">
-                        <p><strong>產品 ID:</strong> {{ product.id }}</p>
-                        <p><strong>創建時間:</strong> {{ product.created_at.strftime('%Y-%m-%d %H:%M:%S') if
-                            product.created_at else '-' }}</p>
-                        <p><strong>更新時間:</strong> {{ product.updated_at.strftime('%Y-%m-%d %H:%M:%S') if
-                            product.updated_at else '-' }}</p>
                     </div>
-                </div>
-                {% endif %}
+            </form>
+        </div>
+
+        <!-- 產品信息顯示（編輯時） -->
+        {% if product %}
+        <div class="box">
+            <h2 class="title is-5">產品信息</h2>
+            <div class="content">
+                <p><strong>產品 ID:</strong> {{ product.id }}</p>
+                <p><strong>創建時間:</strong> {{ product.created_at.strftime('%Y-%m-%d %H:%M:%S') if
+                    product.created_at else '-' }}</p>
+                <p><strong>更新時間:</strong> {{ product.updated_at.strftime('%Y-%m-%d %H:%M:%S') if
+                    product.updated_at else '-' }}</p>
             </div>
         </div>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

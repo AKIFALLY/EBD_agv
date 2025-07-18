@@ -4,13 +4,39 @@
 {% block content %}
 <section class="section">
     <div class="container">
-        <div class="columns is-centered">
-            <div class="column is-half">
-                <div class="box">
-                    <h1 class="title">編輯用戶</h1>
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-account-edit"></i>
+                        </span>
+                        編輯用戶
+                    </h1>
+                </div>
+                <div class="level-item">
                     <p class="subtitle">用戶 ID: {{ edit_user.id }}</p>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/users">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
 
-                    <form method="post" action="/users/{{ edit_user.id }}/edit">
+        <!-- 表單包裝在 box 中 -->
+        <div class="box">
+
+            <form method="post" action="/users/{{ edit_user.id }}/edit">
+                <div class="columns">
+                    <div class="column is-half">
                         <div class="field">
                             <label class="label">用戶名 *</label>
                             <div class="control has-icons-left">
@@ -100,9 +126,9 @@
                                 </a>
                             </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 </section>

@@ -23,6 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'test_agv_core_node = unloader_agv.test_agv_core_node:main',  # Test ROS node's entry point
         ],
     },
 )

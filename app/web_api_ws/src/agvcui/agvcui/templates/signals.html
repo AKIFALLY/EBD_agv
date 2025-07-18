@@ -80,7 +80,7 @@
                 </thead>
                 <tbody>
                     {% for signal in signals %}
-                    <tr data-signal-id="{{ signal.id }}">
+                    <tr data-signal-id="{{ signal.id }}" id="signal-row-{{ signal.id }}">
                         <td><strong>{{ signal.id }}</strong></td>
                         <td>
                             <div class="has-text-weight-medium">{{ signal.name }}</div>
@@ -104,12 +104,12 @@
                             {% endif %}
                         </td>
                         <td><span class="has-text-grey">{{ signal.description or '-' }}</span></td>
-                        <td class="signal-value">
+                        <td class="signal-value" id="signal-value-{{ signal.id }}">
                             {% if signal.value is not none %}
                             {% if signal.type_of_value and signal.type_of_value.lower() in ['bool', 'boolean'] %}
                             {% if signal.value == 1 or signal.value == '1' or signal.value == true or signal.value ==
                             'true' %}
-                            <span class="tag is-success">
+                            <span class="tag is-success" id="signal-tag-{{ signal.id }}">
                                 <span class="icon">
                                     <i class="mdi mdi-check-circle"></i>
                                 </span>
@@ -117,38 +117,38 @@
                             </span>
                             {% elif signal.value == 0 or signal.value == '0' or signal.value == false or signal.value ==
                             'false' %}
-                            <span class="tag is-danger">
+                            <span class="tag is-danger" id="signal-tag-{{ signal.id }}">
                                 <span class="icon">
                                     <i class="mdi mdi-close-circle"></i>
                                 </span>
                                 <span>FALSE (0)</span>
                             </span>
                             {% else %}
-                            <span class="tag is-warning">{{ signal.value }}</span>
+                            <span class="tag is-warning" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% endif %}
                             {% elif signal.type_of_value and signal.type_of_value.lower() in ['int', 'integer',
                             'number'] %}
                             {% if signal.value|int > 0 %}
-                            <span class="tag is-info">{{ signal.value }}</span>
+                            <span class="tag is-info" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% elif signal.value|int == 0 %}
-                            <span class="tag is-light">{{ signal.value }}</span>
+                            <span class="tag is-light" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% else %}
-                            <span class="tag is-warning">{{ signal.value }}</span>
+                            <span class="tag is-warning" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% endif %}
                             {% elif signal.type_of_value and signal.type_of_value.lower() in ['float', 'double',
                             'decimal'] %}
                             {% if signal.value|float > 0 %}
-                            <span class="tag is-info">{{ signal.value }}</span>
+                            <span class="tag is-info" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% elif signal.value|float == 0 %}
-                            <span class="tag is-light">{{ signal.value }}</span>
+                            <span class="tag is-light" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% else %}
-                            <span class="tag is-warning">{{ signal.value }}</span>
+                            <span class="tag is-warning" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% endif %}
                             {% else %}
-                            <span class="tag is-success">{{ signal.value }}</span>
+                            <span class="tag is-success" id="signal-tag-{{ signal.id }}">{{ signal.value }}</span>
                             {% endif %}
                             {% else %}
-                            <span class="tag is-light">無值</span>
+                            <span class="tag is-light" id="signal-tag-{{ signal.id }}">無值</span>
                             {% endif %}
                         </td>
                         <td>
@@ -258,8 +258,5 @@
         {% endif %}
     </div>
 </section>
-
-<!-- JavaScript 功能已移至 /static/js/signalsPage.js -->
-
 
 {% endblock %}

@@ -20,3 +20,19 @@ Thumbs.db
 .vscode/*
 
 *.log
+check_network.log
+
+# 忽略 Docker 掛載目錄
+/app/host/
+
+# 忽略容器啟動時自動生成的身份識別檔案
+# AGV 環境身份檔案
+app/.agv_environment
+app/.agv_identity
+
+# AGVC 環境身份檔案
+app/.agvc_environment
+app/.agvc_identity
+
+# 統一設備身份檔案
+app/.device_identity

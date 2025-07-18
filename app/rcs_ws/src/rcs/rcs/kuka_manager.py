@@ -110,11 +110,14 @@ class KukaManager:
         with self.db_pool.get_session() as session:
             from db_proxy.models import AGV, Task
             from sqlmodel import select
+
+            # 1. 檢查資料庫中的 AGV 狀態，確保只選擇真正閒置的 AGV
             enable_kuka400i_agvs = session.exec(
                 select(AGV).where(
                     AGV.enable == 1,
                     AGV.model == "KUKA400i",
-                    AGV.id.in_(idle_kuka400i_agv_ids)
+                    AGV.id.in_(idle_kuka400i_agv_ids),
+                    AGV.status_id == 3  # 確保 AGV 在資料庫中也是閒置狀態
                 )
             ).all()
             available_kuka400i_agv_ids = [
@@ -128,7 +131,7 @@ class KukaManager:
                 select(Task).where(
                     Task.status_id == 1,  # 1 待執行
                     Task.mission_code == None,  # 尚未指定任務代碼
-                    Task.parameters["Model"].as_string() == "KUKA400i"
+                    Task.parameters["model"].as_string() == "KUKA400i"
                 ).order_by(Task.priority.asc())
             ).all()
 

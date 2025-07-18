@@ -1,12 +1,43 @@
 #!/bin/bash
 # /app/startup.bash
 
+# 創建 AGVC 環境標記檔案
+echo "AGVC_ENVIRONMENT=true" > /app/.agvc_environment
+echo "CONTAINER_TYPE=agvc_server" >> /app/.agvc_environment
+echo "STARTUP_TIME=$(date)" >> /app/.agvc_environment
+
+# 🖥️ 統一設備身份識別
+echo "🔍 開始統一設備身份識別..."
+export CONTAINER_TYPE="agvc"
+
+if [ -f "/app/scripts/config_driven_device_detector.bash" ]; then
+    # 執行配置驅動統一身份識別腳本
+    source /app/scripts/config_driven_device_detector.bash
+    if [ $? -eq 0 ]; then
+        echo "✅ AGVC 設備身份識別成功: $DEVICE_ID ($AGVC_TYPE)"
+        echo "📁 配置檔案: $DEVICE_CONFIG_FILE"
+        echo "🎯 角色: $AGVC_ROLE"
+        echo "🔧 工作空間: $AGVC_WORKSPACES"
+    else
+        echo "⚠️ AGVC 設備身份識別失敗，使用預設配置"
+    fi
+else
+    echo "❌ 統一設備識別腳本不存在，使用預設配置"
+    export DEVICE_ID="agvc01"
+    export AGVC_ID="agvc01"
+    export AGVC_TYPE="primary_controller"
+    export AGVC_ROLE="primary"
+    export ROS_NAMESPACE="/agvc01"
+    export DEVICE_CONFIG_FILE="/app/config/agvc/agvc01_config.yaml"
+    export AGVC_WORKSPACES="db_proxy_ws,web_api_ws,ecs_ws,rcs_ws,wcs_ws"
+fi
+
 # 檢查是否安裝 Node.js (command -v 查詢是否存在指定的命令)
 command -v node &> /dev/null
 NODE_INSTALLED=$?
 
 # 確認變數是否設定成功
-echo "Startups script is running..."
+echo "AGVC Startup script is running..."
 echo "ROS_DISTRO=$ROS_DISTRO"
 echo "ZENOH_ROUTER_CONFIG_URI=$ZENOH_ROUTER_CONFIG_URI"
 echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"

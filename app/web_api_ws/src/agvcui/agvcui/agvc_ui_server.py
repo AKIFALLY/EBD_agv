@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from agvcui.agvc_ui_socket import AgvcUiSocket
-from agvcui.routers import map, tasks, devices, signals
+from agvcui.routers import map, tasks, works, devices, signals
 from agvcui.routers import rosout_logs, runtime_logs, audit_logs
 from agvcui.routers import clients, racks, products, carriers, agvs, auth, users
 from agvcui.middleware import AuthMiddleware
@@ -81,10 +81,47 @@ class AgvcUiServer:
         @self.app.get("/", response_class=HTMLResponse)
         async def home(request: Request):
             current_user = get_current_user_from_request(request)
+
+            # 查詢啟用的房間和製程資訊
+            from agvcui.database import connection_pool
+            from db_proxy.models import Room, ProcessSettings
+            from sqlmodel import select
+
+            enabled_rooms = []
+            try:
+                with connection_pool.get_session() as session:
+                    # 查詢啟用的房間並關聯製程設定
+                    stmt = select(Room, ProcessSettings).join(
+                        ProcessSettings, Room.process_settings_id == ProcessSettings.id
+                    ).where(Room.enable == 1).order_by(Room.id)
+
+                    results = session.exec(stmt).all()
+
+                    for room, process_settings in results:
+                        enabled_rooms.append({
+                            'id': room.id,
+                            'name': room.name,
+                            'description': room.description,
+                            'soaking_times': process_settings.soaking_times,
+                            'process_description': process_settings.description
+                        })
+
+            except Exception as e:
+                print(f"❌ 查詢房間資料失敗: {e}")
+                # 如果查詢失敗，提供預設的房間2資料
+                enabled_rooms = [{
+                    'id': 2,
+                    'name': '房間2',
+                    'description': '預設房間',
+                    'soaking_times': 1,
+                    'process_description': '標準製程'
+                }]
+
             return self.templates.TemplateResponse("home.html", {
                 "request": request,
                 "active_tab": "home",
-                "current_user": current_user
+                "current_user": current_user,
+                "enabled_rooms": enabled_rooms
             })
 
         @self.app.get("/setting", response_class=HTMLResponse)
@@ -98,6 +135,7 @@ class AgvcUiServer:
 
         self.app.include_router(map.get_router(self.templates))
         self.app.include_router(tasks.get_router(self.templates))
+        self.app.include_router(works.get_router(self.templates))
         self.app.include_router(rosout_logs.get_router(self.templates))
         self.app.include_router(runtime_logs.get_router(self.templates))
         self.app.include_router(audit_logs.get_router(self.templates))

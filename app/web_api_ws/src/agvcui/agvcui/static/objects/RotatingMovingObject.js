@@ -23,6 +23,10 @@ export class RotatingMovingObject extends BaseObject {
         this.lerpSpeed = 8.0; // 插值速度
         this.minDistance = 0.000001; // 最小距離閾值
 
+        // 角度精度控制優化
+        this.angleThreshold = 0.1; // 角度精度閾值（度）- 從1度降低到0.1度
+        this.minAngleThreshold = 0.01; // 最小角度閾值，避免無限循環
+
         // 目標點平滑功能
         this.useTargetSmoothing = true; // 是否啟用目標點平滑
         this.targetSmoothSpeed = 6.0; // 目標點平滑速度
@@ -80,6 +84,27 @@ export class RotatingMovingObject extends BaseObject {
         return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI) + 90;
     }
 
+    // 優化的角度差異計算，處理角度環繞問題
+    _calculateAngleDifference(targetAngle, currentAngle) {
+        let diff = targetAngle - currentAngle;
+
+        // 處理角度環繞，選擇最短路徑
+        if (diff > 180) {
+            diff -= 360;
+        } else if (diff < -180) {
+            diff += 360;
+        }
+
+        return diff;
+    }
+
+    // 標準化角度到 0-360 範圍
+    _normalizeAngle(angle) {
+        while (angle < 0) angle += 360;
+        while (angle >= 360) angle -= 360;
+        return angle;
+    }
+
 
 
 
@@ -128,13 +153,11 @@ export class RotatingMovingObject extends BaseObject {
         const lngDiff = targetLng - currentSmoothLng;
         const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
 
-        // 計算目標角度差異
-        let angleDiff = this.targetAngle - this.smoothTargetAngle;
-        if (angleDiff > 180) angleDiff -= 360;
-        if (angleDiff < -180) angleDiff += 360;
+        // 計算目標角度差異 - 使用優化的角度差異計算
+        const angleDiff = this._calculateAngleDifference(this.targetAngle, this.smoothTargetAngle);
 
         // 如果差異很小，直接設定到目標
-        if (distance <= this.minDistance && Math.abs(angleDiff) <= 1) {
+        if (distance <= this.minDistance && Math.abs(angleDiff) <= this.minAngleThreshold) {
             this.smoothTargetLatLng = L.latLng(targetLat, targetLng);
             this.smoothTargetAngle = this.targetAngle;
         } else {
@@ -148,13 +171,10 @@ export class RotatingMovingObject extends BaseObject {
                 this.smoothTargetLatLng = L.latLng(newLat, newLng);
             }
 
-            // 平滑目標角度
-            if (Math.abs(angleDiff) > 1) {
+            // 平滑目標角度 - 使用更精確的閾值
+            if (Math.abs(angleDiff) > this.minAngleThreshold) {
                 this.smoothTargetAngle += angleDiff * smoothFactor;
-
-                // 確保角度在 0-360 範圍內
-                if (this.smoothTargetAngle < 0) this.smoothTargetAngle += 360;
-                if (this.smoothTargetAngle >= 360) this.smoothTargetAngle -= 360;
+                this.smoothTargetAngle = this._normalizeAngle(this.smoothTargetAngle);
             }
         }
     }
@@ -171,13 +191,11 @@ export class RotatingMovingObject extends BaseObject {
         const lngDiff = targetLng - currentLng;
         const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
 
-        // 計算角度差異
-        let angleDiff = this.smoothTargetAngle - this.angle;
-        if (angleDiff > 180) angleDiff -= 360;
-        if (angleDiff < -180) angleDiff += 360;
+        // 計算角度差異 - 使用優化的角度差異計算
+        const angleDiff = this._calculateAngleDifference(this.smoothTargetAngle, this.angle);
 
-        // 如果距離和角度差異都很小，直接設定到目標
-        if (distance <= this.minDistance && Math.abs(angleDiff) <= 1) {
+        // 優化的角度和位置更新邏輯
+        if (distance <= this.minDistance && Math.abs(angleDiff) <= this.minAngleThreshold) {
             this.latlng = L.latLng(targetLat, targetLng);
             this.angle = this.smoothTargetAngle;
         } else {
@@ -191,13 +209,18 @@ export class RotatingMovingObject extends BaseObject {
                 this.latlng = L.latLng(newLat, newLng);
             }
 
-            // 角度插值
-            if (Math.abs(angleDiff) > 1) {
-                this.angle += angleDiff * lerpFactor;
+            // 優化的角度插值 - 使用動態速度調整
+            if (Math.abs(angleDiff) > this.minAngleThreshold) {
+                // 根據角度差異調整插值速度，角度差異越小速度越慢，實現平滑過渡
+                let dynamicLerpFactor = lerpFactor;
+                if (Math.abs(angleDiff) < this.angleThreshold) {
+                    // 當接近目標角度時，降低插值速度以實現更平滑的過渡
+                    const proximityFactor = Math.abs(angleDiff) / this.angleThreshold;
+                    dynamicLerpFactor = lerpFactor * Math.max(0.1, proximityFactor);
+                }
 
-                // 確保角度在 0-360 範圍內
-                if (this.angle < 0) this.angle += 360;
-                if (this.angle >= 360) this.angle -= 360;
+                this.angle += angleDiff * dynamicLerpFactor;
+                this.angle = this._normalizeAngle(this.angle);
             }
         }
     }

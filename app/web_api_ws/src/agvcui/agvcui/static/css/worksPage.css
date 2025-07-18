@@ -1,0 +1,25 @@
+/* 工作類型管理頁面 - 使用 Bulma 預設樣式，包含 table 和 responsive 設計 */
+
+/* 僅保留必要的 JSON 參數顯示樣式 */
+.work-parameters-dropdown .dropdown-content {
+    min-width: 300px;
+}
+
+.work-parameters-dropdown pre {
+    max-height: 180px;
+    overflow: auto;
+    font-size: 0.75rem;
+}
+
+/* Works 頁面動畫效果已移至 updateAnimations.css 統一管理 */
+
+/* 響應式調整（動畫相關已移至 updateAnimations.css） */
+@media screen and (max-width: 768px) {
+    .work-parameters-dropdown .dropdown-content {
+        min-width: 250px;
+    }
+
+    .work-parameters-dropdown pre {
+        font-size: 0.7rem;
+    }
+}

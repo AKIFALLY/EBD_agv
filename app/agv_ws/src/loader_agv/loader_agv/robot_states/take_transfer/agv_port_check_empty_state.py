@@ -8,15 +8,17 @@ from std_msgs.msg import Bool
 
 class AgvPortCheckEmptyState(State):
 
-    PORT_ADDRESS = 2100
-    EQP_ID = 210
-
     SELECT_PORT01, SELECT_PORT02, SELECT_PORT03, SELECT_PORT04, SELECT_NONE = 1, 2, 3, 4, 0
 
     def __init__(self, node: Node):
         super().__init__(node)
+        self.node = node
         self.eqp_signal_query_client = EqpSignalQueryClient(node)
         self.carrier_query_client = CarrierQueryClient(node)
+
+        # 動態計算 port_address 和 eqp_id
+        self.port_address = self.node.room_id * 1000 + 100
+        self.eqp_id = self.node.room_id * 100 + 10
 
         self.select_agv_port_table = {
             (0, 0, 0, 0): self.SELECT_PORT01,
@@ -60,7 +62,7 @@ class AgvPortCheckEmptyState(State):
     def eqp_signal_query_callback(self, response):
         for i in range(4):
             self.port_carriers[i] = EqpSignalQueryClient.eqp_signal_port(
-                response, self.PORT_ADDRESS + i + 1)
+                response, self.port_address + i + 1)
             self.node.get_logger().info(
                 f"AGV Port {i+1:02d} 有無貨: {self.port_carriers[i]}")
 
@@ -72,7 +74,8 @@ class AgvPortCheckEmptyState(State):
     def carrier_callback(self, response):
         self.carrier_query_success = response.success
         self.carrier_id = CarrierQueryClient.carrier_port_id_carrier_id(
-            response, self.PORT_ADDRESS + getattr(self, 'select_agv_port_number', 0))
+            response, self.port_address + getattr(self, 'select_agv_port_number', 0))
+        self.node.get_logger().info(f"Carrier 查詢成功，資料: {self.carrier_id}")
 
     def _update_context_states(self, context: RobotContext):
         """更新context中的狀態"""
@@ -101,13 +104,11 @@ class AgvPortCheckEmptyState(State):
             self.node.get_logger().info(
                 f"Robot Take Transfer AgvPortCheckEmpty 狀態: {desc}")
             self.node.get_logger().info(f"執行AGV端口{port}")
-            context.agv_port_number = number
             context.get_loader_agv_port_front = number
             self.check_ok = True
         else:
             self.node.get_logger().info("Robot Take Transfer AgvPortCheckEmpty 狀態: AGV端口已滿")
             self.node.get_logger().info("無法執行AGV端口操作，請檢查AGV端口狀態。")
-            context.agv_port_number = None
             context.get_loader_agv_port_front = None
             self._reset_state()
 
@@ -117,7 +118,7 @@ class AgvPortCheckEmptyState(State):
         # 查詢EQP信號
         if not self.search_eqp_signal_ok and not self.sent:
             self.eqp_signal_query_client.search_eqp_signal_eqp_id(
-                self.EQP_ID, self.eqp_signal_query_callback)
+                self.eqp_id, self.eqp_signal_query_callback)
             self.sent = True
 
         print("🔶=========================================================================🔶")
@@ -126,9 +127,12 @@ class AgvPortCheckEmptyState(State):
 
         # 查詢Carrier
         if self.check_ok and not self.carrier_query_sended:
-            self.select_agv_port_number = context.agv_port_number
+            self.select_agv_port_number = context.get_loader_agv_port_front
+            self.node.get_logger().info(
+                f"🔍 查詢 AGV 端口 {self.port_address + self.select_agv_port_number} 的 Carrier")
+            port_id_target = self.port_address + self.select_agv_port_number
             self.carrier_query_client.search_carrier_port_id(
-                port_id=self.PORT_ADDRESS + self.select_agv_port_number, callback=self.carrier_callback)
+                port_id_min=port_id_target, port_id_max=port_id_target, callback=self.carrier_callback)
             self.carrier_query_sended = True
 
         # 處理Carrier查詢結果
@@ -136,11 +140,10 @@ class AgvPortCheckEmptyState(State):
             if self.carrier_id is not None:
                 self.node.get_logger().info(
                     f"Carrier 查詢成功，資料: {self.carrier_id}")
-                self.node.get_logger().info(
-                    f"AGV端口{self.PORT_ADDRESS + self.select_agv_port_number}已經有貨，無法執行AGV端口操作。")
+                self.node.get_logger().error(
+                    f"AGV端口{self.port_address + self.select_agv_port_number}已經有貨，無法執行AGV端口操作。")
                 self._reset_state()
             else:
-                context.get_boxin_port = context.agv_port_number
                 # AGV端口檢查完成，可以進入下一個狀態
                 self.node.get_logger().info("AGV端口檢查完成")
                 from loader_agv.robot_states.take_transfer.take_transfer_state import TakeTransferState

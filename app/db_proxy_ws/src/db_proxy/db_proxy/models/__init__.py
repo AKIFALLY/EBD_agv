@@ -24,6 +24,7 @@ from db_proxy.models.rack import Rack
 from db_proxy.models.carrier import Carrier
 from db_proxy.models.carrier_status import CarrierStatus
 from db_proxy.models.agvc_kuka import KukaNode, KukaEdge
+from db_proxy.models.license import License
 
 __all__ = [
     # Base models
@@ -52,5 +53,8 @@ __all__ = [
     "Task", "TaskStatus", "Work",
 
     # WCS models
-    "Room", "RackStatus", "Rack", "Carrier"
+    "Room", "RackStatus", "Rack", "Carrier",
+
+    # License models
+    "License"
 ]

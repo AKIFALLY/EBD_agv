@@ -1,0 +1,404 @@
+EXIT 流程 (出口流程) - Cargo Mover AGV
+===========================================
+
+## 📋 流程概述
+EXIT 流程負責將傳送箱中的貨物取出並放入 Rack 系統，是 AGV 的出口作業流程。
+此流程實現雙重循環邏輯：內層處理傳送箱貨物，外層處理 Rack Port 選擇。
+
+## 🔄 完整流程圖 (重大流程重構)
+
+### 流程觸發
+0. IdleState (mission="exit") → TransferVisionPositionState
+   ↓
+
+### 主流程
+1. TransferVisionPositionState (傳送箱視覺定位)
+   ↓
+2. TransferCheckHaveState (檢查傳送箱有貨 + 設定 take_transfer_continue)
+   ↓
+3. SelectRackPortState (選擇 Rack Port)
+   ↓
+4. RackVisionPositionState (Rack 視覺定位)
+   ↓
+5. TakeTransferState (取傳送箱)
+   ↓
+6. PutRackPortState (放到 Rack + 更新資料庫)
+   ↓
+7. 根據 take_transfer_continue 判斷：
+    - True  → 回到步驟 2 (TransferCheckHaveState) 繼續處理傳送箱
+    - False → 進入 CheckRackSideState 處理下一個 rack port
+
+### 外層循環 (CheckRackSideState 分支)
+8. CheckRackSideState (檢查 Rack 方向 + 選擇下一個 Port)
+   ↓
+9. 根據 Rack 方向判斷：
+    - 方向正確 → 回到步驟 2 (TransferCheckHaveState) ⭐ **新的循環路徑**
+    - 需要旋轉 → WaitRotationState → RackVisionPositionState → 回到步驟 5
+    ↓
+10. 循環或 CompleteState (完成)
+
+## ⚠️ 重大流程變更說明
+- **CheckRackSideState 現在直接回到 TransferCheckHaveState**
+- **創建了新的外層循環：CheckRackSideState → TransferCheckHaveState**
+- **完整恢復了 Rack 方向檢查和旋轉等待功能**
+
+## 📝 各狀態詳細說明
+
+### 1. TransferVisionPositionState
+- **功能**: 傳送箱視覺定位
+- **實現**: 繼承自 BaseVisionPositionState，使用 PHOTO_BOX_OUT 進行視覺定位
+- **目標**: 確保機器人能正確識別傳送箱位置
+- **特殊處理**: 重置 context.rack_photo_up_or_down_buffer = None
+- **下一步**: TransferCheckHaveState
+
+### 2. TransferCheckHaveState
+- **功能**: 檢查傳送箱有貨狀態並設定繼續處理標誌
+- **主要邏輯**:
+  - 查詢 EQP 信號 (eqp_id: room_id*100+2, port_address: room_id*1000+20)
+  - 檢查 Port 1-4 的有貨狀態 (port_carriers 陣列)
+  - 選擇最早的 Carrier (按 updated_at 排序)
+  - 設定 take_transfer_continue 標誌 (關鍵邏輯)
+  - 更新 context.boxout_number、get_boxout_port、carrier_id
+- **8-bit 通訊步驟**:
+  1. IDLE → WRITE_VAILD → WRITE_PORT_NUMBER → WAIT_UNLOAD_REQ → WRITE_TR_REQ → WAIT_READY
+- **狀態重置**: 每次進入都會重置所有查詢狀態和變數
+- **下一步**: SelectRackPortState
+
+### 3. SelectRackPortState ⭐ **最新更新**
+- **功能**: 選擇要放置的 Rack Port
+- **邏輯**:
+  - 查詢 Rack ID 123 上的 Carrier
+  - 實現遞減邏輯：選擇 min_rack_index - 1
+  - 如果 min_rack_index == 1，進入 CompleteState
+  - 如果 RACK 上沒有 Carrier，也進入 CompleteState
+- **最新變更**: 現在進入 RackVisionPositionState，恢復視覺定位步驟
+- **下一步**: RackVisionPositionState 或 CompleteState
+
+### 4. RackVisionPositionState ⭐ **恢復視覺定位**
+- **功能**: Rack 視覺定位
+- **拍照邏輯**:
+  - Port 1-8, 17-24: 上層拍照 (PHOTO_RACK_UP)
+  - Port 9-16, 25-32: 下層拍照 (PHOTO_RACK_DOWN)
+- **優化機制**:
+  - 檢查 context.rack_photo_up_or_down_buffer 避免重複拍照
+  - 如果拍照位置相同則直接跳到 FINISH
+- **機器人步驟**: IDLE → CHECK_IDLE → WRITE_CHG_PARA → CHECK_CHG_PARA → WRITE_PGNO → CHECK_PGNO → ACTING → FINISH
+- **下一步**: TakeTransferState
+
+### 5. TakeTransferState
+- **功能**: 從傳送箱取出貨物
+- **PGNO**: ACTION_FROM + BOX_OUT_POSITION + NONE_POSITION
+- **機器人步驟**: IDLE → CHECK_IDLE → WRITE_CHG_PARAMTER → WRITE_CHG_PARA → CHECK_CHG_PARA → WRITE_PGNO → CHECK_PGNO → ACTING → FINISH
+- **狀態追蹤**: 使用 hokuyo_input_updated 標誌避免重複更新
+- **下一步**: PutRackPortState
+
+### 6. PutRackPortState
+- **功能**: 將貨物放入 Rack 並更新資料庫
+- **PGNO**: ACTION_TO + NONE_POSITION + RACK_OUT_POSITION
+- **機器人步驟**: IDLE → CHECK_IDLE → WRITE_CHG_PARAMTER → WRITE_CHG_PARA → CHECK_CHG_PARA → WRITE_PGNO → CHECK_PGNO → ACTING → FINISH → UPDATE_DATABASE
+- **資料庫更新**: 在 UPDATE_DATABASE 步驟中更新 Carrier 資料庫
+- **流程控制**: 在 UPDATE_DATABASE 完成後根據 take_transfer_continue 決定下一步
+- **下一步**: TransferCheckHaveState 或 CheckRackSideState
+
+### 7. CheckRackSideState ⭐ **重大功能擴展**
+- **功能**: 檢查 Rack 方向並選擇下一個 Port
+- **雙重職責**:
+  1. **Rack 方向檢查**: 確認當前 Port 的 Rack 方向是否正確
+  2. **Port 選擇**: 實現遞減邏輯選擇下一個 Rack Port
+- **查詢邏輯**:
+  - 同時查詢 Carrier 和 Rack 資訊
+  - 使用 rack_id = 123 進行查詢
+- **方向判斷**:
+  - Port 1-16: 需要 A 面 (direction = 0)
+  - Port 17-32: 需要 B 面 (direction = 180)
+- **Port 選擇邏輯**:
+  - 如果 min_rack_index == 1，進入 CompleteState
+  - 如果沒有 Carrier，設定 context.get_rack_port = 32
+  - 否則設定 context.get_rack_port = min_rack_index - 1
+- **下一步**:
+  - 方向正確 → TransferCheckHaveState ⭐ **新的循環路徑**
+  - 需要旋轉 → WaitRotationState
+
+### 8. WaitRotationState (條件性)
+- **功能**: 等待 Rack 旋轉到正確方向
+- **觸發條件**: Rack 方向與目標 Port 不匹配
+- **旋轉邏輯**: 持續查詢 Rack 狀態直到方向正確
+- **下一步**: RackVisionPositionState
+
+### 9. 資料庫更新與流程控制 (在 PutRackPortState 中)
+- **功能**: 更新 Carrier 資料庫並決定下一步
+- **更新內容**:
+  - carrier.room_id = context.get_room_id
+  - carrier.rack_id = 123
+  - carrier.port_id = 0 (從傳送箱移除)
+  - carrier.rack_index = context.get_rack_port
+  - carrier.status_id = 2
+- **流程控制邏輯**:
+  - take_transfer_continue = True → 回到 TransferCheckHaveState (繼續處理傳送箱)
+  - take_transfer_continue = False → 回到 CheckRackSideState (處理下一個 Rack Port)
+
+### 10. 循環邏輯與結束條件 ⭐ **重大流程重構**
+- **內層循環**: take_transfer_continue = True 時，繼續處理同一傳送箱的其他貨物
+- **外層循環**: take_transfer_continue = False 時，進入 CheckRackSideState 處理下一個 Rack Port
+- **新的循環路徑**: CheckRackSideState → TransferCheckHaveState (當 Rack 方向正確時)
+- **完整功能恢復**: 恢復了所有 Rack 方向檢查和旋轉等待功能
+- **雙重 Port 選擇邏輯**:
+  - SelectRackPortState: 初始 Port 選擇
+  - CheckRackSideState: 後續 Port 選擇 (外層循環)
+- **結束條件**:
+  - SelectRackPortState 中 min_rack_index == 1 → CompleteState
+  - SelectRackPortState 中 RACK 上沒有 Carrier → CompleteState
+  - CheckRackSideState 中 min_rack_index == 1 → CompleteState
+
+## 🔧 關鍵參數
+
+### Port 配置
+- **傳送箱 Port**: room_id*1000+21 到 room_id*1000+24 (port_address + 1-4)
+- **EQP ID**: room_id*100+2 (傳送箱設備)
+- **Rack ID**: 123
+
+### 狀態變數
+- **context.boxout_number**: 選定的傳送箱 Port 編號 (1-4)
+- **context.get_boxout_port**: 同 boxout_number
+- **context.get_rack_port**: 選定的 Rack Port 編號
+- **context.carrier_id**: 當前處理的 Carrier ID
+- **context.take_transfer_continue**: 是否繼續處理傳送箱
+
+### take_transfer_continue 邏輯 (關鍵決策機制)
+```python
+# 在 TransferCheckHaveState._check_take_transfer_continue() 中實現
+def _check_take_transfer_continue(self, context):
+    # 檢查相鄰 Port 是否有貨
+    if self.select_boxout_port == 1 and self.port_carriers[1]:  # Port 2 有貨
+        context.take_transfer_continue = True
+    elif self.select_boxout_port == 3 and self.port_carriers[3]:  # Port 4 有貨
+        context.take_transfer_continue = True
+    else:
+        context.take_transfer_continue = False
+```
+**邏輯說明**:
+- 選擇 Port 1 且 Port 2 有貨 → 繼續處理傳送箱
+- 選擇 Port 3 且 Port 4 有貨 → 繼續處理傳送箱
+- 其他情況 → 處理下一個 Rack Port
+
+## ⚠️ 注意事項
+
+1. **狀態重置**: 每個狀態的 enter() 和 leave() 都會重置相關變數
+2. **視覺定位優化**: RackVisionPositionState 使用 buffer 機制避免重複拍照
+3. **8-bit 通訊**: 必須按順序完成所有 8-bit 步驟，每步都有成功/失敗處理
+4. **錯誤處理**: 每個步驟都有完整的錯誤處理和重試機制
+5. **資料庫同步**: 在 PutRackPortState 的 FINISH 步驟中更新資料庫
+6. **循環控制**: 通過 take_transfer_continue 精確控制流程分支
+7. **查詢機制**: 使用 callback 機制處理異步資料庫查詢
+
+## 🔄 流程特點
+
+- **觸發機制**: 從 IdleState 根據 mission="exit" 自動觸發 EXIT 流程
+- **雙重循環**: 內層處理傳送箱貨物，外層處理 Rack Port 選擇
+- **智能判斷**: 根據相鄰 Port 狀態決定是否繼續處理傳送箱
+- **遞減邏輯**: Rack Port 按遞減順序處理 (min_rack_index - 1)
+- **狀態追蹤**: 完整的狀態變數管理和重置機制
+- **優化機制**: 視覺定位 buffer、Hokuyo 更新標誌等避免重複操作
+- **異步處理**: 使用 callback 機制處理資料庫查詢和設備通訊
+
+## 🔧 程式碼架構改進
+
+- **繼承結構**: TransferVisionPositionState 繼承自 BaseVisionPositionState
+- **模組化設計**: 每個狀態都有清晰的職責分工
+- **錯誤恢復**: 查詢失敗時會重置狀態並重新嘗試
+- **日誌記錄**: 每個關鍵步驟都有詳細的日誌輸出
+
+## 📊 狀態實現細節
+
+### TransferCheckHaveState 關鍵實現
+```python
+class TransferCheckHaveState(State):
+    # 8-bit 通訊步驟常數
+    IDLE = 0
+    WRITE_VAILD = 1
+    WRITE_PORT_NUMBER = 2
+    WAIT_UNLOAD_REQ = 3
+    WRITE_TR_REQ = 4
+    WAIT_READY = 5
+
+    # 設備參數 (已動態化)
+    # self.port_address = self.node.task.room_id * 1000 + 20
+    # self.eqp_id = self.node.task.room_id * 100 + 2
+
+    def _reset_state(self):
+        """重置所有狀態變數"""
+        self.check_ok = False
+        self.sent = False
+        self.queries_completed = {'carrier': False, 'eqp_signal': False, 'hokuyo_input': False}
+        self.port_carriers = [False, False, False, False]  # Port 1-4 狀態
+
+    def _check_take_transfer_continue(self, context):
+        """檢查是否繼續處理傳送箱的核心邏輯"""
+        if self.select_boxout_port == 1 and self.port_carriers[1]:
+            context.take_transfer_continue = True
+        elif self.select_boxout_port == 3 and self.port_carriers[3]:
+            context.take_transfer_continue = True
+        else:
+            context.take_transfer_continue = False
+```
+
+### SelectRackPortState 遞減邏輯 ⭐ **最新更新**
+```python
+# 實現遞減邏輯選擇 Rack Port
+if self.min_rack_index == 1:
+    # 已到達最小值，流程完成
+    context.set_state(CompleteState(self.node))
+else:
+    # 選擇下一個 Port (遞減)
+    context.get_rack_port = self.min_rack_index - 1
+    # 最新變更：進入 RackVisionPositionState，恢復視覺定位
+    context.set_state(RackVisionPositionState(self.node))
+```
+
+**最新變更說明**:
+- 進入 `RackVisionPositionState` 進行視覺定位
+- 保留視覺定位精度
+
+### CheckRackSideState 流程控制 ⭐ **重大功能擴展**
+```python
+# CheckRackSideState 的新流程邏輯
+case 2:
+    if self.no_carrier and self.carrier_response_ok:
+        # 沒有 Carrier，設定最大 Port
+        context.get_rack_port = 32
+        self.step = 3
+    elif self.min_rack_index == 1 and self.carrier_response_ok:
+        # 已到達最小值，流程完成
+        context.set_state(CompleteState(self.node))
+    elif 1 < self.min_rack_index <= 32 and self.carrier_response_ok:
+        # 選擇下一個 Port (遞減)
+        context.get_rack_port = self.min_rack_index - 1
+        self.step = 3
+
+case 3:
+    if self.rack_direction == 0 and 1 <= context.get_rack_port <= 16:
+        # A 面方向正確，直接進入 TransferCheckHaveState
+        context.set_state(TransferCheckHaveState(self.node))
+    elif self.rack_direction == 180 and 17 <= context.get_rack_port <= 32:
+        # B 面方向正確，直接進入 TransferCheckHaveState
+        context.set_state(TransferCheckHaveState(self.node))
+    else:
+        # 需要旋轉，進入 WaitRotationState
+        context.set_state(WaitRotationState(self.node))
+```
+
+**重大變更說明**:
+- CheckRackSideState 現在具有雙重職責：方向檢查 + Port 選擇
+- 當方向正確時，直接進入 `TransferCheckHaveState` 創建新的循環路徑
+- 當需要旋轉時，進入 `WaitRotationState` 保持完整的旋轉功能
+
+### PutRackPortState 流程控制 (重要更新)
+```python
+# 在 UPDATE_DATABASE 步驟中根據 take_transfer_continue 決定下一步
+case RobotContext.UPDATE_DATABASE:
+    if not self.sent:
+        self.update_carrier_database(context)
+        self.sent = True
+    elif self.sent and self.update_carrier_success:
+        self.step = RobotContext.IDLE
+
+        # 關鍵流程控制邏輯
+        if getattr(context, 'take_transfer_continue', False):
+            # 繼續處理傳送箱
+            context.set_state(TransferCheckHaveState(self.node))
+        else:
+            # 直接進入 CheckRackSideState，跳過 SelectRackPortState
+            context.set_state(CheckRackSideState(self.node))
+```
+
+**重要變更說明**:
+- 當 `take_transfer_continue = False` 時，現在直接進入 `CheckRackSideState`
+- 這樣可以避免重複執行 `SelectRackPortState` 的 Rack Port 選擇邏輯
+- 流程更加高效，直接使用已選定的 Rack Port 進行後續處理
+
+## 🚀 重大流程重構說明
+
+### ⭐ 新的完整流程邏輯
+```
+流程觸發:
+IdleState (mission="exit")
+    ↓
+TransferVisionPositionState (傳送箱視覺定位)
+    ↓
+TransferCheckHaveState (檢查傳送箱有貨 + 設定 take_transfer_continue)
+    ↓
+
+主流程:
+SelectRackPortState (選擇 Rack Port)
+    ↓
+RackVisionPositionState (Rack 視覺定位)
+    ↓
+TakeTransferState (取傳送箱)
+    ↓
+PutRackPortState (放到 Rack + 更新資料庫)
+    ↓
+take_transfer_continue 判斷
+    ├─ True  → TransferCheckHaveState (繼續處理傳送箱)
+    └─ False → CheckRackSideState (外層循環)
+
+外層循環:
+CheckRackSideState (檢查 Rack 方向 + 選擇下一個 Port)
+    ↓
+Rack 方向判斷
+    ├─ 方向正確 → TransferCheckHaveState ⭐ **新的循環路徑**
+    └─ 需要旋轉 → WaitRotationState → RackVisionPositionState → TakeTransferState
+```
+
+### ✅ 完整功能恢復
+- **CheckRackSideState**: 完整的 Rack 方向檢查和 Port 選擇功能
+- **WaitRotationState**: 旋轉等待功能
+- **RackVisionPositionState**: 視覺定位精度
+
+### 📈 重構效果
+1. **完整功能**: 恢復所有 Rack 檢查和旋轉功能
+2. **雙重循環**: 內層處理傳送箱，外層處理 Rack Port
+3. **智能路由**: CheckRackSideState 直接回到 TransferCheckHaveState
+4. **高效循環**: 減少不必要的狀態重複
+
+## 🔧 最新修復 (2025-07-01)
+
+### ✅ 修復的問題
+1. **EXIT流程觸發機制**: 修復 `IdleState` 中 EXIT 流程的觸發邏輯
+   - **問題**: `idle_state.py` 中 `mission="exit"` 時只有 `pass`，沒有實際觸發 EXIT 流程
+   - **修復**: 加入 `TransferVisionPositionState` 的觸發邏輯
+
+2. **註解錯誤修正**: 修正 `PutRackPortState` 中的誤導性註解
+   - **問題**: 註解說"進入 SelectRackPortState"，但實際是進入 `CheckRackSideState`
+   - **修復**: 更正註解為"處理下一個 Rack Port: 進入 CheckRackSideState"
+
+3. **Hokuyo Input 持續更新**: 修復所有流程狀態中的 Hokuyo Input 更新邏輯
+   - **問題**: Hokuyo Input 只更新一次後就停止，無法持續監控設備狀態
+   - **修復**: 在所有流程狀態中移除 `hokuyo_input_updated` 標誌，讓 Hokuyo Input 持續更新
+   - **EXIT流程影響狀態**: `TransferCheckHaveState`、`TakeTransferState`、`SelectRackPortState`、`PutRackPortState`
+   - **ENTRANCE流程影響狀態**: `TransferCheckEmptyState`、`TakeRackPortState`、`PutTransferState`
+   - **基礎類別**: `BaseRobotState._handle_hokuyo_input()` 方法也已更新
+   - **影響**: 確保設備狀態能即時反映，提高系統穩定性和響應性
+
+### 📝 修復的文件
+**EXIT流程**:
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/idle_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/exit/transfer_check_have_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/exit/take_transfer_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/exit/select_rack_port_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/exit/put_rack_port_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/exit/EXIT流程` (本文件)
+
+**ENTRANCE流程**:
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/transfer_check_empty_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/take_rack_port_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/put_tranfer_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/ENTRANCE流程`
+
+**基礎類別**:
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/base_robot_state.py`
+
+### 🎯 修復後的完整流程
+現在 EXIT 和 ENTRANCE 流程都已經完全一致：
+- 從 `IdleState` 開始到 `CompleteState` 結束的完整流程都已實作並正確運作
+- 所有狀態都使用持續更新的 Hokuyo Input 邏輯
+- 確保整個 cargo_mover_agv 系統的一致性和穩定性

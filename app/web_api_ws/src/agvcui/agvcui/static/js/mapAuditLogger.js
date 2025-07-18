@@ -45,7 +45,7 @@ export const mapAuditLogger = (() => {
             sessionId: sessionId
         });
 
-        console.log('Audit logger initialized with session:', sessionId);
+        console.debug('Audit logger initialized with session:', sessionId);
     }
 
     // 生成會話 ID
@@ -113,7 +113,7 @@ export const mapAuditLogger = (() => {
         // 觸發事件
         dispatchAuditEvent(operation);
 
-        console.log('Operation logged:', operation);
+        console.debug('Operation logged:', operation);
     }
 
     // 生成操作 ID
@@ -385,13 +385,13 @@ export const mapAuditLogger = (() => {
     function clearHistory() {
         operationHistory = [];
         localStorage.removeItem('map_audit_history');
-        console.log('Audit history cleared');
+        // console.debug('Audit history cleared');
     }
 
     // 啟用/禁用記錄
     function setLoggingEnabled(enabled) {
         isLoggingEnabled = enabled;
-        console.log('Audit logging', enabled ? 'enabled' : 'disabled');
+        // console.debug('Audit logging', enabled ? 'enabled' : 'disabled');
     }
 
     // 公開方法

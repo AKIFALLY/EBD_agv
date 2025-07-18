@@ -1,12 +1,302 @@
 {% extends "base.html" %}
-{% block title %}首頁{% endblock %}
+{% block title %}系統儀表板{% endblock %}
+
+<!-- Dashboard 頁面樣式 -->
+{% block extra_head %}
+<link href="/static/css/dashboardPage.css" rel="stylesheet" />
+{% endblock %}
 
 {% block content %}
-<section class="hero is-fullheight-with-navbar is-light is-bold">
-    <div class="hero-body is-justify-content-center is-align-items-center">
-        <div class="has-text-centered">
-            <h1 class="title is-size-1">DEMO</h1>
+<div class="dashboard-container">
+    <!-- Dashboard 標題區 -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <span class="icon">
+                <i class="mdi mdi-view-dashboard"></i>
+            </span>
+            系統儀表板
+        </h1>
+        <p class="dashboard-subtitle">即時監控 AGV 系統運行狀態</p>
+    </div>
+
+    <!-- Dashboard 卡片網格 -->
+    <div class="dashboard-grid">
+        <!-- 1. 任務表卡片 - 半寬度佈局 -->
+
+        <!-- 1. 任務狀態卡片 - 全寬度佈局 -->
+        <div class="dashboard-card dashboard-card-full-width dashboard-card-compact" id="dashboard-card-task">
+            <div class="dashboard-card-header">
+                <div class="dashboard-card-title">
+                    <span class="dashboard-card-icon">
+                        <i class="mdi mdi-clipboard-list"></i>
+                    </span>
+                    任務列表
+                </div>
+                <button class="dashboard-expand-button" id="task-expand-button">
+                    <i class="mdi mdi-chevron-down"></i>
+                </button>
+            </div>
+
+            <div class="dashboard-loading" style="display: flex;">
+                <span class="icon">
+                    <i class="mdi mdi-loading"></i>
+                </span>
+                載入中...
+            </div>
+
+            <!-- 摘要內容 -->
+            <div class="dashboard-summary-content" id="task-summary-content">
+                <div class="dashboard-summary-metrics">
+                    <div class="dashboard-summary-metric">
+                        <div class="dashboard-summary-metric-value" id="task-summary-total">0</div>
+                        <div class="dashboard-summary-metric-label">總任務</div>
+                    </div>
+                    <div class="dashboard-summary-metric">
+                        <div class="dashboard-summary-metric-value" id="task-summary-pending">0</div>
+                        <div class="dashboard-summary-metric-label">待執行</div>
+                    </div>
+                    <div class="dashboard-summary-metric">
+                        <div class="dashboard-summary-metric-value" id="task-summary-executing">0</div>
+                        <div class="dashboard-summary-metric-label">執行中</div>
+                    </div>
+                </div>
+                <div class="dashboard-summary-status" id="task-summary-status">
+                    <div class="dashboard-summary-status-dot"></div>
+                    <span>等待資料...</span>
+                </div>
+            </div>
+
+            <!-- 詳細內容 -->
+            <div class="dashboard-detail-content" id="task-detail-content">
+                <div class="dashboard-status" id="dashboard-status-task">
+                    <div class="dashboard-status-dot"></div>
+                    <div class="dashboard-status-text">等待資料...</div>
+                </div>
+
+                <!-- 任務階層結構顯示 -->
+                <div class="dashboard-task-hierarchy-container" id="dashboard-task-hierarchy-container">
+                    <div id="dashboard-task-hierarchy">
+                        <!-- 任務階層結構將由 JavaScript 動態填入 -->
+                    </div>
+
+                    <!-- 無任務時的提示 -->
+                    <div class="dashboard-task-empty" id="dashboard-task-empty" style="display: none;">
+                        <div class="has-text-centered has-text-grey">
+                            <span class="icon is-large">
+                                <i class="mdi mdi-clipboard-check-outline mdi-48px"></i>
+                            </span>
+                            <p>目前沒有執行中或待執行的任務</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 設備狀態卡片 - 半寬度佈局 -->
+        <div class="dashboard-card dashboard-card-half-width dashboard-card-compact" id="dashboard-card-equipment">
+            <div class="dashboard-card-header">
+                <div class="dashboard-card-title">
+                    <span class="dashboard-card-icon">
+                        <i class="mdi mdi-robot-industrial"></i>
+                    </span>
+                    設備狀態
+                </div>
+                <button class="dashboard-expand-button" id="equipment-expand-button">
+                    <i class="mdi mdi-chevron-down"></i>
+                </button>
+            </div>
+
+            <div class="dashboard-loading" style="display: flex;">
+                <span class="icon">
+                    <i class="mdi mdi-loading"></i>
+                </span>
+                載入中...
+            </div>
+
+            <!-- 摘要內容 -->
+            <div class="dashboard-summary-content" id="equipment-summary-content">
+                <div class="dashboard-summary-metrics">
+                    <div class="dashboard-summary-metric">
+                        <div class="dashboard-summary-metric-value" id="equipment-summary-agv-total">0</div>
+                        <div class="dashboard-summary-metric-label">AGV總數</div>
+                    </div>
+                    <div class="dashboard-summary-metric">
+                        <div class="dashboard-summary-metric-value" id="equipment-summary-agv-online">0</div>
+                        <div class="dashboard-summary-metric-label">線上</div>
+                    </div>
+                    <div class="dashboard-summary-metric">
+                        <div class="dashboard-summary-metric-value" id="equipment-summary-rack-total">0</div>
+                        <div class="dashboard-summary-metric-label">貨架總數</div>
+                    </div>
+                </div>
+                <div class="dashboard-summary-status" id="equipment-summary-status">
+                    <div class="dashboard-summary-status-dot"></div>
+                    <span>等待資料...</span>
+                </div>
+            </div>
+
+            <!-- 詳細內容 -->
+            <div class="dashboard-detail-content" id="equipment-detail-content">
+                <div class="dashboard-status" id="dashboard-status-equipment">
+                    <div class="dashboard-status-dot"></div>
+                    <div class="dashboard-status-text">等待資料...</div>
+                </div>
+
+                <!-- 設備列表容器 - 左右分欄佈局 -->
+                <div class="dashboard-equipment-container dashboard-equipment-two-column"
+                    id="dashboard-equipment-container">
+                    <!-- 左側：AGV 列表區塊 -->
+                    <div class="equipment-section equipment-section-left">
+                        <h6 class="equipment-section-title">
+                            <span class="icon">
+                                <i class="mdi mdi-robot"></i>
+                            </span>
+                            AGV 列表
+                        </h6>
+                        <div class="equipment-list" id="dashboard-agv-list">
+                            <!-- AGV 列表項目將由 JavaScript 動態填入 -->
+                        </div>
+                    </div>
+
+                    <!-- 右側：Rack 列表區塊 -->
+                    <div class="equipment-section equipment-section-right">
+                        <h6 class="equipment-section-title">
+                            <span class="icon">
+                                <i class="mdi mdi-package-variant"></i>
+                            </span>
+                            貨架列表
+                        </h6>
+                        <div class="equipment-list" id="dashboard-rack-list">
+                            <!-- Rack 列表項目將由 JavaScript 動態填入 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 無設備時的提示 -->
+                <div class="dashboard-equipment-empty" id="dashboard-equipment-empty" style="display: none;">
+                    <div class="has-text-centered has-text-grey">
+                        <span class="icon is-large">
+                            <i class="mdi mdi-robot-off-outline mdi-48px"></i>
+                        </span>
+                        <p>目前沒有設備資料</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 房間狀態卡片 - 半寬度佈局 -->
+        <div class="dashboard-card dashboard-card-half-width dashboard-card-compact" id="dashboard-card-rooms">
+            <div class="dashboard-card-header">
+                <div class="dashboard-card-title">
+                    <span class="dashboard-card-icon">
+                        <i class="mdi mdi-home-group"></i>
+                    </span>
+                    房間狀態
+                </div>
+                <button class="dashboard-expand-button" id="rooms-expand-button">
+                    <i class="mdi mdi-chevron-down"></i>
+                </button>
+            </div>
+
+            <div class="dashboard-loading" style="display: flex;">
+                <span class="icon">
+                    <i class="mdi mdi-loading"></i>
+                </span>
+                載入中...
+            </div>
+
+            <!-- 摘要內容 -->
+            <div class="dashboard-summary-content" id="rooms-summary-content">
+                <div class="dashboard-summary-metrics">
+                    {% for room in enabled_rooms %}
+                    <div class="dashboard-summary-metric">
+                        <div class="dashboard-summary-metric-value" id="rooms-summary-{{ room.id }}-carriers">0</div>
+                        <div class="dashboard-summary-metric-label">{{ room.name }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="dashboard-summary-status" id="rooms-summary-status">
+                    <div class="dashboard-summary-status-dot"></div>
+                    <span>等待資料...</span>
+                </div>
+            </div>
+
+            <!-- 詳細內容 -->
+            <div class="dashboard-detail-content" id="rooms-detail-content">
+                <div class="dashboard-status" id="dashboard-status-rooms">
+                    <div class="dashboard-status-dot"></div>
+                    <div class="dashboard-status-text">等待資料...</div>
+                </div>
+
+                <!-- 房間列表容器 -->
+                <div class="dashboard-rooms-container" id="dashboard-rooms-container">
+                    {% for room in enabled_rooms %}
+                    <div class="room-section" id="room-section-{{ room.id }}">
+                        <div class="room-section-header">
+                            <div class="room-section-title">
+                                <span class="icon">
+                                    <i class="mdi mdi-home-variant{% if room.id != 2 %}-outline{% endif %}"></i>
+                                </span>
+                                <span>{{ room.name }}</span>
+                            </div>
+                            <div class="room-section-status">
+                                <span class="room-carriers-count" id="room-carriers-count-{{ room.id }}">0 個載具</span>
+                                <span class="room-status-badge" id="room-status-badge-{{ room.id }}">待機中</span>
+                            </div>
+                        </div>
+
+                        <div class="room-section-content">
+                            <!-- 製程資訊 -->
+                            <div class="room-info-group">
+                                <h6 class="room-info-title">製程資訊</h6>
+                                <div class="room-info-items">
+                                    <div class="room-info-item">
+                                        <span class="room-info-label">製程狀態：</span>
+                                        <span class="room-info-value" id="room-process-status-{{ room.id }}">待機中</span>
+                                    </div>
+                                    <div class="room-info-item">
+                                        <span class="room-info-label">製程描述：</span>
+                                        <span class="room-info-value" id="room-process-desc-{{ room.id }}">{{
+                                            room.process_description or '-' }}</span>
+                                    </div>
+                                    <div class="room-info-item">
+                                        <span class="room-info-label">泡藥次數：</span>
+                                        <span class="room-info-value" id="room-soaking-times-{{ room.id }}">{{
+                                            room.soaking_times or '-' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 物流狀態 -->
+                            <div class="room-info-group">
+                                <h6 class="room-info-title">物流狀態</h6>
+                                <div class="room-logistics-status">
+                                    <div class="logistics-item">
+                                        <span class="logistics-label">入口：</span>
+                                        <span class="logistics-status" id="room-entrance-{{ room.id }}">無貨架</span>
+                                    </div>
+                                    <div class="logistics-item">
+                                        <span class="logistics-label">出口：</span>
+                                        <span class="logistics-status" id="room-exit-{{ room.id }}">無貨架</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- 無房間時的提示 -->
+                <div class="dashboard-rooms-empty" id="dashboard-rooms-empty" style="display: none;">
+                    <div class="has-text-centered has-text-grey">
+                        <span class="icon is-large">
+                            <i class="mdi mdi-home-off-outline mdi-48px"></i>
+                        </span>
+                        <p>目前沒有房間資料</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</section>
+</div>
 {% endblock %}

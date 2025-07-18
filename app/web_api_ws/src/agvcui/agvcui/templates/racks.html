@@ -50,51 +50,44 @@
                 </thead>
                 <tbody>
                     {% for rack in racks %}
-                    <tr>
+                    <tr data-rack-id="{{ rack.id }}" id="rack-row-{{ rack.id }}">
                         <td><strong>{{ rack.id }}</strong></td>
                         <td>
                             <div class="has-text-weight-medium">{{ rack.name or '未命名' }}</div>
                         </td>
                         <td>
                             {% if rack.location_id %}
-                            <span class="tag is-info">{{ rack.location_id }}</span>
+                            <span class="tag is-info" id="rack-location-{{ rack.id }}">{{ rack.location_id }}</span>
                             {% else %}
-                            <span class="tag is-light">未設置</span>
+                            <span class="tag is-light" id="rack-location-{{ rack.id }}">未設置</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if rack.product_id %}
-                            <span class="tag is-primary">{{ rack.product_id }}</span>
+                            <span class="tag is-primary" id="rack-product-{{ rack.id }}">{{ rack.product_id }}</span>
                             {% else %}
-                            <span class="tag is-light">無產品</span>
+                            <span class="tag is-light" id="rack-product-{{ rack.id }}">無產品</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if rack.status_id == 1 %}
-                            <span class="tag is-success">可用</span>
+                            <span class="tag is-success" id="rack-status-{{ rack.id }}">空閒</span>
                             {% elif rack.status_id == 2 %}
-                            <span class="tag is-warning">使用中</span>
+                            <span class="tag is-info" id="rack-status-{{ rack.id }}">使用中</span>
                             {% elif rack.status_id == 3 %}
-                            <span class="tag is-danger">維護中</span>
+                            <span class="tag is-warning" id="rack-status-{{ rack.id }}">維護中</span>
+                            {% elif rack.status_id == 4 %}
+                            <span class="tag is-danger" id="rack-status-{{ rack.id }}">故障</span>
                             {% else %}
-                            <span class="tag is-light">{{ rack.status_id or '未知' }}</span>
+                            <span class="tag is-light" id="rack-status-{{ rack.id }}">{{ rack.status_id or '未知'
+                                }}</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if rack.direction is not none %}
-                            {% if rack.direction == 0 %}
-                            <span class="tag is-success">0°</span>
-                            {% elif rack.direction == 90 %}
-                            <span class="tag is-info">90°</span>
-                            {% elif rack.direction == -90 %}
-                            <span class="tag is-warning">-90°</span>
-                            {% elif rack.direction == 180 %}
-                            <span class="tag is-danger">180°</span>
+                            <span id="rack-direction-{{ rack.id }}">{{ rack.direction|round(1) }}°</span>
                             {% else %}
-                            <span class="tag is-light">{{ rack.direction }}°</span>
-                            {% endif %}
-                            {% else %}
-                            <span class="tag is-light">未設置</span>
+                            <span class="has-text-grey" id="rack-direction-{{ rack.id }}">未設置</span>
                             {% endif %}
                         </td>
                         {% if current_user and current_user.role in ['operator', 'admin'] %}
@@ -178,5 +171,6 @@
     </div>
 </section>
 
+<!-- Racks 頁面 JavaScript 已移至 index.js 統一管理 -->
 
 {% endblock %}

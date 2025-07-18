@@ -18,13 +18,13 @@ export const mapRackManager = (() => {
         // 監聽 racksStore 的變化
         if (window.racksStore) {
             window.racksStore.on('change', handleRacksChange);
-            console.log('mapRackManager: 已訂閱 racksStore 變化');
+            console.debug('mapRackManager: 已訂閱 racksStore 變化');
         }
 
         // 監聽 carriersStore 的變化
         if (window.carriersStore) {
             window.carriersStore.on('change', handleCarriersChange);
-            console.log('mapRackManager: 已訂閱 carriersStore 變化');
+            console.debug('mapRackManager: 已訂閱 carriersStore 變化');
         }
     }
 
@@ -33,7 +33,7 @@ export const mapRackManager = (() => {
         if (!newState?.racks) return;
 
         const racks = newState.racks || [];
-        console.log(`mapRackManager: 收到貨架更新，共 ${racks.length} 個貨架`);
+        console.debug(`mapRackManager: 收到貨架更新，共 ${racks.length} 個貨架`);
 
         // 更新本地資料
         rackData.clear();
@@ -44,7 +44,7 @@ export const mapRackManager = (() => {
         // 如果側邊面板正在顯示貨架列表，只更新內容
         const racksList = document.getElementById('racks-list');
         if (racksList && racksList.children.length > 0) {
-            console.log('mapRackManager: 更新側邊面板貨架列表內容');
+            console.debug('mapRackManager: 更新側邊面板貨架列表內容');
             updateRacksListContent(racksList, racks);
         }
     }
@@ -54,7 +54,7 @@ export const mapRackManager = (() => {
         if (!newState?.carriers) return;
 
         const carriers = newState.carriers || [];
-        console.log(`mapRackManager: 收到載具更新，共 ${carriers.length} 個載具`);
+        console.debug(`mapRackManager: 收到載具更新，共 ${carriers.length} 個載具`);
 
         // 更新本地載具資料
         carrierData.clear();
@@ -81,7 +81,7 @@ export const mapRackManager = (() => {
                     rackData.set(rack.id, rack);
                 });
 
-                console.log(`Loaded ${racks.length} racks from store`);
+                console.debug(`Loaded ${racks.length} racks from store`);
             } else {
                 console.warn('racksStore not available');
             }
@@ -108,7 +108,7 @@ export const mapRackManager = (() => {
                     }
                 });
 
-                console.log(`Loaded ${carriers.length} carriers from store for rack manager`);
+                console.debug(`Loaded ${carriers.length} carriers from store for rack manager`);
             } else {
                 console.warn('carriersStore not available for rack manager');
             }
@@ -125,7 +125,7 @@ export const mapRackManager = (() => {
 
         if (!rack) {
             console.warn('Rack not found for ID:', rackId, 'Parsed as:', actualRackId);
-            console.log('Available rack IDs:', Array.from(rackData.keys()));
+            console.debug('Available rack IDs:', Array.from(rackData.keys()));
 
             // 返回預設值以避免錯誤
             return {
@@ -136,8 +136,8 @@ export const mapRackManager = (() => {
             };
         }
 
-        console.log('Found rack:', rack);
-        console.log('Rack product_id:', rack.product_id);
+        console.debug('Found rack:', rack);
+        console.debug('Rack product_id:', rack.product_id);
 
         return {
             rack,
@@ -150,18 +150,18 @@ export const mapRackManager = (() => {
     // 獲取最大容量
     function getMaxCapacity(productId) {
         // 根據產品類型決定容量
-        console.log('getMaxCapacity called with:', productId, 'type:', typeof productId);
+        console.debug('getMaxCapacity called with:', productId, 'type:', typeof productId);
 
         if (productId) {
             // 轉換為字串進行檢查
             const productIdStr = String(productId);
             if (productIdStr.includes('L')) {
-                console.log('Product is L type, returning 16 slots');
+                console.debug('Product is L type, returning 16 slots');
                 return 16; // L 產品 16 格
             }
         }
 
-        console.log('Product is S type or unknown, returning 32 slots');
+        console.debug('Product is S type or unknown, returning 32 slots');
         return 32; // S 產品 32 格
     }
 
@@ -189,62 +189,56 @@ export const mapRackManager = (() => {
         const title = `貨架: ${rack.name || rack.id}`;
 
         const content = `
-            <div class="map-info-card">
-                <div class="field">
-                    <label class="label">貨架 ID</label>
-                    <div class="control">
-                        <span class="tag is-primary">${rack.id}</span>
-                    </div>
-                </div>
-                <div class="field">
-                    <label class="label">名稱</label>
-                    <div class="control">
-                        <span>${rack.name || 'N/A'}</span>
-                    </div>
-                </div>
-                <div class="field">
-                    <label class="label">位置</label>
-                    <div class="control">
-                        <span>X: ${latlng.lng.toFixed(2)}, Y: ${latlng.lat.toFixed(2)}</span>
-                    </div>
-                </div>
-                <div class="field">
-                    <label class="label">狀態</label>
-                    <div class="control">
-                        <span class="status-indicator">
-                            <span class="status-dot ${getRackStatusColor(rack.status_id)}"></span>
-                            ${getRackStatusName(rack.status_id)}
-                        </span>
-                    </div>
-                </div>
-                <div class="field">
-                    <label class="label">產品類型</label>
-                    <div class="control">
-                        <span class="tag is-info">${rack.product_id || 'N/A'}</span>
-                    </div>
-                </div>
-                <div class="field">
-                    <label class="label">載具數量</label>
-                    <div class="control">
-                        <span class="tag ${carrierCount >= maxCapacity ? 'is-warning' : 'is-success'}">
-                            ${carrierCount} / ${maxCapacity}
-                        </span>
-                    </div>
-                </div>
-                ${carriers.length > 0 ? `
-                    <div class="field">
-                        <label class="label">載具列表</label>
-                        <div class="control">
+            <table class="table is-narrow is-fullwidth popup-table">
+                <tbody>
+                    <tr>
+                        <td class="popup-label">貨架 ID</td>
+                        <td><span class="tag is-primary">${rack.id}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="popup-label">名稱</td>
+                        <td>${rack.name || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td class="popup-label">位置</td>
+                        <td>X: ${latlng.lng.toFixed(2)}, Y: ${latlng.lat.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td class="popup-label">狀態</td>
+                        <td>
+                            <span class="status-indicator">
+                                <span class="status-dot ${getRackStatusColor(rack.status_id)}"></span>
+                                ${getRackStatusName(rack.status_id)}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="popup-label">產品類型</td>
+                        <td><span class="tag is-info">${rack.product_id || 'N/A'}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="popup-label">載具數量</td>
+                        <td>
+                            <span class="tag ${carrierCount >= maxCapacity ? 'is-warning' : 'is-success'}">
+                                ${carrierCount} / ${maxCapacity}
+                            </span>
+                        </td>
+                    </tr>
+                    ${carriers.length > 0 ? `
+                    <tr>
+                        <td class="popup-label">載具列表</td>
+                        <td>
                             <div class="tags">
                                 ${carriers.slice(0, 5).map(carrier =>
             `<span class="tag is-light">載具 ${carrier.id}</span>`
         ).join('')}
                                 ${carriers.length > 5 ? `<span class="tag is-light">+${carriers.length - 5} 更多</span>` : ''}
                             </div>
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
+                        </td>
+                    </tr>
+                    ` : ''}
+                </tbody>
+            </table>
         `;
 
         const actions = [
@@ -378,7 +372,7 @@ export const mapRackManager = (() => {
                         rack.status_id = statusId;
                     }
 
-                    console.log(`Rack ${actualRackId} status updated to ${statusId}`);
+                    console.debug(`Rack ${actualRackId} status updated to ${statusId}`);
                 } else {
                     console.error('Failed to update rack status');
                 }
@@ -440,7 +434,7 @@ export const mapRackManager = (() => {
                     <span class="tag ${getRackStatusColor(rack.status_id)}">${getRackStatusName(rack.status_id)}</span>
                 </div>
                 <div class="is-size-7 has-text-grey">
-                    位置: ${rack.location_id || 'N/A'} | 產品: ${rack.product_id || 'N/A'}
+                    位置: ${rack.location_id || 'N/A'} | 產品: ${rack.product_name || rack.product_id || 'N/A'}
                 </div>
             `;
         });
@@ -488,7 +482,7 @@ export const mapRackManager = (() => {
                     <span class="tag ${getRackStatusColor(rack.status_id)}">${getRackStatusName(rack.status_id)}</span>
                 </div>
                 <div class="is-size-7 has-text-grey">
-                    位置: ${rack.location_id || 'N/A'} | 產品: ${rack.product_id || 'N/A'}
+                    位置: ${rack.location_id || 'N/A'} | 產品: ${rack.product_name || rack.product_id || 'N/A'}
                 </div>
             </div>
         `).join('');

@@ -18,19 +18,29 @@ def load_yaml_config(yaml_path, agv_id):
 
 def generate_launch_description():
 
-    agv_id = 'cargo02'
+    # 🔧 從環境變數動態讀取 AGV 配置
+    agv_id = os.environ.get('AGV_ID', 'cargo01')
+    ros_namespace = os.environ.get('ROS_NAMESPACE', f'/{agv_id}')
+    device_config_file = os.environ.get('DEVICE_CONFIG_FILE', f'/app/config/agv/{agv_id}_config.yaml')
 
-    # 兩個參數檔路徑
+    # 參數檔路徑
     param_file = "/app/config/ecs_config.yaml"
     agv_command_file = "/app/agv_cmd_service_ws/src/agv_cmd_service/config/agv_cmd_service.yaml"
 
+    print(f"🚗 Cargo AGV Launch 配置:")
+    print(f"  AGV_ID: {agv_id}")
+    print(f"  ROS_NAMESPACE: {ros_namespace}")
+    print(f"  DEVICE_CONFIG_FILE: {device_config_file}")
+
     # 確保檔案存在
     if not os.path.exists(param_file):
-        print(f"⚠️ YAML 設定檔不存在: {param_file}")
+        logger.warning(f"⚠️ YAML 設定檔不存在: {param_file}")
     if not os.path.exists(agv_command_file):
         print(f"⚠️ YAML 設定檔不存在: {agv_command_file}")
+    if not os.path.exists(device_config_file):
+        print(f"⚠️ 設備配置檔不存在: {device_config_file}")
 
-    # 讀入 AGV01 設定
+    # 讀入 AGV 設定
     config = load_yaml_config(param_file, agv_id)
 
     return LaunchDescription([
@@ -57,7 +67,7 @@ def generate_launch_description():
             executable='plc_service',
             name='plc_service',
             namespace=agv_id,
-            parameters=[param_file],
+            parameters=[param_file, device_config_file],
         ),
 
         # Node(

@@ -6,6 +6,7 @@
 import { userStore } from '../store/index.js';
 import { notify } from './notify.js';
 import { mapPermissions } from './mapPermissions.js';
+import { getTaskStatusName } from './taskStatus.js';
 
 export const mapInteraction = (() => {
     let currentPopup = null;
@@ -232,11 +233,14 @@ export const mapInteraction = (() => {
         }
 
         if (contentElement) {
-            // 先清空內容，但保留原始模板
-            const templates = contentElement.querySelectorAll('[id$="-template"]');
-            const templateHTML = Array.from(templates).map(t => t.outerHTML).join('');
+            // 保存原始模板（只在第一次保存）
+            if (!contentElement._originalTemplates) {
+                const templates = contentElement.querySelectorAll('[id$="-template"]');
+                contentElement._originalTemplates = Array.from(templates).map(t => t.outerHTML).join('');
+            }
 
-            contentElement.innerHTML = content + templateHTML;
+            // 清空內容並設置新內容，然後恢復原始模板
+            contentElement.innerHTML = content + contentElement._originalTemplates;
         } else {
             console.error('sidebar-content element not found'); // 調試用
         }
@@ -254,9 +258,9 @@ export const mapInteraction = (() => {
         setTimeout(() => {
             const computedRight = window.getComputedStyle(currentSidebar).right;
             if (computedRight !== '0px') {
-                console.warn('CSS not working, forcing style. Computed right:', computedRight); // 調試用
+                console.debug('CSS transition not complete, applying fallback positioning. Computed right:', computedRight); // 調試用
                 currentSidebar.style.right = '0px';
-                console.log('Forced style - new computed right:', window.getComputedStyle(currentSidebar).right); // 調試用
+                console.debug('Applied fallback positioning - new computed right:', window.getComputedStyle(currentSidebar).right); // 調試用
             }
         }, 50); // 給 CSS 一點時間生效
 
@@ -322,7 +326,12 @@ export const mapInteraction = (() => {
             // 延遲載入列表，確保 DOM 已更新
             setTimeout(() => {
                 console.log('Loading tasks list after delay'); // 調試用
-                loadTasksList();
+                // 優先使用 mapTaskManager 的 loadTasksList，如果不存在則使用本地的
+                if (window.mapTaskManager && typeof window.mapTaskManager.loadTasksList === 'function') {
+                    window.mapTaskManager.loadTasksList();
+                } else {
+                    loadTasksList();
+                }
             }, 10);
         } else {
             console.error('tasks-template not found!'); // 調試用
@@ -465,58 +474,82 @@ export const mapInteraction = (() => {
 
     // 載入任務列表
     async function loadTasksList() {
-        // 在側邊面板中查找任務列表元素
+        console.log('mapInteraction.loadTasksList: 開始載入任務列表');
+
+        // 優先使用 mapTaskManager 的 loadTasksList
+        if (window.mapTaskManager && typeof window.mapTaskManager.loadTasksList === 'function') {
+            console.log('mapInteraction.loadTasksList: 使用 mapTaskManager.loadTasksList');
+            window.mapTaskManager.loadTasksList();
+            return;
+        }
+
+        // 備用邏輯（如果 mapTaskManager 不可用）
+        console.warn('mapInteraction.loadTasksList: mapTaskManager 不可用，使用備用邏輯');
+
         const sidebarContent = document.getElementById('sidebar-content');
-        if (!sidebarContent) return;
+        if (!sidebarContent) {
+            console.error('mapInteraction.loadTasksList: sidebar-content 元素未找到');
+            return;
+        }
 
         const listElement = sidebarContent.querySelector('#tasks-list') || sidebarContent.querySelector('[data-list="tasks"]');
         if (!listElement) {
-            console.warn('Tasks list element not found in sidebar');
+            console.warn('mapInteraction.loadTasksList: tasks-list 元素未找到');
             return;
         }
 
         try {
             listElement.innerHTML = '<div class="has-text-centered"><span class="icon"><i class="mdi mdi-loading mdi-spin"></i></span> 載入中...</div>';
 
-            // 使用 mapTaskManager 載入任務列表
-            if (window.mapTaskManager) {
-                // 直接在這裡載入任務資料
-                if (window.tasksStore) {
-                    const tasksState = window.tasksStore.getState();
-                    const tasks = tasksState.tasks || [];
+            if (window.tasksStore) {
+                const tasksState = window.tasksStore.getState();
+                const tasks = tasksState.tasks || [];
 
-                    if (tasks.length === 0) {
-                        listElement.innerHTML = '<p class="has-text-grey">目前沒有任務</p>';
-                        return;
-                    }
+                if (tasks.length === 0) {
+                    listElement.innerHTML = '<p class="has-text-grey">目前沒有任務</p>';
+                    return;
+                }
 
-                    // 按 ID 排序任務
-                    const sortedTasks = tasks.sort((a, b) => a.id - b.id);
+                // 按 ID 排序任務
+                const sortedTasks = tasks.sort((a, b) => a.id - b.id);
 
-                    const tasksHtml = sortedTasks.map(task => `
-                        <div class="map-info-card" style="margin-bottom: 0.5rem; cursor: pointer;" onclick="mapInteraction.viewTaskDetails(${task.id})">
-                            <div class="map-info-card-header">
-                                <span class="map-info-card-title">${task.name || `任務 ${task.id}`}</span>
-                                <span class="tag is-info">任務 ${task.id}</span>
+                // 使用與 mapTaskManager 相同的樣式和結構，並使用原本的跳轉行為
+                const tasksHtml = sortedTasks.map(task => `
+                    <div class="task-item" onclick="window.mapInteraction.viewTaskDetails(${task.id})">
+                        <div class="level is-mobile">
+                            <div class="level-left">
+                                <div class="level-item">
+                                    <div>
+                                        <p class="title is-6">${task.name || `任務 ${task.id}`}</p>
+                                        <p class="subtitle is-7">
+                                            <span class="tag is-small is-info">狀態 ${task.status_id || 'N/A'}</span>
+                                            ${task.agv_id ? `<span class="tag is-small is-light">AGV ${task.agv_id}</span>` : ''}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="is-size-7 has-text-grey">
-                                狀態: ${task.status_id || 'N/A'} | 優先級: ${task.priority || 'N/A'}
+                            <div class="level-right">
+                                <div class="level-item">
+                                    <span class="icon">
+                                        <i class="mdi mdi-chevron-right"></i>
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    `).join('');
+                    </div>
+                `).join('');
 
-                    // 新增任務總數顯示
-                    const totalInfo = `<div class="has-text-grey is-size-7 mb-2">總計 ${tasks.length} 個任務</div>`;
-                    listElement.innerHTML = totalInfo + tasksHtml;
-                } else {
-                    listElement.innerHTML = '<div class="has-text-danger">任務資料未載入</div>';
-                }
+                // 新增任務總數顯示
+                const totalInfo = `<div class="total-info has-text-grey is-size-7 mb-2">總計 ${tasks.length} 個任務</div>`;
+                listElement.innerHTML = totalInfo + tasksHtml;
+
+                console.log(`mapInteraction.loadTasksList: 已載入 ${tasks.length} 個任務（備用邏輯）`);
             } else {
-                listElement.innerHTML = '<div class="has-text-danger">任務管理器未初始化</div>';
+                listElement.innerHTML = '<div class="has-text-danger">任務資料未載入</div>';
             }
 
         } catch (error) {
-            console.error('Error loading tasks:', error);
+            console.error('mapInteraction.loadTasksList: 載入失敗', error);
             listElement.innerHTML = '<div class="has-text-danger">載入失敗</div>';
         }
     }
@@ -556,7 +589,7 @@ export const mapInteraction = (() => {
                             <span class="tag is-success">貨架 ${rack.id}</span>
                         </div>
                         <div class="is-size-7 has-text-grey">
-                            位置: ${rack.location_id || 'N/A'} | 產品: ${rack.product_id || 'N/A'}
+                            位置: ${rack.location_id || 'N/A'} | 產品: ${rack.product_name || rack.product_id || 'N/A'}
                         </div>
                     </div>
                 `).join('');
@@ -638,14 +671,8 @@ export const mapInteraction = (() => {
         }
     }
 
-    function getTaskStatusName(statusId) {
-        switch (statusId) {
-            case 1: return '待處理';
-            case 2: return '進行中';
-            case 3: return '已完成';
-            case 4: return '已取消';
-            default: return '未知';
-        }
+    function getTaskStatusNameLocal(statusId) {
+        return getTaskStatusName(statusId);
     }
 
     // 輔助函數 - 貨架狀態

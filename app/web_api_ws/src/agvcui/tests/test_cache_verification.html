@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>緩存驗證工具</title>
+    <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
+    <link rel="stylesheet" href="/static/css/agvcui-bulma-extend.css" />
+    <link rel="stylesheet" href="/static/css/mapPage.css?v=<?php echo time(); ?>" />
+    <style>
+        .test-container {
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #dbdbdb;
+            border-radius: 6px;
+        }
+        .result {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+        }
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result.warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="title">緩存驗證工具</h1>
+        
+        <div class="test-section">
+            <h2 class="subtitle">檢查控制</h2>
+            <div class="buttons">
+                <button class="button is-primary" onclick="checkCSSUpdates()">🔍 檢查 CSS 更新</button>
+                <button class="button is-info" onclick="checkJSUpdates()">📜 檢查 JS 更新</button>
+                <button class="button is-success" onclick="testRackButton()">🧪 測試貨架按鈕</button>
+                <button class="button is-warning" onclick="clearCache()">🗑️ 清除緩存指引</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="subtitle">檢查結果</h2>
+            <div id="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="subtitle">實際測試</h2>
+            <div style="position: relative; height: 150px; background: #e8e8e8; border: 1px solid #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <div class="rack">
+                    <!-- 詳細顯示 -->
+                    <div class="rack-static">
+                        <!-- 切換按鈕 - 詳細模式 -->
+                        <div class="rack-toggle-btn" title="切換顯示模式" onclick="buttonClicked()">
+                            ⇄
+                        </div>
+                        
+                        <div class="rack-label has-radius-top-left has-radius-top-right span3">
+                            <span class="product-name">測試</span>
+                        </div>
+                        <div class="rack-label has-radius-bottom-left">
+                            <span class="size">大</span>
+                        </div>
+                        <div class="rack-label has-radius-bottom-right span2">
+                            <span class="count">3</span>
+                            <span class="slash">/</span>
+                            <span class="total">5</span>
+                        </div>
+                        <div class="rack-title has-radius-top-left has-radius-top-right span3">
+                            <span class="rack-name">緩存測試</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="help">如果您能看到右上角的藍色圓形 ⇄ 按鈕，說明 CSS 已更新</p>
+        </div>
+    </div>
+
+    <script>
+        function addResult(type, title, message) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${title}</strong><br>${message}`;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function checkCSSUpdates() {
+            clearResults();
+            addResult('info', '檢查開始', '正在檢查 CSS 更新...');
+
+            // 檢查 .rack-toggle-btn 樣式
+            const testElement = document.createElement('div');
+            testElement.className = 'rack-toggle-btn';
+            testElement.style.position = 'absolute';
+            testElement.style.top = '-1000px';
+            document.body.appendChild(testElement);
+
+            const styles = getComputedStyle(testElement);
+            
+            // 檢查關鍵樣式是否已更新
+            const checks = [
+                {
+                    name: 'z-index',
+                    actual: styles.zIndex,
+                    expected: '50',
+                    description: '檢查 z-index 是否已更新為 50'
+                },
+                {
+                    name: 'display',
+                    actual: styles.display,
+                    expected: 'flex',
+                    description: '檢查 display 屬性'
+                },
+                {
+                    name: 'position',
+                    actual: styles.position,
+                    expected: 'absolute',
+                    description: '檢查 position 屬性'
+                },
+                {
+                    name: 'width',
+                    actual: styles.width,
+                    expected: '20px',
+                    description: '檢查寬度'
+                },
+                {
+                    name: 'height',
+                    actual: styles.height,
+                    expected: '20px',
+                    description: '檢查高度'
+                }
+            ];
+
+            let updatedCount = 0;
+            checks.forEach(check => {
+                const passed = check.actual === check.expected;
+                if (passed) updatedCount++;
+                
+                addResult(
+                    passed ? 'success' : 'error',
+                    `CSS ${check.name}`,
+                    `${check.description}<br>實際值: ${check.actual}, 期望值: ${check.expected}`
+                );
+            });
+
+            document.body.removeChild(testElement);
+
+            // 總結
+            if (updatedCount === checks.length) {
+                addResult('success', 'CSS 檢查完成', '✅ 所有 CSS 樣式已正確更新！');
+            } else {
+                addResult('error', 'CSS 檢查完成', `❌ ${checks.length - updatedCount} 個樣式未更新，請清除瀏覽器緩存`);
+            }
+        }
+
+        function checkJSUpdates() {
+            addResult('info', 'JS 檢查', '檢查 RackInfoObject 是否已更新...');
+            
+            // 檢查是否能載入 RackInfoObject
+            import('/static/objects/RackInfoObject.js')
+                .then(module => {
+                    addResult('success', 'JS 模組載入', '✅ RackInfoObject 模組載入成功');
+                    
+                    // 檢查模組內容（這裡只能做基本檢查）
+                    if (module.RackInfoObject) {
+                        addResult('success', 'JS 類別', '✅ RackInfoObject 類別存在');
+                    } else {
+                        addResult('error', 'JS 類別', '❌ RackInfoObject 類別不存在');
+                    }
+                })
+                .catch(error => {
+                    addResult('error', 'JS 模組載入', `❌ 載入失敗: ${error.message}`);
+                });
+        }
+
+        function testRackButton() {
+            addResult('info', '按鈕測試', '檢查頁面中的切換按鈕...');
+            
+            const button = document.querySelector('.rack-toggle-btn');
+            if (button) {
+                const styles = getComputedStyle(button);
+                const rect = button.getBoundingClientRect();
+                
+                addResult('success', '按鈕存在', '✅ 找到切換按鈕');
+                addResult('info', '按鈕樣式', 
+                    `display: ${styles.display}<br>` +
+                    `visibility: ${styles.visibility}<br>` +
+                    `z-index: ${styles.zIndex}<br>` +
+                    `位置: ${rect.left.toFixed(1)}, ${rect.top.toFixed(1)}<br>` +
+                    `尺寸: ${rect.width.toFixed(1)} x ${rect.height.toFixed(1)}`
+                );
+                
+                if (rect.width > 0 && rect.height > 0) {
+                    addResult('success', '按鈕可見性', '✅ 按鈕在頁面中可見');
+                } else {
+                    addResult('error', '按鈕可見性', '❌ 按鈕不可見（尺寸為 0）');
+                }
+            } else {
+                addResult('error', '按鈕測試', '❌ 未找到切換按鈕');
+            }
+        }
+
+        function clearCache() {
+            addResult('warning', '清除緩存指引', 
+                '請嘗試以下方法清除緩存：<br>' +
+                '1. 按 Ctrl+F5 (Windows) 或 Cmd+Shift+R (Mac)<br>' +
+                '2. 開啟開發者工具 → Network 標籤 → 勾選 "Disable cache"<br>' +
+                '3. 右鍵重新整理按鈕 → "清空快取並強制重新整理"<br>' +
+                '4. 在網址後加上 ?v=' + Date.now()
+            );
+        }
+
+        function buttonClicked() {
+            addResult('success', '按鈕點擊', '✅ 切換按鈕點擊成功！功能正常');
+        }
+
+        // 頁面載入時自動檢查
+        document.addEventListener('DOMContentLoaded', function() {
+            addResult('info', '頁面載入', '緩存驗證工具已載入');
+            
+            // 顯示當前時間戳，幫助判斷是否為最新版本
+            const timestamp = new Date().toLocaleString();
+            addResult('info', '載入時間', `頁面載入時間: ${timestamp}`);
+            
+            // 自動執行 CSS 檢查
+            setTimeout(checkCSSUpdates, 500);
+        });
+    </script>
+</body>
+</html>

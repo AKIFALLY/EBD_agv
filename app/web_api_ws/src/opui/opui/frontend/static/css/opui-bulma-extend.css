@@ -1,0 +1,27 @@
+.button {
+    --bulma-button-border-width: 0px !important;
+    --bulma-button-outer-shadow-a: 0.05 !important;
+    /* 強制移除預設 按鈕框線,強制保持預設陰影 */
+}
+
+.is-selected {
+    background-color: rgba(140, 240, 140, 0.8);
+    /*    
+    background-color: rgba(247, 183, 69, 0.8);
+*/
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* 連線狀態圖示樣式 */
+.mdi-wifi.is-connected {
+    color: #48c774 !important;
+    /* 綠色 - 已連線 */
+}
+
+.mdi-wifi.is-disconnected {
+    color: #f14668 !important;
+    /* 紅色 - 已斷線 */
+}

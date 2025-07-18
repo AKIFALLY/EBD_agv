@@ -40,44 +40,67 @@ export const signalsPage = (() => {
     }
 
     /**
-     * 更新頁面上的信號值顯示
+     * 更新頁面上的信號值顯示（優化版本 - 使用唯一 ID 和精確變化檢測）
      * @param {Array} signals - 要顯示的信號列表
      */
     function updateSignalValues(signals) {
         signals.forEach(signal => {
-            // 查找對應的信號行
-            const signalRow = document.querySelector(`tr[data-signal-id="${signal.id}"]`);
-            if (!signalRow) return;
-
-            // 更新信號值
-            const valueCell = signalRow.querySelector('.signal-value');
-            if (valueCell) {
-                // 獲取當前顯示的值（從 tag 中提取）
-                const currentTag = valueCell.querySelector('.tag');
-                const oldValue = currentTag ? extractValueFromTag(currentTag) : '';
-                const newValue = signal.value || '';
-
-                if (oldValue !== newValue) {
-                    // 值有變化，重新生成 HTML 並添加動畫效果
-                    valueCell.innerHTML = generateValueHTML(signal);
-
-                    // 添加更新動畫
-                    valueCell.classList.add('signal-updated');
-                    setTimeout(() => {
-                        valueCell.classList.remove('signal-updated');
-                    }, 1000);
-
-                    console.debug(`信號 ${signal.name} 值更新: ${oldValue} → ${newValue}`);
-                }
-            }
-
-            // 更新時間戳（如果有的話）
-            const timestampCell = signalRow.querySelector('.signal-timestamp');
-            if (timestampCell && signal.updated_at) {
-                const updateTime = new Date(signal.updated_at).toLocaleTimeString();
-                timestampCell.textContent = updateTime;
-            }
+            updateSignalRowOptimized(signal.id, signal);
         });
+    }
+
+    /**
+     * 優化的信號行更新函數（只更新變化的欄位，不重建 DOM 結構）
+     * @param {number} signalId - 信號 ID
+     * @param {Object} newSignal - 新的信號資料
+     */
+    function updateSignalRowOptimized(signalId, newSignal) {
+        let hasChanges = false;
+
+        // 更新信號值（優化版本 - 只更新標籤內容，不重建整個 HTML）
+        const valueTagElement = document.getElementById(`signal-tag-${signalId}`);
+        if (valueTagElement) {
+            const oldValue = extractValueFromTag(valueTagElement);
+            const newValue = newSignal.value || '';
+
+            console.debug(`信號 ${signalId} 值檢測: 舊值="${oldValue}" (${typeof oldValue}), 新值="${newValue}" (${typeof newValue})`);
+
+            if (hasChanged(oldValue, newValue)) {
+                // 只更新標籤的內容和樣式，不重建整個結構
+                updateSignalValueTag(valueTagElement, newSignal);
+
+                // 統一動畫目標：應用到 td 元素
+                const valueCell = document.getElementById(`signal-value-${signalId}`);
+                if (valueCell) {
+                    addUpdateAnimation(valueCell);
+                }
+
+                hasChanges = true;
+                console.debug(`信號 ${newSignal.name || signalId} 值更新: "${oldValue}" → "${newValue}"`);
+            } else {
+                console.debug(`信號 ${signalId} 值無變化，跳過動畫`);
+            }
+        }
+
+        // 更新時間戳（帶變化檢測）
+        const timestampElement = document.getElementById(`signal-timestamp-${signalId}`);
+        if (timestampElement && newSignal.updated_at) {
+            const oldTimestamp = timestampElement.textContent;
+            const newTimestamp = new Date(newSignal.updated_at).toLocaleTimeString();
+
+            if (hasChanged(oldTimestamp, newTimestamp)) {
+                timestampElement.textContent = newTimestamp;
+                // 統一動畫目標：應用到 td 元素
+                const timestampTdElement = timestampElement.closest('td');
+                addUpdateAnimation(timestampTdElement);
+                hasChanges = true;
+            }
+        }
+
+        // 記錄變化但不添加整行動畫
+        if (hasChanges) {
+            console.debug(`信號 ${newSignal.name || signalId} 資料已更新`);
+        }
     }
 
     /**
@@ -95,6 +118,97 @@ export const signalsPage = (() => {
 
         // 處理其他格式，直接返回文本
         return text === '無值' ? '' : text;
+    }
+
+    /**
+     * 精確的變化檢測函數
+     * @param {any} oldValue - 舊值
+     * @param {any} newValue - 新值
+     * @param {number} precision - 數值比較精度（可選）
+     * @returns {boolean} 是否有變化
+     */
+    function hasChanged(oldValue, newValue, precision = null) {
+        if (precision !== null && typeof oldValue === 'number' && typeof newValue === 'number') {
+            return Math.abs(oldValue - newValue) > precision;
+        }
+        return oldValue !== newValue;
+    }
+
+    /**
+     * 添加更新動畫效果（帶防重疊機制）
+     * @param {Element} element - 要添加動畫的元素
+     */
+    function addUpdateAnimation(element) {
+        if (!element) return;
+
+        // 檢查是否已經在播放動畫
+        if (element.classList.contains('signal-updated')) {
+            console.debug('Signal 動畫進行中，跳過重複添加');
+            return;
+        }
+
+        element.classList.add('signal-updated');
+        setTimeout(() => {
+            element.classList.remove('signal-updated');
+        }, 1000); // 與 CSS 動畫持續時間一致
+    }
+
+    /**
+     * 優化的信號值標籤更新（只更新內容和樣式，不重建結構）
+     * @param {Element} tagElement - 標籤元素
+     * @param {Object} signal - 信號對象
+     */
+    function updateSignalValueTag(tagElement, signal) {
+        if (!signal.value && signal.value !== 0) {
+            tagElement.className = 'tag is-light';
+            tagElement.innerHTML = '無值';
+            return;
+        }
+
+        const value = signal.value;
+        const type = signal.type_of_value?.toLowerCase();
+
+        if (type === 'bool' || type === 'boolean') {
+            if (value == 1 || value === '1' || value === true || value === 'true') {
+                tagElement.className = 'tag is-success';
+                tagElement.innerHTML = `
+                    <span class="icon"><i class="mdi mdi-check-circle"></i></span>
+                    <span>TRUE (1)</span>
+                `;
+            } else if (value == 0 || value === '0' || value === false || value === 'false') {
+                tagElement.className = 'tag is-danger';
+                tagElement.innerHTML = `
+                    <span class="icon"><i class="mdi mdi-close-circle"></i></span>
+                    <span>FALSE (0)</span>
+                `;
+            } else {
+                tagElement.className = 'tag is-warning';
+                tagElement.textContent = value;
+            }
+        } else if (type === 'int' || type === 'integer' || type === 'number') {
+            const numValue = parseInt(value);
+            if (numValue > 0) {
+                tagElement.className = 'tag is-info';
+            } else if (numValue === 0) {
+                tagElement.className = 'tag is-light';
+            } else {
+                tagElement.className = 'tag is-warning';
+            }
+            tagElement.textContent = value;
+        } else if (type === 'float' || type === 'double' || type === 'decimal') {
+            const numValue = parseFloat(value);
+            if (numValue > 0) {
+                tagElement.className = 'tag is-info';
+            } else if (numValue === 0) {
+                tagElement.className = 'tag is-light';
+            } else {
+                tagElement.className = 'tag is-warning';
+            }
+            tagElement.textContent = value;
+        } else {
+            tagElement.className = 'tag is-success';
+            tagElement.textContent = value;
+        }
     }
 
     /**

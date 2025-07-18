@@ -1,32 +1,31 @@
 from agv_base.base_context import BaseContext
 from agv_base.agv_node_base import AgvNodebase
+from cargo_mover_agv.robot_states.idle_state import IdleState
 from cargo_mover_agv.robot_context import RobotContext
-from cargo_mover_agv.robot_states.entrance.select_rack_port_state import SelectRackPortState
-from cargo_mover_agv.robot_states.entrance.check_rack_side_state import CheckRackSideState
-from cargo_mover_agv.robot_states.entrance.put_tranfer_state import PutTranferState
-from cargo_mover_agv.robot_states.entrance.transfer_vision_position_state import TransferVisionPositionState
-from cargo_mover_agv.robot_states.exit.transfer_check_have_state import TransferCheckHaveState
-from cargo_mover_agv.robot_states.entrance.transfer_check_empty_state import TransferCheckEmptyState
-from cargo_mover_agv.robot_states.entrance.take_rack_port_state import TakeRackPortState
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 import rclpy
 from rclpy.node import Node
 import time
+from db_proxy_interfaces.msg import Task as TaskMsg
 
 
 class TestAgvCoreNode(AgvNodebase):
     def __init__(self):
         super().__init__()
+        self.room_id = 2  # 設定房間ID
+        self.work_id = 2000102  # 設定工作ID
         self.hokuyo_dms_8bit_1 = HokuyoDMS8Bit(
             self, "/app/config/hokuyo_dms_config.yaml", "hokuyo_dms_cargo02_1")
         self.hokuyo_dms_8bit_2 = HokuyoDMS8Bit(
             self, "/app/config/hokuyo_dms_config.yaml", "hokuyo_dms_cargo02_2")
         self.agv_state_context = RobotContext(
-            TransferCheckHaveState(self))
+            IdleState(self))
         self.agv_state_context.on_state_changing += self.on_state_changing
         self.agv_state_context.on_state_changed += self.on_state_changed
         self.agv_state_context.before_handle += self.before_handle
         self.agv_state_context.after_handle += self.after_handle
+
+        self.task = TaskMsg()
 
         self.get_logger().info("Test AGV 狀態機啟動 AgvIdleState")
         # 測試cycle timer

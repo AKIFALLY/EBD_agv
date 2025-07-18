@@ -13,11 +13,19 @@ def initialize_task_status(session):
 
     default_task_status = [
         # AGV 用 執行中 / 任務完成
-        {"id": 1, "name": "待執行", "description": "任務等待執行"},
-        {"id": 2, "name": "執行中", "description": "任務正在執行"},
-        {"id": 3, "name": "已完成", "description": "任務已完成"},
-        {"id": 4, "name": "取消", "description": "任務取消"},
-        {"id": 5, "name": "錯誤", "description": "錯誤"},
+        {"id": 0, "name": "請求中", "description": "UI-請求執行任務"},
+        {"id": 1, "name": "待處理", "description": "WCS-任務已接受，待處理"},
+        {"id": 2, "name": "待執行", "description": "RCS-任務已派發，待執行"},
+        {"id": 3, "name": "執行中", "description": "AGV-任務正在執行"},
+        {"id": 4, "name": "已完成", "description": "AGV-任務已完成"},
+
+        {"id": 5, "name": "取消中", "description": "任務取消"},
+        {"id": 51, "name": "WCS-取消中", "description": "WCS-任務取消中，待處理"},
+        {"id": 52, "name": "RCS-取消中", "description": "RCS-任務取消中，取消中"},
+        {"id": 53, "name": "AGV-取消中", "description": "AGV-取消完成"},
+        {"id": 54, "name": "已取消", "description": "任務已取消"},
+
+        {"id": 6, "name": "錯誤", "description": "錯誤"},
     ]
     insert_data_if_not_exists_name_and_not_exists_id(
         session, default_task_status, TaskStatus)

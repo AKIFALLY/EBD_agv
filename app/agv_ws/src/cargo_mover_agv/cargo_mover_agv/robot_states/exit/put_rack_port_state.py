@@ -1,39 +1,44 @@
-from agv_base.states.state import State
 from db_proxy.agvc_database_client import AGVCDatabaseClient
 from rclpy.node import Node
 from db_proxy_interfaces.msg import Carrier as CarrierMsg
-from cargo_mover_agv.robot_context import RobotContext  # 新增的匯入
+from cargo_mover_agv.robot_context import RobotContext
 from agv_base.robot import Robot
+from cargo_mover_agv.robot_states.base_robot_state import BaseRobotState
 
 
-class PutRackPortState(State):
+class PutRackPortState(BaseRobotState):
     def __init__(self, node: Node):
         super().__init__(node)
-        self.hokuyo_dms_8bit_1 = self.node.hokuyo_dms_8bit_1
+        self.hokuyo_dms_8bit_2 = self.node.hokuyo_dms_8bit_2
         self.step = RobotContext.IDLE
         self.agvc_client = AGVCDatabaseClient(self.node)
         self.sent = False
-        self.hokuyo_input_updated = False  # 用於判斷是否已經更新過 Hokuyo Input
+        # hokuyo_input_updated 已移除，因為需要持續更新
+        self.update_carrier_success = False
 
     def enter(self):
         self.node.get_logger().info("Robot Exit 目前狀態: PutRackPort")
         self.sent = False
-        self.hokuyo_input_updated = False
+        # hokuyo_input_updated 已移除，因為需要持續更新
+        self.update_carrier_success = False
 
     def leave(self):
         self.node.get_logger().info("Robot Exit 離開 PutRackPort 狀態")
         self.sent = False
-        self.hokuyo_input_updated = False  # 用於判斷是否已經更新過 Hokuyo Input
+        # hokuyo_input_updated 已移除，因為需要持續更新
+        self.update_carrier_success = False
 
     def update_carrier_database(self, context: RobotContext):
         carrier = CarrierMsg()
         carrier.id = context.carrier_id
         context.get_room_id = 0  # 假設這是傳送箱所在的房間 ID
         carrier.room_id = context.get_room_id
-        carrier.rack_id = 123
+        # 使用從 task.parameters 解析的 rack_id，如果沒有則使用預設值 123
+        rack_id_to_use = context.rack_id if context.rack_id is not None else 123
+        carrier.rack_id = rack_id_to_use
         carrier.port_id = 0
         carrier.rack_index = context.get_rack_port
-        carrier.status_id = 2  # 假設 2 是表示傳送箱的狀態
+        carrier.status_id = Robot.CARRIER_STATUS_COMPLETED  # 已完成
         self.agvc_client.async_update_carrier(
             carrier, self.update_carrier_database_callback)
 
@@ -47,29 +52,26 @@ class PutRackPortState(State):
             self.update_carrier_success = False
 
     def handle(self, context: RobotContext):
+        self.node.get_logger().info("Robot Exit PutRackPort 狀態")
+
+        # 並行執行：Hokuyo write_busy 設定
+        self._set_hokuyo_busy_exit()
+
+        # 並行執行：其他操作（不需等待 Hokuyo 完成）
         PUT_RACK_PGNO = context.robot.ACTION_TO + \
             context.robot.NONE_POSITION + context.robot.RACK_OUT_POSITION
-        self.node.get_logger().info("Robot Exit PutRackPort 狀態")
         read_pgno = context.robot.read_pgno_response
-        context.robot.read_pgno()
+        context.robot.read_robot_status()
 
-        # 更新 Hokuyo Input
-        if not self.hokuyo_input_updated:
-            self.hokuyo_dms_8bit_1.update_hokuyo_input()
-            self.hokuyo_input_updated = True
-        if self.hokuyo_dms_8bit_1.hokuyo_input_success:
-            self.node.get_logger().info("Hokuyo Input 更新成功")
-            self.hokuyo_dms_8bit_1.hokuyo_input_success = False
-            self.hokuyo_input_updated = False
-        elif self.hokuyo_dms_8bit_1.hokuyo_input_failed:
-            self.node.get_logger().info("Hokuyo Input 更新失敗")
-            self.hokuyo_dms_8bit_1.hokuyo_input_failed = False
-            self.hokuyo_input_updated = False
-        else:
-            self.node.get_logger().info("等待 Hokuyo Input 更新")
+        # 更新 Hokuyo Input - 使用統一方法
+        self._handle_hokuyo_input_exit()
 
-        print("🔶=========================================================================🔶")
+        # 條件執行：只有機器人邏輯需要等待 Hokuyo 完成
+        if self.hokuyo_busy_write_completed:
+            self._execute_robot_logic(context, PUT_RACK_PGNO, read_pgno)
 
+    def _execute_robot_logic(self, context: RobotContext, PUT_RACK_PGNO, read_pgno):
+        """執行機器人邏輯"""
         match self.step:
             case RobotContext.IDLE:
                 self.node.get_logger().info("Robot Exit PUT RACK IDLE")
@@ -85,7 +87,6 @@ class PutRackPortState(State):
             case RobotContext.WRITE_CHG_PARAMTER:
                 if not self.sent:
                     context.update_rack_box_port()
-                    context.robot.update_parameter()
                     self.sent = True
                 if context.robot.update_parameter_success:
                     self.node.get_logger().info("✅更新參數成功")
@@ -170,21 +171,26 @@ class PutRackPortState(State):
                 self.node.get_logger().info("Robot Exit PUT RACK Finish")
                 if read_pgno.value == Robot.IDLE:
                     self.node.get_logger().info("✅放RACK完成")
-                    # 這裡可以添加下一個狀態的轉換
-                    # from cargo_mover_agv.robot_states.exit.next_state import NextState
-                    # context.set_state(NextState(self.node))
-                    self.step = RobotContext.IDLE
+                    self.step = RobotContext.UPDATE_DATABASE
                 else:
                     self.node.get_logger().info("❌放RACK失敗")
 
             case RobotContext.UPDATE_DATABASE:
-                self.node.get_logger().info("Robot Entrance PUT TRANSFER UPDATE_DATABASE")
+                self.node.get_logger().info("Robot Exit PUT RACK UPDATE_DATABASE")
                 if not self.sent:
                     self.update_carrier_database(context)
                     self.sent = True
                 elif self.sent and self.update_carrier_success:
                     self.node.get_logger().info("✅更新 Carrier 資料庫成功")
                     self.sent = False
-                    from cargo_mover_agv.robot_states.entrance.check_rack_side_state import CheckRackSideState
-                    context.set_state(CheckRackSideState(self.node))
                     self.step = RobotContext.IDLE
+
+                    # 根據 take_transfer_continue 決定下一個狀態
+                    if getattr(context, 'take_transfer_continue', False):
+                        self.node.get_logger().info("🔄 Take Transfer 繼續: 進入 TransferCheckHaveState")
+                        from cargo_mover_agv.robot_states.exit.transfer_check_have_state import TransferCheckHaveState
+                        context.set_state(TransferCheckHaveState(self.node))
+                    else:
+                        self.node.get_logger().info("🔄 處理下一個 Rack Port: 進入 CheckRackSideState")
+                        from cargo_mover_agv.robot_states.exit.check_rack_side_state import CheckRackSideState
+                        context.set_state(CheckRackSideState(self.node))

@@ -164,19 +164,7 @@
         </div>
     </div>
 
-    <!-- 資訊面板 -->
-    <div id="info-panel" class="hidden" style="
-      position: absolute;
-      top: calc( var(--bulma-navbar-height) + 1rem);
-      right: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      z-index: 1000;
-    ">
-        <em>Click a node to see info</em>
-    </div>
+
 
     <!-- 地圖圖例 -->
     <div id="map-legend" class="map-legend" style="display: none;">
@@ -186,7 +174,7 @@
             <span>正常運行</span>
         </div>
         <div class="map-legend-item">
-            <div class="map-legend-icon" style="background: #ffdd57;"></div>
+            <div class="map-legend-icon" style="background: #ffcc00;"></div>
             <span>警告狀態</span>
         </div>
         <div class="map-legend-item">
@@ -199,19 +187,5 @@
         </div>
     </div>
 </section>
-{% endblock %}
 
-{% block extra_scripts %}
-<script type="module">
-    import { mapPage } from '/static/js/mapPage.js';
-
-    // 開發環境載入測試腳本
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        import('/static/js/mapIntegrationTest.js');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        mapPage.setup();
-    });
-</script>
 {% endblock %}

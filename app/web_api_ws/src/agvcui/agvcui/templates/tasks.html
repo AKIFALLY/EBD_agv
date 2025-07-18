@@ -93,8 +93,8 @@
                 </thead>
                 <tbody>
                     {% for task in tasks %}
-                    <tr title="{{ task.description or '無描述' }}" data-task-id="{{ task.id }}" {% if task.parent_task_id
-                        %}data-parent-id="{{ task.parent_task_id }}" {% endif %}>
+                    <tr title="{{ task.description or '無描述' }}" data-task-id="{{ task.id }}" id="task-row-{{ task.id }}"
+                        {% if task.parent_task_id %}data-parent-id="{{ task.parent_task_id }}" {% endif %}>
                         <td><strong>{{ task.id }}</strong></td>
                         <td>
                             <div class="has-text-weight-medium">{{ task.name }}</div>
@@ -122,28 +122,28 @@
                         </td>
                         <td>
                             {% if task.mission_code %}
-                            <span class="tag is-info">
+                            <span class="tag is-info" id="task-mission-{{ task.id }}">
                                 <span class="icon">
                                     <i class="mdi mdi-barcode"></i>
                                 </span>
                                 <span>{{ task.mission_code }}</span>
                             </span>
                             {% else %}
-                            <span class="tag is-light">未設定</span>
+                            <span class="tag is-light" id="task-mission-{{ task.id }}">未設定</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if task.agv and task.agv.name %}
-                            <span class="tag is-success">
+                            <span class="tag is-success" id="task-agv-{{ task.id }}">
                                 <span class="icon">
                                     <i class="mdi mdi-robot"></i>
                                 </span>
                                 <span>{{ task.agv.name }}</span>
                             </span>
                             {% elif task.agv_id %}
-                            <span class="tag is-warning">AGV {{ task.agv_id }}</span>
+                            <span class="tag is-warning" id="task-agv-{{ task.id }}">AGV {{ task.agv_id }}</span>
                             {% else %}
-                            <span class="tag is-light">未分配</span>
+                            <span class="tag is-light" id="task-agv-{{ task.id }}">未分配</span>
                             {% endif %}
                         </td>
                         <td>
@@ -189,21 +189,23 @@
                         </td>
                         <td>
                             {% if task.status_id == 1 %}
-                            <span class="tag is-warning">待處理</span>
+                            <span class="tag is-warning" id="task-status-{{ task.id }}">待處理</span>
                             {% elif task.status_id == 2 %}
-                            <span class="tag is-info">進行中</span>
+                            <span class="tag is-info" id="task-status-{{ task.id }}">進行中</span>
                             {% elif task.status_id == 3 %}
-                            <span class="tag is-success">已完成</span>
+                            <span class="tag is-success" id="task-status-{{ task.id }}">已完成</span>
                             {% elif task.status_id == 4 %}
-                            <span class="tag is-danger">已取消</span>
+                            <span class="tag is-danger" id="task-status-{{ task.id }}">已取消</span>
                             {% else %}
-                            <span class="tag is-light">{{ task.status_id or '未知' }}</span>
+                            <span class="tag is-light" id="task-status-{{ task.id }}">{{ task.status_id or '未知'
+                                }}</span>
                             {% endif %}
                         </td>
                         <td><span class="has-text-grey is-family-monospace is-size-7">{{
                                 task.created_at.strftime('%Y-%m-%d %H:%M') if task.created_at
                                 else '-' }}</span></td>
-                        <td><span class="has-text-grey is-family-monospace is-size-7">{{
+                        <td><span class="has-text-grey is-family-monospace is-size-7"
+                                id="task-timestamp-{{ task.id }}">{{
                                 task.updated_at.strftime('%Y-%m-%d %H:%M') if task.updated_at
                                 else '-' }}</span></td>
                         {% if current_user and current_user.role in ['operator', 'admin'] %}
@@ -334,8 +336,12 @@
 <!-- JavaScript 功能已移至 /static/js/deleteModal.js -->
 {% endif %}
 
+<!-- Tasks 頁面 JavaScript 模組已移至 index.js 統一管理 -->
+
+<!-- Tasks 頁面視圖切換邏輯已移至 tasksPage.js 統一管理 -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    // 保留原有的視圖切換邏輯，但移除 DOMContentLoaded 包裝
+    (function () {
         const listViewBtn = document.getElementById('listViewBtn');
         const hierarchyViewBtn = document.getElementById('hierarchyViewBtn');
         const listView = document.getElementById('listView');
@@ -469,7 +475,7 @@
                 default: return 'is-light';
             }
         }
-    });
+    })();
 </script>
 
 {% endblock %}

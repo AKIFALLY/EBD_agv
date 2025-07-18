@@ -1,25 +1,21 @@
-from agv_base.states.state import State
 from db_proxy.carrier_query_client import CarrierQueryClient
 from db_proxy.eqp_signal_query_client import EqpSignalQueryClient
 from rclpy.node import Node
-from cargo_mover_agv.robot_context import RobotContext  # 新增的匯入
-from std_msgs.msg import Bool  # 匯入 ROS 2 的 Bool 訊息型態
+from cargo_mover_agv.robot_context import RobotContext
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
+from cargo_mover_agv.robot_states.base_robot_state import BaseRobotState
 
 
-class TransferCheckEmptyState(State):
+class TransferCheckEmptyState(BaseRobotState):
     RobotContext.boxin_up_both_empty = True
 
     # 8 BIT STEP
     IDLE = 0
-    WRITE_VAILD = 1
+    WRITE_VALID = 1
     WRITE_PORT_NUMBER = 2
     WAIT_LOAD_REQ = 3
     WRITE_TR_REQ = 4
     WAIT_READY = 5
-
-    PORT_ADDRESS = 2010
-    EQP_ID = 201
 
     SELECT_PORT01, SELECT_PORT02, SELECT_PORT03, SELECT_PORT04, SELECT_NONE = 1, 2, 3, 4, 0
 
@@ -28,6 +24,10 @@ class TransferCheckEmptyState(State):
         self.hokuyo_dms_8bit_1: HokuyoDMS8Bit = self.node.hokuyo_dms_8bit_1
         self.eqp_signal_query_client = EqpSignalQueryClient(node)
         self.carrier_query_client = CarrierQueryClient(node)
+
+        # 動態計算 port_address 和 eqp_id
+        self.port_address = self.node.room_id * 1000 + 10
+        self.eqp_id = self.node.room_id * 100 + 1
 
         self.select_boxin_port_table = {
             (0, 0, 0, 0): self.SELECT_PORT01, (0, 0, 0, 1): self.SELECT_PORT01, (0, 0, 1, 1): self.SELECT_PORT01,
@@ -43,7 +43,7 @@ class TransferCheckEmptyState(State):
         self.check_ok = False
         self.step = self.IDLE
         self.sent = False
-        self.hokuyo_input_updated = False
+        # hokuyo_input_updated 已移除，因為需要持續更新
         self.search_eqp_signal_ok = False
         self.carrier_query_sended = False
         self.carrier_query_success = False
@@ -62,7 +62,7 @@ class TransferCheckEmptyState(State):
     def eqp_signal_query_callback(self, response):
         for i in range(4):
             self.port_carriers[i] = EqpSignalQueryClient.eqp_signal_port(
-                response, self.PORT_ADDRESS + i + 1)
+                response, self.port_address + i + 1)
             self.node.get_logger().info(
                 f"Port {i+1:02d} 有無貨: {self.port_carriers[i]}")
 
@@ -74,7 +74,7 @@ class TransferCheckEmptyState(State):
     def carrier_callback(self, response):
         self.carrier_query_success = response.success
         self.carrier_id = CarrierQueryClient.carrier_port_id_carrier_id(
-            response, self.PORT_ADDRESS + getattr(self, 'box_number', 0))
+            response, self.port_address + getattr(self, 'box_number', 0))
 
     def _update_context_states(self, context: RobotContext):
         """更新context中的狀態"""
@@ -128,7 +128,7 @@ class TransferCheckEmptyState(State):
             self.sent = False
             self.step = next_step
         elif getattr(self.hokuyo_dms_8bit_1, failed_attr):
-            self.node.get_logger().info(f"❌{step_name}失敗")
+            self.node.get_logger().error(f"❌{step_name}失敗")
             setattr(self.hokuyo_dms_8bit_1, failed_attr, False)
             self.sent = False
         else:
@@ -140,32 +140,20 @@ class TransferCheckEmptyState(State):
         # 查詢EQP信號
         if not self.search_eqp_signal_ok and not self.sent:
             self.eqp_signal_query_client.search_eqp_signal_eqp_id(
-                self.EQP_ID, self.eqp_signal_query_callback)
+                self.eqp_id, self.eqp_signal_query_callback)
             self.sent = True
 
-        # 更新Hokuyo Input
-        if not self.hokuyo_input_updated:
-            self.hokuyo_dms_8bit_1.update_hokuyo_input()
-            self.hokuyo_input_updated = True
-
-        if self.hokuyo_dms_8bit_1.hokuyo_input_success:
-            self.node.get_logger().info("Hokuyo Input 更新成功")
-            self.hokuyo_dms_8bit_1.hokuyo_input_success = False
-            self.hokuyo_input_updated = False
-        elif self.hokuyo_dms_8bit_1.hokuyo_input_failed:
-            self.node.get_logger().info("Hokuyo Input 更新失敗")
-            self.hokuyo_dms_8bit_1.hokuyo_input_failed = False
-            self.hokuyo_input_updated = False
-
-        print("🔶=========================================================================🔶")
+        # 更新 Hokuyo Input - 使用統一方法
+        self._handle_hokuyo_input_entrance()
 
         self._handle_port_selection(context)
 
         # 查詢Carrier
         if self.check_ok and not self.carrier_query_sended:
             self.box_number = context.boxin_number
+            port_id_target = self.port_address + self.box_number
             self.carrier_query_client.search_carrier_port_id(
-                port_id=self.PORT_ADDRESS + self.box_number, callback=self.carrier_callback)
+                port_id_min=port_id_target, port_id_max=port_id_target, callback=self.carrier_callback)
             self.carrier_query_sended = True
 
         # 處理Carrier查詢結果
@@ -174,7 +162,7 @@ class TransferCheckEmptyState(State):
                 self.node.get_logger().info(
                     f"Carrier 查詢成功，資料: {self.carrier_id}")
                 self.node.get_logger().info(
-                    f"傳送箱{self.PORT_ADDRESS + self.box_number}已經有貨，無法執行傳送箱操作。")
+                    f"傳送箱{self.port_address + self.box_number}已經有貨，無法執行傳送箱操作。")
                 self._reset_state()
             else:
                 context.get_boxin_port = context.boxin_number
@@ -184,14 +172,14 @@ class TransferCheckEmptyState(State):
         """處理8bit步驟"""
         match self.step:
             case self.IDLE:
-                self.step = self.WRITE_VAILD
+                self.step = self.WRITE_VALID
                 self.sent = False
 
-            case self.WRITE_VAILD:
-                self._handle_step_operation(context, "vaild寫入",
-                                            lambda: self.hokuyo_dms_8bit_1.write_vaild(
+            case self.WRITE_VALID:
+                self._handle_step_operation(context, "valid寫入",
+                                            lambda: self.hokuyo_dms_8bit_1.write_valid(
                                                 "1"),
-                                            "vaild_success", "vaild_failed", self.WRITE_PORT_NUMBER)
+                                            "valid_success", "valid_failed", self.WRITE_PORT_NUMBER)
 
             case self.WRITE_PORT_NUMBER:
                 self._handle_step_operation(context, "port number寫入",
@@ -204,7 +192,7 @@ class TransferCheckEmptyState(State):
                     self.node.get_logger().info("✅收到load_req")
                     self.step = self.WRITE_TR_REQ
                 else:
-                    self.node.get_logger().info("⏳等待load_req")
+                    self.node.get_logger().debug("⏳等待load_req")
 
             case self.WRITE_TR_REQ:
                 self._handle_step_operation(context, "tr_req寫入",
@@ -219,4 +207,4 @@ class TransferCheckEmptyState(State):
                     from cargo_mover_agv.robot_states.entrance.select_rack_port_state import SelectRackPortState
                     context.set_state(SelectRackPortState(self.node))
                 else:
-                    self.node.get_logger().info("⏳等待ready")
+                    self.node.get_logger().debug("⏳等待ready")

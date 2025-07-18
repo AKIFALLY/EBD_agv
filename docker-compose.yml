@@ -11,6 +11,7 @@ services:
     network_mode: "host" # 使用主機網路
     restart: unless-stopped # 自動重啟策略
     environment:
+      CONTAINER_TYPE: "agv"
       ZENOH_ROUTER_CONFIG_URI: "/app/routerconfig.json5"
       RMW_IMPLEMENTATION: "rmw_zenoh_cpp"
       SDL_AUDIODRIVER: dummy # 避免 pygame 的 ALSA 錯誤

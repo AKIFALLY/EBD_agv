@@ -67,6 +67,10 @@ const agvsStore = createStore('agvsState', {
     agvs: []
 });
 
+const productsStore = createStore('productsState', {
+    products: []
+});
+
 const userStore = createStore('userState', {
     id: null,
     username: null,
@@ -76,6 +80,31 @@ const userStore = createStore('userState', {
     isLoggedIn: false,
     isConnected: false
 });
+
+const locationsStore = createStore('locationsState', {
+    locations: [],
+    loading: false,
+    error: null
+});
+
+// 為 locationsStore 添加額外方法
+locationsStore.getLocationName = function (locationId) {
+    const state = this.getState();
+    const location = state.locations.find(loc => loc.id === locationId);
+    return location ? location.name : null;
+};
+
+locationsStore.getLocationById = function (locationId) {
+    const state = this.getState();
+    return state.locations.find(loc => loc.id === locationId);
+};
+
+locationsStore.updateLocations = function (locations) {
+    this.setState({
+        locations: locations || [],
+        error: null
+    });
+};
 
 // ✅ 統一 export 所有 store
 export {
@@ -87,7 +116,9 @@ export {
     carriersStore,
     tasksStore,
     agvsStore,
+    productsStore,
     userStore,
+    locationsStore,
 };
 
 // 🌐 全域暴露 stores 供其他模組使用
@@ -99,4 +130,6 @@ window.racksStore = racksStore;
 window.carriersStore = carriersStore;
 window.tasksStore = tasksStore;
 window.agvsStore = agvsStore;
+window.productsStore = productsStore;
 window.userStore = userStore;
+window.locationsStore = locationsStore;

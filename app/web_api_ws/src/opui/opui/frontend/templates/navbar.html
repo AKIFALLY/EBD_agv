@@ -1,0 +1,186 @@
+<style>
+    .is-connected {
+        color: lightgreen;
+    }
+
+    .is-disconnected {
+        color: coral;
+    }
+
+    .navbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        position: relative;
+    }
+
+    .navbar-menu {
+        display: flex !important;
+        flex-grow: 1;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+    }
+
+    .navbar-brand,
+    .navbar-start,
+    .navbar-end {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
+    /* 中間置中的機器編號 */
+    .is-absolute-center {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    /* OP-UI 品牌圖示樣式 */
+    .navbar-brand-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    /* Active 狀態樣式 */
+    .navbar-item.is-active {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+        border-bottom: 2px solid #3273dc;
+    }
+
+    .navbar-item.is-active:hover {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+    }
+
+    /* 導航項目間距調整 */
+    .navbar-item {
+        transition: all 0.2s ease;
+    }
+
+    .navbar-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    /* 圖示與文字間距 */
+    .navbar-item .mdi {
+        margin-right: 6px;
+    }
+</style>
+<nav class="navbar is-black has-shadow" role="navigation" aria-label="main navigation">
+    <!-- 🔧 加入 navbar-menu 才能 override 成水平 -->
+    <div class="navbar-menu is-active">
+        <div class="navbar-start">
+            <a class="navbar-item" href="/home?deviceId={{ device_id }}">
+                <img src="/static/favicon.png" alt="OP-UI" class="navbar-brand-icon">
+            </a>
+            <a class="navbar-item nav-link" href="/home?deviceId={{ device_id }}" data-page="home">
+                <span class="mdi mdi-monitor"></span>
+                <span>操作</span>
+            </a>
+            <a class="navbar-item nav-link" href="/setting?deviceId={{ device_id }}" data-page="setting">
+                <span class="mdi mdi-cog"></span>
+                <span>設定</span>
+            </a>
+            <a class="navbar-item nav-link" href="/rack?deviceId={{ device_id }}" data-page="rack">
+                <span class="mdi mdi-view-grid"></span>
+                <span>料架</span>
+            </a>
+        </div>
+
+        <!-- 絕對置中的機器編號 -->
+        <div class="navbar-item is-absolute-center">
+            <span class="has-text-white has-text-weight-bold" id="nav-machine-number"> </span>
+        </div>
+
+        <div class="navbar-end">
+            <a class="navbar-item"> 
+                <span class="mdi mdi-wifi is-disconnected"></span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<script>
+    // 設備授權導航連結處理和 Active 狀態管理
+    document.addEventListener('DOMContentLoaded', function () {
+        // 從當前 URL 獲取 deviceId 參數
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceId = urlParams.get('deviceId');
+
+        if (deviceId) {
+            // 更新所有導航連結，添加 deviceId 參數
+            const navLinks = document.querySelectorAll('.navbar-link');
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.includes('deviceId=')) {
+                    const separator = href.includes('?') ? '&' : '?';
+                    link.setAttribute('href', href + separator + 'deviceId=' + encodeURIComponent(deviceId));
+                }
+            });
+        }
+
+        // 設定 Active 狀態
+        setActiveNavItem();
+    });
+
+    /**
+     * 根據當前頁面路徑設定對應導航項目的 active 狀態
+     */
+    function setActiveNavItem() {
+        // 移除所有導航項目的 active 狀態
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.classList.remove('is-active');
+        });
+
+        // 根據當前路徑確定頁面類型
+        const currentPath = window.location.pathname;
+        let currentPage = 'home'; // 預設為 home
+
+        if (currentPath.includes('/setting')) {
+            currentPage = 'setting';
+        } else if (currentPath.includes('/rack')) {
+            currentPage = 'rack';
+        } else if (currentPath.includes('/home') || currentPath === '/') {
+            currentPage = 'home';
+        }
+
+        // 為對應的導航項目添加 active 狀態
+        const activeNavItem = document.querySelector(`.nav-link[data-page="${currentPage}"]`);
+        if (activeNavItem) {
+            activeNavItem.classList.add('is-active');
+        }
+
+        // 在控制台輸出當前頁面資訊（用於除錯）
+        //console.log(`🔗 當前頁面: ${currentPage}, 路徑: ${currentPath}`);
+    }
+
+    /**
+     * 當頁面路徑改變時更新 active 狀態（用於 SPA 導航）
+     */
+    function updateActiveNavItem() {
+        setActiveNavItem();
+    }
+
+    // 監聽 popstate 事件（瀏覽器前進/後退按鈕）
+    window.addEventListener('popstate', function() {
+        setTimeout(setActiveNavItem, 100); // 延遲一點確保路徑已更新
+    });
+
+    // 為導航連結添加點擊事件監聽器
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.nav-link')) {
+            // 延遲更新 active 狀態，確保頁面導航完成
+            setTimeout(setActiveNavItem, 100);
+        }
+    });
+</script>

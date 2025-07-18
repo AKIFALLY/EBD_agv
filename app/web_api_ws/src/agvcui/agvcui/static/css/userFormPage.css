@@ -228,7 +228,7 @@
 
 .password-strength-medium .password-strength-bar {
     width: 66%;
-    background-color: #ffdd57;
+    background-color: #ffcc00;
 }
 
 .password-strength-strong .password-strength-bar {
@@ -253,12 +253,12 @@
         margin: 1rem;
         padding: 1.5rem;
     }
-    
+
     .user-form-buttons {
         flex-direction: column;
         gap: 0.75rem;
     }
-    
+
     .user-form-submit,
     .user-form-cancel {
         width: 100%;

@@ -3,6 +3,7 @@ from rclpy.node import Node
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 from rcs.kuka_manager import KukaManager
 from rcs.ct_manager import CtManager
+from rcs.task_status_simulator import TaskStatusSimulator
 
 
 class RcsCore(Node):
@@ -28,11 +29,17 @@ class RcsCore(Node):
         # CT 車隊管理器 - 處理您自己的 AGV 車隊
         self.ct_manager = CtManager(self)
 
+        # --- 初始化任務狀態模擬器 ---
+        self.task_status_simulator = TaskStatusSimulator(self.db_pool, self.get_logger())
+
         # 新增 1 秒觸發一次的 timer callback
         self.timer_1s = self.create_timer(1.0, self.main_loop)
 
     def main_loop(self):
         self.get_logger().debug("1秒定時器觸發 (timer_1s)")
+
+        # 任務狀態模擬處理 (優先處理)
+        self.task_status_simulator.process_task_status_transitions()
 
         # KUKA 車隊任務派發
         self.kuka_manager.dispatch()
@@ -53,6 +60,10 @@ def main(args=None):
     except KeyboardInterrupt:
         node.get_logger().info("🛑 偵測到 Ctrl+C，正在關閉 RcsCore 節點...")
     finally:
+        # 關閉任務狀態模擬器
+        if hasattr(node, 'task_status_simulator') and node.task_status_simulator:
+            node.task_status_simulator.shutdown()
+
         if hasattr(node, 'kuka_manager') and node.kuka_manager:
             node.kuka_manager.stop_monitoring()
         node.destroy_node()

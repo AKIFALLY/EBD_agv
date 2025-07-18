@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>側邊欄重複顯示修復測試</title>
+    <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
+    <link rel="stylesheet" href="/static/css/agvcui-bulma-extend.css" />
+    <link rel="stylesheet" href="/static/css/mapPage.css" />
+    <style>
+        .test-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #dbdbdb;
+            border-radius: 6px;
+        }
+
+        .log-output {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .map-container {
+            position: relative;
+            height: 400px;
+            background: #e8e8e8;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .map-sidebar {
+            position: absolute;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background: white;
+            border-left: 1px solid #dbdbdb;
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .map-sidebar.is-open {
+            right: 0;
+        }
+
+        .map-sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid #dbdbdb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .map-sidebar-content {
+            padding: 1rem;
+        }
+
+        .map-toolbar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .test-controls {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1 class="title">側邊欄重複顯示修復測試</h1>
+
+        <div class="test-section">
+            <h2 class="subtitle">測試說明</h2>
+            <div class="content">
+                <p>此測試用於驗證地圖頁面任務側邊欄重複顯示問題的修復效果：</p>
+                <ol>
+                    <li>點擊「開啟任務側邊欄」按鈕</li>
+                    <li>點擊「模擬 Store 更新」按鈕多次</li>
+                    <li>檢查側邊欄是否出現重複的任務列表</li>
+                    <li>查看控制台日誌確認修復效果</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="subtitle">測試控制</h2>
+            <div class="test-controls">
+                <div class="buttons">
+                    <button class="button is-primary" onclick="openTasksSidebar()">開啟任務側邊欄</button>
+                    <button class="button is-info" onclick="simulateStoreUpdate()">模擬 Store 更新</button>
+                    <button class="button is-warning" onclick="closeSidebar()">關閉側邊欄</button>
+                    <button class="button is-light" onclick="clearLog()">清除日誌</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="subtitle">模擬地圖容器</h2>
+            <div class="map-container">
+                <div class="map-toolbar">
+                    <button class="button is-small" id="map-tool-tasks" onclick="toggleTasksSidebar()">
+                        <span class="icon"><i class="mdi mdi-format-list-bulleted"></i></span>
+                        <span>任務</span>
+                    </button>
+                </div>
+
+                <!-- 側邊面板 -->
+                <div class="map-sidebar" id="map-sidebar">
+                    <div class="map-sidebar-header">
+                        <h4 class="title is-5" id="sidebar-title">詳細資訊</h4>
+                        <button class="map-sidebar-close" id="sidebar-close" onclick="closeSidebar()">
+                            <i class="mdi mdi-close"></i>
+                        </button>
+                    </div>
+                    <div class="map-sidebar-content" id="sidebar-content">
+                        <!-- 任務管理模板 -->
+                        <div id="tasks-template" style="display: none;">
+                            <div class="map-info-card">
+                                <div class="map-info-card-header">
+                                    <span class="map-info-card-title">任務管理</span>
+                                </div>
+                            </div>
+                            <div id="tasks-list">
+                                <!-- 動態載入任務列表 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="subtitle">測試日誌</h2>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模擬 Store 和管理器
+        let updateCounter = 0;
+        let logOutput = document.getElementById('log-output');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logOutput.textContent += `[${timestamp}] ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            logOutput.textContent = '';
+        }
+
+        // 模擬任務資料
+        const mockTasks = [
+            { id: 1, name: '搬運任務 A', status_id: 1, agv_id: 1, priority: 'high' },
+            { id: 2, name: '裝載任務 B', status_id: 2, agv_id: 2, priority: 'medium' },
+            { id: 3, name: '卸載任務 C', status_id: 1, agv_id: null, priority: 'low' },
+            { id: 4, name: '檢查任務 D', status_id: 3, agv_id: 3, priority: 'high' }
+        ];
+
+        // 模擬 tasksStore
+        window.tasksStore = {
+            _state: { tasks: mockTasks },
+            _listeners: [],
+
+            getState() {
+                return this._state;
+            },
+
+            on(event, callback) {
+                if (event === 'change') {
+                    this._listeners.push(callback);
+                }
+            },
+
+            off(event, callback) {
+                if (event === 'change') {
+                    const index = this._listeners.indexOf(callback);
+                    if (index > -1) {
+                        this._listeners.splice(index, 1);
+                    }
+                }
+            },
+
+            _notifyListeners() {
+                this._listeners.forEach(callback => {
+                    try {
+                        callback(this._state);
+                    } catch (error) {
+                        console.error('Store listener error:', error);
+                    }
+                });
+            }
+        };
+
+        // 模擬 mapTaskManager
+        window.mapTaskManager = {
+            init() {
+                log('mapTaskManager: 初始化');
+                window.tasksStore.on('change', this.handleTasksChange.bind(this));
+            },
+
+            handleTasksChange(newState) {
+                log(`mapTaskManager: 收到任務更新，共 ${newState.tasks.length} 個任務`);
+
+                const tasksList = document.getElementById('tasks-list');
+                if (tasksList && tasksList.children.length > 0) {
+                    log('mapTaskManager: 更新側邊面板任務列表內容');
+                    this.updateTasksListContent(tasksList, newState.tasks);
+                }
+            },
+
+            loadTasksList() {
+                log('mapTaskManager: 載入任務列表');
+                const tasks = window.tasksStore.getState().tasks;
+                const tasksList = document.getElementById('tasks-list');
+
+                if (!tasksList) {
+                    log('mapTaskManager: 找不到 tasks-list 元素');
+                    return;
+                }
+
+                if (tasks.length === 0) {
+                    tasksList.innerHTML = '<p class="has-text-grey">目前沒有任務</p>';
+                    return;
+                }
+
+                const tasksHtml = tasks.map(task => `
+                    <div class="task-item" style="padding: 0.5rem; border: 1px solid #ddd; margin-bottom: 0.5rem; border-radius: 4px;">
+                        <div><strong>${task.name}</strong></div>
+                        <div class="is-size-7 has-text-grey">ID: ${task.id} | 狀態: ${task.status_id} | AGV: ${task.agv_id || '未分配'}</div>
+                    </div>
+                `).join('');
+
+                const totalInfo = `<div class="total-info has-text-grey is-size-7 mb-2">總計 ${tasks.length} 個任務</div>`;
+                tasksList.innerHTML = totalInfo + tasksHtml;
+
+                log(`mapTaskManager: 已載入 ${tasks.length} 個任務`);
+            },
+
+            updateTasksListContent(tasksList, tasks) {
+                log('mapTaskManager: 更新任務列表內容（保持 DOM 結構）');
+
+                // 更新總數資訊
+                let totalInfoElement = tasksList.querySelector('.total-info');
+                if (!totalInfoElement) {
+                    totalInfoElement = document.createElement('div');
+                    totalInfoElement.className = 'total-info has-text-grey is-size-7 mb-2';
+                    tasksList.insertBefore(totalInfoElement, tasksList.firstChild);
+                }
+                totalInfoElement.textContent = `總計 ${tasks.length} 個任務 (更新 #${updateCounter})`;
+
+                // 簡化的更新邏輯
+                const existingItems = Array.from(tasksList.querySelectorAll('.task-item'));
+                existingItems.forEach(item => item.remove());
+
+                // 移除所有現有的任務項目（保留總數資訊）
+                const existingItems = Array.from(tasksList.querySelectorAll('.task-item'));
+                existingItems.forEach(item => item.remove());
+
+                // 重新創建所有任務項目（模擬修復後的邏輯）
+                tasks.forEach(task => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'task-item';
+                    itemElement.onclick = () => {
+                        log(`點擊任務: ${task.name} (ID: ${task.id})`);
+                        // 模擬跳轉行為
+                        console.log(`模擬跳轉到: /tasks/${task.id}/edit`);
+                    };
+
+                    itemElement.innerHTML = `
+                        <div class="level is-mobile">
+                            <div class="level-left">
+                                <div class="level-item">
+                                    <div>
+                                        <p class="title is-6">${task.name}</p>
+                                        <p class="subtitle is-7">
+                                            <span class="tag is-small is-info">狀態 ${task.status_id}</span>
+                                            ${task.agv_id ? `<span class="tag is-small is-light">AGV ${task.agv_id}</span>` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="level-right">
+                                <div class="level-item">
+                                    <span class="icon">
+                                        <i class="mdi mdi-chevron-right"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    tasksList.appendChild(itemElement);
+                });
+
+                log(`mapTaskManager: 已更新 ${tasks.length} 個任務項目（使用重建邏輯）`);
+            }
+        };
+
+        // 模擬 mapInteraction 的部分功能
+        function showSidebar(title, content) {
+            log(`showSidebar: 顯示側邊欄 - ${title}`);
+
+            const sidebar = document.getElementById('map-sidebar');
+            const titleElement = document.getElementById('sidebar-title');
+            const contentElement = document.getElementById('sidebar-content');
+
+            if (titleElement) {
+                titleElement.textContent = title;
+            }
+
+            if (contentElement) {
+                // 保存原始模板（只在第一次保存）
+                if (!contentElement._originalTemplates) {
+                    const templates = contentElement.querySelectorAll('[id$="-template"]');
+                    contentElement._originalTemplates = Array.from(templates).map(t => t.outerHTML).join('');
+                    log('showSidebar: 保存原始模板');
+                }
+
+                // 清空內容並設置新內容，然後恢復原始模板
+                contentElement.innerHTML = content + contentElement._originalTemplates;
+                log('showSidebar: 設置內容並恢復模板');
+            }
+
+            sidebar.classList.add('is-open');
+        }
+
+        function closeSidebar() {
+            log('closeSidebar: 關閉側邊欄');
+            const sidebar = document.getElementById('map-sidebar');
+            sidebar.classList.remove('is-open');
+        }
+
+        function openTasksSidebar() {
+            log('openTasksSidebar: 開啟任務側邊欄');
+
+            const template = document.getElementById('tasks-template');
+            if (template) {
+                const clonedContent = template.cloneNode(true);
+                clonedContent.style.display = 'block';
+                clonedContent.removeAttribute('id');
+
+                showSidebar('任務管理', clonedContent.outerHTML);
+
+                setTimeout(() => {
+                    log('openTasksSidebar: 延遲載入任務列表');
+                    if (window.mapTaskManager && typeof window.mapTaskManager.loadTasksList === 'function') {
+                        window.mapTaskManager.loadTasksList();
+                    }
+                }, 10);
+            }
+        }
+
+        function toggleTasksSidebar() {
+            const sidebar = document.getElementById('map-sidebar');
+            if (sidebar.classList.contains('is-open')) {
+                closeSidebar();
+            } else {
+                openTasksSidebar();
+            }
+        }
+
+        function simulateStoreUpdate() {
+            updateCounter++;
+            log(`simulateStoreUpdate: 模擬第 ${updateCounter} 次 Store 更新`);
+
+            // 模擬資料變化
+            const newTasks = mockTasks.map(task => ({
+                ...task,
+                name: `${task.name} (更新 #${updateCounter})`
+            }));
+
+            window.tasksStore._state = { tasks: newTasks };
+            window.tasksStore._notifyListeners();
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            log('頁面載入完成，初始化測試環境');
+            window.mapTaskManager.init();
+            log('測試環境初始化完成');
+        });
+    </script>
+</body>
+
+</html>

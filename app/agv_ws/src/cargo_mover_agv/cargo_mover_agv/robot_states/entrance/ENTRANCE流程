@@ -1,0 +1,181 @@
+ENTRANCE 流程 (入口流程) - Cargo Mover AGV
+===========================================
+
+## 📋 流程概述
+ENTRANCE 流程負責將 Rack 上的貨物取出並放入傳送箱系統，是 AGV 的入口作業流程。
+
+## 🔄 完整流程圖
+
+1. TransferVisionPositionState (傳送箱視覺定位)
+   ↓
+2. TransferCheckEmptyState (檢查傳送箱空位 + 選擇可用 Port)
+   ↓
+3. SelectRackPortState (選擇 Rack Port)
+   ↓
+4. CheckRackSideState (檢查 Rack 方向)
+   ↓
+5. WaitRotationState (等待 Rack 旋轉) [如需要]
+   ↓
+6. RackVisionPositionState (Rack 視覺定位)
+   ↓
+7. TakeRackPortState (從 Rack 取貨物)
+   ↓
+8. PutTransferState (放入傳送箱)
+   ↓
+9. UPDATE_DATABASE (更新資料庫)
+   ↓
+10. CheckRackSideState (檢查是否還有其他貨物需要處理)
+    ↓
+11. 循環或 CompleteState (完成)
+
+## 📝 各狀態詳細說明
+
+### 1. TransferVisionPositionState
+- **功能**: 傳送箱視覺定位
+- **目標**: 確保機器人能正確識別傳送箱位置
+- **下一步**: TransferCheckEmptyState
+
+### 2. TransferCheckEmptyState
+- **功能**: 檢查傳送箱空位狀態
+- **主要邏輯**:
+  - 查詢 EQP 信號 (eqp_id: room_id*100+1, port_address: room_id*1000+10)
+  - 檢查 Port 1-4 的空位狀態
+  - 選擇可用的空位 (優先順序: Port 1 → 2 → 3 → 4)
+  - 更新 context.boxin_number
+- **8-bit 通訊步驟**:
+  1. WRITE_VAILD → WRITE_PORT_NUMBER → WAIT_LOAD_REQ → WRITE_TR_REQ → WAIT_READY
+- **下一步**: SelectRackPortState
+
+### 3. SelectRackPortState
+- **功能**: 選擇要處理的 Rack Port
+- **邏輯**: 查詢 Rack ID 123 上的 Carrier，選擇最小的 rack_index
+- **下一步**: RackVisionPositionState 或 CompleteState (無 Carrier)
+
+### 4. CheckRackSideState
+- **功能**: 檢查 Rack 方向是否正確
+- **邏輯**:
+  - Port 1-16: 需要 A 面 (direction = 0)
+  - Port 17-32: 需要 B 面 (direction = 180)
+- **下一步**: 
+  - 方向正確 → TransferCheckEmptyState
+  - 需要旋轉 → WaitRotationState
+
+### 5. WaitRotationState (條件性)
+- **功能**: 等待 Rack 旋轉到正確方向
+- **觸發條件**: Rack 方向與目標 Port 不匹配
+- **下一步**: TransferCheckEmptyState
+
+### 6. RackVisionPositionState
+- **功能**: Rack 視覺定位
+- **邏輯**:
+  - Port 1-8, 17-24: 上層拍照 (PHOTO_RACK_UP)
+  - Port 9-16, 25-32: 下層拍照 (PHOTO_RACK_DOWN)
+- **下一步**: TakeRackPortState
+
+### 7. TakeRackPortState
+- **功能**: 從 Rack 取出貨物
+- **PGNO**: ACTION_FROM + RACK_IN_POSITION + NONE_POSITION
+- **步驟**: IDLE → CHECK_IDLE → WRITE_CHG_PARAMTER → WRITE_CHG_PARA → CHECK_CHG_PARA → WRITE_PGNO → CHECK_PGNO → ACTING → FINISH
+- **下一步**: PutTransferState
+
+### 8. PutTransferState
+- **功能**: 將貨物放入傳送箱
+- **PGNO**: ACTION_TO + NONE_POSITION + BOXIN_POSITION
+- **步驟**: 同 TakeRackPortState 的機器人操作步驟
+- **完成後**: 設定 context.boxin_buffer = context.get_boxin_port
+- **下一步**: UPDATE_DATABASE
+
+### 9. UPDATE_DATABASE
+- **功能**: 更新 Carrier 資料庫
+- **更新內容**:
+  - carrier.room_id = context.get_room_id
+  - carrier.rack_id = 0 (從 Rack 移除)
+  - carrier.port_id = port_id_address + context.get_boxin_port
+  - carrier.rack_index = 0
+  - carrier.status_id = 1
+- **下一步**: CheckRackSideState
+
+### 10. 循環檢查
+- **邏輯**: 檢查是否還有其他 Carrier 需要處理
+- **繼續條件**: 還有 Carrier 在 Rack 上
+- **結束條件**: 無更多 Carrier → CompleteState
+
+## 🔧 關鍵參數
+
+### Port 配置
+- **傳送箱 Port**: room_id*1000+11 到 room_id*1000+14 (port_address + 1-4)
+- **EQP ID**: room_id*100+1 (傳送箱設備)
+- **Rack ID**: 123
+
+### 狀態變數
+- **context.boxin_number**: 選定的傳送箱 Port 編號 (1-4)
+- **context.get_boxin_port**: 同 boxin_number
+- **context.get_rack_port**: 選定的 Rack Port 編號
+- **context.carrier_id**: 當前處理的 Carrier ID
+- **context.boxin_buffer**: 傳送箱緩衝區狀態
+
+### 空位檢查邏輯
+```
+Port 1 空 → 選擇 Port 1
+Port 1 滿, Port 2 空 → 選擇 Port 2  
+Port 1-2 滿, Port 3 空 → 選擇 Port 3
+Port 1-3 滿, Port 4 空 → 選擇 Port 4
+全滿 → 無法執行，重置狀態
+```
+
+## ⚠️ 注意事項
+
+1. **視覺定位**: 每次操作前都需要進行視覺定位確保精度
+2. **8-bit 通訊**: 必須按順序完成所有 8-bit 步驟
+3. **錯誤處理**: 每個步驟都有成功/失敗的處理機制
+4. **資料庫同步**: 操作完成後必須更新資料庫狀態
+5. **Rack 方向**: 確保 Rack 方向與目標 Port 匹配
+6. **Hokuyo Input 持續更新**: 所有狀態都會持續更新 Hokuyo Input，確保設備狀態即時反映
+
+## 🔄 與 EXIT 流程的差異
+
+| 項目 | ENTRANCE | EXIT |
+|------|----------|------|
+| 方向 | Rack → 傳送箱 | 傳送箱 → Rack |
+| 檢查對象 | 傳送箱空位 | 傳送箱有貨 |
+| Port 地址 | room_id*1000+10 (傳送箱) | room_id*1000+20 (傳送箱) |
+| EQP ID | room_id*100+1 | room_id*100+2 |
+| 機器人動作 | FROM Rack TO 傳送箱 | FROM 傳送箱 TO Rack |
+| 循環邏輯 | 處理所有 Rack 貨物 | 根據 take_transfer_continue |
+
+## 🔧 最新修復 (2025-07-01)
+
+### ✅ Hokuyo Input 持續更新修復
+**問題**: ENTRANCE流程中的狀態使用 `hokuyo_input_updated` 標誌限制更新，導致設備狀態無法即時反映
+
+**修復的狀態**:
+1. **TransferCheckEmptyState** - 移除 `hokuyo_input_updated` 標誌，改為持續更新
+2. **TakeRackPortState** - 移除 `hokuyo_input_updated` 標誌，改為持續更新
+3. **PutTransferState** - 移除 `hokuyo_input_updated` 標誌，改為持續更新
+
+**修復效果**:
+- 確保 Hokuyo 設備狀態能即時監控
+- 提高系統穩定性和響應性
+- 與 EXIT 流程保持一致的更新邏輯
+
+**修復前**:
+```python
+if not self.hokuyo_input_updated:
+    self.hokuyo_dms_8bit_1.update_hokuyo_input()
+    self.hokuyo_input_updated = True  # 限制更新
+```
+
+**修復後**:
+```python
+# 更新 Hokuyo Input - 需持續更新
+self.hokuyo_dms_8bit_1.update_hokuyo_input()  # 持續更新
+```
+
+### 📝 修復的文件
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/transfer_check_empty_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/take_rack_port_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/put_tranfer_state.py`
+- `agv_ws/src/cargo_mover_agv/cargo_mover_agv/robot_states/entrance/ENTRANCE流程` (本文件)
+
+### 🎯 整體一致性
+現在 ENTRANCE 和 EXIT 流程都使用相同的 Hokuyo Input 持續更新邏輯，確保整個 cargo_mover_agv 系統的一致性和穩定性。

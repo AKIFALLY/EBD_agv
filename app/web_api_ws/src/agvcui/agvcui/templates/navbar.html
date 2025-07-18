@@ -1,16 +1,27 @@
-<nav class="navbar is-light">
+<nav class="navbar is-light" role="navigation" aria-label="main navigation">
     <div class="navbar-brand">
         <a class="navbar-item" href="/">
             <strong>Agvc UI</strong>
         </a>
+
+        <!-- 漢堡選單按鈕 -->
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
     </div>
-    <div class="navbar-menu">
+
+    <div id="navbarBasicExample" class="navbar-menu">
         <div class="navbar-start">
             <a class="navbar-item" href="/map">
                 Map
             </a>
             <a class="navbar-item" href="/tasks">
                 Tasks
+            </a>
+            <a class="navbar-item" href="/works">
+                Works
             </a>
             <a class="navbar-item" href="/agvs">
                 AGVs
@@ -103,6 +114,13 @@
                             <i class="mdi mdi-account-group"></i>
                         </span>
                         <span>用戶管理</span>
+                    </a>
+                    <a class="navbar-item" href="http://0.0.0.0:5050/browser/" id="database-management-link"
+                        style="display: none;">
+                        <span class="icon">
+                            <i class="mdi mdi-database"></i>
+                        </span>
+                        <span>資料庫管理</span>
                     </a>
                     <hr class="navbar-divider" id="user-management-divider" style="display: none;">
                     <a class="navbar-item" href="#" id="logout-btn">

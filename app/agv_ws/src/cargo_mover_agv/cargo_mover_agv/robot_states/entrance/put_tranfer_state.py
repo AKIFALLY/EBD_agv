@@ -1,15 +1,13 @@
-from agv_base.states.state import State
 from db_proxy_interfaces.msg import Carrier as CarrierMsg
 from rclpy.node import Node
-from cargo_mover_agv.robot_context import RobotContext  # 新增的匯入
+from cargo_mover_agv.robot_context import RobotContext
 from agv_base.robot import Robot
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 from db_proxy.agvc_database_client import AGVCDatabaseClient
+from cargo_mover_agv.robot_states.base_robot_state import BaseRobotState
 
 
-class PutTranferState(State):
-    PORT_ID_ADDRESS = 2010
-
+class PutTransferState(BaseRobotState):
     def __init__(self, node: Node):
         super().__init__(node)
 
@@ -18,29 +16,28 @@ class PutTranferState(State):
         self.agvc_client = AGVCDatabaseClient(self.node)
         self.update_carrier_success = False
         self.sent = False
-        self.hokuyo_input_updated = False  # 用於判斷是否已經更新過 Hokuyo Input
+
+        # 動態計算 port_id_address
+        self.port_id_address = self.node.room_id * 1000 + 10
 
     def enter(self):
-        self.node.get_logger().info("Robot Entrance 目前狀態: PutTranfer")
+        self.node.get_logger().info("Robot Entrance 目前狀態: PutTransfer")
         self.update_carrier_success = False
         self.sent = False
-        self.hokuyo_input_updated = False  # 用於判斷是否已經更新過 Hokuyo Input
 
     def leave(self):
-        self.node.get_logger().info("Robot Entrance 離開 PutTranfer 狀態")
+        self.node.get_logger().info("Robot Entrance 離開 PutTransfer 狀態")
         self.update_carrier_success = False
         self.sent = False
-        self.hokuyo_input_updated = False  # 用於判斷是否已經更新過 Hokuyo Input
 
     def update_carrier_database(self, context: RobotContext):
         carrier = CarrierMsg()
         carrier.id = context.carrier_id
-        context.get_room_id = 2  # 假設這是傳送箱所在的房間 ID
-        carrier.room_id = context.get_room_id
+        carrier.room_id = self.node.room_id
         carrier.rack_id = 0
-        carrier.port_id = self.PORT_ID_ADDRESS+context.get_boxin_port
+        carrier.port_id = self.port_id_address+context.get_boxin_port
         carrier.rack_index = 0
-        carrier.status_id = 2  # 假設 2 是表示傳送箱的狀態
+        carrier.status_id = Robot.CARRIER_STATUS_ENTER_BOXIN_TRANSFER  # 進入入口傳送箱
         self.agvc_client.async_update_carrier(
             carrier, self.update_carrier_database_callback)
 
@@ -54,29 +51,25 @@ class PutTranferState(State):
             self.update_carrier_success = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Robot Entrance PutTranfer 狀態")
-        PUT_TRANFER_PGNO = context.robot.ACTION_TO + \
+        self.node.get_logger().info("Robot Entrance PutTransfer 狀態")
+
+        # 並行執行：Hokuyo write_busy 設定
+        self._set_hokuyo_busy_entrance()
+
+        # 並行執行：其他操作（不需等待 Hokuyo 完成）
+        PUT_TRANSFER_PGNO = context.robot.ACTION_TO + \
             context.robot.NONE_POSITION + context.robot.BOX_IN_POSITION
         read_pgno = context.robot.read_pgno_response
-        context.robot.read_pgno()
+        context.robot.read_robot_status()
 
-        # 更新 Hokuyo Input
-        if not self.hokuyo_input_updated:
-            self.hokuyo_dms_8bit_1.update_hokuyo_input()
-            self.hokuyo_input_updated = True
-        if self.hokuyo_dms_8bit_1.hokuyo_input_success:
-            self.node.get_logger().info("Hokuyo Input 更新成功")
-            self.hokuyo_dms_8bit_1.hokuyo_input_success = False
-            self.hokuyo_input_updated = False
-        elif self.hokuyo_dms_8bit_1.hokuyo_input_failed:
-            self.node.get_logger().info("Hokuyo Input 更新失敗")
-            self.hokuyo_dms_8bit_1.hokuyo_input_failed = False
-            self.hokuyo_input_updated = False
-        else:
-            self.node.get_logger().info("等待 Hokuyo Input 更新")
+        # 更新 Hokuyo Input - 使用統一方法
+        self._handle_hokuyo_input_entrance()
+        # 條件執行：只有機器人邏輯需要等待 Hokuyo 完成
+        if self.hokuyo_busy_write_completed:
+            self._execute_robot_logic(context, PUT_TRANSFER_PGNO, read_pgno)
 
-        print("🔶=========================================================================🔶")
-
+    def _execute_robot_logic(self, context: RobotContext, PUT_TRANSFER_PGNO, read_pgno):
+        """執行機器人邏輯"""
         match self.step:
             case RobotContext.IDLE:
                 self.node.get_logger().info("Robot Entrance PUT TRANSFER IDLE")
@@ -92,7 +85,6 @@ class PutTranferState(State):
             case RobotContext.WRITE_CHG_PARAMTER:
                 if not self.sent:
                     context.update_rack_box_port()
-                    context.robot.update_parameter()
                     self.sent = True
                 if context.robot.update_parameter_success:
                     self.node.get_logger().info("✅更新參數成功")
@@ -137,7 +129,7 @@ class PutTranferState(State):
             case RobotContext.WRITE_PGNO:
                 self.node.get_logger().info("Robot Entrance PUT TRANSFER WRITE_PGNO")
                 if not self.sent:
-                    context.robot.update_pgno(PUT_TRANFER_PGNO)
+                    context.robot.update_pgno(PUT_TRANSFER_PGNO)
                     self.sent = True
                 if context.robot.update_pgno_success:
                     self.node.get_logger().info("✅傳送PGNO成功")
@@ -153,7 +145,7 @@ class PutTranferState(State):
 
             case RobotContext.CHECK_PGNO:
                 self.node.get_logger().info("Robot Entrance PUT TRANSFER CHECK_PGNO")
-                if read_pgno.value == (PUT_TRANFER_PGNO):
+                if read_pgno.value == (PUT_TRANSFER_PGNO):
                     self.node.get_logger().info("✅讀取PGNO成功")
                     self.step = RobotContext.ACTING
                 elif read_pgno.value == Robot.CHG_PARA:
@@ -163,8 +155,8 @@ class PutTranferState(State):
 
             case RobotContext.ACTING:
                 self.node.get_logger().info("Robot Entrance PUT TRANSFER ACTING")
-                if read_pgno.value == (PUT_TRANFER_PGNO):
-                    self.node.get_logger().info("🤖手臂動作中")
+                if read_pgno.value == (PUT_TRANSFER_PGNO):
+                    self.node.get_logger().debug("🤖手臂動作中")
                 elif read_pgno.value == Robot.IDLE:
                     self.node.get_logger().info("✅手臂動作完成")
                     # 這裡可以添加完成後的邏輯

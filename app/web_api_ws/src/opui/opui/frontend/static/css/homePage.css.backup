@@ -1,0 +1,329 @@
+/* homePage.css - Home 頁面專用樣式 */
+/* 參考 AGVCUI 的設計風格，專門為操作界面設計 */
+
+/* ===== 主要布局 ===== */
+.home-container {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.operation-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .operation-panel {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* ===== 側邊面板 ===== */
+.side-panel {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e5e9;
+}
+
+.side-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f5f5f5;
+}
+
+.side-panel-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #363636;
+}
+
+.side-indicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.side-indicator.left {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.side-indicator.right {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+/* ===== 產品選擇區域 ===== */
+.product-selection {
+    margin-bottom: 1.5rem;
+}
+
+.product-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.product-btn {
+    flex: 1;
+    min-height: 3rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.product-btn:not(.is-primary) {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+}
+
+.product-btn:not(.is-primary):hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+}
+
+.product-btn.is-primary {
+    box-shadow: 0 2px 4px rgba(50, 115, 220, 0.3);
+}
+
+/* ===== 產品資訊顯示 ===== */
+.product-info {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #3273dc;
+}
+
+.product-info .has-text-weight-bold {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ===== 料架選擇區域 ===== */
+.rack-selection {
+    margin-bottom: 1.5rem;
+}
+
+.rack-selection-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #4a4a4a;
+}
+
+.rack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.5rem;
+}
+
+.rack-btn {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    min-height: 50px;
+}
+
+.rack-btn:not(.is-primary) {
+    background-color: #ffffff;
+    border: 2px solid #dbdbdb;
+    color: #4a4a4a;
+}
+
+.rack-btn:not(.is-primary):hover {
+    background-color: #f5f5f5;
+    border-color: #3273dc;
+    color: #3273dc;
+    transform: scale(1.05);
+}
+
+.rack-btn.is-primary {
+    background-color: #3273dc;
+    border-color: #3273dc;
+    color: white;
+    box-shadow: 0 2px 4px rgba(50, 115, 220, 0.3);
+}
+
+/* ===== 操作按鈕區域 ===== */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.action-btn {
+    min-height: 3.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.action-btn.is-primary {
+    background-color: #3273dc;
+    border-color: #3273dc;
+}
+
+.action-btn.is-success {
+    background-color: #48c774;
+    border-color: #48c774;
+}
+
+.action-btn.is-danger {
+    background-color: #f14668;
+    border-color: #f14668;
+}
+
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== 任務狀態區域 ===== */
+.task-status {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #fafafa;
+    border-radius: 6px;
+    border: 1px solid #e1e5e9;
+}
+
+.task-status-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #4a4a4a;
+}
+
+.task-status .tag {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+}
+
+/* ===== 狀態指示器 ===== */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-indicator.is-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-indicator.is-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-indicator.is-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-indicator.is-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* ===== 動畫效果 ===== */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.is-loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== 響應式設計 ===== */
+@media (max-width: 480px) {
+    .home-container {
+        padding: 0.5rem;
+    }
+    
+    .side-panel {
+        padding: 1rem;
+    }
+    
+    .product-buttons {
+        flex-direction: column;
+    }
+    
+    .rack-grid {
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    }
+    
+    .action-btn {
+        min-height: 3rem;
+        font-size: 1rem;
+    }
+}
+
+/* ===== 深色模式支援 ===== */
+@media (prefers-color-scheme: dark) {
+    .side-panel {
+        background: #2b2b2b;
+        border-color: #404040;
+        color: #e0e0e0;
+    }
+    
+    .product-info {
+        background-color: #3a3a3a;
+        color: #e0e0e0;
+    }
+    
+    .task-status {
+        background-color: #3a3a3a;
+        border-color: #404040;
+        color: #e0e0e0;
+    }
+}

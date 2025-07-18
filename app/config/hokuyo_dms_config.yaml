@@ -8,9 +8,8 @@ hokuyo_dms_cargo02_2:
 
 hokuyo_dms_unloader02:
   device: "MR"
-  address: "100"
+  address: "5800"
   
 hokuyo_dms_loader02:
   device: "MR"
-  address: "100"
- 
+  address: "5800"

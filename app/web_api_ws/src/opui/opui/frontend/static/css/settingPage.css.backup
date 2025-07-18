@@ -1,0 +1,414 @@
+/* settingPage.css - Setting 頁面專用樣式 */
+/* 參考 AGVCUI 的設計風格，專門為設定界面設計 */
+
+/* ===== 主要布局 ===== */
+.setting-container {
+    padding: 1rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.setting-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e5e9;
+}
+
+.setting-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f5f5f5;
+}
+
+.setting-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #363636;
+    margin-right: 1rem;
+}
+
+.setting-section-icon {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+    color: #3273dc;
+}
+
+/* ===== 機台選擇區域 ===== */
+.machine-selection {
+    margin-bottom: 2rem;
+}
+
+.machine-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.machine-btn {
+    min-height: 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.machine-btn:not(.is-primary):not(:disabled) {
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    color: #495057;
+}
+
+.machine-btn:not(.is-primary):not(:disabled):hover {
+    background-color: #e9ecef;
+    border-color: #3273dc;
+    color: #3273dc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(50, 115, 220, 0.2);
+}
+
+.machine-btn.is-primary {
+    background-color: #3273dc;
+    border-color: #3273dc;
+    color: white;
+    box-shadow: 0 2px 8px rgba(50, 115, 220, 0.3);
+}
+
+.machine-btn:disabled {
+    background-color: #f5f5f5;
+    border-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.machine-btn:disabled::after {
+    content: "停用";
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background-color: #dc3545;
+    color: white;
+    font-size: 0.625rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 10px;
+}
+
+.machine-number {
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.machine-label {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* ===== 產品配置區域 ===== */
+.product-config {
+    margin-bottom: 2rem;
+}
+
+.product-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+@media (max-width: 768px) {
+    .product-config-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.product-side {
+    border: 2px solid #f5f5f5;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background-color: #fafafa;
+}
+
+.product-side.left {
+    border-color: #e3f2fd;
+    background-color: #f8fbff;
+}
+
+.product-side.right {
+    border-color: #f3e5f5;
+    background-color: #fdf8ff;
+}
+
+.product-side-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.product-side-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.product-side-icon {
+    font-size: 1.25rem;
+}
+
+.product-side.left .product-side-icon {
+    color: #1976d2;
+}
+
+.product-side.right .product-side-icon {
+    color: #7b1fa2;
+}
+
+/* ===== 產品輸入框 ===== */
+.product-input-group {
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.product-input-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #4a4a4a;
+}
+
+.product-input-wrapper {
+    position: relative;
+}
+
+.product-input {
+    width: 100%;
+    padding: 0.75rem 3rem 0.75rem 1rem;
+    border: 2px solid #dbdbdb;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.product-input:focus {
+    border-color: #3273dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 115, 220, 0.25);
+    outline: none;
+}
+
+.product-input.is-success {
+    border-color: #48c774;
+}
+
+.product-input.is-danger {
+    border-color: #f14668;
+}
+
+.product-checked {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #48c774;
+    font-size: 1.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.product-checked.is-visible {
+    opacity: 1;
+}
+
+.help {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.help.is-danger {
+    color: #f14668;
+}
+
+/* ===== 系統設定區域 ===== */
+.system-settings {
+    margin-bottom: 2rem;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    background-color: #fafafa;
+}
+
+.setting-item-info {
+    flex: 1;
+}
+
+.setting-item-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #363636;
+}
+
+.setting-item-description {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.setting-item-action {
+    margin-left: 1rem;
+}
+
+/* ===== 危險區域 ===== */
+.danger-zone {
+    border: 2px solid #f14668;
+    background-color: #fef7f7;
+}
+
+.danger-zone .setting-section-title {
+    color: #f14668;
+}
+
+.danger-zone .setting-section-icon {
+    color: #f14668;
+}
+
+.factory-reset-btn {
+    background-color: #f14668;
+    border-color: #f14668;
+    color: white;
+    font-weight: 600;
+    min-height: 3rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.factory-reset-btn:hover {
+    background-color: #e8304a;
+    border-color: #e8304a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(241, 70, 104, 0.3);
+}
+
+/* ===== 狀態指示器 ===== */
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.connection-status.is-connected {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.connection-status.is-disconnected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* ===== 動畫效果 ===== */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== 響應式設計 ===== */
+@media (max-width: 768px) {
+    .setting-container {
+        padding: 0.5rem;
+    }
+    
+    .setting-section {
+        padding: 1rem;
+    }
+    
+    .machine-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+    
+    .machine-btn {
+        min-height: 3.5rem;
+    }
+    
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .setting-item-action {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* ===== 深色模式支援 ===== */
+@media (prefers-color-scheme: dark) {
+    .setting-section {
+        background: #2b2b2b;
+        border-color: #404040;
+        color: #e0e0e0;
+    }
+    
+    .product-side {
+        background-color: #3a3a3a;
+        border-color: #404040;
+    }
+    
+    .product-input {
+        background-color: #3a3a3a;
+        border-color: #404040;
+        color: #e0e0e0;
+    }
+    
+    .setting-item {
+        background-color: #3a3a3a;
+        border-color: #404040;
+        color: #e0e0e0;
+    }
+}

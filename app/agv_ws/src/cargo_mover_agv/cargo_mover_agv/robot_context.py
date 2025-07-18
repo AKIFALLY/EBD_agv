@@ -44,6 +44,12 @@ class RobotContext(BaseContext):
 
         self.boxin_number = 0
 
+        # BOXIN PORT狀態
+        self.boxin_port1 = False  # BOXIN Port 1 是否有貨物
+        self.boxin_port2 = False  # BOXIN Port 2 是否有貨物
+        self.boxin_port3 = False  # BOXIN Port 3 是否有貨物
+        self.boxin_port4 = False  # BOXIN Port 4 是否有貨物
+
         # BOXOUT狀態
         self.boxout_up_both_have = False
         self.boxout_down_both_have = False
@@ -71,6 +77,10 @@ class RobotContext(BaseContext):
 
         self.carrier_id = 0
         self.get_room_id = 0
+        self.rack_id = None  # 新增屬性，用於存儲從 task.parameters 中取得的 rack_id
+
+        # take transfer 相關狀態
+        self.take_transfer_continue = False  # take transfer 是否可以繼續
 
         # hokuyo_dms_8bit
         self.hokuyo1_receive_ready = False
@@ -81,7 +91,8 @@ class RobotContext(BaseContext):
         """更新 RACK PORT 並同步參數"""
         self.robot_parameter.rack_port = self.get_rack_port  # 更新 rack_port
         self.robot_parameter.boxin_port = self.get_boxin_port  # 更新 box_port
-        print(
-            f"更新 RACK PORT: {self.get_rack_port}, BOXIN PORT: {self.get_boxin_port}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        self.node.get_logger().debug(
+            f"更新 RACK PORT: {self.get_rack_port}, BOXIN PORT: {self.get_boxin_port}")
         self.robot_parameter.boxout_port = self.get_boxout_port
-        self.robot_parameter.update_parameter()  # 同步更新參數
+        self.robot_parameter.calculate_parameter()  # 同步更新參數
+        self.robot.update_parameter()

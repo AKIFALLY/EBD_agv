@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}設備未授權 - OpUI{% endblock %}
+
+{% block content %}
+<section class="hero is-danger is-fullheight-with-navbar">
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    <div class="box">
+                        <figure class="image is-128x128 is-inline-block mb-4">
+                            <span class="icon is-large has-text-danger">
+                                <i class="mdi mdi-shield-alert mdi-96px"></i>
+                            </span>
+                        </figure>
+                        
+                        <h1 class="title is-3 has-text-danger">
+                            設備未授權
+                        </h1>
+                        
+                        <div class="content">
+                            {% if error_message %}
+                                <p class="subtitle is-5 has-text-grey-dark">
+                                    {{ error_message }}
+                                </p>
+                            {% else %}
+                                <p class="subtitle is-5 has-text-grey-dark">
+                                    您的設備沒有存取此系統的權限
+                                </p>
+                            {% endif %}
+                            
+                            {% if device_id %}
+                                <div class="notification is-light">
+                                    <strong>設備 ID:</strong> {{ device_id }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="field is-grouped is-grouped-centered">
+                            <div class="control">
+                                <button class="button is-primary" onclick="window.history.back()">
+                                    <span class="icon">
+                                        <i class="mdi mdi-arrow-left"></i>
+                                    </span>
+                                    <span>返回</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <button class="button is-light" onclick="window.location.reload()">
+                                    <span class="icon">
+                                        <i class="mdi mdi-refresh"></i>
+                                    </span>
+                                    <span>重新整理</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="content is-small has-text-grey">
+                            <p>
+                                <strong>可能的解決方案：</strong>
+                            </p>
+                            <ul class="has-text-left">
+                                <li>檢查 deviceId 參數是否正確（必須為16位英數字串）</li>
+                                <li>確認設備已在系統中註冊</li>
+                                <li>聯繫系統管理員啟用設備授權</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

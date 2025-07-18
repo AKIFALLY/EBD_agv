@@ -1,24 +1,47 @@
 
 import { userStore } from '../store/index.js';
 
+// 設置漢堡選單功能
+function setupBurgerMenu() {
+    // 獲取所有 "navbar-burger" 元素
+    const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+    // 為每個漢堡選單添加點擊事件監聽器
+    $navbarBurgers.forEach(el => {
+        el.addEventListener('click', () => {
+            // 獲取目標選單
+            const target = el.dataset.target;
+            const $target = document.getElementById(target);
+
+            // 切換 "is-active" 類別
+            el.classList.toggle('is-active');
+            $target.classList.toggle('is-active');
+        });
+    });
+}
+
 function setupDropdowns() {
     const dropdowns = document.querySelectorAll('.navbar-item.has-dropdown');
+
     dropdowns.forEach(dropdown => {
         const link = dropdown.querySelector('.navbar-link');
         if (link) {
             link.addEventListener('click', function (e) {
                 e.preventDefault();
+
                 // 關閉其他 dropdown
                 dropdowns.forEach(d => {
                     if (d !== dropdown) {
                         d.classList.remove('is-active');
                     }
                 });
+
                 // 切換當前 dropdown
                 dropdown.classList.toggle('is-active');
             });
         }
     });
+
     // 點擊外部時收起所有 dropdown
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.navbar-item.has-dropdown')) {
@@ -62,6 +85,7 @@ function updateNavbarUserInfo(userState) {
     const userRole = document.getElementById('user-role');
     const userStatus = document.getElementById('user-status');
     const userManagementLink = document.getElementById('user-management-link');
+    const databaseManagementLink = document.getElementById('database-management-link');
     const userManagementDivider = document.getElementById('user-management-divider');
 
     if (userState && userState.isLoggedIn === true) {
@@ -76,10 +100,12 @@ function updateNavbarUserInfo(userState) {
         if (userState.role === 'admin') {
             if (adminBadge) adminBadge.style.display = 'inline-block';
             if (userManagementLink) userManagementLink.style.display = 'block';
+            if (databaseManagementLink) databaseManagementLink.style.display = 'block';
             if (userManagementDivider) userManagementDivider.style.display = 'block';
         } else {
             if (adminBadge) adminBadge.style.display = 'none';
             if (userManagementLink) userManagementLink.style.display = 'none';
+            if (databaseManagementLink) databaseManagementLink.style.display = 'none';
             if (userManagementDivider) userManagementDivider.style.display = 'none';
         }
 
@@ -112,6 +138,9 @@ function handleUserStateChange(newState) {
 export const navbar = (() => {
     function setup() {
         console.log('Navbar: 開始初始化');
+
+        // 設置漢堡選單
+        setupBurgerMenu();
 
         // 設置下拉選單
         setupDropdowns();

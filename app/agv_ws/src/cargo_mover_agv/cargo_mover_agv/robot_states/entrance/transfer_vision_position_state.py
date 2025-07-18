@@ -9,11 +9,11 @@ class TransferVisionPositionState(BaseVisionPositionState):
 
     def enter(self):
         self.node.get_logger().info("Robot Entrance 目前狀態: TranferVisionPosition")
-        self._reset_common_state()
+        self._reset_state()
 
     def leave(self):
         self.node.get_logger().info("Robot Entrance 離開 TranferVisionPosition 狀態")
-        self._reset_common_state()
+        self._reset_state()
 
     def handle(self, context: RobotContext):
         context.rack_photo_up_or_down_buffer = None

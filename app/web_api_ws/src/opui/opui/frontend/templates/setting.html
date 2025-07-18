@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}opui - 設定{% endblock %}
+{% block content %}
+
+<style>
+    .button,
+    .label,
+    .input {
+        font-size: 1.25rem;
+        white-space: nowrap;
+    }
+
+    /* 產品檢查圖示樣式 */
+    .product-checked {
+        color: #48c774 !important;
+        /* 綠色 */
+        display: none;
+        /* 預設隱藏，由 JS 控制顯示 */
+    }
+
+    .product-checked.is-visible {
+        display: flex !important;
+    }
+
+    /* 機台按鈕樣式 */
+    .machine-btn:disabled {
+        opacity: 0.6;
+    }
+
+
+</style>
+
+<section class="section">
+    <div class="container">
+        <h2 class="title is-4">設定頁面</h2>
+
+        <div class="box">
+            <h4 class="title is-5 has-text-centered">機台編號</h4>
+            <div class="columns is-multiline is-mobile">
+                {% for i in range(1, 5) %}
+                <div class="column is-one-quarter">
+                    <button class="button is-fullwidth machine-btn" data-machine-id="{{ i }}" disabled>{{ i }}</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="box">
+            <div class="columns">
+                <!-- OP1 -->
+                <div class="column">
+                    <h4 class="subtitle is-5 has-text-centered">OP 1</h4>
+                    <div class="is-flex is-flex-direction-column is-gapless product-group" data-side="left">
+                        <div class="is-flex is-align-items-center mb-2 product-entry" data-index="0">
+                            <div class="control has-icons-left has-icons-right m-1">
+                                <input class="input is-medium product-input" type="text" placeholder="產品名稱"
+                                    data-side="left" data-index="0" />
+                                <span class="icon is-left">
+                                    <i class="mdi mdi-tag"></i>
+                                </span>
+                                <span class="icon is-right product-checked">
+                                    <i class="mdi mdi-check-bold"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="is-flex is-align-items-center mb-2 product-entry" data-index="1">
+                            <div class="control has-icons-left has-icons-right m-1">
+                                <input class="input is-medium product-input" type="text" placeholder="產品名稱"
+                                    data-side="left" data-index="1" />
+                                <span class="icon is-left">
+                                    <i class="mdi mdi-tag"></i>
+                                </span>
+                                <span class="icon is-right product-checked">
+                                    <i class="mdi mdi-check-bold"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="is-divider-vertical" style="width:2px;background:#eee;margin:0 0.5rem;"></div>
+
+                <!-- OP2 -->
+                <div class="column">
+                    <h4 class="subtitle is-5 has-text-centered">OP 2</h4>
+                    <div class="is-flex is-flex-direction-column is-gapless product-group" data-side="right">
+                        <div class="is-flex is-align-items-center mb-2 product-entry" data-index="0">
+                            <div class="control has-icons-left has-icons-right m-1">
+                                <input class="input is-medium product-input" type="text" placeholder="產品名稱"
+                                    data-side="right" data-index="0" />
+                                <span class="icon is-left">
+                                    <i class="mdi mdi-tag"></i>
+                                </span>
+                                <span class="icon is-right product-checked">
+                                    <i class="mdi mdi-check-bold"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="is-flex is-align-items-center mb-2 product-entry" data-index="1">
+                            <div class="control has-icons-left has-icons-right m-1">
+                                <input class="input is-medium product-input" type="text" placeholder="產品名稱"
+                                    data-side="right" data-index="1" />
+                                <span class="icon is-left">
+                                    <i class="mdi mdi-tag"></i>
+                                </span>
+                                <span class="icon is-right product-checked">
+                                    <i class="mdi mdi-check-bold"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="columns mt-4 is-vcentered">
+            <div class="column is-one-quarter has-text-left">
+                <button class="button is-danger" id="factory-restore">恢復原廠</button>
+            </div>
+            <div class="column is-half has-text-centered">
+                <!-- 不需要儲存按鈕，設定會自動同步 -->
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+{% endblock %}

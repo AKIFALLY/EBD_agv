@@ -1,10 +1,6 @@
-from agv_base.states.state import State
 from db_proxy.carrier_query_client import CarrierQueryClient
 from rclpy.node import Node
-from cargo_mover_agv.robot_context import RobotContext  # 新增的匯入
-from agv_base.robot import Robot
-from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
-
+from cargo_mover_agv.robot_context import RobotContext
 from cargo_mover_agv.robot_states.base_robot_state import BaseRobotState
 
 
@@ -27,7 +23,7 @@ class SelectRackPortState(BaseRobotState):
     def enter(self):
         self.node.get_logger().info("Robot Entrance 目前狀態: SelectRackPort")
         self._reset_query_state()
-        self._reset_common_state()
+        self._reset_state()
 
     def leave(self):
         self.node.get_logger().info("Robot Entrance 離開 SelectRackPort 狀態")
@@ -43,15 +39,18 @@ class SelectRackPortState(BaseRobotState):
             response)
 
     def handle(self, context: RobotContext):
-        self._handle_hokuyo_input()
+        self._handle_hokuyo_input_entrance()
         self._print_separator()
 
         self.node.get_logger().info("Robot Entrance SelectRackPort 狀態")
 
         # 執行查詢
         if not self.response_ok and not self.sent:
+            # 使用從 task.parameters 解析的 rack_id，如果沒有則使用預設值 123
+            rack_id_to_use = context.rack_id if context.rack_id is not None else 123
+            self.node.get_logger().info(f"🔍 SelectRackPort 使用 rack_id: {rack_id_to_use} 進行查詢")
             self.carrier_query_client.search_carrier_rack_id(
-                rack_id=123, callback=self.carrier_callback)
+                rack_id=rack_id_to_use, callback=self.carrier_callback)
             self.sent = True
             return
 
@@ -61,7 +60,7 @@ class SelectRackPortState(BaseRobotState):
         context.get_rack_port = self.min_rack_index
 
         # 處理查詢結果
-        if context.get_rack_port and context.get_rack_port != 0:
+        if self.min_rack_index is not None:
             self._log_success_info(context)
             from .rack_vision_position_state import RackVisionPositionState
             context.set_state(RackVisionPositionState(self.node))

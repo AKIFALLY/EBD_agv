@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=pgAdmin 4
+Exec=xdg-open http://localhost:5050
+Icon=/home/ct/RosAGV/shortcut/pgadmin.ico
+Type=Application
+Categories=Network;WebBrowser;

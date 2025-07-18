@@ -87,6 +87,11 @@ function setup() {
     socket.on("task_list", (msg) => {
         tasksStore.setState({ "tasks": msg.tasks });
     });
+    socket.on("location_list", (msg) => {
+        console.log("收到 location_list 事件:", msg);
+        locationsStore.updateLocations(msg.locations);
+        console.log("locationsStore 狀態:", locationsStore.getState());
+    });
     socket.on("agv_list", (msg) => {
         agvsStore.setState({ "agvs": msg.agvs });
     });

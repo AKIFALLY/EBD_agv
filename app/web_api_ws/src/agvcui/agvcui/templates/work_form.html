@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-briefcase-outline"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/works">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表單包裝在 box 中 -->
+        <div class="box">
+            <form method="post" action="{{ form_action }}" accept-charset="UTF-8">
+                <div class="columns">
+                    <div class="column is-half">
+                        <!-- 工作類型名稱 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-format-title"></i>
+                                    </span>
+                                    <span>工作類型名稱 *</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="text" name="name"
+                                    value="{{ work.get('name', '') if work else '' }}" placeholder="請輸入工作類型名稱" required>
+                            </div>
+                            <p class="help">工作類型的唯一識別名稱</p>
+                        </div>
+
+                        <!-- 描述 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-text"></i>
+                                    </span>
+                                    <span>描述</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <textarea class="textarea" name="description" rows="4"
+                                    placeholder="請輸入工作類型描述">{{ work.get('description', '') if work and work.get('description') else '' }}</textarea>
+                            </div>
+                            <p class="help">詳細說明此工作類型的用途和特點</p>
+                        </div>
+                    </div>
+
+                    <div class="column is-half">
+                        <!-- 參數設定 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-code-json"></i>
+                                    </span>
+                                    <span>參數設定 (JSON)</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <textarea class="textarea" name="parameters" rows="10"
+                                    placeholder='請輸入 JSON 格式的參數，例如：&#10;{&#10;  "type": "transport",&#10;  "priority": 1,&#10;  "timeout": 300&#10;}'>{{ work.get('parameters') | tojson_chinese(indent=2) if work and work.get('parameters') else '' }}</textarea>
+                            </div>
+                            <p class="help">
+                                <span class="icon">
+                                    <i class="mdi mdi-information"></i>
+                                </span>
+                                JSON 格式的參數配置，留空表示無參數
+                            </p>
+                        </div>
+
+                        <!-- JSON 驗證提示 -->
+                        <div class="notification is-info is-light">
+                            <div class="content">
+                                <p><strong>參數格式說明：</strong></p>
+                                <ul>
+                                    <li>必須是有效的 JSON 格式</li>
+                                    <li>可以包含字串、數字、布林值、陣列和物件</li>
+                                    <li>常用參數範例：
+                                        <ul>
+                                            <li><code>"type"</code>: 工作類型</li>
+                                            <li><code>"priority"</code>: 優先級</li>
+                                            <li><code>"timeout"</code>: 超時時間</li>
+                                            <li><code>"retry_count"</code>: 重試次數</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 表單按鈕 -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-content-save"></i>
+                            </span>
+                            <span>{{ "更新" if work else "創建" }}</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a class="button is-light" href="/works">
+                            <span class="icon">
+                                <i class="mdi mdi-cancel"></i>
+                            </span>
+                            <span>取消</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 如果是編輯模式，顯示相關任務信息 -->
+        {% if work %}
+        <div class="box">
+            <h2 class="title is-5">
+                <span class="icon">
+                    <i class="mdi mdi-clipboard-list"></i>
+                </span>
+                相關任務
+            </h2>
+
+            {% if work and work.get('tasks') and work.get('tasks')|length > 0 %}
+            <div class="content">
+                <p>此工作類型目前被 <strong>{{ work.get('tasks')|length }}</strong> 個任務使用：</p>
+                <div class="tags">
+                    {% for task in work.get('tasks')[:10] %}
+                    <span class="tag is-info">
+                        <span class="icon">
+                            <i class="mdi mdi-clipboard-text"></i>
+                        </span>
+                        <span>{{ task.get('name', '任務 ' + task.get('id', '')|string) }}</span>
+                    </span>
+                    {% endfor %}
+                    {% if work.get('tasks')|length > 10 %}
+                    <span class="tag is-light">還有 {{ work.get('tasks')|length - 10 }} 個...</span>
+                    {% endif %}
+                </div>
+                <p class="help has-text-warning">
+                    <span class="icon">
+                        <i class="mdi mdi-alert"></i>
+                    </span>
+                    修改此工作類型可能會影響相關任務的執行
+                </p>
+            </div>
+            {% else %}
+            <div class="content">
+                <p class="has-text-grey">目前沒有任務使用此工作類型</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- JSON 驗證 JavaScript -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const parametersTextarea = document.querySelector('textarea[name="parameters"]');
+        const form = document.querySelector('form');
+
+        // JSON 格式驗證
+        function validateJSON(jsonString) {
+            if (!jsonString.trim()) {
+                return { valid: true, error: null }; // 空字串是有效的
+            }
+
+            try {
+                JSON.parse(jsonString);
+                return { valid: true, error: null };
+            } catch (e) {
+                return { valid: false, error: e.message };
+            }
+        }
+
+        // 即時驗證
+        parametersTextarea.addEventListener('input', function () {
+            const result = validateJSON(this.value);
+            const helpElement = this.parentNode.nextElementSibling;
+
+            if (result.valid) {
+                this.classList.remove('is-danger');
+                helpElement.classList.remove('has-text-danger');
+                helpElement.innerHTML = '<span class="icon"><i class="mdi mdi-information"></i></span> JSON 格式的參數配置，留空表示無參數';
+            } else {
+                this.classList.add('is-danger');
+                helpElement.classList.add('has-text-danger');
+                helpElement.innerHTML = `<span class="icon"><i class="mdi mdi-alert"></i></span> JSON 格式錯誤: ${result.error}`;
+            }
+        });
+
+        // 表單提交驗證
+        form.addEventListener('submit', function (e) {
+            const result = validateJSON(parametersTextarea.value);
+            if (!result.valid) {
+                e.preventDefault();
+                alert('參數格式錯誤，請檢查 JSON 格式：\n' + result.error);
+                parametersTextarea.focus();
+            }
+        });
+    });
+</script>
+{% endblock %}

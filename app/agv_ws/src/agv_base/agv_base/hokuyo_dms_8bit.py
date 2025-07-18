@@ -26,7 +26,7 @@ class HokuyoDMS8Bit():
         if self.config_key not in self.config:
             self.node.get_logger().error(
                 f"Config key '{self.config_key}' not found in configuration.")
-            return False
+            raise ValueError(f"Config key '{self.config_key}' not found in configuration.")
 
         self.device_config = self.config[self.config_key]
         self.device_type = self.device_config['device']
@@ -34,10 +34,10 @@ class HokuyoDMS8Bit():
         self.node.get_logger().info(
             f"Config Key:{self.config_key}, Device type: {self.device_type}, Address: {self.address}")
 
-        self.vaild_response = None
-        self.vaild_success = False
-        self.vaild_failed = False
-        self.vaild_step = 0
+        self.valid_response = None
+        self.valid_success = False
+        self.valid_failed = False
+        self.valid_step = 0
         self.port_number_response = None
         self.port_number_success = False
         self.port_number_failed = False
@@ -63,12 +63,12 @@ class HokuyoDMS8Bit():
         self.unload_req = False
         self.ready = False
 
-    def vaild_callback(self, response):
-        self.node.get_logger().info(f"Read Vaild value: {response}")
-        self.vaild_response = response
-        self.vaild_success = response.success
-        self.vaild_failed = not response.success
-        self.vaild_step = 0
+    def valid_callback(self, response):
+        self.node.get_logger().info(f"Read Valid value: {response}")
+        self.valid_response = response
+        self.valid_success = response.success
+        self.valid_failed = not response.success
+        self.valid_step = 0
 
     def port_number_callback(self, response):
         self.node.get_logger().info(f"Read Port Number value: {response}")
@@ -109,15 +109,15 @@ class HokuyoDMS8Bit():
             self.unload_req = bool(int(self.hokuyo_input_response.values[1]))
             self.ready = bool(int(self.hokuyo_input_response.values[3]))
 
-    def write_vaild(self, data: str) -> bool:
-        match self.vaild_step:
+    def write_valid(self, data: str) -> bool:
+        match self.valid_step:
             case 0:
-                self.node.get_logger().info("Send 寫入Vaild")
+                self.node.get_logger().info("Send 寫入Valid")
                 self.plc_client.async_write_data(
-                    device_type=self.device_type, address=self.address, value=data, callback=self.vaild_callback)
-                self.vaild_step = 1
+                    device_type=self.device_type, address=self.address, value=data, callback=self.valid_callback)
+                self.valid_step = 1
             case 1:
-                self.node.get_logger().info("等待寫入Vaild")
+                self.node.get_logger().info("等待寫入Valid")
 
     def write_port_number(self, port_number: int) -> bool:
         # 將 port_number 轉換為 8 位二進位並存入 string[] 變數

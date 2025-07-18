@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RackInfoObject 調試測試</title>
+    <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
+    <link rel="stylesheet" href="/static/css/agvcui-bulma-extend.css" />
+    <link rel="stylesheet" href="/static/css/mapPage.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        .test-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #dbdbdb;
+            border-radius: 6px;
+        }
+        .log-output {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        .test-controls {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="title">RackInfoObject 調試測試</h1>
+        
+        <div class="test-section">
+            <h2 class="subtitle">測試說明</h2>
+            <div class="content">
+                <p>此測試頁面用於調試 RackInfoObject 的切換按鈕功能：</p>
+                <ol>
+                    <li>創建真實的 Leaflet 地圖和 RackInfoObject 實例</li>
+                    <li>測試切換按鈕的顯示和功能</li>
+                    <li>檢查 DOM 結構和事件綁定</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="subtitle">地圖測試</h2>
+            <div class="test-controls">
+                <div class="buttons">
+                    <button class="button is-primary" onclick="createRackObject()">創建貨架物件</button>
+                    <button class="button is-info" onclick="inspectRackObject()">檢查貨架物件</button>
+                    <button class="button is-success" onclick="testToggleFunction()">測試切換功能</button>
+                    <button class="button is-light" onclick="clearLog()">清除日誌</button>
+                </div>
+            </div>
+            
+            <div id="map"></div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="subtitle">調試日誌</h2>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { RackInfoObject } from '/static/objects/RackInfoObject.js';
+
+        let logOutput = document.getElementById('log-output');
+        let map;
+        let rackObject;
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logOutput.textContent += `[${timestamp}] ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            logOutput.textContent = '';
+        }
+
+        // 初始化地圖
+        function initMap() {
+            map = L.map('map').setView([25.0330, 121.5654], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            log('✅ 地圖初始化完成');
+        }
+
+        // 創建貨架物件
+        window.createRackObject = function() {
+            if (!map) {
+                log('❌ 地圖未初始化');
+                return;
+            }
+
+            try {
+                const latlng = [25.0330, 121.5654];
+                rackObject = new RackInfoObject(map, latlng, 'test-rack-1', '測試貨架');
+                log('✅ 貨架物件創建成功');
+                
+                // 等待 DOM 初始化
+                setTimeout(() => {
+                    inspectRackObject();
+                }, 100);
+                
+            } catch (error) {
+                log('❌ 創建貨架物件失敗: ' + error.message);
+                console.error(error);
+            }
+        };
+
+        // 檢查貨架物件
+        window.inspectRackObject = function() {
+            if (!rackObject) {
+                log('❌ 貨架物件不存在');
+                return;
+            }
+
+            log('🔍 檢查貨架物件:');
+            log(`ID: ${rackObject.id}`);
+            log(`isMiniMode: ${rackObject.isMiniMode}`);
+            log(`el: ${!!rackObject.el}`);
+            log(`minDom: ${!!rackObject.minDom}`);
+            log(`maxDom: ${!!rackObject.maxDom}`);
+            log(`toggleBtn: ${!!rackObject.toggleBtn}`);
+
+            if (rackObject.el) {
+                log('DOM 結構:');
+                log(rackObject.el.outerHTML);
+                
+                // 檢查切換按鈕
+                const toggleBtn = rackObject.el.querySelector('.rack-toggle-btn');
+                if (toggleBtn) {
+                    const styles = getComputedStyle(toggleBtn);
+                    log(`切換按鈕樣式:`);
+                    log(`  display: ${styles.display}`);
+                    log(`  position: ${styles.position}`);
+                    log(`  top: ${styles.top}`);
+                    log(`  right: ${styles.right}`);
+                    log(`  z-index: ${styles.zIndex}`);
+                    log(`  background: ${styles.background}`);
+                } else {
+                    log('❌ 切換按鈕元素未找到');
+                }
+            }
+        };
+
+        // 測試切換功能
+        window.testToggleFunction = function() {
+            if (!rackObject) {
+                log('❌ 貨架物件不存在');
+                return;
+            }
+
+            log('🧪 測試切換功能:');
+            const currentMode = rackObject.isMiniMode;
+            log(`當前模式: ${currentMode ? '最小化' : '詳細'}`);
+            
+            // 直接調用 setMini 方法
+            rackObject.setMini(!currentMode);
+            log(`切換後模式: ${rackObject.isMiniMode ? '最小化' : '詳細'}`);
+            
+            // 測試切換按鈕點擊
+            if (rackObject.toggleBtn) {
+                log('測試切換按鈕點擊...');
+                rackObject.toggleBtn.click();
+                log(`按鈕點擊後模式: ${rackObject.isMiniMode ? '最小化' : '詳細'}`);
+            } else {
+                log('❌ 切換按鈕不存在，無法測試點擊');
+            }
+        };
+
+        // 全域函數
+        window.log = log;
+        window.clearLog = clearLog;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('📄 頁面載入完成');
+            initMap();
+            log('💡 提示: 點擊「創建貨架物件」開始測試');
+        });
+    </script>
+</body>
+</html>

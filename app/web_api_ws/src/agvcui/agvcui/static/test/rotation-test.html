@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RotatingMovingObject 旋轉測試</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            border: 1px solid #ccc;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        input, select {
+            margin: 0 10px;
+            padding: 5px;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            background: #007cba;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e7f3ff;
+            border-left: 4px solid #007cba;
+        }
+        .agv-size {
+            width: 40px;
+            height: 40px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>RotatingMovingObject 旋轉角度優化測試</h1>
+    
+    <div class="info">
+        <strong>測試目的：</strong>驗證旋轉角度更新機制的優化效果
+        <ul>
+            <li>測試旋轉速度是否提升</li>
+            <li>驗證角度精度控制（0.1度精度）</li>
+            <li>檢查小角度差異的平滑過渡</li>
+            <li>確認無跳動效果</li>
+        </ul>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>動畫模式：</label>
+            <select id="animationMode">
+                <option value="smooth">Smooth (平滑)</option>
+                <option value="instant">Instant (即時)</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>插值速度：</label>
+            <input type="range" id="lerpSpeed" min="1" max="20" value="8" step="0.5">
+            <span id="lerpSpeedValue">8.0</span>
+        </div>
+        
+        <div class="control-group">
+            <label>目標點平滑：</label>
+            <input type="checkbox" id="targetSmoothing">
+            <label for="targetSmoothing">啟用</label>
+        </div>
+        
+        <div class="control-group">
+            <label>目標角度：</label>
+            <input type="range" id="targetAngle" min="0" max="360" value="0" step="1">
+            <span id="targetAngleValue">0°</span>
+        </div>
+        
+        <div class="control-group">
+            <button onclick="testSequentialRotation()">連續旋轉測試</button>
+            <button onclick="testPrecisionRotation()">精度測試</button>
+            <button onclick="testSmallAngleRotation()">小角度測試</button>
+            <button onclick="resetTest()">重置</button>
+        </div>
+        
+        <div class="control-group">
+            <label>當前角度：</label>
+            <span id="currentAngle">0°</span>
+            <label style="margin-left: 20px;">角度差異：</label>
+            <span id="angleDiff">0°</span>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        // 簡化的 RotatingMovingObject 測試版本
+        class TestRotatingObject {
+            constructor(map, latlng, id) {
+                this.map = map;
+                this.latlng = latlng;
+                this.angle = 0;
+                this.targetAngle = 0;
+                this.lastTime = null;
+                
+                // 優化的參數
+                this.lerpSpeed = 8.0;
+                this.angleThreshold = 0.1;
+                this.minAngleThreshold = 0.01;
+                this.useTargetSmoothing = false;
+                this.targetSmoothSpeed = 6.0;
+                this.smoothTargetAngle = 0;
+                this.animationMode = 'smooth';
+                
+                this.createMarker();
+                this.startAnimation();
+            }
+            
+            createMarker() {
+                const icon = L.divIcon({
+                    className: 'agv-size',
+                    html: 'AGV',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+                
+                this.marker = L.marker(this.latlng, { icon }).addTo(this.map);
+            }
+            
+            setTargetAngle(angle) {
+                this.targetAngle = angle;
+            }
+            
+            setAnimationMode(mode, speed) {
+                this.animationMode = mode;
+                this.lerpSpeed = speed;
+            }
+            
+            setTargetSmoothing(enabled, speed) {
+                this.useTargetSmoothing = enabled;
+                this.targetSmoothSpeed = speed;
+                if (!enabled) {
+                    this.smoothTargetAngle = this.targetAngle;
+                }
+            }
+            
+            _calculateAngleDifference(targetAngle, currentAngle) {
+                let diff = targetAngle - currentAngle;
+                if (diff > 180) diff -= 360;
+                else if (diff < -180) diff += 360;
+                return diff;
+            }
+            
+            _normalizeAngle(angle) {
+                while (angle < 0) angle += 360;
+                while (angle >= 360) angle -= 360;
+                return angle;
+            }
+            
+            updateTransform(delta) {
+                if (this.animationMode === 'instant') {
+                    this.angle = this.targetAngle;
+                    this.smoothTargetAngle = this.targetAngle;
+                } else {
+                    this.updateSmoothRotation(delta);
+                }
+                
+                // 更新顯示
+                const element = this.marker.getElement();
+                if (element) {
+                    element.style.transform = `rotate(${this.angle}deg)`;
+                }
+                
+                // 更新 UI 顯示
+                document.getElementById('currentAngle').textContent = this.angle.toFixed(2) + '°';
+                const diff = this._calculateAngleDifference(this.targetAngle, this.angle);
+                document.getElementById('angleDiff').textContent = Math.abs(diff).toFixed(2) + '°';
+            }
+            
+            updateSmoothRotation(delta) {
+                // 目標點平滑
+                if (this.useTargetSmoothing) {
+                    const targetDiff = this._calculateAngleDifference(this.targetAngle, this.smoothTargetAngle);
+                    if (Math.abs(targetDiff) > this.minAngleThreshold) {
+                        const smoothFactor = Math.min(1.0, this.targetSmoothSpeed * delta);
+                        this.smoothTargetAngle += targetDiff * smoothFactor;
+                        this.smoothTargetAngle = this._normalizeAngle(this.smoothTargetAngle);
+                    }
+                } else {
+                    this.smoothTargetAngle = this.targetAngle;
+                }
+                
+                // 角度插值
+                const angleDiff = this._calculateAngleDifference(this.smoothTargetAngle, this.angle);
+                
+                if (Math.abs(angleDiff) <= this.minAngleThreshold) {
+                    this.angle = this.smoothTargetAngle;
+                } else {
+                    const lerpFactor = Math.min(1.0, this.lerpSpeed * delta);
+                    
+                    // 動態速度調整
+                    let dynamicLerpFactor = lerpFactor;
+                    if (Math.abs(angleDiff) < this.angleThreshold) {
+                        const proximityFactor = Math.abs(angleDiff) / this.angleThreshold;
+                        dynamicLerpFactor = lerpFactor * Math.max(0.1, proximityFactor);
+                    }
+                    
+                    this.angle += angleDiff * dynamicLerpFactor;
+                    this.angle = this._normalizeAngle(this.angle);
+                }
+            }
+            
+            startAnimation() {
+                const animate = (time) => {
+                    if (!this.lastTime) this.lastTime = time;
+                    const delta = (time - this.lastTime) / 1000;
+                    this.lastTime = time;
+                    
+                    this.updateTransform(delta);
+                    requestAnimationFrame(animate);
+                };
+                requestAnimationFrame(animate);
+            }
+        }
+        
+        // 初始化地圖
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', {
+            attribution: '測試地圖'
+        }).addTo(map);
+        
+        // 創建測試物件
+        const testObject = new TestRotatingObject(map, [0, 0], 'test');
+        
+        // 控制項事件
+        document.getElementById('animationMode').addEventListener('change', (e) => {
+            testObject.setAnimationMode(e.target.value, testObject.lerpSpeed);
+        });
+        
+        document.getElementById('lerpSpeed').addEventListener('input', (e) => {
+            const speed = parseFloat(e.target.value);
+            testObject.setAnimationMode(testObject.animationMode, speed);
+            document.getElementById('lerpSpeedValue').textContent = speed.toFixed(1);
+        });
+        
+        document.getElementById('targetSmoothing').addEventListener('change', (e) => {
+            testObject.setTargetSmoothing(e.target.checked, testObject.targetSmoothSpeed);
+        });
+        
+        document.getElementById('targetAngle').addEventListener('input', (e) => {
+            const angle = parseInt(e.target.value);
+            testObject.setTargetAngle(angle);
+            document.getElementById('targetAngleValue').textContent = angle + '°';
+        });
+        
+        // 測試函數
+        window.testSequentialRotation = () => {
+            const angles = [0, 90, 180, 270, 360, 45, 135, 225, 315, 0];
+            let index = 0;
+            
+            const rotateNext = () => {
+                if (index < angles.length) {
+                    testObject.setTargetAngle(angles[index]);
+                    document.getElementById('targetAngle').value = angles[index];
+                    document.getElementById('targetAngleValue').textContent = angles[index] + '°';
+                    index++;
+                    setTimeout(rotateNext, 2000);
+                }
+            };
+            rotateNext();
+        };
+        
+        window.testPrecisionRotation = () => {
+            const preciseAngles = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
+            let index = 0;
+            
+            const rotateNext = () => {
+                if (index < preciseAngles.length) {
+                    testObject.setTargetAngle(preciseAngles[index]);
+                    document.getElementById('targetAngle').value = preciseAngles[index];
+                    document.getElementById('targetAngleValue').textContent = preciseAngles[index] + '°';
+                    index++;
+                    setTimeout(rotateNext, 3000);
+                }
+            };
+            rotateNext();
+        };
+        
+        window.testSmallAngleRotation = () => {
+            let currentAngle = 0;
+            const smallIncrements = [0.1, 0.2, 0.3, 0.5, 0.8, 1.0];
+            let index = 0;
+            
+            const rotateNext = () => {
+                if (index < smallIncrements.length) {
+                    currentAngle += smallIncrements[index];
+                    testObject.setTargetAngle(currentAngle);
+                    document.getElementById('targetAngle').value = currentAngle;
+                    document.getElementById('targetAngleValue').textContent = currentAngle.toFixed(1) + '°';
+                    index++;
+                    setTimeout(rotateNext, 2000);
+                }
+            };
+            rotateNext();
+        };
+        
+        window.resetTest = () => {
+            testObject.setTargetAngle(0);
+            testObject.angle = 0;
+            document.getElementById('targetAngle').value = 0;
+            document.getElementById('targetAngleValue').textContent = '0°';
+        };
+    </script>
+</body>
+</html>

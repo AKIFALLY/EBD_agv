@@ -23,13 +23,9 @@ class RobotContext(BaseContext):
     def __init__(self, initial_state: State):
         super().__init__(initial_state)
 
-        # 一些Robot可能需要跨狀態使用的參數
-        self.ocr = None
-        self.mission = None
-        self.rack_rotaion = None
+        # Robot 狀態機參數
         self.robot_parameter = LoaderRobotParameter()
         self.robot = Robot(self.node, self.robot_parameter)
-        self.selected_agv_port = 0  # 新增屬性，用於存儲選擇的 AGV車上 Port
 
         # BOXIN狀態
         self.boxin_up_both_empty = False
@@ -43,8 +39,6 @@ class RobotContext(BaseContext):
         self.boxin_down_lock = False
         self.boxin_buffer = 0  # 新增屬性，用於存儲 BOXIN Buffer 的值
 
-        self.boxin_number = 0
-
         # BOXIN PORT狀態
         self.boxin_port1 = False  # BOXIN Port 1 是否有貨物
         self.boxin_port2 = False  # BOXIN Port 2 是否有貨物
@@ -57,7 +51,29 @@ class RobotContext(BaseContext):
         self.agv_port3 = False  # AGV Port 3 是否有貨物
         self.agv_port4 = False  # AGV Port 4 是否有貨物
 
-        self.agv_port_number = 0  # 新增屬性，用於存儲選擇的 AGV Port 編號
+        # CLEANER PORT狀態
+        self.cleaner_port1 = False  # CLEANER Port 1 是否有貨物
+        self.cleaner_port2 = False  # CLEANER Port 2 是否有貨物
+        self.cleaner_port3 = False  # CLEANER Port 3 是否有貨物
+        self.cleaner_port4 = False  # CLEANER Port 4 是否有貨物
+
+        # SOAKER PORT狀態
+        self.soaker_port1 = False  # SOAKER Port 1 是否有貨物
+        self.soaker_port2 = False  # SOAKER Port 2 是否有貨物
+        self.soaker_port3 = False  # SOAKER Port 3 是否有貨物
+        self.soaker_port4 = False  # SOAKER Port 4 是否有貨物
+        self.soaker_port5 = False  # SOAKER Port 5 是否有貨物
+        self.soaker_port6 = False  # SOAKER Port 6 是否有貨物
+
+        # PRE_DRYER PORT狀態
+        self.pre_dryer_port1 = False  # PRE_DRYER Port 1 是否有貨物
+        self.pre_dryer_port2 = False  # PRE_DRYER Port 2 是否有貨物
+        self.pre_dryer_port3 = False  # PRE_DRYER Port 3 是否有貨物
+        self.pre_dryer_port4 = False  # PRE_DRYER Port 4 是否有貨物
+        self.pre_dryer_port5 = False  # PRE_DRYER Port 5 是否有貨物
+        self.pre_dryer_port6 = False  # PRE_DRYER Port 6 是否有貨物
+        self.pre_dryer_port7 = False  # PRE_DRYER Port 7 是否有貨物
+        self.pre_dryer_port8 = False  # PRE_DRYER Port 8 是否有貨物
 
         # AGV TO ROBOT PARAMETERS
         # rack
@@ -71,7 +87,6 @@ class RobotContext(BaseContext):
         self.get_pre_dryer_port = 1
 
         self.carrier_id = 0
-        self.get_room_id = 0
 
         # take transfer 相關狀態
         self.take_transfer_continue = False  # take transfer 是否可以繼續
@@ -79,10 +94,8 @@ class RobotContext(BaseContext):
         # put cleaner 相關狀態
         self.put_cleaner_continue = False  # put cleaner 是否可以繼續
 
-        # hokuyo_dms_8bit
-        self.hokuyo1_receive_ready = False
-        self.hokuyo1_receive_load_req = False
-        self.hokuyo1_receive_unload_req = False
+        # take cleaner 相關狀態
+        self.take_cleaner_continue = False  # take cleaner 是否可以繼續
 
     def update_port_parameters(self):
         """更新 RACK PORT 並同步參數"""
@@ -92,7 +105,7 @@ class RobotContext(BaseContext):
         self.robot_parameter.soaker_port = self.get_soaker_port  # 更新 soaker_port
         self.robot_parameter.cleaner_port = self.get_cleaner_port  # 更新 cleaner_port
         self.robot_parameter.pre_dryer_port = self.get_pre_dryer_port  # 更新 pre_dryer_port
-        print(
+        self.node.get_logger().debug(
             f"更新參數: loader_agv_port_front={self.robot_parameter.loader_agv_port_front}, "
             f"loader_agv_port_side={self.robot_parameter.loader_agv_port_side}, "
             f"boxin_port={self.robot_parameter.boxin_port}, "
@@ -101,4 +114,5 @@ class RobotContext(BaseContext):
             f"pre_dryer_port={self.robot_parameter.pre_dryer_port}"
         )
         # 同步更新參數
-        self.robot_parameter.update_parameter()  # 同步更新參數
+        self.robot_parameter.calculate_parameter()  # 同步更新參數
+        self.robot.update_parameter()

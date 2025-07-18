@@ -3,20 +3,27 @@
  * 適用於所有頁面的資料更新視覺反饋
  */
 
-/* 通用更新動畫類別 */
+/* 統一更新動畫類別（基於 Signal 頁面的最佳效果） */
 .field-updated,
 .agv-field-updated,
 .signal-updated,
-.task-updated {
-    animation: fieldUpdate 0.8s ease-out;
+.task-updated,
+.rack-updated {
+    animation: fieldUpdate 1.0s ease-out;
     position: relative;
+    z-index: 1;
 }
 
-/* 統一的更新動畫關鍵幀 */
+/* 統一的更新動畫關鍵幀（三階段增強效果） */
 @keyframes fieldUpdate {
     0% {
         background-color: #e8f4fd;
-        box-shadow: 0 0 5px rgba(50, 115, 220, 0.3);
+        box-shadow: 0 0 8px rgba(50, 115, 220, 0.4);
+    }
+
+    50% {
+        background-color: #d1ecf1;
+        box-shadow: 0 0 12px rgba(50, 115, 220, 0.5);
     }
 
     100% {
@@ -25,13 +32,14 @@
     }
 }
 
-/* 表格中的動畫適配 */
+/* 表格中的動畫適配（增強表格欄位效果） */
 .table td.field-updated,
 .table td.agv-field-updated,
 .table td.signal-updated,
-.table td.task-updated {
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
+.table td.task-updated,
+.table td.rack-updated {
+    border-radius: 6px;
+    transition: all 0.3s ease;
 }
 
 /* 卡片中的動畫適配 */
@@ -41,11 +49,19 @@
     margin: 2px;
 }
 
+/* Dashboard 卡片動畫適配 */
+.dashboard-card.field-updated,
+.dashboard-metric.field-updated {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
 /* 標籤元素的過渡效果 */
 .field-updated .tag,
 .agv-field-updated .tag,
 .signal-updated .tag,
-.task-updated .tag {
+.task-updated .tag,
+.rack-updated .tag {
     transition: all 0.3s ease;
 }
 
@@ -61,14 +77,20 @@
     .field-updated,
     .agv-field-updated,
     .signal-updated,
-    .task-updated {
-        animation-duration: 0.6s;
+    .task-updated,
+    .rack-updated {
+        animation-duration: 0.8s;
     }
 
     @keyframes fieldUpdate {
         0% {
             background-color: #e8f4fd;
-            box-shadow: 0 0 3px rgba(50, 115, 220, 0.2);
+            box-shadow: 0 0 6px rgba(50, 115, 220, 0.3);
+        }
+
+        50% {
+            background-color: #d1ecf1;
+            box-shadow: 0 0 8px rgba(50, 115, 220, 0.4);
         }
 
         100% {
@@ -82,8 +104,13 @@
 @media (prefers-color-scheme: dark) {
     @keyframes fieldUpdate {
         0% {
+            background-color: rgba(50, 115, 220, 0.3);
+            box-shadow: 0 0 8px rgba(50, 115, 220, 0.5);
+        }
+
+        50% {
             background-color: rgba(50, 115, 220, 0.2);
-            box-shadow: 0 0 5px rgba(50, 115, 220, 0.4);
+            box-shadow: 0 0 12px rgba(50, 115, 220, 0.6);
         }
 
         100% {
@@ -99,16 +126,19 @@
     .field-updated,
     .agv-field-updated,
     .signal-updated,
-    .task-updated {
+    .task-updated,
+    .rack-updated {
         animation: none;
         background-color: #e8f4fd;
-        transition: background-color 0.3s ease;
+        transition: all 0.3s ease;
     }
 
     .field-updated:hover,
     .agv-field-updated:hover,
     .signal-updated:hover,
-    .task-updated:hover {
+    .task-updated:hover,
+    .rack-updated:hover {
         background-color: transparent;
+        border-color: transparent;
     }
 }

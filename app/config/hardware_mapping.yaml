@@ -1,0 +1,76 @@
+agv_devices:
+  cargo01:
+    config_file: cargo01_config.yaml
+    description: '貨物搬運型 AGV #1 (MAC 更新: 2025-07-18 06:04)'
+    device_type: cargo
+    launch_file: launch.py
+    launch_package: cargo_mover_agv
+    mac_addresses:
+    - AA:BB:CC:DD:EE:01
+    - AA:BB:CC:DD:EE:11
+    - D8:43:AE:D2:D3:EA
+  cargo02:
+    config_file: cargo02_config.yaml
+    description: '貨物搬運型 AGV #2'
+    device_type: cargo
+    launch_file: launch.py
+    launch_package: cargo_mover_agv
+    mac_addresses:
+    - AA:BB:CC:DD:EE:02
+    - AA:BB:CC:DD:EE:12
+  loader01:
+    config_file: loader01_config.yaml
+    description: '裝載型 AGV #1'
+    device_type: loader
+    launch_file: launch.py
+    launch_package: loader_agv
+    mac_addresses:
+    - AA:BB:CC:DD:EE:03
+    - AA:BB:CC:DD:EE:13
+  loader02:
+    config_file: loader02_config.yaml
+    description: '裝載型 AGV #2'
+    device_type: loader
+    launch_file: launch.py
+    launch_package: loader_agv
+    mac_addresses:
+    - AA:BB:CC:DD:EE:04
+    - AA:BB:CC:DD:EE:14
+  unloader01:
+    config_file: unloader01_config.yaml
+    description: '卸載型 AGV #1'
+    device_type: unloader
+    launch_file: launch.py
+    launch_package: unloader_agv
+    mac_addresses:
+    - AA:BB:CC:DD:EE:05
+    - AA:BB:CC:DD:EE:15
+  unloader02:
+    config_file: unloader02_config.yaml
+    description: '卸載型 AGV #2'
+    device_type: unloader
+    launch_file: launch.py
+    launch_package: unloader_agv
+    mac_addresses:
+    - AA:BB:CC:DD:EE:06
+    - AA:BB:CC:DD:EE:16
+agvc_devices:
+  agvc01:
+    config_file: agvc01_config.yaml
+    description: AGVC 主節點 - 完整服務控制器
+    device_type: primary_controller
+    mac_addresses:
+    - 02:42:00:00:00:01          # 固定 MAC 地址（Docker Compose 配置）
+    - D8:43:AE:D2:D3:EA          # 宿主機 MAC 地址
+    - 7A:4A:7E:0C:BE:BF          # 容器當前 MAC 地址（重啟前）
+    role: primary
+    services:
+    - postgresql
+    - pgadmin4
+    - nginx
+    workspaces:
+    - db_proxy_ws
+    - web_api_ws
+    - ecs_ws
+    - rcs_ws
+    - wcs_ws

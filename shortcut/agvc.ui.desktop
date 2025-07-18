@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=AGVC UI
+Exec=xdg-open http://agvc.ui
+Icon=/home/ct/RosAGV/shortcut/CTLogo.svg
+Type=Application
+Categories=Network;WebBrowser;

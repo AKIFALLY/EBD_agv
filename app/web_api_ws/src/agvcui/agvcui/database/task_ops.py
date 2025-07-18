@@ -3,9 +3,9 @@
 任務相關資料庫操作
 """
 
-from sqlmodel import select, func
+from sqlmodel import select, func, or_
 from sqlalchemy.orm import selectinload
-from db_proxy.models import Task
+from db_proxy.models import Task, Work
 from .connection import connection_pool, task_crud, work_crud, task_status_crud
 from .utils import fetch_all
 
@@ -133,6 +133,94 @@ def delete_task(task_id: int):
 def work_all() -> list[dict]:
     """獲取所有工作類型"""
     return fetch_all(work_crud)
+
+
+def get_works(offset: int = 0, limit: int = 20, search: str = None,
+              sort_by: str = "id", sort_order: str = "desc") -> list[dict]:
+    """獲取工作類型列表（分頁、搜尋和排序）"""
+    with connection_pool.get_session() as session:
+        # 建立基本查詢
+        statement = select(Work)
+
+        # 添加搜尋條件
+        if search:
+            statement = statement.where(
+                or_(
+                    Work.name.ilike(f"%{search}%"),
+                    Work.description.ilike(f"%{search}%")
+                )
+            )
+
+        # 添加排序
+        sort_column = getattr(Work, sort_by, Work.id)
+        if sort_order.lower() == "asc":
+            statement = statement.order_by(sort_column.asc())
+        else:
+            statement = statement.order_by(sort_column.desc())
+
+        # 添加分頁
+        statement = statement.offset(offset).limit(limit)
+
+        works = session.exec(statement).all()
+        return [work.model_dump() for work in works]
+
+
+def count_works(search: str = None) -> int:
+    """獲取工作類型總數"""
+    with connection_pool.get_session() as session:
+        if search:
+            statement = select(func.count(Work.id)).where(
+                or_(
+                    Work.name.ilike(f"%{search}%"),
+                    Work.description.ilike(f"%{search}%")
+                )
+            )
+        else:
+            statement = select(func.count(Work.id))
+
+        return session.exec(statement).one()
+
+
+def get_work_by_id(work_id: int, include_tasks: bool = False):
+    """根據 ID 獲取工作類型"""
+    with connection_pool.get_session() as session:
+        if include_tasks:
+            # 使用 eager loading 預先加載 tasks 關係
+            from sqlalchemy.orm import selectinload
+            statement = select(Work).where(Work.id == work_id).options(selectinload(Work.tasks))
+            work = session.exec(statement).first()
+            if work:
+                # 將對象轉換為字典以避免 detached 問題
+                work_dict = work.model_dump()
+                # 手動添加 tasks 信息
+                work_dict['tasks'] = [task.model_dump()
+                                      for task in work.tasks] if work.tasks else []
+                return work_dict
+            return None
+        else:
+            work = work_crud.get_by_id(session, work_id)
+            if work:
+                return work.model_dump()
+            return None
+
+
+def create_work(work_data: dict):
+    """創建新工作類型"""
+    with connection_pool.get_session() as session:
+        work_obj = Work(**work_data)
+        return work_crud.create(session, work_obj)
+
+
+def update_work(work_id: int, work_data: dict):
+    """更新工作類型"""
+    with connection_pool.get_session() as session:
+        return work_crud.update(session, work_id, work_data)
+
+
+def delete_work(work_id: int) -> bool:
+    """刪除工作類型"""
+    with connection_pool.get_session() as session:
+        return work_crud.delete(session, work_id)
 
 
 def task_status_all() -> list[dict]:

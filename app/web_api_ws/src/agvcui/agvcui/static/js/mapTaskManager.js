@@ -3,6 +3,8 @@
  * 處理地圖上的任務相關功能
  */
 
+import { getTaskStatusInfo, getTaskStatusName } from './taskStatus.js';
+
 export const mapTaskManager = (() => {
     let taskData = new Map();
 
@@ -13,16 +15,19 @@ export const mapTaskManager = (() => {
         // 監聽 tasksStore 的變化
         if (window.tasksStore) {
             window.tasksStore.on('change', handleTasksChange);
-            console.log('mapTaskManager: 已訂閱 tasksStore 變化');
+            console.debug('mapTaskManager: 已訂閱 tasksStore 變化');
         }
     }
 
     // 處理 tasksStore 變化
     function handleTasksChange(newState) {
-        if (!newState?.tasks) return;
+        if (!newState?.tasks) {
+            console.debug('mapTaskManager.handleTasksChange: 無效的狀態資料');
+            return;
+        }
 
         const tasks = newState.tasks || [];
-        console.log(`mapTaskManager: 收到任務更新，共 ${tasks.length} 個任務`);
+        console.debug(`mapTaskManager.handleTasksChange: 收到任務更新，共 ${tasks.length} 個任務`);
 
         // 更新本地資料
         taskData.clear();
@@ -33,8 +38,10 @@ export const mapTaskManager = (() => {
         // 如果側邊面板正在顯示任務列表，只更新內容
         const tasksList = document.getElementById('tasks-list');
         if (tasksList && tasksList.children.length > 0) {
-            console.log('mapTaskManager: 更新側邊面板任務列表內容');
+            console.debug('mapTaskManager.handleTasksChange: 側邊面板正在顯示，更新任務列表內容');
             updateTasksListContent(tasksList, tasks);
+        } else {
+            console.debug('mapTaskManager.handleTasksChange: 側邊面板未顯示或為空，跳過更新');
         }
     }
 
@@ -51,7 +58,7 @@ export const mapTaskManager = (() => {
                     taskData.set(task.id, task);
                 });
 
-                console.log(`Loaded ${tasks.length} tasks from store`);
+                console.debug(`Loaded ${tasks.length} tasks from store`);
             } else {
                 console.warn('tasksStore not available');
             }
@@ -106,7 +113,7 @@ export const mapTaskManager = (() => {
                 <div class="field">
                     <label class="label">狀態</label>
                     <div class="control">
-                        <span class="tag ${getTaskStatusColor(task.status_id)}">${getTaskStatusName(task.status_id)}</span>
+                        <span class="tag ${getTaskStatusColor(task.status_id)}">${getTaskStatusNameLocal(task.status_id)}</span>
                     </div>
                 </div>
                 <div class="field">
@@ -204,28 +211,14 @@ export const mapTaskManager = (() => {
         window.mapInteraction.showPopup(position, title, content, actions);
     }
 
-    // 獲取任務狀態顏色
+    // 獲取任務狀態顏色（使用統一的狀態定義）
     function getTaskStatusColor(statusId) {
-        switch (statusId) {
-            case 1: return 'is-warning';  // 待執行
-            case 2: return 'is-info';     // 執行中
-            case 3: return 'is-success';  // 已完成
-            case 4: return 'is-danger';   // 失敗
-            case 5: return 'is-light';    // 已取消
-            default: return 'is-light';
-        }
+        return getTaskStatusInfo(statusId).color;
     }
 
-    // 獲取任務狀態名稱
-    function getTaskStatusName(statusId) {
-        switch (statusId) {
-            case 1: return '待執行';
-            case 2: return '執行中';
-            case 3: return '已完成';
-            case 4: return '失敗';
-            case 5: return '已取消';
-            default: return '未知';
-        }
+    // 獲取任務狀態名稱（使用統一的狀態定義）
+    function getTaskStatusNameLocal(statusId) {
+        return getTaskStatusName(statusId);
     }
 
     // 獲取優先級顏色
@@ -250,7 +243,7 @@ export const mapTaskManager = (() => {
         if (window.mapPermissions && window.mapPermissions.hasPermission('delete_task')) {
             if (confirm('確定要刪除這個任務嗎？')) {
                 // 這裡可以調用 API 刪除任務
-                console.log('Delete task:', taskId);
+                console.debug('Delete task:', taskId);
                 // TODO: 實作刪除 API 調用
             }
         }
@@ -259,7 +252,7 @@ export const mapTaskManager = (() => {
     // 開始任務
     function startTask(taskId) {
         if (window.mapPermissions && window.mapPermissions.hasPermission('execute_task')) {
-            console.log('Start task:', taskId);
+            console.debug('Start task:', taskId);
             // TODO: 實作開始任務 API 調用
         }
     }
@@ -267,128 +260,129 @@ export const mapTaskManager = (() => {
     // 暫停任務
     function pauseTask(taskId) {
         if (window.mapPermissions && window.mapPermissions.hasPermission('execute_task')) {
-            console.log('Pause task:', taskId);
+            console.debug('Pause task:', taskId);
             // TODO: 實作暫停任務 API 調用
         }
     }
 
     // 更新任務列表內容（保持 DOM 結構）
     function updateTasksListContent(tasksList, tasks) {
-        // 保存當前滾動位置
-        const scrollTop = tasksList.scrollTop;
+        console.debug('mapTaskManager.updateTasksListContent: 開始更新任務列表內容');
 
-        // 按 ID 排序任務
-        const sortedTasks = tasks.sort((a, b) => a.id - b.id);
-
-        // 更新總數資訊
-        let totalInfoElement = tasksList.querySelector('.total-info');
-        if (!totalInfoElement) {
-            totalInfoElement = document.createElement('div');
-            totalInfoElement.className = 'total-info has-text-grey is-size-7 mb-2';
-            tasksList.insertBefore(totalInfoElement, tasksList.firstChild);
+        // 防止重複更新
+        if (tasksList._isUpdating) {
+            console.debug('mapTaskManager.updateTasksListContent: 正在更新中，跳過此次更新');
+            return;
         }
-        totalInfoElement.textContent = `總計 ${tasks.length} 個任務`;
+        tasksList._isUpdating = true;
 
-        // 獲取現有的任務項目
-        const existingItems = Array.from(tasksList.querySelectorAll('.task-item'));
+        try {
+            // 保存當前滾動位置
+            const scrollTop = tasksList.scrollTop;
 
-        // 處理新增和更新的任務
-        sortedTasks.forEach((task, index) => {
-            let itemElement = existingItems.find(item => {
-                const onclick = item.getAttribute('onclick');
-                const match = onclick?.match(/showTaskPopup\(.*?"id":(\d+)/);
-                return match && parseInt(match[1]) === task.id;
-            });
+            // 按 ID 排序任務
+            const sortedTasks = tasks.sort((a, b) => a.id - b.id);
 
-            if (!itemElement) {
-                // 新增任務項目
-                itemElement = document.createElement('div');
-                itemElement.className = 'task-item';
-                itemElement.setAttribute('onclick', `mapTaskManager.showTaskPopup(${JSON.stringify(task).replace(/"/g, '&quot;')}, null)`);
-
-                // 插入到正確位置
-                const nextItem = existingItems[index];
-                if (nextItem) {
-                    tasksList.insertBefore(itemElement, nextItem);
-                } else {
-                    tasksList.appendChild(itemElement);
-                }
-                existingItems.splice(index, 0, itemElement);
-            } else {
-                // 更新 onclick 屬性以確保資料是最新的
-                itemElement.setAttribute('onclick', `mapTaskManager.showTaskPopup(${JSON.stringify(task).replace(/"/g, '&quot;')}, null)`);
+            // 更新總數資訊
+            let totalInfoElement = tasksList.querySelector('.total-info');
+            if (!totalInfoElement) {
+                totalInfoElement = document.createElement('div');
+                totalInfoElement.className = 'total-info has-text-grey is-size-7 mb-2';
+                tasksList.insertBefore(totalInfoElement, tasksList.firstChild);
             }
+            totalInfoElement.textContent = `總計 ${tasks.length} 個任務`;
 
-            // 更新項目內容
-            itemElement.innerHTML = `
-                <div class="level is-mobile">
-                    <div class="level-left">
-                        <div class="level-item">
-                            <div>
-                                <p class="title is-6">${task.name || `任務 ${task.id}`}</p>
-                                <p class="subtitle is-7">
-                                    <span class="tag is-small ${getTaskStatusColor(task.status_id)}">${getTaskStatusName(task.status_id)}</span>
-                                    ${task.agv_id ? `<span class="tag is-small is-light">AGV ${task.agv_id}</span>` : ''}
-                                </p>
+            // 簡化更新邏輯：直接重建任務項目
+            // 移除所有現有的任務項目（保留總數資訊）
+            const existingItems = Array.from(tasksList.querySelectorAll('.task-item'));
+            existingItems.forEach(item => item.remove());
+
+            // 重新創建所有任務項目
+            sortedTasks.forEach(task => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'task-item';
+
+                // 使用原本的跳轉行為而不是彈出視窗
+                itemElement.setAttribute('onclick', `window.mapInteraction.viewTaskDetails(${task.id})`);
+
+                itemElement.innerHTML = `
+                    <div class="level is-mobile">
+                        <div class="level-left">
+                            <div class="level-item">
+                                <div>
+                                    <p class="title is-6">${task.name || `任務 ${task.id}`}</p>
+                                    <p class="subtitle is-7">
+                                        <span class="tag is-small ${getTaskStatusColor(task.status_id)}">${getTaskStatusNameLocal(task.status_id)}</span>
+                                        ${task.agv_id ? `<span class="tag is-small is-light">AGV ${task.agv_id}</span>` : ''}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-right">
+                            <div class="level-item">
+                                <span class="icon">
+                                    <i class="mdi mdi-chevron-right"></i>
+                                </span>
                             </div>
                         </div>
                     </div>
-                    <div class="level-right">
-                        <div class="level-item">
-                            <span class="icon">
-                                <i class="mdi mdi-chevron-right"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
+                `;
 
-        // 移除已刪除的任務項目
-        existingItems.forEach(item => {
-            const onclick = item.getAttribute('onclick');
-            const match = onclick?.match(/showTaskPopup\(.*?"id":(\d+)/);
-            const taskId = match ? parseInt(match[1]) : null;
+                tasksList.appendChild(itemElement);
+            });
 
-            if (taskId && !sortedTasks.find(task => task.id === taskId)) {
-                item.remove();
-            }
-        });
+            // 恢復滾動位置
+            tasksList.scrollTop = scrollTop;
 
-        // 恢復滾動位置
-        tasksList.scrollTop = scrollTop;
+            console.debug(`mapTaskManager.updateTasksListContent: 已更新 ${tasks.length} 個任務項目`);
+        } catch (error) {
+            console.error('mapTaskManager.updateTasksListContent: 更新失敗', error);
+        } finally {
+            // 重置更新標誌
+            tasksList._isUpdating = false;
+        }
     }
 
     // 載入任務列表到側邊面板
     function loadTasksList() {
+        console.debug('mapTaskManager.loadTasksList: 開始載入任務列表');
+
         const tasks = getAllTaskData();
         const tasksList = document.getElementById('tasks-list');
 
-        if (!tasksList) return;
+        if (!tasksList) {
+            console.warn('mapTaskManager.loadTasksList: tasks-list 元素未找到');
+            return;
+        }
+
+        console.debug(`mapTaskManager.loadTasksList: 找到 ${tasks.length} 個任務`);
 
         if (tasks.length === 0) {
             tasksList.innerHTML = '<p class="has-text-grey">目前沒有任務</p>';
+            console.debug('mapTaskManager.loadTasksList: 沒有任務，顯示空狀態');
             return;
         }
 
         // 如果列表已經有內容，使用更新方式
         if (tasksList.children.length > 0) {
+            console.debug('mapTaskManager.loadTasksList: 列表已有內容，使用更新方式');
             updateTasksListContent(tasksList, tasks);
             return;
         }
 
         // 初次載入時使用完整重建
+        console.debug('mapTaskManager.loadTasksList: 初次載入，使用完整重建');
         const sortedTasks = tasks.sort((a, b) => a.id - b.id);
 
         const tasksHtml = sortedTasks.map(task => `
-            <div class="task-item" onclick="mapTaskManager.showTaskPopup(${JSON.stringify(task).replace(/"/g, '&quot;')}, null)">
+            <div class="task-item" onclick="window.mapInteraction.viewTaskDetails(${task.id})">
                 <div class="level is-mobile">
                     <div class="level-left">
                         <div class="level-item">
                             <div>
                                 <p class="title is-6">${task.name || `任務 ${task.id}`}</p>
                                 <p class="subtitle is-7">
-                                    <span class="tag is-small ${getTaskStatusColor(task.status_id)}">${getTaskStatusName(task.status_id)}</span>
+                                    <span class="tag is-small ${getTaskStatusColor(task.status_id)}">${getTaskStatusNameLocal(task.status_id)}</span>
                                     ${task.agv_id ? `<span class="tag is-small is-light">AGV ${task.agv_id}</span>` : ''}
                                 </p>
                             </div>
@@ -407,6 +401,8 @@ export const mapTaskManager = (() => {
 
         const totalInfo = `<div class="total-info has-text-grey is-size-7 mb-2">總計 ${tasks.length} 個任務</div>`;
         tasksList.innerHTML = totalInfo + tasksHtml;
+
+        console.debug(`mapTaskManager.loadTasksList: 已載入 ${tasks.length} 個任務（完整重建）`);
     }
 
     // 公開方法

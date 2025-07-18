@@ -1,12 +1,42 @@
 #!/bin/bash
 # /app/startup.bash
 
+# 創建 AGV 環境標記檔案
+echo "AGV_ENVIRONMENT=true" > /app/.agv_environment
+echo "CONTAINER_TYPE=rosagv" >> /app/.agv_environment
+echo "STARTUP_TIME=$(date)" >> /app/.agv_environment
+
+# 🚗 統一設備身份識別
+echo "🔍 開始統一設備身份識別..."
+export CONTAINER_TYPE="agv"
+
+if [ -f "/app/scripts/config_driven_device_detector.bash" ]; then
+    # 執行配置驅動統一身份識別腳本
+    source /app/scripts/config_driven_device_detector.bash
+    if [ $? -eq 0 ]; then
+        echo "✅ AGV 設備身份識別成功: $DEVICE_ID ($AGV_TYPE)"
+        echo "📁 配置檔案: $DEVICE_CONFIG_FILE"
+        echo "🚀 啟動套件: $AGV_LAUNCH_PACKAGE"
+    else
+        echo "⚠️ AGV 設備身份識別失敗，使用預設配置"
+    fi
+else
+    echo "❌ 統一設備識別腳本不存在，使用預設配置"
+    export DEVICE_ID="loader02"
+    export AGV_ID="loader02"
+    export AGV_TYPE="loader"
+    export ROS_NAMESPACE="/loader02"
+    export AGV_LAUNCH_PACKAGE="loader_agv"
+    export AGV_LAUNCH_FILE="launch.py"
+    export DEVICE_CONFIG_FILE="/app/config/agv/loader02_config.yaml"
+fi
+
 # 檢查是否安裝 Node.js (command -v 查詢是否存在指定的命令)
 command -v node &> /dev/null
 NODE_INSTALLED=$?
 
 # 確認變數是否設定成功
-echo "Startups script is running..."
+echo "AGV Startup script is running..."
 echo "ROS_DISTRO=$ROS_DISTRO"
 echo "ZENOH_ROUTER_CONFIG_URI=$ZENOH_ROUTER_CONFIG_URI"
 echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
