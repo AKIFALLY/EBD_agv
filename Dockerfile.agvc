@@ -58,6 +58,21 @@ RUN apt-get update && apt-get install -y \
     lsof \
     usbutils \
     ros-jazzy-joy-linux \
+    aggregate \
+    dnsutils \
+    fzf \
+    gh \
+    iproute2 \
+    ipset \
+    iptables \
+    yq \
+    jq \
+    less \
+    man-db \
+    unzip \
+    ripgrep \
+    zsh \
+    zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # 建立 Python 虛擬環境

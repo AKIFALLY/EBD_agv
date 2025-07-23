@@ -13,13 +13,4 @@
 
 /* Works 頁面動畫效果已移至 updateAnimations.css 統一管理 */
 
-/* 響應式調整（動畫相關已移至 updateAnimations.css） */
-@media screen and (max-width: 768px) {
-    .work-parameters-dropdown .dropdown-content {
-        min-width: 250px;
-    }
-
-    .work-parameters-dropdown pre {
-        font-size: 0.7rem;
-    }
-}
+/* 移除響應式調整 - 專注於桌面環境 */

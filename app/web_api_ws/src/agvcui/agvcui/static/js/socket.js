@@ -1,5 +1,6 @@
 import { mapStore, signalsStore, carriersStore, machinesStore, roomsStore, racksStore, tasksStore, agvsStore, userStore } from '../store/index.js';
 import { notify } from './notify.js';
+import { validateTaskStatus } from './taskStatus.js';
 
 let socket = null;
 
@@ -85,7 +86,28 @@ function setup() {
         racksStore.setState({ "racks": msg.racks });
     });
     socket.on("task_list", (msg) => {
-        tasksStore.setState({ "tasks": msg.tasks });
+        // 🔧 新增：資料格式驗證
+        if (!msg || !Array.isArray(msg.tasks)) {
+            console.error('任務資料格式錯誤:', msg);
+            return;
+        }
+
+        // 🔧 新增：狀態驗證和修正
+        const validatedTasks = msg.tasks.map(task => {
+            const statusValidation = validateTaskStatus(task.status_id);
+            if (!statusValidation.isValid) {
+                console.warn(`任務 ${task.id} 狀態不一致:`, statusValidation.error);
+                console.warn(`有效狀態 ID:`, statusValidation.validStatusIds);
+                // 使用降級狀態
+                task.status_id = statusValidation.fallbackStatus;
+                task._statusCorrected = true; // 標記狀態已修正
+            }
+
+            return task;
+        });
+
+        console.debug(`Socket.IO 接收任務資料: ${validatedTasks.length} 個任務`);
+        tasksStore.setState({ "tasks": validatedTasks });
     });
     socket.on("location_list", (msg) => {
         console.log("收到 location_list 事件:", msg);

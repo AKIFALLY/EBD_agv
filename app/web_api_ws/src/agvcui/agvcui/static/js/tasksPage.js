@@ -1,6 +1,6 @@
 import { tasksStore } from '../store/index.js';
 import { notify } from './notify.js';
-import { getTaskStatusInfo, getTaskStatusName, getTaskStatusIdByName } from './taskStatus.js';
+import { getTaskStatusInfo, getTaskStatusName, getTaskStatusIdByName, validateTaskStatus } from './taskStatus.js';
 
 export const tasksPage = (() => {
     let currentTasks = []; // 當前顯示的任務列表
@@ -18,6 +18,34 @@ export const tasksPage = (() => {
 
         // 根據當前篩選條件更新任務列表
         updateTasksDisplay(allTasks);
+
+        // 🔧 修正：檢查是否需要更新階層視圖
+        // 當任務資料更新時，如果階層視圖是活動的，需要重新生成
+        const hierarchyViewBtn = document.getElementById('hierarchyViewBtn');
+        const hierarchyView = document.getElementById('hierarchyView');
+
+        if (hierarchyViewBtn && hierarchyView &&
+            hierarchyViewBtn.classList.contains('is-primary') &&
+            !hierarchyView.classList.contains('is-hidden')) {
+
+            console.debug('階層視圖是活動的，準備重新生成階層結構');
+
+            // 🔧 改善：使用防抖版本的階層更新
+            if (typeof window.generateHierarchyDebounced === 'function') {
+                window.generateHierarchyDebounced(100); // 100ms 防抖延遲
+                console.debug('階層視圖已觸發防抖更新');
+            } else if (typeof window.generateHierarchy === 'function') {
+                // 降級到直接調用
+                setTimeout(() => {
+                    window.generateHierarchy();
+                    console.debug('階層視圖已重新生成（降級模式）');
+                }, 150);
+            } else {
+                console.debug('generateHierarchy 函數不可用，嘗試手動觸發');
+                // 嘗試觸發階層視圖按鈕點擊事件來重新生成
+                hierarchyViewBtn.click();
+            }
+        }
     }
 
     /**
@@ -51,30 +79,40 @@ export const tasksPage = (() => {
     }
 
     /**
-     * 優化的任務行更新函數（只更新變化的欄位，不重建 DOM 結構）
+     * 🔧 重構：優化的任務行更新函數（增強狀態驗證和精確 DOM 選擇）
      * @param {number} taskId - 任務 ID
      * @param {Object} newTask - 新的任務資料
      */
     function updateTaskRowOptimized(taskId, newTask) {
+        // 🔧 新增：使用精確的任務行選擇器
+        const taskRow = document.querySelector(`tr[data-task-id="${taskId}"]`);
+        if (!taskRow) {
+            console.debug(`任務行不存在: ${taskId}`);
+            return;
+        }
+
         let hasChanges = false;
 
-        // 更新任務狀態（帶變化檢測和詳細 debug）
-        const statusElement = document.getElementById(`task-status-${taskId}`);
-        if (statusElement) {
-            const oldStatus = extractStatusFromTag(statusElement);
-            const newStatus = newTask.status_id;
+        // 🔧 增強：任務狀態更新（帶狀態驗證）
+        const statusCell = taskRow.querySelector('.task-status-cell');
+        if (statusCell) {
+            const currentStatusId = parseInt(statusCell.dataset.statusId) || null;
+            const newStatusId = newTask.status_id;
 
-            console.debug(`任務 ${taskId} 狀態檢測: 舊值="${oldStatus}" (${typeof oldStatus}), 新值="${newStatus}" (${typeof newStatus})`);
+            // 🔧 新增：狀態驗證
+            const statusValidation = validateTaskStatus(newStatusId);
+            if (!statusValidation.isValid) {
+                console.warn(`任務 ${taskId} 狀態無效:`, statusValidation.error);
+                newTask.status_id = statusValidation.fallbackStatus;
+                newTask._statusCorrected = true;
+            }
 
-            if (hasChanged(oldStatus, newStatus)) {
-                updateTaskStatusTag(statusElement, newTask.status_id);
-                // 統一動畫目標：應用到 td 元素
-                const statusTdElement = statusElement.closest('td');
-                addUpdateAnimation(statusTdElement);
+            console.debug(`任務 ${taskId} 狀態檢測: 舊值="${currentStatusId}", 新值="${newTask.status_id}"`);
+
+            if (hasChanged(currentStatusId, newTask.status_id)) {
+                updateTaskStatusCellOptimized(statusCell, newTask.status_id, newTask._statusCorrected);
                 hasChanges = true;
-                console.debug(`任務 ${newTask.name || taskId} 狀態更新: "${oldStatus}" → "${newStatus}"`);
-            } else {
-                console.debug(`任務 ${taskId} 狀態無變化，跳過動畫`);
+                console.debug(`任務 ${newTask.name || taskId} 狀態更新: ${currentStatusId} → ${newTask.status_id}`);
             }
         }
 
@@ -124,10 +162,49 @@ export const tasksPage = (() => {
             }
         }
 
-        // 記錄變化但不添加整行動畫
+        // 記錄變化
         if (hasChanges) {
             console.debug(`任務 ${newTask.name || taskId} 資料已更新`);
         }
+    }
+
+    /**
+     * 🔧 新增：優化的狀態單元格更新函數（帶動畫效果）
+     * @param {Element} statusCell - 狀態單元格元素
+     * @param {number} statusId - 新的狀態 ID
+     * @param {boolean} isCorrected - 是否為修正後的狀態
+     */
+    function updateTaskStatusCellOptimized(statusCell, statusId, isCorrected = false) {
+        const statusInfo = getTaskStatusInfo(statusId);
+
+        // 🔧 新增：狀態變更動畫
+        statusCell.classList.add('status-updating');
+
+        setTimeout(() => {
+            // 更新狀態顯示
+            const statusTag = statusCell.querySelector('.tag') || statusCell;
+            statusTag.className = `tag ${statusInfo.color}`;
+            statusTag.textContent = isCorrected ? `${statusInfo.name}(修正)` : statusInfo.name;
+
+            // 更新資料屬性
+            statusCell.dataset.statusId = statusId;
+
+            // 移除更新動畫，添加完成動畫
+            statusCell.classList.remove('status-updating');
+            statusCell.classList.add('status-updated');
+
+            // 如果是修正狀態，添加警告樣式
+            if (isCorrected) {
+                statusCell.classList.add('status-corrected');
+                setTimeout(() => {
+                    statusCell.classList.remove('status-corrected');
+                }, 2000);
+            }
+
+            setTimeout(() => {
+                statusCell.classList.remove('status-updated');
+            }, 300);
+        }, 100);
     }
 
     /**
@@ -253,8 +330,9 @@ export const tasksPage = (() => {
      * @param {Array} allTasks - 所有任務
      */
     function updateTaskStats(filteredTasks, allTasks) {
-        // 更新標題中的任務數量
-        const titleTag = document.querySelector('.level-item .tag');
+        // 🔧 修正：使用更精確的選擇器，避免干擾階層視圖中的個別任務
+        // 只更新頁面標題區域的統計資訊，不影響階層視圖中的任務狀態標籤
+        const titleTag = document.querySelector('.hero .level-item .tag, .section .level-item .tag:not(.task-node .level-item .tag)');
         if (titleTag) {
             const count = filteredTasks.length;
             const agvName = currentAgvId ? `AGV ${currentAgvId}` : '所有任務';
@@ -265,7 +343,14 @@ export const tasksPage = (() => {
                 <span>${agvName} (${count} 個任務)</span>
             `;
         }
+
+        // 🔧 註釋：階層視圖的更新邏輯已移至 handleTasksChange 函數中
+        // 避免重複更新，提高效能
     }
+
+    // 🔧 新增：暴露函數和資料供階層視圖使用
+    window.updateTaskStatusCellOptimized = updateTaskStatusCellOptimized;
+    window.tasksStore = tasksStore;
 
     /**
      * 初始化頁面

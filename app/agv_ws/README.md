@@ -2,7 +2,7 @@
 
 ## 📋 基本資訊
 
-**啟動狀態**: ✅ 部分啟動 (僅 Loader AGV 完全實作並自動啟動)
+**啟動狀態**: ✅ 實際啟動 (Loader AGV 在容器啟動腳本中自動載入並執行)
 **運行環境**: 🚗 AGV 車載系統 (主要)
 **主要功能**: AGV 核心控制系統和狀態機架構
 **依賴狀態**: 依賴多個工作空間，是 RosAGV 系統的核心模組
@@ -12,16 +12,22 @@
 
 AGV 工作空間是 RosAGV 系統的核心模組，包含多種類型的 AGV 控制節點和基礎框架。該工作空間實現了基於狀態機的 AGV 控制架構，支援不同類型的 AGV（Loader、Cargo Mover、Unloader）以及完整的狀態管理和任務執行功能。
 
-**⚠️ 重要說明**: 目前僅 **Loader AGV** 完全實作並自動啟動，其他車型（Cargo Mover AGV、Unloader AGV）仍在開發中，需要手動啟動且功能不完整。作為系統的核心，它整合了 PLC 通訊、感測器處理、路徑規劃和任務執行等關鍵功能。
+此工作空間作為系統的核心，整合了 PLC 通訊、感測器處理、路徑規劃和任務執行等關鍵功能。它採用雙層狀態管理架構，包含 AGV 層狀態和通用狀態，支援複雜的任務流程和狀態轉換。系統具備完整的記憶體管理（65536 words）、50ms 主迴圈控制和 1.5 秒狀態發布週期。
+
+**⚠️ 重要說明**: 目前僅 **Loader AGV** 完全實作並自動啟動，其他車型（Cargo Mover AGV、Unloader AGV）仍在開發中，需要手動啟動且功能不完整。
 
 ## 🔗 依賴關係
 
+### 系統套件依賴
+- **ROS 2**: `rclpy`, `rclpy.node`, `rclpy.timer`, `rclpy.clock`
+- **Python 標準庫**: `time`, `threading`, `abc`
+
 ### 依賴的工作空間
-- **plc_proxy**: 使用 `PlcClient` 進行 PLC 通訊
-- **keyence_plc**: 使用 `PlcMemory` 進行記憶體管理
-- **agv_cmd_service**: 可能使用 AGV 命令服務
-- **path_algorithm**: 使用 A* 演算法進行路徑規劃
-- **db_proxy**: 使用資料庫客戶端進行資料存取
+- **plc_proxy_ws**: 使用 `PlcClient` 進行 PLC 通訊和服務調用
+- **keyence_plc_ws**: 使用 `PlcMemory` 進行記憶體管理 (65536 words = 131072 bytes)
+- **path_algorithm**: 使用 `AStarAlgorithm` 進行路徑規劃和座標轉換
+- **agv_cmd_service_ws**: 可能使用 AGV 命令服務 (部分整合)
+- **db_proxy_ws**: 使用資料庫客戶端進行資料存取 (部分整合)
 
 ### 被依賴的工作空間
 - **外部系統**: AGVC 管理系統、Web UI 等監控和控制本工作空間

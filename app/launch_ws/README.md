@@ -4,33 +4,33 @@
 
 **啟動狀態**: ⚠️ 手動啟動 (未在容器啟動腳本中自動啟動)
 **運行環境**: 🖥️ AGVC 管理系統 (主要)
-**主要功能**: Launch 檔案管理 - 系統啟動和配置管理
-**依賴狀態**: 使用系統套件，無其他工作空間依賴
+**主要功能**: Launch 檔案管理和系統啟動配置
+**依賴狀態**: 純系統套件，無其他工作空間依賴
 **手動啟動**: 可使用 `ros2 launch ecs_launch launch.py` 或 `ros2 launch web_api_launch launch.py` 啟動
 
 ## 📋 專案概述
 
-啟動工作空間是 RosAGV 系統的統一啟動和配置管理核心，提供各種系統組件的 launch 檔案和配置模板。該工作空間實現了模組化的啟動管理，支援 ECS 系統和 Web API 系統的統一啟動，簡化了複雜系統的部署流程。
+啟動工作空間是 RosAGV 系統的統一啟動和配置管理核心，提供各種系統組件的 Launch 檔案和配置模板。該工作空間實現了模組化的啟動管理，支援 ECS 系統和 Web API 系統的統一啟動，簡化了複雜系統的部署流程。
 
-作為 AGVC 管理系統的重要組件，Launch 工作空間提供了完整的啟動控制邏輯，包括 ECS 啟動、Web API 啟動、參數配置管理等。系統採用標準的 ROS 2 Launch 架構，支援多種啟動模式和配置選項，並提供完整的參數管理和依賴處理。
+此工作空間作為 AGVC 管理系統的重要組件，提供了完整的啟動控制邏輯，包括 ECS 啟動、Web API 啟動、參數配置管理等。系統採用標準的 ROS 2 Launch 架構，支援多種啟動模式和配置選項，並提供完整的參數管理和依賴處理。
 
 **重要特點**: 實現了完整的 ECS Launch 和 Web API Launch 檔案，支援統一的系統啟動和參數配置管理，並提供靈活的啟動選項和配置模板。
 
 ## 🔗 依賴關係
 
 ### 系統套件依賴
-- **launch**: ROS 2 Launch 系統核心
-- **launch_ros**: ROS 2 Launch 整合套件
-- **setuptools**: Python 套件建置工具
-
-### 依賴的工作空間
-- **無**: 此工作空間為獨立模組，不依賴其他工作空間
+- **ROS 2**: `launch`, `launch_ros`, `launch.actions`, `launch.substitutions`
+- **Python 標準庫**: `setuptools`, `glob`, `os`
 
 ### 被依賴的工作空間
-- **無**: 此工作空間提供啟動檔案，不被其他工作空間直接依賴
+- **ecs_ws**: 透過 `ecs_launch` 啟動 ECS 系統
+- **web_api_ws**: 透過 `web_api_launch` 啟動 Web API 系統
+- **plc_proxy_ws**: 透過 Launch 檔案啟動 PLC 服務
+- **agvcui**: 透過 Launch 檔案啟動 AGVC UI 服務
+- **opui**: 透過 Launch 檔案啟動 OP UI 服務
 
 ### 外部依賴
-- **配置檔案**: 依賴 `/app/config/` 目錄下的配置檔案
+- **配置檔案**: `/app/config/ecs_config.yaml`, `/app/config/web_api_config.yaml`
 
 ## 🏗️ 專案結構
 
@@ -204,50 +204,52 @@ ros2 launch ecs_launch --help
 ros2 pkg list | grep web_api_launch
 ros2 launch web_api_launch --help
 
-# 檢查 Launch 檔案
+# 檢查 Launch 檔案安裝位置
 ls -la /app/launch_ws/install/ecs_launch/share/ecs_launch/launch/
 ls -la /app/launch_ws/install/web_api_launch/share/web_api_launch/launch/
 ```
 
-### 4. ECS Launch 測試
+### 4. Launch 檔案語法測試
 ```bash
+# 測試 ECS Launch 檔案語法
+ros2 launch ecs_launch launch.py --show-args
+
+# 測試 Web API Launch 檔案語法
+ros2 launch web_api_launch launch.py --show-args
+
+# 檢查 Launch 檔案內容
+cat /app/launch_ws/src/ecs_launch/launch/launch.py
+cat /app/launch_ws/src/web_api_launch/launch/launch.py
+```
+
+### 5. ECS Launch 功能測試 (需要相關套件)
+```bash
+# 檢查 ECS Launch 依賴套件
+ros2 pkg list | grep -E "(plc_proxy|ecs)"
+
 # 測試 ECS Launch 啟動 (乾跑模式)
 ros2 launch ecs_launch launch.py --show-args
 
-# 實際啟動 ECS 系統
-ros2 launch ecs_launch launch.py &
-sleep 10
-
-# 檢查啟動的節點
-ros2 node list | grep agvc
-
-# 檢查節點狀態
-ros2 node info /agvc/plc_service
-ros2 node info /agvc/ecs_core
-
-# 停止 Launch
-pkill -f ecs_launch
+# 如果相關套件存在，可以測試實際啟動
+# ros2 launch ecs_launch launch.py &
+# sleep 10
+# ros2 node list | grep agvc
+# pkill -f ecs_launch
 ```
 
-### 5. Web API Launch 測試
+### 6. Web API Launch 功能測試 (需要相關套件)
 ```bash
+# 檢查 Web API Launch 依賴套件
+ros2 pkg list | grep -E "(agvcui|opui|web_api)"
+
 # 測試 Web API Launch 啟動 (乾跑模式)
 ros2 launch web_api_launch launch.py --show-args
 
-# 實際啟動 Web API 系統
-ros2 launch web_api_launch launch.py &
-sleep 10
-
-# 檢查啟動的節點
-ros2 node list | grep agvc
-
-# 檢查節點狀態
-ros2 node info /agvc/agvc_ui_server
-ros2 node info /agvc/op_ui_server
-ros2 node info /agvc/web_api_server
-
-# 停止 Launch
-pkill -f web_api_launch
+# 如果相關套件存在，可以測試實際啟動
+# ros2 launch web_api_launch launch.py &
+# sleep 10
+# ros2 node list | grep agvc
+# pkill -f web_api_launch
 ```
 
 ## 🚀 使用方法
@@ -309,31 +311,43 @@ ps aux | grep -E "(ecs_launch|web_api_launch)"
 
 ## 🔧 故障排除
 
-### 常見問題
-
-#### 1. Launch 檔案啟動失敗
-**症狀**: `ros2 launch ecs_launch launch.py` 或 `ros2 launch web_api_launch launch.py` 無法啟動
+### 1. Launch 套件建置失敗
+**症狀**: `colcon build` 失敗或套件無法找到
 **解決方法**:
 ```bash
-# 檢查 Launch 套件建置狀態
-ls -la /app/launch_ws/install/
-
-# 重新建置 Launch 工作空間
-source /opt/ros/jazzy/setup.bash && source /opt/ws_rmw_zenoh/install/setup.bash && cd /app/launch_ws
-rm -rf build install log
+# 檢查工作空間是否正確建置
+cd /app/launch_ws
 colcon build
 
-# 檢查 setup.bash 載入
+# 確認環境已載入
 source install/setup.bash
+
+# 檢查套件是否正確安裝
 ros2 pkg list | grep -E "(ecs_launch|web_api_launch)"
 
-# 檢查 Launch 檔案語法
-python3 -m py_compile src/ecs_launch/launch/launch.py
-python3 -m py_compile src/web_api_launch/launch/launch.py
+# 檢查 Python 路徑
+python3 -c "import sys; print('\\n'.join(sys.path))"
 ```
 
-#### 2. 配置檔案問題
-**症狀**: Launch 檔案無法載入配置檔案或配置錯誤
+### 2. Launch 檔案啟動失敗
+**症狀**: `ros2 launch ecs_launch launch.py` 無法啟動
+**解決方法**:
+```bash
+# 檢查 Launch 檔案語法
+python3 -m py_compile /app/launch_ws/src/ecs_launch/launch/launch.py
+python3 -m py_compile /app/launch_ws/src/web_api_launch/launch/launch.py
+
+# 檢查 Launch 檔案安裝位置
+ls -la /app/launch_ws/install/ecs_launch/share/ecs_launch/launch/
+ls -la /app/launch_ws/install/web_api_launch/share/web_api_launch/launch/
+
+# 測試 Launch 檔案語法
+ros2 launch ecs_launch launch.py --show-args
+ros2 launch web_api_launch launch.py --show-args
+```
+
+### 3. 配置檔案問題
+**症狀**: Launch 檔案無法載入配置檔案
 **解決方法**:
 ```bash
 # 檢查配置檔案是否存在
@@ -346,182 +360,150 @@ import yaml
 try:
     with open('/app/config/ecs_config.yaml', 'r') as f:
         config = yaml.safe_load(f)
-        print('✅ ECS 配置檔案格式正確')
+    print('✅ ecs_config.yaml 格式正確')
 except Exception as e:
-    print(f'❌ ECS 配置檔案錯誤: {e}')
+    print(f'❌ ecs_config.yaml 格式錯誤: {e}')
 "
 
-# 使用預設配置啟動
-ros2 launch ecs_launch launch.py
+# 檢查配置檔案權限
+ls -la /app/config/*.yaml
 ```
 
-#### 3. 節點啟動失敗
-**症狀**: Launch 檔案啟動但節點無法正常運行
+### 4. 目標套件不存在
+**症狀**: Launch 檔案啟動但節點無法找到
 **解決方法**:
 ```bash
 # 檢查目標套件是否存在
 ros2 pkg list | grep -E "(plc_proxy|ecs|agvcui|opui|web_api)"
 
 # 檢查節點可執行檔案
+ros2 pkg executables plc_proxy
+ros2 pkg executables ecs
+ros2 pkg executables agvcui
+
+# 手動測試節點啟動
 ros2 run plc_proxy plc_service --help
 ros2 run ecs ecs_core --help
-ros2 run agvcui agvc_ui_server --help
-
-# 手動啟動節點進行測試
-ros2 run plc_proxy plc_service --ros-args -r __ns:=/agvc
-ros2 run ecs ecs_core --ros-args -r __ns:=/agvc
 ```
 
-### 除錯工具
+### 5. 命名空間問題
+**症狀**: 節點啟動但無法在預期命名空間中找到
+**解決方法**:
 ```bash
-# 檢查 Launch 相關進程
-ps aux | grep -E "(launch|ros2)"
+# 檢查所有節點
+ros2 node list
 
-# 檢查 ROS 2 環境
-printenv | grep ROS
+# 檢查特定命名空間
+ros2 node list | grep agvc
 
-# 檢查 Launch 檔案詳細資訊
+# 檢查節點詳細資訊
+ros2 node info /agvc/plc_service
+ros2 node info /agvc/ecs_core
+
+# 檢查主題和服務
+ros2 topic list | grep agvc
+ros2 service list | grep agvc
+## ⚙️ 配置說明
+
+### ECS Launch 配置
+```python
+# ecs_launch/launch.py 配置參數
+param_file = '/app/config/ecs_config.yaml'  # ECS 配置檔案路徑
+namespace = 'agvc'                          # 統一命名空間
+
+# 啟動的節點
+nodes = [
+    'plc_service',    # PLC 通訊服務 (plc_proxy 套件)
+    'ecs_core'        # ECS 核心控制 (ecs 套件)
+]
+```
+
+### Web API Launch 配置
+```python
+# web_api_launch/launch.py 配置參數
+param_file = '/app/config/web_api_config.yaml'  # Web API 配置檔案路徑
+namespace = 'agvc'                              # 統一命名空間
+
+# 啟動的節點
+nodes = [
+    'agvc_ui_server',  # AGVC 管理介面 (agvcui 套件)
+    'op_ui_server',    # 操作員介面 (opui 套件)
+    'web_api_server'   # Web API 服務 (web_api 套件)
+]
+```
+
+### Launch 參數配置
+```bash
+# 使用自訂配置檔案
+ros2 launch ecs_launch launch.py param_file:=/path/to/custom_config.yaml
+ros2 launch web_api_launch launch.py param_file:=/path/to/custom_config.yaml
+
+# 檢查可用參數
 ros2 launch ecs_launch launch.py --show-args
 ros2 launch web_api_launch launch.py --show-args
 ```
 
-## 🔧 配置說明
-
-### 啟動參數
+### 配置檔案範例
 ```yaml
-# 系統配置
-system:
-  namespace: "agvc"
-  log_level: "INFO"
-  
-# 節點配置
-nodes:
-  plc_service:
-    package: "plc_proxy"
-    executable: "plc_service"
-    parameters: "/app/config/ecs_config.yaml"
-    
-  ecs_core:
-    package: "ecs"
-    executable: "ecs_core"
-    parameters: "/app/config/ecs_config.yaml"
-```
+# /app/config/ecs_config.yaml
+ecs_core:
+  ros__parameters:
+    update_rate: 10.0
+    enable_monitoring: true
 
-### 環境變數
-```bash
-# ROS 2 環境
-export ROS_DOMAIN_ID=0
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+plc_service:
+  ros__parameters:
+    plc_ip: "192.168.12.224"
+    plc_port: 8501
+## 🔗 相關文檔
 
-# 系統路徑
-export PYTHONPATH=/opt/pyvenv_env/lib/python3.12/site-packages:$PYTHONPATH
-```
-
-## 🔗 依賴項目
-
-- **ROS 2 Jazzy**: 機器人作業系統框架
-- **launch**: ROS 2 啟動系統
-- **launch_ros**: ROS 2 特定啟動功能
-- **ament_python**: Python 套件建置工具
-
-## 📝 開發指南
-
-### 新增啟動文件
-1. 在 `launch/` 目錄下建立新的 launch 文件
-2. 定義所需的節點和參數
-3. 更新 setup.py 包含新文件
-4. 測試啟動流程
-
-### 配置管理
-1. 建立配置模板
-2. 實施配置驗證
-3. 新增環境特定配置
-4. 文檔化配置選項
-
-## 🔧 維護注意事項
-
-1. **版本相容性**: 確保與 ROS 2 版本相容
-2. **配置同步**: 保持配置文件同步更新
-3. **測試覆蓋**: 完整測試所有啟動場景
-4. **文檔維護**: 保持啟動文檔最新
+- **ecs_ws**: ECS 系統，透過 `ecs_launch` 啟動 ECS 核心和 PLC 服務
+- **web_api_ws**: Web API 系統，透過 `web_api_launch` 啟動 Web 服務
+- **plc_proxy_ws**: PLC 代理服務，被 Launch 檔案啟動
+- **agvcui**: AGVC 管理介面，被 Web API Launch 啟動
+- **opui**: 操作員介面，被 Web API Launch 啟動
+- **ROS 2 Launch 文檔**: [ROS 2 Launch Documentation](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Launch/Launch-Main.html)
 
 ## 📋 ToDo 清單
 
 ### 🔴 高優先級 (緊急)
-- [x] **ECS Launch 完整實作** ✅ **已完成**
-  - [x] 完整的 ECS 系統啟動檔案 (ecs_launch/launch.py)
-  - [x] PLC 服務和 ECS 核心節點啟動
-  - [x] 參數配置管理和命名空間設定
-  - [x] 完整的 Launch 架構和依賴處理
-- [x] **Web API Launch 完整實作** ✅ **已完成**
-  - [x] 完整的 Web API 系統啟動檔案 (web_api_launch/launch.py)
-  - [x] AGVC UI、OP UI、Web API 服務啟動
-  - [x] 統一的命名空間和參數管理
-  - [x] 標準的 ROS 2 Launch 架構
+- [ ] 完善 Launch 檔案錯誤處理機制
+- [ ] 新增 Launch 檔案參數驗證功能
+- [ ] 最佳化節點啟動順序和依賴關係
 
 ### 🟡 中優先級 (重要)
-- [ ] **Launch 檔案擴展** (2 週)
-  - [x] 基本 ECS 和 Web API Launch 已完成
-  - [ ] 新增更多系統組件的 Launch 檔案
-  - [ ] 實現組合式 Launch 檔案 (多系統同時啟動)
-  - [ ] 新增條件式啟動邏輯
-- [ ] **配置驗證和管理** (2 週)
-  - [ ] 實現配置檔案驗證機制
-  - [ ] 新增配置錯誤檢測和報告
-  - [ ] 建立配置模板和範例
-- [ ] **測試覆蓋擴展** (1 週)
-  - [x] 基本 Launch 測試已建立
-  - [ ] 新增自動化 Launch 測試
-  - [ ] 實現 Launch 檔案語法檢查
-  - [ ] 建立整合測試框架
+- [ ] 新增更多系統組件的 Launch 檔案
+- [ ] 實作組合式 Launch 檔案 (多系統同時啟動)
+- [ ] 新增條件式啟動邏輯和環境檢測
+- [ ] 完善 Launch 檔案測試覆蓋率
 
 ### 🟢 低優先級 (改善)
-- [ ] **監控和分析功能** (3 週)
-  - [ ] 實現 Launch 狀態監控
-  - [ ] 新增啟動效能指標收集
-  - [ ] 建立啟動失敗分析和警報機制
-- [ ] **進階 Launch 功能** (2 週)
-  - [ ] 實現動態參數調整
-  - [ ] 新增 Launch 檔案熱重載
-  - [ ] 建立 Launch 檔案版本管理
+- [ ] 新增 Launch 狀態監控和健康檢查
+- [ ] 支援動態參數調整和熱重載
+- [ ] 新增 Launch 檔案版本管理
+- [ ] 實作 Launch 效能監控和分析
 
 ### 🔧 技術債務
-- [x] **標準化架構** ✅ **已完成**
-  - [x] 標準的 ROS 2 Launch 架構
-  - [x] 統一的套件結構和配置
-  - [x] 完整的 setup.py 和 package.xml 配置
-- [ ] **程式碼品質提升** (1 週)
-  - [ ] 新增 Launch 檔案註解和文檔
-  - [ ] 實現程式碼風格統一
-  - [ ] 新增 Launch 檔案最佳實踐指南
+- [ ] 重構 Launch 檔案結構，提高可維護性
+- [ ] 統一 Launch 檔案註解和文檔格式
+- [ ] 改善 Launch 檔案最佳實踐指南
 
-### 📊 完成度追蹤 (基於實際程式碼分析)
-- **ECS Launch**: 95% ✅ (完整實作，包含所有必要節點)
-- **Web API Launch**: 95% ✅ (完整實作，包含所有 Web 服務)
-- **Launch 架構**: 90% ✅ (標準 ROS 2 架構已完成)
-- **配置管理**: 70% 🔄 (基本配置支援已實現)
-- **測試覆蓋**: 60% 🔄 (基本測試已建立)
-- **文檔完整性**: 95% ✅ (完整的技術文檔已完成)
+### 📊 完成度追蹤
+- ✅ ECS Launch 檔案 (100%)
+- ✅ Web API Launch 檔案 (100%)
+- ✅ 基礎 Launch 架構 (100%)
+- ✅ 參數配置支援 (100%)
+- ⚠️ 錯誤處理機制 (70% - 需要改善)
+- ⚠️ 測試覆蓋率 (60% - 基礎測試)
+- ❌ 進階 Launch 功能 (0% - 未開始)
 
-### 🎯 里程碑 (更新版)
-1. **v1.0.0** ✅ **已達成** - 核心 Launch 功能實現
-   - [x] ECS Launch 完整實作
-   - [x] Web API Launch 完整實作
-   - [x] 標準化 Launch 架構完成
+### 🎯 里程碑
+- **v1.0.0**: ✅ 基礎 Launch 功能完成 (當前版本)
+- **v1.1.0**: 🚧 錯誤處理和測試改善
+- **v2.0.0**: 📋 進階 Launch 功能和監控
 
-2. **v1.1.0** (2 週後) - Launch 功能擴展
-   - [ ] Launch 檔案擴展和組合式啟動
-   - [ ] 配置驗證和管理功能
-   - [ ] 測試覆蓋擴展
-
-3. **v2.0.0** (6 週後) - 進階功能和監控
-   - [ ] 監控和分析功能
-   - [ ] 進階 Launch 功能
-   - [ ] 完整的管理和維護工具
-
-### 🏆 重要成就 (基於實際程式碼分析)
-- ✅ **完整的 Launch 系統**: ECS 和 Web API 系統的完整啟動支援
-- ✅ **標準化架構**: 符合 ROS 2 標準的 Launch 檔案架構
-- ✅ **統一命名空間**: 所有節點使用統一的 agvc 命名空間
-- ✅ **參數配置支援**: 完整的配置檔案和參數傳遞機制
-- ✅ **模組化設計**: 清晰的套件分離和獨立啟動能力
+### 🏆 重要成就
+- ✅ 成功整合到 RosAGV 系統
+- ✅ 提供完整的系統啟動管理
+- ✅ 實現標準化的 Launch 架構
+- ✅ 支援靈活的參數配置

@@ -6,5 +6,7 @@
     },
     "autopep8.args": [
         "--max-line-length=100"
-    ]
+    ],
+
+    "terminal.integrated.fontFamily": "JetBrainsMono NF"
 }

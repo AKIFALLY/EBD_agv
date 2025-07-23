@@ -21,6 +21,7 @@ setup(
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
+    test_suite='test',
     entry_points={
         'console_scripts': [
             'agv_core_node = loader_agv.agv_core_node:main',  # ROS node's entry point

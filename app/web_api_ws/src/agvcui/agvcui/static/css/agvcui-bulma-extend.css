@@ -27,7 +27,7 @@
     width: 3.25rem;
 }
 
-/* 在小螢幕上優化 navbar 下拉選單 */
+/* 優化 navbar 下拉選單 這是用來覆寫bulma 預設行為會隱藏navbar的問題 */
 @media screen and (max-width: 1023px) {
     .navbar-menu {
         box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);

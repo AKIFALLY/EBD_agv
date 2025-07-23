@@ -120,6 +120,68 @@
     }
 }
 
+/* 🔧 新增：任務狀態專用動畫樣式 */
+.task-status-cell {
+    transition: all 0.3s ease;
+}
+
+.task-status-cell.status-updating {
+    opacity: 0.6;
+    transform: scale(0.95);
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.task-status-cell.status-updated {
+    opacity: 1;
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.task-status-cell.status-corrected {
+    background-color: rgba(255, 193, 7, 0.2);
+    border: 2px solid rgba(255, 193, 7, 0.5);
+    animation: statusCorrected 2s ease-out;
+}
+
+@keyframes statusCorrected {
+    0% {
+        background-color: rgba(255, 193, 7, 0.3);
+        border-color: rgba(255, 193, 7, 0.7);
+    }
+    50% {
+        background-color: rgba(255, 193, 7, 0.2);
+        border-color: rgba(255, 193, 7, 0.5);
+    }
+    100% {
+        background-color: transparent;
+        border-color: transparent;
+    }
+}
+
+.task-status-cell .tag {
+    transition: all 0.2s ease;
+}
+
+/* 載入狀態指示器 */
+.tasks-loading {
+    position: relative;
+}
+
+.tasks-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
 /* 減少動畫偏好設定支援 */
 @media (prefers-reduced-motion: reduce) {
 
@@ -140,5 +202,15 @@
     .rack-updated:hover {
         background-color: transparent;
         border-color: transparent;
+    }
+
+    /* 🔧 新增：減少動畫時的任務狀態樣式 */
+    .task-status-cell.status-updating,
+    .task-status-cell.status-updated,
+    .task-status-cell.status-corrected {
+        animation: none;
+        transform: none;
+        background-color: rgba(0, 123, 255, 0.1);
+        transition: background-color 0.3s ease;
     }
 }

@@ -160,7 +160,7 @@ def test_rosout_logs_filters():
     print("\n5. 檢查用戶體驗設計")
     
     ux_features = [
-        "響應式布局 (columns)",
+        "桌面專用布局 (columns)",
         "小尺寸控件 (is-small)",
         "圖標提示 (mdi icons)",
         "自動提交 (change events)",

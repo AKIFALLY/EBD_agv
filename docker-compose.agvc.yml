@@ -38,15 +38,13 @@ services:
       - ~/RosAGV/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
       - ~/RosAGV/README.md:/app/host/README.md:rw
       - ~/RosAGV/.augment-guidelines:/app/host/.augment-guidelines:rw
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw # (ubuntu 需要)將宿主機的 /tmp/.X11-unix 掛載到容器的 /tmp/.X11-unix 目錄
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw # (ubuntu 需要)將宿主機的 /tmp/.X11-unix 掛載到容器的 /tmp/.X11-unix 目錄 宿主機需要執行 xhost +local:
     ports:
       - 7447:7447 # 7447 zenoh router
       - 2200:2200 # 2200 ssh server
-      - 8000:8000 # 8000 fastapi server
-      - 3000:3000 # 3000 webui (agvc.ui)
-      - 3001:3001 # 3001 opui (op.ui)
-      - 8001:8001 # 8001 fastapi server
-      - 8002:8002 # 8002 fastapi server
+      - 8000:8000 # 8000 fastapi server (web_api)
+      - 8001:8001 # 8001 fastapi server (agvc.ui)
+      - 8002:8002 # 8002 fastapi server (op.ui)
       - 5173:5173 # 5173 vue app tester server
     tty: true
     stdin_open: true

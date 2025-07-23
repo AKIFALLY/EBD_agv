@@ -7,7 +7,7 @@ export const TASK_STATUS = {
     // 基本任務流程狀態
     REQUESTING: { id: 0, name: '請求中', description: 'UI-請求執行任務', color: 'is-info' },
     PENDING: { id: 1, name: '待處理', description: 'WCS-任務已接受，待處理', color: 'is-warning' },
-    READY: { id: 2, name: '待執行', description: 'RCS-任務已派發，待執行', color: 'is-warning' },
+    READY_TO_EXECUTE: { id: 2, name: '待執行', description: 'RCS-任務已派發，待執行', color: 'is-warning' },
     EXECUTING: { id: 3, name: '執行中', description: 'AGV-任務正在執行', color: 'is-info' },
     COMPLETED: { id: 4, name: '已完成', description: 'AGV-任務已完成', color: 'is-success' },
 
@@ -22,6 +22,28 @@ export const TASK_STATUS = {
     ERROR: { id: 6, name: '錯誤', description: '錯誤', color: 'is-danger' }
 };
 
+// 🔧 新增：向後相容性別名，確保現有程式碼不會中斷
+export const TASK_STATUS_ALIASES = {
+    READY: TASK_STATUS.READY_TO_EXECUTE  // 向後相容舊的 READY 常數
+};
+
+/**
+ * 🔧 新增：驗證任務狀態 ID 的有效性
+ * @param {number|null|undefined} statusId - 狀態 ID
+ * @returns {Object} 驗證結果物件
+ */
+export function validateTaskStatus(statusId) {
+    const validStatusIds = Object.values(TASK_STATUS).map(status => status.id);
+    const isValid = validStatusIds.includes(statusId);
+
+    return {
+        isValid: isValid,
+        error: isValid ? null : `無效的狀態 ID: ${statusId}`,
+        fallbackStatus: isValid ? statusId : TASK_STATUS.REQUESTING.id, // 預設為 REQUESTING
+        validStatusIds: validStatusIds
+    };
+}
+
 /**
  * 根據狀態 ID 獲取狀態資訊
  * @param {number|null|undefined} statusId - 狀態 ID
@@ -33,6 +55,19 @@ export function getTaskStatusInfo(statusId) {
         return { id: null, name: '未設定', description: '狀態未設定', color: 'is-light' };
     }
 
+    // 🔧 增強：使用狀態驗證函數
+    const validation = validateTaskStatus(statusId);
+    if (!validation.isValid) {
+        console.warn(`getTaskStatusInfo: ${validation.error}`);
+        // 返回降級狀態
+        const fallbackStatus = Object.values(TASK_STATUS).find(s => s.id === validation.fallbackStatus);
+        return {
+            ...fallbackStatus,
+            name: `${fallbackStatus.name}(降級)`,
+            description: `原狀態無效(${statusId})，已降級為${fallbackStatus.description}`
+        };
+    }
+
     // 查找對應的狀態
     const status = Object.values(TASK_STATUS).find(s => s.id === statusId);
 
@@ -40,7 +75,7 @@ export function getTaskStatusInfo(statusId) {
         return status;
     }
 
-    // 未知狀態
+    // 未知狀態（理論上不應該到達這裡，因為已經過驗證）
     return {
         id: statusId,
         name: `未知(${statusId})`,

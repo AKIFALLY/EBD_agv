@@ -187,7 +187,7 @@
                             <span class="tag is-light">無參數</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="task-status-cell" data-status-id="{{ task.status_id or 0 }}">
                             {% if task.status_id == 1 %}
                             <span class="tag is-warning" id="task-status-{{ task.id }}">待處理</span>
                             {% elif task.status_id == 2 %}
@@ -364,69 +364,222 @@
             generateHierarchy();
         });
 
-        // 生成階層結構
+        // 🔧 重構：增量更新的階層結構管理
+        let hierarchyNodeMap = new Map(); // 任務 ID -> DOM 節點映射
+        let lastTasksData = new Map(); // 上次的任務資料快照
+        let updateInProgress = false; // 防止重複更新
+
+        // 🔧 新增：增量更新階層結構（主要入口函數）
         function generateHierarchy() {
-            const tasks = [];
-            const rows = document.querySelectorAll('tbody tr[data-task-id]');
-
-            // 收集所有任務資料
-            rows.forEach(row => {
-                const taskId = parseInt(row.dataset.taskId);
-                const parentId = row.dataset.parentId ? parseInt(row.dataset.parentId) : null;
-                const name = row.querySelector('td:nth-child(2) .has-text-weight-medium').textContent;
-
-                // 正確提取 AGV 資訊 (第5欄)
-                const agvCell = row.querySelector('td:nth-child(5)');
-                const agvTag = agvCell.querySelector('.tag');
-                const agv = agvTag ? agvTag.textContent.trim() : '未分配';
-
-                // 正確提取狀態資訊 (第9欄)
-                const statusCell = row.querySelector('td:nth-child(9)');
-                const statusTag = statusCell.querySelector('.tag');
-                const status = statusTag ? statusTag.textContent.trim() : '未知';
-
-                tasks.push({
-                    id: taskId,
-                    parentId: parentId,
-                    name: name,
-                    status: status,
-                    agv: agv,
-                    children: []
-                });
-            });
-
-            // 建立階層結構
-            const taskMap = {};
-            const rootTasks = [];
-
-            tasks.forEach(task => {
-                taskMap[task.id] = task;
-            });
-
-            tasks.forEach(task => {
-                if (task.parentId && taskMap[task.parentId]) {
-                    taskMap[task.parentId].children.push(task);
-                } else {
-                    rootTasks.push(task);
-                }
-            });
-
-            // 渲染階層結構
-            taskHierarchy.innerHTML = '';
-            if (rootTasks.length === 0) {
-                taskHierarchy.innerHTML = '<p class="has-text-grey">沒有找到任務資料</p>';
+            if (updateInProgress) {
+                console.debug('階層視圖更新進行中，跳過重複調用');
                 return;
             }
 
-            rootTasks.forEach(task => {
-                taskHierarchy.appendChild(createTaskNode(task, 0));
-            });
+            updateInProgress = true;
+            const startTime = performance.now();
+
+            try {
+                // 從 tasksStore 獲取最新資料（如果可用）
+                let tasksData;
+                if (window.tasksStore && typeof window.tasksStore.getState === 'function') {
+                    const storeState = window.tasksStore.getState();
+                    tasksData = storeState.tasks || [];
+                } else {
+                    // 降級：從 DOM 提取資料
+                    tasksData = extractTasksFromDOM();
+                }
+
+                // 檢測變更並執行增量更新
+                const changes = detectHierarchyChanges(tasksData);
+
+                if (changes.hasChanges) {
+                    console.debug('檢測到階層變更:', changes);
+                    updateHierarchyIncremental(tasksData, changes);
+                } else {
+                    console.debug('階層無變更，跳過更新');
+                }
+
+                // 更新快照
+                lastTasksData = new Map(tasksData.map(task => [task.id, { ...task }]));
+
+            } catch (error) {
+                console.error('階層視圖更新失敗:', error);
+                // 降級到完全重建
+                rebuildHierarchyComplete();
+            } finally {
+                updateInProgress = false;
+                const endTime = performance.now();
+                console.debug(`階層視圖更新耗時: ${(endTime - startTime).toFixed(2)}ms`);
+            }
         }
 
-        // 創建任務節點
+        // 🔧 新增：從 DOM 提取任務資料（降級方案）
+        function extractTasksFromDOM() {
+            const tasks = [];
+            const rows = document.querySelectorAll('tbody tr[data-task-id]');
+
+            rows.forEach(row => {
+                const taskId = parseInt(row.dataset.taskId);
+                const parentId = row.dataset.parentId ? parseInt(row.dataset.parentId) : null;
+                const name = row.querySelector('td:nth-child(2) .has-text-weight-medium')?.textContent || '未知任務';
+
+                // 🔧 改善：從狀態單元格提取狀態 ID
+                const statusCell = row.querySelector('.task-status-cell');
+                const statusId = statusCell ? parseInt(statusCell.dataset.statusId) || 0 : 0;
+
+                // 提取 AGV 資訊
+                const agvCell = row.querySelector('td:nth-child(5)');
+                const agvTag = agvCell?.querySelector('.tag');
+                const agv = agvTag ? agvTag.textContent.trim() : '未分配';
+
+                tasks.push({
+                    id: taskId,
+                    parent_task_id: parentId,
+                    name: name,
+                    status_id: statusId,
+                    agv: agv
+                });
+            });
+
+            return tasks;
+        }
+
+        // 🔧 新增：檢測階層變更
+        function detectHierarchyChanges(newTasksData) {
+            const changes = {
+                hasChanges: false,
+                added: [],
+                removed: [],
+                modified: [],
+                statusChanged: []
+            };
+
+            const newTasksMap = new Map(newTasksData.map(task => [task.id, task]));
+            const oldTasksMap = lastTasksData;
+
+            // 檢測新增和修改的任務
+            for (const [taskId, newTask] of newTasksMap) {
+                const oldTask = oldTasksMap.get(taskId);
+
+                if (!oldTask) {
+                    // 新增的任務
+                    changes.added.push(newTask);
+                    changes.hasChanges = true;
+                } else {
+                    // 檢查是否有修改
+                    const isModified = (
+                        oldTask.name !== newTask.name ||
+                        oldTask.parent_task_id !== newTask.parent_task_id ||
+                        oldTask.agv !== newTask.agv
+                    );
+
+                    const isStatusChanged = oldTask.status_id !== newTask.status_id;
+
+                    if (isModified) {
+                        changes.modified.push({ old: oldTask, new: newTask });
+                        changes.hasChanges = true;
+                    }
+
+                    if (isStatusChanged) {
+                        changes.statusChanged.push({ old: oldTask, new: newTask });
+                        changes.hasChanges = true;
+                    }
+                }
+            }
+
+            // 檢測刪除的任務
+            for (const [taskId, oldTask] of oldTasksMap) {
+                if (!newTasksMap.has(taskId)) {
+                    changes.removed.push(oldTask);
+                    changes.hasChanges = true;
+                }
+            }
+
+            return changes;
+        }
+
+        // 🔧 新增：增量更新階層結構
+        function updateHierarchyIncremental(tasksData, changes) {
+            // 處理刪除的任務
+            changes.removed.forEach(task => {
+                const node = hierarchyNodeMap.get(task.id);
+                if (node && node.parentNode) {
+                    // 添加淡出動畫
+                    node.style.transition = 'opacity 0.3s ease';
+                    node.style.opacity = '0';
+                    setTimeout(() => {
+                        if (node.parentNode) {
+                            node.parentNode.removeChild(node);
+                        }
+                        hierarchyNodeMap.delete(task.id);
+                    }, 300);
+                }
+            });
+
+            // 處理狀態變更
+            changes.statusChanged.forEach(({ old: oldTask, new: newTask }) => {
+                updateTaskNodeStatus(newTask);
+            });
+
+            // 處理修改的任務
+            changes.modified.forEach(({ old: oldTask, new: newTask }) => {
+                updateTaskNodeContent(newTask);
+            });
+
+            // 處理新增的任務
+            if (changes.added.length > 0) {
+                // 重建階層結構以正確處理父子關係
+                rebuildHierarchyStructure(tasksData);
+            }
+        }
+
+        // 🔧 新增：更新任務節點狀態
+        function updateTaskNodeStatus(task) {
+            const node = hierarchyNodeMap.get(task.id);
+            if (!node) return;
+
+            const statusElement = node.querySelector('.task-status-tag');
+            if (statusElement) {
+                // 🔧 整合：使用統一的狀態更新邏輯
+                if (window.updateTaskStatusCellOptimized) {
+                    // 創建臨時狀態單元格結構
+                    const tempCell = document.createElement('div');
+                    tempCell.className = 'task-status-cell';
+                    tempCell.dataset.statusId = task.status_id;
+                    tempCell.appendChild(statusElement);
+
+                    // 使用統一的狀態更新函數
+                    window.updateTaskStatusCellOptimized(tempCell, task.status_id, task._statusCorrected);
+                } else {
+                    // 降級方案：直接更新
+                    updateStatusElementDirect(statusElement, task.status_id);
+                }
+            }
+        }
+
+        // 🔧 新增：直接更新狀態元素（降級方案）
+        function updateStatusElementDirect(statusElement, statusId) {
+            // 使用 taskStatus.js 的狀態資訊（如果可用）
+            if (window.getTaskStatusInfo) {
+                const statusInfo = window.getTaskStatusInfo(statusId);
+                statusElement.className = `tag ${statusInfo.color} task-status-tag`;
+                statusElement.textContent = statusInfo.name;
+            } else {
+                // 最終降級方案
+                const statusText = getStatusTextById(statusId);
+                const statusColor = getStatusColorById(statusId);
+                statusElement.className = `tag ${statusColor} task-status-tag`;
+                statusElement.textContent = statusText;
+            }
+        }
+
+        // 🔧 重構：創建任務節點（支援精確選擇器和狀態一致性）
         function createTaskNode(task, level) {
             const div = document.createElement('div');
             div.className = 'task-node';
+            div.dataset.taskId = task.id; // 🔧 新增：精確選擇器支援
+            div.dataset.level = level;
             div.style.marginLeft = (level * 20) + 'px';
             div.style.marginBottom = '10px';
             div.style.padding = '10px';
@@ -434,7 +587,20 @@
             div.style.borderRadius = '4px';
             div.style.backgroundColor = level === 0 ? '#f5f5f5' : '#ffffff';
 
-            const statusColor = getStatusColor(task.status);
+            // 🔧 改善：使用統一的狀態資訊
+            const statusInfo = window.getTaskStatusInfo ?
+                window.getTaskStatusInfo(task.status_id) :
+                { name: getStatusTextById(task.status_id), color: getStatusColorById(task.status_id) };
+
+            // 🔧 新增：狀態驗證
+            if (window.validateTaskStatus) {
+                const validation = window.validateTaskStatus(task.status_id);
+                if (!validation.isValid) {
+                    console.warn(`階層視圖任務 ${task.id} 狀態無效:`, validation.error);
+                    task.status_id = validation.fallbackStatus;
+                    task._statusCorrected = true;
+                }
+            }
 
             div.innerHTML = `
             <div class="level is-mobile">
@@ -444,37 +610,308 @@
                             <i class="mdi mdi-${level === 0 ? 'folder' : 'file'}"></i>
                         </span>
                         <strong>ID: ${task.id}</strong>
-                        <span class="ml-2">${task.name}</span>
+                        <span class="ml-2 task-name">${task.name}</span>
                     </div>
                 </div>
                 <div class="level-right">
                     <div class="level-item">
-                        <span class="tag ${statusColor}">${task.status}</span>
-                        ${task.agv ? `<span class="tag is-light ml-1">${task.agv}</span>` : ''}
-                        ${task.children.length > 0 ? `<span class="tag is-info is-light ml-1">${task.children.length} 子任務</span>` : ''}
+                        <div class="task-status-cell" data-status-id="${task.status_id}">
+                            <span class="tag ${statusInfo.color} task-status-tag">${task._statusCorrected ? statusInfo.name + '(修正)' : statusInfo.name}</span>
+                        </div>
+                        ${task.agv && task.agv !== '未分配' ? `<span class="tag is-light ml-1 task-agv-tag">${task.agv}</span>` : ''}
+                        ${task.children && task.children.length > 0 ? `<span class="tag is-info is-light ml-1">${task.children.length} 子任務</span>` : ''}
                     </div>
                 </div>
             </div>
         `;
 
+            // 🔧 新增：註冊節點映射
+            hierarchyNodeMap.set(task.id, div);
+
+            // 🔧 新增：添加淡入動畫
+            div.style.opacity = '0';
+            div.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => {
+                div.style.opacity = '1';
+            }, 50);
+
             // 添加子任務
-            task.children.forEach(child => {
-                div.appendChild(createTaskNode(child, level + 1));
-            });
+            if (task.children && task.children.length > 0) {
+                task.children.forEach(child => {
+                    div.appendChild(createTaskNode(child, level + 1));
+                });
+            }
 
             return div;
         }
 
-        // 取得狀態顏色
+        // 🔧 新增：更新任務節點內容
+        function updateTaskNodeContent(task) {
+            const node = hierarchyNodeMap.get(task.id);
+            if (!node) return;
+
+            // 更新任務名稱
+            const nameElement = node.querySelector('.task-name');
+            if (nameElement && nameElement.textContent !== task.name) {
+                nameElement.textContent = task.name;
+                nameElement.classList.add('field-updated');
+                setTimeout(() => nameElement.classList.remove('field-updated'), 1000);
+            }
+
+            // 更新 AGV 資訊
+            const agvElement = node.querySelector('.task-agv-tag');
+            const shouldShowAgv = task.agv && task.agv !== '未分配';
+
+            if (shouldShowAgv && !agvElement) {
+                // 新增 AGV 標籤
+                const levelRight = node.querySelector('.level-right .level-item');
+                const agvTag = document.createElement('span');
+                agvTag.className = 'tag is-light ml-1 task-agv-tag';
+                agvTag.textContent = task.agv;
+                levelRight.appendChild(agvTag);
+            } else if (!shouldShowAgv && agvElement) {
+                // 移除 AGV 標籤
+                agvElement.remove();
+            } else if (agvElement && agvElement.textContent !== task.agv) {
+                // 更新 AGV 標籤
+                agvElement.textContent = task.agv;
+                agvElement.classList.add('field-updated');
+                setTimeout(() => agvElement.classList.remove('field-updated'), 1000);
+            }
+        }
+
+        // 🔧 新增：完全重建階層結構（降級方案）
+        function rebuildHierarchyComplete() {
+            console.debug('執行階層視圖完全重建');
+
+            // 清理舊的映射
+            hierarchyNodeMap.clear();
+
+            // 獲取任務資料
+            const tasksData = extractTasksFromDOM();
+
+            // 建立階層結構
+            const { taskMap, rootTasks } = buildHierarchyStructure(tasksData);
+
+            // 清空容器並重建
+            taskHierarchy.innerHTML = '';
+            if (rootTasks.length === 0) {
+                taskHierarchy.innerHTML = '<p class="has-text-grey">沒有找到任務資料</p>';
+                return;
+            }
+
+            // 使用 DocumentFragment 進行批量操作
+            const fragment = document.createDocumentFragment();
+            rootTasks.forEach(task => {
+                fragment.appendChild(createTaskNode(task, 0));
+            });
+
+            taskHierarchy.appendChild(fragment);
+        }
+
+        // 🔧 新增：重建階層結構（保持現有節點）
+        function rebuildHierarchyStructure(tasksData) {
+            const { taskMap, rootTasks } = buildHierarchyStructure(tasksData);
+
+            // 重新排列現有節點
+            const fragment = document.createDocumentFragment();
+            const processedNodes = new Set();
+
+            rootTasks.forEach(task => {
+                const existingNode = hierarchyNodeMap.get(task.id);
+                if (existingNode) {
+                    fragment.appendChild(existingNode);
+                    processedNodes.add(task.id);
+                    // 處理子任務
+                    appendChildNodes(task, existingNode, processedNodes);
+                } else {
+                    // 創建新節點
+                    fragment.appendChild(createTaskNode(task, 0));
+                }
+            });
+
+            taskHierarchy.innerHTML = '';
+            taskHierarchy.appendChild(fragment);
+        }
+
+        // 🔧 新增：建立階層結構資料
+        function buildHierarchyStructure(tasksData) {
+            const taskMap = {};
+            const rootTasks = [];
+
+            // 建立任務映射
+            tasksData.forEach(task => {
+                taskMap[task.id] = {
+                    ...task,
+                    children: []
+                };
+            });
+
+            // 建立父子關係
+            tasksData.forEach(task => {
+                const taskNode = taskMap[task.id];
+                if (task.parent_task_id && taskMap[task.parent_task_id]) {
+                    taskMap[task.parent_task_id].children.push(taskNode);
+                } else {
+                    rootTasks.push(taskNode);
+                }
+            });
+
+            return { taskMap, rootTasks };
+        }
+
+        // 🔧 新增：遞迴處理子節點
+        function appendChildNodes(parentTask, parentNode, processedNodes) {
+            if (!parentTask.children) return;
+
+            parentTask.children.forEach(childTask => {
+                const existingChildNode = hierarchyNodeMap.get(childTask.id);
+                if (existingChildNode && !processedNodes.has(childTask.id)) {
+                    parentNode.appendChild(existingChildNode);
+                    processedNodes.add(childTask.id);
+                    appendChildNodes(childTask, existingChildNode, processedNodes);
+                }
+            });
+        }
+
+        // 🔧 改善：根據狀態 ID 取得狀態文字
+        function getStatusTextById(statusId) {
+            const statusMap = {
+                0: '請求中',
+                1: '待處理',
+                2: '待執行',
+                3: '執行中',
+                4: '已完成',
+                5: '取消中',
+                6: '錯誤',
+                51: 'WCS-取消中',
+                52: 'RCS-取消中',
+                53: 'AGV-取消中',
+                54: '已取消'
+            };
+            return statusMap[statusId] || `未知(${statusId})`;
+        }
+
+        // 🔧 改善：根據狀態 ID 取得狀態顏色
+        function getStatusColorById(statusId) {
+            const colorMap = {
+                0: 'is-info',     // 請求中
+                1: 'is-warning',  // 待處理
+                2: 'is-warning',  // 待執行
+                3: 'is-info',     // 執行中
+                4: 'is-success',  // 已完成
+                5: 'is-warning',  // 取消中
+                6: 'is-danger',   // 錯誤
+                51: 'is-warning', // WCS-取消中
+                52: 'is-warning', // RCS-取消中
+                53: 'is-warning', // AGV-取消中
+                54: 'is-danger'   // 已取消
+            };
+            return colorMap[statusId] || 'is-light';
+        }
+
+        // 🔧 棄用：保留向後相容性
         function getStatusColor(status) {
+            console.warn('getStatusColor() 已棄用，請使用 getStatusColorById()');
             switch (status) {
                 case '已完成': return 'is-success';
-                case '進行中': return 'is-info';
-                case '待處理': return 'is-warning';
+                case '進行中': case '執行中': return 'is-info';
+                case '待處理': case '待執行': return 'is-warning';
                 case '已取消': return 'is-danger';
                 default: return 'is-light';
             }
         }
+
+        // 🔧 新增：防抖機制
+        let hierarchyUpdateTimeout = null;
+
+        function generateHierarchyDebounced(delay = 50) {
+            if (hierarchyUpdateTimeout) {
+                clearTimeout(hierarchyUpdateTimeout);
+            }
+
+            hierarchyUpdateTimeout = setTimeout(() => {
+                generateHierarchy();
+                hierarchyUpdateTimeout = null;
+            }, delay);
+        }
+
+        // 🔧 新增：效能監控
+        const hierarchyPerformanceMetrics = {
+            updateCount: 0,
+            totalUpdateTime: 0,
+            averageUpdateTime: 0,
+            lastUpdateTime: 0,
+
+            recordUpdate(duration) {
+                this.updateCount++;
+                this.totalUpdateTime += duration;
+                this.averageUpdateTime = this.totalUpdateTime / this.updateCount;
+                this.lastUpdateTime = duration;
+
+                // 效能警告
+                if (duration > 100) {
+                    console.warn(`階層視圖更新耗時過長: ${duration.toFixed(2)}ms`);
+                }
+
+                // 定期報告
+                if (this.updateCount % 10 === 0) {
+                    console.debug(`階層視圖效能統計: 平均 ${this.averageUpdateTime.toFixed(2)}ms, 最近 ${this.lastUpdateTime.toFixed(2)}ms`);
+                }
+            },
+
+            getMetrics() {
+                return {
+                    updateCount: this.updateCount,
+                    averageUpdateTime: this.averageUpdateTime,
+                    lastUpdateTime: this.lastUpdateTime
+                };
+            }
+        };
+
+        // 🔧 新增：驗證階層一致性
+        function validateHierarchyConsistency() {
+            const startTime = performance.now();
+            let issues = [];
+
+            // 檢查節點映射一致性
+            hierarchyNodeMap.forEach((node, taskId) => {
+                if (!node.parentNode) {
+                    issues.push(`任務 ${taskId} 的節點已從 DOM 中移除但仍在映射中`);
+                }
+
+                const nodeTaskId = parseInt(node.dataset.taskId);
+                if (nodeTaskId !== taskId) {
+                    issues.push(`任務 ${taskId} 的節點 data-task-id 不一致: ${nodeTaskId}`);
+                }
+            });
+
+            // 檢查 DOM 中的孤立節點
+            const domNodes = taskHierarchy.querySelectorAll('.task-node[data-task-id]');
+            domNodes.forEach(node => {
+                const taskId = parseInt(node.dataset.taskId);
+                if (!hierarchyNodeMap.has(taskId)) {
+                    issues.push(`DOM 中存在未映射的任務節點: ${taskId}`);
+                }
+            });
+
+            const endTime = performance.now();
+            console.debug(`階層一致性驗證耗時: ${(endTime - startTime).toFixed(2)}ms, 發現 ${issues.length} 個問題`);
+
+            if (issues.length > 0) {
+                console.warn('階層一致性問題:', issues);
+                return false;
+            }
+
+            return true;
+        }
+
+        // 🔧 修正：將函數暴露到全域範圍
+        window.generateHierarchy = generateHierarchy;
+        window.generateHierarchyDebounced = generateHierarchyDebounced;
+        window.validateHierarchyConsistency = validateHierarchyConsistency;
+        window.hierarchyPerformanceMetrics = hierarchyPerformanceMetrics;
+
     })();
 </script>
 
