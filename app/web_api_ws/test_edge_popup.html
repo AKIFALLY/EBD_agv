@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邊線彈出視窗測試</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+
+        /* 彈出視窗樣式 */
+        .map-popup {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1001;
+            min-width: 300px;
+            max-width: 500px;
+            display: none;
+        }
+
+        .map-popup-header {
+            padding: 1rem;
+            border-bottom: 1px solid #dbdbdb;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px 8px 0 0;
+            position: relative;
+        }
+
+        .map-popup-content {
+            padding: 0.75rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .map-popup-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #4a4a4a;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .map-popup-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 彈出視窗表格樣式 */
+        .popup-table {
+            margin-bottom: 0 !important;
+        }
+
+        .popup-table td {
+            padding: 0.4rem 0.5rem !important;
+            border: none !important;
+            vertical-align: middle !important;
+        }
+
+        .popup-table .popup-label {
+            font-weight: 600;
+            color: #4a4a4a;
+            width: 30%;
+            white-space: nowrap;
+        }
+
+        .popup-table tbody tr:hover {
+            background-color: rgba(245, 245, 245, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="title">邊線彈出視窗測試</h1>
+        <p class="subtitle">點擊地圖上的邊線來測試彈出視窗功能</p>
+
+        <div id="map"></div>
+
+        <!-- 彈出視窗 -->
+        <div id="map-popup" class="map-popup">
+            <div class="map-popup-header">
+                <h5 class="title is-6" id="popup-title">標題</h5>
+                <button class="map-popup-close" id="popup-close">
+                    <i class="mdi mdi-close"></i>
+                </button>
+            </div>
+            <div class="map-popup-content" id="popup-content">
+                <!-- 動態內容 -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 模擬 mapInteraction 和 mapObjectManager
+        window.mapInteraction = {
+            showPopup: function (latlng, title, content, actions = []) {
+                const popup = document.getElementById('map-popup');
+                const titleElement = document.getElementById('popup-title');
+                const contentElement = document.getElementById('popup-content');
+
+                if (titleElement) titleElement.textContent = title;
+                if (contentElement) contentElement.innerHTML = content;
+
+                // 計算位置
+                const point = map.latLngToContainerPoint(latlng);
+                popup.style.left = `${point.x + 10}px`;
+                popup.style.top = `${point.y - 10}px`;
+                popup.style.display = 'block';
+            },
+
+            closePopup: function () {
+                const popup = document.getElementById('map-popup');
+                if (popup) popup.style.display = 'none';
+            }
+        };
+
+        window.mapObjectManager = {
+            handleEdgeClick: function (edgeObj, e) {
+                console.log('Edge clicked:', edgeObj.id);
+
+                const title = `邊線: ${edgeObj.id}`;
+                const content = `
+                    <table class="table is-narrow is-fullwidth popup-table">
+                        <tbody>
+                            <tr>
+                                <td class="popup-label">邊線 ID</td>
+                                <td><span class="tag is-info">${edgeObj.id}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="popup-label">起點</td>
+                                <td>節點 A</td>
+                            </tr>
+                            <tr>
+                                <td class="popup-label">終點</td>
+                                <td>節點 B</td>
+                            </tr>
+                            <tr>
+                                <td class="popup-label">權重</td>
+                                <td>1.0</td>
+                            </tr>
+                            <tr>
+                                <td class="popup-label">描述</td>
+                                <td>測試邊線</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+
+                window.mapInteraction.showPopup(edgeObj.latlng, title, content);
+            }
+        };
+
+        // 簡化的 LineObject 類別
+        class TestLineObject {
+            constructor(map, pointA, pointB, options = {}) {
+                this.map = map;
+                this.id = options.id || '';
+                this.edgeId = options.id || '';
+
+                this.polyline = L.polyline([pointA, pointB], {
+                    color: options.color || '#AAA',
+                    weight: options.weight || 3,
+                    opacity: 0.7
+                }).addTo(map);
+
+                // 創建透明覆蓋層用於點擊檢測
+                this.clickLayer = L.polyline([pointA, pointB], {
+                    color: 'transparent',
+                    weight: Math.max(15, (options.weight || 3) * 3),
+                    opacity: 0,
+                    interactive: true
+                }).addTo(map);
+
+                // 添加箭頭
+                this.arrow = L.polylineDecorator(this.polyline, {
+                    patterns: [{
+                        offset: '100%',
+                        repeat: 0,
+                        symbol: L.Symbol.arrowHead({
+                            pixelSize: 10,
+                            polygon: true,
+                            pathOptions: {
+                                color: options.color || '#AAA',
+                                fillColor: options.color || '#AAA',
+                                opacity: 0.7,
+                                fill: true
+                            }
+                        })
+                    }]
+                }).addTo(map);
+
+                // 添加點擊事件到透明覆蓋層
+                this.clickLayer.on('click', (e) => {
+                    console.log('Edge clicked:', this.id);
+                    e.originalEvent.stopPropagation();
+                    this.showPopup(e);
+                });
+
+                // 添加 hover 效果到透明覆蓋層
+                this.clickLayer.on('mouseover', () => {
+                    this.polyline.setStyle({ color: 'red', weight: 5 });
+                });
+
+                this.clickLayer.on('mouseout', () => {
+                    this.polyline.setStyle({ color: options.color || '#AAA', weight: 3 });
+                });
+            }
+
+            showPopup(e) {
+                const edgeObj = {
+                    id: this.id,
+                    edgeId: this.edgeId,
+                    latlng: e.latlng,
+                    getData: () => ({
+                        id: this.id,
+                        edgeId: this.edgeId,
+                        name: this.id
+                    })
+                };
+
+                window.mapObjectManager.handleEdgeClick(edgeObj, e);
+            }
+        }
+
+        // 初始化地圖
+        const map = L.map('map').setView([51.505, -0.09], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 創建測試邊線
+        const edge1 = new TestLineObject(map, [51.5, -0.1], [51.51, -0.08], {
+            id: 'edge-001',
+            color: '#3273dc',
+            weight: 4
+        });
+
+        const edge2 = new TestLineObject(map, [51.51, -0.08], [51.52, -0.06], {
+            id: 'edge-002',
+            color: '#48c774',
+            weight: 4
+        });
+
+        const edge3 = new TestLineObject(map, [51.5, -0.1], [51.49, -0.12], {
+            id: 'edge-003',
+            color: '#ffdd57',
+            weight: 4
+        });
+
+        // 綁定關閉按鈕事件
+        document.getElementById('popup-close').addEventListener('click', () => {
+            window.mapInteraction.closePopup();
+        });
+
+        // 點擊地圖關閉彈出視窗
+        map.on('click', () => {
+            window.mapInteraction.closePopup();
+        });
+
+        // 防止點擊彈出視窗時關閉
+        document.getElementById('map-popup').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    </script>
+</body>
+
+</html>

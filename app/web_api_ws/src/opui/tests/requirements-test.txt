@@ -1,0 +1,39 @@
+# OPUI 測試依賴套件
+
+# 核心測試框架
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0
+
+# 測試覆蓋率
+pytest-cov>=4.0.0
+
+# HTTP 測試
+httpx>=0.24.0
+requests>=2.28.0
+
+# 效能測試
+pytest-benchmark>=4.0.0
+
+# 並發測試
+pytest-xdist>=3.0.0
+
+# 測試報告
+pytest-html>=3.1.0
+pytest-json-report>=1.5.0
+
+# 資料庫測試
+pytest-postgresql>=4.1.0
+
+# Mock 和 Fixture 增強
+responses>=0.23.0
+factory-boy>=3.2.0
+
+# 測試工具
+freezegun>=1.2.0
+faker>=18.0.0
+
+# 開發工具
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.12.0

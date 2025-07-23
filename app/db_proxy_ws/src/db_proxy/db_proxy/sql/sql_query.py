@@ -1,6 +1,8 @@
 from sqlalchemy import create_engine, text
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 from typing import List
+from datetime import datetime, timezone
+import time
 # 你可以改成 PostgreSQL, MySQL, etc.
 
 
@@ -67,3 +69,19 @@ def dynamic_query(pool: ConnectionPoolManager, table_name: str, columns: List[st
 #
 #    #SELECT id, work_id, status_id, room_id, node_id, name, description, agv_id, priority, parameters, created_at, updated_at
 #	#FROM public.task;
+
+
+
+if __name__ == "__main__":
+   
+    db_url_agvc = 'postgresql+psycopg2://agvc:password@192.168.100.254/agvc'
+
+    # 使用 SQLModel metadata 建立資料表
+    pool_agvc = ConnectionPoolManager(db_url_agvc, 1)
+    import json
+    dynamic_query(
+    pool_agvc,
+    table_name="task",
+    columns=["id", "work_id", "status_id","room_id", "node_id", "name", "description", "agv_id", "priority", "parameters", "created_at", "updated_at"],
+    data=[1, 2000102,2,2,1004,"測試測試NAME","測試測試DES",1,100,json.dumps(""),datetime.now(timezone.utc),datetime.now(timezone.utc)],
+    mode="insert")

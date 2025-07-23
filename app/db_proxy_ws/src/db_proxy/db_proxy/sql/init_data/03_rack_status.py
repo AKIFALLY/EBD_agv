@@ -17,6 +17,8 @@ def initialize_rack_status(session):
         {"id": 3, "name": "滿料架-16", "description": "全滿料架(16格)"},
         {"id": 4, "name": "未滿架-32", "description": "半滿料架(32格)"},
         {"id": 5, "name": "未滿架-16", "description": "半滿料架(16格)"},
+        {"id": 6, "name": "未滿料-無carrier", "description": "未滿料-但房間已無carrier"},
+        {"id": 7, "name": "NG料架", "description": "NG料架-等待回收"}
     ]
     
     insert_data_if_not_exists_name(session, default_rack_status, RackStatus)

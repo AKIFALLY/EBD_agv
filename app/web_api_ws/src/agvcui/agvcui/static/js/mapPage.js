@@ -554,7 +554,6 @@ export const mapPage = (() => {
 
         // 點擊地圖時，移動並旋轉物件
         map.on("click", e => {
-
             const clickLatLng = e.latlng;
             console.log("clickLatLng", clickLatLng)
             agv.setTargetPosition(clickLatLng);

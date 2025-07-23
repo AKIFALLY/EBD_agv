@@ -53,6 +53,8 @@ def initialize_locations(session):
             "node_id": 97, "name": "射出機2-停車位置1", "description": "射出機2-OP1叫車/停車位置"},
         {"id": 98, "location_status_id": 1,
             "node_id": 98, "name": "射出機2-停車位置2", "description": "射出機2-OP2叫車/停車位置"},
+        
+        
         {"id": 1005, "location_status_id": 1,
             "node_id": 1005, "name": "射出機3-停車位置1", "description": "射出機3-OP1叫車/停車位置"},
         {"id": 1006, "location_status_id": 1,
@@ -118,7 +120,66 @@ def initialize_locations(session):
             "name": "UnloaderAGV Baker", "description": "烤箱B"},
         {"id": 20201, "location_status_id": 1, "room_id": 2, "node_id": 20201,
             "name": "UnloaderAGV Unload Box", "description": "房間內出口傳送箱"},
+
+        # 區域定義
+        {"id": 11, "location_status_id": 1, "room_id": 1, "node_id": 11,
+            "name": "SystemReadyArea_11", "description": "系統準備區"},
+            {"id": 12, "location_status_id": 1, "room_id": 1, "node_id": 12,
+            "name": "SystemReadyArea_12", "description": "系統準備區"},
+            {"id": 13, "location_status_id": 1, "room_id": 1, "node_id": 13,
+            "name": "SystemReadyArea_13", "description": "系統準備區"},
+            {"id": 14, "location_status_id": 1, "room_id": 1, "node_id": 14,
+            "name": "SystemReadyArea_14", "description": "系統準備區"},
+            {"id": 15, "location_status_id": 1, "room_id": 1, "node_id": 15,
+            "name": "SystemReadyArea_15", "description": "系統準備區"},
+            {"id": 16, "location_status_id": 1, "room_id": 1, "node_id": 16,
+            "name": "SystemReadyArea_16", "description": "系統準備區"},
+            {"id": 17, "location_status_id": 1, "room_id": 1, "node_id": 17,
+            "name": "SystemReadyArea_17", "description": "系統準備區"},
+            {"id": 18, "location_status_id": 1, "room_id": 1, "node_id": 18,
+            "name": "SystemReadyArea_18", "description": "系統準備區"},
+            
+
+            {"id": 31, "location_status_id": 1, "room_id": 1, "node_id": 31,
+            "name": "SystemEmptyRackArea_1", "description": "系統空車區"},
+            {"id": 32, "location_status_id": 1, "room_id": 1, "node_id": 32,
+            "name": "SystemEmptyRackArea_2", "description": "系統空車區"},
+            {"id": 33, "location_status_id": 1, "room_id": 1, "node_id": 33,
+            "name": "SystemEmptyRackArea_3", "description": "系統空車區"},
+            {"id": 34, "location_status_id": 1, "room_id": 1, "node_id": 34,
+            "name": "SystemEmptyRackArea_4", "description": "系統空車區"},
+
+            {"id": 51, "location_status_id": 1, "room_id": 1, "node_id": 51,
+            "name": "ManualReceiveArea_1", "description": "手動回收區"},
+            {"id": 52, "location_status_id": 1, "room_id": 1, "node_id": 52,
+            "name": "ManualReceiveArea_2", "description": "手動回收區"},
+            {"id": 53, "location_status_id": 1, "room_id": 1, "node_id": 53,
+            "name": "ManualReceiveArea_3", "description": "手動回收區"},
+            {"id": 54, "location_status_id": 1, "room_id": 1, "node_id": 54,
+            "name": "ManualReceiveArea_4", "description": "手動回收區"},
+            {"id": 55, "location_status_id": 1, "room_id": 1, "node_id": 55,
+            "name": "ManualReceiveArea_5", "description": "手動回收區"},
+
+            {"id": 71, "location_status_id": 1, "room_id": 1, "node_id": 71,
+            "name": "NGRecycleArea_1", "description": "NG回收區"},
+            {"id": 72, "location_status_id": 1, "room_id": 1, "node_id": 72,
+            "name": "NGRecycleArea_2", "description": "NG回收區"},
+            
+        
+
     ]
 
     insert_data_if_not_exists_name(session, default_location, Location)
     print("✅ 位置資料初始化完成")
+
+
+
+"""
+# 區域定義
+SYSTEM_READY_AREA = [11, 12, 13, 14, 15, 16, 17, 18]  # 系統準備區
+SYSTEM_EMPTY_RACK_AREA = [31, 32, 33, 34]  # 系統空車區
+MANUAL_RECEIVE_AREA = [51, 52, 53, 54, 55]  # 手動回收區
+NG_RECYCLE_AREA = [71, 72]  # NG回收區
+
+
+"""

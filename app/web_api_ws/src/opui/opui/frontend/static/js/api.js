@@ -314,7 +314,6 @@ class SocketAPI {
         this.socket.on("parking_list", (data) => {
             // 舊架構中的資料結構是 parkingList，直接使用
 
-
             // 在更新 parking 資料前，先檢查並清除無效的料架選擇
             this._validateAndCleanRackSelections(data || {});
 

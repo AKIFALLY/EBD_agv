@@ -60,6 +60,10 @@ initialize_ct_map = _import_module_function(
     "19_ct_map", "initialize_ct_map")
 initialize_license = _import_module_function(
     "20_license", "initialize_license")
+initialize_kuka_nodes = _import_module_function(
+    "20_kuka_nodes", "initialize_kuka_nodes")
+initialize_task_condition_history = _import_module_function(
+    "21_task_condition", "init_task_condition_tables")
 
 
 def initialize_all_data(session):
@@ -97,8 +101,6 @@ def initialize_all_data(session):
         # 第二階段：節點資料
         print("🗺️ 第二階段：節點資料")
         initialize_nodes(session)
-        initialize_kuka_map(session)  # KUKA 地圖資料匯入
-        initialize_ct_map(session)    # CT 地圖資料匯入
         print()
 
         # 第三階段：機器和房間資料
@@ -136,6 +138,7 @@ def initialize_all_data(session):
         initialize_task_status(session)
         initialize_works(session)
         initialize_tasks(session)
+        initialize_task_condition_history(session)
         print()
 
         print("=" * 50)

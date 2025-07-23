@@ -1,0 +1,54 @@
+"""
+KUKA WCS 配置文件
+包含各種常量和配置參數
+"""
+
+# 任務優先級
+PRIORITY_FOR_RACK_ROTATE = 1000  # 貨架轉向任務的優先級
+PRIORITY_FOR_KUKA_FROM_EMPTY_TO_BOXOUT = 900  # 搬運空架到出口傳送箱的優先級
+PRIORITY_FOR_KUKA_FROM_BOXOUT_TO_MANUAL_RECEIVE = 800  # 取出出口傳送箱的優先級
+PRIORITY_FOR_KUKA_FROM_READY_TO_BOXIN = 700  # 準備區料架送往入口傳送箱的優先級
+
+# 狀態和工作ID
+ROTATE_REQ_NAME = "wait_rotation_state"  # 旋轉請求狀態名稱
+KUKA_RACK_MOVE = 220001  # KUKA 移動貨架的work_id
+KUKA_MOVE = 2100001  # KUKA 移動的work_id
+CARGO_BOXOUT_WORK_ID_LIST = [1000201,2000201,3000201,4000201,5000201]  # CargoAGV拿出口傳送箱的work_id
+CARGO_BOXIN_WORK_ID_LIST= [1000102,2000102,3000102,4000102,5000102]  # CargoAGV放入口傳送箱的work_id
+
+# 區域定義
+SYSTEM_READY_AREA = [11, 12, 13, 14, 15, 16, 17, 18]  # 系統準備區
+SYSTEM_EMPTY_RACK_AREA = [31, 32, 33, 34]  # 系統空車區
+MANUAL_RECEIVE_AREA = [51, 52, 53, 54, 55]  # 手動回收區
+NG_RECYCLE_AREA = [71, 72]  # NG回收區
+
+# 日誌配置
+LOG_LEVEL = "INFO"  # 日誌級別
+ENABLE_DEBUG_LOGS = True  # 是否啟用調試日誌
+
+
+# MODLE
+KUKA_MODLE_NAME = "KUKA400i"
+LOADER_MODLE_NAME = "Loader"
+UNLOADER_MODLE_NAME = "Unloader"
+CARGO_MODLE_NAME = "Cargo"
+
+
+# task_stauts
+OPUI_STATUS = 0
+WCS_STATUS = 1
+RCS_STATUS = 2
+AGV_RUNNING_STATUS = 3
+AGV_FINISH_STATUS = 4
+TASK_CANCEL_STATUS = 5
+
+
+
+
+#location_status
+LOCATION_STATUS ={
+    "未知": 1,
+    "無佔用": 2,
+    "占用中": 3,
+    "任務占用中": 4
+}

@@ -25,6 +25,7 @@ from db_proxy.models.carrier import Carrier
 from db_proxy.models.carrier_status import CarrierStatus
 from db_proxy.models.agvc_kuka import KukaNode, KukaEdge
 from db_proxy.models.license import License
+from db_proxy.models.task_condition_history import TaskCondition, TaskConditionHistory, TaskConditionCache, ConditionType
 
 __all__ = [
     # Base models
@@ -52,9 +53,12 @@ __all__ = [
     # Task models
     "Task", "TaskStatus", "Work",
 
-    # WCS models
-    "Room", "RackStatus", "Rack", "Carrier",
-
     # License models
     "License"
+
+    # WCS models
+    "Room", "RackStatus", "Rack", "Carrier", "CarrierStatus",
+
+    # Task Condition models
+    "TaskCondition", "TaskConditionHistory", "TaskConditionCache", "ConditionType"
 ]
