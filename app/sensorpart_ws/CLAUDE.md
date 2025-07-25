@@ -1,474 +1,335 @@
-# sensorpart_ws CLAUDE.md
+# CLAUDE.md
 
-## 模組概述
-感測器數據處理系統，負責AGV上各類感測器的數據採集、處理與融合
+## 系統概述
+TCP客戶端感測器數據接收工作空間，連接外部感測器服務器接收3D定位和OCR識別數據。
 
-## 專案結構
+**🔗 TCP連接架構**: TCP客戶端 → 外部感測器服務器 (192.168.2.100:2005)
+
+## 核心架構
 ```
-src/
-└── sensorpart/         # 感測器處理核心
-    ├── sensorpart/     # 感測器數據處理邏輯
-    ├── drivers/        # 感測器驅動程式
-    ├── filters/        # 數據濾波器
-    └── fusion/         # 感測器融合演算法
+sensorpart_ws/
+└── sensorpart/                   # TCP客戶端核心
+    ├── sensorpart.py             # TCP客戶端主程式
+    ├── test_sensorpart_node.py   # ROS 2節點封裝
+    └── __init__.py
 ```
 
-## 核心功能
+## 主要組件
 
-### 感測器支援
-- **雷射掃描器**: Hokuyo等LiDAR感測器
-- **相機系統**: RGB相機與深度相機
-- **慣性感測器**: IMU加速度計與陀螺儀
-- **超聲波感測器**: 近距離障礙物檢測
+### 1. SensorPart類別 (sensorpart.py)
+**TCP客戶端**，連接外部感測器服務器接收數據:
+```python
+class SensorPart:
+    def __init__(self, host='192.168.2.100', port=2005):
+        self.host = host
+        self.port = port
+        self.client_socket = None
+        self.is_connected = False
+        self.position_data = None  # 3D定位數據存儲
+        self.ocr_result = None     # OCR結果存儲
+```
 
-### 數據處理
-- **噪音濾波**: 卡爾曼濾波與粒子濾波
-- **數據融合**: 多感測器數據融合
-- **校準補償**: 感測器偏移與畸變校正
-- **異常檢測**: 感測器故障與異常數據檢測
+**連接管理**:
+```python
+def connect(self):
+    """連接到感測器服務器，支援重連機制"""
+    while not self.is_connected and not self.stop_event.is_set():
+        try:
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_socket.connect((self.host, self.port))
+            self.is_connected = True
+            print("Connected to server.")
+        except socket.error as e:
+            print(f"Connection failed: {e}. Retrying in 5 seconds...")
+            time.sleep(5)
+```
+
+**數據處理**:
+```python
+def handle_message(self, message):
+    """處理接收到的感測器數據"""
+    # 3D定位數據格式: (005,P,x,y,z,rx,ry,rz)
+    position_pattern = r"\((005),(P|F),(\d+),(\d+),(\d+),([-\d.]+),([-\d.]+),([-\d.]+)\)"
+    
+    # OCR結果格式: (OCR,text)
+    ocr_pattern = r"\((OCR),(.+)\)"
+    
+    if match := re.match(position_pattern, message):
+        _, status, x, y, z, rx, ry, rz = match.groups()
+        if status == 'P':  # 成功狀態
+            self.position_data = {
+                'x': int(x),
+                'y': int(y), 
+                'z': int(z),
+                'rx': float(rx),
+                'ry': float(ry),
+                'rz': float(rz)
+            }
+    elif match := re.match(ocr_pattern, message):
+        _, ocr_string = match.groups()
+        self.ocr_result = ocr_string
+```
+
+### 2. TestSensorPartNode類別 (test_sensorpart_node.py)
+**ROS 2節點封裝**，將TCP客戶端整合到ROS 2系統:
+```python
+class TestSensorPartNode(Node):
+    def __init__(self):
+        super().__init__('sensorpart_node')
+        
+        # 初始化TCP客戶端
+        self.tcp_client = SensorPart()
+        self.tcp_client.start()
+        
+        # 創建定時器定期記錄數據
+        self.timer = self.create_timer(1.0, self.timer_callback)
+        
+    def timer_callback(self):
+        """定時回調，記錄當前接收到的數據"""
+        self.get_logger().info(f"Position Data: {self.tcp_client.position_data}")
+        self.get_logger().info(f"OCR Result: {self.tcp_client.ocr_result}")
+```
+
+## 支援的數據格式
+
+### 1. 3D定位數據
+**格式**: `(005,P,x,y,z,rx,ry,rz)`
+- `005`: 固定標識符
+- `P`: 成功狀態 (F表示失敗)
+- `x,y,z`: 位置坐標 (整數)
+- `rx,ry,rz`: 旋轉角度 (浮點數)
+
+**範例**:
+```
+(005,P,1250,890,120,0.5,-1.2,2.1)
+```
+
+**解析結果**:
+```python
+{
+    'x': 1250,
+    'y': 890,
+    'z': 120,
+    'rx': 0.5,
+    'ry': -1.2,
+    'rz': 2.1
+}
+```
+
+### 2. OCR識別結果
+**格式**: `(OCR,text)`
+- `OCR`: 固定標識符
+- `text`: 識別到的文字內容
+
+**範例**:
+```
+(OCR,AGV001)
+```
+
+**解析結果**:
+```python
+ocr_result = "AGV001"
+```
 
 ## 開發指令
 
-### 環境設定 (AGV容器內)
+### 環境設定 (AGV容器內執行)
 ```bash
-source /app/setup.bash && all_source
+# AGV容器內
+source /app/setup.bash && agv_source  # 或使用 all_source (自動檢測)
 cd /app/sensorpart_ws
-```
-
-### 服務啟動
-```bash
-# 啟動感測器處理節點
-ros2 run sensorpart sensorpart_node
-
-# 啟動感測器校準工具
-ros2 run sensorpart sensor_calibration
-
-# 測試感測器連線
-ros2 run sensorpart test_sensors
 ```
 
 ### 構建與測試
 ```bash
 build_ws sensorpart_ws
-ros2 test sensorpart  # 感測器系統測試
 ```
 
-## 感測器驅動開發
+### 節點啟動 (AGV容器內執行)
+```bash
+# 啟動ROS 2節點 (包含TCP客戶端)
+ros2 run sensorpart test_sensorpart_node
 
-### LiDAR驅動
-```python
-# drivers/lidar_driver.py
-class LiDARDriver:
-    def __init__(self, config):
-        self.device_path = config['device_path']
-        self.frame_id = config['frame_id']
-        self.scan_publisher = self.create_publisher(LaserScan, '/scan', 10)
-        
-    def initialize_lidar(self):
-        """初始化LiDAR設備"""
-        try:
-            self.lidar_device = self.connect_to_device(self.device_path)
-            self.configure_scan_parameters()
-            return True
-        except Exception as e:
-            self.get_logger().error(f"LiDAR初始化失敗: {e}")
-            return False
-            
-    def process_scan_data(self, raw_data):
-        """處理掃描數據並發布"""
-        scan_msg = LaserScan()
-        scan_msg.header.stamp = self.get_clock().now().to_msg()
-        scan_msg.header.frame_id = self.frame_id
-        
-        # 設定掃描參數
-        scan_msg.angle_min = self.angle_min
-        scan_msg.angle_max = self.angle_max
-        scan_msg.angle_increment = self.angle_increment
-        scan_msg.range_min = self.range_min
-        scan_msg.range_max = self.range_max
-        
-        # 轉換原始數據為距離數組
-        scan_msg.ranges = self.convert_to_ranges(raw_data)
-        scan_msg.intensities = self.extract_intensities(raw_data)
-        
-        self.scan_publisher.publish(scan_msg)
+# 或單獨運行TCP客戶端
+ros2 run sensorpart sensorpart
 ```
 
-### IMU驅動
-```python
-# drivers/imu_driver.py
-class IMUDriver:
-    def __init__(self, config):
-        self.device_path = config['device_path']
-        self.frame_id = config['frame_id']
-        self.imu_publisher = self.create_publisher(Imu, '/imu/data', 10)
-        
-    def read_imu_data(self):
-        """讀取IMU數據"""
-        try:
-            raw_data = self.imu_device.read_data()
-            
-            imu_msg = Imu()
-            imu_msg.header.stamp = self.get_clock().now().to_msg()
-            imu_msg.header.frame_id = self.frame_id
-            
-            # 角速度數據
-            imu_msg.angular_velocity.x = raw_data['gyro_x']
-            imu_msg.angular_velocity.y = raw_data['gyro_y']
-            imu_msg.angular_velocity.z = raw_data['gyro_z']
-            
-            # 線性加速度數據
-            imu_msg.linear_acceleration.x = raw_data['accel_x']
-            imu_msg.linear_acceleration.y = raw_data['accel_y']
-            imu_msg.linear_acceleration.z = raw_data['accel_z']
-            
-            # 方向估計(如果可用)
-            if self.has_magnetometer:
-                orientation = self.calculate_orientation(raw_data)
-                imu_msg.orientation = orientation
-                
-            self.imu_publisher.publish(imu_msg)
-            
-        except Exception as e:
-            self.get_logger().warn(f"IMU數據讀取錯誤: {e}")
-```
+## 使用範例
 
-### 相機驅動
+### 1. 直接使用TCP客戶端
 ```python
-# drivers/camera_driver.py
-class CameraDriver:
-    def __init__(self, config):
-        self.camera_id = config['camera_id']
-        self.resolution = config['resolution']
-        self.frame_rate = config['frame_rate']
-        self.image_publisher = self.create_publisher(Image, '/camera/image_raw', 10)
-        
-    def capture_and_publish(self):
-        """擷取並發布影像"""
-        try:
-            frame = self.camera.read()
-            if frame is not None:
-                # 轉換為ROS 2影像訊息
-                image_msg = self.cv_bridge.cv2_to_imgmsg(frame, 'bgr8')
-                image_msg.header.stamp = self.get_clock().now().to_msg()
-                image_msg.header.frame_id = self.frame_id
-                
-                self.image_publisher.publish(image_msg)
-                
-        except Exception as e:
-            self.get_logger().warn(f"相機擷取錯誤: {e}")
-```
+from sensorpart.sensorpart import SensorPart
 
-## 數據濾波與處理
+# 創建並啟動客戶端
+client = SensorPart(host='192.168.2.100', port=2005)
+client.start()
 
-### 卡爾曼濾波器
-```python
-# filters/kalman_filter.py
-class KalmanFilter:
-    def __init__(self, initial_state, initial_covariance):
-        self.state = initial_state
-        self.covariance = initial_covariance
-        self.process_noise = None
-        self.measurement_noise = None
-        
-    def predict(self, control_input=None):
-        """預測步驟"""
-        # 狀態預測
-        self.state = self.state_transition @ self.state
-        if control_input is not None:
-            self.state += self.control_matrix @ control_input
-            
-        # 協方差預測
-        self.covariance = (self.state_transition @ self.covariance @ 
-                          self.state_transition.T + self.process_noise)
+# 檢查接收到的數據
+if client.position_data:
+    print(f"Position: {client.position_data}")
     
-    def update(self, measurement):
-        """更新步驟"""
-        # 卡爾曼增益
-        innovation_covariance = (self.measurement_matrix @ self.covariance @ 
-                               self.measurement_matrix.T + self.measurement_noise)
-        kalman_gain = (self.covariance @ self.measurement_matrix.T @ 
-                      np.linalg.inv(innovation_covariance))
-        
-        # 狀態更新
-        innovation = measurement - self.measurement_matrix @ self.state
-        self.state += kalman_gain @ innovation
-        
-        # 協方差更新
-        self.covariance = ((np.eye(len(self.state)) - kalman_gain @ 
-                           self.measurement_matrix) @ self.covariance)
+if client.ocr_result:
+    print(f"OCR: {client.ocr_result}")
+
+# 停止客戶端
+client.stop()
 ```
 
-### 移動平均濾波器
+### 2. 在ROS 2節點中使用
 ```python
-# filters/moving_average_filter.py
-class MovingAverageFilter:
-    def __init__(self, window_size=10):
-        self.window_size = window_size
-        self.data_buffer = deque(maxlen=window_size)
-        
-    def add_sample(self, sample):
-        """添加新樣本"""
-        self.data_buffer.append(sample)
-        
-    def get_filtered_value(self):
-        """獲取濾波後的值"""
-        if len(self.data_buffer) == 0:
-            return None
-        return sum(self.data_buffer) / len(self.data_buffer)
-        
-    def reset(self):
-        """重置濾波器"""
-        self.data_buffer.clear()
-```
+import rclpy
+from rclpy.node import Node
+from sensorpart.sensorpart import SensorPart
 
-## 感測器融合
-
-### 多感測器融合
-```python
-# fusion/sensor_fusion.py
-class SensorFusion:
+class MySensorNode(Node):
     def __init__(self):
-        self.lidar_data = None
-        self.imu_data = None
-        self.camera_data = None
-        self.fused_publisher = self.create_publisher(
-            PointCloud2, '/fused_sensor_data', 10
-        )
+        super().__init__('my_sensor_node')
         
-    def fuse_lidar_imu(self, lidar_scan, imu_data):
-        """融合LiDAR與IMU數據"""
-        # 使用IMU數據校正LiDAR掃描
-        corrected_scan = self.motion_compensation(lidar_scan, imu_data)
+        # 初始化TCP客戶端
+        self.sensor_client = SensorPart()
+        self.sensor_client.start()
         
-        # 轉換為點雲格式
-        point_cloud = self.scan_to_pointcloud(corrected_scan)
+        # 創建定時器處理數據
+        self.timer = self.create_timer(0.5, self.process_sensor_data)
         
-        return point_cloud
-        
-    def motion_compensation(self, scan, imu_data):
-        """運動補償"""
-        # 計算掃描期間的運動
-        angular_velocity = imu_data.angular_velocity.z
-        scan_time = scan.time_increment * len(scan.ranges)
-        
-        # 補償角度偏移
-        compensated_ranges = []
-        for i, range_value in enumerate(scan.ranges):
-            time_offset = i * scan.time_increment
-            angle_offset = angular_velocity * time_offset
+    def process_sensor_data(self):
+        """處理感測器數據"""
+        if self.sensor_client.position_data:
+            pos = self.sensor_client.position_data
+            self.get_logger().info(f"AGV位置: ({pos['x']}, {pos['y']}, {pos['z']})")
             
-            # 校正該點的角度
-            corrected_angle = scan.angle_min + i * scan.angle_increment - angle_offset
-            compensated_ranges.append((range_value, corrected_angle))
-            
-        return compensated_ranges
+        if self.sensor_client.ocr_result:
+            self.get_logger().info(f"識別結果: {self.sensor_client.ocr_result}")
 ```
 
-### 障礙物檢測
+### 3. 測試連接
+```bash
+# 測試TCP連接 (AGV容器內)
+telnet 192.168.2.100 2005
+
+# 檢查網路連通性
+ping 192.168.2.100
+
+# 查看端口狀態
+netstat -tlnp | grep 2005
+```
+
+## 配置參數
+
+### 連接參數
 ```python
-# fusion/obstacle_detection.py
-class ObstacleDetection:
-    def __init__(self):
-        self.min_obstacle_size = 0.1  # 最小障礙物尺寸(m)
-        self.max_detection_range = 10.0  # 最大檢測範圍(m)
-        self.obstacle_publisher = self.create_publisher(
-            ObstacleArray, '/obstacles', 10
-        )
-        
-    def detect_obstacles(self, sensor_data):
-        """檢測障礙物"""
-        obstacles = []
-        
-        # 從點雲數據中檢測障礙物
-        if 'pointcloud' in sensor_data:
-            cloud_obstacles = self.detect_from_pointcloud(
-                sensor_data['pointcloud']
-            )
-            obstacles.extend(cloud_obstacles)
-            
-        # 從超聲波數據中檢測近距離障礙物
-        if 'ultrasonic' in sensor_data:
-            ultrasonic_obstacles = self.detect_from_ultrasonic(
-                sensor_data['ultrasonic']
-            )
-            obstacles.extend(ultrasonic_obstacles)
-            
-        # 融合與去重
-        fused_obstacles = self.merge_obstacles(obstacles)
-        
-        return fused_obstacles
+# 預設連接參數
+DEFAULT_HOST = '192.168.2.100'  # 感測器服務器IP
+DEFAULT_PORT = 2005             # 服務器端口
+
+# 重連參數
+RECONNECT_INTERVAL = 5          # 重連間隔(秒)
+SOCKET_TIMEOUT = None           # Socket超時設定
 ```
 
-## 感測器配置
-
-### 感測器參數配置
-```yaml
-# /app/config/agv/sensor_config.yaml
-sensors:
-  lidar:
-    - name: "front_lidar"
-      type: "hokuyo_urg"
-      device_path: "/dev/ttyACM0"
-      frame_id: "front_lidar_link"
-      angle_min: -2.0944      # -120度
-      angle_max: 2.0944       # 120度
-      range_min: 0.1          # 0.1m
-      range_max: 30.0         # 30m
-      scan_rate: 10           # 10Hz
-      
-    - name: "rear_lidar"
-      type: "hokuyo_urg"
-      device_path: "/dev/ttyACM1"
-      frame_id: "rear_lidar_link"
-      angle_min: -2.0944
-      angle_max: 2.0944
-      range_min: 0.1
-      range_max: 30.0
-      scan_rate: 10
-      
-  imu:
-    name: "base_imu"
-    type: "xsens_mti"
-    device_path: "/dev/ttyUSB0"
-    frame_id: "imu_link"
-    sample_rate: 100        # 100Hz
-    
-  camera:
-    - name: "front_camera"
-      type: "usb_camera"
-      device_id: 0
-      frame_id: "front_camera_link"
-      resolution: [1280, 720]
-      frame_rate: 30
-      
-  ultrasonic:
-    - name: "front_ultrasonic"
-      type: "mb1040"
-      pin: 18
-      frame_id: "front_ultrasonic_link"
-      max_range: 7.65
-      min_range: 0.20
-      field_of_view: 0.7854   # 45度
-```
-
-### 濾波器配置
-```yaml
-# 濾波器參數
-filters:
-  lidar_filter:
-    type: "median"
-    window_size: 5
-    range_threshold: 0.05   # 5cm
-    
-  imu_filter:
-    type: "kalman"
-    process_noise: 0.01
-    measurement_noise: 0.1
-    
-  camera_filter:
-    type: "gaussian"
-    kernel_size: 5
-    sigma: 1.0
-```
-
-## 測試與調試
-
-### 感測器測試
-```bash
-# 測試LiDAR
-ros2 topic echo /scan
-
-# 測試IMU
-ros2 topic echo /imu/data
-
-# 測試相機
-ros2 topic echo /camera/image_raw
-
-# 查看感測器TF樹
-ros2 run tf2_tools view_frames.py
-```
-
-### 視覺化工具
-```bash
-# 啟動RViz查看感測器數據
-ros2 run rviz2 rviz2 -d /app/config/agv/sensor_visualization.rviz
-
-# 查看點雲數據
-ros2 run rqt_plot rqt_plot /scan/ranges[0]
-
-# 相機影像顯示
-ros2 run rqt_image_view rqt_image_view
-```
-
-## 校準程序
-
-### LiDAR校準
+### 自定義連接設定
 ```python
-# calibration/lidar_calibration.py
-class LiDARCalibration:
-    def calibrate_lidar_mounting(self):
-        """校準LiDAR安裝角度"""
-        # 掃描平面參考物件
-        reference_scans = self.collect_reference_scans()
-        
-        # 計算安裝角度偏移
-        mounting_offset = self.calculate_mounting_offset(reference_scans)
-        
-        # 更新轉換矩陣
-        self.update_transform_matrix(mounting_offset)
-        
-        return mounting_offset
-```
+# 連接到自定義服務器
+custom_client = SensorPart(host='192.168.1.100', port=3005)
 
-### IMU校準
-```bash
-# IMU校準程序
-ros2 run sensorpart imu_calibration --duration 60
-
-# 保存校準數據
-ros2 service call /sensorpart/save_imu_calibration
-
-# 載入校準數據
-ros2 service call /sensorpart/load_imu_calibration
+# 或在環境變數中設定
+import os
+host = os.getenv('SENSOR_HOST', '192.168.2.100')
+port = int(os.getenv('SENSOR_PORT', '2005'))
+client = SensorPart(host=host, port=port)
 ```
 
 ## 故障排除
 
 ### 常見問題
-1. **感測器無法連線**: 檢查設備路徑與權限
-2. **數據噪音過大**: 調整濾波器參數
-3. **校準偏移**: 重新執行校準程序
-4. **數據延遲**: 檢查系統負載與通訊頻寬
+1. **無法連接服務器**: 檢查網路連通性和服務器狀態
+   ```bash
+   ping 192.168.2.100
+   telnet 192.168.2.100 2005
+   ```
 
-### 診斷工具
+2. **連接頻繁斷開**: 檢查網路穩定性或服務器負載
+   - 客戶端會自動重連，檢查重連日誌
+
+3. **數據格式錯誤**: 檢查接收到的原始訊息格式
+   - 查看 "Unrecognized message format" 警告
+
+4. **ROS 2節點無回應**: 檢查TCP客戶端狀態
+   ```bash
+   ros2 node info /sensorpart_node
+   ```
+
+### 診斷步驟
 ```bash
-# 感測器狀態診斷
-ros2 run sensorpart sensor_diagnostics
+# 1. 檢查網路連接
+ping 192.168.2.100
+nmap -p 2005 192.168.2.100
 
-# 檢查設備連線
-ls -la /dev/tty* /dev/video*
+# 2. 測試TCP連接
+telnet 192.168.2.100 2005
 
-# 查看感測器統計
-ros2 topic hz /scan
-ros2 topic bw /camera/image_raw
+# 3. 檢查ROS 2節點狀態
+ros2 node list | grep sensor
+ros2 node info /sensorpart_node
+
+# 4. 查看日誌輸出
+ros2 run sensorpart test_sensorpart_node
 ```
 
-## 性能最佳化
+### 錯誤處理
+```python
+# 在節點中添加錯誤處理
+def timer_callback(self):
+    try:
+        if not self.tcp_client.is_connected:
+            self.get_logger().warn("TCP客戶端未連接")
+            return
+            
+        # 檢查數據時效性
+        if self.last_data_time and (time.time() - self.last_data_time) > 10:
+            self.get_logger().warn("數據超時，超過10秒未收到新數據")
+            
+    except Exception as e:
+        self.get_logger().error(f"處理感測器數據時發生錯誤: {e}")
+```
 
-### 數據處理最佳化
-- **多執行緒處理**: 並行處理多個感測器數據
-- **數據快取**: 減少重複計算
-- **適應性濾波**: 根據環境動態調整濾波參數
-- **硬體加速**: 利用GPU加速影像處理
+## 技術特性
 
-### 頻寬管理
-- **數據壓縮**: 壓縮影像與點雲數據
-- **選擇性發布**: 根據需求調整發布頻率
-- **品質調整**: 動態調整感測器解析度
+### 多線程設計
+- **主線程**: ROS 2節點運行
+- **TCP線程**: 獨立線程處理TCP連接和數據接收
+- **線程安全**: 使用threading.Event進行線程同步
+
+### 自動重連機制
+- 連接失敗時自動重試 (5秒間隔)
+- 連接中斷時自動重新建立連接
+- 優雅的關閉和清理機制
+
+### 數據解析
+- 使用正則表達式解析固定格式訊息
+- 支援3D定位和OCR兩種數據類型
+- 容錯處理，忽略無法識別的訊息格式
+
+## 系統整合
+
+### 在AGV系統中的角色
+```
+外部感測器設備 (192.168.2.100:2005)
+    ↓ TCP通訊
+sensorpart_ws (TCP客戶端)
+    ↓ ROS 2節點
+AGV應用層 (定位和識別數據處理)
+```
+
+### 數據流向
+1. **外部感測器** → TCP服務器 (192.168.2.100:2005)
+2. **sensorpart客戶端** → 接收並解析數據
+3. **ROS 2節點** → 定時輸出到日誌
+4. **上層應用** → 可擴展為發布ROS 2話題
 
 ## 重要提醒
-- 感測器數據直接影響AGV安全，校準與維護至關重要
-- 環境因素會影響感測器效能，需定期檢查與調整
-- 多感測器融合可提高可靠性，但也增加計算負載
-- 僅適用於AGV車載系統，確保在正確容器環境中運行
+- sensorpart_ws僅提供基本的TCP客戶端功能
+- 適用於AGV車載系統接收外部感測器數據
+- 當前實現僅支援日誌輸出，可擴展為ROS 2話題發布
+- 所有操作必須在AGV容器內執行
+- 需確保與感測器服務器的網路連通性

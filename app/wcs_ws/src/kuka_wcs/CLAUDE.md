@@ -1,205 +1,195 @@
 # kuka_wcs - KUKA 倉庫控制系統
 
 ## 專案概述
-KUKA AGV 車隊的倉庫控制系統，提供智能任務判斷和自動化任務分配功能。實現基於機器人狀態、電量、位置等因素的智能任務分配，與 AGVC 資料庫系統無縫整合。
+KUKA WCS (Warehouse Control System) 主節點，整合 KukaFleetAdapter 和任務判斷引擎，提供 AGV 車隊管理功能。
 
-## 核心模組
-
-### 主要類別
-- **KukaWcsNode** (`kuka_wcs_node.py`): KUKA WCS 主節點，任務決策引擎
-- **TaskDecisionEngine** (`task_decision_engine.py`): 智能任務判斷核心
-- **FleetAdapter** (`fleet_adapter.py`): KUKA Fleet API 適配器
-- **DatabaseClient** (`database_client.py`): AGVC 資料庫客戶端
-- **TaskQueueManager** (`task_queue_manager.py`): 任務佇列管理
-
-### 系統架構
+## 實際程式結構
 ```
-KUKA Fleet ◄──► WCS Decision ◄──► Database
-Adapter         Engine          Client
-    │               │               │
-    ▼               ▼               ▼
-KUKA API        Task Queue      AGVC DB
-(HTTP REST)     Management      (PostgreSQL)
+kuka_wcs/
+├── kuka_wcs_node.py           # 主節點 (實際存在)
+├── task_decision_engine.py    # 任務判斷引擎 (實際存在)
+├── __init__.py
+└── task_handler/              # 任務處理器模組
+    ├── __init__.py
+    ├── empty_rack_to_boxout.py      # 空架到出口傳送箱
+    ├── full_rack_to_manual_receive.py  # 滿架到手動接收
+    ├── rack_rotate_180.py           # 料架旋轉180度
+    └── ready_rack_to_boxin.py       # 準備架到入口箱
 ```
+
+## 核心功能 (基於實際實現)
+
+### KUKA WCS 主節點 (kuka_wcs_node.py)
+- **整合外部系統**: 整合 KukaFleetAdapter 和 AGVCDatabaseClient
+- **任務訂閱**: 訂閱 `/agvc/tasks` 主題接收任務列表
+- **定時處理**: 每1秒執行一次任務處理邏輯
+- **任務決策**: 使用 TaskDecisionEngine 進行任務分析
+
+### 任務判斷引擎 (task_decision_engine.py)
+- **機器人狀態管理**: 追蹤機器人電量、狀態、位置
+- **容器狀態管理**: 管理容器的空滿狀態和位置
+- **任務優先級**: 支援5級優先級 (LOW=1, NORMAL=5, HIGH=10, URGENT=20, EMERGENCY=50)
+- **智能分配**: 基於電量和可用性選擇最佳機器人
+
+### 任務處理器 (task_handler/)
+- **EmptyRackToBoxoutHandler**: 空架到出口傳送箱處理器
+- **條件檢查**: 使用 TaskConditionChecker 進行即時條件驗證
+- **資料收集**: 從條件檢查中收集任務所需資料
+- **任務創建**: 創建 KUKA 搬運任務到資料庫
 
 ## 關鍵檔案
 
-### 核心檔案
-- `/kuka_wcs/kuka_wcs_node.py` - WCS 主節點，任務調度核心
-- `/kuka_wcs/task_decision_engine.py` - 智能任務判斷邏輯
-- `/kuka_wcs/fleet_adapter.py` - KUKA Fleet API 整合
-- `/kuka_wcs/database_client.py` - 資料庫連線和查詢
+### 實際存在的檔案
+- `/kuka_wcs/kuka_wcs_node.py` - WCS 主節點實現
+- `/kuka_wcs/task_decision_engine.py` - 任務判斷引擎
+- `/kuka_wcs/task_handler/empty_rack_to_boxout.py` - 空架搬運處理器
+- `/setup.py` - 定義 entry_points: `kuka_wcs_node`
 
-### 配置檔案
-- `/config/kuka_wcs_config.yaml` - WCS 系統配置
-- `/config/task_priority_config.yaml` - 任務優先級配置
-- `/config/fleet_config.yaml` - KUKA Fleet 連線配置
+### 設定與配置
+- `setup.py` 中定義的 entry_points
+- 無實際配置檔案 (YAML 配置為虛構內容)
 
-### 啟動檔案
-- `/launch/kuka_wcs_launch.py` - 完整系統啟動
-- `/launch/decision_engine_launch.py` - 決策引擎啟動
-- `/launch/fleet_adapter_launch.py` - Fleet 適配器啟動
+## 開發指令 (基於實際 entry_points)
 
-## 開發指令
-
-### 基本構建
+### 環境設定 (AGVC容器內)
 ```bash
-# 進入 AGVC 容器
-docker compose -f docker-compose.agvc.yml exec agvc_server bash
-source /app/setup.bash && all_source
-
-# 構建 wcs_ws
-build_ws wcs_ws
-
-# 單獨構建 kuka_wcs
+source /app/setup.bash
+agvc_source  # 載入AGVC工作空間 (或使用 all_source 自動檢測)
 cd /app/wcs_ws
-colcon build --packages-select kuka_wcs
 ```
 
 ### 服務啟動
 ```bash
-# 完整啟動
-ros2 launch kuka_wcs kuka_wcs_launch.py
-
-# 單獨啟動 WCS 節點
+# KUKA WCS 主節點 (實際可用)
 ros2 run kuka_wcs kuka_wcs_node
-
-# 啟動決策引擎
-ros2 run kuka_wcs task_decision_engine
-
-# 啟動 Fleet 適配器
-ros2 run kuka_wcs fleet_adapter
 ```
 
-## 配置設定
+### 構建與測試
+```bash
+# 構建 kuka_wcs 包
+colcon build --packages-select kuka_wcs
 
-### WCS 系統配置
-```yaml
-# kuka_wcs_config.yaml
-decision_engine:
-  task_timeout: 300
-  priority_levels: 5
-  max_concurrent_tasks: 10
+# 構建整個工作空間
+build_ws wcs_ws
 
-fleet_adapter:
-  kuka_api_url: "http://kuka-fleet:8080"
-  polling_interval: 5.0
-  connection_timeout: 30
+# 測試空架條件檢查
+cd /app/wcs_ws/src/kuka_wcs
+python3 test_empty_rack_condition.py
 
-database:
-  connection_pool_size: 10
-  query_timeout: 15
+# 執行單元測試
+python3 -m pytest tests/ -v
 ```
 
-### 任務優先級配置
-```yaml
-# task_priority_config.yaml
-priority_rules:
-  emergency: 1
-  production: 2
-  maintenance: 3
-  logistics: 4
-  default: 5
+## 實際技術實現
+
+### KUKA WCS 節點架構
+```python
+class KukaWCSNode(Node):
+    def __init__(self):
+        # 整合 KukaFleetAdapter
+        self.kuka_adapter = KukaFleetAdapter(self)
+        
+        # 整合資料庫客戶端
+        self.db_client = AGVCDatabaseClient(self)
+        
+        # 任務決策引擎
+        self.decision_engine = TaskDecisionEngine(self.get_logger())
+        
+        # 訂閱任務主題
+        self.tasks_subscription = self.create_subscription(
+            Tasks, '/agvc/tasks', self.tasks_callback, 10)
+        
+        # 定時處理任務
+        self.task_timer = self.create_timer(1.0, self.process_tasks)
+```
+
+### 任務判斷引擎關鍵類別
+```python
+# 實際存在的資料類別
+@dataclass
+class RobotInfo:
+    robot_id: str
+    status: str
+    battery_level: int
+    current_position: Optional[str] = None
+    assigned_task: Optional[str] = None
+
+@dataclass
+class ContainerInfo:
+    container_code: str
+    container_model_code: str
+    node_code: str
+    empty_full_status: int
+    in_map_status: int
+    is_carry: int
+
+# 任務處理方法
+def make_task_decisions(self) -> List[Dict[str, Any]]:
+    # 按優先級排序任務
+    # 選擇最佳機器人
+    # 返回任務分配建議
 ```
 
 ## 整合點
 
-### 與其他專案整合
-- **db_proxy_ws**: 使用 DatabaseClient 進行資料庫操作
-- **kuka_fleet_ws**: 透過 FleetAdapter 與 KUKA Fleet Manager 通訊
-- **rcs_ws**: 接收任務請求，回傳任務分配結果
-- **web_api_ws**: 提供 WCS 狀態和統計資訊 API
+### 外部依賴
+- **kuka_fleet_ws**: 透過 KukaFleetAdapter 整合
+- **db_proxy_ws**: 使用 AGVCDatabaseClient 存取資料庫
+- **wcs_base**: 使用 BaseTaskHandler 和 TaskConditionChecker
 
-### ROS 2 話題
+### ROS 2 主題 (實際使用)
 ```bash
-# 發布話題
-/wcs/task_assignment        # 任務分配結果
-/wcs/fleet_status          # 車隊狀態資訊
-/wcs/decision_metrics      # 決策引擎指標
+# 訂閱主題
+/agvc/tasks                    # 任務列表 (Tasks 消息類型)
 
-# 訂閱話題
-/rcs/task_request          # 任務請求
-/fleet/robot_status        # 機器人狀態
-/database/status_update    # 資料庫狀態更新
-```
-
-## 測試方法
-
-### 單元測試
-```bash
-# 執行所有測試
-python3 -m pytest test/
-
-# 測試決策引擎
-python3 test/test_decision_engine.py
-
-# 測試 Fleet 適配器
-python3 test/test_fleet_adapter.py
-
-# 測試資料庫客戶端
-python3 test/test_database_client.py
-```
-
-### 整合測試
-```bash
-# 完整系統測試
-python3 test/test_integration.py
-
-# 任務分配測試
-python3 test/test_task_assignment.py
-
-# 效能測試
-python3 test/test_performance.py
+# 任務狀態
+# status_id == 0: 未執行
+# status_id == 1: 已選擇
+# status_id == 2: 執行中
 ```
 
 ## 故障排除
 
 ### 常見問題
 
-#### KUKA Fleet 連線失敗
+#### KUKA WCS 節點無法啟動
 ```bash
-# 檢查 Fleet API 狀態
-curl http://kuka-fleet:8080/api/status
+# 檢查節點狀態
+ros2 node list | grep kuka_wcs
 
-# 檢查網路連通性
-ping kuka-fleet
+# 檢查依賴模組
+# 確保 kuka_fleet_ws 和 db_proxy_ws 正常運行
 
-# 查看 Fleet 適配器日誌
-ros2 topic echo /wcs/fleet_adapter/logs
+# 檢查 Python 路徑
+# 節點會自動添加相關路徑到 sys.path
 ```
 
-#### 任務分配異常
+#### 任務條件檢查失敗
 ```bash
-# 檢查決策引擎狀態
-ros2 topic echo /wcs/decision_metrics
+# 檢查 wcs_base 模組
+ros2 run wcs_base task_condition_query_node
 
-# 查看任務佇列
-ros2 service call /wcs/get_task_queue
-
-# 重置決策引擎
-ros2 service call /wcs/reset_decision_engine
+# 測試任務處理器
+cd /app/wcs_ws/src/kuka_wcs
+python3 test_empty_rack_condition.py
 ```
 
-#### 資料庫連線問題
+#### 導入錯誤
 ```bash
-# 檢查資料庫連線
-ros2 service call /db_proxy/test_connection
-
-# 查看連線池狀態
-ros2 topic echo /wcs/database/connection_status
-
-# 重新初始化資料庫客戶端
-ros2 service call /wcs/reinit_database_client
+# 檢查警告訊息
+# 節點使用 try-except 處理導入失敗
+# Warning: Could not import KukaFleetAdapter
+# Warning: Could not import AGVCDatabaseClient
 ```
 
 ### 除錯技巧
-- 使用 `self.get_logger().info()` 記錄決策過程
-- 監控 `/wcs/decision_metrics` 話題掌握系統效能
-- 檢查任務優先級配置是否正確
-- 確認 KUKA Fleet API 回應格式
+- 檢查 `sys.path` 設定是否正確
+- 使用 `self.get_logger().info()` 追蹤執行狀態
+- 監控任務接收和處理流程
+- 驗證條件檢查器的即時查詢功能
 
-### 效能監控
-- 任務分配延遲應保持在 5 秒內
-- Fleet API 回應時間監控
-- 資料庫查詢效能分析
-- 記憶體使用情況檢查
+### 重要提醒
+- **必須在AGVC容器內運行**: 需要正確的 ROS 2 環境和資料庫連接
+- **依賴外部系統**: 需要 kuka_fleet_ws 和 db_proxy_ws 正常運行
+- **任務處理器**: 使用基於條件表格的檢查機制
+- **即時模式**: TaskConditionChecker 啟用即時查詢模式

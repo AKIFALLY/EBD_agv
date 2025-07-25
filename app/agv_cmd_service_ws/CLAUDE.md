@@ -14,12 +14,26 @@ agv_cmd_service_ws/
 │       ├── ManualCommand.srv    # 手動運動控制服務
 │       └── GeneralCommand.srv   # 一般指令控制服務
 └── agv_cmd_service/            # 指令服務實作
-    └── agv_cmd_service_node.py # 主要服務節點
+    ├── agv_cmd_service_node.py # 主要服務節點
+    ├── agv_cmd_client_node.py  # 指令客戶端
+    ├── agv_cmd_porxy.py        # AGV指令代理類
+    └── config/
+        └── agv_cmd_service.yaml # PLC地址配置
 ```
 
 ## 主要功能
 
 ### 1. 手動運動控制 (ManualCommand服務)
+**服務定義**:
+```
+# Request
+string command
+bool onoff
+---
+# Response  
+bool success
+```
+
 **支援指令**:
 - `forward/backward`: 前進/後退控制
 - `rotate_left/rotate_right`: 左轉/右轉控制  
@@ -35,21 +49,34 @@ shift_left_address: '3801'  shift_right_address: '3802'
 break_address: '3714'       enable_address: '3715'
 ```
 
-### 2. 一般系統控制 (GeneralCommand服務)  
+### 2. 一般系統控制 (GeneralCommand服務)
+**服務定義**:
+```
+# Request
+string command
+string parameter
+---
+# Response
+bool success
+```
+
 **支援指令**:
-- `auto`: 自動模式開關 (參數: on/off)
+- `auto`: 自動模式開關 (參數: "on"/"off")
 - `stop`: 緊急停止
 - `reset`: 系統重置
-- `send_mission`: 發送任務 (參數: from,to,magic)
+- `send_mission`: 發送任務 (參數格式: "on,from,to,magic")
 - `cancel_mission`: 取消任務
-- `traffic_stop`: 交通停止控制 (參數: on/off)
+- `traffic_stop`: 交通停止控制 (參數: "on"/"off")
 
 **任務管理PLC地址**:
 ```python
+auto_address1: '4001'           auto_address2: '0000'
+stop_address: '3701'            reset_address: '302'
 send_mission_from_address: '2990'   # 任務起點
 send_mission_to_address: '2991'     # 任務終點  
 send_mission_magic_address: '2993'  # 任務魔法數字
 cancel_mission_address: '7001'      # 取消任務
+traffic_stop_address: '7002'        # 交通停止
 ```
 
 ## 開發指令
@@ -65,431 +92,250 @@ cd /app/agv_cmd_service_ws
 # 啟動AGV指令服務
 ros2 run agv_cmd_service agv_cmd_service_node
 
-# 測試指令服務連線
-ros2 run agv_cmd_service test_command_service
+# 檢查服務狀態
+ros2 service list | grep -E "(ManualCommand|GeneralCommand)"
 ```
 
 ### 構建與測試
 ```bash
 build_ws agv_cmd_service_ws
-ros2 test agv_cmd_service  # 指令服務測試
+test_ws agv_cmd_service_ws
 ```
 
-## 指令系統開發
+## 核心類別實現
 
-### 指令基礎架構
+### 1. AgvCommandService (主要服務節點)
+位置: `agv_cmd_service/agv_cmd_service_node.py`
+
 ```python
-# commands/base_command.py
-from abc import ABC, abstractmethod
-
-class BaseCommand(ABC):
-    def __init__(self, command_id: str, parameters: dict):
-        self.command_id = command_id
-        self.parameters = parameters
-        self.status = "pending"
-        self.result = None
-        self.error_message = None
-        
-    @abstractmethod
-    async def validate(self) -> tuple[bool, str]:
-        """驗證指令參數"""
-        pass
-        
-    @abstractmethod
-    async def execute(self) -> tuple[bool, dict]:
-        """執行指令"""
-        pass
-        
-    @abstractmethod
-    async def rollback(self):
-        """指令回滾"""
-        pass
-```
-
-### 運動控制指令
-```python
-# commands/motion_commands.py
-class MoveToPositionCommand(BaseCommand):
-    def __init__(self, target_x: float, target_y: float, target_theta: float = 0.0):
-        super().__init__("move_to_position", {
-            'target_x': target_x,
-            'target_y': target_y, 
-            'target_theta': target_theta
-        })
-        
-    async def validate(self) -> tuple[bool, str]:
-        """驗證移動指令參數"""
-        x, y = self.parameters['target_x'], self.parameters['target_y']
-        
-        # 檢查座標範圍
-        if not self.is_valid_coordinate(x, y):
-            return False, f"目標座標超出有效範圍: ({x}, {y})"
-            
-        # 檢查障礙物
-        if await self.check_obstacles(x, y):
-            return False, f"目標位置存在障礙物: ({x}, {y})"
-            
-        return True, "指令驗證通過"
-        
-    async def execute(self) -> tuple[bool, dict]:
-        """執行移動指令"""
-        try:
-            # 發送移動指令給AGV狀態機
-            move_request = MoveRequest(
-                target_x=self.parameters['target_x'],
-                target_y=self.parameters['target_y'],
-                target_theta=self.parameters['target_theta']
-            )
-            
-            result = await self.agv_client.move_to_position(move_request)
-            
-            if result.success:
-                self.status = "completed"
-                return True, {"final_position": result.final_position}
-            else:
-                self.status = "failed"
-                self.error_message = result.error_message
-                return False, {"error": result.error_message}
-                
-        except Exception as e:
-            self.status = "error"
-            self.error_message = str(e)
-            return False, {"error": str(e)}
-```
-
-### 指令執行器
-```python
-# executors/command_executor.py
-class CommandExecutor:
+class AgvCommandService(Node):
     def __init__(self):
-        self.active_commands = {}
-        self.command_history = []
-        self.agv_client = self.create_agv_client()
+        super().__init__('agv_cmd_service_node')
         
-    async def execute_command(self, command: BaseCommand) -> dict:
-        """執行單一指令"""
-        self.active_commands[command.command_id] = command
+        # 初始化PLC通訊客戶端
+        self.plc_comm_client = PlcClient(Node('node'), self.get_namespace())
         
-        try:
-            # 驗證指令
-            is_valid, validation_message = await command.validate()
-            if not is_valid:
-                return {
-                    'success': False,
-                    'error': f"指令驗證失敗: {validation_message}"
-                }
-                
-            # 執行指令
-            command.status = "executing"
-            success, result = await command.execute()
-            
-            # 記錄結果
-            command.result = result
-            self.command_history.append(command)
-            
-            return {
-                'success': success,
-                'command_id': command.command_id,
-                'result': result
-            }
-            
-        except Exception as e:
-            command.status = "error"
-            command.error_message = str(e)
-            return {
-                'success': False,
-                'error': str(e)
-            }
-        finally:
-            if command.command_id in self.active_commands:
-                del self.active_commands[command.command_id]
-```
-
-### 指令序列執行
-```python
-# executors/sequence_executor.py
-class SequenceExecutor:
-    def __init__(self, command_executor: CommandExecutor):
-        self.command_executor = command_executor
-        self.sequence_history = []
-        
-    async def execute_sequence(self, commands: List[BaseCommand]) -> dict:
-        """執行指令序列"""
-        sequence_id = f"seq_{int(time.time())}"
-        results = []
-        
-        for i, command in enumerate(commands):
-            try:
-                result = await self.command_executor.execute_command(command)
-                results.append(result)
-                
-                # 如果指令失敗，停止執行序列
-                if not result['success']:
-                    return {
-                        'sequence_id': sequence_id,
-                        'success': False,
-                        'completed_commands': i,
-                        'failed_at': i,
-                        'results': results,
-                        'error': f"序列在第{i+1}個指令失敗"
-                    }
-                    
-            except Exception as e:
-                return {
-                    'sequence_id': sequence_id,
-                    'success': False,
-                    'completed_commands': i,
-                    'error': str(e)
-                }
-                
-        return {
-            'sequence_id': sequence_id,
-            'success': True,
-            'completed_commands': len(commands),
-            'results': results
+        # 創建ROS 2服務
+        self.create_service(ManualCommand, 'ManualCommand', self.manual_command_callback)
+        self.create_service(GeneralCommand, 'GeneralCommand', self.general_command_callback)
+    
+    def manual_command_callback(self, request, response):
+        """處理手動控制指令"""
+        # 根據指令類型對應到PLC地址並執行
+        command_map = {
+            "forward": self.forward_address,
+            "backward": self.backward_address,
+            "rotate_left": self.rotate_left_address,
+            "rotate_right": self.rotate_right_address,
+            "shift_left": self.shift_left_address,
+            "shift_right": self.shift_right_address,
+            "break": self.break_address,
+            "enable": self.enable_address
         }
-```
-
-## 服務介面
-
-### ROS 2服務定義
-```python
-# agv_cmd_service/command_service.py
-class AGVCommandService:
-    def __init__(self):
-        self.command_executor = CommandExecutor()
-        self.sequence_executor = SequenceExecutor(self.command_executor)
-        self.create_services()
         
-    def create_services(self):
-        """創建ROS 2服務"""
-        # 單一指令服務
-        self.single_command_service = self.create_service(
-            ExecuteCommand, '/agv_cmd/execute', self.handle_execute_command
-        )
+        address = command_map.get(request.command)
+        if address:
+            # 透過PLC客戶端發送指令
+            if request.onoff:
+                self.plc_comm_client.force_on("MR", address)
+            else:
+                self.plc_comm_client.force_off("MR", address)
+            response.success = True
         
-        # 指令序列服務
-        self.sequence_service = self.create_service(
-            ExecuteSequence, '/agv_cmd/execute_sequence', self.handle_execute_sequence
-        )
+        return response
+    
+    def general_command_callback(self, request, response):
+        """處理一般系統指令"""
+        # 解析參數 (格式: "on,from,to,magic")
+        para = request.parameter.split(',')
         
-        # 狀態查詢服務
-        self.status_service = self.create_service(
-            GetCommandStatus, '/agv_cmd/get_status', self.handle_get_status
-        )
-        
-    async def handle_execute_command(self, request, response):
-        """處理單一指令執行請求"""
-        try:
-            command = self.create_command_from_request(request)
-            result = await self.command_executor.execute_command(command)
-            
-            response.success = result['success']
-            response.command_id = result.get('command_id', '')
-            response.result = json.dumps(result.get('result', {}))
-            if not result['success']:
-                response.error_message = result.get('error', '')
+        if request.command == "auto":
+            # 自動模式控制兩個PLC地址
+            if para[0] == "on":
+                self.plc_comm_client.force_on("MR", self.auto_address1)
+                self.plc_comm_client.force_on("MR", self.auto_address2)
+            else:
+                self.plc_comm_client.force_off("MR", self.auto_address1)
+                self.plc_comm_client.force_off("MR", self.auto_address2)
                 
-        except Exception as e:
-            response.success = False
-            response.error_message = str(e)
-            
+        elif request.command == "send_mission":
+            # 任務發送需要寫入三個DM地址
+            self.plc_comm_client.write_data("DM", self.send_mission_from_address, para[1])
+            self.plc_comm_client.write_data("DM", self.send_mission_to_address, para[2])
+            self.plc_comm_client.write_data("DM", self.send_mission_magic_address, para[3])
+        
+        response.success = True
         return response
 ```
 
-## 指令配置
+### 2. AgvCommandClient (指令客戶端)
+位置: `agv_cmd_service/agv_cmd_client_node.py`
 
-### 指令參數配置
-```yaml
-# /app/config/agv/cmd_service_config.yaml
-agv_cmd_service:
-  # 指令執行設定
-  execution:
-    timeout: 300.0          # 指令超時時間(秒)
-    max_concurrent: 5       # 最大並發指令數
-    retry_attempts: 3       # 失敗重試次數
+```python
+class AgvCommandClient:
+    def __init__(self, node: Node, namespace: str = ""):
+        self.node = node
+        self.namespace = '/' + namespace.lstrip('/')
+        
+        # 創建服務客戶端
+        self.manual_command_client = self.node.create_client(
+            ManualCommand, f"{self.namespace}/ManualCommand"
+        )
+        self.general_command_client = self.node.create_client(
+            GeneralCommand, f"{self.namespace}/GeneralCommand"
+        )
     
-  # 安全限制
-  safety_limits:
-    max_linear_velocity: 2.0   # 最大線性速度(m/s)
-    max_angular_velocity: 1.57 # 最大角速度(rad/s) 
-    min_obstacle_distance: 0.5 # 最小障礙物距離(m)
+    def send_manual_command(self, command: str, onoff: bool) -> bool:
+        """發送手動命令"""
+        request = ManualCommand.Request()
+        request.command = command
+        request.onoff = onoff
+        
+        future = self.manual_command_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=2.0)
+        
+        if future.done() and future.result():
+            return future.result().success
+        return False
     
-  # 座標範圍限制
-  coordinate_limits:
-    x_min: -50.0
-    x_max: 50.0
-    y_min: -25.0  
-    y_max: 25.0
-    
-  # 支援的指令類型
-  supported_commands:
-    - name: "move_to_position"
-      description: "移動到指定位置"
-      parameters: ["target_x", "target_y", "target_theta"]
-      
-    - name: "rotate_to_angle"
-      description: "旋轉到指定角度"
-      parameters: ["target_angle"]
-      
-    - name: "stop_immediately"
-      description: "立即停止"
-      parameters: []
-      
-    - name: "get_current_status"
-      description: "獲取當前狀態"
-      parameters: []
+    def send_general_command(self, command: str, parameter: str) -> bool:
+        """發送一般命令"""
+        request = GeneralCommand.Request()
+        request.command = command
+        request.parameter = parameter
+        
+        future = self.general_command_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=0.5)
+        
+        if future.done() and future.result():
+            return future.result().success
+        return False
 ```
 
-### 指令模板
-```yaml
-# 常用指令模板
-command_templates:
-  # 移動到充電站
-  move_to_charging:
-    command_type: "move_to_position"
-    parameters:
-      target_x: 0.0
-      target_y: 0.0
-      target_theta: 0.0
-    description: "移動到充電站"
+### 3. AGVCommandProxy (指令代理類)
+位置: `agv_cmd_service/agv_cmd_porxy.py`
+
+```python
+class AGVCommandProxy:
+    def __init__(self, node: Node):
+        self.node = node
+        
+        # 載入PLC地址配置
+        config_path = "/app/agv_cmd_service_ws/src/agv_cmd_service/config/agv_cmd_service.yaml"
+        self.address_map = self.load_config(config_path)
+        
+        # 初始化PLC客戶端
+        self.plc_client = PlcClient(node)
     
-  # 原地旋轉180度
-  turn_around:
-    command_type: "rotate_to_angle"
-    parameters:
-      target_angle: 3.14159
-    description: "原地掉頭"
+    def send_movement_command(self, direction: str, onoff: bool) -> bool:
+        """發送運動指令"""
+        addr = str(self.address_map[direction])
+        
+        def plc_cb(success: bool):
+            if success:
+                self.node.get_logger().info(f"✅ 指令傳送成功: {direction}")
+            else:
+                self.node.get_logger().error(f"❌ 指令傳送失敗: {direction}")
+        
+        if onoff:
+            self.plc_client.async_force_on("MR", addr, plc_cb)
+        else:
+            self.plc_client.async_force_off("MR", addr, plc_cb)
+        return True
+    
+    def send_mission(self, mfrom: int, mto: int, magic: int) -> bool:
+        """發送任務指令"""
+        # 需要同時寫入三個DM地址
+        self.plc_client.async_write_data(
+            "DM", int(self.address_map['send_mission_from']), str(mfrom)
+        )
+        self.plc_client.async_write_data(
+            "DM", int(self.address_map['send_mission_to']), str(mto)
+        )
+        self.plc_client.async_write_data(
+            "DM", int(self.address_map['send_mission_magic']), str(magic)
+        )
+        return True
+```
+
+## 配置文件
+位置: `config/agv_cmd_service.yaml`
+
+```json
+{
+    "forward": "3708",
+    "backward": "3709", 
+    "rotate_left": "3712",
+    "rotate_right": "3713",
+    "shift_left": "3801",
+    "shift_right": "3802",
+    "break": "3714",
+    "enable": "3715",
+    "auto1": "4001",
+    "auto2": "0",
+    "stop": "3701",
+    "reset": "302",
+    "send_mission_from": "2990",
+    "send_mission_to": "2991",
+    "send_mission_magic": "2993",
+    "cancel_mission": "7001",
+    "traffic_stop": "7002"
+}
 ```
 
 ## 測試與調試
 
-### 指令測試
+### 服務測試
 ```bash
-# 測試移動指令
-ros2 service call /agv_cmd/execute agv_cmd_msgs/srv/ExecuteCommand "{
-  command_type: 'move_to_position',
-  parameters: '{\"target_x\": 5.0, \"target_y\": 3.0, \"target_theta\": 1.57}'
-}"
+# 測試手動控制指令
+ros2 service call /ManualCommand agv_cmd_interfaces/srv/ManualCommand "{command: 'forward', onoff: true}"
 
-# 測試狀態查詢
-ros2 service call /agv_cmd/get_status agv_cmd_msgs/srv/GetCommandStatus "{command_id: ''}"
+# 測試停止指令
+ros2 service call /ManualCommand agv_cmd_interfaces/srv/ManualCommand "{command: 'break', onoff: true}"
 
-# 測試指令序列
-ros2 service call /agv_cmd/execute_sequence agv_cmd_msgs/srv/ExecuteSequence "{
-  commands: [
-    {command_type: 'move_to_position', parameters: '{\"target_x\": 2.0, \"target_y\": 0.0}'},
-    {command_type: 'rotate_to_angle', parameters: '{\"target_angle\": 1.57}'}
-  ]
-}"
+# 測試自動模式開啟
+ros2 service call /GeneralCommand agv_cmd_interfaces/srv/GeneralCommand "{command: 'auto', parameter: 'on'}"
+
+# 測試任務發送
+ros2 service call /GeneralCommand agv_cmd_interfaces/srv/GeneralCommand "{command: 'send_mission', parameter: 'on,1,2,123'}"
 ```
 
 ### 調試工具
 ```bash
-# 查看指令歷史
-ros2 topic echo /agv_cmd/command_history
+# 檢查服務是否運行
+ros2 service list | grep -E "(ManualCommand|GeneralCommand)"
 
-# 監控指令執行狀態
-ros2 topic echo /agv_cmd/execution_status
+# 查看服務類型定義
+ros2 interface show agv_cmd_interfaces/srv/ManualCommand
+ros2 interface show agv_cmd_interfaces/srv/GeneralCommand
 
-# 指令服務診斷
-ros2 run agv_cmd_service command_diagnostics
-```
-
-## 安全機制
-
-### 指令驗證
-```python
-# validators/command_validator.py
-class CommandValidator:
-    def __init__(self, config):
-        self.safety_limits = config['safety_limits']
-        self.coordinate_limits = config['coordinate_limits']
-        
-    def validate_move_command(self, parameters: dict) -> tuple[bool, str]:
-        """驗證移動指令安全性"""
-        x, y = parameters.get('target_x'), parameters.get('target_y')
-        
-        # 座標範圍檢查
-        if not self.is_coordinate_in_bounds(x, y):
-            return False, f"座標超出允許範圍: ({x}, {y})"
-            
-        # 障礙物檢查
-        if self.has_obstacles_at_position(x, y):
-            return False, f"目標位置存在障礙物: ({x}, {y})"
-            
-        return True, "指令驗證通過"
-```
-
-### 緊急停止
-```python
-# 緊急停止機制
-class EmergencyStopHandler:
-    def __init__(self):
-        self.emergency_active = False
-        
-    def trigger_emergency_stop(self):
-        """觸發緊急停止，取消所有執行中的指令"""
-        self.emergency_active = True
-        
-        # 停止所有執行中的指令
-        for command_id, command in self.active_commands.items():
-            command.status = "cancelled"
-            
-        # 發送緊急停止指令給AGV
-        self.send_emergency_stop_to_agv()
+# 監控節點狀態
+ros2 node info /agv_cmd_service_node
 ```
 
 ## 故障排除
 
 ### 常見問題
-1. **指令驗證失敗**: 檢查參數範圍與安全限制
-2. **指令執行超時**: 調整超時時間或檢查AGV狀態
-3. **AGV無回應**: 確認AGV狀態機服務運行正常
-4. **座標超出範圍**: 檢查座標限制配置
+1. **服務無回應**: 確認 plc_proxy_ws 正常運行
+2. **PLC通訊失敗**: 檢查PLC連接狀態和地址配置
+3. **指令執行失敗**: 查看節點日誌確認錯誤原因
+4. **參數格式錯誤**: 確認GeneralCommand的parameter格式正確
 
-### 診斷工具
+### 診斷步驟
 ```bash
-# 檢查指令服務狀態
-ros2 service call /agv_cmd/get_service_status
+# 1. 檢查節點運行狀態
+ros2 node list | grep agv_cmd_service
 
-# 查看活躍指令
-ros2 topic echo /agv_cmd/active_commands
+# 2. 檢查PLC連接
+ros2 topic echo /plc_proxy/status
 
-# 測試AGV連線
-ros2 run agv_cmd_service test_agv_connection
-```
-
-## 監控與統計
-
-### 指令統計
-```python
-# 指令執行統計
-class CommandStatistics:
-    def __init__(self):
-        self.total_commands = 0
-        self.successful_commands = 0
-        self.failed_commands = 0
-        self.average_execution_time = 0.0
-        
-    def update_statistics(self, command: BaseCommand, execution_time: float):
-        """更新指令執行統計"""
-        self.total_commands += 1
-        
-        if command.status == "completed":
-            self.successful_commands += 1
-        else:
-            self.failed_commands += 1
-            
-        # 更新平均執行時間
-        self.average_execution_time = (
-            (self.average_execution_time * (self.total_commands - 1) + execution_time) 
-            / self.total_commands
-        )
+# 3. 查看詳細日誌
+ros2 run agv_cmd_service agv_cmd_service_node --ros-args --log-level DEBUG
 ```
 
 ## 重要提醒
-- 指令服務直接控制AGV運動，安全檢查至關重要
-- 所有指令必須經過嚴格驗證才能執行
-- 緊急停止功能不可禁用或繞過
-- 僅限AGV車載系統使用，確保在正確容器環境中運行
+- 本服務直接控制AGV運動，使用時需注意安全
+- break和enable指令會直接觸發force_on，無論onoff參數值
+- send_mission指令的parameter格式為 "on,from,to,magic"
+- 所有PLC通訊都透過plc_proxy_ws進行
+- 僅適用於AGV車載系統，需在AGV容器內運行

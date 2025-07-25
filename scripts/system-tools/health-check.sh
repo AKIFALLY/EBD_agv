@@ -38,6 +38,38 @@ PASSED_CHECKS=0
 WARNING_CHECKS=0
 FAILED_CHECKS=0
 
+# 環境檢測
+DETECTED_ENV=""
+
+# 檢測當前環境類型
+detect_environment() {
+    # 1. 檢查是否有 AGV 容器運行或存在
+    if docker ps -a -f name=rosagv --format "{{.Names}}" 2>/dev/null | grep -q "^rosagv$"; then
+        DETECTED_ENV="AGVC"
+        return
+    fi
+    
+    # 2. 檢查是否有 AGVC 容器運行或存在
+    if docker ps -a -f name=agvc_server --format "{{.Names}}" 2>/dev/null | grep -q "^agvc_server$"; then
+        DETECTED_ENV="AGVC"
+        return
+    fi
+    
+    # 3. 檢查 Docker Compose 檔案來判斷環境
+    if [ -f "$PROJECT_ROOT/docker-compose.agvc.yml" ] && [ -f "$PROJECT_ROOT/docker-compose.yml" ]; then
+        # 如果兩個檔案都存在，則為 AGVC 管理主機
+        DETECTED_ENV="AGVC"
+        return
+    elif [ -f "$PROJECT_ROOT/docker-compose.yml" ]; then
+        # 只有 AGV compose 檔案，可能是 AGV 車載系統
+        DETECTED_ENV="AGV"
+        return
+    fi
+    
+    # 4. 預設為 AGVC (管理主機)  
+    DETECTED_ENV="AGVC"
+}
+
 # ============================================================================
 # 輔助函數
 # ============================================================================
@@ -54,7 +86,11 @@ show_help() {
     echo -e "${YELLOW}用法:${NC}"
     echo "  $(basename $0) [選項]"
     echo ""
-    echo -e "${YELLOW}選項:${NC}"
+    echo -e "${YELLOW}環境選項:${NC}"
+    echo -e "  ${GREEN}--agv${NC}          - 檢查 AGV 車載環境"
+    echo -e "  ${GREEN}--agvc${NC}         - 檢查 AGVC 管理環境"
+    echo ""
+    echo -e "${YELLOW}檢查選項:${NC}"
     echo -e "  ${GREEN}--quick${NC}        - 快速檢查 (僅檢查關鍵項目)"
     echo -e "  ${GREEN}--full${NC}         - 完整檢查 (預設)"
     echo -e "  ${GREEN}--report${NC}       - 生成詳細報告檔案"
@@ -62,10 +98,10 @@ show_help() {
     echo -e "  ${GREEN}--cron${NC}         - 定期檢查模式 (簡化輸出)"
     echo ""
     echo -e "${YELLOW}範例:${NC}"
-    echo "  $(basename $0)                    # 執行完整檢查"
-    echo "  $(basename $0) --quick            # 快速檢查關鍵服務"
-    echo "  $(basename $0) --report           # 生成報告到檔案"
-    echo "  $(basename $0) --fix              # 檢查並嘗試修復問題"
+    echo "  $(basename $0) --agvc             # 檢查 AGVC 管理環境"
+    echo "  $(basename $0) --agv --quick      # 快速檢查 AGV 車載環境"
+    echo "  $(basename $0) --agvc --report    # 生成 AGVC 環境報告"
+    echo "  $(basename $0) --agv --fix        # 檢查並修復 AGV 環境問題"
 }
 
 # 檢查結果記錄函數
@@ -226,45 +262,61 @@ check_configuration_files() {
 # ============================================================================
 
 check_container_status() {
-    echo -e "\n${CYAN}3️⃣ 容器狀態檢查${NC}"
+    echo -e "\n${CYAN}3️⃣ 容器狀態檢查 (${DETECTED_ENV} 環境)${NC}"
     echo -e "${CYAN}===============${NC}"
     
-    # AGV 容器
-    if docker ps -q -f name=rosagv >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=rosagv)" ]; then
-        local agv_status=$(docker inspect rosagv --format '{{.State.Status}}' 2>/dev/null)
-        if [ "$agv_status" = "running" ]; then
-            record_check "PASS" "AGV 容器運行正常"
-            
-            # 檢查環境變數
-            local container_type=$(docker exec rosagv printenv CONTAINER_TYPE 2>/dev/null)
-            if [ "$container_type" = "agv" ]; then
-                record_check "PASS" "AGV 容器環境配置正確"
+    if [ "$DETECTED_ENV" = "AGV" ]; then
+        # AGV 車載環境：只檢查 AGV 容器
+        if docker ps -q -f name=rosagv >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=rosagv)" ]; then
+            local agv_status=$(docker inspect rosagv --format '{{.State.Status}}' 2>/dev/null)
+            if [ "$agv_status" = "running" ]; then
+                record_check "PASS" "AGV 容器運行正常"
+                
+                # 檢查環境變數
+                local container_type=$(docker exec rosagv printenv CONTAINER_TYPE 2>/dev/null)
+                if [ "$container_type" = "agv" ]; then
+                    record_check "PASS" "AGV 容器環境配置正確"
+                else
+                    record_check "WARN" "AGV 容器環境配置異常"
+                fi
             else
-                record_check "WARN" "AGV 容器環境配置異常"
+                record_check "WARN" "AGV 容器狀態異常: $agv_status"
             fi
         else
-            record_check "WARN" "AGV 容器狀態異常: $agv_status"
+            record_check "FAIL" "AGV 容器未運行" "$DOCKER_TOOLS_DIR/agv-container.sh start"
         fi
-    else
-        record_check "WARN" "AGV 容器未運行" "$DOCKER_TOOLS_DIR/agv-container.sh start"
-    fi
-    
-    # AGVC 容器群組
-    local agvc_containers=("agvc_server" "postgres" "nginx")
-    local agvc_running=0
-    
-    for container in "${agvc_containers[@]}"; do
-        if docker ps -q -f name=$container >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=$container)" ]; then
-            ((agvc_running++))
+        
+    elif [ "$DETECTED_ENV" = "AGVC" ]; then
+        # AGVC 管理環境：只檢查 AGVC 容器群組
+        local agvc_containers=("agvc_server" "postgres" "nginx")
+        local agvc_running=0
+        
+        for container in "${agvc_containers[@]}"; do
+            if docker ps -q -f name=$container >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=$container)" ]; then
+                ((agvc_running++))
+            fi
+        done
+        
+        if [ $agvc_running -eq ${#agvc_containers[@]} ]; then
+            record_check "PASS" "AGVC 所有容器運行正常 ($agvc_running/${#agvc_containers[@]})"
+            
+            # 檢查 AGVC 服務容器環境變數
+            local container_type=$(docker exec agvc_server printenv CONTAINER_TYPE 2>/dev/null)
+            if [ "$container_type" = "agvc" ]; then
+                record_check "PASS" "AGVC 容器環境配置正確"
+            else
+                record_check "WARN" "AGVC 容器環境配置異常"
+            fi
+        elif [ $agvc_running -gt 0 ]; then
+            record_check "WARN" "AGVC 部分容器運行 ($agvc_running/${#agvc_containers[@]})" "$DOCKER_TOOLS_DIR/agvc-container.sh restart"
+        else
+            record_check "FAIL" "AGVC 容器未運行" "$DOCKER_TOOLS_DIR/agvc-container.sh start"
         fi
-    done
-    
-    if [ $agvc_running -eq ${#agvc_containers[@]} ]; then
-        record_check "PASS" "AGVC 所有容器運行正常 ($agvc_running/${#agvc_containers[@]})"
-    elif [ $agvc_running -gt 0 ]; then
-        record_check "WARN" "AGVC 部分容器運行 ($agvc_running/${#agvc_containers[@]})" "$DOCKER_TOOLS_DIR/agvc-container.sh restart"
-    else
-        record_check "WARN" "AGVC 容器未運行" "$DOCKER_TOOLS_DIR/agvc-container.sh start"
+        
+        # 可選：檢查是否意外有 AGV 容器 (這通常不應該在 AGVC 主機上出現)
+        if docker ps -q -f name=rosagv >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=rosagv)" ]; then
+            record_check "WARN" "檢測到 AGV 容器在 AGVC 主機上運行 (不建議)"
+        fi
     fi
 }
 
@@ -273,44 +325,61 @@ check_container_status() {
 # ============================================================================
 
 check_network_connectivity() {
-    echo -e "\n${CYAN}4️⃣ 網路連接檢查${NC}"
+    echo -e "\n${CYAN}4️⃣ 網路連接檢查 (${DETECTED_ENV} 環境)${NC}"
     echo -e "${CYAN}===============${NC}"
     
     # 檢查 Docker 網路
-    if docker network ls | grep -q "rosagv.*bridge" >/dev/null 2>&1; then
+    if docker network ls | grep -q "bridge\|rosagv" >/dev/null 2>&1; then
         record_check "PASS" "Docker 網路已建立"
     else
         record_check "WARN" "Docker 網路未完全建立"
     fi
     
-    # 關鍵端口檢查
-    local ports=(
-        "80:Nginx Web 服務"
-        "7447:Zenoh Router"
-        "8000:主 API 服務"
-        "5432:PostgreSQL"
-    )
-    
-    for port_info in "${ports[@]}"; do
-        local port="${port_info%%:*}"
-        local service="${port_info#*:}"
+    if [ "$DETECTED_ENV" = "AGV" ]; then
+        # AGV 車載環境：主要檢查 Zenoh 通訊端口
+        local agv_ports=(
+            "7447:Zenoh Router"
+        )
         
-        if [ "$port" = "7447" ] || [ "$port" = "8000" ] || [ "$port" = "5432" ]; then
-            # 這些服務在 bridge 網路上
-            if timeout 2 bash -c "echo > /dev/tcp/192.168.100.100/$port" 2>/dev/null; then
-                record_check "PASS" "Port $port ($service) 可連接"
+        for port_info in "${agv_ports[@]}"; do
+            local port="${port_info%%:*}"
+            local service="${port_info#*:}"
+            
+            # AGV 環境中，檢查本地 Zenoh 或 AGVC 主機的 Zenoh
+            if timeout 2 bash -c "echo > /dev/tcp/localhost/$port" 2>/dev/null; then
+                record_check "PASS" "Port $port ($service) 本地可連接"
+            elif timeout 2 bash -c "echo > /dev/tcp/192.168.100.100/$port" 2>/dev/null; then
+                record_check "PASS" "Port $port ($service) AGVC主機可連接"
             else
                 record_check "FAIL" "Port $port ($service) 無法連接"
             fi
-        else
-            # Nginx 在 host 上
+        done
+        
+    elif [ "$DETECTED_ENV" = "AGVC" ]; then
+        # AGVC 管理環境：檢查完整的服務端口
+        local agvc_ports=(
+            "80:Nginx Web 服務"
+            "7447:Zenoh Router"
+            "8000:主 API 服務"
+            "5432:PostgreSQL"
+        )
+        
+        for port_info in "${agvc_ports[@]}"; do
+            local port="${port_info%%:*}"
+            local service="${port_info#*:}"
+            
+            # 在宿主機上，所有服務都通過 localhost 訪問（端口映射）
             if timeout 2 bash -c "echo > /dev/tcp/localhost/$port" 2>/dev/null; then
                 record_check "PASS" "Port $port ($service) 可連接"
             else
-                record_check "WARN" "Port $port ($service) 無法連接"
+                if [ "$port" = "80" ]; then
+                    record_check "WARN" "Port $port ($service) 無法連接"
+                else
+                    record_check "FAIL" "Port $port ($service) 無法連接"
+                fi
             fi
-        fi
-    done
+        done
+    fi
 }
 
 # ============================================================================
@@ -318,34 +387,69 @@ check_network_connectivity() {
 # ============================================================================
 
 check_service_health() {
-    echo -e "\n${CYAN}5️⃣ 服務健康檢查${NC}"
+    echo -e "\n${CYAN}5️⃣ 服務健康檢查 (${DETECTED_ENV} 環境)${NC}"
     echo -e "${CYAN}===============${NC}"
     
-    # PostgreSQL 健康檢查
-    if docker ps -q -f name=postgres >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=postgres)" ]; then
-        if docker exec postgres pg_isready -U rosagv >/dev/null 2>&1; then
-            record_check "PASS" "PostgreSQL 服務健康"
-        else
-            record_check "FAIL" "PostgreSQL 服務異常"
-        fi
-    else
-        record_check "WARN" "PostgreSQL 容器未運行"
-    fi
-    
-    # Zenoh Router 檢查
-    if docker ps -q -f name=agvc_server >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=agvc_server)" ]; then
-        if timeout 2 bash -c "echo > /dev/tcp/192.168.100.100/7447" 2>/dev/null; then
-            record_check "PASS" "Zenoh Router 服務可達"
+    if [ "$DETECTED_ENV" = "AGV" ]; then
+        # AGV 車載環境：主要檢查 Zenoh 連接和基本 ROS 服務
+        
+        # Zenoh Router 連接檢查 (本地或遠端)
+        if timeout 2 bash -c "echo > /dev/tcp/localhost/7447" 2>/dev/null; then
+            record_check "PASS" "Zenoh Router 本地服務可達"
+        elif timeout 2 bash -c "echo > /dev/tcp/192.168.100.100/7447" 2>/dev/null; then
+            record_check "PASS" "Zenoh Router AGVC服務可達"
         else
             record_check "FAIL" "Zenoh Router 服務不可達"
         fi
-    fi
-    
-    # API 健康檢查
-    if timeout 3 curl -s -o /dev/null -w "%{http_code}" http://192.168.100.100:8000/health 2>/dev/null | grep -q "200"; then
-        record_check "PASS" "API 服務健康"
-    else
-        record_check "WARN" "API 服務無響應"
+        
+        # 檢查 AGV 容器內的 ROS 環境 (如果容器在運行)
+        if docker ps -q -f name=rosagv >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=rosagv)" ]; then
+            local ros_env=$(docker exec rosagv bash -c 'source /app/setup.bash >/dev/null 2>&1 && echo $ROS_DISTRO' 2>/dev/null)
+            if [ "$ros_env" = "jazzy" ]; then
+                record_check "PASS" "AGV ROS 環境健康"
+            else
+                record_check "WARN" "AGV ROS 環境異常"
+            fi
+        fi
+        
+    elif [ "$DETECTED_ENV" = "AGVC" ]; then
+        # AGVC 管理環境：檢查完整的服務健康
+        
+        # PostgreSQL 健康檢查
+        if docker ps -q -f name=postgres_container >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=postgres_container)" ]; then
+            if docker exec postgres_container pg_isready -U postgres >/dev/null 2>&1; then
+                record_check "PASS" "PostgreSQL 服務健康"
+            else
+                record_check "FAIL" "PostgreSQL 服務異常"
+            fi
+        else
+            record_check "FAIL" "PostgreSQL 容器未運行"
+        fi
+        
+        # Zenoh Router 檢查
+        if docker ps -q -f name=agvc_server >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=agvc_server)" ]; then
+            if timeout 2 bash -c "echo > /dev/tcp/localhost/7447" 2>/dev/null; then
+                record_check "PASS" "Zenoh Router 服務可達"
+            else
+                record_check "FAIL" "Zenoh Router 服務不可達"
+            fi
+        else
+            record_check "FAIL" "AGVC 服務容器未運行"
+        fi
+        
+        # API 健康檢查
+        if timeout 3 curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null | grep -q "200"; then
+            record_check "PASS" "API 服務健康"
+        else
+            record_check "WARN" "API 服務無響應"
+        fi
+        
+        # Nginx 健康檢查
+        if timeout 3 curl -s -o /dev/null -w "%{http_code}" http://localhost:80 2>/dev/null | grep -q "200\|301\|302"; then
+            record_check "PASS" "Nginx Web 服務健康"
+        else
+            record_check "WARN" "Nginx Web 服務無響應"
+        fi
     fi
 }
 
@@ -564,10 +668,19 @@ main() {
     local FIX_MODE="false"
     local CRON_MODE="false"
     local QUICK_MODE="false"
+    local ENV_MODE=""  # 用戶指定的環境模式
     
     # 解析參數
     while [[ $# -gt 0 ]]; do
         case $1 in
+            --agv)
+                ENV_MODE="AGV"
+                shift
+                ;;
+            --agvc)
+                ENV_MODE="AGVC"
+                shift
+                ;;
             --quick)
                 QUICK_MODE="true"
                 shift
@@ -595,19 +708,34 @@ main() {
             *)
                 print_error "未知選項: $1"
                 show_help
-                exit 1
+                return 1 2>/dev/null || exit 1
                 ;;
         esac
     done
     
+    # 設定環境類型
+    if [ -n "$ENV_MODE" ]; then
+        DETECTED_ENV="$ENV_MODE"
+    else
+        # 如果沒有指定，則自動檢測
+        detect_environment
+    fi
+    
     # Cron 模式特殊處理
     if [ "$CRON_MODE" = "true" ]; then
         cron_check
-        exit $?
+        local exit_code=$?
+        return $exit_code 2>/dev/null || exit $exit_code
     fi
     
     # 顯示標題
     show_header
+    if [ -n "$ENV_MODE" ]; then
+        echo -e "${BLUE}指定檢查環境: ${DETECTED_ENV}${NC}"
+    else
+        echo -e "${BLUE}自動檢測環境: ${DETECTED_ENV}${NC}"
+    fi
+    echo ""
     
     # 執行檢查
     check_system_environment
@@ -646,13 +774,16 @@ main() {
     fi
     
     # 返回狀態碼
+    local exit_code=0
     if [ $FAILED_CHECKS -gt 0 ]; then
-        exit 2
+        exit_code=2
     elif [ $WARNING_CHECKS -gt 0 ]; then
-        exit 1
+        exit_code=1
     else
-        exit 0
+        exit_code=0
     fi
+    
+    return $exit_code 2>/dev/null || exit $exit_code
 }
 
 # 如果腳本被直接執行（而非被 source）

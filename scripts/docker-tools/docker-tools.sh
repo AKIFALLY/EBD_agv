@@ -91,20 +91,60 @@ show_docker_tools_help() {
 }
 
 # ============================================================================
+# 錯誤處理函數
+# ============================================================================
+
+# 容器操作錯誤處理函數
+handle_container_error() {
+    local operation="$1"
+    local container="$2"
+    local exit_code="$3"
+    
+    case $exit_code in
+        0)
+            echo -e "${GREEN}✅ $container $operation 成功${NC}"
+            return 0
+            ;;
+        1)
+            echo -e "${YELLOW}⚠️  $container $operation 有警告${NC}"
+            echo -e "${CYAN}💡 建議檢查容器狀態或日誌${NC}"
+            return 1
+            ;;
+        *)
+            echo -e "${RED}❌ $container $operation 失敗 (退出碼: $exit_code)${NC}"
+            echo -e "${CYAN}💡 建議執行: docker compose ps 檢查容器狀態${NC}"
+            return $exit_code
+            ;;
+    esac
+}
+
+# ============================================================================
 # 便捷別名和函數
 # ============================================================================
 
 # AGV 相關別名
 agv_start() {
+    local exit_code
     "$DOCKER_TOOLS_DIR/agv-container.sh" start
+    exit_code=$?
+    handle_container_error "啟動" "AGV容器" $exit_code
+    return $exit_code
 }
 
 agv_stop() {
+    local exit_code
     "$DOCKER_TOOLS_DIR/agv-container.sh" stop
+    exit_code=$?
+    handle_container_error "停止" "AGV容器" $exit_code
+    return $exit_code
 }
 
 agv_restart() {
+    local exit_code
     "$DOCKER_TOOLS_DIR/agv-container.sh" restart
+    exit_code=$?
+    handle_container_error "重啟" "AGV容器" $exit_code
+    return $exit_code
 }
 
 agv_enter() {
@@ -125,15 +165,27 @@ agv_status() {
 
 # AGVC 相關別名
 agvc_start() {
+    local exit_code
     "$DOCKER_TOOLS_DIR/agvc-container.sh" start
+    exit_code=$?
+    handle_container_error "啟動" "AGVC系統" $exit_code
+    return $exit_code
 }
 
 agvc_stop() {
+    local exit_code
     "$DOCKER_TOOLS_DIR/agvc-container.sh" stop
+    exit_code=$?
+    handle_container_error "停止" "AGVC系統" $exit_code
+    return $exit_code
 }
 
 agvc_restart() {
+    local exit_code
     "$DOCKER_TOOLS_DIR/agvc-container.sh" restart
+    exit_code=$?
+    handle_container_error "重啟" "AGVC系統" $exit_code
+    return $exit_code
 }
 
 agvc_enter() {
@@ -359,7 +411,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             echo -e "${RED}錯誤: 未知命令 '$1'${NC}"
             echo ""
             show_docker_tools_help
-            exit 1
+            return 1 2>/dev/null || exit 1
             ;;
     esac
 else

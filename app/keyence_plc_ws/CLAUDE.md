@@ -3,7 +3,7 @@
 ## 系統概述
 Keyence PLC通訊庫，提供低層TCP Socket連線與Keyence專用協議實現，為AGV/AGVC系統提供PLC控制基礎服務。
 
-**🔗 重要**: 這是純Python庫(非節點)，被plc_proxy_ws封裝為ROS 2服務使用。
+**🔗 重要**: 這是純Python庫(非ROS節點)，被plc_proxy_ws封裝為ROS 2服務使用。
 
 ## 核心架構
 ```
@@ -11,8 +11,8 @@ keyence_plc_ws/
 └── src/keyence_plc/
     ├── keyence_plc_com.py      # TCP通訊核心類別
     ├── keyence_plc_pool.py     # 連線池管理
-    ├── keyence_plc_command.py  # Keyence協議指令
-    ├── keyence_plc_memory.py   # 記憶體操作工具
+    ├── keyence_plc_command.py  # Keyence協議指令生成器
+    ├── keyence_plc_memory.py   # PLC記憶體模擬
     ├── keyence_plc_bytes.py    # 位元組處理工具
     └── mock_keyence_plc_com.py # 模擬PLC(測試用)
 ```
@@ -23,13 +23,31 @@ keyence_plc_ws/
 **核心TCP通訊類別**:
 ```python
 class KeyencePlcCom:
-    def __init__(self, ip, port)
-    def connect(self, test=False)           # TCP連線建立
-    def send_command(self, command)         # 發送PLC指令
-    def force_on(self, device_type, device) # 強制設定ON
-    def force_off(self, device_type, device) # 強制設定OFF
-    def read_data(self, device_type, device) # 讀取資料
-    def write_data(self, device_type, device, data) # 寫入資料
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+        self.sock = None
+        self.timeout = CONNECT_TIMEOUT  # 5秒
+        
+    def connect(self, test=False):
+        """建立TCP連線到PLC"""
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.connect((self.ip, self.port))
+        
+    def send_command(self, command):
+        """發送指令並接收回應，包含錯誤檢查"""
+        self.sock.sendall(command.encode("utf-8"))
+        response = self.receive_until()
+        
+        # 錯誤檢查
+        if response[:2] in self.ERROR_MESSAGES:
+            raise Exception(self.ERROR_MESSAGES[response[:2]])
+        return response
+        
+    def receive_until(self, end_marker=b"\r\n"):
+        """接收資料直到收到結束標記"""
+        # 實現接收邏輯
 ```
 
 **錯誤處理機制**:
@@ -45,70 +63,165 @@ ERROR_MESSAGES = {
 **連線池管理**:
 ```python
 class KeyencePlcPool:
-    def __init__(self, ip, port, max_connections=5)
-    def get_connection()    # 取得可用連線
-    def return_connection() # 歸還連線
-    def _pool_daemon()      # 背景重連程序
+    def __init__(self, ip, port, max_connections=MAX_POOL_SIZE):
+        self.max_connections = max_connections  # 預設5個
+        self.connections = [KeyencePlcCom(ip, port) for _ in range(max_connections)]
+        self.lost_connections = []
+        self.semaphore = threading.Semaphore(max_connections)
+        
+    def _pool_daemon(self):
+        """背景執行緒持續重連失效的連線"""
+        while self._running:
+            time.sleep(RECONNECT_INTERVAL)  # 5秒重試間隔
+            # 嘗試重連 lost_connections 中的連線
 ```
 
 **特性**:
-- 最大連線數: 5個並發連線
-- 自動重連機制: 5秒間隔重試
-- 線程安全的連線池管理
+- 最大連線數: 5個並發連線 (MAX_POOL_SIZE)
+- 自動重連機制: 5秒間隔重試 (RECONNECT_INTERVAL)
+- 線程安全的 Semaphore 控制
 
 ### 3. KeyencePlcCommand (keyence_plc_command.py)
-**Keyence協議指令定義**:
+**Keyence協議指令靜態生成器**:
 ```python
 class KeyencePlcCommand:
     @staticmethod
-    def model()         # 查詢機型: "?K\r\n"
-    def get_run_mode()  # 查詢運行模式: "?M\r\n"  
-    def force_on(device_type, device_number)  # ForceOn: "ST MR3708\r\n"
-    def force_off(device_type, device_number) # ForceOff: "RS MR3708\r\n"
-    def read_data(device_type, device_number) # 讀取: "RD DM2990\r\n"
-    def write_data(device_type, device_number, data) # 寫入: "WR DM2990 100\r\n"
+    def model():
+        """查詢機型指令"""
+        return f"?K{PLC_END_MARKER}"
+        
+    @staticmethod
+    def get_run_mode():
+        """查詢運行模式指令"""
+        return f"?M{PLC_END_MARKER}"
+        
+    @staticmethod
+    def force_on(device_type, device_number):
+        """ForceOn指令: ST MR3708\r\n"""
+        return f"ST {device_type}{device_number}{PLC_END_MARKER}"
+        
+    @staticmethod
+    def force_off(device_type, device_number):
+        """ForceOff指令: RS MR3708\r\n"""
+        return f"RS {device_type}{device_number}{PLC_END_MARKER}"
+        
+    @staticmethod
+    def read_data(device_type, device_number):
+        """讀取PLC資料指令: RD DM2990\r\n"""
+        return f"RD {device_type}{device_number}{PLC_END_MARKER}"
+        
+    @staticmethod
+    def write_data(device_type, device_number, write_data):
+        """寫入PLC資料指令: WR DM2990 100\r\n"""
+        return f"WR {device_type}{device_number} {write_data}{PLC_END_MARKER}"
+        
+    @staticmethod
+    def read_continuous_data(device_type, device_number, device_length):
+        """連續讀取指令: RDS DM2990 5\r\n"""
+        return f"RDS {device_type}{device_number} {device_length}{PLC_END_MARKER}"
+        
+    @staticmethod
+    def write_continuous_data(device_type, device_number, write_data):
+        """連續寫入指令: WRS DM2990 3 100 200 300\r\n"""
+        data_str = " ".join(str(x) for x in write_data)
+        return f"WRS {device_type}{device_number} {len(write_data)} {data_str}{PLC_END_MARKER}"
 ```
 
-**協議特性**:
-- 終止符號: `\r\n` (PLC_END_MARKER)
-- 連線超時: 5秒 (CONNECT_TIMEOUT)
-- 支援設備類型: MR(繼電器), DM(資料記憶體)
-
-## 🔧 開發工具指南
-
-### 宿主機操作 (推薦用於診斷和管理)
-
-#### PLC 連接診斷工具
-```bash
-# 網路連接檢查
-scripts/network-tools/connectivity-test.sh performance --target <PLC_IP>
-scripts/network-tools/port-check.sh --port <PLC_PORT> --host <PLC_IP>
-
-# PLC 通訊日誌分析
-scripts/log-tools/log-analyzer.sh agv | grep -i "plc\|keyence"  # AGV PLC 日誌
-scripts/log-tools/log-analyzer.sh agvc | grep -i "plc\|keyence" # AGVC PLC 日誌
-
-# 容器管理
-source scripts/docker-tools/docker-tools.sh
-agv_health   # AGV 容器健康檢查 (含 PLC 服務)
-agvc_health  # AGVC 容器健康檢查 (含 PLC 服務)
+### 4. PlcBytes (keyence_plc_bytes.py)
+**位元組處理工具類**:
+```python
+class PlcBytes(bytearray):
+    def to_int(self) -> int:
+        """轉換為整數，支援2/4/8位元組"""
+        length = len(self)
+        if length == 2:
+            fmt = "<h"  # 2 bytes (short)
+        elif length == 4:
+            fmt = "<i"  # 4 bytes (int)
+        elif length == 8:
+            fmt = "<q"  # 8 bytes (long long)
+        return struct.unpack(fmt, bytes(self))[0]
+        
+    def to_float(self) -> float:
+        """轉換為浮點數(4位元組)"""
+        return struct.unpack("<f", bytes(self))[0]
+        
+    @classmethod
+    def from_int(cls, value: int, length: int = 4):
+        """從整數創建PlcBytes"""
+        fmt = "<H" if length == 2 else "<I" if length == 4 else "<Q"
+        return cls(struct.pack(fmt, value))
+        
+    @classmethod
+    def from_float(cls, value: float):
+        """從浮點數創建PlcBytes"""
+        return cls(struct.pack("<f", value))
 ```
 
-#### 開發工作流工具
-```bash
-# 建置和測試
-source scripts/dev-tools/dev-tools.sh
-dev_build --workspace keyence_plc_ws
-dev_test --workspace keyence_plc_ws
-dev_check --workspace keyence_plc_ws --severity warning
+### 5. PlcMemory (keyence_plc_memory.py)
+**PLC記憶體模擬類別**:
+```python
+class PlcMemory:
+    def __init__(self, size: int = 131072):  # 65535*2 bytes
+        self.memory = PlcBytes(size)
+        
+    def address_to_index(self, address: int) -> int:
+        """PLC地址轉換為記憶體索引"""
+        return address * 2
+        
+    def set_int(self, address: int, value: int, length: int = 2):
+        """設置整數值到記憶體"""
+        self.set_memory(address, PlcBytes.from_int(value, length))
+        
+    def get_int(self, address: int, length: int = 2) -> int:
+        """從記憶體讀取整數值"""
+        return self.get_bytes(address, length).to_int()
+        
+    def set_float(self, address: int, value: float):
+        """設置浮點數值到記憶體"""
+        self.set_memory(address, PlcBytes.from_float(value))
+        
+    def get_float(self, address: int, length: int = 4) -> float:
+        """從記憶體讀取浮點數值"""
+        return self.get_bytes(address, length).to_float()
 ```
 
-### 容器內操作 (ROS 2 開發)
+### 6. MockKeyencePlcCom (mock_keyence_plc_com.py)
+**測試用模擬PLC**:
+```python
+class MockKeyencePlcCom:
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+        self.sock = None
+        
+    def connect(self):
+        """模擬連線成功"""
+        return True
+        
+    def send_command(self, command):
+        """模擬PLC回應"""
+        return "OK\r\n"
+```
 
-#### 環境設定
+## 協議常數定義
+```python
+# keyence_plc_com.py 和 keyence_plc_command.py
+PLC_END_MARKER = "\r\n"  # PLC協議結束標記
+CONNECT_TIMEOUT = 5      # TCP連線超時(秒)
+
+# keyence_plc_pool.py
+MIN_POOL_SIZE = 1        # 最小連線池大小
+MAX_POOL_SIZE = 5        # 最大連線池大小
+RECONNECT_INTERVAL = 5   # 重連間隔(秒)
+```
+
+## 開發指令
+
+### 環境設定 (容器內執行)
 ```bash
 # AGV容器內
-source /app/setup.bash && all_source  # 或使用 agv_source
+source /app/setup.bash && agv_source  # 或使用 all_source (自動檢測)
 cd /app/keyence_plc_ws
 
 # AGVC容器內  
@@ -116,198 +229,217 @@ source /app/setup.bash && agvc_source  # 或使用 all_source (自動檢測)
 cd /app/keyence_plc_ws
 ```
 
-### 服務啟動
-```bash
-# 啟動Keyence PLC驅動
-ros2 run keyence_plc keyence_plc_node
-
-# 指定配置啟動
-ros2 run keyence_plc keyence_plc_node --ros-args -p config_file:=/app/config/agv/plc_config.yaml
-
-# 測試PLC連線
-ros2 run keyence_plc test_connection
-```
-
 ### 構建與測試
 ```bash
 build_ws keyence_plc_ws
-ros2 test keyence_plc  # PLC通訊測試
+test_ws keyence_plc_ws
 ```
 
-## PLC通訊開發
+## 使用範例
 
-### 連線配置
-```yaml
-# /app/config/agv/plc_config.yaml
-keyence_plc:
-  host: "192.168.1.100"
-  port: 8501
-  timeout: 5.0
-  retry_count: 3
-  reconnect_interval: 10.0
-  
-  # 數據映射
-  input_registers:
-    - {address: "D0", name: "agv_status", type: "int16"}
-    - {address: "D1", name: "robot_position", type: "float32"}
-    
-  output_registers:
-    - {address: "D100", name: "move_command", type: "int16"}
-    - {address: "D101", name: "target_position", type: "float32"}
-```
-
-### 協議實現
+### 1. 基本 PLC 通訊
 ```python
-# protocols/keyence_protocol.py
-class KeyenceProtocol:
-    def read_register(self, address: str) -> bytes:
-        """讀取PLC暫存器數據"""
-        command = self._build_read_command(address)
-        response = self._send_command(command)
-        return self._parse_response(response)
-        
-    def write_register(self, address: str, value: bytes) -> bool:
-        """寫入PLC暫存器數據"""
-        command = self._build_write_command(address, value)
-        response = self._send_command(command)
-        return self._verify_write_success(response)
+from keyence_plc.keyence_plc_com import KeyencePlcCom
+from keyence_plc.keyence_plc_command import KeyencePlcCommand
+
+# 建立PLC連線
+plc = KeyencePlcCom("192.168.1.100", 8501)
+plc.connect()
+
+# 查詢PLC機型
+model_cmd = KeyencePlcCommand.model()
+response = plc.send_command(model_cmd)
+print(f"PLC機型: {response}")
+
+# 強制設定MR3708為ON
+force_on_cmd = KeyencePlcCommand.force_on("MR", "3708")
+response = plc.send_command(force_on_cmd)
+
+# 寫入數據到DM2990
+write_cmd = KeyencePlcCommand.write_data("DM", "2990", "100")
+response = plc.send_command(write_cmd)
+
+# 讀取DM2990的數據
+read_cmd = KeyencePlcCommand.read_data("DM", "2990")
+response = plc.send_command(read_cmd)
+print(f"DM2990值: {response}")
+
+plc.disconnect()
 ```
 
-### 數據轉換
+### 2. 使用連線池
 ```python
-# utils/data_converter.py
-def plc_to_ros(plc_data: bytes, data_type: str):
-    """PLC數據轉換為ROS 2訊息格式"""
-    if data_type == "int16":
-        return struct.unpack(">h", plc_data)[0]
-    elif data_type == "float32":
-        return struct.unpack(">f", plc_data)[0]
-        
-def ros_to_plc(ros_value, data_type: str) -> bytes:
-    """ROS 2數據轉換為PLC格式"""
-    if data_type == "int16":
-        return struct.pack(">h", int(ros_value))
-    elif data_type == "float32":
-        return struct.pack(">f", float(ros_value))
+from keyence_plc.keyence_plc_pool import KeyencePlcPool
+
+# 建立連線池
+pool = KeyencePlcPool("192.168.1.100", 8501, max_connections=3)
+
+# 取得連線
+plc = pool.get_connection()
+
+try:
+    # 執行PLC操作
+    cmd = KeyencePlcCommand.read_data("DM", "2990")
+    response = plc.send_command(cmd)
+    print(f"讀取結果: {response}")
+finally:
+    # 歸還連線到池中
+    pool.return_connection(plc)
 ```
 
-## PLC整合模式
-
-### AGV車載整合
-- **機械臂控制**: 位置指令與狀態回饋
-- **感測器數據**: 安全感測器狀態讀取
-- **運動控制**: 馬達使能與速度控制
-- **安全系統**: 緊急停止與安全檢查
-
-### AGVC站點整合
-- **充電站控制**: 充電狀態監控與控制
-- **緩衝區管理**: 料架位置檢測
-- **環境監控**: 溫濕度、煙霧感測器
-- **設備狀態**: 站點設備健康監控
-
-## 錯誤處理
-
-### 連線錯誤
+### 3. 數據類型轉換
 ```python
-class PLCConnectionManager:
-    def handle_connection_error(self, error):
-        self.logger.error(f"PLC連線錯誤: {error}")
-        self.attempt_reconnect()
-        
-    def attempt_reconnect(self):
-        for attempt in range(self.max_retries):
-            try:
-                self.connect()
-                break
-            except Exception as e:
-                time.sleep(self.reconnect_interval)
+from keyence_plc.keyence_plc_bytes import PlcBytes
+
+# 整數轉換
+int_bytes = PlcBytes.from_int(12345, length=2)  # 2位元組整數
+value = int_bytes.to_int()
+
+# 浮點數轉換
+float_bytes = PlcBytes.from_float(3.14159)
+float_value = float_bytes.to_float()
+
+# 位元組陣列處理
+data = PlcBytes(b'\x01\x02\x03\x04')
+int_value = data.to_int()  # 轉換為整數
 ```
 
-### 數據驗證
-- 檢查PLC回應完整性
-- 驗證數據格式正確性
-- 實施數據範圍檢查
-- 記錄異常數據事件
+### 4. PLC記憶體模擬
+```python
+from keyence_plc.keyence_plc_memory import PlcMemory
+
+# 建立PLC記憶體模擬
+memory = PlcMemory(size=1024)  # 1KB記憶體
+
+# 寫入整數到地址100
+memory.set_int(100, 12345)
+
+# 讀取地址100的整數
+value = memory.get_int(100)
+print(f"地址100的值: {value}")
+
+# 寫入浮點數到地址200
+memory.set_float(200, 3.14159)
+
+# 讀取地址200的浮點數
+float_value = memory.get_float(200)
+print(f"地址200的值: {float_value}")
+```
 
 ## 測試與調試
 
-### 單元測試
+### 1. 測試文件結構
+```
+keyence_plc_ws/
+├── test/                    # 測試相關文件 (在工作空間根目錄)
+├── keyence_plc_com_async.py    # 異步通訊測試
+├── keyence_plc_com_patch.py    # 修補版本測試  
+└── test/
+    ├── keyence_plc_com_test.py     # 基本通訊測試
+    ├── plc_memory_test.py          # 記憶體操作測試
+    └── read_write_test.py          # 讀寫功能測試
+```
+
+### 2. 基本測試範例
 ```python
-# test/test_keyence_protocol.py
-def test_read_register():
-    protocol = KeyenceProtocol()
-    mock_plc_response = b'\x01\x02\x03\x04'
-    result = protocol.parse_response(mock_plc_response)
-    assert result == expected_value
+# test/keyence_plc_com_test.py
+from keyence_plc.keyence_plc_com import KeyencePlcCom
+from keyence_plc.keyence_plc_command import KeyencePlcCommand
+
+# 測試PLC連線
+def test_plc_connection():
+    plc = KeyencePlcCom("192.168.1.100", 8501)
+    try:
+        success = plc.connect()
+        assert success, "PLC連線失敗"
+        print("✅ PLC連線測試通過")
+    except Exception as e:
+        print(f"❌ PLC連線測試失敗: {e}")
+    finally:
+        plc.disconnect()
+
+# 測試指令生成
+def test_command_generation():
+    # 測試各種指令格式
+    assert KeyencePlcCommand.model() == "?K\r\n"
+    assert KeyencePlcCommand.force_on("MR", "3708") == "ST MR3708\r\n"
+    assert KeyencePlcCommand.read_data("DM", "2990") == "RD DM2990\r\n"
+    print("✅ 指令生成測試通過")
 ```
 
-### 調試工具
-```bash
-# PLC連線測試
-ros2 run keyence_plc debug_connection --host 192.168.1.100
+### 3. 模擬PLC測試
+```python
+from keyence_plc.mock_keyence_plc_com import MockKeyencePlcCom
 
-# 數據讀取測試
-ros2 topic echo /plc/input_data
-
-# 數據寫入測試  
-ros2 topic pub /plc/output_command keyence_plc_msgs/PLCCommand "{address: 'D100', value: 123}"
+# 使用模擬PLC進行測試
+mock_plc = MockKeyencePlcCom("localhost", 8501)
+mock_plc.connect()
+response = mock_plc.send_command("?K\r\n")
+print(f"模擬PLC回應: {response}")  # 輸出: OK\r\n
 ```
-
-## 硬體配置
-
-### 網路設定
-- **PLC IP**: 根據硬體映射配置
-- **埠號**: 通常為8501(Keyence預設)
-- **網路延遲**: 考慮工業網路特性
-- **防火牆**: 確保通訊埠開放
-
-### PLC程式配置
-- 確認PLC端通訊設定正確
-- 驗證暫存器地址映射
-- 檢查數據格式設定
-- 測試通訊協議版本相容性
 
 ## 故障排除
 
 ### 常見問題
 1. **連線超時**: 檢查網路連線與PLC狀態
-2. **數據格式錯誤**: 驗證PLC端數據類型設定
-3. **地址錯誤**: 確認暫存器地址正確性
-4. **協議不相容**: 檢查Keyence PLC型號與協議版本
+   ```python
+   # 調整超時時間
+   plc = KeyencePlcCom("192.168.1.100", 8501)
+   plc.timeout = 10  # 設定為10秒
+   ```
 
-### 診斷指令
+2. **協議錯誤**: 確認指令格式正確
+   ```python
+   # 檢查錯誤回應
+   try:
+       response = plc.send_command(command)
+   except Exception as e:
+       if "E0" in str(e):
+           print("元件編號異常")
+       elif "E1" in str(e):
+           print("指令異常")
+   ```
+
+3. **連線池問題**: 連線數量超過限制
+   ```python
+   # 監控連線池狀態
+   pool = KeyencePlcPool("192.168.1.100", 8501)
+   print(f"可用連線: {len(pool.connections)}")
+   print(f"失效連線: {len(pool.lost_connections)}")
+   ```
+
+### 調試技巧
 ```bash
-# 網路連通性測試
+# 1. 網路連通性測試  
 ping 192.168.1.100
+telnet 192.168.1.100 8501
 
-# PLC服務狀態
-ros2 service call /plc/get_status keyence_plc_msgs/srv/GetStatus
+# 2. 查看Python導入
+python3 -c "from keyence_plc.keyence_plc_com import KeyencePlcCom; print('導入成功')"
 
-# 檢查PLC主題
-ros2 topic list | grep plc
+# 3. 容器內測試
+# AGV/AGVC容器內
+cd /app/keyence_plc_ws
+python3 test/keyence_plc_com_test.py
 ```
 
-### 日誌分析
-- PLC連線日誌: ROS 2節點輸出
-- 網路通訊日誌: tcpdump分析
-- 錯誤統計: 透過監控系統查看
+## 硬體配置注意事項
 
-## 安全注意事項
+### PLC網路設定
+- **預設端口**: Keyence PLC通常使用8501端口
+- **IP配置**: 確保PLC與系統在同一網段
+- **通訊協議**: 支援Keyence專用TCP協議
+- **延遲考量**: 工業網路可能有較高延遲
 
-### 工業安全
-- 實施適當的安全檢查
-- 緊急停止信號處理
-- 防止誤操作保護
-- 設備狀態監控
-
-### 通訊安全
-- 使用專用工業網路
-- 限制PLC訪問權限
-- 監控異常通訊活動
-- 實施通訊加密(如需要)
+### 實際部署建議
+- 在plc_proxy_ws中封裝此庫為ROS 2服務
+- 透過agv_cmd_service_ws使用PLC功能
+- 配置正確的PLC IP地址和端口
+- 實施適當的錯誤處理和重連機制
 
 ## 重要提醒
-- PLC通訊影響系統安全，變更需謹慎
-- 數據地址映射需與PLC程式一致
-- 支援AGV與AGVC雙環境，注意配置差異
-- 網路延遲影響即時性，需最佳化通訊頻率
+- 這是純Python庫，不直接提供ROS 2接口
+- 通過plc_proxy_ws封裝後供ROS 2系統使用
+- 支援AGV與AGVC雙環境，需正確配置網路
+- PLC通訊影響系統安全，變更需謹慎測試
+- 連線池可提高並發性能，適合高頻操作場景

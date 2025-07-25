@@ -296,7 +296,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             echo -e "${RED}錯誤: 未知命令 '$1'${NC}"
             echo ""
             show_log_tools_help
-            exit 1
+            return 1 2>/dev/null || exit 1
             ;;
     esac
 else

@@ -716,11 +716,13 @@ main() {
                 echo -e "${RED}未知指令: $1${NC}"
                 echo ""
                 show_network_tools_help
-                exit 1
+                return 1 2>/dev/null || exit 1
                 ;;
         esac
     fi
 }
 
 # 如果直接執行此腳本，運行主程式
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

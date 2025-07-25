@@ -12,12 +12,6 @@ ROS 2 Jazzy + Zenoh RMW企業級AGV車隊管理系統，採用雙環境Docker架
 - **外部整合**: KUKA Fleet系統
 - **Web界面**: AGVCUI管理台 + OPUI操作界面
 
-## 開發技巧
-- 搜尋時優先使用 `rg` (ripgrep)，比 grep 快數倍且支援並行處理
-- 大型代碼庫搜尋：`rg "pattern" --type py --context 3`
-- 忽略特定目錄：`rg "pattern" -g '!build/' -g '!install/'`
-- 多模式搜尋：`rg "(class|def).*AGV" --type py`
-
 ## AI 開發助手指導
 
 ### 🔍 核心開發原則

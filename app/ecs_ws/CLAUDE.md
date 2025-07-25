@@ -1,31 +1,55 @@
 # ecs_ws CLAUDE.md
 
 ## 模組概述
-設備控制系統(Equipment Control System)，管理AGV車隊中的所有設備與子系統，提供統一的設備控制介面
+設備控制系統(Equipment Control System)，專注於PLC數據收集、門控制和設備信號管理，為AGVC系統提供核心的工業設備控制功能
 
-## 專案結構
+## 專案結構 (實際驗證)
 ```
 src/
-└── ecs/                # 設備控制系統核心
-    ├── ecs/            # ECS主要邏輯
-    ├── controllers/    # 設備控制器
-    ├── managers/       # 設備管理器
-    └── interfaces/     # 設備介面定義
+└── ecs/                          # 設備控制系統
+    ├── ecs_core.py              # PLC數據讀取和資料庫信號更新
+    ├── door_logic.py            # 門控制邏輯實現
+    ├── door_controller_config.py # 門控制器配置管理
+    └── door_controller_node_mqtt.py # MQTT門控制節點(KUKA整合)
 ```
 
-## 核心功能
+## 核心功能 (基於實際實現)
 
-### 設備管理
-- **設備註冊**: 自動發現與註冊設備
-- **狀態監控**: 即時設備狀態監控
-- **故障管理**: 設備故障檢測與處理
-- **配置管理**: 設備參數配置與更新
+### PLC數據管理 (ecs_core.py)
+- **連續數據讀取**: 0.1秒週期讀取PLC指定範圍數據
+- **記憶體映射**: 使用PlcMemory管理PLC數據緩存
+- **資料庫同步**: 自動更新設備信號值到PostgreSQL
+- **信號變更檢測**: 只在數值變動時更新資料庫
 
-### 控制架構
-- **統一介面**: 標準化設備控制API
-- **PLC整合**: 透過PLC proxy控制工業設備
-- **即時響應**: 低延遲設備控制回應
-- **安全控制**: 設備安全狀態檢查
+### 門控制系統 (door_logic.py)
+- **門狀態查詢**: 透過PLC proxy讀取門開關狀態
+- **門控制指令**: 強制開門/關門操作
+- **異步操作**: 支援異步和同步門控制
+- **批次控制**: 支援多門同時控制
+
+### MQTT門控制器 (door_controller_node_mqtt.py)
+- **MQTT通訊**: 透過MQTT與外部系統(如KUKA ECS)通訊
+- **狀態監控**: 定期檢查門狀態變化並發布
+- **外部整合**: 接收外部門控制請求並執行
+
+## 關鍵檔案
+
+### 核心檔案
+- `/ecs/ecs_core.py` - PLC數據讀取核心，0.1秒週期更新資料庫信號
+- `/ecs/door_logic.py` - 門控制邏輯實現，支援同步/異步操作
+- `/ecs/door_controller_config.py` - 門配置管理，支援YAML和字串配置
+- `/ecs/door_controller_node_mqtt.py` - MQTT門控制節點，KUKA ECS整合
+
+### 配置檔案
+- `/app/config/door_config.yaml` - 門控制配置
+- `setup.py` - 包含兩個ROS節點入口點
+
+## 實際技術棧
+- **ROS 2節點**: ecs_core, door_controller_node_mqtt
+- **PLC通訊**: 透過plc_proxy.PlcClient
+- **資料庫**: PostgreSQL (透過db_proxy.ConnectionPoolManager)
+- **MQTT**: paho-mqtt (外部系統整合)
+- **記憶體管理**: keyence_plc.PlcMemory
 
 ## 🔧 開發工具指南
 
@@ -65,215 +89,230 @@ agvc_source  # 載入AGVC工作空間 (或使用 all_source 自動檢測)
 cd /app/ecs_ws
 ```
 
-#### 服務管理
+#### 服務管理 (基於實際entry_points)
 ```bash
 # 【方法1: 透過宿主機工具】(推薦)
 source scripts/docker-tools/docker-tools.sh
-quick_agvc "start_ecs"               # 啟動 ECS 服務
-quick_agvc "ros2 run ecs ecs_node"   # 手動啟動 ECS 節點
+quick_agvc "ros2 run ecs ecs_core"               # 啟動 ECS 核心節點
+quick_agvc "ros2 run ecs door_controller_node_mqtt"  # 啟動 MQTT 門控制節點
 
 # 【方法2: 手動進入容器】
 agvc_enter  # 進入容器
-start_ecs                            # 啟動ECS服務
-ros2 run ecs ecs_node               # 手動啟動ECS節點
-check_agvc_status                   # 檢查ECS狀態信息
+ros2 run ecs ecs_core                        # 啟動ECS核心節點
+ros2 run ecs door_controller_node_mqtt       # 啟動MQTT門控制節點
+check_agvc_status                           # 檢查ECS狀態信息
 ```
 
 ### 構建與測試
 ```bash
 build_ws ecs_ws
-ros2 test ecs  # ECS系統測試
+colcon test --packages-select ecs    # ECS包測試
 ```
 
-## 設備控制開發
+## 開發指南 (基於實際實現)
 
-### 設備控制器
+### ECS核心節點開發 (ecs_core.py)
 ```python
-# controllers/agv_controller.py
-class AGVController:
-    def __init__(self, agv_id: str):
-        self.agv_id = agv_id
-        self.plc_client = PLCProxyClient()
-        
-    async def move_to_position(self, x: float, y: float):
-        """控制AGV移動到指定位置"""
-        command = MoveCommand(target_x=x, target_y=y)
-        return await self.plc_client.send_command(command)
-        
-    async def get_status(self) -> AGVStatus:
-        """獲取AGV當前狀態"""
-        status_data = await self.plc_client.read_status()
-        return AGVStatus.parse(status_data)
+# 新增PLC數據讀取範圍
+self.declare_parameter('read_ranges', ["DM,7600,20", "DM,5000,200"])
+
+# 擴展信號處理邏輯
+def write_signals_to_db(self):
+    # 只在信號值變動時更新資料庫
+    if signal.value != str(value):
+        self.get_logger().info(f"變動[{signal.value}] to {str(value)} for {signal.name}")
+        signal.value = str(value)
+        session.merge(signal)
 ```
 
-### 設備管理器
+### 門控制開發 (door_logic.py)
 ```python
-# managers/equipment_manager.py
-class EquipmentManager:
-    def __init__(self):
-        self.controllers = {}
-        self.status_monitor = StatusMonitor()
-        
-    def register_device(self, device_id: str, controller):
-        """註冊新設備控制器"""
-        self.controllers[device_id] = controller
-        self.status_monitor.add_device(device_id)
-        
-    async def execute_command(self, device_id: str, command):
-        """執行設備控制指令"""
-        if device_id in self.controllers:
-            return await self.controllers[device_id].execute(command)
+# 異步門控制實現
+def async_control_door(self, door_id: int, is_open: bool) -> Dict:
+    cfg = self.config.get_config(door_id)
+    if is_open:
+        response = self.plc_client.async_force_on(
+            cfg["mr_type"], cfg["mr_address"], self.force_callback)
+    else:
+        response = self.plc_client.async_force_off(
+            cfg["mr_type"], cfg["mr_address"], self.force_callback)
+
+# 門狀態查詢
+def state_door(self, door_id: int) -> Dict:
+    cfg = self.config.get_config(door_id)
+    response = self.plc_client.read_continuous_byte(
+        cfg["dm_type"], cfg["dm_address"], 1)
+    bit = bool(response.values[0])
+    door_state = "OPEN" if bit else "CLOSE"
 ```
 
-### 新增設備類型
-1. **創建控制器**: 在`controllers/`下實現設備特定控制邏輯
-2. **定義介面**: 在`interfaces/`下定義標準化介面
-3. **註冊設備**: 在設備管理器中註冊新設備類型
-4. **配置映射**: 更新硬體映射配置檔案
+### MQTT門控制器開發 (door_controller_node_mqtt.py)
+```python
+# MQTT配置參數
+self.declare_parameter('broker_host', '192.168.11.206')
+self.declare_parameter('broker_port', 2883)
+self.declare_parameter('sub_topic', 'request/to/agvc/door')
+self.declare_parameter('pub_topic', 'response/to/kukaecs/door')
 
-## ECS整合架構
+# 門狀態監控
+def check_door_status(self):
+    # 定期檢查門狀態變化並透過MQTT發布
+```
+
+### 新增門控制功能
+1. **擴展門配置**: 在door_config.yaml添加新門定義
+2. **修改DoorLogic**: 實現新的門控制邏輯
+3. **更新MQTT**: 添加新的MQTT事件處理
+4. **測試整合**: 確保PLC通訊正常
+
+## ECS整合架構 (基於實際實現)
 
 ### 系統整合
 ```
-ECS (設備控制)
-├─ plc_proxy_ws → keyence_plc_ws → PLC硬體
-├─ agv_ws → AGV狀態機
-├─ rcs_ws → 機器人控制
-└─ wcs_ws → 倉庫管理
+ECS (設備控制系統)
+├─ ecs_core → plc_proxy → keyence_plc → PLC硬體
+├─ door_logic → plc_proxy → 門控制PLC
+├─ door_controller_node_mqtt → MQTT → KUKA ECS
+└─ db_proxy → PostgreSQL (設備信號資料庫)
 ```
 
-### PLC通訊棧
-- **ECS**: 發送高階設備控制指令
-- **plc_proxy**: ROS 2服務代理層
-- **keyence_plc**: Keyence PLC通訊協議
-- **PLC硬體**: 實際設備控制執行
+### 實際通訊棧
+- **ecs_core**: 0.1秒週期讀取PLC數據，更新資料庫信號
+- **door_logic**: 門控制邏輯，支援同步/異步操作  
+- **plc_proxy**: ROS 2 PLC客戶端代理
+- **keyence_plc**: Keyence PLC通訊協議和記憶體管理
+- **MQTT**: 外部系統(KUKA ECS)整合
 
-## 設備配置
+## 配置管理 (實際檔案)
 
-### 硬體映射
+### 門控制配置
 ```yaml
-# /app/config/agvc/equipment.yaml
-equipment:
-  agvs:
-    - id: "AGV001"
-      type: "cargo_mover"
-      plc_address: "192.168.1.101"
-      controllers: ["movement", "sensor", "safety"]
-      
-    - id: "AGV002"  
-      type: "loader"
-      plc_address: "192.168.1.102"
-      controllers: ["movement", "robot_arm", "conveyor"]
-      
-  stations:
-    - id: "CHARGE_01"
-      type: "charging_station"
-      plc_address: "192.168.1.201"
-      controllers: ["charger", "positioning"]
+# /app/config/door_config.yaml
+doors:
+  - "1,MR,100,DM,5000"    # 門ID,控制類型,控制地址,狀態類型,狀態地址
+  - "2,MR,101,DM,5001"
 ```
 
-### 控制參數
-- **響應超時**: 設備控制指令超時時間
-- **重試機制**: 控制失敗重試策略
-- **狀態更新頻率**: 設備狀態監控週期
-- **安全檢查間隔**: 設備安全狀態檢查頻率
-
-## 狀態監控
-
-### 即時監控
+### ECS核心參數 (ROS 2參數)
 ```python
-# managers/status_monitor.py
-class StatusMonitor:
-    async def monitor_equipment(self):
-        """持續監控所有設備狀態"""
-        while True:
-            for device_id in self.monitored_devices:
-                status = await self.get_device_status(device_id)
-                await self.process_status_update(device_id, status)
-            await asyncio.sleep(self.update_interval)
+# ecs_core.py 預設參數
+read_ranges: ["DM,7600,20", "DM,5000,200"]  # PLC讀取範圍
+db_url_agvc: 'postgresql+psycopg2://agvc:password@192.168.100.254/agvc'
+```
+
+### MQTT參數 (ROS 2參數)
+```python
+# door_controller_node_mqtt.py 預設參數
+broker_host: '192.168.11.206'
+broker_port: 2883
+username: 'DsH8vSx2uhTao1hlc9vx'
+sub_topic: 'request/to/agvc/door'
+pub_topic: 'response/to/kukaecs/door'
+```
+
+## 狀態監控 (實際實現)
+
+### PLC數據監控 (ecs_core.py)
+```python
+# 0.1秒週期監控
+def main_loop_timer(self):
+    self.read_plc_data()        # 讀取PLC數據
+    self.write_signals_to_db()  # 更新資料庫信號
+
+# 信號變動檢測
+if signal.value != str(value):
+    self.get_logger().info(f"變動[{signal.value}] to {str(value)} for {signal.name}")
+    signal.value = str(value)
+    session.merge(signal)
+```
+
+### 門狀態監控 (door_controller_node_mqtt.py)
+```python
+# 1秒週期門狀態檢查
+self.timer = self.create_timer(1.0, self.check_door_status)
+
+# 初始化門狀態
+for door_id in self.config.doors.keys():
+    state_info = self.door_logic.state_door(door_id)
+    self.door_status[door_id] = state_info["state"]
 ```
 
 ### 異常處理
-- **設備離線**: 自動重連與故障恢復
-- **狀態異常**: 安全停止與警報處理
-- **通訊錯誤**: PLC通訊故障處理
-- **參數異常**: 設備參數範圍檢查
+- **PLC通訊失敗**: 記錄錯誤並繼續下次讀取
+- **資料庫連接錯誤**: ConnectionPoolManager自動重連
+- **MQTT連接中斷**: 自動重連機制
+- **門控制失敗**: 錯誤回調和狀態記錄
 
-## 測試與調試
+## 測試與調試 (基於實際節點)
 
-### 設備測試
+### ECS節點測試
 ```bash
-# 測試AGV控制
-ros2 service call /ecs/agv/move ecs_msgs/srv/MoveAGV "{agv_id: 'AGV001', target_x: 10.0, target_y: 5.0}"
+# 啟動ECS核心節點
+ros2 run ecs ecs_core --ros-args -p read_ranges:="['DM,7600,20']"
 
-# 查看設備狀態
-ros2 topic echo /ecs/equipment_status
+# 啟動MQTT門控制器
+ros2 run ecs door_controller_node_mqtt --ros-args -p broker_host:="192.168.11.206"
 
-# 設備診斷
-ros2 run ecs equipment_diagnostics --device AGV001
+# 檢查節點狀態
+ros2 node list | grep ecs
+ros2 node info /ecs_core
 ```
 
-### 系統整合測試
-- ECS與PLC proxy通訊測試
-- 設備控制指令回應測試
-- 故障恢復機制測試
-- 多設備協調控制測試
+### 門控制測試 (透過Web API)
+```bash
+# 透過web_api測試門控制
+curl -X POST http://localhost:8000/door/open -d '{"door_id": 1}'
+curl -X GET http://localhost:8000/door/status/1
+```
 
-## 故障排除
+### 資料庫信號檢查
+```bash
+# 檢查設備信號更新
+quick_agvc "psql -U agvc -d agvc -c \"SELECT name, value FROM eqp_signal WHERE dm_address IS NOT NULL;\""
+```
+
+## 故障排除 (基於實際實現)
 
 ### 常見問題
-1. **設備無回應**: 檢查PLC連線與設備狀態
-2. **控制指令失敗**: 驗證PLC proxy服務狀態
-3. **狀態更新延遲**: 檢查網路延遲與系統負載
-4. **設備衝突**: 確認設備排他性控制邏輯
+1. **ECS核心節點無法啟動**: 檢查資料庫連接和PLC proxy狀態
+2. **PLC數據讀取失敗**: 驗證Zenoh連接和PLC proxy服務
+3. **門控制無回應**: 檢查門配置和PLC連接
+4. **MQTT連接失敗**: 驗證MQTT broker設定和網路連通性
 
 ### 診斷工具
 ```bash
-# ECS服務狀態
-ros2 service call /ecs/get_system_status
+# 檢查ECS節點狀態
+ros2 node list | grep ecs
+ros2 node info /ecs_core
 
-# 設備連線狀態
-ros2 topic echo /ecs/device_connections
+# 檢查PLC通訊
+quick_agvc "check_zenoh_status"  # 檢查Zenoh連線
+quick_agvc "check_agvc_status"   # 檢查AGVC狀態
 
-# PLC通訊診斷
-check_zenoh_status  # 檢查Zenoh連線
+# 資料庫連接檢查
+quick_agvc "start_db"            # 檢查資料庫連接
 ```
 
 ### 日誌分析
-- ECS日誌: ROS 2節點輸出
-- PLC通訊日誌: 透過plc_proxy查看
-- 設備狀態日誌: `/tmp/ecs_equipment.log`
+```bash
+# ECS節點日誌
+agvc_logs | grep -i "ecs_core\|door_controller"
 
-## 性能最佳化
+# PLC通訊日誌分析
+scripts/log-tools/log-analyzer.sh agvc --filter "plc\|ecs"
 
-### 控制最佳化
-- **批次指令**: 合併多個設備控制指令
-- **狀態快取**: 減少重複的狀態查詢
-- **優先權管理**: 緊急指令優先處理
-- **負載均衡**: 分散設備控制負載
+# 資料庫操作日誌
+scripts/log-tools/log-analyzer.sh agvc --filter "database\|postgresql"
+```
 
-### 資源管理
-- 設備控制器執行緒池管理
-- 記憶體使用最佳化
-- 網路頻寬管理
-- CPU資源分配
+### 性能監控
+- **PLC讀取頻率**: 0.1秒週期 (可調整read_ranges參數)
+- **資料庫更新效率**: 只在信號變動時更新
+- **MQTT回應時間**: 門狀態變化實時發布
+- **記憶體使用**: PlcMemory緩存管理
 
-## 安全機制
-
-### 設備安全
-- **安全狀態檢查**: 持續監控設備安全狀態
-- **緊急停止**: 實施緊急停止機制
-- **防護檢查**: 設備運行前安全檢查
-- **故障隔離**: 故障設備自動隔離
-
-### 系統安全
-- 設備控制權限管理
-- 指令合法性驗證
-- 異常行為檢測
-- 安全日誌記錄
-
-## 重要提醒
-- ECS控制影響整個系統安全，變更需謹慎
-- 設備控制指令需包含完整安全檢查
-- 必須在AGVC容器內運行
-- 與PLC通訊需考慮工業環境特性
+### 重要提醒
+- **必須在AGVC容器內運行**: 所有ROS 2節點需要正確的環境
+- **PLC連線依賴**: 需要確保plc_proxy服務正常運行
+- **資料庫依賴**: 需要PostgreSQL連接用於信號存儲
+- **配置檔案**: door_config.yaml必須存在且格式正確

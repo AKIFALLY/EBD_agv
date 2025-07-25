@@ -3,7 +3,7 @@
 # 版本: 1.0
 # 說明: 整合所有開發工具的統一介面，提供便捷的開發工作流管理
 
-set -e  # 遇到錯誤立即退出
+# 不使用 set -e，改用手動錯誤處理，避免關閉終端
 
 # ============================================================================
 # 常數定義
@@ -494,7 +494,7 @@ cmd_status() {
             echo -e "  ${GREEN}✓${NC} Docker 服務運行中"
             
             # 檢查容器狀態
-            local containers=("agvc_server" "nginx" "postgres" "rosagv")
+            local containers=("agvc_server" "nginx" "postgres_container" "rosagv")
             for container in "${containers[@]}"; do
                 if docker ps --format "{{.Names}}" | grep -q "^$container$"; then
                     echo -e "  ${GREEN}✓${NC} 容器 $container 運行中"
@@ -781,7 +781,7 @@ main() {
             log_error "未知命令: $command"
             echo ""
             show_usage
-            exit 1
+            return 1 2>/dev/null || exit 1
             ;;
     esac
 }
@@ -838,4 +838,28 @@ show_dev_tools_help() {
 # 如果直接執行此腳本
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
+else
+    # 被 source 時顯示載入訊息並導出函數
+    
+    # 導出便捷函數
+    export -f dev_build
+    export -f dev_test
+    export -f dev_check
+    export -f dev_deploy
+    export -f dev_status
+    export -f show_dev_tools_help
+    
+    # 導出工具函數
+    export -f log_info
+    export -f log_success
+    export -f log_warning
+    export -f log_error
+    
+    # 導出管理命令函數
+    export -f cmd_list
+    export -f cmd_status
+    export -f cmd_doctor
+    
+    echo -e "\033[0;32m✅ RosAGV 開發工具集已載入\033[0m"
+    echo -e "輸入 \033[0;36mshow_dev_tools_help\033[0m 查看可用便捷函數"
 fi
