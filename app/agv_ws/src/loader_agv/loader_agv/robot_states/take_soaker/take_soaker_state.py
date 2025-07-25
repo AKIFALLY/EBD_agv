@@ -14,9 +14,13 @@ class TakeSoakerState(BaseRobotState):
         # 動態參數設定：浸泡設備參數
         self.port_id_address = self.node.room_id * 1000 + 40
         self.step = RobotContext.IDLE
-        self.sent = False def enter(self):
+        self.sent = False
+
+    def enter(self):
         self.node.get_logger().info("Loader Robot Take Soaker 目前狀態: TakeSoaker")
-        self.sent = False def leave(self):
+        self.sent = False
+
+    def leave(self):
         self.node.get_logger().info("Loader Robot Take Soaker 離開 TakeSoaker 狀態")
         self.sent = False
 

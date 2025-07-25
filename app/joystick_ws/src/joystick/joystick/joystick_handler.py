@@ -203,7 +203,7 @@ class JoystickHandler:
         for i, state in enumerate(axis_state):
             # 限制小數精度並設定閾值
             state = round(state, 2)
-            if abs(state) < 0.05:
+            if abs(state) < 0.99:
                 state = 0  # 小於0.05視為0
 
             if state != cls._prev_axis_state[i]:

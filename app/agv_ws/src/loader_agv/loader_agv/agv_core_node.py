@@ -9,15 +9,10 @@ from rclpy.parameter import Parameter  # Import Parameter class
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import SingleThreadedExecutor
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
-from rclpy.executors import MultiThreadedExecutor
-from rclpy.executors import SingleThreadedExecutor
-from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 import agv_base.states.auto_state
 import agv_base.states.error_state
 import agv_base.states.idle_state
 import agv_base.states.manual_state
-from agv_base.agv_states.mission_select_state import MissionSelectState
-from agv_base.agv_states.wait_robot_state import WaitRobotState
 from agv_base.agv_states.mission_select_state import MissionSelectState
 from agv_base.agv_states.wait_robot_state import WaitRobotState
 from agv_base.robot import Robot
@@ -26,31 +21,16 @@ from agv_base.base_context import BaseContext
 from loader_agv.loader_context import LoaderContext
 from loader_agv.robot_context import RobotContext
 import loader_agv.robot_states.idle_state
-from db_proxy_interfaces.msg import AGVs
-from db_proxy_interfaces.msg import Task as TaskMsg
-import loader_agv.robot_states.idle_state
-
-import loader_agv.robot_states.idle_state
+# AGVs 和 TaskMsg 現在由 AgvNodebase 提供
 
 
 class AgvCoreNode(AgvNodebase):
     def __init__(self, node_name='agv_node_base', **kwargs):
         super().__init__(node_name=node_name, **kwargs)
 
-        # 初始化變數屬性
-        # Room ID
-        self.declare_parameter("room_id", 0)  # 預設房間ID為0
-        self.room_id = self.get_parameter(
-            "room_id").get_parameter_value().integer_value  # 取得room_id參數值
-        self.get_logger().info(f"✅ 已接收 room_id: {self.room_id}")
-
-        self.pathdata = None  # 路徑資料
-        self.mission_id = None  # 任務ID
-        self.node_id = None  # 任務目標節點
-        self.AGV_id = 0  # AGV ID
-        self.task = TaskMsg()
-        self.agvsubscription = self.create_subscription(
-            AGVs, '/agvc/agvs', self.agvs_callback, 10)  # QoS profile depth=10
+        # 使用共用方法設置參數和訂閱
+        self.setup_common_parameters()
+        self.setup_agv_subscription()
 
         self.robot = Robot(self, parameter=None)
         self.hokuyo_dms_8bit_1 = HokuyoDMS8Bit(
@@ -76,8 +56,7 @@ class AgvCoreNode(AgvNodebase):
         self.robot_context.on_state_changed += self.state_changed  # 狀態切換訊息
 
     def state_changed(self, old_state, new_state):
-        self.get_logger().info(
-            f"狀態變更: {old_state.__class__.__name__} -> {new_state.__class__.__name__}")
+        self.common_state_changed(old_state, new_state)
 
     def base_after_handle(self, state):
         # data = self.robot.read_pgno()
@@ -112,52 +91,25 @@ class AgvCoreNode(AgvNodebase):
             # self.robot_context.handle()
             pass
 
-    def agvs_callback(self, msg: AGVs):
-        """處理 AGVs 訂閱消息"""
-        namespace = self.get_namespace().lstrip('/')
-        self.get_logger().info(f"📥 當前命名空間: {namespace}")
-        self.get_logger().info(f"📦 接收 AGVs 數量: {len(msg.datas)}")
-
-        # 調試用：列出所有 AGV 資訊（如需調試請取消註解）
-        # for i, a in enumerate(msg.datas):
-        #    self.get_logger().debug(f"[{i}] AGV: id={a.id}, name={a.name}")
-
-        agv = next((a for a in msg.datas if a.name == namespace), None)
-
-        if agv:
-            self.AGV_id = agv.id
-            self.get_logger().info(f"✅ 訂閱到 AGV_ID: {self.AGV_id} Name: {agv.name}")
-            self.destroy_subscription(self.agvsubscription)
-            self.get_logger().info("✅ 停止訂閱 AGVs 訊息")
-        else:
-            self.get_logger().warn("⚠️ 找不到符合命名空間的 AGV")
+    # agvs_callback 現在由 AgvNodebase 提供
 
 
 def main():
-    # 初始化 rclpy，設置 ROS 2 節點
+    # 初始化 rclpy
     rclpy.init()
 
     # 創建 AgvCoreNode 實例
     node = AgvCoreNode()
 
-    executor = MultiThreadedExecutor(num_threads=4)
-    executor.add_node(node)
-
+    # 使用 MultiThreadedExecutor
     executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
 
     try:
         executor.spin()
-        executor.spin()
     except KeyboardInterrupt:
         node.get_logger().info("🛑 偵測到 Ctrl+C，正在關閉節點...")
     finally:
-        node.stop()
-        node.get_logger().info("🛑 節點已關閉，ROS 2 即將關閉。")
-        executor.shutdown()
-        node.destroy_node()
-
-    if rclpy.ok():
         node.stop()
         node.get_logger().info("🛑 節點已關閉，ROS 2 即將關閉。")
         executor.shutdown()

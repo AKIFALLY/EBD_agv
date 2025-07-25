@@ -12,6 +12,8 @@ from plc_proxy.plc_client import PlcClient
 from agv_base.states.idle_state import IdleState
 from agv_base.agv_status import AgvStatus
 from agv_interfaces.msg import AgvStatus as AgvStatusMsg
+from db_proxy_interfaces.msg import AGVs
+from db_proxy_interfaces.msg import Task as TaskMsg
 
 
 class AgvNodebase(Node):
@@ -27,7 +29,7 @@ class AgvNodebase(Node):
 
         # self.client = self.create_client(ReadContinuousByte, 'read_continuous_byte')
         # 輸出日誌信息
-        self.get_logger().info("ROS 2  AGV狀態機啟動 None_State")
+        self.get_logger().info("🤖ROS 2  AGV狀態機啟動 None_State")
         self.agv_status = AgvStatus()  # 初始化 AGV 狀態
         # 等待服務可用
 
@@ -51,6 +53,14 @@ class AgvNodebase(Node):
 
         # self.start(one_cycle_ms=50)
         self.last_one_sec = int(time.time() * 1000)  # 取得現在時間（ms）
+        
+        # 共用變數初始化
+        self.pathdata = None  # 路徑資料
+        self.mission_id = None  # 任務ID
+        self.node_id = None  # 任務目標節點
+        self.AGV_id = 0  # AGV ID
+        self.task = TaskMsg()
+        self.agvsubscription = None  # AGVs 訂閱物件
 
     def start(self, one_cycle_ms=50):
         """啟動搖桿監聽 (獨立執行緒)"""
@@ -154,13 +164,13 @@ class AgvNodebase(Node):
         try:
             msg = AgvStatusMsg()
             msg.agv_id = self.agv_status.AGV_ID or ""
-            msg.slam_x = self.agv_status.AGV_SLAM_X or 0
-            msg.slam_y = self.agv_status.AGV_SLAM_Y or 0
-            msg.slam_theta = self.agv_status.AGV_SLAM_THETA or 0
-            msg.power = self.agv_status.POWER or 0.0
-            msg.x_speed = self.agv_status.AGV_X_SPEED or 0
-            msg.y_speed = self.agv_status.AGV_Y_SPEED or 0
-            msg.theta_speed = self.agv_status.AGV_THETA_SPEED or 0
+            msg.slam_x = float(self.agv_status.AGV_SLAM_X) if self.agv_status.AGV_SLAM_X is not None else 0.0
+            msg.slam_y = float(self.agv_status.AGV_SLAM_Y) if self.agv_status.AGV_SLAM_Y is not None else 0.0
+            msg.slam_theta = float(self.agv_status.AGV_SLAM_THETA) if self.agv_status.AGV_SLAM_THETA is not None else 0.0
+            msg.power = float(self.agv_status.POWER) if self.agv_status.POWER is not None else 0.0
+            msg.x_speed = float(self.agv_status.AGV_X_SPEED) if self.agv_status.AGV_X_SPEED is not None else 0.0
+            msg.y_speed = float(self.agv_status.AGV_Y_SPEED) if self.agv_status.AGV_Y_SPEED is not None else 0.0
+            msg.theta_speed = float(self.agv_status.AGV_THETA_SPEED) if self.agv_status.AGV_THETA_SPEED is not None else 0.0
             msg.front_pgv = self.agv_status.AGV_FPGV or 0
             msg.back_pgv = self.agv_status.AGV_BPGV or 0
             msg.start_point = self.agv_status.AGV_START_POINT or 0
@@ -180,8 +190,8 @@ class AgvNodebase(Node):
             msg.layer = self.agv_status.AGV_LAYER or 0
 
             self._status_publisher.publish(msg)
-        except:
-            self.get_logger().error("Error publishing AGV_PLC data")
+        except Exception as e:
+            self.get_logger().error(f"Error publishing AGV_PLC data: {e}")
             pass
     # 讀取AGV_PLC資料回傳
 
@@ -252,6 +262,44 @@ class AgvNodebase(Node):
             pass
         else:
             self.get_logger().warn("⚠️ 狀態寫入PLC失敗")
+
+    # 共用方法
+    def setup_common_parameters(self):
+        """設置共用參數"""
+        self.declare_parameter("room_id", 0)  # 預設房間ID為0
+        self.room_id = self.get_parameter(
+            "room_id").get_parameter_value().integer_value  # 取得room_id參數值
+        self.get_logger().info(f"✅ 已接收 room_id: {self.room_id}")
+
+    def setup_agv_subscription(self):
+        """設置 AGVs 訂閱"""
+        self.agvsubscription = self.create_subscription(
+            AGVs, '/agvc/agvs', self.agvs_callback, 10)  # QoS profile depth=10
+
+    def agvs_callback(self, msg: AGVs):
+        """處理 AGVs 訂閱消息 - 共用回調方法"""
+        namespace = self.get_namespace().lstrip('/')
+        self.get_logger().info(f"📥 當前命名空間: {namespace}")
+        self.get_logger().info(f"📦 接收 AGVs 數量: {len(msg.datas)}")
+
+        # 調試用：列出所有 AGV 資訊（如需調試請取消註解）
+        # for i, a in enumerate(msg.datas):
+        #    self.get_logger().debug(f"[{i}] AGV: id={a.id}, name={a.name}")
+
+        agv = next((a for a in msg.datas if a.name == namespace), None)
+
+        if agv:
+            self.AGV_id = agv.id
+            self.get_logger().info(f"✅ 訂閱到 AGV_ID: {self.AGV_id} Name: {agv.name}")
+            self.destroy_subscription(self.agvsubscription)
+            self.get_logger().info("✅ 停止訂閱 AGVs 訊息")
+        else:
+            self.get_logger().warn("⚠️ 找不到符合命名空間的 AGV")
+
+    def common_state_changed(self, old_state, new_state):
+        """共用的狀態變更日誌"""
+        self.get_logger().info(
+            f"狀態變更: {old_state.__class__.__name__} -> {new_state.__class__.__name__}")
 
     def destroy_node(self):
         self.stop()

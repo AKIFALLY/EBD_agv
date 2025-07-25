@@ -16,15 +16,7 @@ class AGVCommandProxy:
             try:
                 with open(config_path, 'r') as f:
                     yaml_data = yaml.safe_load(f)
-                    agv_id = node.get_namespace().strip('/')
-                    if agv_id in yaml_data:
-                        self.address_map = yaml_data[agv_id]
-                    else:
-                        node.get_logger().warn(
-                            f"⚠️ YAML 中找不到設定: {agv_id}，使用預設值")
-                        node.get_logger().warn(
-                            f"⚠️ YAML 中找不到設定: {agv_id}，使用預設值")
-                        self.address_map = self.default_map()
+                    self.address_map = yaml_data
             except Exception as e:
                 node.get_logger().error(f"❌ YAML 解析錯誤: {e}，使用預設值")
                 self.address_map = self.default_map()

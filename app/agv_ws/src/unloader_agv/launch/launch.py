@@ -28,56 +28,53 @@ def generate_launch_description():
     except (ValueError, IndexError):
         room_id = 1  # 預設值
 
-    # 參數檔路徑
-    param_file = "/app/config/ecs_config.yaml"
     agv_command_file = "/app/agv_cmd_service_ws/src/agv_cmd_service/config/agv_cmd_service.yaml"
+    agv_base_config = "/app/config/agv/base_config.yaml"
 
-    print(f"📦 Unloader AGV Launch 配置:")
+    print(f"� Loader AGV Launch 配置:")
     print(f"  AGV_ID: {agv_id}")
     print(f"  ROS_NAMESPACE: {ros_namespace}")
     print(f"  DEVICE_CONFIG_FILE: {device_config_file}")
     print(f"  ROOM_ID: {room_id}")
 
     # 確保檔案存在
-    if not os.path.exists(param_file):
-        print(f"⚠️ YAML 設定檔不存在: {param_file}")
     if not os.path.exists(agv_command_file):
-        print(f"⚠️ YAML 設定檔不存在: {agv_command_file}")
+        print(f"⚠️ agv_command_file 設定檔不存在: {agv_command_file}")
     if not os.path.exists(device_config_file):
         print(f"⚠️ 設備配置檔不存在: {device_config_file}")
+    if not os.path.exists(agv_base_config):
+        print(f"⚠️ agv_base_config檔案不存在: {agv_base_config}")
 
-    # 讀入 AGV 設定
-    config = load_yaml_config(param_file, agv_id)
+    # 不再讀取 config，直接用 device_config_file 作為 ROS 2 node 參數檔
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            'param_file',
-            default_value=param_file,
-            description='Path to ecs_config.yaml'
-        ),
-
         DeclareLaunchArgument(
             'agv_command_file',
             default_value=agv_command_file,
             description='Path to agv command file'
         ),
 
-        # ✅ plc_service 使用解析後的參數 dict
         Node(
             package='plc_proxy',
             executable='plc_service',
             name='plc_service',
             namespace=agv_id,
-            parameters=[param_file, device_config_file],
+            parameters=[device_config_file],
         ),
 
-        # ✅ unloader_agv 核心節點
         Node(
-            package='unloader_agv',
-            executable='agv_core_node',
-            name='agv_core_node',
+            package='joy_linux',
+            executable='joy_linux_node',
+            name='joy_linux_node',
             namespace=agv_id,
-            parameters=[{"room_id": room_id}],
+            parameters=[{"dev": "/dev/input/js0"}],
         ),
 
+        Node(
+           package='unloader_agv',
+           executable='agv_core_node',
+           name='agv_core_node',
+           namespace=agv_id,
+           parameters=[{"room_id": room_id}],
+        ),
     ])

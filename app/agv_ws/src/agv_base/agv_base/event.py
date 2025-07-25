@@ -21,7 +21,7 @@ class Event:
 
     def __call__(self, *args, **kwargs):
         if self.print_event:
-            print(f"[Event] {self.name} triggered with args={args} kwargs={kwargs}")
+            print(f"🟢[Event] {self.name} triggered with args={args} kwargs={kwargs}")
         for handler in self._handlers:
             try:
                 if inspect.iscoroutinefunction(handler):
@@ -30,6 +30,6 @@ class Event:
                     handler(*args, **kwargs)
             except Exception as e:
                 if self.pass_exception:
-                    print(f"[Event] Error in handler {handler}: {e}")
+                    print(f"🔴[Event] Error in handler {handler}: {e}")
                 else:
                     raise

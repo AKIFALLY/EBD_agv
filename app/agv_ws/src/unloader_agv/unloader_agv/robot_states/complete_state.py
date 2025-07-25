@@ -18,7 +18,7 @@ class CompleteState(State):
         self.reset_completed = False
 
     def enter(self):
-        self.node.get_logger().info("Robot 目前狀態: Complete")
+        self.node.get_logger().info("🤖Robot 目前狀態: Complete")
 
     def leave(self):
         self.node.get_logger().info("Robot 離開 Complete 狀態")

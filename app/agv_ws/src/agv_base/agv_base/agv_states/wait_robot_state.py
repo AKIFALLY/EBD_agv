@@ -13,16 +13,16 @@ class WaitRobotState(State):
         
 
     def enter(self):
-        self.node.get_logger().info("AGV 進入: WaitRobot 狀態")
+        self.node.get_logger().info("🤖 AGV 進入: WaitRobot 狀態")
 
     def leave(self):
-        self.node.get_logger().info("AGV 離開 WaitRobot 狀態")
+        self.node.get_logger().info("🚪 AGV 離開 WaitRobot 狀態")
 
     def handle(self, context):
         
         if self.count > 100:
             self.count = 0
-            self.node.get_logger().info(f"AGV WaitRobot")
+            self.node.get_logger().info(f"🤖 AGV WaitRobot")
             self.test+=1
         
         self.count += 1
@@ -31,10 +31,10 @@ class WaitRobotState(State):
             self.node.task.status_id = 3 #更新狀態為執行中
             self.agvdbclient.async_update_task(self.node.task,self.task_update_callback)  # 更新任務狀態為執行中
 
-            self.node.get_logger().info("AGV 機器人已完成工作，回到mission select 狀態")
+            self.node.get_logger().info("✅ AGV 機器人已完成工作，回到mission select 狀態")
             self.node.robot_finished = False # 重置機器人完成狀態
 
-            self.node.get_logger().info("ForceON MR7008 刪除路徑資料")
+            self.node.get_logger().info("🗑️ ForceON MR7008 刪除路徑資料")
             self.plc_client.async_force_on('MR', '7008', self.force_callback)     #PLC寫入路徑
 
             from agv_base.agv_states.mission_select_state import MissionSelectState

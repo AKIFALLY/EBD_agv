@@ -5,7 +5,7 @@ import threading
 
 
 class SensorPart:
-    def __init__(self, host='192.168.12.224', port=2005):
+    def __init__(self, host='192.168.2.100', port=2005):
         self.host = host
         self.port = port
         self.client_socket = None

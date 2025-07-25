@@ -21,7 +21,7 @@ class IdleState(State):
         self.exit_work = int(str(self.node.room_id)+"00" + self.EXIT + self.TAKE)
 
     def enter(self):
-        self.node.get_logger().info("robot 目前狀態: Idle")
+        self.node.get_logger().info("🤖robot 目前狀態: Idle")
 
     def leave(self):
         self.node.get_logger().info("robot 離開 Idle 狀態")

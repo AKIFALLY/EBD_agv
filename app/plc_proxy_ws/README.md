@@ -291,15 +291,15 @@ source install/setup.bash
 
 ### 2. 啟動 PLC 服務
 ```bash
-# 使用預設配置啟動 (預設 IP: 192.168.12.224)
+# 使用預設配置啟動 (預設 IP: 192.168.2.100)
 ros2 run plc_proxy plc_service
 
 # 指定 PLC IP 位址
-ros2 run plc_proxy plc_service --ros-args -p plc_ip:="192.168.12.224"
+ros2 run plc_proxy plc_service --ros-args -p plc_ip:="192.168.2.100"
 
 # 指定讀取範圍參數
 ros2 run plc_proxy plc_service --ros-args \
-  -p plc_ip:="192.168.12.224" \
+  -p plc_ip:="192.168.2.100" \
   -p read_ranges:="['DM,7600,200','DM,5000,200']"
 
 # 在命名空間中啟動
@@ -322,7 +322,7 @@ ros2 service call /read_data plc_interfaces/srv/ReadData \
 ### 4. 服務參數配置
 ```yaml
 # 主要參數
-plc_ip: "192.168.12.224"          # PLC IP 位址
+plc_ip: "192.168.2.100"          # PLC IP 位址
 read_ranges:                      # 自動讀取範圍
   - "DM,7600,200"                # DM7600 開始讀取 200 個 word
   - "DM,5000,200"                # DM5000 開始讀取 200 個 word
@@ -540,7 +540,7 @@ print('✅ Keyence PLC 依賴載入成功')
 ### 4. 服務功能測試 (需要實際 PLC)
 ```bash
 # 啟動 PLC 服務 (在背景執行)
-ros2 run plc_proxy plc_service --ros-args -p plc_ip:="192.168.12.224" &
+ros2 run plc_proxy plc_service --ros-args -p plc_ip:="192.168.2.100" &
 
 # 等待服務啟動
 sleep 3
@@ -576,7 +576,7 @@ python3 ros_batched_service_client.py
 ### PLC 連線配置
 ```python
 # 預設配置參數
-DEFAULT_PLC_IP = "192.168.12.224"    # PLC IP 位址
+DEFAULT_PLC_IP = "192.168.2.100"    # PLC IP 位址
 DEFAULT_PLC_PORT = 8501              # PLC 通訊埠
 DEFAULT_READ_RANGES = [              # 自動讀取範圍
     "DM,7600,200",                   # DM7600 開始讀取 200 個 word
@@ -638,10 +638,10 @@ python3 -c "import sys; print('\\n'.join(sys.path))"
 **解決方法**:
 ```bash
 # 檢查 PLC 網路連線
-ping 192.168.12.224
+ping 192.168.2.100
 
 # 檢查 PLC 埠是否開啟
-telnet 192.168.12.224 8501
+telnet 192.168.2.100 8501
 
 # 檢查服務參數
 ros2 param list /plc_service
@@ -650,7 +650,7 @@ ros2 param get /plc_service plc_ip
 # 測試基本連線
 python3 -c "
 from keyence_plc.keyence_plc_com import KeyencePlcCom
-plc = KeyencePlcCom('192.168.12.224', 8501)
+plc = KeyencePlcCom('192.168.2.100', 8501)
 try:
     plc.connect()
     print('✅ PLC 連線成功')

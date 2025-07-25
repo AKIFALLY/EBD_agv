@@ -1,21 +1,16 @@
-# Unloader02 AGV 專屬配置檔案（精簡版）
-device_info:
-  device_id: "unloader02"
-  device_type: "unloader"
-  description: "卸載型 AGV #2"
-  room_id: 2
 
-agv_parameters:
-  max_speed: 1.8
-  max_payload: 600
-  safety_distance: 0.45
-
-ros_nodes:
+unloader02:
   agv_core_node:
-    package: "unloader_agv"
-    executable: "agv_core_node"
-    namespace: "/unloader02"
-    parameters:
-      room_id: 2
-      agv_type: "unloader"
+    ros__parameters:
       device_id: "unloader02"
+      device_type: "unloader"
+      description: "貨物搬運型 AGV #2"
+      room_id: 2
+      max_speed: 1.5
+      max_payload: 500
+      safety_distance: 0.5
+
+  plc_service:
+    ros__parameters:
+      plc_ip: "192.168.2.101"
+      plc_port: 8501

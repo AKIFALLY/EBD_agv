@@ -43,7 +43,7 @@ class IdleState(State):
         self.put_oven_end = int(self.room_id_str + self.OVEN + "02" + self.PUT)
 
     def enter(self):
-        self.node.get_logger().info("Unloader Robot 目前狀態: Idle")
+        self.node.get_logger().info("🤖Unloader Robot 目前狀態: Idle")
 
     def leave(self):
         self.node.get_logger().info("Unloader Robot 離開 Idle 狀態")

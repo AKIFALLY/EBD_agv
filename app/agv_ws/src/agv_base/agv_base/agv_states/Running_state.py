@@ -14,15 +14,15 @@ class RunningState(State):
         # 假設有一個 RobotContext 類別來管理機器人狀態
 
     def enter(self):
-        self.node.get_logger().info("AGV 進入: Running 狀態")
+        self.node.get_logger().info("🏃 AGV 進入: Running 狀態")
 
     def leave(self):
-        self.node.get_logger().info("AGV 離開 Running 狀態")
+        self.node.get_logger().info("🚪 AGV 離開 Running 狀態")
 
     def handle(self, context):
         # self.node.get_logger().info("AGV Running 狀態")
         if not self.node.agv_status.AGV_PATH:
-            self.node.get_logger().info("AGV 沒有路徑資料，回到任務選擇狀態")
+            self.node.get_logger().info("⚠️ AGV 沒有路徑資料，回到任務選擇狀態")
             from agv_base.agv_states.mission_select_state import MissionSelectState
             context.set_state(MissionSelectState(self.node))
         # 如果有路徑資料，則持續運行狀態
@@ -30,12 +30,12 @@ class RunningState(State):
 
             if self.count > 100:
                 self.count = 0
-                self.node.get_logger().info(f"AGV RunningState... ")
+                self.node.get_logger().info(f"🏃 AGV RunningState... ")
 
             self.count += 1
 
         if self.node.agv_status.AGV_2POSITION:
-            self.node.get_logger().info("AGV 到達目標位置")
+            self.node.get_logger().info("✅ AGV 到達目標位置")
             self.node.robot_finished = False  # 重置機器人完成狀態
             from agv_base.agv_states.wait_robot_state import WaitRobotState
             context.set_state(WaitRobotState(self.node))

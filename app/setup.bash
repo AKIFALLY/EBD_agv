@@ -375,7 +375,13 @@ app_download() {
 
 # 定義 source_all 函式，會載入所有指定的 workspace 路徑
 all_source() {
-    echo "🔧 載入所有工作空間 (按依賴順序)..."
+    ## 自動載入設備識別與環境變數
+    #if [ -f "/app/scripts/config_driven_device_detector.bash" ]; then
+    #    source /app/scripts/config_driven_device_detector.bash
+    #else
+    #    echo "⚠️ 找不到設備識別腳本 /app/scripts/config_driven_device_detector.bash"
+    #fi
+    #echo "🔧 載入所有工作空間 (按依賴順序)..."
 
     # 確保 ROS 2 環境已載入
     if [ -z "$ROS_DISTRO" ]; then

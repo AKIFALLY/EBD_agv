@@ -21,7 +21,7 @@ class MissionSelectState(State):
         self.localMission = False  # 觸發Local端任務旗標
 
     def enter(self):
-        self.node.get_logger().info("AGV 進入: Mission Select")
+        self.node.get_logger().info("🎯 AGV 進入: Mission Select")
 
         # 訂閱 task_table topic
         # self.create_subscription(String,'/task_table',self.task_table_callback)
@@ -30,7 +30,7 @@ class MissionSelectState(State):
         self.locamissiontimer = self.node.create_timer(1.0, self.local_mission)
 
     def leave(self):
-        self.node.get_logger().info("AGV 離開 Mission Select 狀態")
+        self.node.get_logger().info("🚪 AGV 離開 Mission Select 狀態")
         self.remove_subscription()  # 移除訂閱
         self.locamissiontimer.cancel()  # 取消timer
 
@@ -42,7 +42,7 @@ class MissionSelectState(State):
 
             # 如果已經有路徑
             if self.node.agv_status.AGV_PATH:
-                self.node.get_logger().info("AGV 已有路徑資料，離開 Mission Select 狀態")
+                self.node.get_logger().info("✅ AGV 已有路徑資料，離開 Mission Select 狀態")
                 # 跳過任務選擇狀態，直接切換到下一個狀態
                 from agv_base.agv_states.Running_state import RunningState
                 context.set_state(RunningState(self.node))  # 切換狀態
@@ -64,7 +64,7 @@ class MissionSelectState(State):
     def tasks_callback(self, msg: Tasks):
         tasks = msg.datas
 
-        self.node.get_logger().info(f"收到 {len(tasks)} 個任務")
+        self.node.get_logger().info(f"📦 收到 {len(tasks)} 個任務")
 
         # 篩選已執行卻未完成的任務 或是未執行但AGV已選擇
         running_tasks = [
@@ -73,7 +73,6 @@ class MissionSelectState(State):
         ]
 
         if len(running_tasks) > 0:
-
             self.node.get_logger().info("⚠️ 有正在執行的任務")
             self.node.mission_id = running_tasks[0].id
             self.node.node_id = running_tasks[0].node_id

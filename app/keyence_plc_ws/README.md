@@ -141,7 +141,7 @@ from keyence_plc.keyence_plc_com import KeyencePlcCom
 from keyence_plc.keyence_plc_command import KeyencePlcCommand
 
 # 初始化通訊
-plc_com = KeyencePlcCom("192.168.12.224", 8501)
+plc_com = KeyencePlcCom("192.168.2.100", 8501)
 
 # 連線到 PLC
 plc_com.connect()
@@ -193,7 +193,7 @@ from keyence_plc.keyence_plc_pool import KeyencePlcPool
 from keyence_plc.keyence_plc_command import KeyencePlcCommand
 
 # 初始化連線池 (最大 5 個連線)
-pool = KeyencePlcPool("192.168.12.224", 8501, max_connections=5)
+pool = KeyencePlcPool("192.168.2.100", 8501, max_connections=5)
 
 # 執行指令 (自動管理連線)
 command = KeyencePlcCommand.read_data("DM", "7600")
@@ -366,7 +366,7 @@ print(f'✅ 1000 次記憶體寫入耗時: {end_time - start_time:.3f} 秒')
 # 測試 PLC 連線
 from keyence_plc.keyence_plc_com import KeyencePlcCom
 
-plc = KeyencePlcCom("192.168.12.224", 8501)
+plc = KeyencePlcCom("192.168.2.100", 8501)
 if plc.connect():
     response = plc.send_command("?K\r\n")  # 查詢機型
     print(f"PLC 機型: {response}")
@@ -395,10 +395,10 @@ python3 -c "import sys; print('\\n'.join(sys.path))"
 **解決方法**:
 ```bash
 # 檢查網路連線
-ping 192.168.12.224
+ping 192.168.2.100
 
 # 檢查 PLC 埠是否開啟
-telnet 192.168.12.224 8501
+telnet 192.168.2.100 8501
 
 # 檢查防火牆設定
 sudo ufw status
@@ -409,7 +409,7 @@ import socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.settimeout(5)
 try:
-    sock.connect(('192.168.12.224', 8501))
+    sock.connect(('192.168.2.100', 8501))
     print('✅ PLC 連線成功')
 except Exception as e:
     print(f'❌ PLC 連線失敗: {e}')
@@ -447,7 +447,7 @@ except IndexError as e:
 # 檢查連線池狀態
 python3 -c "
 from keyence_plc.keyence_plc_pool import KeyencePlcPool
-pool = KeyencePlcPool('192.168.12.224', 8501, max_connections=2)
+pool = KeyencePlcPool('192.168.2.100', 8501, max_connections=2)
 print(f'可用連線數: {len(pool.connections)}')
 print(f'重連池大小: {len(pool.lost_connections)}')
 pool.close_connection()
@@ -456,7 +456,7 @@ pool.close_connection()
 # 強制關閉所有連線
 python3 -c "
 from keyence_plc.keyence_plc_pool import KeyencePlcPool
-pool = KeyencePlcPool('192.168.12.224', 8501)
+pool = KeyencePlcPool('192.168.2.100', 8501)
 pool.close_connection()
 print('✅ 所有連線已關閉')
 "
@@ -467,7 +467,7 @@ print('✅ 所有連線已關閉')
 ### 連線參數
 ```python
 # 預設連線配置
-DEFAULT_IP = "192.168.12.224"     # PLC IP 位址
+DEFAULT_IP = "192.168.2.100"     # PLC IP 位址
 DEFAULT_PORT = 8501               # PLC 通訊埠
 CONNECT_TIMEOUT = 5               # 連線超時 (秒)
 MAX_POOL_SIZE = 5                 # 連線池最大連線數

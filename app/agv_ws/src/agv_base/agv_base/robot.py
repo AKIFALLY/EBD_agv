@@ -115,7 +115,7 @@ class Robot():
         else:
             # 新增成功處理日誌
             success_msg = f"✅ read_pgno_callback 讀取成功: 值為 {response.value}"
-            self.node.get_logger().info(success_msg)
+            #self.node.get_logger().info(success_msg)
 
         # 檢查是否兩個讀取都完成
         if not self.pgno_read_requested and not self.error_number_read_requested:
@@ -124,8 +124,9 @@ class Robot():
             if (self.read_error_number_response is not None and
                 self.read_error_number_response.success and
                     self.read_error_number_response.value != "0"):
-                self.node.get_logger().info(
-                    f"🔍 Robot Error Number: {self.read_error_number_response.value}")
+                pass
+                #self.node.get_logger().info(
+                #    f"🔍 Robot Error Number: {self.read_error_number_response.value}")
 
     def read_error_number_callback(self, response):
         """Error Number 讀取回調函數"""
@@ -145,14 +146,15 @@ class Robot():
         else:
             # 新增成功處理日誌
             success_msg = f"✅ read_error_number_callback 讀取成功: 值為 {response.value}"
-            self.node.get_logger().info(success_msg)
+            #self.node.get_logger().info(success_msg)
 
         # 檢查是否兩個讀取都完成
         if not self.pgno_read_requested and not self.error_number_read_requested:
             self.read_step = 0
             # 記錄 Error Number 資訊（如果有的話）
             if (response.success and response.value != "0"):
-                self.node.get_logger().info(f"🔍 Robot Error Number: {response.value}")
+                #self.node.get_logger().info(f"🔍 Robot Error Number: {response.value}")
+                pass
 
     def update_pgno_callback(self, response):
         self.update_pgno_success = response.success
@@ -167,7 +169,7 @@ class Robot():
 
     def read_robot_status(self):
         """同時讀取 PGNO 和 Error Number 的方法"""
-        self.node.get_logger().info("Robot PGNO 和 Error Number 狀態更新中")
+        #self.node.get_logger().info("Robot PGNO 和 Error Number 狀態更新中")
 
         # 設備類型和地址
         device_type = 'W'
@@ -177,7 +179,7 @@ class Robot():
         match self.read_step:
             case 0:
                 # 同時發起兩個讀取請求
-                self.node.get_logger().info("發送 PGNO 和 Error Number 讀取請求")
+                #self.node.get_logger().info("發送 PGNO 和 Error Number 讀取請求")
 
                 # 讀取 PGNO
                 self.pgno_read_requested = True

@@ -18,7 +18,7 @@ class IdleState(State):
 
     def enter(self):
         self.enter_time = time.time()  # 記錄進入 Idle 狀態的時間
-        self.node.get_logger().info("Base 目前狀態: Idle")
+        self.node.get_logger().info("⚙️ Base 目前狀態: Idle")
 
     def leave(self):
         print("離開 Idle 狀態")

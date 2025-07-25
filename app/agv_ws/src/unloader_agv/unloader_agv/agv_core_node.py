@@ -10,22 +10,20 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter  # Import Parameter class
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import SingleThreadedExecutor
-import signal
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
-from agv_base.robot import Robot
-from plc_proxy.plc_client import PlcClient
 import agv_base.states.auto_state
 import agv_base.states.error_state
 import agv_base.states.idle_state
 import agv_base.states.manual_state
 from agv_base.agv_states.mission_select_state import MissionSelectState
 from agv_base.agv_states.wait_robot_state import WaitRobotState
+from agv_base.robot import Robot
 from agv_base.agv_node_base import AgvNodebase
 from agv_base.base_context import BaseContext
-from cargo_mover_agv.cargo_context import CargoContext
-from cargo_mover_agv.robot_context import RobotContext
+from unloader_agv.unloader_context import UnloaderContext
+from unloader_agv.robot_context import RobotContext
+import unloader_agv.robot_states.idle_state
 # AGVs 和 TaskMsg 現在由 AgvNodebase 提供
-import cargo_mover_agv.robot_states.idle_state
 
 
 class AgvCoreNode(AgvNodebase):
@@ -38,26 +36,23 @@ class AgvCoreNode(AgvNodebase):
 
         self.robot = Robot(self, parameter=None)
         self.hokuyo_dms_8bit_1 = HokuyoDMS8Bit(
-            self, "/app/config/hokuyo_dms_config.yaml", "hokuyo_dms_cargo02_1")
-        self.hokuyo_dms_8bit_2 = HokuyoDMS8Bit(
-            self, "/app/config/hokuyo_dms_config.yaml", "hokuyo_dms_cargo02_2")
+            self, "/app/config/hokuyo_dms_config.yaml", "hokuyo_dms_unloader02")
 
         self.base_context = BaseContext(
             agv_base.states.idle_state.IdleState(self))
-        self.cargo_context = CargoContext(
-            MissionSelectState(self))
+        self.unloader_context = UnloaderContext(MissionSelectState(self))
         self.robot_context = RobotContext(
-            cargo_mover_agv.robot_states.idle_state.IdleState(self))
+            unloader_agv.robot_states.idle_state.IdleState(self))
 
         # 輸出日誌信息
-        self.get_logger().info("🚚Cargo mover AGV狀態機啟動")
+        self.get_logger().info("Unloader AGV狀態機啟動")
 
         # base狀態機
         self.base_context.after_handle += self.base_after_handle  # after_handle
         self.base_context.on_state_changed += self.state_changed  # 狀態切換訊息
 
-        self.cargo_context.after_handle += self.agv_after_handle  # AGV狀態機
-        self.cargo_context.on_state_changed += self.state_changed  # 狀態切換訊息
+        self.unloader_context.after_handle += self.agv_after_handle  # AGV狀態機
+        self.unloader_context.on_state_changed += self.state_changed  # 狀態切換訊息
 
         self.robot_context.after_handle += self.robot_after_handle  # 手臂狀態機
         self.robot_context.on_state_changed += self.state_changed  # 狀態切換訊息
@@ -66,9 +61,8 @@ class AgvCoreNode(AgvNodebase):
         self.common_state_changed(old_state, new_state)
 
     def base_after_handle(self, state):
-        data = self.robot.read_robot_status()
-        #self.get_logger().info(f"[Robot]-讀取PGNO: {data}")
-        # 只能在 Auto 狀態下執行cargo_context.handle
+        # data = self.robot.read_pgno()
+        # self.get_logger().info(f"[Robot]-讀取PGNO: {data}")
         if isinstance(state, agv_base.states.idle_state.IdleState):
             pass
             # self.get_logger().info("[BASE]-Idle")
@@ -79,19 +73,18 @@ class AgvCoreNode(AgvNodebase):
             # self.base_context.handle()
         if isinstance(state, agv_base.states.auto_state.AutoState):
             # self.get_logger().info("[BASE]-Auto")
-            self.cargo_context.handle()
+            self.unloader_context.handle()
         if isinstance(state, agv_base.states.error_state.ErrorState):
             # self.get_logger().info("[BASE]-Error")
             pass
 
     def agv_after_handle(self, state):
         if isinstance(state, WaitRobotState):
-            # self.get_logger().info("[CARGO]-WaitRobot")
-            # self.get_logger().info("[CARGO]-Idle")
+            # self.get_logger().info("[UNLOADER]-WaitRobot")
             self.robot_context.handle()
 
     def robot_after_handle(self, state):
-        if isinstance(state, cargo_mover_agv.robot_states.idle_state.IdleState):
+        if isinstance(state, unloader_agv.robot_states.idle_state.IdleState):
             # self.get_logger().info("[Robot]-Idle")
             # self.robot_context.handle()
             pass

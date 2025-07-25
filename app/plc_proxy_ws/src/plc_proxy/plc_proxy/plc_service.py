@@ -27,13 +27,13 @@ class PlcService(Node):
         super().__init__("plc_service")
 #        self.get_logger().set_level(rclpy.logging.LoggingSeverity.ERROR)
 
-        self.declare_parameter("plc_ip", "192.168.12.224")
+        self.declare_parameter("plc_ip", "192.168.2.100")
         para_ip = self.get_parameter(
             "plc_ip").get_parameter_value().string_value
-        self.get_logger().info(f"PlcService Start {para_ip} !")
+        self.get_logger().info(f"🚀PlcService Start {para_ip} !")
 
         self.get_logger().info(
-            f"PlcService Namespace {self.get_namespace()} !")
+            f"🧩PlcService Namespace {self.get_namespace()} !")
         # 定義自動讀取plc記憶體位置
         self.declare_parameter("read_ranges", ["DM,7600,200", "DM,5000,200"])
         raw_ranges = (

@@ -18,7 +18,7 @@ class HokuyoDMS8Bit():
 
         with open(config_file, 'r') as file:
             self.config = yaml.safe_load(file)
-        self.node.get_logger().info(f"Configuration loaded: {self.config}")
+        self.node.get_logger().info(f"📦Configuration loaded: {self.config}")
 
         self.config_key = config_key
 

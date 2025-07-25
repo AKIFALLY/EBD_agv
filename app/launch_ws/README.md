@@ -453,7 +453,7 @@ ecs_core:
 
 plc_service:
   ros__parameters:
-    plc_ip: "192.168.12.224"
+    plc_ip: "192.168.2.100"
     plc_port: 8501
 ## 🔗 相關文檔
 

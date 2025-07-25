@@ -191,18 +191,19 @@ source /opt/pyvenv_env/bin/activate
     #啟動agv launch
 AGV_LOG_FILE="/tmp/agv.log"
 AGV_PID_FILE="/tmp/agv.pid"
-echo "🚀 啟動 agv launch..."
-nohup ros2 launch loader_agv launch.py > "$AGV_LOG_FILE" 2>&1 &
-echo $! > "$AGV_PID_FILE"
 
-
-    # 檢查 agv launch 是否已經運行
-if [ -f "$AGV_PID_FILE" ] && pgrep -F "$AGV_PID_FILE" > /dev/null; then
-    python3 -c "import sqlmodel; print(sqlmodel.__version__)"
-    python3 -c "import networkx; print(networkx.__version__)"
-
-
-    echo "✅ agv launch 已經在運行中 (PID: $(cat $AGV_PID_FILE))"
-else
-    echo "❌ agv launch 啟動失敗"
-fi
+#echo "🚀 啟動 agv launch..."
+#nohup ros2 launch loader_agv launch.py > "$AGV_LOG_FILE" 2>&1 &
+#echo $! > "$AGV_PID_FILE"
+#
+#
+#    # 檢查 agv launch 是否已經運行
+#if [ -f "$AGV_PID_FILE" ] && pgrep -F "$AGV_PID_FILE" > /dev/null; then
+#    python3 -c "import sqlmodel; print(sqlmodel.__version__)"
+#    python3 -c "import networkx; print(networkx.__version__)"
+#
+#
+#    echo "✅ agv launch 已經在運行中 (PID: $(cat $AGV_PID_FILE))"
+#else
+#    echo "❌ agv launch 啟動失敗"
+#fi

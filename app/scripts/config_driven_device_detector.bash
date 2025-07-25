@@ -16,7 +16,7 @@ echo "🔍 配置驅動設備身份識別開始..."
 # 檢查容器類型
 if [ -z "$CONTAINER_TYPE" ]; then
     echo "❌ CONTAINER_TYPE 環境變數未設定"
-    exit 1
+    return 1
 fi
 
 echo "📦 容器類型: $CONTAINER_TYPE"
@@ -28,7 +28,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     case "$CONTAINER_TYPE" in
         "agv") DEVICE_ID="loader02" ;;
         "agvc") DEVICE_ID="agvc01" ;;
-        *) echo "❌ 未知容器類型"; exit 1 ;;
+        *) echo "❌ 未知容器類型"; return 1 ;;
     esac
     IDENTIFICATION_METHOD="config_file_missing"
     IDENTIFICATION_SUCCESS=1
@@ -313,4 +313,4 @@ esac
 echo "✅ 配置驅動設備身份識別完成: $DEVICE_ID"
 echo "📁 身份檔案已創建: /app/.device_identity"
 
-exit $IDENTIFICATION_SUCCESS
+return $IDENTIFICATION_SUCCESS

@@ -27,7 +27,7 @@ class PlcClient:
 
 
         # 使用 namespace 構建每個服務的名稱
-        node._logger.info(f"Using namespace: {self.namespace}")
+        node._logger.info(f"🧭Using namespace: {self.namespace}")
         self.client_force_on = None
         self.client_force_off = None
         self.client_read = None

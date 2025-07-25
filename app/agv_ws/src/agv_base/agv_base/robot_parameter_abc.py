@@ -13,7 +13,7 @@ class RobotParameterABC(ABC):
         return str(int_pack).zfill(10)  # write continuous data 讀取時需要10位數
 
     @abstractmethod
-    def update_parameter(self):
+    def calculate_parameter(self):
         pass
 
     @abstractmethod

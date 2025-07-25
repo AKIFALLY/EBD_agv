@@ -74,7 +74,7 @@ class JoyHandler:
 
             for i, value in enumerate(msg.axes):
                 value = round(value, 2)
-                if abs(value - self._prev_axes[i]) > 0.05:
+                if abs(value - self._prev_axes[i]) > 0.95:
                     self._prev_axes[i] = value
                     if i in self._axis_callbacks:
                         self._axis_callbacks[i](i, value)

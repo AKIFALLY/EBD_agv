@@ -16,7 +16,7 @@ agv_devices:
     launch_file: launch.py
     launch_package: cargo_mover_agv
     mac_addresses:
-    - AA:BB:CC:DD:EE:02
+    - CC:82:7F:5C:FD:42
     - AA:BB:CC:DD:EE:12
   loader01:
     config_file: loader01_config.yaml
@@ -29,7 +29,7 @@ agv_devices:
     - AA:BB:CC:DD:EE:13
   loader02:
     config_file: loader02_config.yaml
-    description: '裝載型 AGV #2'
+    description: '裝載型 AGV #2 (MAC 更新: 2025-07-24 06:15)'
     device_type: loader
     launch_file: launch.py
     launch_package: loader_agv
@@ -60,9 +60,9 @@ agvc_devices:
     description: AGVC 主節點 - 完整服務控制器
     device_type: primary_controller
     mac_addresses:
-    - 02:42:00:00:00:01          # 固定 MAC 地址（Docker Compose 配置）
-    - D8:43:AE:D2:D3:EA          # 宿主機 MAC 地址
-    - 7A:4A:7E:0C:BE:BF          # 容器當前 MAC 地址（重啟前）
+    - 02:42:00:00:00:01
+    - D8:43:AE:D2:D3:EA
+    - 7A:4A:7E:0C:BE:BF
     role: primary
     services:
     - postgresql

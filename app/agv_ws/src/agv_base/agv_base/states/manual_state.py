@@ -67,6 +67,7 @@ class ManualState(State):
             (DIRECTION_BACKWARD, JoyHandler.D_PAD_Y_AXIS, 0.0): (DIRECTION_NONE, "backward", False),
             (DIRECTION_RIGHT, JoyHandler.D_PAD_X_AXIS, 0.0): (DIRECTION_NONE, "shift_right", False),
             (DIRECTION_LEFT, JoyHandler.D_PAD_X_AXIS, 0.0): (DIRECTION_NONE, "shift_left", False),
+
         }
         """進入 Manual 狀態，註冊搖桿按鈕與軸事件"""
         self.node.get_logger().info("🎮 進入 Manual 狀態，等待搖桿手動移動指令")

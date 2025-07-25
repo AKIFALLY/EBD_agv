@@ -18,10 +18,14 @@ class PutCleanerState(BaseRobotState):
         self.agvc_client = AGVCDatabaseClient(self.node)
         # 簡化 Carrier 更新邏輯：只需更新一個 carrier
         self.update_carrier_success = False
-        self.sent = False def enter(self):
+        self.sent = False
+
+    def enter(self):
         self.node.get_logger().info("Loader Robot Put Cleaner 目前狀態: PutCleaner")
         self.update_carrier_success = False
-        self.sent = False def leave(self):
+        self.sent = False
+
+    def leave(self):
         self.node.get_logger().info("Loader Robot Put Cleaner 離開 PutCleaner 狀態")
         self.update_carrier_success = False
         self.sent = False

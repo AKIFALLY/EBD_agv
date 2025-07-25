@@ -1,40 +1,16 @@
-# Cargo01 AGV 專屬配置檔案（精簡版）
-# 僅包含實際被使用的核心參數
 
-# ============================================================================
-# 設備基本資訊
-# ============================================================================
-device_info:
-  device_id: "cargo01"
-  device_type: "cargo"
-  description: "貨物搬運型 AGV #1"
-  room_id: 1
-
-# ============================================================================
-# 核心 AGV 參數
-# ============================================================================
-agv_parameters:
-  max_speed: 1.5                     # 最大速度 (m/s)
-  max_payload: 500                   # 最大負載 (kg)
-  safety_distance: 0.5               # 安全距離 (m)
-
-# ============================================================================
-# ROS 2 節點配置
-# ============================================================================
-ros_nodes:
+cargo01:
   agv_core_node:
-    package: "cargo_mover_agv"
-    executable: "agv_core_node"
-    namespace: "/cargo01"
-    parameters:
+    ros__parameters:
+      device_id: "cargo01"
+      device_type: "cargo"
+      description: "貨物搬運型 AGV #1"
       room_id: 1
-      agv_type: "cargo"
-      device_id: "cargo01"
-      
+      max_speed: 1.5
+      max_payload: 500
+      safety_distance: 0.5
+
   plc_service:
-    package: "plc_proxy"
-    executable: "plc_service"
-    namespace: "/cargo01"
-    parameters:
-      plc_ip: "192.168.2.100"
-      device_id: "cargo01"
+    ros__parameters:
+      plc_ip: "192.168.2.101"
+      plc_port: 8501

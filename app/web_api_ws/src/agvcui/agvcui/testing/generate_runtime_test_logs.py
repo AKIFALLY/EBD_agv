@@ -65,7 +65,7 @@ def generate_runtime_test_logs():
             "File {filename} processed successfully",
             "System health check passed",
             "Connection established with {device}",
-            "Configuration loaded from {config_file}"
+            "📦Configuration loaded from {config_file}"
         ],
         30: [  # WARN
             "Battery level low: {battery}%",

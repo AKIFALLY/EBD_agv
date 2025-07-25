@@ -54,7 +54,7 @@ class IdleState(State):
         self.put_pre_dryer_end = int(self.room_id_str + self.PRE_DRYER + "08" + self.PUT)
 
     def enter(self):
-        self.node.get_logger().info("robot 目前狀態: Idle")
+        self.node.get_logger().info("🤖robot 目前狀態: Idle")
 
     def leave(self):
         self.node.get_logger().info("robot 離開 Idle 狀態")

@@ -1,14 +1,14 @@
 agv01:
   plc_service:
     ros__parameters:
-      plc_ip: "192.168.12.224"
+      plc_ip: "192.168.2.100"
       read_ranges:
         - "DM,7600,200"
 
 agv02:
   plc_service:
     ros__parameters:
-      plc_ip: "192.168.12.224"
+      plc_ip: "192.168.2.100"
       read_ranges:
         - "DM,7600,200"
 cargo02:
@@ -37,7 +37,7 @@ unloader02:
 agvc:
   plc_service:
     ros__parameters:
-      plc_ip: "192.168.12.224"
+      plc_ip: "192.168.2.100"
       read_ranges:
         - "DM,7600,20"
         - "DM,11000,20"
