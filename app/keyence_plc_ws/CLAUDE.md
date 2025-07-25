@@ -74,16 +74,45 @@ class KeyencePlcCommand:
 - 連線超時: 5秒 (CONNECT_TIMEOUT)
 - 支援設備類型: MR(繼電器), DM(資料記憶體)
 
-## 開發指令
+## 🔧 開發工具指南
 
-### 環境設定
+### 宿主機操作 (推薦用於診斷和管理)
+
+#### PLC 連接診斷工具
+```bash
+# 網路連接檢查
+scripts/network-tools/connectivity-test.sh performance --target <PLC_IP>
+scripts/network-tools/port-check.sh --port <PLC_PORT> --host <PLC_IP>
+
+# PLC 通訊日誌分析
+scripts/log-tools/log-analyzer.sh agv | grep -i "plc\|keyence"  # AGV PLC 日誌
+scripts/log-tools/log-analyzer.sh agvc | grep -i "plc\|keyence" # AGVC PLC 日誌
+
+# 容器管理
+source scripts/docker-tools/docker-tools.sh
+agv_health   # AGV 容器健康檢查 (含 PLC 服務)
+agvc_health  # AGVC 容器健康檢查 (含 PLC 服務)
+```
+
+#### 開發工作流工具
+```bash
+# 建置和測試
+source scripts/dev-tools/dev-tools.sh
+dev_build --workspace keyence_plc_ws
+dev_test --workspace keyence_plc_ws
+dev_check --workspace keyence_plc_ws --severity warning
+```
+
+### 容器內操作 (ROS 2 開發)
+
+#### 環境設定
 ```bash
 # AGV容器內
-source /app/setup.bash && all_source
+source /app/setup.bash && all_source  # 或使用 agv_source
 cd /app/keyence_plc_ws
 
 # AGVC容器內  
-source /app/setup.bash && agvc_source
+source /app/setup.bash && agvc_source  # 或使用 all_source (自動檢測)
 cd /app/keyence_plc_ws
 ```
 

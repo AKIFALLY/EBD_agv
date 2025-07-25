@@ -25,12 +25,41 @@ src/
 - **狀態同步**: AGV狀態與KUKA系統同步
 - **錯誤處理**: KUKA系統錯誤處理與恢復
 
-## 開發指令
+## 🔧 開發工具指南
 
-### 環境設定 (AGVC容器內)
+### 宿主機操作 (推薦用於診斷和管理)
+
+#### WCS 系統診斷工具
+```bash
+# AGVC 系統健康檢查 (含 WCS)
+source scripts/docker-tools/docker-tools.sh
+agvc_health                          # AGVC 系統健康檢查
+agvc_services                        # 所有服務狀態檢查
+
+# WCS 和 KUKA 日誌分析
+scripts/log-tools/log-analyzer.sh agvc | grep -i "wcs\|kuka"    # WCS 相關日誌
+scripts/log-tools/log-analyzer.sh agvc --stats --filter "wcs"
+
+# KUKA Fleet 連接診斷
+scripts/network-tools/connectivity-test.sh performance --target <KUKA_FLEET_IP>
+quick_agvc "check_agvc_status"       # 檢查 WCS 狀態
+```
+
+#### 開發工作流工具
+```bash
+# 建置和測試
+source scripts/dev-tools/dev-tools.sh
+dev_build --workspace wcs_ws
+dev_test --workspace wcs_ws
+dev_check --workspace wcs_ws --severity warning
+```
+
+### 容器內操作 (ROS 2 開發)
+
+#### 環境設定 (AGVC容器內)
 ```bash
 source /app/setup.bash
-agvc_source  # 載入AGVC工作空間
+agvc_source  # 載入AGVC工作空間 (或使用 all_source 自動檢測)
 cd /app/wcs_ws
 ```
 

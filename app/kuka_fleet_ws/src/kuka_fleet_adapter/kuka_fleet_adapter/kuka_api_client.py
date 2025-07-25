@@ -4,7 +4,7 @@ import requests
 
 
 class KukaApiClient:
-    def __init__(self, base_url="http://192.168.11.206:10870", username=None, password=None):
+    def __init__(self, base_url="http://192.168.10.3:10870", username=None, password=None):
         """
         初始化 Kuka API 客戶端。
         :param base_url: Kuka API 的基礎 URL。
@@ -153,7 +153,7 @@ class KukaApiClient:
 
     def container_query_all(self, query_dto: dict):
         """容器查詢(包括入場和離場) - POST /api/amr/containerQueryAll"""
-        return self._post_request("/api/amr/containerQueryAll", data=query_dto, include_auth=False)
+        return self._post_request("/api/amr/containerQueryAll", data=query_dto)
 
     def query_all_container_model_code(self):
         """查詢所有容器模型 - GET /api/amr/queryAllContainerModelCode"""
@@ -268,6 +268,55 @@ class KukaApiClient:
     def robot_query(self, query_dto: dict):
         """機器人狀態查詢接口 - POST /api/amr/robotQuery"""
         return self._post_request("/api/amr/robotQuery", data=query_dto)
+    
+    # --- 便利方法 ---
+    
+    def get_all_robots(self):
+        """獲取所有機器人狀態 - 便利方法"""
+        return self.robot_query({})
+    
+    def get_robot_by_id(self, robot_id: str):
+        """根據機器人ID查詢狀態 - 便利方法"""
+        return self.robot_query({"robotId": robot_id})
+    
+    def get_all_containers_in_map(self):
+        """獲取所有在場容器 - 便利方法"""
+        return self.container_query({})
+    
+    def get_container_by_code(self, container_code: str):
+        """根據容器代碼查詢 - 便利方法"""
+        return self.container_query_all({"containerCode": container_code})
+    
+    def get_jobs_by_status(self, status: int):
+        """根據狀態查詢作業 - 便利方法
+        Args:
+            status: 0=All, 1=Pending, 2=Running, 3=Completed, 4=Failed, 5=Cancelled
+        """
+        return self.job_query({"status": status})
+    
+    def get_running_jobs(self):
+        """獲取運行中的作業 - 便利方法"""
+        return self.get_jobs_by_status(2)
+    
+    def get_pending_jobs(self):
+        """獲取待執行的作業 - 便利方法"""
+        return self.get_jobs_by_status(1)
+    
+    def is_token_valid(self):
+        """檢查 token 是否有效 - 便利方法"""
+        if not self.token:
+            return False
+        # 嘗試調用一個簡單的 API 來驗證 token
+        try:
+            result = self.area_query()
+            return result.get("success", False)
+        except:
+            return False
+    
+    def force_relogin(self, username: str, password: str):
+        """強制重新登入 - 便利方法"""
+        self.token = None
+        return self.login(username, password)
 
 
 if __name__ == "__main__":

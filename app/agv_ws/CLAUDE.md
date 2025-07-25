@@ -25,18 +25,79 @@ src/
 - `agv_base/agv_states/` - 狀態機基礎實現
 - `*/robot_context.py` - 機械臂上下文管理
 
-## 開發指令
+## 🔧 開發工具指南
 
-### 環境設定 (容器內)
+### 宿主機操作 (Docker 容器管理)
+
+#### AGV 容器管理工具
+```bash
+# 載入 Docker 工具集
+source scripts/docker-tools/docker-tools.sh
+
+# AGV 容器基本操作
+agv_start                    # 啟動 AGV 容器
+agv_stop                     # 停止 AGV 容器  
+agv_restart                  # 重啟 AGV 容器
+agv_status                   # 查看 AGV 容器狀態
+agv_logs                     # 查看 AGV 容器日誌
+agv_health                   # AGV 容器健康檢查
+
+# 快速進入 AGV 開發環境
+agv_enter                    # 進入 AGV 容器 (自動載入 agv_source)
+
+# 快速執行 AGV 容器內指令
+quick_agv "build_all"        # 在 AGV 容器內執行建置
+quick_agv "ros2 node list"   # 在 AGV 容器內執行 ROS 2 指令
+```
+
+#### 系統診斷工具 (宿主機執行)
+```bash
+# 系統健康檢查
+scripts/system-tools/health-check.sh --quick     # 快速健康檢查
+scripts/system-tools/service-monitor.sh status   # 服務狀態監控
+
+# AGV 專項診斷
+scripts/docker-tools/container-status.sh agv     # AGV 容器狀態詳情
+scripts/log-tools/log-analyzer.sh agv --stats    # AGV 日誌分析
+
+# 網路和通訊診斷
+scripts/network-tools/zenoh-network.sh agv-check # AGV Zenoh 通訊檢查
+scripts/network-tools/port-check.sh --verbose    # 端口連接檢查
+```
+
+#### 開發工作流工具 (宿主機執行)
+```bash
+# 載入開發工具集
+source scripts/dev-tools/dev-tools.sh
+
+# AGV 工作空間開發
+dev_build --workspace agv_ws          # 建置 AGV 工作空間
+dev_test --workspace agv_ws           # 測試 AGV 工作空間
+dev_check --workspace agv_ws --severity warning  # 代碼品質檢查
+
+# 完整開發流程
+scripts/dev-tools/build-helper.sh fast --workspace agv_ws    # 快速建置
+scripts/dev-tools/test-runner.sh unit --workspace agv_ws     # 單元測試
+scripts/dev-tools/code-analyzer.sh style --workspace agv_ws  # 代碼風格檢查
+```
+
+### 容器內操作 (ROS 2 開發)
+
+#### 環境設定 (容器內)
 ```bash
 source /app/setup.bash
-all_source  # 載入所有工作空間
+all_source  # 載入所有工作空間 (或使用 agv_source 載入 AGV 專用)
 cd /app/agv_ws
 ```
 
-### 構建與測試 (容器內執行)
+#### 構建與測試 (容器內執行)
 ```bash
-# 必須先進入容器並載入環境
+# 【方法1: 透過宿主機工具進入】(推薦)
+# 在宿主機執行：
+source scripts/docker-tools/docker-tools.sh
+agv_enter  # 自動進入 AGV 容器並載入環境
+
+# 【方法2: 手動進入容器】
 docker compose -f docker-compose.yml exec rosagv bash  # AGV容器
 source /app/setup.bash && all_source
 
@@ -51,8 +112,16 @@ colcon test --packages-select agv_base loader_agv
 python3 src/agv_base/agv_base/test_agv_node.py
 ```
 
-### 啟動服務 (容器內執行，launch檔案驗證存在)
+#### 啟動服務 (容器內執行，launch檔案驗證存在)
 ```bash
+# 【方法1: 透過宿主機工具】(推薦)
+# 在宿主機執行：
+source scripts/docker-tools/docker-tools.sh
+quick_agv "ros2 launch loader_agv launch.py"      # 啟動 Loader AGV
+quick_agv "ros2 launch cargo_mover_agv launch.py" # 啟動 Cargo Mover AGV
+quick_agv "ros2 launch unloader_agv launch.py"    # 啟動 Unloader AGV
+
+# 【方法2: 手動進入容器】
 # 必須在AGV容器內執行
 docker compose -f docker-compose.yml exec rosagv bash
 source /app/setup.bash && all_source
@@ -139,7 +208,29 @@ def transition_to_executing(self):
 - 構建後位置：`build/loader_agv/build/lib/loader_agv/test_agv_core_node.py`
 - 執行方式：`python3 src/loader_agv/loader_agv/test_agv_core_node.py`
 
-### 調試工具 (容器內執行)
+### 調試工具
+
+#### 宿主機調試工具 (推薦)
+```bash
+# AGV 系統狀態檢查
+source scripts/docker-tools/docker-tools.sh
+agv_health                          # AGV 容器健康檢查
+agv_status                          # AGV 容器詳細狀態
+
+# AGV 日誌分析
+scripts/log-tools/log-analyzer.sh agv --stats      # AGV 日誌統計分析
+scripts/log-tools/log-analyzer.sh agv --timeline   # AGV 錯誤時間軸
+
+# ROS 2 節點和主題檢查
+quick_agv "ros2 node list"          # 查看運行中的節點
+quick_agv "ros2 topic list"         # 查看可用主題
+quick_agv "ros2 topic echo /agv/status"  # 監控 AGV 狀態主題
+
+# 網路和通訊診斷
+scripts/network-tools/zenoh-network.sh agv-check   # AGV Zenoh 通訊檢查
+```
+
+#### 容器內調試工具
 ```bash
 # 在AGV容器內，載入環境後執行
 source /app/setup.bash && all_source
@@ -162,22 +253,101 @@ ros2 run rqt_graph rqt_graph       # 節點關係圖
 - 載入/卸載序列
 - 安全檢查機制
 
-## 故障排除
+## 🛠️ 故障排除
 
-### 常見問題
-1. **狀態卡死**: 檢查狀態轉換條件與日誌
-2. **機械臂異常**: 確認PLC連接與安全訊號
-3. **感測器失效**: 驗證設備映射與權限
-4. **⚠️ PGNO參數錯誤**: 檢查ACTION_FROM/ACTION_TO參數順序是否正確 (參考上方規則)
+### 系統診斷工作流程
 
-### 日誌位置
-- AGV日誌：`/tmp/agv.log`
-- ROS日誌：`~/.ros/log/`
-- 狀態轉換：查看節點輸出
+#### 第一步：快速系統檢查 (宿主機執行)
+```bash
+# 完整系統健康檢查
+scripts/system-tools/health-check.sh --quick
 
-## 重要提醒
+# AGV 容器狀態檢查
+source scripts/docker-tools/docker-tools.sh
+agv_health                           # AGV 容器健康檢查
+agv_status                           # AGV 容器詳細狀態
+```
+
+#### 第二步：專項診斷 (宿主機執行)
+```bash
+# AGV 日誌分析
+scripts/log-tools/log-analyzer.sh agv --stats       # 日誌統計分析
+scripts/log-tools/log-analyzer.sh agv --timeline    # 錯誤時間軸
+scripts/log-tools/log-analyzer.sh agv --suggestions # 解決建議
+
+# 網路和通訊診斷
+scripts/network-tools/zenoh-network.sh agv-check    # AGV Zenoh 通訊
+scripts/network-tools/port-check.sh --verbose       # 端口連接檢查
+
+# 開發環境診斷
+scripts/dev-tools/build-helper.sh check --workspace agv_ws  # 建置環境檢查
+```
+
+### 常見問題及解決方案
+
+#### 1. **AGV 容器無法啟動**
+```bash
+# 宿主機診斷步驟
+agv_status                           # 查看容器狀態
+agv_logs                            # 查看啟動日誌
+scripts/docker-tools/container-status.sh agv  # 詳細診斷報告
+```
+
+#### 2. **狀態機卡死**
+```bash
+# 宿主機檢查
+quick_agv "ros2 topic echo /agv/status"  # 監控狀態
+scripts/log-tools/log-analyzer.sh agv | grep -i "state"  # 狀態轉換日誌
+
+# 容器內檢查
+agv_enter                           # 進入容器
+ros2 topic list | grep agv          # 檢查 AGV 相關主題
+```
+
+#### 3. **機械臂異常**
+```bash
+# PLC 連接檢查
+quick_agv "ros2 service list | grep plc"  # 檢查 PLC 服務
+scripts/network-tools/connectivity-test.sh performance --target <PLC_IP>
+```
+
+#### 4. **感測器失效**
+```bash
+# 設備映射檢查
+scripts/config-tools/hardware-mapping.sh show <agv_id>  # 查看設備映射
+agv_logs | grep -i sensor           # 查看感測器相關日誌
+```
+
+#### 5. **⚠️ PGNO參數錯誤**
+檢查ACTION_FROM/ACTION_TO參數順序是否正確 (參考上方規則)
+
+### 日誌位置和分析
+```bash
+# 宿主機日誌分析 (推薦)
+scripts/log-tools/log-analyzer.sh agv --stats      # 統計分析
+scripts/log-tools/log-analyzer.sh agv --severity 3  # 嚴重錯誤
+
+# 容器內日誌位置
+# - AGV日誌：/tmp/agv.log
+# - ROS日誌：~/.ros/log/
+# - 狀態轉換：查看節點輸出
+```
+
+## 💡 重要提醒
+
+### 開發環境使用原則
+- **🖥️ 宿主機**: 使用 `scripts/` 工具進行容器管理、系統診斷、開發工作流
+- **🐳 容器內**: 執行 ROS 2 相關指令、代碼開發、測試執行
+- **📡 推薦方式**: 使用 `agv_enter` 進入容器，使用 `quick_agv` 執行容器內指令
+
+### 技術規範提醒
 - **PGNO參數順序**: 嚴格遵守ACTION_FROM/ACTION_TO的參數順序規則
-- 狀態轉換必須包含完整驗證
-- 機械臂操作需安全檢查
-- 感測器數據要容錯處理
-- 所有操作需Docker容器內執行
+- **狀態轉換**: 必須包含完整驗證和日誌記錄
+- **機械臂操作**: 需要安全檢查和錯誤處理
+- **感測器數據**: 要實現容錯處理機制
+
+### 故障排除最佳實踐
+1. **優先使用宿主機工具**: 快速診斷和系統檢查
+2. **日誌分析為主**: 使用 `scripts/log-tools/` 進行智能分析
+3. **環境隔離**: 明確區分宿主機操作和容器內操作
+4. **工具組合**: 結合多個診斷工具獲得完整視圖

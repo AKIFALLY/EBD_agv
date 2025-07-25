@@ -27,25 +27,56 @@ src/
 - **即時響應**: 低延遲設備控制回應
 - **安全控制**: 設備安全狀態檢查
 
-## 開發指令
+## 🔧 開發工具指南
 
-### 環境設定 (AGVC容器內)
+### 宿主機操作 (推薦用於診斷和管理)
+
+#### ECS 系統診斷工具
+```bash
+# AGVC 系統健康檢查 (含 ECS)
+source scripts/docker-tools/docker-tools.sh
+agvc_health                          # AGVC 系統健康檢查
+agvc_services                        # 所有服務狀態檢查
+
+# ECS 日誌分析
+scripts/log-tools/log-analyzer.sh agvc | grep -i "ecs\|equipment"  # ECS 相關日誌
+scripts/log-tools/log-analyzer.sh agvc --stats --filter "ecs"
+
+# 設備連接診斷
+scripts/network-tools/port-check.sh system    # 檢查設備端口
+quick_agvc "check_agvc_status"         # 檢查 ECS 狀態
+```
+
+#### 開發工作流工具
+```bash
+# 建置和測試
+source scripts/dev-tools/dev-tools.sh
+dev_build --workspace ecs_ws
+dev_test --workspace ecs_ws
+dev_check --workspace ecs_ws --severity warning
+```
+
+### 容器內操作 (ROS 2 開發)
+
+#### 環境設定 (AGVC容器內)
 ```bash
 source /app/setup.bash
-agvc_source  # 載入AGVC工作空間
+agvc_source  # 載入AGVC工作空間 (或使用 all_source 自動檢測)
 cd /app/ecs_ws
 ```
 
-### 服務管理
+#### 服務管理
 ```bash
-# 啟動ECS服務
-start_ecs
+# 【方法1: 透過宿主機工具】(推薦)
+source scripts/docker-tools/docker-tools.sh
+quick_agvc "start_ecs"               # 啟動 ECS 服務
+quick_agvc "ros2 run ecs ecs_node"   # 手動啟動 ECS 節點
 
-# 手動啟動ECS節點
-ros2 run ecs ecs_node
-
-# 檢查ECS狀態
-check_agvc_status  # 包含ECS狀態信息
+# 【方法2: 手動進入容器】
+agvc_enter  # 進入容器
+start_ecs                            # 啟動ECS服務
+ros2 run ecs ecs_node               # 手動啟動ECS節點
+check_agvc_status                   # 檢查ECS狀態信息
 ```
 
 ### 構建與測試
