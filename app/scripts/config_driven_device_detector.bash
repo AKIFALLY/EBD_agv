@@ -313,4 +313,5 @@ esac
 echo "✅ 配置驅動設備身份識別完成: $DEVICE_ID"
 echo "📁 身份檔案已創建: /app/.device_identity"
 
+[ $IDENTIFICATION_SUCCESS -eq 0 ] && echo "device_detector:success" || echo "device_detector:failed"
 return $IDENTIFICATION_SUCCESS

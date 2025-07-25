@@ -61,7 +61,8 @@ class PutAgvState(BaseRobotState):
         # 並行執行：其他操作（不需等待 Hokuyo 完成）
         # PGNO 常數調整：PUT_LOADER_AGV_PGNO
         PUT_LOADER_AGV_PGNO = context.robot.ACTION_TO + \
-            read_pgno = context.robot.read_pgno_response
+            context.robot.NONE_POSITION + context.robot.AGV_POSITION_SIDE
+        read_pgno = context.robot.read_pgno_response
         context.robot.read_robot_status()
 
         # 更新 Hokuyo Input - 使用統一方法

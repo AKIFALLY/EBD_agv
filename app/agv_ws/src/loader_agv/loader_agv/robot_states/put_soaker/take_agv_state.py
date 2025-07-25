@@ -12,10 +12,15 @@ class TakeAgvState(BaseRobotState):
         super().__init__(node)
         self.node = node
         # 動態參數計算，與 agv_port_check_have_state.py 中的參數一致
-        self.port_id_address = self.node.room_id * 1000 + 100        self.step = RobotContext.IDLE
-        self.sent = False    def enter(self):
+        self.port_id_address = self.node.room_id * 1000 + 100
+        self.step = RobotContext.IDLE
+        self.sent = False
+
+    def enter(self):
         self.node.get_logger().info("Loader Robot Put Soaker 目前狀態: TakeAgv")
-        self.sent = False    def leave(self):
+        self.sent = False
+
+    def leave(self):
         self.node.get_logger().info("Loader Robot Put Soaker 離開 TakeAgv 狀態")
         self.sent = False
     def handle(self, context: RobotContext):
@@ -27,7 +32,7 @@ class TakeAgvState(BaseRobotState):
         # 並行執行：其他操作（不需等待 Hokuyo 完成）
         # 修正 PGNO 常數定義，適用於 loader_agv
         TAKE_LOADER_AGV_PGNO = context.robot.ACTION_FROM + \
-        read_pgno = context.robot.read_pgno_response
+            context.robot.AGV_POSITION_SIDE + context.robot.NONE_POSITION
         context.robot.read_robot_status()
 
         # 更新 Hokuyo Input - 使用統一方法

@@ -373,15 +373,11 @@ app_download() {
 # app_upload 192.168.0.5
 # app_download 192.168.0.5
 
-# 定義 source_all 函式，會載入所有指定的 workspace 路徑
-all_source() {
-    ## 自動載入設備識別與環境變數
-    #if [ -f "/app/scripts/config_driven_device_detector.bash" ]; then
-    #    source /app/scripts/config_driven_device_detector.bash
-    #else
-    #    echo "⚠️ 找不到設備識別腳本 /app/scripts/config_driven_device_detector.bash"
-    #fi
-    #echo "🔧 載入所有工作空間 (按依賴順序)..."
+# ===== 智能工作空間載入函數 =====
+
+# AGV 專用工作空間載入函數
+agv_source() {
+    echo "🚗 載入 AGV 車載系統專用工作空間..."
 
     # 確保 ROS 2 環境已載入
     if [ -z "$ROS_DISTRO" ]; then
@@ -394,33 +390,83 @@ all_source() {
         fi
     fi
 
-    # 設定要載入的 workspace 路徑 (按依賴順序排列)
-    # 基礎工作空間 (被其他工作空間依賴)
-    local base_workspaces=(
+    # AGV 車載系統專用工作空間 (按依賴順序排列)
+    local agv_base_workspaces=(
+        "/app/keyence_plc_ws/install"
+        "/app/plc_proxy_ws/install"  
+        "/app/path_algorithm/install"
+    )
+
+    local agv_app_workspaces=(
+        "/app/agv_cmd_service_ws/install"
+        "/app/joystick_ws/install"
+        "/app/agv_ws/install"
+        "/app/sensorpart_ws/install"
+        "/app/uno_gpio_ws/install"
+        "/app/launch_ws/install"
+    )
+
+    # 載入 AGV 基礎工作空間
+    echo "📦 載入 AGV 基礎工作空間..."
+    for ws in "${agv_base_workspaces[@]}"; do
+        if [ -d "$ws" ]; then
+            echo "✅ Sourcing $(basename $(dirname $ws))"
+            source "$ws/setup.bash"
+        else
+            echo "⚠️ Warning: $(basename $(dirname $ws)) 不存在，需要先建置"
+        fi
+    done
+
+    # 載入 AGV 應用工作空間
+    echo "🚀 載入 AGV 應用工作空間..."
+    for ws in "${agv_app_workspaces[@]}"; do
+        if [ -d "$ws" ]; then
+            echo "✅ Sourcing $(basename $(dirname $ws))"
+            source "$ws/setup.bash"
+        else
+            echo "⚠️ Warning: $(basename $(dirname $ws)) 不存在，需要先建置"
+        fi
+    done
+
+    echo "✅ AGV 專用工作空間載入完成"
+}
+
+# AGVC 專用工作空間載入函數  
+agvc_source() {
+    echo "🖥️ 載入 AGVC 管理系統專用工作空間..."
+
+    # 確保 ROS 2 環境已載入
+    if [ -z "$ROS_DISTRO" ]; then
+        echo "⚠️ ROS 2 環境未載入，先載入基礎環境..."
+        if [ -f "/opt/ros/jazzy/setup.bash" ]; then
+            source /opt/ros/jazzy/setup.bash
+        fi
+        if [ -f "/opt/ws_rmw_zenoh/install/setup.bash" ]; then
+            source /opt/ws_rmw_zenoh/install/setup.bash
+        fi
+    fi
+
+    # AGVC 管理系統專用工作空間 (按依賴順序排列)
+    local agvc_base_workspaces=(
         "/app/keyence_plc_ws/install"
         "/app/plc_proxy_ws/install"
         "/app/path_algorithm/install"
         "/app/db_proxy_ws/install"
     )
 
-    # 應用工作空間 (依賴基礎工作空間)
-    local app_workspaces=(
+    local agvc_app_workspaces=(
         "/app/ecs_ws/install"
-        "/app/agv_cmd_service_ws/install"
-        "/app/joystick_ws/install"
-        "/app/agv_ws/install"
         "/app/rcs_ws/install"
         "/app/wcs_ws/install"
+        "/app/ai_wcs_ws/install"
         "/app/web_api_ws/install"
         "/app/kuka_fleet_ws/install"
         "/app/launch_ws/install"
-        "/app/sensorpart_ws/install"
-        "/app/uno_gpio_ws/install"
     )
 
-    # 載入基礎工作空間
-    echo "📦 載入基礎工作空間..."
-    for ws in "${base_workspaces[@]}"; do
+    # 載入 AGVC 基礎工作空間
+    echo "📦 載入 AGVC 基礎工作空間..."
+    for ws in "${agvc_base_workspaces[@]}"; do
         if [ -d "$ws" ]; then
             echo "✅ Sourcing $(basename $(dirname $ws))"
             source "$ws/setup.bash"
@@ -429,9 +475,9 @@ all_source() {
         fi
     done
 
-    # 載入應用工作空間
-    echo "🚀 載入應用工作空間..."
-    for ws in "${app_workspaces[@]}"; do
+    # 載入 AGVC 應用工作空間
+    echo "🚀 載入 AGVC 應用工作空間..."
+    for ws in "${agvc_app_workspaces[@]}"; do
         if [ -d "$ws" ]; then
             echo "✅ Sourcing $(basename $(dirname $ws))"
             source "$ws/setup.bash"
@@ -440,7 +486,27 @@ all_source() {
         fi
     done
 
-    echo "✅ 所有工作空間載入完成"
+    echo "✅ AGVC 專用工作空間載入完成"
+}
+
+# 智能工作空間載入函數 (根據環境自動選擇)
+all_source() {
+    echo "🔧 智能載入工作空間 (根據容器環境自動選擇)..."
+
+    # 檢測當前環境並選擇對應的載入策略
+    if [ "$CONTAINER_TYPE" = "agv" ]; then
+        echo "🚗 檢測到 AGV 車載環境，載入 AGV 專用工作空間"
+        agv_source
+    elif [ "$CONTAINER_TYPE" = "agvc" ]; then
+        echo "🖥️ 檢測到 AGVC 管理環境，載入 AGVC 專用工作空間"  
+        agvc_source
+    elif is_agvc_environment; then
+        echo "🖥️ 檢測到 AGVC 管理環境，載入 AGVC 專用工作空間"
+        agvc_source
+    else
+        echo "🔄 無法確定環境類型，載入 AGV 工作空間 (預設)"
+        agv_source
+    fi
 }
 
 # ============================================================================
@@ -458,7 +524,9 @@ show_help() {
     echo "  test_ws/test_single    - 測試指定的單一工作空間"
     echo "  clean_all/ca           - 清理所有建置檔案"
     echo "  clean_ws/clean_single  - 清理指定的單一工作空間"
-    echo "  all_source/sa/load_all - 載入所有工作空間環境"
+    echo "  all_source/sa/load_all - 智能載入工作空間環境 (根據容器類型自動選擇)"
+    echo "  agv_source             - 載入 AGV 車載系統專用工作空間"
+    echo "  agvc_source            - 載入 AGVC 管理系統專用工作空間"
     echo ""
 
     echo -e "${CYAN}📊 狀態和監控:${NC}"
@@ -471,7 +539,6 @@ show_help() {
     echo -e "${CYAN}⚙️  服務管理:${NC}"
     echo "  manage_ssh <action>    - SSH 服務管理 (start|stop|restart|status)"
     echo "  manage_zenoh <action>  - Zenoh Router 管理 (start|stop|restart|status)"
-    echo "  agvc_source            - 載入 AGVC 專用工作空間"
     if is_agvc_environment; then
         echo "  start_db/stop_db       - 啟動/停止資料庫服務 (僅 AGVC 環境)"
         echo "  start_ecs              - 啟動 ECS 設備控制系統 (僅 AGVC 環境)"
@@ -812,6 +879,10 @@ alias ca='clean_all'
 alias sa='all_source'
 alias load_all='all_source'  # 簡化的載入指令
 
+# 專用工作空間載入別名
+alias agv='agv_source'       # AGV 專用工作空間載入
+alias agvc='agvc_source'     # AGVC 專用工作空間載入
+
 # 單一工作空間操作別名
 alias build1='build_single'
 alias test1='test_single'
@@ -828,7 +899,7 @@ alias rosenv='check_ros_env'
 
 # 別名載入提示 (僅在互動式 shell 中顯示)
 if [[ $- == *i* ]]; then
-    log_debug "別名已載入: status, zenoh, rosenv, help, build1, test1, clean1"
+    log_debug "別名已載入: status, zenoh, rosenv, help, build1, test1, clean1, agv, agvc"
 fi
 
 # ===== AGVC 專用函數 =====
@@ -844,32 +915,6 @@ is_agvc_environment() {
     return 1  # 是 AGV 環境
 }
 
-# AGVC 專用工作空間載入函數
-agvc_source() {
-    echo "🔧 載入 AGVC 管理系統專用工作空間..."
-
-    # AGVC 管理系統專用工作空間
-    local agvc_workspaces=(
-        "/app/db_proxy_ws/install"
-        "/app/ecs_ws/install"
-        "/app/rcs_ws/install"
-        "/app/wcs_ws/install"
-        "/app/web_api_ws/install"
-        "/app/kuka_fleet_ws/install"
-    )
-
-    # 載入 AGVC 專用工作空間
-    for ws in "${agvc_workspaces[@]}"; do
-        if [ -d "$ws" ]; then
-            echo "✅ Sourcing $ws/setup.bash"
-            source "$ws/setup.bash"
-        else
-            echo "⚠️ Warning: $ws 不存在，需要先建置"
-        fi
-    done
-
-    echo "✅ AGVC 專用工作空間載入完成"
-}
 
 # 啟動資料庫服務
 start_db() {
@@ -878,31 +923,19 @@ start_db() {
         return 1
     fi
 
-    echo "🚀 啟動 PostgreSQL 資料庫服務..."
+    echo "🚀 檢查 PostgreSQL 資料庫服務狀態..."
 
-    # 檢查 PostgreSQL 是否已運行
-    if pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+    # 檢查 PostgreSQL 是否已運行（連接到外部容器）
+    if timeout 3 bash -c "echo > /dev/tcp/postgres/5432" 2>/dev/null; then
         echo "✅ PostgreSQL 已經在運行中"
         return 0
     fi
 
-    # 啟動 PostgreSQL 服務
-    sudo service postgresql start
-
-    # 等待服務啟動
-    local timeout=30
-    local count=0
-    while [ $count -lt $timeout ]; do
-        if pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
-            echo "✅ PostgreSQL 啟動成功"
-            return 0
-        fi
-        echo "⏳ 等待 PostgreSQL 啟動... ($count/$timeout)"
-        sleep 1
-        ((count++))
-    done
-
-    echo "❌ PostgreSQL 啟動失敗"
+    echo "❌ PostgreSQL 容器未運行或無法連接"
+    echo "💡 請在宿主機執行以下指令啟動 PostgreSQL 容器："
+    echo "   docker compose -f docker-compose.agvc.yml up -d postgres"
+    echo ""
+    echo "📝 注意：PostgreSQL 在獨立容器中運行，無法從此容器內直接啟動"
     return 1
 }
 
@@ -913,13 +946,16 @@ stop_db() {
         return 1
     fi
 
-    echo "⏳ 停止 PostgreSQL 資料庫服務..."
+    echo "🔍 檢查 PostgreSQL 資料庫服務狀態..."
 
-    if pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
-        sudo service postgresql stop
-        echo "✅ PostgreSQL 已停止"
+    if timeout 3 bash -c "echo > /dev/tcp/postgres/5432" 2>/dev/null; then
+        echo "✅ PostgreSQL 正在運行中"
+        echo "💡 要停止 PostgreSQL 容器，請在宿主機執行："
+        echo "   docker compose -f docker-compose.agvc.yml stop postgres"
+        echo ""
+        echo "📝 注意：PostgreSQL 在獨立容器中運行，無法從此容器內直接停止"
     else
-        echo "❌ PostgreSQL 未運行"
+        echo "❌ PostgreSQL 未運行或無法連接"
     fi
 }
 
@@ -961,7 +997,7 @@ start_ecs() {
 
     # 啟動 ECS 核心節點
     echo "🚀 啟動 ECS 核心節點..."
-    nohup ros2 run ecs ecs_core --ros-args -p db_url_agvc:="postgresql+psycopg2://agvc:password@localhost/agvc" > /tmp/ecs.log 2>&1 &
+    nohup ros2 run ecs ecs_core --ros-args -p db_url_agvc:="postgresql+psycopg2://agvc:password@postgres/agvc" > /tmp/ecs.log 2>&1 &
     echo $! > /tmp/ecs.pid
 
     # 等待啟動
@@ -983,8 +1019,8 @@ check_agvc_status() {
 
     echo "🔍 檢查 AGVC 管理系統狀態..."
 
-    # 檢查 PostgreSQL
-    if pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+    # 檢查 PostgreSQL（連接到外部容器）
+    if timeout 3 bash -c "echo > /dev/tcp/postgres/5432" 2>/dev/null; then
         echo "✅ PostgreSQL 運行中"
     else
         echo "❌ PostgreSQL 未運行"
@@ -1026,7 +1062,9 @@ echo "  test_all/ta          - 測試所有工作空間"
 echo "  test_ws <name>       - 測試指定工作空間"
 echo "  clean_all/ca         - 清理所有工作空間"
 echo "  clean_ws <name>      - 清理指定工作空間"
-echo "  all_source/sa        - 載入所有工作空間"
+echo "  all_source/sa        - 智能載入工作空間 (根據環境自動選擇)"
+echo "  agv_source           - 載入 AGV 車載系統專用工作空間"  
+echo "  agvc_source          - 載入 AGVC 管理系統專用工作空間"
 echo "  check_system_status/status - 檢查系統狀態"
 echo "  check_zenoh_status/zenoh   - 檢查 Zenoh 狀態"
 echo "  check_ros_env/rosenv       - 檢查 ROS 2 環境"

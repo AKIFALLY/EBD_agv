@@ -1,14 +1,13 @@
 agv_devices:
   cargo01:
     config_file: cargo01_config.yaml
-    description: '貨物搬運型 AGV #1 (MAC 更新: 2025-07-18 06:04)'
+    description: '貨物搬運型 AGV #1'
     device_type: cargo
     launch_file: launch.py
     launch_package: cargo_mover_agv
     mac_addresses:
     - AA:BB:CC:DD:EE:01
     - AA:BB:CC:DD:EE:11
-    - D8:43:AE:D2:D3:EA
   cargo02:
     config_file: cargo02_config.yaml
     description: '貨物搬運型 AGV #2'
@@ -16,7 +15,7 @@ agv_devices:
     launch_file: launch.py
     launch_package: cargo_mover_agv
     mac_addresses:
-    - CC:82:7F:5C:FD:42
+    - CC:82:7F:5C:FD:42             #CARGO實體網路卡
     - AA:BB:CC:DD:EE:12
   loader01:
     config_file: loader01_config.yaml
@@ -34,7 +33,7 @@ agv_devices:
     launch_file: launch.py
     launch_package: loader_agv
     mac_addresses:
-    - AA:BB:CC:DD:EE:04
+    - CC:82:7F:5E:9C:E8             #LOADER實體網路卡
     - AA:BB:CC:DD:EE:14
   unloader01:
     config_file: unloader01_config.yaml
@@ -52,7 +51,7 @@ agv_devices:
     launch_file: launch.py
     launch_package: unloader_agv
     mac_addresses:
-    - AA:BB:CC:DD:EE:06
+    - CC:82:7F:5E:9A:D2             #UNLOADER實體網路卡
     - AA:BB:CC:DD:EE:16
 agvc_devices:
   agvc01:

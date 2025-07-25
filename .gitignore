@@ -36,3 +36,4 @@ app/.agvc_identity
 
 # 統一設備身份檔案
 app/.device_identity
+.env

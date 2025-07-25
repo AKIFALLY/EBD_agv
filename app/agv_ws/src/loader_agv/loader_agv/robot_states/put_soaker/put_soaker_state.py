@@ -18,11 +18,13 @@ class PutSoakerState(BaseRobotState):
         self.agvc_client = AGVCDatabaseClient(self.node)
         # 簡化 Carrier 更新邏輯：只需更新一個 carrier
         self.update_carrier_success = False
-        self.sent = False 
+        self.sent = False
+
     def enter(self):
         self.node.get_logger().info("Loader Robot Put Soaker 目前狀態: PutSoaker")
         self.update_carrier_success = False
-        self.sent = False 
+        self.sent = False
+
     def leave(self):
         self.node.get_logger().info("Loader Robot Put Soaker 離開 PutSoaker 狀態")
         self.update_carrier_success = False
