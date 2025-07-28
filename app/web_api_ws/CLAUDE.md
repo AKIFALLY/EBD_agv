@@ -1,103 +1,111 @@
 # web_api_ws CLAUDE.md
 
-## 模組概述
-Web API服務系統，提供RESTful API、Socket.IO實時通訊與管理界面
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/context/system/technology-stack.md
+@docs-ai/knowledge/protocols/kuka-fleet-api.md
+@docs-ai/knowledge/protocols/kuka-fleet-callback.md
+@docs-ai/knowledge/protocols/ros2-interfaces.md
+@docs-ai/operations/development/web-development.md
+@docs-ai/operations/development/database-operations.md
 
-## 專案結構 (實際驗證)
+## 📋 模組概述
+
+**Web API 服務系統** - 完整的 Web 服務群組，提供 RESTful API、Socket.IO 實時通訊、用戶界面與外部系統整合，是 AGVC 管理系統的核心 Web 服務層。
+
+### 核心定位
+- **Web 服務群組**: 整合三個主要 Web 服務提供完整功能
+- **系統整合中心**: 連接 PLC、KUKA Fleet、資料庫等外部系統
+- **用戶界面提供**: 管理員界面 (AGVCUI) 和操作員界面 (OPUI)
+- **API Gateway**: 統一的 API 入口和外部系統整合
+
+詳細系統架構說明請參考: @docs-ai/context/system/rosagv-overview.md
+
+## 📂 專案結構 (實際驗證)
+
 ```
 src/
-├── web_api/        # API Gateway服務 (Port 8000) - PLC/交管/門控整合
-├── agvcui/         # 車隊管理系統 (Port 8001) - 完整MVC架構
-├── opui/           # 操作員界面 (Port 8002) - 任務管理界面  
-└── agvui/          # AGV車載監控界面
+├── web_api/              # 🌐 API Gateway 服務 (Port 8000)
+│   ├── routers/          # API 路由模組
+│   │   ├── kuka.py      # KUKA Fleet 整合 API
+│   │   ├── plc.py       # PLC 控制 API
+│   │   ├── door.py      # 門控系統 API
+│   │   ├── traffic.py   # 交通管制 API
+│   │   └── map_importer.py # 地圖匯入 API
+│   ├── api_server.py     # FastAPI 主伺服器
+│   └── tests/           # API 測試套件
+├── agvcui/              # 🖥️ 車隊管理系統 (Port 8001)
+│   ├── database/        # 資料库操作層 (完整 CRUD)
+│   ├── routers/         # 完整 API 路由系統
+│   ├── static/          # 前端靜態資源
+│   ├── templates/       # Jinja2 模板
+│   ├── agvc_ui_server.py # FastAPI 主伺服器
+│   └── agvc_ui_socket.py # Socket.IO 實時通訊
+├── opui/                # 👨‍💼 操作員界面 (Port 8002)
+│   ├── core/            # 核心伺服器模組
+│   ├── frontend/        # 前端界面資源
+│   ├── api/             # API 客戶端
+│   └── services/        # 業務邏輯服務
+└── agvui/               # 🚗 AGV 車載監控界面
+    ├── agv_ui_server.py # AGV 監控伺服器
+    └── static/          # 監控界面資源
 ```
 
-## 服務架構 (基於實際檔案結構)
+### 架構特性
+- **多服務協同**: 四個獨立服務協同提供完整 Web 功能
+- **統一技術棧**: 基於 FastAPI + Socket.IO + PostgreSQL
+- **分層設計**: API Gateway + 業務界面 + 專業界面的分層架構
+- **ROS 2 整合**: 完整的 ROS 2 套件結構和 Launch 支援
 
-### Web服務端口 (docker-compose.agvc.yml驗證)
-- **8000**: `web_api` - API Gateway (PLC、KUKA Fleet、交管整合)
-- **8001**: `agvcui` - 車隊管理系統 (完整資料庫操作和UI)
-- **8002**: `opui` - 操作員任務管理界面
+## 🚀 服務架構詳解
 
-### 實際技術棧
-- **web_api**: FastAPI + 外部系統整合 (無完整MVC架構)
-- **agvcui**: 完整MVC架構 + 資料庫操作 + 前端界面
-- **opui**: Vue.js界面 + 任務管理功能
-- **資料庫**: PostgreSQL (透過setup.bash的資料庫服務)
+### Web 服務端口配置 (基於實際檔案驗證)
+- **Port 8000**: `web_api` - API Gateway (外部系統整合中心)
+  - PLC 控制整合、KUKA Fleet 整合、門控系統、交通管制
+- **Port 8001**: `agvcui` - 車隊管理系統 (完整 MVC 架構)
+  - 完整資料庫操作、用戶管理、任務調度、地圖監控
+- **Port 8002**: `opui` - 操作員界面 (任務管理專用)
+  - 操作員友好界面、任務分派、狀態監控
+- **Port 8003**: `agvui` - AGV 車載監控 (可選)
+  - AGV 本地監控界面、狀態顯示
 
-## 🔧 開發工具指南
+### 技術棧整合
+詳細技術棧說明請參考: @docs-ai/context/system/technology-stack.md
 
-### 宿主機操作 (Docker 容器管理)
+- **後端框架**: FastAPI (高效能 Web 框架)
+- **實時通訊**: Socket.IO (雙向即時通訊)
+- **資料庫**: PostgreSQL + SQLAlchemy/SQLModel
+- **前端技術**: Bulma CSS + Vanilla JavaScript + Leaflet
+- **ROS 2 整合**: 完整的 ROS 2 套件支援
 
-#### AGVC 容器管理工具
+## 🔧 開發環境設定
+
+詳細開發環境設定請參考: @docs-ai/operations/development/docker-development.md
+
+### 容器環境要求
+**⚠️ 重要**: 所有 Web API 服務必須在 AGVC Docker 容器內執行，詳細說明請參考: @docs-ai/context/system/dual-environment.md
+
+### 宿主機統一工具使用
+詳細工具系統請參考: @docs-ai/operations/tools/unified-tools.md
+
+### AGVC 容器管理
+詳細容器管理指導請參考: @docs-ai/operations/development/docker-development.md
+
+**常用 AGVC 管理指令**：
 ```bash
-# 載入 Docker 工具集
+# 載入工具並進入開發環境
 source scripts/docker-tools/docker-tools.sh
+agvc_enter                   # 進入 AGVC 容器 (自動載入環境)
 
-# AGVC 系統基本操作
-agvc_start                   # 啟動 AGVC 系統 (所有服務)
-agvc_stop                    # 停止 AGVC 系統
-agvc_restart                 # 重啟 AGVC 系統
-agvc_status                  # 查看 AGVC 系統狀態
-agvc_logs                    # 查看 AGVC 系統日誌
-agvc_health                  # AGVC 系統健康檢查
-agvc_services                # 檢查所有 AGVC 服務狀態
+# 系統管理
+agvc_start                   # 啟動 AGVC 系統
+agvc_health                  # 健康檢查
+agvc_logs                    # 查看日誌
 
-# 快速進入 AGVC 開發環境
-agvc_enter                   # 進入 AGVC 容器 (自動載入 agvc_source)
-
-# 快速執行 AGVC 容器內指令
-quick_agvc "check_agvc_status"        # 檢查 AGVC 狀態
+# 快速執行容器內指令
+quick_agvc "build_ws web_api_ws"      # 建置工作空間
 quick_agvc "curl http://localhost:8000/health"  # API 健康檢查
-quick_agvc "build_ws web_api_ws"      # 建置 Web API 工作空間
-```
-
-#### Web 服務診斷工具 (宿主機執行)
-```bash
-# Web 服務狀態檢查
-scripts/system-tools/service-monitor.sh status    # 所有服務監控
-scripts/docker-tools/container-status.sh agvc     # AGVC 容器詳細狀態
-
-# API 服務測試
-curl http://localhost:8000/health     # API Gateway 健康檢查
-curl http://localhost:8001/           # AGVCUI 界面檢查
-curl http://localhost:8002/           # OPUI 界面檢查
-
-# AGVC 日誌分析
-scripts/log-tools/log-analyzer.sh agvc --stats     # AGVC 日誌統計
-scripts/log-tools/log-analyzer.sh agvc --timeline  # 錯誤時間軸
-
-# 網路和端口診斷
-scripts/network-tools/port-check.sh system         # 系統端口檢查
-scripts/network-tools/connectivity-test.sh performance --target localhost
-```
-
-#### 資料庫管理工具 (宿主機執行)
-```bash
-# PostgreSQL 容器管理
-docker compose -f docker-compose.agvc.yml up -d postgres    # 啟動資料庫
-docker compose -f docker-compose.agvc.yml stop postgres     # 停止資料庫
-docker compose -f docker-compose.agvc.yml logs postgres     # 查看資料庫日誌
-
-# 資料庫連接測試
-scripts/network-tools/port-check.sh --port 5432 --host localhost  # 資料庫端口檢查
-quick_agvc "start_db"                # 檢查資料庫連接狀態
-```
-
-#### 開發工作流工具 (宿主機執行)
-```bash
-# 載入開發工具集
-source scripts/dev-tools/dev-tools.sh
-
-# Web API 工作空間開發
-dev_build --workspace web_api_ws     # 建置 Web API 工作空間
-dev_test --workspace web_api_ws      # 測試 Web API 工作空間
-dev_check --workspace web_api_ws --severity warning  # 代碼品質檢查
-
-# 完整開發流程
-scripts/dev-tools/build-helper.sh fast --workspace web_api_ws    # 快速建置
-scripts/dev-tools/test-runner.sh unit --workspace web_api_ws     # 單元測試
-scripts/dev-tools/code-analyzer.sh style --workspace web_api_ws  # 代碼風格檢查
 ```
 
 ### 容器內操作 (ROS 2 和 Web 開發)
@@ -248,37 +256,20 @@ def handle_agv_connect():
 
 ## 🔍 測試與調試
 
-### 宿主機測試工具 (推薦)
+### 系統診斷和測試
+詳細測試和診斷指導請參考: @docs-ai/operations/maintenance/system-diagnostics.md
 
-#### API 和服務測試
+### 快速 Web 服務測試
 ```bash
 # Web 服務健康檢查
 curl http://localhost:8000/health    # API Gateway
-curl http://localhost:8001/          # AGVCUI 界面
+curl http://localhost:8001/          # AGVCUI 界面  
 curl http://localhost:8002/          # OPUI 界面
-
-# FastAPI 自動文檔
 curl http://localhost:8000/docs      # API 文檔界面
 
-# AGVC 系統狀態檢查
+# 系統狀態檢查
 source scripts/docker-tools/docker-tools.sh
 agvc_health                          # AGVC 系統健康檢查
-agvc_services                        # 所有服務狀態
-
-# 日誌分析和調試
-scripts/log-tools/log-analyzer.sh agvc --stats       # AGVC 日誌統計
-scripts/log-tools/log-analyzer.sh agvc --timeline    # 錯誤時間軸
-scripts/log-tools/log-analyzer.sh agvc --suggestions # 解決建議
-```
-
-#### 網路和端口診斷
-```bash
-# 端口連接檢查
-scripts/network-tools/port-check.sh system           # 系統端口檢查
-scripts/network-tools/port-check.sh --port 8000-8002 # Web 服務端口
-
-# 服務性能測試
-scripts/network-tools/connectivity-test.sh performance --target localhost
 ```
 
 ### 容器內調試工具
@@ -315,96 +306,38 @@ python -c "import socketio; sio = socketio.Client(); sio.connect('http://localho
 
 ## 🛠️ 故障排除
 
-### 系統診斷工作流程
+詳細故障排除指導請參考: @docs-ai/operations/maintenance/troubleshooting.md
 
-#### 第一步：快速系統檢查 (宿主機執行)
+### 系統診斷和故障排除
+詳細診斷和故障排除指導請參考: 
+- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具和流程
+- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除指導
+
+### 快速診斷工具
 ```bash
-# 完整系統健康檢查
-scripts/system-tools/health-check.sh --quick
+# 統一診斷入口 (宿主機執行)
+r agvc-check                         # AGVC 系統健康檢查
+r containers-status                  # 容器狀態檢查
+r network-check                      # 網路連接檢查
+r quick-diag                         # 快速綜合診斷
 
-# AGVC 系統狀態檢查
+# AGVC 專用工具
 source scripts/docker-tools/docker-tools.sh
 agvc_health                          # AGVC 系統健康檢查
-agvc_services                        # 所有服務狀態檢查
+agvc_status                          # 容器狀態檢查
 ```
 
-#### 第二步：專項診斷 (宿主機執行)
+### 常見 Web 服務問題
 ```bash
-# Web 服務診斷
-scripts/network-tools/port-check.sh system          # 端口檢查
-curl http://localhost:8000/health                   # API 服務檢查
-curl http://localhost:8001/ > /dev/null && echo "AGVCUI OK" || echo "AGVCUI Failed"
+# 端口檢查
+scripts/network-tools/port-check.sh --port 8000-8002
 
-# AGVC 日誌分析
-scripts/log-tools/log-analyzer.sh agvc --stats      # 日誌統計分析
-scripts/log-tools/log-analyzer.sh agvc --timeline   # 錯誤時間軸
-scripts/log-tools/log-analyzer.sh agvc --suggestions # 解決建議
+# 服務重啟
+agvc_restart                         # 重啟整個 AGVC 系統
 
-# 資料庫診斷
-docker compose -f docker-compose.agvc.yml ps postgres  # 資料庫容器狀態
-scripts/network-tools/port-check.sh --port 5432 --host localhost
-```
-
-### 常見問題及解決方案
-
-#### 1. **AGVC 容器無法啟動**
-```bash
-# 宿主機診斷步驟
-agvc_status                          # 查看容器狀態
-agvc_logs                           # 查看啟動日誌
-scripts/docker-tools/container-status.sh agvc  # 詳細診斷報告
-```
-
-#### 2. **端口衝突 (8000-8002)**
-```bash
-# 檢查端口佔用
-scripts/network-tools/port-check.sh --port 8000-8002 --verbose
-netstat -tlnp | grep -E "800[0-2]"  # 查看端口佔用進程
-
-# 解決方案
-agvc_stop && agvc_start              # 重啟 AGVC 系統
-```
-
-#### 3. **資料庫連接失敗**
-```bash
-# 資料庫狀態檢查
-docker compose -f docker-compose.agvc.yml ps postgres
-quick_agvc "start_db"                # 檢查資料庫連接
-
-# 資料庫重啟
-docker compose -f docker-compose.agvc.yml restart postgres
-```
-
-#### 4. **Socket.IO 斷線**
-```bash
-# 網路連接檢查
-scripts/network-tools/connectivity-test.sh performance --target localhost
-quick_agvc "netstat -tlnp | grep 8000"  # 檢查 Socket.IO 服務
-
-# 防火牆檢查
-sudo ufw status                      # 檢查防火牆狀態
-```
-
-#### 5. **前端資源載入失敗**
-```bash
-# Nginx 配置檢查
-docker compose -f docker-compose.agvc.yml ps nginx
-docker compose -f docker-compose.agvc.yml logs nginx
-
-# Nginx 重啟
-docker compose -f docker-compose.agvc.yml restart nginx
-```
-
-### 日誌位置和分析
-```bash
-# 宿主機日誌分析 (推薦)
-scripts/log-tools/log-analyzer.sh agvc --stats      # 統計分析
-scripts/log-tools/log-analyzer.sh agvc --severity 3  # 嚴重錯誤
-
-# 容器日誌位置
-# - API日誌：容器內stdout (透過 agvc_logs 查看)
-# - Nginx日誌：/var/log/nginx/ (透過 docker logs 查看)
-# - 瀏覽器日誌：開發工具Console
+# 日誌檢查  
+agvc_logs                           # 查看系統日誌
+scripts/log-tools/log-analyzer.sh agvc --stats  # 日誌分析
 ```
 
 ## 💡 重要提醒
@@ -415,13 +348,31 @@ scripts/log-tools/log-analyzer.sh agvc --severity 3  # 嚴重錯誤
 - **📡 推薦方式**: 使用 `agvc_enter` 進入容器，使用 `quick_agvc` 執行容器內指令
 
 ### Web 開發最佳實踐
-- **API變更**: 需同步更新前端界面和文檔
-- **Socket.IO事件**: 確保向後兼容性和完整測試
-- **資料庫變更**: 透過 db_proxy 進行，避免直接操作
+詳細 Web 開發指導請參考: @docs-ai/operations/development/web-development.md
+
+- **API 變更**: 需同步更新前端界面和文檔
+- **Socket.IO 事件**: 確保向後兼容性和完整測試
+- **資料庫變更**: 透過 db_proxy 進行，詳見 @docs-ai/operations/development/database-operations.md
 - **服務部署**: 所有 Web 服務必須在 AGVC 容器內運行
 
 ### 故障排除最佳實踐
+詳細故障排除流程請參考: @docs-ai/operations/maintenance/troubleshooting.md
+
 1. **優先使用宿主機工具**: 快速診斷和服務檢查
 2. **多層次檢查**: 容器→服務→端口→網路→資料庫
-3. **日誌分析為主**: 使用 `scripts/log-tools/` 進行智能分析
+3. **日誌分析為主**: 使用統一診斷工具進行智能分析
 4. **服務隔離**: 分別檢查 API Gateway、AGVCUI、OPUI 服務
+
+## 🔗 交叉引用
+- 系統概覽: @docs-ai/context/system/rosagv-overview.md
+- 雙環境架構: @docs-ai/context/system/dual-environment.md
+- 技術棧詳解: @docs-ai/context/system/technology-stack.md
+- KUKA Fleet API: @docs-ai/knowledge/protocols/kuka-fleet-api.md
+- KUKA Fleet 回調: @docs-ai/knowledge/protocols/kuka-fleet-callback.md
+- ROS 2 介面: @docs-ai/knowledge/protocols/ros2-interfaces.md
+- Web 開發指導: @docs-ai/operations/development/web-development.md
+- 資料庫操作: @docs-ai/operations/development/database-operations.md
+- Docker 開發: @docs-ai/operations/development/docker-development.md
+- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
+- 統一工具: @docs-ai/operations/tools/unified-tools.md

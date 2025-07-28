@@ -17,7 +17,7 @@ from typing import Dict, List, Optional, Any, Tuple, Union, ClassVar
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 import json
-import asyncio
+# import asyncio  # 移除異步依賴
 from datetime import datetime, timezone, timedelta
 
 from .enhanced_database_client import EnhancedDatabaseClient
@@ -174,46 +174,47 @@ class UnifiedWCSDecisionEngine:
             'cycles_completed': 0
         }
     
-    async def run_unified_decision_cycle(self) -> List[TaskDecision]:
-        """執行統一決策週期 - 涵蓋7大業務流程"""
+    def run_unified_decision_cycle(self) -> List[TaskDecision]:
+        """執行統一決策週期 (修正：改為同步方法以符合ai_wcs_node調用)"""
         all_decisions = []
         
-        self.get_logger().info('開始執行統一WCS決策週期')
+        if self.get_logger:
+            self.get_logger().info('開始執行統一WCS決策週期')
         
         try:
             # 🔴 Priority 100: AGV旋轉檢查
-            decisions = await self.check_agv_rotation_flow()
+            decisions = self.check_agv_rotation_flow()
             all_decisions.extend(decisions)
             self.decision_stats['agv_rotation_tasks'] += len(decisions)
             
             # 🟠 Priority 90: NG料架回收
-            decisions = await self.check_ng_rack_recycling_flow()
+            decisions = self.check_ng_rack_recycling_flow()
             all_decisions.extend(decisions)
             self.decision_stats['ng_recycling_tasks'] += len(decisions)
             
             # 🟡 Priority 80: 人工收料區相關流程
-            decisions = await self.check_full_rack_to_manual_flow()
+            decisions = self.check_full_rack_to_manual_flow()
             all_decisions.extend(decisions)
             
-            decisions = await self.check_manual_area_transport_flow()
+            decisions = self.check_manual_area_transport_flow()
             all_decisions.extend(decisions)
             self.decision_stats['manual_transport_tasks'] += len(decisions)
             
             # 🟢 Priority 60: 系統準備區到房間
-            decisions = await self.check_system_to_room_flow()
+            decisions = self.check_system_to_room_flow()
             all_decisions.extend(decisions)
             self.decision_stats['system_to_room_tasks'] += len(decisions)
             
             # 🔵 Priority 40: 空料架相關流程
-            decisions = await self.check_empty_rack_transfer_flow()
+            decisions = self.check_empty_rack_transfer_flow()
             all_decisions.extend(decisions)
             
-            decisions = await self.check_manual_empty_recycling_flow()
+            decisions = self.check_manual_empty_recycling_flow()
             all_decisions.extend(decisions)
             self.decision_stats['empty_operations_tasks'] += len(decisions)
             
             # 🔷 Priority 40: OPUI操作員請求處理
-            decisions = await self.check_opui_requests_flow()
+            decisions = self.check_opui_requests_flow()
             all_decisions.extend(decisions)
             self.decision_stats['opui_requests_tasks'] = self.decision_stats.get('opui_requests_tasks', 0) + len(decisions)
             
@@ -234,23 +235,23 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'統一決策週期執行失敗: {e}')
             return []
     
-    async def check_agv_rotation_flow(self) -> List[TaskDecision]:
+    def check_agv_rotation_flow(self) -> List[TaskDecision]:
         """AGV旋轉狀態檢查 - 使用3節點移動方式"""
         decisions = []
         
         try:
             # 獲取等待旋轉狀態的AGV (需要實作AGV狀態查詢)
-            waiting_agvs = await self._get_agvs_by_state('wait_rotation_state')
+            waiting_agvs = self._get_agvs_by_state('wait_rotation_state')
             
             for agv_context in waiting_agvs:
-                agv_tasks = await self._get_tasks_by_agv(agv_context.get('agv_id'))
+                agv_tasks = self._get_tasks_by_agv(agv_context.get('agv_id'))
                 
                 for task in agv_tasks:
                     # 檢查是否無子任務 (防重複發送)
-                    child_tasks = await self._get_child_tasks(task.get('id'))
+                    child_tasks = self._get_child_tasks(task.get('id'))
                     if not child_tasks:
                         # 檢查是否有重複的旋轉任務
-                        duplicate_check = await self._has_active_task('220001', task.get('node_id'))
+                        duplicate_check = self._has_active_task('220001', task.get('node_id'))
                         if not duplicate_check:
                             # 創建使用 nodes 移動的旋轉任務
                             rotation_nodes = self._generate_rotation_nodes(
@@ -310,13 +311,13 @@ class UnifiedWCSDecisionEngine:
             return room_id * 10000 + 20  # 出口旋轉中間點
         return location_id + 1000  # 預設中間點
     
-    async def check_ng_rack_recycling_flow(self) -> List[TaskDecision]:
+    def check_ng_rack_recycling_flow(self) -> List[TaskDecision]:
         """NG料架回收 - 三階段條件檢查 (房間擴展支援)"""
         decisions = []
         
         try:
             # 條件 6: 檢查NG回收區是否有空位
-            ng_space_available = await self._check_locations_available([71, 72], status=2)
+            ng_space_available = self._check_locations_available([71, 72], status=2)
             if not ng_space_available:
                 return decisions  # NG回收區無空位
             
@@ -327,12 +328,12 @@ class UnifiedWCSDecisionEngine:
                 inlet_location = room_id * 10000 + 1  # 房間入口位置
                 
                 # 條件 X20: 檢查房間X入口傳送箱NG料架
-                has_ng_rack = await self._check_ng_rack_at_location(inlet_location)
+                has_ng_rack = self._check_ng_rack_at_location(inlet_location)
                 if not has_ng_rack:
                     continue  # 該房間無NG料架
                 
                 # 條件 X21: 檢查是否有重複執行任務
-                has_duplicate = await self._has_active_task('220001', inlet_location)
+                has_duplicate = self._has_active_task('220001', inlet_location)
                 if not has_duplicate:
                     # 該房間條件滿足，創建NG料架回收任務
                     decision = TaskDecision(
@@ -355,22 +356,22 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'NG料架回收檢查失敗: {e}')
             return []
     
-    async def check_full_rack_to_manual_flow(self) -> List[TaskDecision]:
+    def check_full_rack_to_manual_flow(self) -> List[TaskDecision]:
         """滿料架到人工收料區"""
         decisions = []
         
         try:
             # 檢查系統空架區空料架
-            empty_locations = await self._check_locations_available([31, 32, 33, 34], status=3)
+            empty_locations = self._check_locations_available([31, 32, 33, 34], status=3)
             if not empty_locations:
                 return decisions
             
             for room_id in range(1, 11):
                 # 檢查房間內是否有carrier需要搬運
-                has_carriers = await self._check_carriers_in_room(room_id)
+                has_carriers = self._check_carriers_in_room(room_id)
                 if has_carriers:
                     outlet_location = room_id * 10000 + 2
-                    has_conflict = await self._has_active_task('220001', outlet_location)
+                    has_conflict = self._has_active_task('220001', outlet_location)
                     if not has_conflict:
                         decision = TaskDecision(
                             work_id='220001',
@@ -390,13 +391,13 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'滿料架搬運檢查失敗: {e}')
             return []
     
-    async def check_manual_area_transport_flow(self) -> List[TaskDecision]:
+    def check_manual_area_transport_flow(self) -> List[TaskDecision]:
         """人工收料區搬運"""
         decisions = []
         
         try:
             # 檢查人工收料區是否有空位
-            manual_spaces = await self._check_locations_available([51, 52, 53, 54, 55], status=2)
+            manual_spaces = self._check_locations_available([51, 52, 53, 54, 55], status=2)
             if not manual_spaces:
                 return decisions
             
@@ -404,11 +405,11 @@ class UnifiedWCSDecisionEngine:
                 outlet_location = room_id * 10000 + 2
                 
                 # 檢查房間出口是否有滿料架
-                has_full_racks = await self._check_racks_at_location(outlet_location, status=[2, 3, 6])
+                has_full_racks = self._check_racks_at_location(outlet_location, status=[2, 3, 6])
                 
                 if has_full_racks:
                     # 有滿料架，檢查重複任務
-                    has_conflict = await self._has_active_task('220001', outlet_location)
+                    has_conflict = self._has_active_task('220001', outlet_location)
                     if not has_conflict:
                         decision = TaskDecision(
                             work_id='220001',
@@ -424,8 +425,8 @@ class UnifiedWCSDecisionEngine:
                 else:
                     # 無滿料架，檢查cargo任務
                     cargo_work_id = room_id * 1000000 + 201
-                    has_completed_cargo = await self._has_completed_task(cargo_work_id)
-                    has_conflict = await self._has_active_task('220001', outlet_location)
+                    has_completed_cargo = self._has_completed_task(cargo_work_id)
+                    has_conflict = self._has_active_task('220001', outlet_location)
                     
                     if has_completed_cargo and not has_conflict:
                         decision = TaskDecision(
@@ -445,13 +446,13 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'人工收料區搬運檢查失敗: {e}')
             return []
     
-    async def check_system_to_room_flow(self) -> List[TaskDecision]:
+    def check_system_to_room_flow(self) -> List[TaskDecision]:
         """系統準備區到房間入口"""
         decisions = []
         
         try:
             # 檢查系統準備區是否有料架
-            system_racks = await self._check_locations_available([11, 12, 13, 14, 15, 16, 17, 18], status=3)
+            system_racks = self._check_locations_available([11, 12, 13, 14, 15, 16, 17, 18], status=3)
             if not system_racks:
                 return decisions
             
@@ -459,8 +460,8 @@ class UnifiedWCSDecisionEngine:
                 inlet_location = room_id * 10000 + 1
                 
                 # 檢查房間入口是否無料架佔用
-                is_occupied = await self._check_racks_at_location(inlet_location)
-                has_conflict = await self._has_active_task('220001', inlet_location)
+                is_occupied = self._check_racks_at_location(inlet_location)
+                has_conflict = self._has_active_task('220001', inlet_location)
                 
                 if not is_occupied and not has_conflict:
                     decision = TaskDecision(
@@ -481,7 +482,7 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'系統準備區搬運檢查失敗: {e}')
             return []
     
-    async def check_empty_rack_transfer_flow(self) -> List[TaskDecision]:
+    def check_empty_rack_transfer_flow(self) -> List[TaskDecision]:
         """空料架搬運"""
         decisions = []
         
@@ -491,12 +492,12 @@ class UnifiedWCSDecisionEngine:
                 outlet_location = room_id * 10000 + 2
                 
                 # 檢查房間入口是否有空料架
-                empty_racks = await self._check_racks_at_location(inlet_location, status=[1])
+                empty_racks = self._check_racks_at_location(inlet_location, status=[1])
                 
                 if empty_racks:
                     # 檢查房間出口是否無料架佔用
-                    outlet_occupied = await self._check_racks_at_location(outlet_location)
-                    has_conflict = await self._has_active_task('220001', outlet_location)
+                    outlet_occupied = self._check_racks_at_location(outlet_location)
+                    has_conflict = self._has_active_task('220001', outlet_location)
                     
                     if not outlet_occupied and not has_conflict:
                         decision = TaskDecision(
@@ -517,23 +518,23 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'空料架搬運檢查失敗: {e}')
             return []
     
-    async def check_manual_empty_recycling_flow(self) -> List[TaskDecision]:
+    def check_manual_empty_recycling_flow(self) -> List[TaskDecision]:
         """人工回收空料架搬運 - 三階段條件檢查"""
         decisions = []
         
         try:
             # 條件 7: 檢查人工回收空料架區是否有料架
-            manual_empty_racks = await self._check_locations_available([91, 92], status=3)
+            manual_empty_racks = self._check_locations_available([91, 92], status=3)
             if not manual_empty_racks:
                 return decisions  # 無空料架需回收
             
             # 條件 8: 檢查空料架回收區是否有空位  
-            empty_spaces = await self._check_locations_available([51, 52, 53, 54], status=2)
+            empty_spaces = self._check_locations_available([51, 52, 53, 54], status=2)
             if not empty_spaces:
                 return decisions  # 回收區無空位
             
             # 條件 9: 檢查是否有重複執行任務 (特殊work_id='230001')
-            has_duplicate = await self._has_active_task_by_work_id('230001', status_list=[0, 1, 2])
+            has_duplicate = self._has_active_task_by_work_id('230001', status_list=[0, 1, 2])
             if not has_duplicate:
                 # 三個條件都滿足，創建人工回收空料架任務
                 decision = TaskDecision(
@@ -555,24 +556,24 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'人工回收空料架檢查失敗: {e}')
             return []
     
-    async def check_opui_requests_flow(self) -> List[TaskDecision]:
+    def check_opui_requests_flow(self) -> List[TaskDecision]:
         """OPUI操作員請求處理 - 叫空車和派滿車"""
         decisions = []
         
         try:
             # 獲取OPUI待處理請求
-            opui_requests = await self._get_opui_pending_requests()
+            opui_requests = self._get_opui_pending_requests()
             
             for request in opui_requests:
                 # 處理OPUI叫空車請求 (work_id: 100001)
                 if request.get('work_id') == '100001':
-                    decision = await self._process_opui_call_empty_request(request)
+                    decision = self._process_opui_call_empty_request(request)
                     if decision:
                         decisions.append(decision)
                 
                 # 處理OPUI派滿車請求 (work_id: 100002)
                 elif request.get('work_id') == '100002':
-                    decision = await self._process_opui_dispatch_full_request(request)
+                    decision = self._process_opui_dispatch_full_request(request)
                     if decision:
                         decisions.append(decision)
             
@@ -582,7 +583,7 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'OPUI請求處理檢查失敗: {e}')
             return []
     
-    async def _process_opui_call_empty_request(self, request: Dict[str, Any]) -> Optional[TaskDecision]:
+    def _process_opui_call_empty_request(self, request: Dict[str, Any]) -> Optional[TaskDecision]:
         """處理OPUI叫空車請求"""
         try:
             machine_id = request.get('machine_id')
@@ -593,7 +594,7 @@ class UnifiedWCSDecisionEngine:
                 return None
             
             # 檢查停車格狀態是否允許叫車
-            machine_info = await self._get_machine_parking_info(machine_id)
+            machine_info = self._get_machine_parking_info(machine_id)
             if not machine_info:
                 return None
             
@@ -608,7 +609,7 @@ class UnifiedWCSDecisionEngine:
             target_node_id = parking_space['node_id']
             
             # 找到可用的空料架
-            empty_rack_location = await self._find_available_empty_rack()
+            empty_rack_location = self._find_available_empty_rack()
             if not empty_rack_location:
                 self.get_logger().debug('無可用空料架，無法處理叫空車請求')
                 return None
@@ -635,7 +636,7 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'處理OPUI叫空車請求異常: {e}')
             return None
     
-    async def _process_opui_dispatch_full_request(self, request: Dict[str, Any]) -> Optional[TaskDecision]:
+    def _process_opui_dispatch_full_request(self, request: Dict[str, Any]) -> Optional[TaskDecision]:
         """處理OPUI派滿車請求"""
         try:
             machine_id = request.get('machine_id')
@@ -647,13 +648,13 @@ class UnifiedWCSDecisionEngine:
                 return None
             
             # 檢查系統準備派車區是否有空位
-            prep_area_spaces = await self._check_locations_available([11, 12, 13, 14, 15, 16, 17, 18], status=2)
+            prep_area_spaces = self._check_locations_available([11, 12, 13, 14, 15, 16, 17, 18], status=2)
             if not prep_area_spaces:
                 self.get_logger().debug('系統準備派車區無空位，無法處理派滿車請求')
                 return None
             
             # 獲取機台停車格位置作為起始位置
-            machine_info = await self._get_machine_parking_info(machine_id)
+            machine_info = self._get_machine_parking_info(machine_id)
             if not machine_info:
                 return None
             
@@ -707,7 +708,7 @@ class UnifiedWCSDecisionEngine:
         
         return scheduled
     
-    async def get_room_location_info(self, room_id: int) -> Dict[str, int]:
+    def get_room_location_info(self, room_id: int) -> Dict[str, int]:
         """取得房間位置資訊"""
         return {
             'inlet_location': room_id * 10000 + 1,    # 房間入口
@@ -718,10 +719,10 @@ class UnifiedWCSDecisionEngine:
     
     # === 資料庫查詢輔助方法 (待實作) ===
     
-    async def _get_agvs_by_state(self, state: str) -> List[Dict[str, Any]]:
+    def _get_agvs_by_state(self, state: str) -> List[Dict[str, Any]]:
         """獲取特定狀態的AGV"""
         try:
-            agv_infos = await self.db_client.get_agvs_by_state(state)
+            agv_infos = self.db_client.get_agvs_by_state(state)
             
             # 轉換為字典格式
             agvs = []
@@ -741,10 +742,10 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'獲取AGV狀態失敗: state={state}, error={e}')
             return []
     
-    async def _get_tasks_by_agv(self, agv_id: int) -> List[Dict[str, Any]]:
+    def _get_tasks_by_agv(self, agv_id: int) -> List[Dict[str, Any]]:
         """獲取AGV的任務列表"""
         try:
-            task_infos = await self.db_client.get_tasks_by_agv(agv_id)
+            task_infos = self.db_client.get_tasks_by_agv(agv_id)
             
             # 轉換為字典格式
             tasks = []
@@ -771,10 +772,10 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'獲取AGV任務失敗: agv_id={agv_id}, error={e}')
             return []
     
-    async def _get_child_tasks(self, task_id: int) -> List[Dict[str, Any]]:
+    def _get_child_tasks(self, task_id: int) -> List[Dict[str, Any]]:
         """獲取子任務列表"""
         try:
-            task_infos = await self.db_client.get_child_tasks(task_id)
+            task_infos = self.db_client.get_child_tasks(task_id)
             
             # 轉換為字典格式
             tasks = []
@@ -801,81 +802,81 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'獲取子任務失敗: task_id={task_id}, error={e}')
             return []
     
-    async def _has_active_task(self, work_id: str, location_id: int) -> bool:
+    def _has_active_task(self, work_id: str, location_id: int) -> bool:
         """檢查是否有重複的活動任務"""
         try:
-            has_task = await self.db_client.has_active_task(work_id, location_id)
+            has_task = self.db_client.has_active_task(work_id, location_id)
             return has_task
             
         except Exception as e:
             self.get_logger().error(f'檢查活動任務失敗: work_id={work_id}, location_id={location_id}, error={e}')
             return False
     
-    async def _has_active_task_by_work_id(self, work_id: str, status_list: List[int]) -> bool:
+    def _has_active_task_by_work_id(self, work_id: str, status_list: List[int]) -> bool:
         """檢查特定work_id是否有活動任務"""
         try:
-            has_task = await self.db_client.has_active_task_by_work_id(work_id, status_list)
+            has_task = self.db_client.has_active_task_by_work_id(work_id, status_list)
             return has_task
             
         except Exception as e:
             self.get_logger().error(f'檢查work_id任務失敗: work_id={work_id}, status_list={status_list}, error={e}')
             return False
     
-    async def _has_completed_task(self, work_id: Union[str, int]) -> bool:
+    def _has_completed_task(self, work_id: Union[str, int]) -> bool:
         """檢查是否有已完成的任務"""
         try:
-            has_task = await self.db_client.has_completed_task(work_id)
+            has_task = self.db_client.has_completed_task(work_id)
             return has_task
             
         except Exception as e:
             self.get_logger().error(f'檢查完成任務失敗: work_id={work_id}, error={e}')
             return False
     
-    async def _check_locations_available(self, location_ids: List[int], status: int) -> List[Dict[str, Any]]:
+    def _check_locations_available(self, location_ids: List[int], status: int) -> List[Dict[str, Any]]:
         """檢查位置可用性"""
         try:
-            locations = await self.db_client.check_locations_available(location_ids, status)
+            locations = self.db_client.check_locations_available(location_ids, status)
             return locations
             
         except Exception as e:
             self.get_logger().error(f'檢查位置可用性失敗: location_ids={location_ids}, status={status}, error={e}')
             return []
     
-    async def _check_ng_rack_at_location(self, location_id: int) -> bool:
+    def _check_ng_rack_at_location(self, location_id: int) -> bool:
         """檢查位置是否有NG料架"""
         try:
-            has_ng_rack = await self.db_client.check_ng_rack_at_location(location_id)
+            has_ng_rack = self.db_client.check_ng_rack_at_location(location_id)
             return has_ng_rack
             
         except Exception as e:
             self.get_logger().error(f'檢查NG料架失敗: location_id={location_id}, error={e}')
             return False
     
-    async def _check_carriers_in_room(self, room_id: int) -> bool:
+    def _check_carriers_in_room(self, room_id: int) -> bool:
         """檢查房間是否有carrier"""
         try:
-            has_carriers = await self.db_client.check_carriers_in_room(room_id)
+            has_carriers = self.db_client.check_carriers_in_room(room_id)
             return has_carriers
             
         except Exception as e:
             self.get_logger().error(f'檢查房間carrier失敗: room_id={room_id}, error={e}')
             return False
     
-    async def _check_racks_at_location(self, location_id: int, status: List[int] = None) -> List[Dict[str, Any]]:
+    def _check_racks_at_location(self, location_id: int, status: List[int] = None) -> List[Dict[str, Any]]:
         """檢查位置的料架狀態"""
         try:
-            racks = await self.db_client.check_racks_at_location(location_id, status)
+            racks = self.db_client.check_racks_at_location(location_id, status)
             return racks
             
         except Exception as e:
             self.get_logger().error(f'檢查料架狀態失敗: location_id={location_id}, status={status}, error={e}')
             return []
     
-    async def _get_opui_pending_requests(self) -> List[Dict[str, Any]]:
+    def _get_opui_pending_requests(self) -> List[Dict[str, Any]]:
         """獲取OPUI待處理請求 - 基於machine parking space狀態和待處理任務"""
         try:
             # 使用增強資料庫客戶端獲取OPUI請求
-            requests = await self.db_client.get_opui_pending_requests()
+            requests = self.db_client.get_opui_pending_requests()
             
             self.get_logger().debug(f'查詢OPUI待處理請求: {len(requests)}個')
             
@@ -915,11 +916,11 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'獲取OPUI待處理請求失敗: {e}')
             return []
     
-    async def _get_machine_parking_info(self, machine_id: int) -> Optional[Dict[str, Any]]:
+    def _get_machine_parking_info(self, machine_id: int) -> Optional[Dict[str, Any]]:
         """獲取機台停車格資訊 - 用於OPUI叫空車和派滿車邏輯"""
         try:
             # 使用增強資料庫客戶端獲取機台停車格資訊
-            parking_info = await self.db_client.get_machine_parking_info(machine_id)
+            parking_info = self.db_client.get_machine_parking_info(machine_id)
             
             if parking_info:
                 self.get_logger().debug(
@@ -936,10 +937,10 @@ class UnifiedWCSDecisionEngine:
             self.get_logger().error(f'獲取機台停車格資訊失敗: machine_id={machine_id}, error={e}')
             return None
     
-    async def _find_available_empty_rack(self) -> Optional[int]:
+    def _find_available_empty_rack(self) -> Optional[int]:
         """尋找可用的空料架位置"""
         # 檢查系統空架區是否有可用的空料架
-        empty_racks = await self._check_locations_available([31, 32, 33, 34], status=3)
+        empty_racks = self._check_locations_available([31, 32, 33, 34], status=3)
         if empty_racks:
             return empty_racks[0]['id']
         return None
@@ -954,6 +955,13 @@ class UnifiedWCSDecisionEngine:
             'work_id_mappings': self.work_ids,
             'last_update': datetime.now(timezone.utc).isoformat()
         }
+    
+    def destroy_node(self):
+        """修正：添加destroy_node方法以符合ai_wcs_node調用"""
+        if self.get_logger:
+            self.get_logger().info('🔚 WCS統一決策引擎正在關閉...')
+        # 清理資源
+        pass
     
     def get_logger(self):
         """取得logger實例"""
@@ -981,21 +989,13 @@ def main(args=None):
         def run_decision_cycle(self):
             """執行決策週期"""
             try:
-                # 使用異步執行
-                import asyncio
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                
-                decisions = loop.run_until_complete(
-                    self.engine.run_unified_decision_cycle()
-                )
+                # 直接同步執行
+                decisions = self.engine.run_unified_decision_cycle()
                 
                 self.get_logger().info(f'決策週期完成，產生 {len(decisions)} 個任務')
                 
             except Exception as e:
                 self.get_logger().error(f'決策週期執行錯誤: {e}')
-            finally:
-                loop.close()
                 
     rclpy.init(args=args)
     node = StandaloneUnifiedEngine()

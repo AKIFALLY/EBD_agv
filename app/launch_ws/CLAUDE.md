@@ -1,96 +1,139 @@
 # launch_ws CLAUDE.md
 
-## 模組概述
-簡單的 ROS 2 啟動檔案管理工作空間，包含 web API 服務和 ECS 系統的基本啟動配置。
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/context/workspaces/agvc-workspaces.md
+@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/docker-development.md
+@docs-ai/operations/tools/unified-tools.md
+@docs-ai/operations/maintenance/system-diagnostics.md
 
-## 實際專案結構 (基於實際程式碼)
+## 📋 模組概述
+
+**ROS 2 Launch 配置工作空間** - 提供統一的服務啟動管理，整合 Web API 服務群組和 ECS 設備控制系統的 ROS 2 Launch 檔案。
+
+### 核心定位
+- **服務編排**: 統一管理多個 ROS 2 節點的啟動順序和依賴關係
+- **配置集中**: 透過 Launch 檔案集中管理系統參數和配置
+- **環境隔離**: 使用命名空間 (`agvc`) 實現服務隔離
+- **部署簡化**: 提供一鍵啟動複雜服務群組的能力
+
+詳細容器環境說明請參考: @docs-ai/context/system/dual-environment.md
+
+## 📂 專案結構 (實際驗證)
+
 ```
 src/
-├── web_api_launch/          # Web API 服務啟動包
+├── web_api_launch/          # 🌐 Web API 服務群組啟動包
 │   ├── launch/
-│   │   └── launch.py        # Web API 啟動檔案
+│   │   └── launch.py        # Web API 服務群組啟動檔案
 │   ├── web_api_launch/
-│   │   └── __init__.py
-│   ├── setup.py            # 套件設定 (無 entry_points)
-│   └── package.xml
-└── ecs_launch/             # ECS 系統啟動包
+│   │   └── __init__.py      # Python 模組初始化
+│   ├── setup.py            # 套件設定 (Launch-only package)
+│   ├── setup.cfg           # 建置配置
+│   ├── package.xml         # ROS 2 套件資訊
+│   └── test/               # 標準測試檔案
+└── ecs_launch/             # 🔧 ECS 設備控制系統啟動包
     ├── launch/
-    │   └── launch.py        # ECS 啟動檔案  
+    │   └── launch.py        # ECS 系統啟動檔案
     ├── ecs_launch/
-    │   └── __init__.py
-    ├── setup.py            # 套件設定 (無 entry_points)
-    └── package.xml
+    │   └── __init__.py      # Python 模組初始化
+    ├── setup.py            # 套件設定 (Launch-only package)
+    ├── setup.cfg           # 建置配置
+    ├── package.xml         # ROS 2 套件資訊
+    └── test/               # 標準測試檔案
 ```
 
-## 核心功能 (基於實際實現)
+### 套件特性
+- **純 Launch 套件**: 兩個套件都專注於 Launch 檔案，無可執行節點
+- **標準結構**: 遵循 ROS 2 套件標準結構和命名慣例
+- **測試支援**: 包含標準的 ROS 2 測試檔案架構
 
-### web_api_launch - Web API 服務啟動
-啟動所有 Web 相關服務：
+## 🚀 核心功能 (基於實際代碼驗證)
 
-**啟動的節點**:
-- `agvc_ui_server` (agvcui 套件) - AGV 車隊管理界面
-- `op_ui_server` (opui 套件) - 操作員界面
-- `web_api_server` (web_api 套件) - 核心 Web API 服務
+### 🌐 web_api_launch - Web API 服務群組
+提供完整的 Web 服務堆疊啟動，整合用戶界面和 API 服務：
 
-**配置**:
-- 所有節點使用 `agvc` 命名空間
-- 配置檔案路徑: `/app/config/web_api_config.yaml`
+**🔧 啟動的節點**:
+- **`agvc_ui_server`** (agvcui 套件) - AGV 車隊管理界面 (Port 8001)
+- **`op_ui_server`** (opui 套件) - 操作員任務管理界面 (Port 8002)
+- **`web_api_server`** (web_api 套件) - 核心 Web API Gateway (Port 8000)
 
-### ecs_launch - ECS 系統啟動
-啟動設備控制系統相關服務：
+**⚙️ 配置特性**:
+- **命名空間**: 統一使用 `agvc` 命名空間
+- **配置檔案**: `/app/config/web_api_config.yaml` (已定義但節點自行處理配置)
+- **服務群組**: 三個服務協同提供完整的 Web 功能棧
 
-**啟動的節點**:
-- `plc_service` (plc_proxy 套件) - PLC 通訊服務
-- `ecs_core` (ecs 套件) - ECS 核心節點
+### 🔧 ecs_launch - ECS 設備控制系統
+專注於設備控制和 PLC 通訊的核心服務啟動：
 
-**配置**:
-- 所有節點使用 `agvc` 命名空間
-- 配置檔案路徑: `/app/config/ecs_config.yaml`
-- 包含已註解的 `door_controller_node_mqtt` (目前未啟用)
+**🔧 啟動的節點**:
+- **`plc_service`** (plc_proxy 套件) - PLC 通訊代理服務
+- **`ecs_core`** (ecs 套件) - 設備控制系統核心節點
 
-## 開發指令
+**⚙️ 配置特性**:
+- **命名空間**: 統一使用 `agvc` 命名空間
+- **配置檔案**: `/app/config/ecs_config.yaml` (參數化配置)
+- **備用節點**: `door_controller_node_mqtt` (已註解，待需要時啟用)
+- **輸出設定**: 所有節點輸出到螢幕 (`output="screen"`)
 
-### 環境設定 (AGVC容器內)
-```bash
-source /app/setup.bash
-agvc_source  # 載入AGVC工作空間
-cd /app/launch_ws
-```
+## 🔧 開發環境
+
+### 容器環境要求
+**⚠️ 重要**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行，詳細說明請參考: @docs-ai/context/system/dual-environment.md
+
+### 開發環境設定
+詳細開發環境設定請參考：
+- @docs-ai/operations/development/docker-development.md - 容器開發指導
+- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
 ### 建置工作空間
 ```bash
-# 建置整個工作空間
+# 建置整個工作空間 (容器內)
 build_ws launch_ws
 
 # 或使用 colcon 直接建置
-colcon build
+colcon build --packages-select web_api_launch ecs_launch
+
+# 檢查建置結果
+ls -la install/
 ```
 
-### 啟動服務
+### 🚀 服務啟動
 
-#### Web API 服務啟動
+#### 🌐 Web API 服務群組啟動
 ```bash
-# 啟動所有 Web 服務
+# 啟動完整 Web 服務群組 (在 AGVC 容器內)
 ros2 launch web_api_launch launch.py
 
 # 檢查啟動的節點
 ros2 node list | grep agvc
 # 預期輸出:
-# /agvc/agvc_ui_server
-# /agvc/op_ui_server  
-# /agvc/web_api_server
+# /agvc/agvc_ui_server    # AGV 車隊管理界面
+# /agvc/op_ui_server      # 操作員界面
+# /agvc/web_api_server    # 核心 Web API Gateway
+
+# 驗證 Web 服務可用性
+curl http://localhost:8000/health     # Web API 健康檢查
+curl http://localhost:8001/           # AGVCUI 界面
+curl http://localhost:8002/           # OPUI 界面
 ```
 
-#### ECS 系統啟動
+#### 🔧 ECS 設備控制系統啟動
 ```bash
-# 啟動 ECS 系統
+# 啟動 ECS 設備控制系統 (在 AGVC 容器內)
 ros2 launch ecs_launch launch.py
 
 # 檢查啟動的節點
 ros2 node list | grep agvc
 # 預期輸出:
-# /agvc/plc_service
-# /agvc/ecs_core
+# /agvc/plc_service       # PLC 通訊代理
+# /agvc/ecs_core          # ECS 核心節點
+
+# 檢查服務狀態
+ros2 service list | grep agvc
+ros2 topic list | grep agvc
 ```
 
 ## 實際啟動檔案內容
@@ -209,41 +252,91 @@ curl http://localhost:8000/health
 - 所有節點使用 `agvc` 命名空間統一管理
 - 透過配置檔案管理系統參數
 
-## 故障排除
+## 🚨 故障排除
 
-### 常見問題
+詳細故障排除指導請參考:
+- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
+- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
+- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
-#### 套件找不到
+### 常見問題排查
+
+#### 🔧 Launch 套件找不到
 ```bash
-# 檢查套件是否存在
+# 檢查 Launch 套件是否存在
+ros2 pkg list | grep -E "(web_api_launch|ecs_launch)"
+
+# 檢查依賴套件是否存在
 ros2 pkg list | grep -E "(web_api|agvcui|opui|ecs|plc_proxy)"
 
 # 確認工作空間已正確載入
 echo $ROS_PACKAGE_PATH
 ```
 
-#### 節點啟動失敗  
+#### 🚨 節點啟動失敗
 ```bash
 # 檢查詳細錯誤訊息
 ros2 launch web_api_launch launch.py --debug
+ros2 launch ecs_launch launch.py --debug
 
 # 檢查配置檔案是否存在
 ls -la /app/config/web_api_config.yaml
 ls -la /app/config/ecs_config.yaml
+
+# 檢查個別節點是否可以啟動
+ros2 run web_api api_server
+ros2 run ecs ecs_core
 ```
 
-#### 服務無法連接
+#### 🌐 Web 服務無法連接
 ```bash
-# 檢查網路端口
+# 檢查網路端口佔用
 netstat -tlnp | grep -E "(8000|8001|8002)"
 
 # 檢查服務狀態
 ros2 node info /agvc/web_api_server
+ros2 node info /agvc/agvc_ui_server
+
+# 檢查服務健康狀態
+curl -v http://localhost:8000/health
 ```
 
-## 重要提醒
-- **必須在AGVC容器內運行**: 需要正確的 ROS 2 環境
-- **簡單啟動設計**: 相比複雜的啟動管理系統，實際實現較為簡單
-- **命名空間統一**: 所有節點使用 `agvc` 命名空間
-- **配置檔案依賴**: 確認 `/app/config/` 目錄下的配置檔案存在
-- **無 console_scripts**: 兩個套件都沒有定義 entry_points，僅提供啟動檔案
+## 💡 重要提醒
+
+### 開發環境要求
+- **⚠️ 容器執行要求**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行
+- **📋 工作空間載入**: 必須正確載入 AGVC 工作空間 (`agvc_source` 或 `all_source`)
+- **🔧 配置檔案依賴**: 確認 `/app/config/` 目錄下的配置檔案存在
+
+### 工具使用策略
+詳細工具指導請參考: @docs-ai/operations/tools/unified-tools.md
+
+### 系統架構特點
+- **🏗️ 純 Launch 設計**: 兩個套件專注於啟動編排，無獨立可執行檔案
+- **🏷️ 命名空間統一**: 所有節點使用 `agvc` 命名空間，避免衝突
+- **📦 模組化服務**: Web 服務群組和 ECS 系統獨立管理，可分別啟動
+- **⚙️ 參數化配置**: ECS 系統使用 YAML 配置檔案，Web 服務由節點自行管理配置
+
+## 🔗 系統整合
+
+### 與其他模組整合
+- **web_api_ws**: 提供 Web API Gateway 的統一啟動入口
+- **agvcui/opui**: 整合用戶界面服務的集中啟動
+- **ecs_ws**: 設備控制系統的服務編排
+- **plc_proxy_ws**: PLC 通訊服務的統一管理
+
+### 外部系統依賴
+- **ROS 2 Jazzy**: 核心 Launch 系統支援
+- **AGVC Docker 環境**: 完整的容器化運行環境
+- **Zenoh RMW**: 跨容器通訊機制
+- **配置檔案系統**: `/app/config/` 下的 YAML 配置檔案
+
+## 🔗 交叉引用
+- 系統概覽: @docs-ai/context/system/rosagv-overview.md
+- 雙環境架構: @docs-ai/context/system/dual-environment.md  
+- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
+- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
+- 容器開發: @docs-ai/operations/development/docker-development.md
+- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
+- 統一工具: @docs-ai/operations/tools/unified-tools.md

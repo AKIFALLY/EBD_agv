@@ -231,6 +231,13 @@ class RackAnalyzer:
             issues.append(f"B面carrier數量不一致: 預期{rack_status.b_side_count}, 實際{b_side_actual}")
         
         return issues
+    
+    def destroy_node(self):
+        """修正：添加destroy_node方法以符合ai_wcs_node調用"""
+        if self.logger:
+            self.logger.info('🔚 Rack 狀態分析器正在關閉...')
+        # 清理資源
+        pass
 
 
 def main(args=None):

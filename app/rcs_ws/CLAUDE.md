@@ -1,7 +1,27 @@
 # rcs_ws CLAUDE.md
 
-## 模組概述
-車隊控制系統(Robot Control System)，負責AGV車隊的任務分派和交通管理。包含CT車隊管理、KUKA車隊管理和交通區域控制功能。
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/context/system/technology-stack.md
+@docs-ai/context/workspaces/agvc-workspaces.md
+@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/docker-development.md
+@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/maintenance/troubleshooting.md
+@docs-ai/operations/tools/unified-tools.md
+
+## 📋 模組概述
+
+**RCS (Robot Control System) 車隊控制系統** - 負責 AGV 車隊的任務分派和交通管理，整合 CT 車隊管理、KUKA 車隊管理和交通區域控制功能，是 AGVC 管理系統的車隊調度核心。
+
+### 核心定位
+- **車隊調度中心**: 統一管理 CT 和 KUKA 兩套車隊系統
+- **任務分派引擎**: 1秒定時器協調的任務派發機制
+- **交通管制**: 交通區域控制和衝突避免
+- **狀態監控**: 即時監控 AGV 狀態變更和同步
+
+詳細系統架構請參考: @docs-ai/context/workspaces/agvc-workspaces.md
 
 ## 專案結構 (實際驗證)
 ```
@@ -66,20 +86,32 @@ src/
 - `setup.py` - 僅包含 rcs_core 節點入口點
 - `package.xml` - ROS 2 包配置
 
-## 實際技術棧
-- **ROS 2節點**: rcs_core (唯一entry_point)
-- **資料庫**: PostgreSQL (透過db_proxy.ConnectionPoolManager)
-- **AGV通訊**: agv_interfaces.msg (AgvStateChange, AgvStatus)
+## 🚀 技術棧特性
+
+詳細技術棧說明請參考: @docs-ai/context/system/technology-stack.md
+
+### 核心技術
+- **ROS 2 Jazzy**: 基於最新 ROS 2 發行版
+- **PostgreSQL**: 資料庫連接透過 db_proxy.ConnectionPoolManager
+- **Zenoh RMW**: 跨容器通訊機制
+- **Python 3.12**: 主要開發語言
+
+### RCS 特定架構
+- **ROS 2 節點**: rcs_core (唯一 entry_point)
+- **AGV 通訊**: agv_interfaces.msg (AgvStateChange, AgvStatus)
 - **主題訂閱**: `/agv/state_change`, `/agv/status`
+- **定時協調**: 1秒定時器主迴圈
 
-## 開發指令
+## 🔧 開發環境
 
-### 環境設定 (AGVC容器內)
-```bash
-source /app/setup.bash
-agvc_source  # 載入AGVC工作空間 (或使用 all_source 自動檢測)
-cd /app/rcs_ws
-```
+### 容器環境要求
+**⚠️ 重要**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行
+
+詳細開發環境設定請參考:
+- @docs-ai/context/system/dual-environment.md - 雙環境架構說明
+- @docs-ai/operations/development/docker-development.md - 容器開發指導
+- @docs-ai/operations/development/ros2-development.md - ROS 2 開發指導
+- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
 ### 服務啟動 (基於實際entry_points)
 ```bash
@@ -90,23 +122,14 @@ ros2 run rcs rcs_core
 ros2 run traffic_manager traffic_controller
 ```
 
-### 構建與測試
+### RCS 特定測試
 ```bash
-# 構建 rcs_ws
-build_ws rcs_ws
-
-# 單獨構建 rcs 包
-colcon build --packages-select rcs
-
 # 測試 CT 任務分派
 cd /app/rcs_ws/src/rcs
 python3 test_ct_dispatch.py
 
 # 測試配置管理器
 python3 test_config_manager.py
-
-# 執行測試套件 (如果存在)
-python3 -m pytest test/ -v
 ```
 
 ### 配置管理工具
@@ -177,52 +200,52 @@ def _setup_agv_monitoring(self):
 /agv/status               # AGV 狀態監控
 ```
 
-## 故障排除
+## 🚨 故障排除
 
-### 常見問題
+詳細故障排除指導請參考:
+- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
+- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
+- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
-#### RCS 核心節點無法啟動
+### RCS 特定問題檢查
+
+#### RCS 核心節點診斷
 ```bash
 # 檢查 RCS 節點狀態
 ros2 node list | grep rcs_core
-
-# 檢查資料庫連接
-quick_agvc "start_db"
+ros2 node info /rcs_core
 
 # 查看節點日誌
 ros2 run rcs rcs_core
 ```
 
-#### AGV 狀態監控失效
+#### AGV 狀態監控檢查
 ```bash
 # 檢查 AGV 主題
 ros2 topic list | grep agv
-
-# 監控 AGV 狀態變更
 ros2 topic echo /agv/state_change
-
-# 檢查 CT Manager 日誌
-ros2 node info /rcs_core
+ros2 topic echo /agv/status
 ```
 
-#### 任務分派問題
+#### 任務分派測試
 ```bash
 # 執行 CT 分派測試
 cd /app/rcs_ws/src/rcs
 python3 test_ct_dispatch.py
-
-# 檢查任務狀態模擬器
-# (TaskStatusSimulator 在 main_loop 中執行)
+python3 test_config_manager.py
 ```
 
-### 除錯技巧
-- 檢查 1秒定時器是否正常運行
-- 驗證資料庫連接狀態
-- 監控 AGV 狀態主題是否有數據
-- 使用測試腳本驗證分派邏輯
+### 重要依賴檢查
+- **資料庫連接**: 需要 PostgreSQL 和 db_proxy 服務正常
+- **AGV 主題**: 需要 AGV 系統發布狀態訊息
+- **定時器運行**: 檢查 1秒定時器是否正常執行
 
-### 重要提醒
-- **必須在AGVC容器內運行**: RCS 需要資料庫和 AGV 主題
-- **資料庫依賴**: 需要 PostgreSQL 連接正常
-- **AGV 主題依賴**: 需要 AGV 系統發布狀態訊息
-- **唯一節點**: setup.py 只定義 rcs_core 一個節點入口點
+## 🔗 交叉引用
+- 系統概覽: @docs-ai/context/system/rosagv-overview.md
+- 雙環境架構: @docs-ai/context/system/dual-environment.md
+- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
+- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
+- 容器開發: @docs-ai/operations/development/docker-development.md
+- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
+- 統一工具: @docs-ai/operations/tools/unified-tools.md

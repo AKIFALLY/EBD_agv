@@ -4,8 +4,8 @@ AI WCS 系統整合測試 - 統一組件版本
 """
 
 import unittest
-from unittest.mock import Mock, AsyncMock, patch
-import asyncio
+from unittest.mock import Mock, patch
+# import asyncio  # 移除異步依賴
 import sys
 import os
 

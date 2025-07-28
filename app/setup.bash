@@ -77,7 +77,7 @@ test_all() {
         "/app/db_proxy_ws"
         "/app/ecs_ws"
         "/app/rcs_ws"
-        "/app/wcs_ws"
+        "/app/ai_wcs_ws"
         "/app/web_api_ws"
         "/app/kuka_fleet_ws"
         "/app/launch_ws"
@@ -457,7 +457,6 @@ agvc_source() {
     local agvc_app_workspaces=(
         "/app/ecs_ws/install"
         "/app/rcs_ws/install"
-        "/app/wcs_ws/install"
         "/app/ai_wcs_ws/install"
         "/app/web_api_ws/install"
         "/app/kuka_fleet_ws/install"
@@ -1035,7 +1034,7 @@ check_agvc_status() {
 
     # 檢查 AGVC 專用工作空間
     echo "=== AGVC 工作空間狀態 ==="
-    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "wcs_ws" "web_api_ws" "kuka_fleet_ws")
+    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "ai_wcs_ws" "web_api_ws" "kuka_fleet_ws")
     for ws in "${agvc_workspaces[@]}"; do
         if [ -d "/app/$ws/install" ]; then
             echo "✅ $ws 已建置"

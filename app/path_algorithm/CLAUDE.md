@@ -1,7 +1,15 @@
-# CLAUDE.md
+# path_algorithm CLAUDE.md
+
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/docker-development.md
 
 ## 系統概述
-基於NetworkX的A*路徑規劃工具，專為工業AGV系統設計，使用標籤(Tag)和站點(Station)進行路徑規劃。
+基於 NetworkX 的 A* 路徑規劃工具，專為工業 AGV 系統設計，使用標籤(Tag)和站點(Station)進行路徑規劃。
+
+**⚠️ 重要**: 所有 ROS 2 程式必須在 Docker 容器內執行，宿主機無 ROS 2 環境。
 
 **🗺️ 圖形架構**: YAML/JSON配置 → NetworkX有向圖 → A*路徑搜尋
 
@@ -210,86 +218,40 @@ StationID:
 ]
 ```
 
-## 開發指令
+## 🔧 開發環境
 
-### 環境設定 (容器內執行)
+**詳細開發環境設定**: @docs-ai/operations/development/docker-development.md
+
+### 快速開始
 ```bash
-# AGV或AGVC容器內
-source /app/setup.bash && all_source  # 自動檢測環境
+# 進入容器並載入工作空間
+all_source  # 智能載入
 cd /app/path_algorithm
-```
 
-### 構建與測試
-```bash
-build_ws path_algorithm
-```
-
-### 程式執行 (容器內)
-```bash
-# 注意：setup.py未定義entry_points，需直接執行
-cd /app/path_algorithm/src/astar_algorithm/astar_algorithm
+# 建置與執行 (注意：需直接執行 Python 檔案)
+colcon build --packages-select path_algorithm
+cd src/astar_algorithm/astar_algorithm
 python3 astar_algorithm.py
 ```
 
 ## 使用範例
 
-### 1. 基本路徑規劃
+### 基本路徑規劃
 ```python
 from astar_algorithm.astar_algorithm import AStarAlgorithm
 
-# 使用Tag ID進行路徑規劃
-start_tag = 1
-end_tag = 10
+# Tag ID 路徑規劃
+astar = AStarAlgorithm(start_tag=1, end_tag=10)
+path = astar.run()  # 輸出: [1, 3, 7, 10]
+
+# 站點名稱規劃
+start_tag = AStarAlgorithm.get_tag_by_station("Soaking01")
+end_tag = AStarAlgorithm.get_tag_by_station("LoadStation01")
 astar = AStarAlgorithm(start_tag, end_tag)
+path = astar.run()
 
-try:
-    path = astar.run()
-    print(f"路徑: {path}")
-    # 輸出範例: [1, 3, 7, 10]
-except ValueError as e:
-    print(f"路徑規劃失敗: {e}")
-```
-
-### 2. 使用站點名稱規劃
-```python
-# 使用站點名稱進行路徑規劃
-start_station = "Soaking01"
-end_station = "LoadStation01"
-
-start_tag = AStarAlgorithm.get_tag_by_station(start_station)
-end_tag = AStarAlgorithm.get_tag_by_station(end_station)
-
-if start_tag and end_tag:
-    astar = AStarAlgorithm(start_tag, end_tag)
-    path = astar.run()
-    print(f"從 {start_station} 到 {end_station} 的路徑: {path}")
-```
-
-### 3. 獲取路徑座標
-```python
-astar = AStarAlgorithm()
-
-# 獲取路徑中每個點的座標
-path = [1, 3, 7, 10]
-coordinates = []
-
-for tag in path:
-    x, y = astar.getXY(tag)
-    coordinates.append((x, y))
-    print(f"Tag {tag}: X={x}, Y={y}")
-
-print(f"路徑座標: {coordinates}")
-```
-
-### 4. 站點和Tag互相查詢
-```python
-# 查詢站點對應的Tag
-tag = AStarAlgorithm.get_tag_by_station("Soaking01")
-print(f"Soaking01 對應Tag: {tag}")
-
-# 查詢Tag對應的站點
-station = AStarAlgorithm.get_station_by_tag(4)
-print(f"Tag 4 對應站點: {station}")
+# 獲取座標
+x, y = astar.getXY(tag_id)
 ```
 
 ## 數據結構說明
@@ -315,54 +277,19 @@ print(f"Tag 4 對應站點: {station}")
 
 ## 故障排除
 
-### 常見問題
-1. **配置檔案未找到**: 檢查YAML和JSON檔案路徑
-   ```bash
-   ls -la /app/config/path.yaml
-   ls -la /app/config/stationID.yaml
-   ```
+**完整故障排除指導**: @docs-ai/operations/maintenance/troubleshooting.md
 
-2. **找不到路徑**: 檢查起終點Tag是否存在且連通
-   ```python
-   # 檢查Tag是否存在於圖中
-   if start_tag not in astar.graph:
-       print(f"起始Tag {start_tag} 不存在")
-   ```
+### 模組特定問題
+- **配置檔案未找到**: 檢查 `/app/config/path.yaml` 和 `stationID.yaml`
+- **找不到路徑**: 檢查起終點 Tag 是否存在且連通
+- **圖形結構問題**: 使用 `astar.graph.number_of_nodes()` 檢查圖形完整性
 
-3. **JSON數據格式錯誤**: 驗證JSON檔案格式
-   ```bash
-   python3 -m json.tool /app/config/path_data.json
-   ```
-
-4. **站點映射錯誤**: 檢查stationID.yaml格式
-   ```python
-   site_map = AStarAlgorithm.load_site_map()
-   print(site_map)
-   ```
-
-### 調試工具
-```python
-# 檢查圖形結構
-print(f"節點數量: {astar.graph.number_of_nodes()}")
-print(f"邊數量: {astar.graph.number_of_edges()}")
-
-# 檢查特定節點的鄰居
-neighbors = list(astar.graph.neighbors(tag_id))
-print(f"Tag {tag_id} 的鄰居: {neighbors}")
-
-# 檢查節點座標
-pos = astar.graph.nodes[tag_id]['pos']
-print(f"Tag {tag_id} 座標: {pos}")
-```
-
-### 性能考量
-- **圖形大小**: NetworkX適合中等規模圖形 (< 10000節點)
-- **記憶體使用**: 約每1000節點需要10-50MB記憶體
-- **搜尋速度**: 典型路徑長度<100步時，搜尋時間<1ms
+### 效能特性
+- 適用規模: < 10,000 節點，搜尋效能 < 1ms
 
 ## 系統整合
 
-### 在RosAGV系統中的角色
+### 在 RosAGV 系統中的角色
 ```
 配置檔案 (YAML/JSON)
     ↓ 數據載入
@@ -372,15 +299,28 @@ AGV控制系統 (路徑執行)
 ```
 
 ### 擴展可能性
-- **ROS 2整合**: 可封裝為ROS 2服務節點
+- **ROS 2 整合**: 可封裝為 ROS 2 服務節點
 - **動態更新**: 支援圖形動態修改
 - **多目標規劃**: 擴展為多點順序訪問
 - **約束規劃**: 添加時間窗、容量等約束
 
-## 重要提醒
-- path_algorithm基於NetworkX提供純路徑規劃功能
-- 適用於工業AGV系統的標籤導航環境
+## 💡 重要提醒
+
+### 模組特性
+- 基於 NetworkX 提供純路徑規劃功能
+- 適用於工業 AGV 系統的標籤導航環境
 - 當前版本需要預先定義的靜態圖形結構
-- 支援AGV和AGVC雙環境使用
-- 所有操作需在對應容器內執行
 - 依賴準確的配置檔案和圖形數據
+
+### 雙環境支援
+@docs-ai/context/system/dual-environment.md
+- AGV 和 AGVC 雙環境都可使用此模組
+- 透過 Zenoh RMW 實現跨容器通訊
+- 所有操作需在對應容器內執行
+
+## 🔗 交叉引用
+- **系統架構**: @docs-ai/context/system/rosagv-overview.md
+- **ROS 2 開發指導**: @docs-ai/operations/development/ros2-development.md
+- **容器開發環境**: @docs-ai/operations/development/docker-development.md
+- **系統診斷工具**: @docs-ai/operations/maintenance/system-diagnostics.md
+- **車型應用**: @docs-ai/knowledge/agv-domain/vehicle-types.md

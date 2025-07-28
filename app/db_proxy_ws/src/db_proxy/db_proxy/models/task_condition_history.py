@@ -7,6 +7,7 @@ from sqlmodel import SQLModel, Field, Column, JSON, Text
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from enum import Enum
+from pydantic import ConfigDict, field_serializer
 
 
 class ConditionType(str, Enum):
@@ -34,10 +35,7 @@ class TaskCondition(SQLModel, table=True):
     results: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON), description="結果資料（JSONB 格式）")
     description: Optional[str] = Field(default=None, max_length=500, description="條件描述")
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
 
 
 class TaskConditionHistory(SQLModel, table=True):
@@ -67,10 +65,12 @@ class TaskConditionHistory(SQLModel, table=True):
     # 錯誤資訊
     error_message: Optional[str] = Field(default=None, max_length=500, description="錯誤訊息")
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer('created_at', 'updated_at', 'expires_at', when_used='json')
+    def serialize_datetime(self, value: datetime) -> str:
+        """序列化 datetime 為 ISO 格式字串"""
+        return value.isoformat() if value else None
 
 
 class TaskConditionCache(SQLModel, table=True):
@@ -97,7 +97,9 @@ class TaskConditionCache(SQLModel, table=True):
     hit_count: int = Field(default=0, description="命中次數")
     last_hit_at: Optional[datetime] = Field(default=None, description="最後命中時間")
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer('created_at', 'expires_at', 'last_hit_at', when_used='json')
+    def serialize_datetime(self, value: datetime) -> str:
+        """序列化 datetime 為 ISO 格式字串"""
+        return value.isoformat() if value else None

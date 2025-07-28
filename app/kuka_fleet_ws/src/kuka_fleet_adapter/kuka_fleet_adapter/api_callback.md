@@ -1,5 +1,13 @@
 # API 規格說明：missionStateCallback
 
+## ⚠️ 重要提醒
+本文檔已遷移至 docs-ai 知識庫，請參考最新完整版本：
+- **回調處理規格**: @docs-ai/knowledge/protocols/kuka-fleet-callback.md
+
+以下內容僅供快速參考，請以 docs-ai 版本為準。
+
+---
+
 ## 說明
 
 此 API 用於將任務狀態從 Kuka 系統回報給上游系統，包含任務代碼、容器資訊、當前位置與任務狀態等。

@@ -1,5 +1,13 @@
 # KUKA Fleet API Documentation
 
+## ⚠️ 重要提醒
+本文檔已遷移至 docs-ai 知識庫，請參考最新完整版本：
+- **完整 API 規格**: @docs-ai/knowledge/protocols/kuka-fleet-api.md
+
+以下內容僅供快速參考，請以 docs-ai 版本為準。
+
+---
+
 **Version**: 2.13.0  
 **Host**: 192.168.10.3:10870  
 **Base URL**: http://192.168.10.3:10870

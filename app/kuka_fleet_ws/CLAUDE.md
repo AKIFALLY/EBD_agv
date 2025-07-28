@@ -1,9 +1,31 @@
-# kuka_fleet_ws CLAUDE.md
+# kuka_fleet_ws - KUKA Fleet 適配器系統
 
-## 模組概述
-KUKA Fleet 適配器工作空間，提供與 KUKA Fleet Manager API 的整合介面，實現 KUKA AGV 車隊管理、任務派發和狀態監控功能。
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/context/system/technology-stack.md
+@docs-ai/context/workspaces/agvc-workspaces.md
+@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/docker-development.md
+@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/maintenance/troubleshooting.md
+@docs-ai/operations/tools/unified-tools.md
+@docs-ai/knowledge/protocols/kuka-fleet-api.md
+@docs-ai/knowledge/protocols/kuka-fleet-callback.md
 
-## 專案結構
+## 📋 模組概述
+
+**KUKA Fleet 適配器工作空間** 是 RosAGV 系統中負責與 KUKA Fleet Manager API 整合的核心模組，基於 ROS 2 Jazzy 實現 KUKA AGV 車隊管理、任務派發和狀態監控功能。
+
+### 核心定位
+- **外部系統整合**: 提供與 KUKA Fleet Manager 的標準化 API 介面
+- **車隊管理中心**: 統一管理 KUKA AGV 車隊狀態和任務調度
+- **ROS 2 適配層**: 將 KUKA Fleet API 適配為 ROS 2 生態系統服務
+- **實時監控**: 提供 AGV 和容器的實時狀態監控能力
+
+詳細系統架構請參考: @docs-ai/context/workspaces/agvc-workspaces.md
+
+## 📂 專案結構 (實際檔案結構)
 ```
 src/
 └── kuka_fleet_adapter/           # KUKA Fleet 適配器套件
@@ -20,7 +42,7 @@ src/
     └── setup.cfg              # 建置配置
 ```
 
-## 核心功能
+## 🏗️ 核心功能 (基於實際代碼)
 
 ### KukaFleetAdapter - KUKA 車隊適配器
 負責 ROS 2 節點整合和車隊管理邏輯：
@@ -55,7 +77,7 @@ class KukaFleetAdapter:
 - `workflow(workflow, robot_id, mission_code)`: 執行工作流程任務
 
 ### KukaApiClient - KUKA API 客戶端
-實現完整的 KUKA Fleet API 通訊：
+實現完整的 KUKA Fleet API 通訊，詳細 API 規格請參考: @docs-ai/knowledge/protocols/kuka-fleet-api.md
 
 **認證功能**：
 - `login()`: API 登入認證
@@ -85,22 +107,33 @@ class KukaFleetAdapter:
 - `get_all_containers_in_map()`: 獲取所有在場容器
 - `get_running_jobs()`: 獲取運行中的作業
 
-## 開發指令
+## 🔧 開發環境
 
-### 環境設定 (AGVC容器內)
+### 容器環境要求
+
+**⚠️ 重要**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行，詳細說明請參考: @docs-ai/context/system/dual-environment.md
+
+### 開發指令
+
+### 環境設定
+詳細環境設定請參考: @docs-ai/operations/development/docker-development.md
+
 ```bash
-source /app/setup.bash
-agvc_source  # 載入AGVC工作空間
-cd /app/kuka_fleet_ws
+# 快速進入開發環境
+agvc_enter && all_source && cd /app/kuka_fleet_ws
 ```
 
-### 建置與安裝
-```bash
-# 建置工作空間
-build_ws kuka_fleet_ws
+### 開發環境設定
+詳細開發環境設定請參考：
+- @docs-ai/operations/development/docker-development.md - 容器開發指導
+- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
-# 或使用完整建置指令
-source /opt/ros/jazzy/setup.bash && source /opt/ws_rmw_zenoh/install/setup.bash && cd /app/kuka_fleet_ws && colcon build
+### 建置與安裝
+詳細建置指導請參考: @docs-ai/operations/development/ros2-development.md
+
+```bash
+# 建置 KUKA Fleet 工作空間
+build_ws kuka_fleet_ws
 ```
 
 ### 服務啟動
@@ -268,7 +301,14 @@ ROBOT_CONFIG = {
 }
 ```
 
-## 故障排除
+## 🚨 故障排除
+
+詳細故障排除指導請參考：
+- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
+- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
+- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
+
+### KUKA Fleet 特定故障排除
 
 ### 常見問題
 
@@ -336,20 +376,47 @@ ros2 node list | grep kuka_fleet_adapter
 pkill -f kuka_fleet_adapter
 ```
 
-## 整合點
+## 🔗 系統整合
 
-### 與其他系統整合
+### 與其他模組整合
 - **rcs_ws**: 使用 KukaFleetAdapter 進行 KUKA 車隊管理
-- **wcs_ws**: 透過 KukaFleetAdapter 整合 KUKA 任務派發
+- **ai_wcs_ws**: 透過 KukaFleetAdapter 整合 KUKA 任務派發
+- **web_api_ws**: 提供 KUKA Fleet 狀態的 Web API 介面
 
-### 外部依賴
+### 外部系統依賴
 - **KUKA Fleet Manager**: 必須可達 http://192.168.10.3:10870
-- **ROS 2 Jazzy**: 核心 ROS 2 框架
+- **ROS 2 Jazzy**: 核心 ROS 2 框架支持
 - **Python requests**: HTTP 客戶端庫
+- **Zenoh RMW**: 跨容器通訊機制
 
-## 重要提醒
-- 此工作空間需手動啟動，未包含在容器自動啟動腳本中
-- 必須確保 KUKA Fleet Manager 可連線
-- API 認證使用 Authorization header，不需要 Bearer 前綴
-- 所有 ROS 2 相關操作必須在 AGVC 容器內執行
-- 地圖區域配置為 "test-test1"，需根據實際環境調整
+## 💡 開發最佳實踐
+
+### 重要注意事項
+⚠️ **容器執行要求**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行  
+⚠️ **API 連線要求**: 必須確保 KUKA Fleet Manager 可連線  
+⚠️ **認證方式**: API 認證使用 Authorization header，不需要 Bearer 前綴  
+⚠️ **手動啟動**: 此工作空間需手動啟動，未包含在容器自動啟動腳本中  
+⚠️ **環境配置**: 地圖區域配置為 "test-test1"，需根據實際環境調整  
+⚠️ **回調處理**: 需實作 missionStateCallback 接收 KUKA Fleet 狀態回調，詳見: @docs-ai/knowledge/protocols/kuka-fleet-callback.md
+
+### 工具使用策略
+詳細工具指導請參考: @docs-ai/operations/maintenance/system-diagnostics.md
+
+- **統一入口優先**: 使用 `r` 命令處理日常操作
+- **專業工具深入**: 複雜問題使用對應的專業工具集
+- **便捷函數組合**: 載入工具集後使用便捷函數提高效率
+
+### 標準開發工作流程
+詳細開發工作流程請參考: @docs-ai/operations/development/ros2-development.md
+
+## 🔗 交叉引用
+- 系統概覽: @docs-ai/context/system/rosagv-overview.md
+- 雙環境架構: @docs-ai/context/system/dual-environment.md
+- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
+- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
+- 容器開發: @docs-ai/operations/development/docker-development.md
+- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
+- 統一工具: @docs-ai/operations/tools/unified-tools.md
+- **KUKA Fleet API 規格**: @docs-ai/knowledge/protocols/kuka-fleet-api.md
+- **KUKA Fleet 回調規格**: @docs-ai/knowledge/protocols/kuka-fleet-callback.md

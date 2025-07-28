@@ -72,4 +72,4 @@ agvc_devices:
     - web_api_ws
     - ecs_ws
     - rcs_ws
-    - wcs_ws
+    - ai_wcs_ws

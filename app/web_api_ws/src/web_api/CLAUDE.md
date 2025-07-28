@@ -1,5 +1,11 @@
 # web_api - 核心Web API服務
 
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/knowledge/protocols/kuka-fleet-api.md
+@docs-ai/knowledge/protocols/kuka-fleet-callback.md
+
 ## 專案概述
 web_api是RosAGV系統的核心Web API服務，提供RESTful API接口整合各系統模組。基於FastAPI框架，統一管理PLC控制、門控制、交通管制、地圖匯入、KUKA Fleet整合等功能，為前端界面和外部系統提供標準化的HTTP API。
 
@@ -116,9 +122,22 @@ export LOG_LEVEL="debug"               # 日誌級別
 - **ecs_ws**: 使用DoorLogic進行門控制
 - **db_proxy_ws**: 透過ConnectionPoolManager存取資料庫
 - **traffic_manager**: 交通管制區域管理
-- **kuka_fleet_ws**: KUKA Fleet系統整合
+- **kuka_fleet_ws**: KUKA Fleet系統整合 (詳見 @docs-ai/knowledge/protocols/kuka-fleet-api.md)
 - **agvcui**: 提供API給管理界面
 - **opui**: 提供API給操作界面
+
+### KUKA Fleet 整合詳細說明
+web_api 透過 `/interfaces/api/amr/missionStateCallback` 端點接收 KUKA Fleet Manager 的任務狀態回調：
+
+**🔧 回調實作**: `routers/kuka.py`
+- **端點**: `POST /interfaces/api/amr/missionStateCallback`
+- **功能**: 接收 KUKA Fleet 任務狀態更新並儲存至資料庫
+- **狀態類型**: 支援 12 種任務狀態 (MOVE_BEGIN, ARRIVED, COMPLETED 等)
+- **資料模型**: 使用 `MissionStateCallbackData` Pydantic 模型驗證
+
+**📋 API 規格參考**:
+- **完整 API 規格**: @docs-ai/knowledge/protocols/kuka-fleet-api.md
+- **回調處理規格**: @docs-ai/knowledge/protocols/kuka-fleet-callback.md
 
 ### API端點規範
 ```bash
@@ -141,10 +160,8 @@ POST /traffic/release               # 釋放交通區域
 POST /map/import                    # 匯入地圖數據
 GET  /map/status                    # 地圖狀態查詢
 
-# KUKA Fleet API
-GET  /kuka/robots                   # 機器人列表
-POST /kuka/dispatch_task            # 派遣任務
-GET  /kuka/task_status              # 任務狀態查詢
+# KUKA Fleet API (詳細規格參考 @docs-ai/knowledge/protocols/kuka-fleet-api.md)
+POST /interfaces/api/amr/missionStateCallback  # 任務狀態回調接收 (實際實作)
 ```
 
 ## 測試方法

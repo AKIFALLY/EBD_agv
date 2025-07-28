@@ -49,7 +49,7 @@ agv_ws/
 │   │   │   ├── context_abc.py             # 狀態機抽象介面
 │   │   │   ├── event.py                   # 事件系統
 │   │   │   ├── robot.py                   # 機器人基礎類別
-│   │   │   ├── hokuyo_dms_8bit.py         # Hokuyo 感測器處理
+│   │   │   ├── hokuyo_dms_8bit.py         # Hokuyo 8bit 光通訊模組處理
 │   │   │   ├── agv_states/                # AGV 專用狀態實作
 │   │   │   │   ├── idle_state.py          # 空閒狀態
 │   │   │   │   ├── manual_state.py        # 手動模式狀態
@@ -96,7 +96,7 @@ agv_ws/
 │       ├── package.xml
 │       └── setup.py
 ├── test/                          # 測試檔案
-│   └── test_hokuyo_dms_8bit.py    # Hokuyo 感測器測試
+│   └── test_hokuyo_dms_8bit.py    # Hokuyo 8bit 光通訊模組測試
 └── README.md                      # 本檔案
 ```
 
@@ -155,7 +155,7 @@ agv_ws/
 - **業務流程**: 接收任務 → 移動到卸載點 → 🚧 卸載邏輯 (開發中) → 🚧 分揀作業 (開發中)
 
 ### 4. 感測器整合
-- **Hokuyo DMS**: 雷射距離感測器整合，支援 8-bit 資料處理
+- **Hokuyo DMS**: 8bit 光通訊模組整合，透過 PLC 進行資料通訊
 - **PGV 感測器**: 前後 PGV 感測器支援
 - **SLAM 定位**: SLAM 位置資訊處理
 
@@ -424,7 +424,7 @@ ros2 node info /cargo02/agv_core_node
 
 ### 5. 測試和除錯
 ```bash
-# 測試 Hokuyo 感測器
+# 測試 Hokuyo 8bit 光通訊模組
 python3 /app/agv_ws/test/test_hokuyo_dms_8bit.py
 
 # 檢查 PLC 連線
@@ -472,7 +472,7 @@ ros2 service call /cargo02/write_continuous_data plc_interfaces/srv/WriteContinu
 
 ### 4. 感測器測試
 ```bash
-# 測試 Hokuyo 感測器
+# 測試 Hokuyo 8bit 光通訊模組
 cd /app/agv_ws
 python3 test/test_hokuyo_dms_8bit.py
 

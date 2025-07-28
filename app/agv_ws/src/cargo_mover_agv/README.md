@@ -2,18 +2,18 @@
 
 ## 概述
 
-`cargo_mover_agv` 是 RosAGV 系統中專門負責貨物搬運作業的 AGV 控制套件。此套件實現了 Cargo Mover AGV 的核心控制邏輯，包括雙 Hokuyo 設備管理、狀態機控制、非同步任務處理等功能。
+`cargo_mover_agv` 是 RosAGV 系統中專門負責貨物搬運作業的 AGV 控制套件。此套件實現了 Cargo Mover AGV 的核心控制邏輯，包括 Hokuyo 8bit 光通訊模組管理（左右側）、狀態機控制、非同步任務處理等功能。
 
 ## 功能特點
 
 ### 核心功能
-- **雙 Hokuyo 設備管理**: 支援兩個 Hokuyo DMS 8-bit 設備的並行控制
+- **Hokuyo 光通訊模組管理**: 支援 Hokuyo DMS 8bit 光通訊模組（左右側安裝）的控制
 - **狀態機控制**: 基於狀態機的機器人行為管理
 - **非同步任務處理**: 支援複雜的非同步任務更新和處理
 - **貨物搬運**: 專門針對貨物搬運作業最佳化的控制邏輯
 
 ### 支援的作業流程
-1. **Idle State**: 空閒狀態管理和 Hokuyo 設備初始化
+1. **Idle State**: 空閒狀態管理和 Hokuyo 8bit 光通訊模組初始化（左右側）
 2. **Complete State**: 任務完成處理和延遲重置機制
 3. **Wait Rotation**: 等待旋轉狀態和非同步任務更新
 4. **Cargo States**: 貨物特定的狀態處理
@@ -161,9 +161,9 @@ python3 -m unittest test_idle_state_hokuyo.TestIdleStateHokuyo.test_hokuyo_write
 
 ## 技術細節
 
-### 雙 Hokuyo 設備配置
+### Hokuyo 設備配置（左右側）
 ```python
-# 雙 Hokuyo 設備初始化
+# Hokuyo 設備初始化（左右側）
 self.hokuyo_dms_8bit_1 = HokuyoDMS8Bit(
     self, "/app/config/hokuyo_dms_config.yaml", "hokuyo_dms_cargo02_1")
 self.hokuyo_dms_8bit_2 = HokuyoDMS8Bit(
@@ -179,7 +179,7 @@ work_id = 2000102  # Cargo Mover 的工作ID格式
 
 ### 狀態機架構
 基於 `agv_base.states.state.State` 的狀態機實現，支援：
-- 雙 Hokuyo 設備並行控制
+- Hokuyo 設備控制（左右側安裝）
 - 非同步任務處理
 - 延遲重置機制
 - 複雜的狀態轉換邏輯
@@ -239,5 +239,5 @@ ros2 node info /cargo02/cargo_mover_agv_node
 ## 版本歷史
 
 - **v1.0.0**: 初始版本，支援基本的 Cargo Mover AGV 功能
-- **v1.1.0**: 新增雙 Hokuyo 設備支援
+- **v1.1.0**: 新增 Hokuyo 設備支援（左右側）
 - **v1.2.0**: 完善測試套件和文檔

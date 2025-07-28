@@ -1,10 +1,38 @@
+"""
+⚠️ DEPRECATED: This module is deprecated and no longer maintained.
+   Please use standard ROS 2 Joy instead:
+   
+   ros2 run joy joy_node --ros-args --remap joy:=/agv/joy
+   
+   Then use JoyHandler for processing sensor_msgs/Joy messages.
+"""
+
+import warnings
 import pygame
 import os
 import threading
 import time
 
+# Issue deprecation warning when module is imported
+warnings.warn(
+    "JoystickHandler (Pygame-based) is deprecated. Use standard ROS 2 joy_node instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 
 class JoystickHandler:
+    """
+    ⚠️ DEPRECATED: Pygame-based joystick handler is deprecated.
+    
+    This class provides direct access to USB joystick devices through Pygame,
+    but is no longer maintained. Please use standard ROS 2 joy_node instead:
+    
+    ros2 run joy joy_node --ros-args --remap joy:=/agv/joy
+    
+    Then use JoyHandler class for processing sensor_msgs/Joy messages.
+    """
+    
     # 定義搖桿DPAD常量
     DPAD_UP = (0, 1)
     DPAD_DOWN = (0, -1)
@@ -36,7 +64,16 @@ class JoystickHandler:
 
     @classmethod
     def init(cls):
-        """初始化 Pygame 和搖桿"""
+        """
+        初始化 Pygame 和搖桿
+        
+        ⚠️ DEPRECATED: Use standard ROS 2 joy_node instead
+        """
+        warnings.warn(
+            "JoystickHandler.init() is deprecated. Use standard ROS 2 joy_node instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         if not cls._initialized:
             os.environ["SDL_AUDIODRIVER"] = "dummy"  # 避免音訊驅動問題
             pygame.init()
@@ -219,8 +256,14 @@ class JoystickHandler:
         # pygame.time.wait(polling_rate)  # 控制輪詢速度
 
 
-# 測試
+# ⚠️ DEPRECATED: Testing code is deprecated
 if __name__ == "__main__":
+    print("⚠️ DEPRECATED: This Pygame-based joystick test is deprecated.")
+    print("Please use standard ROS 2 joy_node instead:")
+    print("  ros2 run joy joy_node --ros-args --remap joy:=/agv/joy")
+    print("  ros2 topic echo /agv/joy")
+    print()
+    
     def button_event(button, action):
         print(f"🕹️ {button} {action}")
 

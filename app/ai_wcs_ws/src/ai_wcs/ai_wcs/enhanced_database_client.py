@@ -9,7 +9,7 @@ import logging
 from typing import Dict, List, Optional, Any, Tuple, Union
 from dataclasses import dataclass
 import json
-import asyncio
+# import asyncio  # 移除異步依賴
 from datetime import datetime, timezone, timedelta
 
 # 直接導入 db_proxy 組件
@@ -89,13 +89,13 @@ class EnhancedDatabaseClient:
             'avg_query_time': 0.0
         }
         
-        # 批次查詢快取
+        # 批次查詢快取 - 同步優化
         self.batch_cache = {}
-        self.batch_cache_ttl = 30  # 30秒快取
+        self.batch_cache_ttl = 25  # 25秒快取 - 適配同步執行
         
-        # 一般查詢快取
+        # 一般查詢快取 - 同步優化  
         self.cache = {}
-        self.cache_ttl = 60  # 60秒快取
+        self.cache_ttl = 45  # 45秒快取 - 平衡性能與實時性
     
     def _build_database_url(self) -> str:
         """建構資料庫連接 URL - 使用正確的AGVC資料庫設定"""
@@ -109,9 +109,9 @@ class EnhancedDatabaseClient:
         self.logger.info(f'資料庫連接: {host}:{port}/{database}')
         return db_url
     
-    async def batch_check_locations_status(self, 
-                                         location_groups: Dict[str, List[int]], 
-                                         status_filter: int) -> BatchQueryResult:
+    def batch_check_locations_status(self, 
+                                    location_groups: Dict[str, List[int]], 
+                                    status_filter: int) -> BatchQueryResult:
         """批次檢查多組位置狀態"""
         start_time = datetime.now()
         
@@ -170,8 +170,8 @@ class EnhancedDatabaseClient:
                 query_count=1
             )
     
-    async def batch_check_task_conflicts(self, 
-                                       work_location_pairs: List[Tuple[str, int]]) -> BatchQueryResult:
+    def batch_check_task_conflicts(self, 
+                                  work_location_pairs: List[Tuple[str, int]]) -> BatchQueryResult:
         """批次檢查任務衝突"""
         start_time = datetime.now()
         
@@ -221,7 +221,7 @@ class EnhancedDatabaseClient:
                 error_message=error_msg
             )
     
-    async def get_agvs_by_state(self, state: str) -> List[AGVInfo]:
+    def get_agvs_by_state(self, state: str) -> List[AGVInfo]:
         """獲取特定狀態的AGV"""
         try:
             with self.connection_pool.get_session() as session:
@@ -251,7 +251,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'查詢AGV狀態異常: {e}')
             return []
     
-    async def get_tasks_by_agv(self, agv_id: int) -> List[TaskInfo]:
+    def get_tasks_by_agv(self, agv_id: int) -> List[TaskInfo]:
         """獲取AGV的任務列表"""
         try:
             with self.connection_pool.get_session() as session:
@@ -288,7 +288,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'查詢AGV任務異常: {e}')
             return []
     
-    async def get_child_tasks(self, parent_task_id: int) -> List[TaskInfo]:
+    def get_child_tasks(self, parent_task_id: int) -> List[TaskInfo]:
         """獲取子任務列表"""
         try:
             with self.connection_pool.get_session() as session:
@@ -322,7 +322,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'查詢子任務異常: {e}')
             return []
     
-    async def has_active_task(self, work_id: str, location_id: int) -> bool:
+    def has_active_task(self, work_id: str, location_id: int) -> bool:
         """檢查是否有重複的活動任務"""
         try:
             with self.connection_pool.get_session() as session:
@@ -341,7 +341,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'檢查活動任務異常: {e}')
             return False
     
-    async def has_active_task_by_work_id(self, work_id: str, status_list: List[int]) -> bool:
+    def has_active_task_by_work_id(self, work_id: str, status_list: List[int]) -> bool:
         """檢查特定work_id是否有活動任務"""
         try:
             with self.connection_pool.get_session() as session:
@@ -359,7 +359,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'檢查work_id任務異常: {e}')
             return False
     
-    async def has_completed_task(self, work_id: Union[str, int]) -> bool:
+    def has_completed_task(self, work_id: Union[str, int]) -> bool:
         """檢查是否有已完成的任務"""
         try:
             with self.connection_pool.get_session() as session:
@@ -377,7 +377,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'檢查完成任務異常: {e}')
             return False
     
-    async def check_locations_available(self, location_ids: List[int], status: int) -> List[Dict[str, Any]]:
+    def check_locations_available(self, location_ids: List[int], status: int) -> List[Dict[str, Any]]:
         """檢查位置可用性"""
         try:
             with self.connection_pool.get_session() as session:
@@ -407,7 +407,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'檢查位置可用性異常: {e}')
             return []
     
-    async def check_ng_rack_at_location(self, location_id: int) -> bool:
+    def check_ng_rack_at_location(self, location_id: int) -> bool:
         """檢查位置是否有NG料架"""
         try:
             with self.connection_pool.get_session() as session:
@@ -425,7 +425,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'檢查NG料架異常: {e}')
             return False
     
-    async def check_carriers_in_room(self, room_id: int) -> bool:
+    def check_carriers_in_room(self, room_id: int) -> bool:
         """檢查房間是否有carrier"""
         try:
             with self.connection_pool.get_session() as session:
@@ -440,7 +440,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'檢查房間carrier異常: {e}')
             return False
     
-    async def check_racks_at_location(self, location_id: int, status: List[int] = None) -> List[Dict[str, Any]]:
+    def check_racks_at_location(self, location_id: int, status: List[int] = None) -> List[Dict[str, Any]]:
         """檢查位置的料架狀態"""
         try:
             with self.connection_pool.get_session() as session:
@@ -473,7 +473,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'檢查位置料架異常: {e}')
             return []
     
-    async def create_task_from_decision(self, decision_dict: Dict[str, Any]) -> Optional[int]:
+    def create_task_from_decision(self, decision_dict: Dict[str, Any]) -> Optional[int]:
         """從決策創建任務"""
         try:
             with self.connection_pool.get_session() as session:
@@ -505,7 +505,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'創建任務異常: {e}')
             return None
     
-    async def update_machine_parking_status(self, machine_id: int, space_num: int, status: int) -> bool:
+    def update_machine_parking_status(self, machine_id: int, space_num: int, status: int) -> bool:
         """更新機台停車格狀態 - OPUI停車格狀態同步"""
         try:
             # 根據停車格編號決定更新哪個欄位
@@ -552,7 +552,7 @@ class EnhancedDatabaseClient:
             self.logger.error(f'更新停車格狀態異常: {e}')
             return False
     
-    async def get_machine_parking_info(self, machine_id: int) -> Optional[Dict[str, Any]]:
+    def get_machine_parking_info(self, machine_id: int) -> Optional[Dict[str, Any]]:
         """獲取機台停車格完整資訊 - OPUI狀態查詢"""
         try:
             with self.connection_pool.get_session() as session:
@@ -599,7 +599,7 @@ class EnhancedDatabaseClient:
         }
         return status_map.get(status, f"未知狀態 ({status})")
     
-    async def batch_update_parking_status(self, updates: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def batch_update_parking_status(self, updates: List[Dict[str, Any]]) -> Dict[str, Any]:
         """批次更新停車格狀態 - 性能最佳化"""
         try:
             successful_updates = []
@@ -610,7 +610,7 @@ class EnhancedDatabaseClient:
                 space_num = update['space_num']
                 status = update['status']
                 
-                success = await self.update_machine_parking_status(machine_id, space_num, status)
+                success = self.update_machine_parking_status(machine_id, space_num, status)
                 
                 if success:
                     successful_updates.append(update)
@@ -634,7 +634,7 @@ class EnhancedDatabaseClient:
                 'error': str(e)
             }
     
-    async def get_opui_pending_requests(self) -> List[Dict[str, Any]]:
+    def get_opui_pending_requests(self) -> List[Dict[str, Any]]:
         """獲取OPUI待處理請求 (基於machine parking space狀態) - 使用 SQLModel 查詢"""
         try:
             with self.connection_pool.get_session() as session:
@@ -750,15 +750,14 @@ class EnhancedDatabaseClient:
 
 def main():
     """主函數 - 直接連接模式測試"""
-    import asyncio
     
-    async def test_enhanced_client():
+    def test_enhanced_client():
         """測試增強資料庫客戶端"""
         client = EnhancedDatabaseClient()
         
         # 測試基本連接
         try:
-            agvs = await client.get_agvs_by_state('idle')
+            agvs = client.get_agvs_by_state('idle')
             print(f"找到 {len(agvs)} 個空閒AGV")
             
             # 測試批次查詢
@@ -766,7 +765,7 @@ def main():
                 'ng_area': [71, 72],
                 'manual_area': [51, 52, 53, 54, 55]
             }
-            result = await client.batch_check_locations_status(location_groups, 0)
+            result = client.batch_check_locations_status(location_groups, 0)
             print(f"批次查詢結果: {result.success}, 查詢數量: {result.query_count}")
             
             # 獲取統計資料
@@ -777,7 +776,7 @@ def main():
             print(f"測試異常: {e}")
     
     # 執行測試
-    asyncio.run(test_enhanced_client())
+    test_enhanced_client()
 
 
 if __name__ == '__main__':

@@ -1,11 +1,48 @@
+"""
+⚠️ DEPRECATED: This module is deprecated and no longer maintained.
+   This test node uses the deprecated Pygame-based JoystickHandler.
+   
+   Please use standard ROS 2 Joy instead:
+   
+   ros2 run joy joy_node --ros-args --remap joy:/agv/joy
+   ros2 topic echo /agv/joy
+   
+   Or use JoyHandler for processing sensor_msgs/Joy messages.
+"""
+
+import warnings
 import rclpy
 from rclpy.node import Node
 from joystick.joystick_handler import JoystickHandler
 
+# Issue deprecation warning when module is imported
+warnings.warn(
+    "JoystickTestNode is deprecated as it uses deprecated JoystickHandler. Use standard ROS 2 joy_node instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 
 class JoystickTestNode(Node):
+    """
+    ⚠️ DEPRECATED: JoystickTestNode is deprecated.
+    
+    This test node integrates the deprecated Pygame-based JoystickHandler.
+    Please use standard ROS 2 joy_node instead:
+    
+    ros2 run joy joy_node --ros-args --remap joy:=/agv/joy
+    
+    Then use JoyHandler class for processing sensor_msgs/Joy messages.
+    """
+    
     def __init__(self):
         super().__init__('joystick_test_node')
+        
+        # Issue deprecation warning when node is created
+        self.get_logger().warn(
+            "⚠️ DEPRECATED: JoystickTestNode uses deprecated Pygame handler. "
+            "Use standard ROS 2 joy_node instead."
+        )
 
         # 初始化搖桿
         JoystickHandler.init()
@@ -64,6 +101,12 @@ class JoystickTestNode(Node):
 
 
 def main(args=None):
+    print("⚠️ DEPRECATED: JoystickTestNode is deprecated.")
+    print("Please use standard ROS 2 joy_node instead:")
+    print("  ros2 run joy joy_node --ros-args --remap joy:=/agv/joy")
+    print("  ros2 topic echo /agv/joy")
+    print()
+    
     rclpy.init(args=args)
     node = JoystickTestNode()
     try:

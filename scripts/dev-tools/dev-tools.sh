@@ -515,7 +515,7 @@ cmd_status() {
     log_info "檢查工作空間狀態..."
     local workspaces=(
         "agv_ws" "agv_cmd_service_ws" "joystick_ws" "keyence_plc_ws"
-        "plc_proxy_ws" "db_proxy_ws" "ecs_ws" "rcs_ws" "wcs_ws"
+        "plc_proxy_ws" "db_proxy_ws" "ecs_ws" "rcs_ws" "ai_wcs_ws"
         "web_api_ws" "kuka_fleet_ws" "sensorpart_ws" "launch_ws"
     )
     

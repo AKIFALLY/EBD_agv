@@ -1,23 +1,97 @@
-# CLAUDE.md
+# sensorpart_ws CLAUDE.md
 
-## 系統概述
-TCP客戶端感測器數據接收工作空間，連接外部感測器服務器接收3D定位和OCR識別數據。
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/context/system/technology-stack.md
+@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/docker-development.md
+@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/maintenance/troubleshooting.md
 
-**🔗 TCP連接架構**: TCP客戶端 → 外部感測器服務器 (192.168.2.100:2005)
+## 🎯 適用場景
+- AGV 車載系統的外部感測器資料接收
+- 3D 定位和 OCR 識別資料的 TCP 客戶端整合
+- 感測器伺服器連線管理和資料解析
+- ROS 2 系統的感測器資料橋接功能
 
-## 核心架構
+## 📋 模組概述
+
+**sensorpart_ws** 是 RosAGV 系統中的感測器資料接收工作空間，作為 TCP 客戶端連接外部感測器伺服器，接收並解析 3D 定位和 OCR 識別資料，為 AGV 車載系統提供視覺感測器資料支援。
+
+### 核心特色
+- **TCP 客戶端**: 連接外部感測器伺服器 (192.168.2.100:2005)
+- **自動重連**: 內建重連機制確保連線穩定性
+- **多執行緒設計**: 獨立執行緒處理 TCP 通訊，不阻塞 ROS 2 節點
+- **資料解析**: 支援 3D 定位和 OCR 兩種資料格式解析
+- **ROS 2 整合**: 提供標準 ROS 2 節點封裝
+
+### 業務價值
+- **即時定位**: 為 AGV 提供外部視覺定位資料
+- **物品識別**: 支援 OCR 文字識別功能
+- **系統整合**: 無縫整合到 ROS 2 生態系統
+- **穩定通訊**: 自動處理網路中斷和重連
+
+**⚠️ 重要**: 所有 ROS 2 程式必須在 Docker 容器內執行，宿主機無 ROS 2 環境。
+
+### 通訊架構
+```
+外部感測器設備 
+    ↓ TCP 伺服器 (192.168.2.100:2005)
+sensorpart_ws (TCP 客戶端)
+    ↓ 資料解析和存儲
+ROS 2 節點 (TestSensorPartNode)
+    ↓ 日誌輸出 / 可擴展為主題發布
+AGV 應用層
+```
+
+## 🏗️ 系統架構
+
+### 工作空間結構
 ```
 sensorpart_ws/
-└── sensorpart/                   # TCP客戶端核心
-    ├── sensorpart.py             # TCP客戶端主程式
-    ├── test_sensorpart_node.py   # ROS 2節點封裝
-    └── __init__.py
+├── src/
+│   └── sensorpart/              # 感測器套件
+│       ├── package.xml          # ROS 2 套件定義
+│       ├── setup.py             # Python 套件設定
+│       ├── setup.cfg            # 套件配置
+│       ├── resource/            # 資源檔案
+│       └── sensorpart/          # 核心模組
+│           ├── __init__.py      # 套件初始化
+│           ├── sensorpart.py    # TCP 客戶端主程式
+│           └── test_sensorpart_node.py  # ROS 2 節點封裝
+└── CLAUDE.md                    # 模組文檔
 ```
 
-## 主要組件
+### 核心組件關係
+```
+SensorPart (TCP 客戶端)
+├── 多執行緒 TCP 連線管理
+├── 自動重連機制
+├── 資料格式解析
+└── 執行緒安全的資料存儲
 
-### 1. SensorPart類別 (sensorpart.py)
-**TCP客戶端**，連接外部感測器服務器接收數據:
+TestSensorPartNode (ROS 2 節點)
+├── SensorPart 實例管理
+├── 定時器回調
+├── ROS 2 日誌輸出
+└── 節點生命週期管理
+```
+
+## 🔧 核心組件
+
+### 1. SensorPart 類別 (sensorpart.py)
+@docs-ai/operations/development/ros2-development.md
+
+**SensorPart** 是核心的 TCP 客戶端類別，負責與外部感測器伺服器建立連線並接收資料。
+
+#### 核心特性
+- **多執行緒設計**: 獨立執行緒處理 TCP 通訊，不影響主程式運行
+- **自動重連機制**: 連線失敗或中斷時自動重試 (5秒間隔)
+- **資料解析**: 支援 3D 定位和 OCR 兩種固定格式資料
+- **執行緒安全**: 使用 threading.Event 進行執行緒同步
+
+#### 實際實作架構 (基於真實代碼)
 ```python
 class SensorPart:
     def __init__(self, host='192.168.2.100', port=2005):
@@ -27,12 +101,14 @@ class SensorPart:
         self.is_connected = False
         self.position_data = None  # 3D定位數據存儲
         self.ocr_result = None     # OCR結果存儲
+        self.thread = None
+        self.stop_event = threading.Event()
 ```
 
-**連接管理**:
+#### 連線管理機制 (來自實際代碼)
 ```python
 def connect(self):
-    """連接到感測器服務器，支援重連機制"""
+    """連接到感測器服務器，支援重連機制 (來自 sensorpart.py 第 18 行)"""
     while not self.is_connected and not self.stop_event.is_set():
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,12 +118,30 @@ def connect(self):
         except socket.error as e:
             print(f"Connection failed: {e}. Retrying in 5 seconds...")
             time.sleep(5)
+
+def start(self):
+    """啟動 TCP 客戶端執行緒 (來自 sensorpart.py 第 84 行)"""
+    self.thread = threading.Thread(target=self.run, daemon=True)
+    self.thread.start()
+    print("TCP Client started in a separate thread.")
+
+def stop(self):
+    """停止 TCP 客戶端和執行緒 (來自 sensorpart.py 第 89 行)"""
+    self.stop_event.set()
+    self.disconnect()
+    if self.thread and self.thread.is_alive():
+        print("Waiting for TCP Client thread to finish...")
+        if threading.current_thread() != self.thread:
+            self.thread.join(timeout=1.0)
+        else:
+            print("⚠️ 無法在 sensopart 執行緒內 join 自己，略過 join()")
+    print("TCP Client stopped.")
 ```
 
-**數據處理**:
+#### 資料解析實作 (來自實際代碼)
 ```python
 def handle_message(self, message):
-    """處理接收到的感測器數據"""
+    """處理接收到的感測器數據 (來自 sensorpart.py 第 36 行)"""
     # 3D定位數據格式: (005,P,x,y,z,rx,ry,rz)
     position_pattern = r"\((005),(P|F),(\d+),(\d+),(\d+),([-\d.]+),([-\d.]+),([-\d.]+)\)"
     
@@ -65,47 +159,86 @@ def handle_message(self, message):
                 'ry': float(ry),
                 'rz': float(rz)
             }
+            print(f"3D Positioning Data Updated: {self.position_data}")
+        else:
+            print("3D Positioning Data Invalid.")
     elif match := re.match(ocr_pattern, message):
         _, ocr_string = match.groups()
         self.ocr_result = ocr_string
+        print(f"OCR Result Updated: {self.ocr_result}")
+    else:
+        print("Unrecognized message format. Ignoring.")
 ```
 
-### 2. TestSensorPartNode類別 (test_sensorpart_node.py)
-**ROS 2節點封裝**，將TCP客戶端整合到ROS 2系統:
+### 2. TestSensorPartNode 類別 (test_sensorpart_node.py)
+
+**TestSensorPartNode** 是 ROS 2 節點封裝，將 TCP 客戶端整合到 ROS 2 系統中。
+
+#### 核心特性
+- **ROS 2 節點**: 標準 ROS 2 節點實作
+- **SensorPart 整合**: 內建 TCP 客戶端管理
+- **定時回調**: 定期記錄接收到的感測器資料
+- **優雅關閉**: 正確處理節點關閉和資源清理
+
+#### 實際實作架構 (來自真實代碼)
 ```python
 class TestSensorPartNode(Node):
     def __init__(self):
         super().__init__('sensorpart_node')
-        
-        # 初始化TCP客戶端
+        self.get_logger().info("TestSensorPartNode initialized.")
+
+        # 初始化TCP客戶端 (來自 test_sensorpart_node.py 第 12 行)
         self.tcp_client = SensorPart()
         self.tcp_client.start()
-        
-        # 創建定時器定期記錄數據
+
+        # 創建定時器定期記錄數據 (來自 test_sensorpart_node.py 第 16 行)
         self.timer = self.create_timer(1.0, self.timer_callback)
-        
+
     def timer_callback(self):
-        """定時回調，記錄當前接收到的數據"""
+        """定時回調，記錄當前接收到的數據 (來自 test_sensorpart_node.py 第 19 行)"""
         self.get_logger().info(f"Position Data: {self.tcp_client.position_data}")
         self.get_logger().info(f"OCR Result: {self.tcp_client.ocr_result}")
+
+    def destroy_node(self):
+        """節點關閉時停止 TCP 客戶端 (來自 test_sensorpart_node.py 第 25 行)"""
+        self.tcp_client.stop()
+        super().destroy_node()
 ```
 
-## 支援的數據格式
-
-### 1. 3D定位數據
-**格式**: `(005,P,x,y,z,rx,ry,rz)`
-- `005`: 固定標識符
-- `P`: 成功狀態 (F表示失敗)
-- `x,y,z`: 位置坐標 (整數)
-- `rx,ry,rz`: 旋轉角度 (浮點數)
-
-**範例**:
-```
-(005,P,1250,890,120,0.5,-1.2,2.1)
-```
-
-**解析結果**:
+#### 完整的 main 函數 (來自實際代碼)
 ```python
+def main(args=None):
+    """主函數 (來自 test_sensorpart_node.py 第 31 行)"""
+    rclpy.init(args=args)
+    node = TestSensorPartNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        node.get_logger().info("Shutting down SensorPartNode...")
+    finally:
+        node.destroy_node()
+
+    if rclpy.ok():
+        rclpy.shutdown()
+```
+
+## 📋 支援的資料格式
+
+### 3D 定位資料格式
+**協議格式**: `(005,P,x,y,z,rx,ry,rz)`
+
+| 欄位 | 說明 | 範例值 |
+|------|------|--------|
+| 005 | 固定標識符 | 005 |
+| P/F | 狀態 (P=成功, F=失敗) | P |
+| x,y,z | 位置坐標 (整數) | 1250,890,120 |
+| rx,ry,rz | 旋轉角度 (浮點數) | 0.5,-1.2,2.1 |
+
+**資料範例**:
+```
+輸入: (005,P,1250,890,120,0.5,-1.2,2.1)
+
+解析結果:
 {
     'x': 1250,
     'y': 890,
@@ -116,55 +249,46 @@ class TestSensorPartNode(Node):
 }
 ```
 
-### 2. OCR識別結果
-**格式**: `(OCR,text)`
-- `OCR`: 固定標識符
-- `text`: 識別到的文字內容
+### OCR 識別結果格式
+**協議格式**: `(OCR,text)`
 
-**範例**:
+| 欄位 | 說明 | 範例值 |
+|------|------|--------|
+| OCR | 固定標識符 | OCR |
+| text | 識別到的文字內容 | AGV001 |
+
+**資料範例**:
 ```
-(OCR,AGV001)
+輸入: (OCR,AGV001)
+解析結果: ocr_result = "AGV001"
 ```
 
-**解析結果**:
-```python
-ocr_result = "AGV001"
-```
+## 🚀 開發環境設定和節點啟動
+@docs-ai/operations/development/docker-development.md
+@docs-ai/operations/development/ros2-development.md
 
-## 開發指令
-
-### 環境設定 (AGV容器內執行)
+### sensorpart_ws 特定指令
 ```bash
-# AGV容器內
-source /app/setup.bash && agv_source  # 或使用 all_source (自動檢測)
-cd /app/sensorpart_ws
-```
-
-### 構建與測試
-```bash
-build_ws sensorpart_ws
-```
-
-### 節點啟動 (AGV容器內執行)
-```bash
-# 啟動ROS 2節點 (包含TCP客戶端)
+# 啟動感測器節點 (包含 TCP 客戶端)
 ros2 run sensorpart test_sensorpart_node
 
-# 或單獨運行TCP客戶端
+# 或單獨運行 TCP 客戶端
 ros2 run sensorpart sensorpart
 ```
 
-## 使用範例
+詳細的容器環境設定、工作空間載入、建置和除錯指令請參考上方 docs-ai 連結。
 
-### 1. 直接使用TCP客戶端
+## 💡 使用範例和實際整合
+
+### 1. 直接使用 TCP 客戶端
 ```python
 from sensorpart.sensorpart import SensorPart
 
-# 創建並啟動客戶端
+# 建立並啟動客戶端 (來自實際代碼架構)
 client = SensorPart(host='192.168.2.100', port=2005)
 client.start()
 
-# 檢查接收到的數據
+# 檢查接收到的資料
 if client.position_data:
     print(f"Position: {client.position_data}")
     
@@ -175,7 +299,7 @@ if client.ocr_result:
 client.stop()
 ```
 
-### 2. 在ROS 2節點中使用
+### 2. 在 ROS 2 節點中使用
 ```python
 import rclpy
 from rclpy.node import Node
@@ -189,147 +313,131 @@ class MySensorNode(Node):
         self.sensor_client = SensorPart()
         self.sensor_client.start()
         
-        # 創建定時器處理數據
+        # 建立定時器處理資料
         self.timer = self.create_timer(0.5, self.process_sensor_data)
         
     def process_sensor_data(self):
-        """處理感測器數據"""
+        """處理感測器資料"""
         if self.sensor_client.position_data:
             pos = self.sensor_client.position_data
             self.get_logger().info(f"AGV位置: ({pos['x']}, {pos['y']}, {pos['z']})")
             
         if self.sensor_client.ocr_result:
             self.get_logger().info(f"識別結果: {self.sensor_client.ocr_result}")
+    
+    def destroy_node(self):
+        """節點關閉時正確停止 TCP 客戶端"""
+        self.sensor_client.stop()
+        super().destroy_node()
 ```
 
-### 3. 測試連接
-```bash
-# 測試TCP連接 (AGV容器內)
-telnet 192.168.2.100 2005
-
-# 檢查網路連通性
-ping 192.168.2.100
-
-# 查看端口狀態
-netstat -tlnp | grep 2005
-```
-
-## 配置參數
-
-### 連接參數
+### 3. 自定義連線設定
 ```python
-# 預設連接參數
-DEFAULT_HOST = '192.168.2.100'  # 感測器服務器IP
-DEFAULT_PORT = 2005             # 服務器端口
-
-# 重連參數
-RECONNECT_INTERVAL = 5          # 重連間隔(秒)
-SOCKET_TIMEOUT = None           # Socket超時設定
-```
-
-### 自定義連接設定
-```python
-# 連接到自定義服務器
+# 連接到自定義伺服器 (基於實際代碼構造函數)
 custom_client = SensorPart(host='192.168.1.100', port=3005)
 
-# 或在環境變數中設定
+# 或使用環境變數設定
 import os
 host = os.getenv('SENSOR_HOST', '192.168.2.100')
 port = int(os.getenv('SENSOR_PORT', '2005'))
 client = SensorPart(host=host, port=port)
 ```
 
-## 故障排除
+## 🚨 故障排除
+@docs-ai/operations/maintenance/troubleshooting.md
+@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/tools/unified-tools.md
 
-### 常見問題
-1. **無法連接服務器**: 檢查網路連通性和服務器狀態
-   ```bash
-   ping 192.168.2.100
-   telnet 192.168.2.100 2005
-   ```
+### sensorpart_ws 特定問題
 
-2. **連接頻繁斷開**: 檢查網路穩定性或服務器負載
-   - 客戶端會自動重連，檢查重連日誌
+#### TCP 連線診斷
+- 檢查感測器伺服器 `192.168.2.100:2005` 的連通性
+- 確認感測器伺服器正在運行且端口開放
+- 檢查網路設定和防火牆配置
 
-3. **數據格式錯誤**: 檢查接收到的原始訊息格式
-   - 查看 "Unrecognized message format" 警告
-
-4. **ROS 2節點無回應**: 檢查TCP客戶端狀態
-   ```bash
-   ros2 node info /sensorpart_node
-   ```
-
-### 診斷步驟
-```bash
-# 1. 檢查網路連接
-ping 192.168.2.100
-nmap -p 2005 192.168.2.100
-
-# 2. 測試TCP連接
-telnet 192.168.2.100 2005
-
-# 3. 檢查ROS 2節點狀態
-ros2 node list | grep sensor
-ros2 node info /sensorpart_node
-
-# 4. 查看日誌輸出
-ros2 run sensorpart test_sensorpart_node
-```
-
-### 錯誤處理
+#### 資料接收診斷
 ```python
-# 在節點中添加錯誤處理
+# 建議的錯誤處理擴展 (可加入到 TestSensorPartNode)
 def timer_callback(self):
     try:
+        # 檢查 TCP 客戶端連線狀態
         if not self.tcp_client.is_connected:
             self.get_logger().warn("TCP客戶端未連接")
             return
             
-        # 檢查數據時效性
-        if self.last_data_time and (time.time() - self.last_data_time) > 10:
-            self.get_logger().warn("數據超時，超過10秒未收到新數據")
+        # 實際代碼的基本功能 (來自 test_sensorpart_node.py 第 19-23 行)
+        self.get_logger().info(f"Position Data: {self.tcp_client.position_data}")
+        self.get_logger().info(f"OCR Result: {self.tcp_client.ocr_result}")
             
     except Exception as e:
-        self.get_logger().error(f"處理感測器數據時發生錯誤: {e}")
+        self.get_logger().error(f"處理感測器資料時發生錯誤: {e}")
 ```
 
-## 技術特性
+通用的故障排除流程、系統診斷方法、網路診斷指令和統一診斷工具請參考上方的 docs-ai 連結。
 
-### 多線程設計
-- **主線程**: ROS 2節點運行
-- **TCP線程**: 獨立線程處理TCP連接和數據接收
-- **線程安全**: 使用threading.Event進行線程同步
+## ⚡ 效能特性
 
-### 自動重連機制
-- 連接失敗時自動重試 (5秒間隔)
-- 連接中斷時自動重新建立連接
-- 優雅的關閉和清理機制
+### sensorpart_ws 特有效能特點
+- **多執行緒設計**: TCP 通訊在獨立執行緒中處理，不阻塞 ROS 2 節點
+- **自動重連**: 5秒間隔的自動重連機制確保連線穩定性
+- **執行緒安全**: 使用 threading.Event 確保資料存取的執行緒安全
+- **輕量級設計**: 純 Python 實作，資源使用量低
 
-### 數據解析
-- 使用正則表達式解析固定格式訊息
-- 支援3D定位和OCR兩種數據類型
-- 容錯處理，忽略無法識別的訊息格式
-
-## 系統整合
-
-### 在AGV系統中的角色
-```
-外部感測器設備 (192.168.2.100:2005)
-    ↓ TCP通訊
-sensorpart_ws (TCP客戶端)
-    ↓ ROS 2節點
-AGV應用層 (定位和識別數據處理)
+### 連線參數配置
+```python
+# 實際代碼中的預設參數 (來自 sensorpart.py 第 8 行)
+host='192.168.2.100'    # 感測器伺服器IP (構造函數預設值)
+port=2005               # 伺服器端口 (構造函數預設值)
+# 重連間隔: 5秒 (來自 sensorpart.py 第 28 行 time.sleep(5))
+# Socket 超時: 未設定 (使用系統預設)
 ```
 
-### 數據流向
-1. **外部感測器** → TCP服務器 (192.168.2.100:2005)
-2. **sensorpart客戶端** → 接收並解析數據
-3. **ROS 2節點** → 定時輸出到日誌
-4. **上層應用** → 可擴展為發布ROS 2話題
+## 🏗️ 系統整合架構
 
-## 重要提醒
-- sensorpart_ws僅提供基本的TCP客戶端功能
-- 適用於AGV車載系統接收外部感測器數據
-- 當前實現僅支援日誌輸出，可擴展為ROS 2話題發布
-- 所有操作必須在AGV容器內執行
-- 需確保與感測器服務器的網路連通性
+### sensorpart_ws 在 RosAGV 中的定位
+```
+外部感測器設備
+    ↓ TCP 伺服器 (192.168.2.100:2005)
+sensorpart_ws (TCP 客戶端)
+    ↓ ROS 2 節點整合
+AGV 車載系統 (定位和識別資料)
+```
+
+### 資料流向
+1. **外部感測器設備** → TCP 伺服器發送資料
+2. **sensorpart 客戶端** → 接收並解析 3D 定位和 OCR 資料
+3. **ROS 2 節點** → 定時輸出資料到日誌
+4. **擴展可能** → 可發布為 ROS 2 主題供其他節點使用
+
+### 核心價值
+- **感測器橋接**: 將外部 TCP 感測器資料引入 ROS 2 系統
+- **資料解析**: 標準化 3D 定位和 OCR 資料格式
+- **穩定通訊**: 自動重連確保資料接收的連續性
+
+## 💡 開發要點
+
+- **TCP 客戶端**: 連接外部感測器伺服器接收資料
+- **多執行緒設計**: 獨立執行緒處理網路通訊
+- **資料格式固定**: 支援 3D 定位 `(005,P,...)` 和 OCR `(OCR,...)` 格式
+- **ROS 2 整合**: 提供節點封裝便於系統整合
+- **AGV 車載專用**: 主要用於 AGV 車載系統的感測器資料接收
+
+## 🔗 交叉引用
+
+### 相關模組
+- **AGV 狀態機**: `app/agv_ws/src/agv_base/CLAUDE.md` - 可使用感測器資料進行定位
+- **路徑規劃**: `app/path_algorithm/CLAUDE.md` - 可結合 3D 定位資料
+
+### 通用指導
+- **ROS 2 開發指導**: @docs-ai/operations/development/ros2-development.md
+- **容器開發環境**: @docs-ai/operations/development/docker-development.md
+
+### 運維支援
+- **系統診斷工具**: @docs-ai/operations/maintenance/system-diagnostics.md
+- **故障排除流程**: @docs-ai/operations/maintenance/troubleshooting.md
+- **統一工具系統**: @docs-ai/operations/tools/unified-tools.md
+
+### 系統架構
+- **雙環境架構**: @docs-ai/context/system/dual-environment.md
+- **技術棧說明**: @docs-ai/context/system/technology-stack.md
+- **模組索引導航**: @docs-ai/context/structure/module-index.md
