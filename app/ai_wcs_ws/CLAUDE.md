@@ -5,11 +5,14 @@
 @docs-ai/context/system/dual-environment.md
 @docs-ai/context/system/technology-stack.md
 @docs-ai/context/workspaces/agvc-workspaces.md
+@docs-ai/context/structure/module-index.md
 @docs-ai/knowledge/agv-domain/wcs-system-design.md
 @docs-ai/knowledge/agv-domain/wcs-workid-system.md
 @docs-ai/knowledge/agv-domain/wcs-database-design.md
+@docs-ai/operations/development/core-principles.md
 @docs-ai/operations/development/ros2-development.md
 @docs-ai/operations/development/docker-development.md
+@docs-ai/operations/development/testing-standards.md
 @docs-ai/operations/maintenance/system-diagnostics.md
 @docs-ai/operations/maintenance/troubleshooting.md
 @docs-ai/operations/tools/unified-tools.md
@@ -187,13 +190,73 @@ ros2 run ai_wcs ai_wcs_node
 ```
 
 ### 測試驗證
-```bash
-# 功能測試
-python3 src/ai_wcs/test/test_simple_functionality.py
 
-# 系統整合測試
-python3 src/ai_wcs/test/test_system_integration.py
+#### 🎯 測試最佳實踐 (推薦工作流程)
+
+**⚠️ 重要政策：自 2025-07-29 起，AI WCS 專案統一使用 pytest 測試框架**
+- 詳細規範請參考: @docs-ai/operations/development/testing-standards.md
+- 所有新測試必須使用 pytest，不再使用 unittest
+
+**日常開發調試** (pytest 標準方式):
+```bash
+# 進入容器並載入環境
+agvc_enter && all_source
+cd /app/ai_wcs_ws/src/ai_wcs
+
+# pytest 直接測試 (推薦開發時使用)
+python3 -m pytest test/test_ai_wcs_pytest.py -v    # ✅ pytest 標準測試
+python3 -m pytest test/ -v --tb=short             # 執行所有測試
+python3 -m pytest test/ -m unit                   # 只執行單元測試
+python3 -m pytest test/ -m integration            # 只執行整合測試
 ```
+
+**正式提交前** (ROS 2 標準方式):
+```bash
+# 進入容器並載入環境
+agvc_enter && all_source
+cd /app/ai_wcs_ws
+
+# ROS 2 標準測試 (使用 pytest 作為後端)
+colcon test --packages-select ai_wcs    # 🤖 ROS 2 原生測試
+colcon test-result --verbose           # 查看詳細測試結果
+colcon test-result                     # 查看簡單測試結果
+```
+
+**快速功能驗證** (向下相容):
+```bash
+# 快速功能驗證 - 8個核心功能測試
+cd /app/ai_wcs_ws
+python3 test_ai_wcs_functionality.py    # ✅ 一條指令搞定！
+```
+
+#### 📋 測試結構說明
+```
+ai_wcs_ws/
+├── test_ai_wcs_functionality.py      # 主要功能測試 (8個核心功能)
+└── src/ai_wcs/test/
+    ├── run_tests.py                  # 統一測試執行器
+    ├── unit/                         # 單元測試
+    ├── integration/                  # 整合測試
+    └── functional/                   # 功能測試
+```
+
+#### ✅ pytest 核心測試覆蓋 (13/13 通過)
+**⚠️ 基於 pytest 框架的標準測試 (`test_ai_wcs_pytest.py`)**:
+- 業務流程優先級數值測試
+- 業務流程優先級排序測試
+- 任務決策創建和驗證測試
+- Work ID 分類數值和完整性測試
+- 參數管理器初始化和映射測試
+- KUKA 料架移動參數建構測試
+- OPUI 叫空車參數建構測試
+- 優先級排序功能測試
+- 枚舉別名機制測試
+- 決策序列化整合測試
+
+**📊 測試統計**:
+- **pytest 測試**: 13 個核心功能測試 ✅
+- **總測試數**: 57 個測試（包含向下相容的 unittest 和靜態檢查）
+- **通過率**: 100% (0 errors, 0 failures, 0 skipped)
 
 ## 📊 系統監控
 

@@ -49,7 +49,7 @@ AGVC 管理工作空間 (11個):
 ├── db_proxy_ws/               # 資料庫代理
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-├── wcs_ws/                    # 倉庫控制系統
+# (wcs_ws 已整合至 ai_wcs_ws)
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
 ├── ai_wcs_ws/                 # AI 倉庫控制
 └── [共用工作空間: keyence_plc_ws, plc_proxy_ws, path_algorithm]

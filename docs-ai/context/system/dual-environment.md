@@ -95,7 +95,7 @@ web_api_ws/               # Web API 和 Socket.IO
 db_proxy_ws/              # 資料庫代理服務
 ecs_ws/                   # 設備控制系統
 rcs_ws/                   # 機器人控制系統
-wcs_ws/                   # 倉庫控制系統
+# (wcs_ws 已整合至 ai_wcs_ws)
 kuka_fleet_ws/            # KUKA Fleet 整合
 ai_wcs_ws/                # AI 倉庫控制系統
 keyence_plc_ws/           # PLC 通訊 (共用)

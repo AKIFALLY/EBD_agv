@@ -384,9 +384,8 @@ class UnifiedTaskManager:
                 'parameters': parameters
             }
             
-            # 創建任務到資料庫 (修正：暫時模擬創建成功，實際應連接db_client)
-            # task_id = await self.db_client.create_task_from_decision(task_dict)
-            task_id = f"mock_task_{hash(str(task_dict)) % 10000}"  # 模擬任務ID
+            # 創建任務到資料庫
+            task_id = self.db_client.create_task_from_decision(task_dict)
             
             if task_id:
                 self.logger.info(
@@ -394,10 +393,13 @@ class UnifiedTaskManager:
                     f'type={decision.task_type}, priority={decision.priority}'
                 )
                 
-                # 🔗 OPUI停車格狀態同步 (修正：暫時跳過async調用)
+                # 🔗 OPUI停車格狀態同步
                 if decision.work_id in ['100001', '100002']:
-                    # sync_success = await self.sync_opui_parking_status_for_task(decision, task_id)
-                    self.logger.info(f'📋 OPUI停車格狀態同步已跳過 (模擬模式): task_id={task_id}')
+                    sync_success = self.sync_opui_parking_status_for_task(decision, task_id)
+                    if sync_success:
+                        self.logger.info(f'📋 OPUI停車格狀態同步成功: task_id={task_id}')
+                    else:
+                        self.logger.warning(f'📋 OPUI停車格狀態同步失敗: task_id={task_id}')
                 
                 return TaskCreationResult(
                     success=True,

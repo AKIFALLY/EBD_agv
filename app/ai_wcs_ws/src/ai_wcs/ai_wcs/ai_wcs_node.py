@@ -22,8 +22,9 @@ from .enhanced_database_client import EnhancedDatabaseClient
 from .unified_task_manager import UnifiedTaskManager
 from .rack_analyzer import RackAnalyzer
 
-# 導入 ROS 2 訊息
+# 導入 ROS 2 訊息和服務
 from std_msgs.msg import String
+from std_srvs.srv import SetBool, Trigger
 
 
 class AIWCSNode(Node):
@@ -37,7 +38,7 @@ class AIWCSNode(Node):
         self.decision_engine = UnifiedWCSDecisionEngine(self.get_logger())
         self.database_client = EnhancedDatabaseClient()
         self.task_manager = UnifiedTaskManager(self.get_logger())
-        self.rack_analyzer = RackAnalyzer(self.get_logger())
+        self.rack_analyzer = RackAnalyzer(self.get_logger(), self.database_client)
         
         # 整合增強資料庫客戶端到決策引擎
         self._integrate_enhanced_database_client()
@@ -52,16 +53,11 @@ class AIWCSNode(Node):
             'enable_opui_integration': True       # 啟用OPUI整合
         }
         
-        # 建立ROS 2發布者
-        self.system_status_pub = self.create_publisher(
-            String, '/ai_wcs/unified_system_status', 10
-        )
-        self.decision_metrics_pub = self.create_publisher(
-            String, '/ai_wcs/unified_decision_metrics', 10
-        )
-        self.task_updates_pub = self.create_publisher(
-            String, '/ai_wcs/unified_task_updates', 10
-        )
+        # 系統控制狀態
+        self.system_paused = False            # 系統暫停狀態
+        self.emergency_stopped = False        # 緊急停止狀態
+        
+        # 不創建 ROS 2 發布者 - 使用資料庫模式
         
         # 建立定時器
         self.decision_timer = self.create_timer(
@@ -88,6 +84,9 @@ class AIWCSNode(Node):
             'system_start_time': datetime.now(timezone.utc)
         }
         
+        # 創建 ROS 2 服務介面
+        self._create_services()
+        
         self.get_logger().info('✅ AI WCS 統一決策引擎系統初始化完成')
     
     def _integrate_enhanced_database_client(self):
@@ -107,6 +106,15 @@ class AIWCSNode(Node):
     def run_unified_decision_cycle(self):
         """執行統一決策週期 - 七大業務流程統一調度 (純ROS 2同步方式)"""
         if not self.system_status['is_running']:
+            return
+            
+        # 檢查系統控制狀態
+        if self.system_paused:
+            self.get_logger().debug('系統已暫停，跳過決策週期')
+            return
+        
+        if self.emergency_stopped:
+            self.get_logger().warning('系統處於緊急停止狀態，跳過決策週期')
             return
         
         cycle_start_time = datetime.now(timezone.utc)
@@ -136,10 +144,8 @@ class AIWCSNode(Node):
             
             # 發布任務更新
             if successful_tasks:
-                self.publish_task_updates(successful_tasks, decisions)
-            
-            # 發布決策指標
-            self.publish_decision_metrics()
+                # 不發布 ROS 2 訊息 - 使用資料庫模式
+                pass
             
             # 更新系統狀態
             self.system_status['last_decision_cycle'] = cycle_start_time
@@ -177,74 +183,24 @@ class AIWCSNode(Node):
         """提交任務到資料庫"""
         submitted_count = 0
         
-        for task in tasks:
-            try:
-                # TODO: 實作資料庫提交邏輯
-                # success = self._insert_task_to_db(task)
-                success = True  # 暫時模擬成功
-                
-                if success:
+        # 使用 task_manager 批次創建任務
+        try:
+            creation_results = self.task_manager.create_tasks_from_decisions(tasks)
+            
+            for result in creation_results:
+                if result.success:
                     submitted_count += 1
-                    self.get_logger().debug(f'任務已提交到資料庫: {task.task_id}')
+                    self.get_logger().debug(f'任務已提交到資料庫: {result.task_id}')
                 else:
-                    self.get_logger().error(f'任務提交失敗: {task.task_id}')
+                    self.get_logger().error(f'任務提交失敗: {result.error_message}')
                     
-            except Exception as e:
-                self.get_logger().error(f'提交任務時發生錯誤: {task.task_id} - {e}')
+        except Exception as e:
+            self.get_logger().error(f'提交任務時發生錯誤: {e}')
         
         return submitted_count
     
-    def publish_decision_metrics(self):
-        """發布決策指標"""
-        try:
-            # 整合所有組件的統計資料
-            decision_stats = self.decision_engine.get_decision_statistics()
-            task_stats = self.task_manager.get_task_statistics()
-            db_stats = self.database_client.get_query_statistics()
-            
-            metrics = {
-                'decision_engine': decision_stats,
-                'task_manager': task_stats,
-                'database_client': db_stats,
-                'system_metrics': {
-                    'total_cycles': self.system_status['total_cycles'],
-                    'task_success_rate': task_stats['stats']['created'] / max(task_stats['stats']['created'] + task_stats['stats']['failed'], 1)
-                },
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }
-            
-            msg = String()
-            msg.data = json.dumps(metrics, ensure_ascii=False)
-            self.decision_metrics_pub.publish(msg)
-            
-        except Exception as e:
-            self.get_logger().error(f'❌ 發布決策指標失敗: {e}')
+    # 發布方法已移除 - 使用資料庫模式
     
-    def publish_task_updates(self, creation_results: List, decisions: List[TaskDecision]):
-        """發布任務更新"""
-        try:
-            task_data = {
-                'created_tasks': [
-                    {
-                        'task_id': result.task_id,
-                        'work_id': decisions[i].work_id,
-                        'task_type': decisions[i].task_type,
-                        'priority': decisions[i].priority,
-                        'created_at': result.created_at.isoformat()
-                    }
-                    for i, result in enumerate(creation_results) if result.success
-                ],
-                'system_type': 'unified_wcs',
-                'cycle_number': self.system_status['total_cycles'],
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }
-            
-            msg = String()
-            msg.data = json.dumps(task_data, ensure_ascii=False)
-            self.task_updates_pub.publish(msg)
-            
-        except Exception as e:
-            self.get_logger().error(f'❌ 發布任務更新失敗: {e}')
     
     def cleanup_old_tasks(self):
         """清理舊任務"""
@@ -299,34 +255,11 @@ class AIWCSNode(Node):
                 f'查詢命中率: {db_stats["cache_hit_rate"]:.2%}'
             )
             
-            # 發布系統狀態
-            self.publish_unified_system_status()
+            # 不發布系統狀態 - 使用資料庫模式
             
         except Exception as e:
             self.get_logger().error(f'❌ 記錄統計資料失敗: {e}')
     
-    def publish_unified_system_status(self):
-        """發布統一系統狀態"""
-        try:
-            status_data = {
-                'system_status': self.system_status,
-                'system_type': 'unified_wcs_decision_engine',
-                'components': {
-                    'unified_decision_engine': 'active',
-                    'enhanced_database_client': 'active',
-                    'unified_task_manager': 'active',
-                    'rack_analyzer': 'active'
-                },
-                'config': self.config,
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }
-            
-            msg = String()
-            msg.data = json.dumps(status_data, ensure_ascii=False)
-            self.system_status_pub.publish(msg)
-            
-        except Exception as e:
-            self.get_logger().error(f'❌ 發布統一系統狀態失敗: {e}')
     
     def pause_system(self):
         """暫停系統"""
@@ -400,21 +333,124 @@ class AIWCSNode(Node):
     
     def _create_services(self):
         """創建ROS 2服務介面"""
-        # TODO: 可以添加以下服務
-        # - /ai_wcs/get_status (獲取系統狀態)
-        # - /ai_wcs/pause_system (暫停系統)
-        # - /ai_wcs/resume_system (恢復系統)
-        # - /ai_wcs/emergency_stop (緊急停止)
-        # - /ai_wcs/update_config (更新配置)
-        pass
+        # 暫停系統服務
+        self.pause_service = self.create_service(
+            SetBool, '/ai_wcs/pause_system', self.pause_system_callback)
+        
+        # 恢復系統服務  
+        self.resume_service = self.create_service(
+            SetBool, '/ai_wcs/resume_system', self.resume_system_callback)
+        
+        # 緊急停止服務
+        self.emergency_stop_service = self.create_service(
+            Trigger, '/ai_wcs/emergency_stop', self.emergency_stop_callback)
+        
+        self.get_logger().info('🔧 ROS 2 控制服務已創建')
+    
+    # === ROS 2 服務回調方法 ===
+    
+    def pause_system_callback(self, request, response):
+        """暫停系統服務回調"""
+        try:
+            if request.data:  # 請求暫停
+                if not self.system_paused:
+                    self.system_paused = True
+                    self.get_logger().info('⏸️ 系統已暫停 - 決策引擎停止自動調度')
+                    response.success = True
+                    response.message = "系統已成功暫停"
+                else:
+                    response.success = False
+                    response.message = "系統已經處於暫停狀態"
+            else:  # 請求取消暫停 (這個功能也可以通過 resume 實現)
+                if self.system_paused:
+                    self.system_paused = False
+                    self.get_logger().info('▶️ 系統暫停已取消')
+                    response.success = True
+                    response.message = "系統暫停已取消"
+                else:
+                    response.success = False
+                    response.message = "系統不在暫停狀態"
+                    
+        except Exception as e:
+            self.get_logger().error(f'暫停系統服務異常: {e}')
+            response.success = False
+            response.message = f"服務異常: {e}"
+            
+        return response
+    
+    def resume_system_callback(self, request, response):
+        """恢復系統服務回調"""
+        try:
+            if request.data:  # 請求恢復
+                if self.system_paused or self.emergency_stopped:
+                    old_paused = self.system_paused
+                    old_emergency = self.emergency_stopped
+                    
+                    self.system_paused = False
+                    self.emergency_stopped = False
+                    
+                    # 立即執行一次決策週期
+                    self.get_logger().info('▶️ 系統已恢復 - 重新啟動決策引擎')
+                    self.run_unified_decision_cycle()
+                    
+                    response.success = True
+                    response.message = f"系統已恢復 (暫停:{old_paused}, 緊急停止:{old_emergency})"
+                else:
+                    response.success = False
+                    response.message = "系統已經在正常運行狀態"
+            else:
+                response.success = False
+                response.message = "請求參數錯誤，應設置 data=true"
+                
+        except Exception as e:
+            self.get_logger().error(f'恢復系統服務異常: {e}')
+            response.success = False
+            response.message = f"服務異常: {e}"
+            
+        return response
+    
+    def emergency_stop_callback(self, request, response):
+        """緊急停止服務回調"""
+        try:
+            if not self.emergency_stopped:
+                self.emergency_stopped = True
+                self.system_paused = False  # 緊急停止優先級更高
+                
+                # 停止當前任務創建並標記待處理任務
+                self._mark_pending_tasks_as_cancelled()
+                
+                self.get_logger().error('🛑 系統緊急停止 - 所有自動決策已停止')
+                response.success = True
+                response.message = "系統已緊急停止，所有自動決策已停止"
+            else:
+                response.success = False
+                response.message = "系統已經處於緊急停止狀態"
+                
+        except Exception as e:
+            self.get_logger().error(f'緊急停止服務異常: {e}')
+            response.success = False
+            response.message = f"服務異常: {e}"
+            
+        return response
+    
+    def _mark_pending_tasks_as_cancelled(self):
+        """標記所有待處理任務為取消狀態"""
+        try:
+            # 這裡可以實作標記邏輯，目前記錄日誌
+            active_tasks_count = len(self.task_manager.active_tasks) if hasattr(self.task_manager, 'active_tasks') else 0
+            self.get_logger().info(f'🔄 緊急停止: {active_tasks_count} 個活動任務需要處理')
+            
+            # 實際的任務取消邏輯可以在這裡實作
+            # 例如：更新資料庫中 status_id=0 (REQUESTING) 的任務為 CANCELLED 狀態
+            
+        except Exception as e:
+            self.get_logger().error(f'標記任務取消失敗: {e}')
     
     def _create_publishers(self):
         """創建ROS 2發布者"""
-        # TODO: 可以添加以下發布者
-        # - /ai_wcs/system_status (系統狀態)
-        # - /ai_wcs/task_updates (任務更新)
-        # - /ai_wcs/decision_metrics (決策指標)
-        pass
+        # 不需要狀態發布者 - AGVCUI 直接從資料庫查詢狀態
+        # 移除不必要的發布者介面，減少系統複雜度
+        self.get_logger().info('📢 跳過 ROS 2 發布者創建 - 使用資料庫模式')
     
     def destroy_node(self):
         """節點銷毀時的清理工作"""

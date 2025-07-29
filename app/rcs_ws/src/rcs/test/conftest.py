@@ -8,8 +8,8 @@ import sys
 from unittest.mock import MagicMock, Mock
 from datetime import datetime, timezone
 
-# 添加必要的路徑
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+# 添加必要的路徑 (簡化版本)
+# sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 @pytest.fixture
 def mock_logger():

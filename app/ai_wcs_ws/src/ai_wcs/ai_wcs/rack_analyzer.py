@@ -10,6 +10,12 @@ from dataclasses import dataclass
 from enum import Enum
 import json
 
+# 導入資料庫相關組件
+from sqlmodel import select, and_, or_
+from db_proxy.models.room import Room
+from db_proxy.models.agvc_location import Location
+from db_proxy.models.agvc_kuka import KukaNode, KukaEdge
+
 
 class RackDirection(Enum):
     """Rack 朝向"""
@@ -57,8 +63,9 @@ class RackStatus:
 class RackAnalyzer:
     """Rack 狀態分析器"""
     
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, database_client=None):
         self.logger = logger
+        self.database_client = database_client
         if self.logger:
             self.logger.info('Rack 狀態分析器啟動')
         
@@ -177,14 +184,38 @@ class RackAnalyzer:
         return False
     
     def _is_room_inlet(self, location_id: int) -> bool:
-        """判斷是否為房間入口（需要實際查詢資料庫）"""
-        # TODO: 實作資料庫查詢邏輯
-        return False
+        """判斷是否為房間入口"""
+        if not self.database_client:
+            # 無資料庫連接時返回 False
+            return False
+            
+        try:
+            with self.database_client.connection_pool.get_session() as session:
+                # 查詢是否有房間將此 location_id 設為入口
+                stmt = select(Room).where(Room.enter_location_id == location_id)
+                room = session.exec(stmt).first()
+                return room is not None
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f'查詢房間入口失敗: {e}')
+            return False
     
     def _is_room_outlet(self, location_id: int) -> bool:
-        """判斷是否為房間出口（需要實際查詢資料庫）"""
-        # TODO: 實作資料庫查詢邏輯
-        return False
+        """判斷是否為房間出口"""
+        if not self.database_client:
+            # 無資料庫連接時返回 False
+            return False
+            
+        try:
+            with self.database_client.connection_pool.get_session() as session:
+                # 查詢是否有房間將此 location_id 設為出口
+                stmt = select(Room).where(Room.exit_location_id == location_id)
+                room = session.exec(stmt).first()
+                return room is not None
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f'查詢房間出口失敗: {e}')
+            return False
     
     def get_rotation_nodes(self, location_node_id: int) -> List[int]:
         """
@@ -196,9 +227,47 @@ class RackAnalyzer:
         return [location_node_id, intermediate_node, location_node_id]
     
     def _get_rotation_intermediate_node(self, location_node_id: int) -> int:
-        """取得旋轉作業的中間節點（暫時使用固定偏移邏輯）"""
-        # TODO: 實作實際的中間節點查詢邏輯
-        return location_node_id + 1000  # 暫時的偏移值
+        """取得旋轉作業的中間節點 - 查詢雙向連接的相鄰節點"""
+        if not self.database_client:
+            # 無資料庫連接時使用暫時偏移值
+            return location_node_id + 1000
+            
+        try:
+            with self.database_client.connection_pool.get_session() as session:
+                # 查詢與 location_node_id 有雙向連接的節點
+                # 找到所有從 location_node_id 出發的邊
+                stmt_outgoing = select(KukaEdge).where(KukaEdge.from_id == location_node_id)
+                outgoing_edges = session.exec(stmt_outgoing).all()
+                
+                # 對於每個目標節點，檢查是否也有反向邊
+                for edge in outgoing_edges:
+                    target_node_id = edge.to_id
+                    if target_node_id:
+                        # 檢查是否存在反向邊 (target_node_id -> location_node_id)
+                        stmt_return = select(KukaEdge).where(
+                            and_(
+                                KukaEdge.from_id == target_node_id,
+                                KukaEdge.to_id == location_node_id
+                            )
+                        )
+                        return_edge = session.exec(stmt_return).first()
+                        
+                        if return_edge:
+                            # 找到雙向連接的節點
+                            if self.logger:
+                                self.logger.info(f'找到旋轉中間節點: {location_node_id} -> {target_node_id} -> {location_node_id}')
+                            return target_node_id
+                
+                # 沒有找到雙向連接的節點，使用暫時偏移值
+                if self.logger:
+                    self.logger.warning(f'節點 {location_node_id} 沒有雙向連接的相鄰節點，使用暫時偏移值')
+                return location_node_id + 1000
+                    
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f'查詢中間節點失敗: {e}')
+            # 發生異常時使用暫時偏移值
+            return location_node_id + 1000
     
     def validate_rack_carriers_consistency(self, rack_status: RackStatus, 
                                          carriers: List[CarrierInfo]) -> List[str]:

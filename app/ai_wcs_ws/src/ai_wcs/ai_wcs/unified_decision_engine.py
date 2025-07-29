@@ -28,12 +28,16 @@ from .rack_analyzer import RackAnalyzer, RackStatus, CarrierInfo
 
 
 class BusinessFlowPriority(IntEnum):
-    """業務流程優先度定義 - 基於設計文檔"""
-    AGV_ROTATION = 100          # AGV旋轉檢查
-    NG_RECYCLING = 90           # NG料架回收
-    MANUAL_TRANSPORT = 80       # 人工收料區相關
-    SYSTEM_TO_ROOM = 60         # 系統準備區到房間
-    EMPTY_OPERATIONS = 40       # 空料架和人工回收
+    """業務流程優先度定義 - 基於設計文檔的完整七大流程"""
+    AGV_ROTATION = 100                  # AGV旋轉檢查
+    NG_RECYCLING = 90                   # NG料架回收
+    MANUAL_TRANSPORT = 80               # 人工收料區相關
+    FULL_RACK_TO_MANUAL = 80            # 滿料架到人工收料區
+    SYSTEM_TO_ROOM = 60                 # 系統準備區到房間
+    EMPTY_RACK_TRANSFER = 40            # 空料架搬運
+    MANUAL_EMPTY_RECYCLING = 40         # 人工回收空料架
+    EMPTY_OPERATIONS = 40               # 通用空料架操作
+    OPUI_OPERATIONS = 40                # OPUI 叫車/派車操作
 
 
 class WorkIDCategory(Enum):

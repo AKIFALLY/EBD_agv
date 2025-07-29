@@ -26,8 +26,7 @@
 - **資料庫操作**: `app/db_proxy_ws/CLAUDE.md` - PostgreSQL ORM和CRUD
   - **資料庫指導**: @docs-ai/operations/development/database-operations.md - 通用資料庫操作最佳實踐
 - **設備控制**: `app/ecs_ws/CLAUDE.md` - 門控系統和設備管理
-- **倉庫控制**: `app/wcs_ws/CLAUDE.md` - WCS智能調度系統
-- **AI 倉庫控制**: `app/ai_wcs_ws/CLAUDE.md` - AI WCS決策引擎
+- **倉庫控制 (AI WCS)**: `app/ai_wcs_ws/CLAUDE.md` - AI WCS統一決策引擎 (原 wcs_ws 已整合)
 - **機器人控制**: `app/rcs_ws/CLAUDE.md` - RCS和交通管理
 
 ### 🔗 通訊與整合
@@ -55,7 +54,7 @@
 - **Web API 問題** → `web_api_ws/CLAUDE.md`
 - **資料庫錯誤** → `db_proxy_ws/CLAUDE.md` + @docs-ai/operations/development/database-operations.md
 - **PLC 通訊故障** → `keyence_plc_ws/CLAUDE.md` + `plc_proxy_ws/CLAUDE.md` + @docs-ai/knowledge/protocols/keyence-plc-protocol.md
-- **車隊管理問題** → `wcs_ws/CLAUDE.md` 或 `ai_wcs_ws/CLAUDE.md`
+- **車隊管理問題** → `ai_wcs_ws/CLAUDE.md` (統一決策引擎)
 - **KUKA Fleet 整合** → `kuka_fleet_ws/CLAUDE.md` + @docs-ai/knowledge/protocols/kuka-fleet-api.md + @docs-ai/knowledge/protocols/kuka-fleet-callback.md
 
 ### 按開發階段導航
@@ -63,6 +62,7 @@
 - **架構設計** → 系統架構文檔 (@docs-ai/context/system/)
 - **實作開發** → 對應模組的 CLAUDE.md
 - **測試驗證** → 開發操作文檔 (@docs-ai/operations/development/)
+  - **測試標準**: @docs-ai/operations/development/testing-standards.md - pytest 統一測試規範
 - **部署維護** → 維護操作文檔 (@docs-ai/operations/maintenance/)
 
 ## 📋 文檔維護指南

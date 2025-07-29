@@ -1,10 +1,152 @@
-# 測試程序操作指導
+# ROS 2 測試程序最佳實踐
 
 ## 🎯 適用場景
-- ROS 2 套件單元測試和整合測試
+- ROS 2 套件的測試開發和執行
+- 測試程序的標準化和最佳實踐
+- AI WCS 等系統模組的測試指導
 - Web API 測試和驗證
 - 系統端到端測試
 - 自動化測試流程建立
+
+## 🎯 測試最佳實踐工作流程
+
+### 日常開發調試 (最簡單，快速驗證)
+**適用場景**: 快速功能驗證、調試階段、個人開發
+```bash
+# 進入容器並載入環境
+agvc_enter && all_source  # 或 agv_enter && all_source
+
+# 快速功能驗證 - 直接執行主要測試
+cd /app/[workspace_name]
+python3 test_[module]_functionality.py    # ✅ 一條指令搞定！
+
+# 範例: AI WCS 功能測試
+cd /app/ai_wcs_ws
+python3 test_ai_wcs_functionality.py
+```
+
+**優點**:
+- 🚀 最快速的測試方式
+- 🎯 直接執行，無額外配置
+- 💡 適合快速驗證和調試
+
+### 正式提交前 (ROS 2 標準方式)
+**適用場景**: 正式提交、CI/CD、版本發布前驗證
+```bash
+# 進入容器並載入環境
+agvc_enter && all_source
+cd /app/[workspace_name]
+
+# ROS 2 標準測試 (推薦用於正式驗證)
+colcon test --packages-select [package_name]    # 🤖 ROS 2 原生測試
+colcon test-result --verbose                   # 查看詳細測試結果
+colcon test-result                             # 查看簡單測試結果
+
+# 範例: AI WCS 標準測試
+cd /app/ai_wcs_ws
+colcon test --packages-select ai_wcs
+colcon test-result --verbose
+```
+
+**優點**:
+- 🏆 ROS 2 官方標準做法
+- 📊 完整的測試報告和統計
+- 🔍 支援複雜的測試配置
+- 🛡️ 整合 ROS 2 生態系統
+
+### 依賴套件建置 (解決測試跳過問題)
+**適用場景**: 當測試因缺少依賴而跳過時的解決方案
+
+```bash
+# 🔧 解決跨工作空間依賴問題
+# 當 colcon test 顯示 "SKIPPED" 且提示缺少依賴模組時
+
+# 1. 在 AGV 容器中建置 agv_interfaces (如果需要)
+docker compose -f docker-compose.yml exec rosagv bash
+all_source && cd /app/agv_ws
+colcon build --packages-select agv_interfaces
+
+# 2. 在 AGVC 容器中建置所有必要依賴
+agvc_enter && all_source
+
+# 建置 agv_interfaces (跨工作空間依賴)
+cd /app/agv_ws && colcon build --packages-select agv_interfaces
+
+# 建置 db_proxy (資料庫代理)
+cd /app/db_proxy_ws && colcon build --packages-select db_proxy
+
+# 建置 kuka_fleet_adapter (KUKA 車隊整合)
+cd /app/kuka_fleet_ws && colcon build --packages-select kuka_fleet_adapter
+
+# 3. 載入完整環境並重新執行測試
+cd /app/rcs_ws
+source /app/agv_ws/install/setup.bash
+source /app/db_proxy_ws/install/setup.bash 
+source /app/kuka_fleet_ws/install/setup.bash
+
+# 4. 執行測試 (顯著改善測試通過率)
+colcon test --packages-select rcs --event-handlers console_direct+
+colcon test-result --verbose
+# 期望結果: 18-19 passed, 0-1 skipped (相比之前的 15 passed, 4 skipped)
+```
+
+**常見依賴問題解決**:
+- **agv_interfaces 不可用**: 在 AGV 和 AGVC 容器中建置並載入該套件
+- **db_proxy 模組缺失**: 建置 db_proxy 工作空間並載入環境
+- **kuka_fleet_adapter 缺失**: 建置 kuka_fleet_ws 並載入環境
+- **PyYAML 缺失**: 執行 `pip3 install PyYAML`
+- **資料庫連接失敗**: 檢查 PostgreSQL 容器狀態 (`r containers-status`)
+- **ROS 2 環境未載入**: 確保執行 `all_source` 載入工作空間
+
+**資料庫測試跳過問題解決**:
+```bash
+# 如果仍有 1 個資料庫相關測試跳過，可嘗試以下解決方案：
+
+# 1. 確保 PostgreSQL 容器完全啟動
+docker compose -f docker-compose.agvc.yml ps postgres_container
+# 狀態應該是 "Up" 而不是 "starting"
+
+# 2. 測試資料庫連接
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "
+  source /opt/pyvenv_env/bin/activate && source /app/setup.bash && 
+  python3 -c 'from db_proxy.connection_pool_manager import ConnectionPoolManager; 
+  db = ConnectionPoolManager(\"postgresql+psycopg2://agvc:password@192.168.100.254/agvc\");
+  print(\"DB OK\" if db else \"DB Fail\")'
+"
+
+# 3. 重新啟動容器服務 (如果需要)
+r agvc-restart
+
+# 4. 等待數秒後重新執行測試
+sleep 5 && colcon test --packages-select rcs --event-handlers console_direct+
+```
+
+**依賴建置順序**:
+1. PyYAML (pip3 安裝)
+2. agv_interfaces (跨工作空間依賴)
+3. db_proxy (資料庫代理)
+4. kuka_fleet_adapter (KUKA 整合)
+5. 載入所有環境後執行測試
+
+### 高級測試選項 (靈活分類測試)
+**適用場景**: 複雜測試管理、分層測試、測試分析
+```bash
+# 使用自定義測試執行器
+cd /app/[workspace_name]/src/[package]/test
+python3 run_tests.py functional       # 功能測試
+python3 run_tests.py integration      # 整合測試  
+python3 run_tests.py unit            # 單元測試
+python3 run_tests.py all             # 全部測試
+
+# 範例: AI WCS 分類測試
+cd /app/ai_wcs_ws/src/ai_wcs/test
+python3 run_tests.py functional
+```
+
+**優點**:
+- 🔧 靈活的測試分類
+- 📋 詳細的測試管理
+- 🎛️ 可自定義測試流程
 
 ## 📋 RosAGV 測試架構
 

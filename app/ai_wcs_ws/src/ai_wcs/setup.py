@@ -7,7 +7,7 @@ package_name = 'ai_wcs'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=find_packages(exclude=['test']),
+    packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -19,7 +19,7 @@ setup(
     maintainer='root',
     maintainer_email='yazelin@ching-tech.com',
     description='AI-driven Warehouse Control System for intelligent Rack management',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

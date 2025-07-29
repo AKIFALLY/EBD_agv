@@ -1,10 +1,42 @@
-# CLAUDE.md
+# AGV 手動指令服務 CLAUDE.md
 
-## 系統概述
-AGV手動指令服務工作空間，提供AGV遠程手動控制功能，透過ROS 2服務接口控制PLC實現AGV運動和任務管理。
+## 📚 Context Loading
+@docs-ai/context/system/rosagv-overview.md
+@docs-ai/context/system/dual-environment.md
+@docs-ai/context/system/technology-stack.md
+@docs-ai/context/workspaces/agv-workspaces.md
+@docs-ai/context/structure/module-index.md
+@docs-ai/operations/development/core-principles.md
+@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/docker-development.md
+@docs-ai/operations/development/plc-communication.md
+@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/maintenance/troubleshooting.md
+@docs-ai/operations/tools/unified-tools.md
+@docs-ai/knowledge/protocols/keyence-plc-protocol.md
 
-**🚗 運行環境**: AGV車載系統  
-**🔗 核心依賴**: plc_proxy_ws (PLC通訊)
+## 🎯 適用場景
+- AGV 遠程手動控制功能開發
+- PLC 通訊服務整合
+- 手動運動控制和任務管理
+- ROS 2 服務接口設計和實作
+
+## 📋 模組概述
+
+AGV 手動指令服務工作空間提供完整的 AGV 遠程手動控制解決方案，透過 ROS 2 服務接口與 PLC 通訊，實現精確的 AGV 運動控制和任務管理功能。
+
+### 核心特色
+- **雙服務架構**: ManualCommand (運動控制) + GeneralCommand (系統控制)
+- **PLC 整合**: 透過 plc_proxy_ws 實現可靠的 PLC 通訊
+- **安全控制**: 提供緊急煞車和啟用/停用功能
+- **任務管理**: 支援完整的任務發送和取消機制
+- **配置驅動**: 基於 YAML 配置的 PLC 地址映射
+
+### 技術架構
+- **運行環境**: AGV 車載系統 (Docker 容器內)
+- **核心依賴**: plc_proxy_ws (PLC 通訊), agv_interfaces (共用介面)
+- **通訊協定**: ROS 2 服務 + Keyence PLC 協定
+- **配置管理**: YAML 配置檔案驅動
 
 ## 核心架構
 ```
@@ -79,27 +111,23 @@ cancel_mission_address: '7001'      # 取消任務
 traffic_stop_address: '7002'        # 交通停止
 ```
 
-## 開發指令
+## 🚀 快速開始
 
-### 環境設定 (AGV容器內)
+### 開發環境
+@docs-ai/operations/development/docker-development.md
+@docs-ai/operations/development/ros2-development.md
+
 ```bash
-source /app/setup.bash && all_source
+# 標準容器開發流程
 cd /app/agv_cmd_service_ws
-```
+colcon build --packages-select agv_cmd_interfaces agv_cmd_service
+source install/setup.bash
 
-### 服務啟動
-```bash
-# 啟動AGV指令服務
+# 啟動服務
 ros2 run agv_cmd_service agv_cmd_service_node
 
-# 檢查服務狀態
+# 驗證服務
 ros2 service list | grep -E "(ManualCommand|GeneralCommand)"
-```
-
-### 構建與測試
-```bash
-build_ws agv_cmd_service_ws
-test_ws agv_cmd_service_ws
 ```
 
 ## 核心類別實現
@@ -313,29 +341,67 @@ ros2 interface show agv_cmd_interfaces/srv/GeneralCommand
 ros2 node info /agv_cmd_service_node
 ```
 
-## 故障排除
+## 🔍 故障排除
 
-### 常見問題
-1. **服務無回應**: 確認 plc_proxy_ws 正常運行
-2. **PLC通訊失敗**: 檢查PLC連接狀態和地址配置
-3. **指令執行失敗**: 查看節點日誌確認錯誤原因
-4. **參數格式錯誤**: 確認GeneralCommand的parameter格式正確
+### 通用診斷
+@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/maintenance/troubleshooting.md
+@docs-ai/operations/development/plc-communication.md
 
-### 診斷步驟
+### 模組特定問題
+
+#### 服務無回應
 ```bash
-# 1. 檢查節點運行狀態
-ros2 node list | grep agv_cmd_service
+# 檢查服務狀態
+ros2 service list | grep -E "(ManualCommand|GeneralCommand)"
+ros2 service call /ManualCommand agv_cmd_interfaces/srv/ManualCommand "{command: 'enable', onoff: true}"
+```
 
-# 2. 檢查PLC連接
-ros2 topic echo /plc_proxy/status
-
-# 3. 查看詳細日誌
+#### 配置載入失敗
+```bash
+# 驗證配置檔案
+cat /app/agv_cmd_service_ws/src/agv_cmd_service/config/agv_cmd_service.yaml
 ros2 run agv_cmd_service agv_cmd_service_node --ros-args --log-level DEBUG
 ```
 
-## 重要提醒
-- 本服務直接控制AGV運動，使用時需注意安全
-- break和enable指令會直接觸發force_on，無論onoff參數值
-- send_mission指令的parameter格式為 "on,from,to,magic"
-- 所有PLC通訊都透過plc_proxy_ws進行
-- 僅適用於AGV車載系統，需在AGV容器內運行
+#### 指令測試
+```bash
+# 手動指令測試
+ros2 service call /ManualCommand agv_cmd_interfaces/srv/ManualCommand "{command: 'forward', onoff: true}"
+ros2 service call /GeneralCommand agv_cmd_interfaces/srv/GeneralCommand "{command: 'auto', parameter: 'on'}"
+```
+
+## ⚠️ 重要提醒
+
+### 安全注意事項
+- **直接控制**: 本服務直接控制 AGV 運動，使用時需注意安全
+- **緊急控制**: break 和 enable 指令會直接觸發 force_on，無論 onoff 參數值
+- **運行環境**: 僅適用於 AGV 車載系統，必須在 AGV 容器內運行
+
+### 使用規範
+- **參數格式**: send_mission 指令的 parameter 格式為 "on,from,to,magic"
+- **依賴服務**: 所有 PLC 通訊都透過 plc_proxy_ws 進行
+- **配置管理**: PLC 地址配置透過 YAML 檔案管理，修改需重啟服務
+
+## 📋 使用指導
+
+### 指令格式
+- **ManualCommand**: `{command: 'forward/backward/rotate_left/rotate_right/shift_left/shift_right/break/enable', onoff: true/false}`
+- **GeneralCommand**: `{command: 'auto/stop/reset/send_mission/cancel_mission/traffic_stop', parameter: 'on/off' 或 'on,from,to,magic'}`
+
+### 安全使用
+- **運動控制**: 發送運動指令前確認 AGV 處於安全狀態
+- **緊急停止**: break 和 enable 指令會直接觸發，忽略 onoff 參數
+- **任務管理**: send_mission 參數格式務必為 "on,from,to,magic"
+
+## 🔗 交叉引用
+- AGV 狀態機: `app/agv_ws/src/agv_base/CLAUDE.md`
+- PLC 通訊模組: `app/keyence_plc_ws/CLAUDE.md`
+- PLC 代理服務: `app/plc_proxy_ws/CLAUDE.md`
+- ROS 2 介面定義: `app/agv_ws/src/agv_interfaces/CLAUDE.md`
+- ROS 2 開發指導: @docs-ai/operations/development/ros2-development.md
+- PLC 通訊最佳實踐: @docs-ai/operations/development/plc-communication.md
+- Keyence 協定詳解: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
+- 容器開發環境: @docs-ai/operations/development/docker-development.md
+- 系統診斷工具: @docs-ai/operations/maintenance/system-diagnostics.md
+- 故障排除流程: @docs-ai/operations/maintenance/troubleshooting.md

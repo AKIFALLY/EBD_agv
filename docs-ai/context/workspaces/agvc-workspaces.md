@@ -16,7 +16,7 @@ AGVC 管理系統工作空間
 ├── db_proxy_ws/               # 資料庫代理服務
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-├── wcs_ws/                    # 倉庫控制系統
+# (wcs_ws 已整合至 ai_wcs_ws)
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
 ├── ai_wcs_ws/                 # AI 倉庫控制系統
 ├── keyence_plc_ws/            # Keyence PLC 通訊 (共用)
@@ -116,45 +116,46 @@ db_proxy_ws/src/
 - 網路設備
 
 ### rcs_ws/ - 機器人控制系統 (Robot Control System)
-**職責**: 機器人任務調度、路徑規劃、協調控制
+**職責**: CT 和 KUKA 車隊控制、任務分派協調、AGV 狀態監控
 
 #### 套件結構
 ```
 rcs_ws/src/
-├── rcs/                      # 機器人控制核心
-│   ├── task_scheduler.py     # 任務調度器
-│   ├── path_planner.py       # 路徑規劃器
-│   ├── collision_avoidance.py # 碰撞避免
-│   └── fleet_coordinator.py  # 車隊協調器
-└── rcs_interfaces/           # RCS 介面定義
-    ├── msg/                  # 控制訊息
-    ├── srv/                  # 控制服務
-    └── action/               # 控制動作
+├── rcs/                         # RCS 車隊控制核心
+│   ├── rcs_core.py             # RCS 核心節點 - 1秒定時器協調中心
+│   ├── ct_manager.py           # CT 車隊管理器
+│   ├── kuka_manager.py         # KUKA 車隊管理器
+│   ├── kuka_dispatcher.py      # KUKA 任務派發器
+│   ├── kuka_dispatcher_v2.py   # KUKA 派發器 V2
+│   ├── kuka_robot.py           # KUKA 機器人控制
+│   ├── kuka_container.py       # KUKA 容器管理
+│   ├── kuka_config_manager.py  # KUKA 配置管理
+│   ├── kuka_config_cli.py      # 配置管理 CLI 工具
+│   ├── kuka_monitor.py         # KUKA 監控模組
+│   ├── task_status_simulator.py # 任務狀態模擬器
+│   ├── rack_state_manager.py   # 架台狀態管理
+│   ├── wcs_priority_scheduler.py # WCS 優先級調度器
+│   └── wcs_task_adapter.py     # WCS 任務適配器
+├── rcs_interfaces/             # RCS 介面定義 (CMake 專案)
+└── traffic_manager/            # 交通管理模組
+    └── traffic_controller.py   # 交通區域控制器
 ```
 
-#### 核心演算法
-- 任務優先級排程
-- 多車路徑規劃
-- 死鎖檢測和解決
-- 動態路徑重規劃
-- 車隊負載均衡
-
-### wcs_ws/ - 倉庫控制系統 (Warehouse Control System)
-**職責**: 倉庫邏輯管理、庫存控制、作業流程管理
-
 #### 核心功能
-- 庫存管理和追蹤
-- 作業任務生成
-- 倉庫區域管理
-- 貨物流向控制
-- 作業效率最佳化
+- **統一車隊協調**: 1秒定時器主迴圈協調 CT 和 KUKA 車隊
+- **AGV 狀態監控**: 訂閱 `/agv/state_change` 和 `/agv/status` 主題
+- **任務分派引擎**: WCS 任務讀取和車隊任務派發
+- **KUKA 車隊整合**: 完整的 KUKA Fleet 管理和配置
+- **交通管制**: 交通區域控制和衝突避免
 
-#### 業務邏輯
-- 入庫作業流程
-- 出庫作業流程
-- 庫內移動作業
-- 盤點作業管理
-- 異常處理流程
+### ⚠️ wcs_ws/ - 已整合至 ai_wcs_ws
+**說明**: 原本的 wcs_ws 倉庫控制系統功能已完全整合至 ai_wcs_ws 中，現在由 AI WCS 統一決策引擎提供更強大的智能倉庫控制功能。
+
+**遷移說明**: 
+- 原 WCS 功能現已由 `ai_wcs_ws` 的統一決策引擎實現
+- 七大業務流程統一調度管理
+- Work ID 分類管理系統 (220001, 230001, 100001, 100002等)
+- 詳細功能請參考 `app/ai_wcs_ws/CLAUDE.md`
 
 ## 🤖 AI 和整合工作空間
 

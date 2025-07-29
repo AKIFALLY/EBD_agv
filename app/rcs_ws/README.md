@@ -12,7 +12,7 @@
 
 RCS (Robot Control System) 工作空間是 RosAGV 系統的車隊控制核心，負責智能任務派發、車隊管理和狀態監控。該系統實現了基於房間和車型的智能任務分派機制，支援 CT 車隊（Cargo、Loader、Unloader）和 KUKA 車隊的統一管理。
 
-作為 AGVC 管理系統的重要組件，RCS 提供了完整的車隊控制邏輯，包括任務狀態模擬、智能派發演算法、異常處理機制等。系統採用模組化設計，支援多種車型和任務類型，並提供完整的測試工具和文檔。
+作為 AGVC 管理系統的重要組件，RCS 提供了完整的車隊控制邏輯，包括智能派發演算法、異常處理機制等。系統採用模組化設計，支援多種車型和任務類型，並提供完整的測試工具和文檔。
 
 **重要特點**: 實現了完整的 CT Manager 智能任務分派機制，支援房內外任務的自動分配，並提供詳細的測試腳本和技術文檔。
 
@@ -44,8 +44,7 @@ rcs_ws/
 │   │   │   ├── __init__.py       # 套件初始化
 │   │   │   ├── rcs_core.py       # RCS 核心節點 (主程式入口)
 │   │   │   ├── ct_manager.py     # CT 車隊管理器 (主要實作)
-│   │   │   ├── kuka_manager.py   # KUKA 車隊管理器
-│   │   │   └── task_status_simulator.py # 任務狀態模擬器
+│   │   │   └── kuka_manager.py   # KUKA 車隊管理器
 │   │   ├── docs/                 # 技術文檔
 │   │   │   ├── README.md         # 詳細說明文檔
 │   │   │   ├── summaries/        # 總結文件
@@ -80,7 +79,6 @@ rcs_ws/
 - **資料庫連線池**: 使用 ConnectionPoolManager 管理 PostgreSQL 連線
 - **車隊管理器整合**: 統一管理 CT 和 KUKA 車隊管理器
 - **定時任務處理**: 1 秒週期的主迴圈，處理任務派發和狀態更新
-- **任務狀態模擬**: 整合 TaskStatusSimulator 進行任務狀態轉換
 - **異常處理**: 完整的錯誤處理和優雅關閉機制
 
 ### 2. CT 車隊管理器 (ct_manager.py)
@@ -104,13 +102,7 @@ rcs_ws/
 - **任務監控**: KUKA 任務狀態監控和同步
 - **派發協調**: 與 CT 車隊的協調派發
 
-### 4. 任務狀態模擬器 (task_status_simulator.py)
-**狀態轉換管理**:
-- **任務狀態模擬**: 模擬任務執行過程中的狀態變化
-- **狀態轉換邏輯**: 自動處理任務狀態的轉換
-- **資料庫同步**: 與資料庫的任務狀態同步
-
-### 5. 交通管理模組 (traffic_manager) - 獨立套件
+### 4. 交通管理模組 (traffic_manager) - 獨立套件
 **交通區域控制核心**:
 - **交通區域管理**: 管理 AGV 交通區域的取得和釋放
 - **狀態控制**: 控制交通區域的 "free" 和 "controlled" 狀態
@@ -171,19 +163,6 @@ ct_manager = CtManager(rcs_node)
 ct_manager.dispatch()
 ```
 
-### 任務狀態模擬器使用
-```python
-from rcs.task_status_simulator import TaskStatusSimulator
-
-# 建立任務狀態模擬器
-simulator = TaskStatusSimulator(db_pool, logger)
-
-# 處理任務狀態轉換
-simulator.process_task_status_transitions()
-
-# 關閉模擬器
-simulator.shutdown()
-```
 
 ### 交通管理模組使用
 ```python
@@ -501,23 +480,6 @@ cd /app/rcs_ws/src/rcs
 python3 -v test_ct_dispatch.py
 ```
 
-#### 5. 任務狀態模擬器問題
-**症狀**: 任務狀態轉換不正常或模擬器錯誤
-**解決方法**:
-```bash
-# 檢查任務狀態模擬器模組
-python3 -c "
-from rcs.task_status_simulator import TaskStatusSimulator
-print('✅ 任務狀態模擬器模組可用')
-"
-
-# 檢查資料庫中的任務狀態
-# (需要透過 db_proxy 查詢任務表)
-
-# 重啟 RCS 核心節點
-pkill -f rcs_core
-ros2 run rcs rcs_core
-```
 
 #### 6. 交通管理模組問題
 **症狀**: `ModuleNotFoundError: No module named 'traffic_manager'` 或交通區域控制失敗
@@ -669,7 +631,6 @@ with db_pool.get_session() as session:
   - [x] 資料庫連線池管理整合
   - [x] 車隊管理器統一整合 (CT + KUKA)
   - [x] 定時任務處理主迴圈 (1 秒週期)
-  - [x] 任務狀態模擬器整合
   - [x] 優雅關閉機制和異常處理
 - [x] **KUKA Manager 核心架構** ✅ **已完成**
   - [x] KUKA Fleet Adapter 整合
@@ -685,12 +646,6 @@ with db_pool.get_session() as session:
   - [x] 任務派發邏輯 (move, rack_move, workflow)
   - [x] 機器人和容器狀態監控
   - [x] 與 CT 車隊的協調派發已實現
-- [x] **任務狀態模擬器完整實作** ✅ **已完成**
-  - [x] 完整的狀態轉換邏輯 (PENDING → READY → EXECUTING → COMPLETED)
-  - [x] 異步狀態轉換處理
-  - [x] 可配置的轉換延遲時間
-  - [x] 異常處理和清理機制
-  - [x] 與 RCS 核心節點完整整合
 - [x] **交通管理模組核心功能** ✅ **已完成**
   - [x] TrafficController 核心實作已完成
   - [x] 交通區域取得和釋放功能已實現
@@ -733,7 +688,6 @@ with db_pool.get_session() as session:
   - [x] 基本整合測試已實現
 - [ ] **測試覆蓋擴展** (2 週)
   - [ ] 新增 KUKA Manager 單元測試
-  - [ ] 新增任務狀態模擬器測試
   - [ ] 實現端到端整合測試
   - [ ] 新增效能測試
 - [x] **文檔完善** ✅ **已完成**
@@ -746,7 +700,6 @@ with db_pool.get_session() as session:
 - **RCS 核心節點**: 95% ✅ (完整實作，包含所有管理器整合)
 - **CT Manager**: 95% ✅ (智能派發機制和狀態監控已完成)
 - **KUKA Manager**: 90% ✅ (完整實作，包含任務派發和狀態監控)
-- **任務狀態模擬器**: 90% ✅ (完整的異步狀態轉換機制已實現)
 - **交通管理模組**: 85% ✅ (核心功能已完成，進階功能待實現)
 - **RCS 介面定義**: 30% ⏳ (基本套件已建立，介面定義待完成)
 - **測試覆蓋**: 75% ✅ (CT 派發和交通管理測試已完成)
@@ -760,14 +713,13 @@ with db_pool.get_session() as session:
 
 2. **v1.1.0** ✅ **已達成** - 多車隊支援和狀態管理
    - [x] KUKA Manager 完整整合
-   - [x] 任務狀態模擬器完整實作
    - [x] 交通管理模組核心功能實現
    - [x] 完整的測試覆蓋和文檔
 
 3. **v1.2.0** (2 週後) - 介面定義和進階功能
    - [ ] RCS 介面定義完善 (.srv 和 .msg 檔案)
    - [ ] 交通管理進階功能 (路徑衝突避免)
-   - [ ] KUKA 和任務狀態模擬器測試擴展
+   - [ ] KUKA Manager 測試擴展
 
 4. **v2.0.0** (6 週後) - 效能最佳化和監控系統
    - [ ] 效能最佳化和快取機制
@@ -778,7 +730,7 @@ with db_pool.get_session() as session:
 ### 🏆 重要成就 (基於實際程式碼分析)
 - ✅ **完整的車隊控制系統**: CT + KUKA 雙車隊統一管理
 - ✅ **智能任務派發**: 基於房間和車型的分派機制
-- ✅ **異步狀態管理**: 完整的任務狀態轉換模擬器
+- ✅ **任務狀態管理**: 完整的任務狀態轉換處理
 - ✅ **交通區域控制**: 完整的交通管理 API 和 Web 整合
 - ✅ **模組化架構**: 高度模組化和可擴展的設計
 - ✅ **完整測試覆蓋**: CT 派發和交通管理的完整測試
