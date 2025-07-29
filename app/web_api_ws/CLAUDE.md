@@ -1,26 +1,20 @@
 # web_api_ws CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/protocols/kuka-fleet-api.md
 @docs-ai/knowledge/protocols/kuka-fleet-callback.md
-@docs-ai/knowledge/protocols/ros2-interfaces.md
-@docs-ai/operations/development/web-development.md
-@docs-ai/operations/development/database-operations.md
+@docs-ai/knowledge/business/eyewear-production-process.md
 
 ## 📋 模組概述
 
 **Web API 服務系統** - 完整的 Web 服務群組，提供 RESTful API、Socket.IO 實時通訊、用戶界面與外部系統整合，是 AGVC 管理系統的核心 Web 服務層。
 
-### 核心定位
-- **Web 服務群組**: 整合三個主要 Web 服務提供完整功能
-- **系統整合中心**: 連接 PLC、KUKA Fleet、資料庫等外部系統
-- **用戶界面提供**: 管理員界面 (AGVCUI) 和操作員界面 (OPUI)
-- **API Gateway**: 統一的 API 入口和外部系統整合
-
-詳細系統架構說明請參考: @docs-ai/context/system/rosagv-overview.md
+### Web API 服務群組工作空間特有功能
+- **🌐 Web 服務群組**: 整合四個主要 Web 服務提供完整功能
+- **🔗 系統整合中心**: 連接 PLC、KUKA Fleet、資料庫等外部系統
+- **🖥️ 用戶界面提供**: AGVCUI (管理員) + OPUI (操作員) + AGVUI (車載)
+- **🎭 API Gateway**: 統一的 API 入口和外部系統整合
 
 ## 📂 專案結構 (實際驗證)
 
@@ -70,42 +64,30 @@ src/
 - **Port 8003**: `agvui` - AGV 車載監控 (可選)
   - AGV 本地監控界面、狀態顯示
 
-### 技術棧整合
-詳細技術棧說明請參考: @docs-ai/context/system/technology-stack.md
-
+### Web 服務技術棧
 - **後端框架**: FastAPI (高效能 Web 框架)
-- **實時通訊**: Socket.IO (雙向即時通訊)
+- **即時通訊**: Socket.IO (雙向即時通訊)
 - **資料庫**: PostgreSQL + SQLAlchemy/SQLModel
 - **前端技術**: Bulma CSS + Vanilla JavaScript + Leaflet
 - **ROS 2 整合**: 完整的 ROS 2 套件支援
 
-## 🔧 開發環境設定
+## 🚀 Web API 專用開發
 
-詳細開發環境設定請參考: @docs-ai/operations/development/docker-development.md
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
-### 容器環境要求
-**⚠️ 重要**: 所有 Web API 服務必須在 AGVC Docker 容器內執行，詳細說明請參考: @docs-ai/context/system/dual-environment.md
-
-### 宿主機統一工具使用
-詳細工具系統請參考: @docs-ai/operations/tools/unified-tools.md
-
-### AGVC 容器管理
-詳細容器管理指導請參考: @docs-ai/operations/development/docker-development.md
-
-**常用 AGVC 管理指令**：
+### Web 服務管理快速指令
 ```bash
-# 載入工具並進入開發環境
-source scripts/docker-tools/docker-tools.sh
-agvc_enter                   # 進入 AGVC 容器 (自動載入環境)
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
 
-# 系統管理
+# 【AGVC 系統管理】
 agvc_start                   # 啟動 AGVC 系統
 agvc_health                  # 健康檢查
-agvc_logs                    # 查看日誌
 
-# 快速執行容器內指令
-quick_agvc "build_ws web_api_ws"      # 建置工作空間
-quick_agvc "curl http://localhost:8000/health"  # API 健康檢查
+# 【Web 服務狀態檢查】
+curl http://localhost:8000/health    # API Gateway
+curl http://localhost:8001/          # AGVCUI
+curl http://localhost:8002/          # OPUI
 ```
 
 ### 容器內操作 (ROS 2 和 Web 開發)
@@ -254,43 +236,26 @@ def handle_agv_connect():
 - **硬體映射**: `/app/config/hardware_mapping.yaml`
 - **Zenoh配置**: `/app/routerconfig.json5`
 
-## 🔍 測試與調試
+## 🔍 Web 服務專項測試
 
-### 系統診斷和測試
-詳細測試和診斷指導請參考: @docs-ai/operations/maintenance/system-diagnostics.md
+**⚠️ 通用測試指導請參考**: ../../CLAUDE.md 測試章節
 
-### 快速 Web 服務測試
+### Web 服務快速測試
 ```bash
 # Web 服務健康檢查
 curl http://localhost:8000/health    # API Gateway
 curl http://localhost:8001/          # AGVCUI 界面  
 curl http://localhost:8002/          # OPUI 界面
-curl http://localhost:8000/docs      # API 文檔界面
+curl http://localhost:8000/docs      # API 文檔
 
-# 系統狀態檢查
-source scripts/docker-tools/docker-tools.sh
-agvc_health                          # AGVC 系統健康檢查
-```
-
-### 容器內調試工具
-
-#### API 測試 (容器內)
-```bash
-# 【方法1: 透過宿主機工具】(推薦)
-quick_agvc "curl http://localhost:8000/health"       # API 健康檢查
-quick_agvc "python -c \"import socketio; sio = socketio.Client(); sio.connect('http://localhost:8000')\""
-
-# 【方法2: 手動進入容器】
-agvc_enter  # 進入容器
-curl http://localhost:8000/docs      # FastAPI自動文檔
-# Socket.IO測試
+# Socket.IO 連接測試
 python -c "import socketio; sio = socketio.Client(); sio.connect('http://localhost:8000')"
 ```
 
-### 前端調試
-- **瀏覽器開發工具**: 檢查Network與Console
-- **Vue Devtools**: 組件狀態調試  
-- **Socket.IO調試**: 查看事件流
+### Web 特定調試工具
+- **FastAPI 自動文檔**: http://localhost:8000/docs
+- **Socket.IO 事件監控**: 瀏覽器開發工具 Network 分頁
+- **Vue 組件調試**: Vue Devtools (OPUI)
 
 ## 部署注意事項
 
@@ -304,64 +269,38 @@ python -c "import socketio; sio = socketio.Client(); sio.connect('http://localho
 - API認證與授權機制
 - 敏感資料環境變數管理
 
-## 🛠️ 故障排除
+## 🚨 Web 服務專項故障排除
 
-詳細故障排除指導請參考: @docs-ai/operations/maintenance/troubleshooting.md
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
-### 系統診斷和故障排除
-詳細診斷和故障排除指導請參考: 
-- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具和流程
-- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除指導
-
-### 快速診斷工具
+### Web 服務特有問題診斷
 ```bash
-# 統一診斷入口 (宿主機執行)
-r agvc-check                         # AGVC 系統健康檢查
-r containers-status                  # 容器狀態檢查
-r network-check                      # 網路連接檢查
-r quick-diag                         # 快速綜合診斷
-
-# AGVC 專用工具
-source scripts/docker-tools/docker-tools.sh
+# Web 服務健康檢查
 agvc_health                          # AGVC 系統健康檢查
-agvc_status                          # 容器狀態檢查
-```
+curl http://localhost:8000/health    # API Gateway 健康檢查
 
-### 常見 Web 服務問題
-```bash
-# 端口檢查
+# 端口和網路檢查
+netstat -tlnp | grep -E "(8000|8001|8002)"  # 檢查 Web 服務端口
 scripts/network-tools/port-check.sh --port 8000-8002
 
-# 服務重啟
-agvc_restart                         # 重啟整個 AGVC 系統
-
-# 日誌檢查  
+# 服務重啟和日誌
+agvc_restart                         # 重啟 AGVC 系統
 agvc_logs                           # 查看系統日誌
-scripts/log-tools/log-analyzer.sh agvc --stats  # 日誌分析
 ```
 
-## 💡 重要提醒
+### Web 服務關鍵依賴
+- **AGVC 容器**: 所有 Web 服務必須在 AGVC 容器內運行
+- **資料庫連接**: PostgreSQL 服務正常運行
+- **ROS 2 環境**: 正確載入 AGVC 工作空間
+- **端口可用性**: 8000-8002 端口未被佔用
 
-### 開發環境使用原則
-- **🖥️ 宿主機**: 使用 `scripts/` 工具進行容器管理、服務診斷、API 測試
-- **🐳 容器內**: 執行 Web 服務、ROS 2 相關指令、資料庫操作
-- **📡 推薦方式**: 使用 `agvc_enter` 進入容器，使用 `quick_agvc` 執行容器內指令
+## 💡 Web 開發要點
 
-### Web 開發最佳實踐
-詳細 Web 開發指導請參考: @docs-ai/operations/development/web-development.md
-
-- **API 變更**: 需同步更新前端界面和文檔
-- **Socket.IO 事件**: 確保向後兼容性和完整測試
-- **資料庫變更**: 透過 db_proxy 進行，詳見 @docs-ai/operations/development/database-operations.md
-- **服務部署**: 所有 Web 服務必須在 AGVC 容器內運行
-
-### 故障排除最佳實踐
-詳細故障排除流程請參考: @docs-ai/operations/maintenance/troubleshooting.md
-
-1. **優先使用宿主機工具**: 快速診斷和服務檢查
-2. **多層次檢查**: 容器→服務→端口→網路→資料庫
-3. **日誌分析為主**: 使用統一診斷工具進行智能分析
-4. **服務隔離**: 分別檢查 API Gateway、AGVCUI、OPUI 服務
+- **Web 服務群組**: 四個 Web 服務協同提供完整功能
+- **AGVC 容器運行**: 所有 Web 服務必須在 AGVC 容器內執行
+- **多端口服務**: 8000 (API), 8001 (AGVCUI), 8002 (OPUI), 8003 (AGVUI)
+- **即時通訊**: Socket.IO 提供雙向即時資料交換
+- **系統整合**: 與 PLC、KUKA Fleet、資料庫等外部系統整合
 
 ## 🔗 交叉引用
 - 系統概覽: @docs-ai/context/system/rosagv-overview.md

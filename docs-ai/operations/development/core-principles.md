@@ -81,6 +81,79 @@ cat /path/to/config               # 確認配置存在
 # 定期重新檢查文檔中引用的內容是否仍然存在
 ```
 
+## 🔧 Bash Tool 使用技巧
+
+### 腳本語法限制和解決方案
+在使用 Bash tool 執行複雜腳本時，需要注意以下語法限制：
+
+#### 子命令替換問題
+```bash
+# ❌ 問題語法：$() 在 Bash tool 中可能無法正確解析
+matches=$(rg -l "pattern" . | wc -l)
+
+# ✅ 解決方案：使用反引號替換
+matches=`rg -l "pattern" . | wc -l`
+
+# ✅ 或者分步執行
+rg -l "pattern" . > /tmp/matches.txt
+matches=`wc -l < /tmp/matches.txt`
+```
+
+#### 複雜多行腳本處理
+```bash
+# ❌ 避免：過於複雜的嵌套結構
+for file in $(find . -name "*.md"); do
+    if [ $(rg -l "@docs-ai" "$file" | wc -l) -gt 0 ]; then
+        echo "Found: $file"
+    fi
+done
+
+# ✅ 建議：分解為簡單步驟
+find . -name "*.md" > /tmp/files.txt
+for file in `cat /tmp/files.txt`; do
+    matches=`rg -l "@docs-ai" "$file" | wc -l`
+    if [ "$matches" -gt 0 ]; then
+        echo "Found: $file"
+    fi
+done
+```
+
+#### 特殊字元處理
+```bash
+# ✅ 正確：使用雙引號保護包含空格的路徑
+for file in "docs-ai/README.md" "docs-ai/USAGE_GUIDE.md"; do
+    echo "處理檔案: $file"
+done
+
+# ✅ 正確：變數替換語法
+file="docs-ai/README.md"
+relative_path=${file#docs-ai/}  # 移除前綴
+echo "相對路徑: $relative_path"
+```
+
+#### 錯誤處理和除錯
+```bash
+# ✅ 建議：加入錯誤處理
+command_output=`some_command 2>/dev/null`
+if [ $? -eq 0 ]; then
+    echo "成功: $command_output"
+else
+    echo "失敗: 命令執行出錯"
+fi
+
+# ✅ 建議：使用 echo 除錯複雜邏輯
+echo "開始處理檔案: $file"
+echo "模式: $pattern"
+echo "結果: $matches"
+```
+
+### 最佳實踐
+1. **簡化邏輯**: 避免過於複雜的嵌套和管道操作
+2. **分步執行**: 將複雜操作分解為多個簡單步驟
+3. **使用反引號**: 優先使用 `` ` `` 而非 `$()`
+4. **添加除錯輸出**: 在關鍵步驟添加 echo 除錯資訊
+5. **錯誤處理**: 檢查命令執行結果和退出碼
+
 ## 🔗 交叉引用
 - 搜尋技巧: @docs-ai/operations/development/search-strategies.md
 - 環境管理: @docs-ai/context/system/dual-environment.md

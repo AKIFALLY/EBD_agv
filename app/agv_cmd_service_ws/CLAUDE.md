@@ -1,33 +1,16 @@
-# AGV 手動指令服務 CLAUDE.md
+# agv_cmd_service_ws - AGV 手動指令服務工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/context/workspaces/agv-workspaces.md
-@docs-ai/context/structure/module-index.md
-@docs-ai/operations/development/core-principles.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/development/plc-communication.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
-@docs-ai/operations/tools/unified-tools.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/protocols/keyence-plc-protocol.md
 
-## 🎯 適用場景
-- AGV 遠程手動控制功能開發
-- PLC 通訊服務整合
-- 手動運動控制和任務管理
-- ROS 2 服務接口設計和實作
+## 📋 工作空間概述
 
-## 📋 模組概述
+**AGV 手動指令服務工作空間** 專注於提供完整的 AGV 遠程手動控制解決方案，透過 ROS 2 服務接口與 PLC 通訊，實現精確的 AGV 運動控制和任務管理功能。
 
-AGV 手動指令服務工作空間提供完整的 AGV 遠程手動控制解決方案，透過 ROS 2 服務接口與 PLC 通訊，實現精確的 AGV 運動控制和任務管理功能。
-
-### 核心特色
-- **雙服務架構**: ManualCommand (運動控制) + GeneralCommand (系統控制)
-- **PLC 整合**: 透過 plc_proxy_ws 實現可靠的 PLC 通訊
+### AGV 手動指令服務工作空間特有功能
+- **🎮 雙服務架構**: ManualCommand (運動控制) + GeneralCommand (系統控制)
+- **🔌 PLC 整合**: 透過 plc_proxy_ws 實現可靠的 PLC 通訊
 - **安全控制**: 提供緊急煞車和啟用/停用功能
 - **任務管理**: 支援完整的任務發送和取消機制
 - **配置驅動**: 基於 YAML 配置的 PLC 地址映射
@@ -111,19 +94,18 @@ cancel_mission_address: '7001'      # 取消任務
 traffic_stop_address: '7002'        # 交通停止
 ```
 
-## 🚀 快速開始
+## 🚀 AGV 手動指令服務專用開發
 
-### 開發環境
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/development/ros2-development.md
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
+### AGV 手動指令服務特定啟動
 ```bash
-# 標準容器開發流程
-cd /app/agv_cmd_service_ws
-colcon build --packages-select agv_cmd_interfaces agv_cmd_service
-source install/setup.bash
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
 
-# 啟動服務
+# 【直接啟動】AGV 手動指令服務
+cd /app/agv_cmd_service_ws
+build_ws agv_cmd_service_ws
 ros2 run agv_cmd_service agv_cmd_service_node
 
 # 驗證服務
@@ -341,14 +323,11 @@ ros2 interface show agv_cmd_interfaces/srv/GeneralCommand
 ros2 node info /agv_cmd_service_node
 ```
 
-## 🔍 故障排除
+## 🚨 AGV 手動指令服務專項故障排除
 
-### 通用診斷
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
-@docs-ai/operations/development/plc-communication.md
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
-### 模組特定問題
+### AGV 手動指令服務特有問題
 
 #### 服務無回應
 ```bash
@@ -395,13 +374,15 @@ ros2 service call /GeneralCommand agv_cmd_interfaces/srv/GeneralCommand "{comman
 - **任務管理**: send_mission 參數格式務必為 "on,from,to,magic"
 
 ## 🔗 交叉引用
-- AGV 狀態機: `app/agv_ws/src/agv_base/CLAUDE.md`
-- PLC 通訊模組: `app/keyence_plc_ws/CLAUDE.md`
-- PLC 代理服務: `app/plc_proxy_ws/CLAUDE.md`
-- ROS 2 介面定義: `app/agv_ws/src/agv_interfaces/CLAUDE.md`
-- ROS 2 開發指導: @docs-ai/operations/development/ros2-development.md
-- PLC 通訊最佳實踐: @docs-ai/operations/development/plc-communication.md
-- Keyence 協定詳解: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
-- 容器開發環境: @docs-ai/operations/development/docker-development.md
-- 系統診斷工具: @docs-ai/operations/maintenance/system-diagnostics.md
-- 故障排除流程: @docs-ai/operations/maintenance/troubleshooting.md
+
+### 相關模組
+- **AGV 狀態機**: `../agv_ws/src/agv_base/CLAUDE.md` - 狀態機整合
+- **PLC 通訊模組**: `../keyence_plc_ws/CLAUDE.md` - 底層通訊
+- **PLC 代理服務**: `../plc_proxy_ws/CLAUDE.md` - PLC 服務整合
+- **ROS 2 介面**: `../agv_ws/src/agv_interfaces/CLAUDE.md` - 介面定義
+
+### 專業指導
+- **Keyence 協定**: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
+
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

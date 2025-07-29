@@ -174,7 +174,10 @@ class UnifiedWCSDecisionEngine:
             'manual_transport_tasks': 0,
             'system_to_room_tasks': 0,
             'empty_operations_tasks': 0,
+            'opui_requests_tasks': 0,
             'total_decisions': 0,
+            'successful_decisions': 0,
+            'failed_decisions': 0,
             'cycles_completed': 0
         }
     
@@ -569,14 +572,16 @@ class UnifiedWCSDecisionEngine:
             opui_requests = self._get_opui_pending_requests()
             
             for request in opui_requests:
-                # 處理OPUI叫空車請求 (work_id: 100001)
-                if request.get('work_id') == '100001':
+                work_id = request.get('work_id')
+                
+                # 處理OPUI叫空車請求 (work_id: 100001) - 支援字串和整數
+                if work_id in [100001, '100001']:
                     decision = self._process_opui_call_empty_request(request)
                     if decision:
                         decisions.append(decision)
                 
-                # 處理OPUI派滿車請求 (work_id: 100002)
-                elif request.get('work_id') == '100002':
+                # 處理OPUI派滿車請求 (work_id: 100002) - 支援字串和整數
+                elif work_id in [100002, '100002']:
                     decision = self._process_opui_dispatch_full_request(request)
                     if decision:
                         decisions.append(decision)
@@ -588,13 +593,15 @@ class UnifiedWCSDecisionEngine:
             return []
     
     def _process_opui_call_empty_request(self, request: Dict[str, Any]) -> Optional[TaskDecision]:
-        """處理OPUI叫空車請求"""
+        """處理OPUI叫空車請求 - 更新現有任務而不是創建新任務"""
         try:
             machine_id = request.get('machine_id')
             parameters = request.get('parameters', {})
+            task_id = request.get('task_id')  # 原有任務 ID
             space_num = parameters.get('space_num', 1)
             
-            if not machine_id:
+            if not machine_id or not task_id:
+                self.get_logger().debug(f'缺少必要參數: machine_id={machine_id}, task_id={task_id}')
                 return None
             
             # 檢查停車格狀態是否允許叫車
@@ -609,32 +616,20 @@ class UnifiedWCSDecisionEngine:
                 self.get_logger().debug(f'停車格不可用: machine_id={machine_id}, space={space_num}')
                 return None
             
-            # 獲取目標node_id
-            target_node_id = parking_space['node_id']
-            
-            # 找到可用的空料架
-            empty_rack_location = self._find_available_empty_rack()
-            if not empty_rack_location:
-                self.get_logger().debug('無可用空料架，無法處理叫空車請求')
-                return None
-            
-            # 創建叫空車決策
-            decision = TaskDecision(
-                work_id='100001',
-                task_type='opui_call_empty',
-                priority=self.priority_levels['EMPTY_OPERATIONS'],
-                source_location=empty_rack_location,
-                target_location=target_node_id,
-                parameters={
-                    'machine_id': machine_id,
-                    'space_num': space_num,
-                    'task_type': 'call_empty',
-                    'client_id': parameters.get('client_id', 'clientId')
-                },
-                reason=f"OPUI叫空車：machine_id={machine_id}, space_{space_num}"
+            # 更新現有 OPUI 叫空車任務
+            update_success = self.db_client.update_existing_opui_task(
+                task_id=task_id,
+                new_status=1,  # 狀態更新為 1 (AI WCS 已處理)
+                model="KUKA400i"
             )
             
-            return decision
+            if update_success:
+                self.get_logger().info(f'✅ OPUI 叫空車任務更新成功: task_id={task_id}, machine_id={machine_id}')
+                # 不返回 TaskDecision，因為我們是更新現有任務而不是創建新任務
+                return None
+            else:
+                self.get_logger().error(f'❌ OPUI 叫空車任務更新失敗: task_id={task_id}')
+                return None
             
         except Exception as e:
             self.get_logger().error(f'處理OPUI叫空車請求異常: {e}')

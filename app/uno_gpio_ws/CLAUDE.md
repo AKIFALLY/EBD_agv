@@ -1,12 +1,7 @@
 # uno_gpio_ws CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
+../../CLAUDE.md  # 引用根目錄系統文档
 
 ## 🎯 適用場景
 - AGV 車載系統的 GPIO 硬體控制
@@ -18,7 +13,13 @@
 
 **uno_gpio_ws** 是專為研華 UNO-137 工業電腦設計的 GPIO 控制專案，提供數位輸入/輸出 (DI/DO) 控制功能。作為 AGV 車載系統的硬體控制組件，實現了基於現代 libgpiod 介面的 GPIO 操作。
 
-**⚠️ 重要**: 此為獨立 GPIO 控制專案，非標準 ROS 2 工作空間，使用系統原生 libgpiod 庫直接操作硬體。所有容器開發相關操作請參考 @docs-ai/operations/development/docker-development.md
+### UNO GPIO 控制工作空間特有功能
+- **🔌 現代 GPIO 介面**: 使用 libgpiod 取代傳統 sysfs 方式
+- **🚀 雙語言實作**: C 語言和 Python 完整範例
+- **⚡ 即時 I/O 控制**: 8 個 DI 和 8 個 DO 通道同步控制
+- **🏭 硬體特化**: 專為研華 UNO-137 工業電腦設計
+
+**⚠️ 重要**: 非標準 ROS 2 工作空間，使用系統原生 libgpiod 庫
 
 ### 核心特色
 - **現代 GPIO 介面**: 使用 libgpiod 取代傳統 sysfs 方式
@@ -170,38 +171,33 @@ def main():
 - **GPIO 介面**: /dev/gpiochip0
 - **權限需求**: sudo 或 gpio 群組權限
 
-## 🚀 快速開始
-@docs-ai/operations/development/docker-development.md
+## 🚀 GPIO 專用開發
 
-### 系統套件安裝
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
+
+### GPIO 專用系統設定
 ```bash
-# 安裝必要套件
-sudo apt update
+# GPIO 系統套件安裝
 sudo apt install -y libgpiod-dev gpiod python3-libgpiod gcc
 
-# 驗證安裝
-gpiodetect
-python3 -c "import gpiod; print('✅ python3-libgpiod 可用')"
+# GPIO 功能驗證
+gpiodetect  # 檢查 GPIO 晶片
+python3 -c "import gpiod; print('✅ GPIO 庫可用')"
 ```
 
-### 編譯和執行
+### GPIO 程式編譯和執行
 ```bash
-# 進入專案目錄 (容器內)
-cd /app/uno_gpio_ws
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
 
-# C 語言版本
+# 【直接編譯】GPIO 程式
+cd /app/uno_gpio_ws
 gcc -o gpio_example gpio_example.c -lgpiod
 sudo ./gpio_example
 
-# Python 版本
+# Python GPIO 程式
 sudo python3 gpio_example.py
-
-# 使用命令列工具
-sudo gpioget 0 17    # 讀取 DI0
-sudo gpioset 0 25=1  # 設定 DO0 為高電位
 ```
-
-詳細的容器環境操作、開發環境設定請參考 @docs-ai/operations/development/docker-development.md
 
 ## 💡 核心 API
 
@@ -300,46 +296,30 @@ class UnoGPIOController:
             line.request(consumer="agv_controller", type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
 ```
 
-## 🚨 故障排除
-@docs-ai/operations/maintenance/troubleshooting.md
-@docs-ai/operations/maintenance/system-diagnostics.md
+## 🚨 GPIO 專項故障排除
 
-### uno_gpio_ws 特定問題
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
-#### GPIO 權限問題
+### GPIO 特有問題診斷
 ```bash
-# 症狀: "Permission denied" 或無法存取 GPIO
-# 解決: 使用 sudo 執行
-sudo python3 gpio_example.py
-sudo ./gpio_example
+# GPIO 權限問題
+sudo python3 gpio_example.py  # 使用 sudo 執行
+sudo usermod -a -G gpio $USER  # 加入 gpio 群組
 
-# 或將使用者加入 gpio 群組 (如果存在)
-sudo usermod -a -G gpio $USER
-# 重新登入後生效
+# GPIO 硬體檢測
+ls -la /dev/gpiochip*  # 檢查 GPIO 晶片
+gpiodetect            # 檢查可用晶片
+gpioinfo | grep -E "(17|25)"  # 檢查特定 GPIO
+
+# 套件安裝問題
+sudo apt install libgpiod-dev python3-libgpiod
+python3 -c "import gpiod; print('✅ GPIO 庫可用')"
 ```
 
-#### 硬體檢測問題
-```bash
-# 檢查 GPIO 晶片是否存在
-ls -la /dev/gpiochip*
-
-# 檢查特定 GPIO 是否可用
-gpioinfo | grep -E "(17|19|20|21|22|23|24|18|25|26|27|28|29|30|31|32)"
-
-# 檢查核心模組
-lsmod | grep gpio
-```
-
-#### 套件相關問題
-```bash
-# libgpiod 套件未安裝
-sudo apt install libgpiod-dev gpiod python3-libgpiod
-
-# 驗證 Python 套件
-python3 -c "import gpiod; print('✅ OK')"
-```
-
-通用的系統診斷方法、容器環境故障排除請參考上方 docs-ai 連結。
+### GPIO 關鍵依賴
+- **權限要求**: GPIO 操作需要 sudo 權限
+- **硬體平台**: 研華 UNO-137 工業電腦
+- **系統套件**: libgpiod-dev, python3-libgpiod
 
 ## 💡 開發注意事項
 
@@ -359,15 +339,8 @@ python3 -c "import gpiod; print('✅ OK')"
 ## 🔗 交叉引用
 
 ### 相關模組
-- **AGV 控制系統**: `app/agv_ws/src/agv_base/CLAUDE.md` - 可整合 GPIO 控制功能
-- **感測器處理**: `app/sensorpart_ws/CLAUDE.md` - 可結合硬體 I/O 狀態
+- **AGV 控制系統**: `../agv_ws/src/agv_base/CLAUDE.md` - GPIO 控制功能整合
+- **感測器處理**: `../sensorpart_ws/CLAUDE.md` - 硬體 I/O 狀態結合
 
-### 通用指導
-- **容器開發環境**: @docs-ai/operations/development/docker-development.md
-- **雙環境架構**: @docs-ai/context/system/dual-environment.md
-- **技術棧說明**: @docs-ai/context/system/technology-stack.md
-
-### 運維支援
-- **系統診斷工具**: @docs-ai/operations/maintenance/system-diagnostics.md
-- **故障排除流程**: @docs-ai/operations/maintenance/troubleshooting.md
-- **統一工具系統**: @docs-ai/operations/tools/unified-tools.md
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

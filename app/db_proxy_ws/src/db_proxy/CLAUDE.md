@@ -1,92 +1,86 @@
-# db_proxy CLAUDE.md
+# db_proxy - 資料庫代理核心套件
 
 ## 📚 Context Loading
-@docs-ai/context/system/technology-stack.md
-@docs-ai/operations/development/database-operations.md  
-@docs-ai/operations/development/database-operations.md
-@docs-ai/operations/maintenance/system-diagnostics.md
+../CLAUDE.md  # 引用上層 db_proxy_ws 工作空間文档
 
-## 概述
-PostgreSQL資料庫代理服務核心套件，提供連線池管理、ORM模型定義與ROS 2服務介面
+## 📋 套件概述
+db_proxy 是 db_proxy_ws 工作空間中的 **核心資料庫代理套件**，提供 ConnectionPoolManager、SQLModel ORM 整合、ROS 2 服務介面等核心功能。負責所有資料庫存取的統一入口和抽象層實作。
 
-## 關鍵特色
-- **連線池管理**: ConnectionPoolManager 自動管理資料庫連線生命週期
-- **SQLModel整合**: 現代化ORM模型，支援FastAPI生態系統
-- **ROS 2服務**: 提供標準化資料庫存取ROS服務介面
-- **CRUD抽象**: 統一的資料庫操作介面和模型轉換器
+**🎯 定位**: 資料庫代理核心實作，提供統一的資料存取介面
 
-## 快速開始
+## 🔧 核心套件特色
+- **AGVCDatabaseNode**: 主要資料庫節點實作 (`agvc_database_node.py`)
+- **ConnectionPoolManager**: 自動連線池管理和監控 (`connection_pool_manager.py`)
+- **SQLModel 整合**: 26 個資料模型定義 (`models/` 目錄)
+- **CRUD 抽象層**: 23 個 CRUD 操作實作 (`crud/` 目錄)
+- **ROS 2 服務**: 11 個標準化資料庫服務介面
+- **ROS 訊息轉換**: 自動 SQLModel ↔ ROS Message 轉換 (`ros_converter.py`)
+
+## 🚀 套件專用啟動
+
+### 資料庫節點啟動
 ```bash
-# 進入容器並啟動服務
-agvc_enter
-start_db && ros2 run db_proxy agvc_database_node
+# 【推薦方式】透過上層工作空間工具
+# 參考: ../CLAUDE.md 開發環境設定
+
+# 【直接啟動】資料庫代理節點
+python3 db_proxy/agvc_database_node.py
+# 或使用 ROS 2 方式
+ros2 run db_proxy agvc_database_node
 ```
 
-## 詳細指導
-具體操作請參考: @docs-ai/operations/development/database-operations.md
-
-## 故障排除
-基本除錯請參考: @docs-ai/operations/maintenance/system-diagnostics.md
-
-### 常見問題
+### 套件核心功能測試
 ```bash
 # 連線池狀態檢查
-ros2 service call /db_proxy/test_connection
+ros2 service call /sql_query db_proxy_interfaces/srv/SqlQuery "sql: 'SELECT 1 as test'"
 
-# 資料庫初始化
-python3 sql/init_data/run_all_init.py
+# CRUD 服務測試
+ros2 service call /carrier_query db_proxy_interfaces/srv/CarrierQuery "query_type: 'get_all'"
+ros2 service call /rack_query db_proxy_interfaces/srv/RackQuery "query_type: 'get_all'"
 ```
 
-詳細除錯流程請參考相關 prompts 檔案。
+## 🚨 db_proxy 套件專項故障排除
 
-## 故障排除
+**⚠️ 通用故障排除請參考**: ../CLAUDE.md 故障排除章節
 
-### 常見問題
+### 套件核心功能問題
 
-#### 資料庫連線失敗
+#### 連線池管理問題
 ```bash
-# 檢查 PostgreSQL 服務狀態
-docker compose -f docker-compose.agvc.yml ps postgres
+# 檢查 ConnectionPoolManager 狀態
+python3 -c "
+from db_proxy.connection_pool_manager import ConnectionPoolManager
+pool = ConnectionPoolManager('postgresql://postgres:postgres@postgres_container:5432/postgres')
+print('連線池初始化成功')
+"
 
-# 測試資料庫連線
-python3 -c "from db_proxy.db_proxy.connection_pool_manager import test_connection; test_connection()"
-
-# 檢查連線池狀態
-ros2 service call /db_proxy/test_connection
+# 檢查連線池統計 (透過節點日誌，每5秒記錄一次)
+ros2 node info /agvc_database_node
 ```
 
-#### 連線池耗盡
+#### SQLModel 和 CRUD 問題
 ```bash
-# 檢查連線池狀態
-python3 -c "from db_proxy.db_proxy.connection_pool_manager import get_pool_status; print(get_pool_status())"
+# 檢查 26 個資料模型載入
+python3 -c "from db_proxy.models import *; print('所有 SQLModel 模型載入成功')"
 
-# 重置連線池
-ros2 service call /db_proxy/reset_connection_pool
-
-# 檢查長時間運行的查詢
-# 在 PostgreSQL 中執行: SELECT * FROM pg_stat_activity WHERE state = 'active';
-```
-
-#### SQLAlchemy 模型錯誤
-```bash
-# 檢查模型定義
-python3 -c "from db_proxy.db_proxy.models import *; print('Models loaded successfully')"
+# 檢查 23 個 CRUD 操作
+python3 -c "from db_proxy.crud import *; print('所有 CRUD 操作載入成功')"
 
 # 驗證資料庫 schema
 python3 db_proxy/sql/verify_schema.py
-
-# 重新創建表格
-python3 db_proxy/sql/recreate_tables.py
 ```
 
-### 除錯技巧
-- 使用 `echo=True` 啟用 SQLAlchemy SQL 日誌
-- 監控 `/db_proxy/system_logs` 話題掌握系統狀態
-- 檢查連線池配置是否適合負載
-- 使用 PostgreSQL 的 `pg_stat_activity` 監控活動連線
+#### ROS 2 服務問題
+```bash
+# 檢查 11 個資料庫服務
+ros2 service list | grep -E "(sql_query|carrier_query|rack_query|update_)"
 
-### 效能監控
-- 連線池使用率應保持在 80% 以下
-- 查詢回應時間監控
-- 資料庫鎖定情況檢查
-- 記憶體使用情況分析
+# 測試服務可用性
+ros2 service call /sql_query db_proxy_interfaces/srv/SqlQuery "sql: 'SELECT version()'"
+```
+
+### 套件效能監控要點
+- **連線池**: 5+5 連線配置，使用率應 < 80%
+- **ROS 2 服務**: 11 個服務的回應時間監控
+- **SQLModel 查詢**: 透過 `echo=True` 啟用 SQL 日誌監控
+- **記憶體使用**: 26 個模型 + 23 個 CRUD 的記憶體效能

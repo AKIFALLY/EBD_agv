@@ -15,8 +15,12 @@ RosAGV 使用 PostgreSQL 16 作為主要資料庫，透過 db_proxy_ws 提供統
 資料庫架構
 ├── PostgreSQL 16 (postgres_container)
 │   ├── 連接埠: 5432
-│   ├── 使用者: postgres
-│   └── 資料庫: postgres
+│   ├── 管理員: postgres/password
+│   ├── 應用用戶: agvc/password  
+│   └── 資料庫實例:
+│       ├── postgres (PostgreSQL 預設資料庫)
+│       ├── agvc (應用程式主要資料庫)
+│       └── test_db (測試資料庫)
 ├── db_proxy_ws (資料庫代理服務)
 │   ├── ConnectionPoolManager (連線池管理)
 │   ├── SQLModel ORM (28個資料模型)
@@ -32,6 +36,119 @@ RosAGV 使用 PostgreSQL 16 作為主要資料庫，透過 db_proxy_ws 提供統
 - **網路地址**: postgres_container (192.168.100.254:5432)
 - **持久化**: 使用 Docker Volume 進行資料持久化
 - **備份**: 透過 pg_dump 進行資料備份
+
+## 🚀 資料庫初始化
+
+**⚠️ 重要**: 系統首次部署時必須先執行完整的資料庫初始化流程
+
+### 初始化方式選擇
+RosAGV 提供兩種資料庫初始化方式：
+- **方式1: 腳本初始化** (目前推薦) - 使用 shell 腳本 + ROS 2 指令
+- **方式2: 套件初始化** (備選方案) - 程式化初始化邏輯
+
+### 標準初始化流程 (方式1)
+
+#### 步驟1: 創建用戶和資料庫
+```bash
+# 在宿主機執行
+cd /home/ct/RosAGV/app/db_proxy_ws/scripts
+./init_database.sh
+```
+
+**此腳本會執行**:
+- 檢查並啟動 PostgreSQL 容器
+- 創建 `agvc` 用戶 (密碼: password)
+- 創建 `agvc` 資料庫 (應用程式主要資料庫)
+- 創建 `test_db` 資料庫 (測試用)
+- 授予 agvc 用戶完整權限
+- 驗證連接和權限
+
+#### 步驟2: 創建資料表和初始數據
+```bash
+# 在 AGVC 容器內執行
+docker compose -f docker-compose.agvc.yml exec agvc_server bash
+cd /app/db_proxy_ws/src/db_proxy
+python3 -m db_proxy.sql.db_install
+```
+
+**此步驟會執行**:
+- 創建所有 SQLModel 資料表
+- 插入預設的系統數據
+- 重置資料庫序列
+- 驗證初始化結果
+
+### 初始化驗證
+```bash
+# 檢查資料庫連接
+PGPASSWORD=password psql -h 192.168.100.254 -U agvc -d agvc -c "SELECT current_user, current_database();"
+
+# 檢查資料表
+PGPASSWORD=password psql -h 192.168.100.254 -U agvc -d agvc -c "\dt"
+```
+
+### 故障排除
+
+#### 常見問題1: PostgreSQL 容器未啟動
+```bash
+# 解決方案
+docker compose -f docker-compose.agvc.yml up -d postgres
+# 等待 10 秒後重新執行 init_database.sh
+```
+
+#### 常見問題2: 宿主機無法連接容器
+```bash
+# 檢查容器網路
+docker network inspect rosagv_agvc_network
+
+# 檢查端口映射
+docker compose -f docker-compose.agvc.yml ps postgres
+```
+
+#### 常見問題3: 用戶已存在錯誤
+```bash
+# init_database.sh 腳本有檢查機制，會跳過已存在用戶
+# 如需重置，可手動刪除用戶後重新執行
+```
+
+## 📋 多資料庫共存
+
+### 資料庫實例說明
+RosAGV 系統在單一 PostgreSQL 實例中維護三個資料庫：
+
+```
+PostgreSQL 實例 (postgres_container)
+├── postgres 資料庫
+│   ├── 用途: PostgreSQL 系統預設資料庫
+│   ├── 擁有者: postgres 用戶
+│   └── 用於: 系統管理和維護
+│
+├── agvc 資料庫  
+│   ├── 用途: RosAGV 應用程式主要資料庫
+│   ├── 擁有者: agvc 用戶
+│   ├── 連接字串: postgresql+psycopg2://agvc:password@192.168.100.254/agvc
+│   └── 包含: 所有業務資料表和應用數據
+│
+└── test_db 資料庫
+    ├── 用途: 單元測試和整合測試
+    ├── 擁有者: agvc 用戶
+    ├── 連接字串: postgresql+psycopg2://agvc:password@192.168.100.254/test_db
+    └── 用於: 測試環境隔離
+```
+
+### 應用程式連接配置
+```python
+# 所有 RosAGV 模組使用統一連接字串
+DB_URL = 'postgresql+psycopg2://agvc:password@192.168.100.254/agvc'
+
+# 模組連接範例
+# - web_api_ws
+# - opui  
+# - agvcui
+# - db_proxy_ws
+# - ecs_ws
+# - rcs_ws
+# - ai_wcs_ws
+```
 
 ## 🔧 連線池管理
 

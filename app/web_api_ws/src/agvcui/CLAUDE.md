@@ -1,7 +1,12 @@
-# agvcui - AGVC車隊管理界面
+# agvcui - 車隊管理界面系統
 
-## 專案概述
-agvcui是RosAGV系統的車隊管理界面，提供完整的AGV車隊監控、任務管理、設備狀態監控等功能。基於FastAPI後端和現代化前端技術，提供即時的Web界面，支援多用戶管理、即時地圖顯示、任務調度等企業級功能。
+## 📚 Context Loading
+../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档
+
+## 📋 套件概述
+agvcui 是 Web API 工作空間中的 **車隊管理界面系統**，提供完整的 MVC 架構和企業級管理功能。基於 FastAPI + Socket.IO + Jinja2，提供即時 Web 界面，支援 AGV 車隊監控、任務管理、地圖視覺化等核心管理功能。
+
+**🎯 定位**: Port 8001 的管理員界面，具備完整的資料庫操作和即時通訊能力
 
 ## 核心模組
 
@@ -81,89 +86,68 @@ static/
     └── ...
 ```
 
-## 開發指令
+## 🚀 AGVCUI 專用啟動
 
-### 基本操作
+### 車隊管理界面啟動
 ```bash
-# 進入AGVC容器
-docker compose -f docker-compose.agvc.yml exec agvc_server bash
-source /app/setup.bash && all_source
+# 【推薦方式】透過上層工作空間工具
+# 參考: ../CLAUDE.md 開發環境設定
 
-# 構建agvcui
-build_ws web_api_ws
-# 或單獨構建
-colcon build --packages-select agvcui
-
-# 啟動AGVCUI伺服器
+# 【直接啟動】AGVCUI 管理界面
 cd /app/web_api_ws/src/agvcui
 python3 agvcui/agvc_ui_server.py
-```
 
-### 開發模式啟動
-```bash
-# 使用uvicorn開發模式 (port 8001)
+# 開發模式 (自動重載)
 uvicorn agvcui.agvc_ui_server:app --host 0.0.0.0 --port 8001 --reload
 
-# 檢查AGVCUI界面
+# 檢查管理界面
 curl http://localhost:8001/
 ```
 
-### 測試指令
+### AGVCUI 專項測試
 ```bash
-# 執行測試套件
-cd /app/web_api_ws/src/agvcui
+# 車隊管理功能測試
 python3 -m pytest tests/ -v
+python3 tests/test_task_status_api.py    # 任務狀態 API 測試
 
-# 執行特定測試
-python3 tests/test_task_status_api.py
-
-# 前端功能測試
-open tests/test_cache_verification.html
-open tests/test_rack_marker_interaction.html
+# 前端界面測試 (瀏覽器開啟)
+firefox tests/test_cache_verification.html        # 快取驗證測試
+firefox tests/test_rack_marker_interaction.html   # Rack 標記互動測試
 ```
 
-## 配置設定
+## 📊 AGVCUI 特定配置
 
-### 伺服器配置
+### 管理界面服務器配置
 ```python
-# agvc_ui_server.py 配置
-HOST = "0.0.0.0"
-PORT = 8001
+# agvc_ui_server.py 車隊管理界面配置
+HOST = "0.0.0.0"      # AGVCUI 監聽地址
+PORT = 8001           # 管理界面端口 (企業級管理功能)
 DATABASE_URL = "postgresql+psycopg2://agvc:password@192.168.100.254/agvc"
 ```
 
-### 認證配置
+### 認證和會話配置
 ```python
-# auth.py 配置
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# auth.py JWT 認證配置
+SECRET_KEY = "your_secret_key"           # 管理員認證密鑰
+ALGORITHM = "HS256"                      # JWT 算法
+ACCESS_TOKEN_EXPIRE_MINUTES = 30         # 管理員會話超時
 ```
 
-### WebSocket配置
+### Socket.IO 即時通訊配置
 ```python
-# agvc_ui_socket.py 配置
-SOCKET_PATH = "/socket.io"
-CORS_ALLOWED_ORIGINS = ["*"]
+# agvc_ui_socket.py 即時更新配置
+SOCKET_PATH = "/socket.io"               # WebSocket 路徑
+CORS_ALLOWED_ORIGINS = ["*"]             # 跨域設定 (開發用)
 ```
 
-### 環境變數
-```bash
-export AGVCUI_HOST="0.0.0.0"           # AGVCUI伺服器主機
-export AGVCUI_PORT="8001"              # AGVCUI伺服器端口  
-export DATABASE_URL="postgresql+psycopg2://agvc:password@192.168.100.254/agvc"
-export SECRET_KEY="your_secret_key"    # JWT密鑰
-```
+## 🔗 AGVCUI 特有整合點
 
-## 整合點
-
-### 與其他專案整合
-- **web_api_ws**: 共享web_api_ws工作空間
-- **db_proxy_ws**: 透過database層存取PostgreSQL
-- **agv_base**: 接收AGV狀態更新
-- **agv_interfaces**: 處理AGV狀態和狀態變更訊息
-- **kuka_fleet_ws**: 整合KUKA Fleet任務管理
-- **ecs_ws**: 設備控制和狀態監控
+### 車隊管理界面特有整合
+- **db_proxy_ws**: 透過完整 database/ 層進行 PostgreSQL CRUD 操作
+- **agv_interfaces**: 接收和處理 AGV 狀態更新訊息
+- **kuka_fleet_ws**: 整合 KUKA Fleet 任務管理和監控
+- **ecs_ws**: 設備控制狀態監控和門控管理
+- **Socket.IO 即時通訊**: 支援多用戶同時監控和操作
 
 ### WebSocket事件
 ```javascript
@@ -256,84 +240,50 @@ firefox http://localhost:8001
 # - 設備管理頁面
 ```
 
-## 故障排除
+## 🚨 AGVCUI 專項故障排除  
 
-### 常見問題
+**⚠️ 通用故障排除請參考**: ../CLAUDE.md 故障排除章節
 
-#### 伺服器啟動失敗
+### 車隊管理界面特有問題
+
+#### WebSocket 即時通訊問題
 ```bash
-# 檢查端口佔用
-netstat -tulpn | grep :8001
-sudo lsof -i :8001
-
-# 檢查資料庫連接
-python3 -c "
-from agvcui.database.connection import get_db_connection
-conn = get_db_connection()
-print('Database connection OK')"
-
-# 檢查依賴模組
-python3 -c "import fastapi, socketio, jinja2; print('Dependencies OK')"
-```
-
-#### WebSocket連接問題
-```bash
-# 檢查WebSocket連接
+# 檢查 Socket.IO 連接狀態
 curl -i -N -H "Connection: Upgrade" \
   -H "Upgrade: websocket" \
   -H "Sec-WebSocket-Version: 13" \
   -H "Sec-WebSocket-Key: test" \
   http://localhost:8001/socket.io/
 
-# 檢查瀏覽器控制台錯誤
-# Network標籤查看WebSocket連接狀態
+# 瀏覽器控制台檢查 WebSocket 事件
 ```
 
-#### 前端資源載入失敗
+#### 地圖視覺化問題
 ```bash
-# 檢查靜態資源路徑
-ls -la /app/web_api_ws/src/agvcui/agvcui/static/
-
-# 檢查CSS和JavaScript文件
-curl http://localhost:8001/static/css/bulma_1_0_4.min.css
-curl http://localhost:8001/static/js/mapPage.js
-
-# 檢查瀏覽器Network標籤
-# 確認所有資源載入成功
-```
-
-#### 地圖顯示問題
-```bash
-# 檢查地圖數據API
+# 檢查地圖數據 API
 curl http://localhost:8001/api/map/data
-
-# 檢查地圖物件
 curl http://localhost:8001/api/map/objects
 
-# 開啟瀏覽器開發工具檢查JavaScript錯誤
-# 查看Leaflet地圖初始化狀態
+# 檢查 Leaflet.js 地圖初始化
+# 瀏覽器開發工具 → Console → 檢查 JavaScript 錯誤
 ```
 
-### 除錯技巧
-- 使用瀏覽器開發工具檢查Network和Console錯誤
-- 監控FastAPI日誌觀察API請求處理
-- 使用WebSocket測試工具驗證即時通訊
-- 檢查PostgreSQL日誌確認資料庫查詢
-- 使用Postman測試API端點功能
+#### 認證和會話問題
+```bash
+# 檢查 JWT 認證設定
+curl -X POST http://localhost:8001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "password"}'
 
-### 效能監控
-- 頁面載入時間分析
-- WebSocket訊息傳輸延遲
-- 資料庫查詢效能
-- 前端JavaScript執行效能
-- 記憶體使用情況
-- 並發用戶支援能力
+# 檢查會話狀態
+curl -X GET http://localhost:8001/auth/me \
+  -H "Authorization: Bearer <token>"
+```
 
-### 使用者介面功能
-- **儀表板**: 系統總覽、AGV狀態統計、任務進度
-- **AGV監控**: 即時AGV位置、狀態、電池電量
-- **任務管理**: 任務創建、編輯、調度、監控
-- **地圖視圖**: 即時地圖、AGV軌跡、設備狀態
-- **設備管理**: 架台、載具、設備狀態監控
-- **用戶管理**: 用戶權限、認證、審計日誌
-- **系統日誌**: ROS日誌、運行時日誌、錯誤追蹤
+### AGVCUI 功能特色
+- **🎛️ 儀表板**: 系統總覽、AGV 狀態統計、任務進度監控
+- **🗺️ 地圖視圖**: 即時地圖、AGV 軌跡、設備狀態視覺化
+- **📋 任務管理**: 任務創建、編輯、調度、執行監控
+- **🚗 AGV 監控**: 即時位置、狀態、電池電量、工作狀態
+- **📊 設備管理**: 架台、載具、設備狀態監控和控制
+- **👥 用戶管理**: 多用戶權限、認證、審計日誌追蹤

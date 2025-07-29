@@ -1,23 +1,19 @@
-# plc_proxy_ws CLAUDE.md
+# plc_proxy_ws - PLC 通訊代理工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/protocols/keyence-plc-protocol.md
 @docs-ai/operations/development/plc-communication.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
 
-## 🎯 適用場景
-- PLC 設備的 ROS 2 服務封裝和標準化接口提供
-- 上層應用與 Keyence PLC 之間的通訊代理
-- AGV 和 AGVC 雙環境下的 PLC 設備控制
-- 解決 PLC 通訊的服務化和並發管理問題
+## 📋 工作空間概述
 
-## 📋 模組概述
+**PLC 通訊代理工作空間** 專注於將底層 keyence_plc_ws 純 Python 通訊庫封裝為標準化的 ROS 2 服務接口，為上層應用提供統一的 PLC 操作能力。
 
-**plc_proxy_ws** 是 RosAGV 系統中的 PLC 通訊代理工作空間，將底層的 keyence_plc_ws 純 Python 通訊庫封裝為標準化的 ROS 2 服務接口，為上層應用提供統一的 PLC 操作能力。
+### PLC Proxy 工作空間特有功能
+- **🔌 ROS 2 服務封裝**: 將 PLC 操作封裝為 8 種標準 ROS 2 服務
+- **🔄 並發支援**: 使用 ReentrantCallbackGroup 支援多線程並發調用  
+- **🌊 連線池整合**: 集成 KeyencePlcPool 實現高效連線管理
+- **🔀 雙環境支援**: AGV 車載和 AGVC 管理雙環境統一接口
 
 ### 核心特色
 - **ROS 2 服務化**: 將 PLC 操作封裝為標準 ROS 2 服務
@@ -352,19 +348,18 @@ plc_proxy_ws 提供 8 個標準化的 ROS 2 服務介面，將 Keyence PLC 原�
 
 詳細的協議規範和指令格式請參考：@docs-ai/knowledge/protocols/keyence-plc-protocol.md
 
-## 🚀 開發環境設定和服務啟動
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/development/ros2-development.md
+## 🚀 PLC Proxy 專用開發
 
-### 快速啟動 (容器內執行)
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
+
+### PLC Proxy 特定啟動
 ```bash
-# 基本環境設定 (詳細步驟請參考上方連結)
-all_source && cd /app/plc_proxy_ws
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
 
-# 建置 plc_proxy_ws
-colcon build --packages-select plc_interfaces plc_proxy && all_source
-
-# 啟動 PLC 代理服務
+# 【直接啟動】PLC 代理服務
+cd /app/plc_proxy_ws
+build_ws plc_proxy_ws
 ros2 run plc_proxy plc_service_node
 
 # 自定義參數啟動
@@ -577,12 +572,11 @@ ros2 param get /plc_service plc_ip
 ros2 param get /plc_service read_ranges
 ```
 
-## 🚨 故障排除
-@docs-ai/operations/maintenance/troubleshooting.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/tools/unified-tools.md
+## 🚨 PLC Proxy 專項故障排除
 
-### plc_proxy_ws 特定問題
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
+
+### PLC Proxy 特有問題
 
 #### 服務無回應快速診斷
 ```bash
@@ -620,17 +614,7 @@ address: "3708"              # 字串格式
 values: ["100", "200"]       # 字串陣列
 ```
 
-### 統一診斷工具
-```bash
-r quick-diag                 # 系統綜合診斷
-r agvc-check                 # AGVC 健康檢查
-r network-check              # 網路連接檢查
-```
-
-通用的故障排除流程和系統診斷方法請參考上方的 docs-ai 連結。
-
-## ⚡ 效能最佳化
-@docs-ai/operations/development/plc-communication.md
+## ⚡ PLC Proxy 效能最佳化
 
 ### plc_proxy_ws 特有效能特性
 - **ReentrantCallbackGroup**: 支援多線程並發服務調用
@@ -687,22 +671,12 @@ Keyence PLC 硬體
 ## 🔗 交叉引用
 
 ### 相關模組
-- **Keyence PLC 通訊庫**: `app/keyence_plc_ws/CLAUDE.md` - 底層 Python 通訊庫
-- **手動控制服務**: `app/agv_cmd_service_ws/CLAUDE.md` - PlcClient 主要使用者
+- **Keyence PLC 通訊庫**: `../keyence_plc_ws/CLAUDE.md` - 底層 Python 通訊庫
+- **手動控制服務**: `../agv_cmd_service_ws/CLAUDE.md` - PlcClient 主要使用者
 
-### 通用指導
+### 專業指導
 - **Keyence 協議詳解**: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
-- **PLC ROS 2 介面規範**: @docs-ai/knowledge/protocols/plc-ros2-interfaces.md
 - **PLC 開發最佳實踐**: @docs-ai/operations/development/plc-communication.md
-- **ROS 2 開發指導**: @docs-ai/operations/development/ros2-development.md
-- **容器開發環境**: @docs-ai/operations/development/docker-development.md
 
-### 運維支援
-- **系統診斷工具**: @docs-ai/operations/maintenance/system-diagnostics.md
-- **故障排除流程**: @docs-ai/operations/maintenance/troubleshooting.md
-- **統一工具系統**: @docs-ai/operations/tools/unified-tools.md
-
-### 系統架構
-- **雙環境架構**: @docs-ai/context/system/dual-environment.md
-- **技術棧說明**: @docs-ai/context/system/technology-stack.md
-- **模組索引導航**: @docs-ai/context/structure/module-index.md
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

@@ -1,21 +1,22 @@
-# rcs_ws CLAUDE.md
+# rcs_ws - 機器人控制系統工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/context/workspaces/agvc-workspaces.md
-@docs-ai/knowledge/agv-domain/wcs-system-design.md
-@docs-ai/knowledge/agv-domain/wcs-database-design.md
-@docs-ai/operations/development/ros2-development.md
+../../CLAUDE.md  # 引用根目錄系統文档
+@docs-ai/knowledge/business/eyewear-production-process.md
 @docs-ai/operations/development/docker-development.md
 @docs-ai/operations/maintenance/system-diagnostics.md
 @docs-ai/operations/maintenance/troubleshooting.md
 @docs-ai/operations/tools/unified-tools.md
 
-## 📋 模組概述
+## 📋 工作空間概述
 
-**RCS (Robot Control System) 簡化車隊控制系統** - 負責 AGV 車隊的基本任務分派，專注於 CT 車隊管理和 KUKA 車隊管理的核心功能，回歸簡單易懂的設計。
+**機器人控制系統工作空間** 專注於 AGV 車隊的基本任務分派，負責 CT 車隊管理和 KUKA 車隊管理的核心功能，採用簡化設計理念。
+
+### 機器人控制系統工作空間特有功能
+- **🚗 雙車隊管理**: CT 車隊和 KUKA 車隊的統一控制
+- **📋 任務分派**: 基本的任務查詢和派發功能
+- **🚦 交通管制**: 交通區域的佔用和釋放管理
+- **⚙️ 簡化設計**: 回歸簡單易懂的車隊控制邏輯
 
 ### 簡化設計理念
 - **回歸簡單**: 移除複雜的 WCS 適配器和優先度調度器
@@ -82,32 +83,15 @@ src/
 - `setup.py` - 僅包含 rcs_core 節點入口點
 - `package.xml` - ROS 2 包配置
 
-## 🚀 技術棧特性
+## 🚀 RCS 專用開發
 
-詳細技術棧說明請參考: @docs-ai/context/system/technology-stack.md
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
-### 核心技術
-- **ROS 2 Jazzy**: 基於最新 ROS 2 發行版
-- **PostgreSQL**: 資料庫連接透過 db_proxy.ConnectionPoolManager
-- **Zenoh RMW**: 跨容器通訊機制
-- **Python 3.12**: 主要開發語言
-
-### RCS 特定架構
+### RCS 系統特定技術棧
 - **ROS 2 節點**: rcs_core (唯一 entry_point)
 - **AGV 通訊**: agv_interfaces.msg (AgvStateChange, AgvStatus)
 - **主題訂閱**: `/agv/state_change`, `/agv/status`
 - **定時協調**: 1秒定時器主迴圈
-
-## 🔧 開發環境
-
-### 容器環境要求
-**⚠️ 重要**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行
-
-詳細開發環境設定請參考:
-- @docs-ai/context/system/dual-environment.md - 雙環境架構說明
-- @docs-ai/operations/development/docker-development.md - 容器開發指導
-- @docs-ai/operations/development/ros2-development.md - ROS 2 開發指導
-- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
 ### 服務啟動 (基於實際entry_points)
 ```bash
@@ -232,161 +216,55 @@ def dispatch(self):
 /agv/status               # AGV 狀態監控
 ```
 
-## 🧪 測試腳本 (基於 pytest 標準)
+## 🧪 RCS 專項測試
 
-### 測試框架政策
-**⚠️ 重要**: 自 2025-07-29 起，RCS 模組使用 **pytest 測試框架**，遵循 @docs-ai/operations/development/testing-standards.md 規範。
+**⚠️ 通用測試指導請參考**: ../../CLAUDE.md 測試章節
 
-### pytest 標準測試 (`test_rcs_pytest.py`)
-基於 docs-ai 測試標準規範實作的正式測試檔案：
+### RCS 專用測試特性
+- **pytest 框架**: 遵循統一測試標準
+- **測試分類**: unit, integration, functional, database
+- **跨工作空間依賴**: 需要 agv_interfaces, db_proxy, kuka_fleet_adapter
 
-- **測試分類**: 
-  - `@pytest.mark.unit` - 單元測試
-  - `@pytest.mark.integration` - 整合測試  
-  - `@pytest.mark.functional` - 功能測試
-  - `@pytest.mark.database` - 資料庫測試
-
-- **測試範圍**:
-  - 資料庫連接和查詢功能
-  - 任務和 AGV 資料結構驗證
-  - 工作 ID 分類和路由邏輯
-  - CT/KUKA Manager 初始化
-  - 參數格式一致性
-
-### 推薦測試執行方式
-
-#### 1. 日常開發調試 (最簡單)
+### RCS 特定測試執行
 ```bash
-# 進入容器並載入環境
-agvc_enter && all_source
-
-# 直接執行 pytest 測試 (推薦)
+# 日常開發測試 (推薦)
 cd /app/rcs_ws
 python3 -m pytest src/rcs/test/test_rcs_pytest.py -v
 
-# 執行特定標記的測試
-python3 -m pytest src/rcs/test/test_rcs_pytest.py -m unit -v
-python3 -m pytest src/rcs/test/test_rcs_pytest.py -m database -v
-```
-
-#### 2. 正式提交前 (ROS 2 標準方式)
-```bash
-# 進入容器並載入環境
-agvc_enter && all_source
-cd /app/rcs_ws
-
 # ROS 2 標準測試
 colcon test --packages-select rcs
-colcon test-result --verbose
 ```
 
-#### 3. 測試覆蓋率檢查
+## 🚨 RCS 專項故障排除
+
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
+
+### RCS 系統特定診斷
 ```bash
-# 生成測試覆蓋率報告
-python3 -m pytest src/rcs/test/test_rcs_pytest.py --cov=rcs --cov-report=html
-python3 -m pytest src/rcs/test/test_rcs_pytest.py --cov=rcs --cov-report=term-missing
-```
-
-### 測試檔案結構 (已整理)
-RCS 測試已整理為標準的 pytest 結構：
-- `src/rcs/test/test_rcs_pytest.py` - 主要測試檔案 (pytest 標準)
-- `src/rcs/test/conftest.py` - pytest fixtures 配置
-- `src/rcs/test/pytest.ini` - pytest 配置檔案
-
-### 測試配置
-- **pytest.ini**: pytest 配置檔案，定義測試路徑和標記
-- **測試路徑**: `src/rcs/test/`
-- **測試標記**: unit, integration, functional, database, slow
-
-### 測試前置條件
-- **環境**: 必須在 AGVC 容器內執行
-- **工作空間**: 需要載入 AGVC 工作空間 (`all_source`)
-- **服務**: PostgreSQL 容器需要正常運行
-- **測試框架**: 使用 pytest 框架 (符合最新標準)
-- **依賴套件**: 某些測試需要 agv_interfaces 等跨工作空間依賴
-
-### 依賴問題解決 (實現 100% 測試通過)
-```bash
-# 完整的依賴建置程序 - 從 15 passed, 4 skipped 提升到 19 passed, 0 skipped
-
-# 1. 安裝 Python 依賴
-agvc_enter && pip3 install PyYAML
-
-# 2. 建置跨工作空間依賴
-# 建置 agv_interfaces
-cd /app/agv_ws && colcon build --packages-select agv_interfaces
-
-# 建置 db_proxy (資料庫代理)
-cd /app/db_proxy_ws && colcon build --packages-select db_proxy
-
-# 建置 kuka_fleet_adapter (KUKA 車隊整合)
-cd /app/kuka_fleet_ws && colcon build --packages-select kuka_fleet_adapter
-
-# 3. 載入完整環境
-cd /app/rcs_ws
-source /app/agv_ws/install/setup.bash
-source /app/db_proxy_ws/install/setup.bash 
-source /app/kuka_fleet_ws/install/setup.bash
-
-# 4. 執行測試 (顯著改善測試通過率!)
-colcon test --packages-select rcs --event-handlers console_direct+
-# 期望結果: 18-19 passed, 0-1 skipped (從 15 passed, 4 skipped 大幅改善)
-```
-
-### 測試結果解讀
-- **PASSED**: 測試通過
-- **FAILED**: 測試失敗，需要檢查
-- **SKIPPED**: 測試跳過 (通常因為依賴不可用)
-- **覆蓋率**: 顯示程式碼測試覆蓋率
-
-## 🚨 故障排除
-
-詳細故障排除指導請參考:
-- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
-- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
-- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
-
-### RCS 特定問題檢查
-
-#### RCS 核心節點診斷
-```bash
-# 檢查 RCS 節點狀態
+# RCS 核心節點診斷
 ros2 node list | grep rcs_core
 ros2 node info /rcs_core
 
-# 查看節點日誌
-ros2 run rcs rcs_core
-```
-
-#### AGV 狀態監控檢查
-```bash
-# 檢查 AGV 主題
-ros2 topic list | grep agv
+# AGV 狀態監控檢查
 ros2 topic echo /agv/state_change
 ros2 topic echo /agv/status
+
+# 任務分派測試
+ros2 run rcs rcs_core  # 觀察日誌輸出
 ```
 
-#### 任務分派測試
-```bash
-# 使用專用測試腳本 (推薦)
-python3 /app/rcs_ws/test_dispatch_logic.py
-
-# 或檢查簡化版本的任務分派
-ros2 run rcs rcs_core
-# 觀察日誌輸出的任務分派訊息
-```
-
-### 重要依賴檢查
-- **資料庫連接**: 需要 PostgreSQL 和 db_proxy 服務正常
-- **AGV 主題**: 需要 AGV 系統發布狀態訊息
-- **定時器運行**: 檢查 1秒定時器是否正常執行
+### RCS 關鍵依賴
+- **資料庫連接**: PostgreSQL 和 db_proxy 服務
+- **AGV 主題**: AGV 狀態訊息發布
+- **定時器運行**: 1秒定時器正常執行
 
 ## 🔗 交叉引用
-- 系統概覽: @docs-ai/context/system/rosagv-overview.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 容器開發: @docs-ai/operations/development/docker-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
-- 統一工具: @docs-ai/operations/tools/unified-tools.md
+
+### 相關模組
+- **db_proxy_ws**: `../db_proxy_ws/CLAUDE.md` - 資料庫連接池管理
+- **agv_ws**: `../agv_ws/CLAUDE.md` - AGV 狀態監控整合
+- **ai_wcs_ws**: `../ai_wcs_ws/CLAUDE.md` - AI WCS 任務分派
+- **kuka_fleet_ws**: `../kuka_fleet_ws/CLAUDE.md` - KUKA 車隊整合
+
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

@@ -1,17 +1,17 @@
-# launch_ws CLAUDE.md
+# launch_ws - ROS 2 啟動配置工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/workspaces/agvc-workspaces.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/tools/unified-tools.md
-@docs-ai/operations/maintenance/system-diagnostics.md
+../../CLAUDE.md  # 引用根目錄系統文档
 
-## 📋 模組概述
+## 📋 工作空間概述
 
-**ROS 2 Launch 配置工作空間** - 提供統一的服務啟動管理，整合 Web API 服務群組和 ECS 設備控制系統的 ROS 2 Launch 檔案。
+**ROS 2 啟動配置工作空間** 專注於提供統一的服務啟動管理，整合 Web API 服務群組和 ECS 設備控制系統的 ROS 2 Launch 檔案。
+
+### ROS 2 啟動配置工作空間特有功能
+- **🚀 統一啟動管理**: 提供 Web API 和 ECS 系統的統一啟動入口
+- **📦 服務群組編排**: 整合多個相關服務的啟動順序
+- **⚙️ 參數配置**: 統一的啟動參數管理
+- **🔄 依賴管理**: 處理服務間的啟動依賴關係
 
 ### 核心定位
 - **服務編排**: 統一管理多個 ROS 2 節點的啟動順序和依賴關係
@@ -78,15 +78,21 @@ src/
 - **備用節點**: `door_controller_node_mqtt` (已註解，待需要時啟用)
 - **輸出設定**: 所有節點輸出到螢幕 (`output="screen"`)
 
-## 🔧 開發環境
+## 🚀 ROS 2 啟動配置專用開發
 
-### 容器環境要求
-**⚠️ 重要**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行，詳細說明請參考: @docs-ai/context/system/dual-environment.md
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
-### 開發環境設定
-詳細開發環境設定請參考：
-- @docs-ai/operations/development/docker-development.md - 容器開發指導
-- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
+### ROS 2 啟動配置特定啟動
+```bash
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
+
+# 【直接啟動】Launch 配置
+cd /app/launch_ws
+build_ws launch_ws
+ros2 launch launch_ws web_api_group.launch.py    # Web API 服務群組
+ros2 launch launch_ws ecs_system.launch.py       # ECS 系統啟動
+```
 
 ### 建置工作空間
 ```bash
@@ -252,10 +258,11 @@ curl http://localhost:8000/health
 - 所有節點使用 `agvc` 命名空間統一管理
 - 透過配置檔案管理系統參數
 
-## 🚨 故障排除
+## 🚨 ROS 2 啟動配置專項故障排除
 
-詳細故障排除指導請參考:
-- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
+
+### ROS 2 啟動配置特有問題
 - @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
 - @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
@@ -332,11 +339,11 @@ curl -v http://localhost:8000/health
 - **配置檔案系統**: `/app/config/` 下的 YAML 配置檔案
 
 ## 🔗 交叉引用
-- 系統概覽: @docs-ai/context/system/rosagv-overview.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md  
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 容器開發: @docs-ai/operations/development/docker-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
+
+### 相關模組
+- **Web API 服務**: `../web_api_ws/CLAUDE.md` - Web API 服務群組啟動
+- **ECS 系統**: `../ecs_ws/CLAUDE.md` - 設備控制系統啟動
+
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節
 - 統一工具: @docs-ai/operations/tools/unified-tools.md

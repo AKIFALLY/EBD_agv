@@ -1,22 +1,19 @@
 # joystick_ws - USB 搖桿輸入處理工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/maintenance/system-diagnostics.md
+../../CLAUDE.md  # 引用根目錄系統文档
 
-## 📋 模組概述
+## 📋 工作空間概述
 
-**joystick_ws** 是 RosAGV 系統中專用於 USB 搖桿輸入處理的 ROS 2 工作空間，主要提供：
+**USB 搖桿輸入處理工作空間** 專注於為 RosAGV AGV 車載系統提供 USB 搖桿輸入處理和手動控制功能。
 
-- **~~Pygame 直接處理架構~~** ⚠️ **已棄用**: 透過 `JoystickHandler` 類別直接讀取 USB 搖桿設備
-- **ROS 2 Joy 訊息處理架構** ✅ **主要使用**: 透過 `JoyHandler` 類別處理 `sensor_msgs/Joy` 訊息
-- **~~測試節點整合~~** ⚠️ **已棄用**: 提供 `JoystickTestNode` 整合測試功能
+### USB 搖桿工作空間特有功能
+- **🎮 ROS 2 Joy 訊息處理**: 透過 `JoyHandler` 類別處理 `sensor_msgs/Joy` 訊息 ✅ **主要使用**
+- **🚫 Pygame 直接處理**: 透過 `JoystickHandler` 類別直接讀取 USB 搖桿設備 ⚠️ **已棄用**
+- **🚫 測試節點整合**: 提供 `JoystickTestNode` 整合測試功能 ⚠️ **已棄用**
+- **🔌 USB 設備支援**: 需要 `/dev/input` 設備掛載支援
 
-**⚠️ 重要**: 此模組專為 AGV 車載系統設計，必須在 AGV 容器內執行，需要 `/dev/input` 設備掛載支援。
+**⚠️ 重要**: 此模組專為 AGV 車載系統設計，必須在 AGV 容器內執行。
 
 ## 📂 工作空間結構
 
@@ -67,7 +64,9 @@ joystick_ws/
 
 **⚠️ 棄用原因**: 測試節點整合了已棄用的 Pygame 處理模式，建議直接使用標準的 ROS 2 joy_node。
 
-## 🚀 開發環境
+## 🚀 USB 搖桿處理專用開發
+
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
 **⚠️ 環境要求**: 必須在 AGV 車載容器內開發，需要 USB 設備存取權限。
 
@@ -244,7 +243,9 @@ class MyJoyNode(Node):
         self.get_logger().info(f"軸 {index} = {value}")
 ```
 
-## 🚨 故障排除
+## 🚨 USB 搖桿處理專項故障排除
+
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
 ### 搖桿設備問題
 ```bash
@@ -326,8 +327,9 @@ ros2 node info /joy_node
 
 ## 🔗 交叉引用
 
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- Docker 開發: @docs-ai/operations/development/docker-development.md
-- AGV 工作空間: @docs-ai/context/workspaces/agv-workspaces.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+### 相關模組
+- **AGV 手動指令**: `../agv_cmd_service_ws/CLAUDE.md` - 搖桿指令整合
+
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節
 - 技術棧: @docs-ai/context/system/technology-stack.md

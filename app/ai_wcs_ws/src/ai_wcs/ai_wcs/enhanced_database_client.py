@@ -222,12 +222,16 @@ class EnhancedDatabaseClient:
             )
     
     def get_agvs_by_state(self, state: str) -> List[AGVInfo]:
-        """獲取特定狀態的AGV"""
+        """獲取特定狀態的AGV - 修復: AGV 模型沒有 state 欄位，使用 AGVContext 查詢"""
         try:
             with self.connection_pool.get_session() as session:
-                stmt = select(AGV).where(
+                # 從 db_proxy 導入 AGVContext 模型
+                from db_proxy.models.agvc_rcs import AGVContext
+                
+                # 透過 AGVContext 查詢特定狀態的 AGV
+                stmt = select(AGV).join(AGVContext).where(
                     and_(
-                        AGV.state == state,
+                        AGVContext.current_state == state,
                         AGV.enable == 1
                     )
                 )
@@ -236,12 +240,20 @@ class EnhancedDatabaseClient:
                 
                 agvs = []
                 for agv_model in agv_models:
+                    # 獲取 AGV 的最新狀態
+                    context_stmt = select(AGVContext).where(
+                        AGVContext.agv_id == agv_model.id
+                    ).order_by(AGVContext.updated_at.desc())
+                    
+                    latest_context = session.exec(context_stmt).first()
+                    current_state = latest_context.current_state if latest_context else "unknown"
+                    
                     agv = AGVInfo(
                         id=agv_model.id,
                         name=agv_model.name,
-                        state=agv_model.state,
-                        current_location=agv_model.current_location,
-                        is_available=getattr(agv_model, 'is_available', True)
+                        state=current_state,
+                        current_location=agv_model.last_node_id,  # 修復: 使用 last_node_id 作為 current_location
+                        is_available=agv_model.enable == 1 and current_state == "idle"
                     )
                     agvs.append(agv)
                 
@@ -653,7 +665,7 @@ class EnhancedDatabaseClient:
                 # 步驟2: 查詢相關的 OPUI 任務
                 opui_tasks_stmt = select(Task).where(
                     and_(
-                        Task.work_id.in_(['100001', '100002']),
+                        Task.work_id.in_([100001, 100002]),
                         Task.status_id == 0
                     )
                 ).order_by(Task.created_at.asc())
@@ -734,6 +746,54 @@ class EnhancedDatabaseClient:
             self.logger.error(f'查詢OPUI請求異常: {e}')
             return []
     
+    def update_existing_opui_task(self, task_id: int, new_status: int = 1, model: str = "KUKA400i") -> bool:
+        """更新現有 OPUI 任務狀態和參數 - 專用於叫空車任務"""
+        try:
+            with self.connection_pool.get_session() as session:
+                # 查詢現有任務
+                task = session.exec(
+                    select(Task).where(Task.id == task_id)
+                ).first()
+                
+                if not task:
+                    self.logger.error(f'找不到任務: task_id={task_id}')
+                    return False
+                
+                # 檢查是否為 OPUI 叫空車任務 (work_id 可能是整數或字符串)
+                if str(task.work_id) != '100001':
+                    self.logger.error(f'任務不是 OPUI 叫空車任務: task_id={task_id}, work_id={task.work_id}')
+                    return False
+                
+                # 更新任務狀態
+                old_status = task.status_id
+                task.status_id = new_status
+                
+                # 更新參數，添加 model 資訊
+                if isinstance(task.parameters, dict):
+                    updated_params = task.parameters.copy()
+                    updated_params["model"] = model
+                    task.parameters = updated_params
+                else:
+                    task.parameters = {"model": model}
+                
+                session.add(task)
+                session.commit()
+                session.refresh(task)
+                
+                self.logger.info(
+                    f'✅ OPUI 叫空車任務更新成功: task_id={task_id}, '
+                    f'status={old_status}→{new_status}, model={model}'
+                )
+                
+                # 更新統計
+                self.query_stats['total_queries'] += 1
+                
+                return True
+                
+        except Exception as e:
+            self.logger.error(f'更新 OPUI 任務失敗: task_id={task_id}, error={e}')
+            return False
+
     def get_query_statistics(self) -> Dict[str, Any]:
         """獲取查詢統計資料"""
         cache_total = self.query_stats['cache_hits'] + self.query_stats['cache_misses']

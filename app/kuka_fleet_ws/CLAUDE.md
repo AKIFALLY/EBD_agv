@@ -1,29 +1,19 @@
 # kuka_fleet_ws - KUKA Fleet 適配器系統
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/context/workspaces/agvc-workspaces.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
-@docs-ai/operations/tools/unified-tools.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/protocols/kuka-fleet-api.md
 @docs-ai/knowledge/protocols/kuka-fleet-callback.md
 
-## 📋 模組概述
+## 📋 工作空間概述
 
-**KUKA Fleet 適配器工作空間** 是 RosAGV 系統中負責與 KUKA Fleet Manager API 整合的核心模組，基於 ROS 2 Jazzy 實現 KUKA AGV 車隊管理、任務派發和狀態監控功能。
+**KUKA Fleet 適配器工作空間** 專注於與 KUKA Fleet Manager API 的深度整合，實現 KUKA AGV 車隊的統一管理和任務協調。
 
-### 核心定位
-- **外部系統整合**: 提供與 KUKA Fleet Manager 的標準化 API 介面
-- **車隊管理中心**: 統一管理 KUKA AGV 車隊狀態和任務調度
-- **ROS 2 適配層**: 將 KUKA Fleet API 適配為 ROS 2 生態系統服務
-- **實時監控**: 提供 AGV 和容器的實時狀態監控能力
-
-詳細系統架構請參考: @docs-ai/context/workspaces/agvc-workspaces.md
+### KUKA Fleet 工作空間特有功能
+- **🔗 KUKA Fleet API 適配**: 完整實現 KUKA Fleet Manager API 規格
+- **📡 任務狀態回調處理**: 接收和處理 12 種任務狀態變化
+- **🚗 KUKA AGV 車隊管理**: 統一管理 KUKA AGV 的狀態和任務調度
+- **⚡ 實時監控**: AGV 位置、容器狀態、任務進度的實時監控
 
 ## 📂 專案結構 (實際檔案結構)
 ```
@@ -107,32 +97,17 @@ class KukaFleetAdapter:
 - `get_all_containers_in_map()`: 獲取所有在場容器
 - `get_running_jobs()`: 獲取運行中的作業
 
-## 🔧 開發環境
+## 🚀 KUKA Fleet 專用開發
 
-### 容器環境要求
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
-**⚠️ 重要**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行，詳細說明請參考: @docs-ai/context/system/dual-environment.md
-
-### 開發指令
-
-### 環境設定
-詳細環境設定請參考: @docs-ai/operations/development/docker-development.md
-
+### KUKA Fleet 特定啟動
 ```bash
-# 快速進入開發環境
-agvc_enter && all_source && cd /app/kuka_fleet_ws
-```
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
 
-### 開發環境設定
-詳細開發環境設定請參考：
-- @docs-ai/operations/development/docker-development.md - 容器開發指導
-- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
-
-### 建置與安裝
-詳細建置指導請參考: @docs-ai/operations/development/ros2-development.md
-
-```bash
-# 建置 KUKA Fleet 工作空間
+# 【直接啟動】KUKA Fleet 適配器
+cd /app/kuka_fleet_ws
 build_ws kuka_fleet_ws
 ```
 
@@ -301,31 +276,24 @@ ROBOT_CONFIG = {
 }
 ```
 
-## 🚨 故障排除
+## 🚨 KUKA Fleet 專項故障排除
 
-詳細故障排除指導請參考：
-- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
-- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
-- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
-### KUKA Fleet 特定故障排除
+### KUKA Fleet 特有問題
 
-### 常見問題
-
-#### API 連線失敗
+#### KUKA Fleet Manager API 連線失敗
 ```bash
-# 檢查網路連通性
+# 檢查 KUKA Fleet Manager 連通性
 ping 192.168.10.3
-
-# 測試 API 端點
 curl -X POST http://192.168.10.3:10870/api/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"Admin"}'
 ```
 
-#### 節點啟動失敗
+#### KUKA Fleet 適配器節點問題
 ```bash
-# 檢查套件安裝
+# 檢查 KUKA Fleet 套件
 ros2 pkg list | grep kuka_fleet_adapter
 
 # 檢查節點狀態

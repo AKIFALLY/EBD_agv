@@ -75,6 +75,79 @@ docs-ai/knowledge/
     └── database-schemas.md         # 資料庫結構設計
 ```
 
+## 🚀 AI 助理快速上手指南
+
+### 第一步：掌握統一工具入口
+**關鍵概念**: 只需要記住一個字母 `r`
+
+```bash
+# 最重要的 4 個命令
+r                    # 顯示工具選單
+r agvc-check         # 每日健康檢查
+r containers-status  # 檢查容器狀態
+r quick-diag         # 快速診斷
+```
+
+**AI 助理應該知道**:
+- `r` 是統一工具入口，適用於日常運維和故障排除
+- 這是宿主機環境的工具，不需要進入容器
+- 所有常用診斷和管理功能都可以透過 `r` 存取
+
+### 第二步：理解雙環境架構
+**關鍵概念**: AGV 車載系統 + AGVC 管理系統
+
+- **AGV 車載系統**: 即時控制、硬體整合、PLC 通訊
+- **AGVC 管理系統**: 車隊管理、Web 服務、資料庫管理
+- **跨環境通訊**: 透過 Zenoh RMW 實現無縫通訊
+
+### 📋 常用命令速查表
+
+#### 🔍 系統診斷
+| 命令 | 用途 | 適用場景 |
+|------|------|----------|
+| `r agvc-check` | AGVC 健康檢查 | 每日例行檢查 |
+| `r system-health` | 完整健康檢查 | 深度系統診斷 |
+| `r quick-diag` | 快速綜合診斷 | 故障排除 |
+
+#### 🐳 容器管理
+| 命令 | 用途 | 適用場景 |
+|------|------|----------|
+| `r containers-status` | 檢查容器狀態 | 確認系統運行 |
+| `r agvc-start` | 啟動 AGVC 系統 | 系統啟動 |
+| `r agvc-stop` | 停止 AGVC 系統 | 系統關閉 |
+
+#### 🌐 網路診斷
+| 命令 | 用途 | 適用場景 |
+|------|------|----------|
+| `r network-check` | 端口連接檢查 | 網路問題診斷 |
+| `r zenoh-check` | Zenoh 連接檢查 | 通訊問題排除 |
+
+#### 📋 日誌分析
+| 命令 | 用途 | 適用場景 |
+|------|------|----------|
+| `r log-scan` | 日誌錯誤掃描 | 發現系統問題 |
+| `r log-errors` | 高級錯誤掃描 | 深度錯誤分析 |
+
+### 🚨 故障排除快速流程
+
+1. **第一階段：快速評估** (1-2分鐘)
+   ```bash
+   r quick-diag           # 快速綜合診斷
+   r containers-status    # 容器運行狀態
+   r agvc-check          # 關鍵服務檢查
+   ```
+
+2. **第二階段：問題定位** (3-5分鐘)
+   ```bash
+   r log-errors          # 深度日誌分析
+   r network-check       # 網路連接檢查
+   r zenoh-check         # Zenoh 連接專項檢查
+   ```
+
+3. **第三階段：問題解決** (5-15分鐘)
+   - 根據診斷結果執行對應解決方案
+   - 參考相關 @docs-ai/ 文檔進行詳細操作
+
 ## 🔄 與現有文件系統的整合
 
 ### 職責分工
@@ -82,6 +155,11 @@ docs-ai/knowledge/
 - **`README.md`**: 專案概覽和快速開始指南
 - **CLAUDE.md**: AI Agent 主要記憶文件，透過 @docs-ai/ 引用載入詳細指導
 - **`docs-ai/`**: 模組化的 AI Agent 操作指導庫
+
+## 📚 Prompts 使用指南
+
+### 設計理念
+RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保持簡潔，同時動態載入豐富的 contextual prompts。
 
 ### 📝 @ 引用語法
 
@@ -244,3 +322,59 @@ docs-ai/knowledge/
 - Operations 文件專注於具體操作
 - Knowledge 文件專注於領域專業知識
 - 與 `.augment-guidelines` 保持職責分工
+
+## 📖 核心文檔引用清單
+
+### 🔥 必讀文檔 (AI 助理優先級 1)
+- `@docs-ai/operations/maintenance/system-diagnostics.md` - 統一工具使用指南
+- `@docs-ai/operations/development/docker-development.md` - Docker 容器管理
+- `@docs-ai/operations/maintenance/troubleshooting.md` - 故障排除指導
+
+### 🔧 專業工具 (優先級 2)
+- `@docs-ai/operations/maintenance/log-analysis.md` - 日誌分析
+- `@docs-ai/operations/development/ros2-development.md` - ROS 2 開發建置
+- `@docs-ai/operations/development/testing-procedures.md` - 測試程序
+
+### 📖 系統架構 (優先級 3)
+- `@docs-ai/context/system/technology-stack.md` - ROS 2 + Zenoh 架構
+- `@docs-ai/context/system/dual-environment.md` - 雙環境設計
+
+### 🎯 常用引用組合
+
+#### AGV 車載開發
+```markdown
+@docs-ai/context/workspaces/agv-workspaces.md
+@docs-ai/knowledge/agv-domain/vehicle-types.md
+@docs-ai/operations/development/ros2-development.md
+```
+
+#### AGVC 管理開發
+```markdown
+@docs-ai/context/workspaces/agvc-workspaces.md
+@docs-ai/operations/development/web-development.md
+@docs-ai/operations/development/database-operations.md
+```
+
+#### 系統診斷維護
+```markdown
+@docs-ai/context/system/dual-environment.md
+@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/maintenance/troubleshooting.md
+```
+
+## 🔍 快速文檔定位
+
+### 按問題類型定位
+- **狀態機問題** → `@docs-ai/context/workspaces/agv-workspaces.md`
+- **Web API 問題** → `@docs-ai/operations/development/web-development.md`
+- **資料庫問題** → `@docs-ai/operations/development/database-operations.md`
+- **PLC 通訊問題** → `@docs-ai/knowledge/protocols/keyence-plc-protocol.md`
+- **容器問題** → `@docs-ai/operations/development/docker-development.md`
+- **網路通訊問題** → `@docs-ai/knowledge/protocols/zenoh-rmw.md`
+
+### 按開發階段定位
+- **需求分析** → `@docs-ai/knowledge/` 領域知識文檔
+- **架構設計** → `@docs-ai/context/system/` 系統架構文檔
+- **實作開發** → `@docs-ai/operations/development/` 開發指導文檔
+- **測試驗證** → `@docs-ai/operations/development/testing-procedures.md`
+- **部署維護** → `@docs-ai/operations/maintenance/` 維護操作文檔

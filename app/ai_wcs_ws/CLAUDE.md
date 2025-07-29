@@ -1,31 +1,20 @@
-# ai_wcs_ws - AI 智能倉庫控制系統
+# ai_wcs_ws - AI 智能倉庫控制系統工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/context/workspaces/agvc-workspaces.md
-@docs-ai/context/structure/module-index.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/agv-domain/wcs-system-design.md
 @docs-ai/knowledge/agv-domain/wcs-workid-system.md
 @docs-ai/knowledge/agv-domain/wcs-database-design.md
-@docs-ai/operations/development/core-principles.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/development/testing-standards.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
-@docs-ai/operations/tools/unified-tools.md
 
-## 📋 模組概述
+## 📋 工作空間概述
 
-**AI WCS (AI Warehouse Control System)** 是 RosAGV 系統中的智能倉庫控制模組，基於 ROS 2 Jazzy 實現統一決策引擎的七大業務流程調度管理，具備完整的生命週期追蹤和智能決策能力。
+**AI WCS 工作空間** 專注於智能倉庫控制系統的統一決策引擎開發，實現七大業務流程調度管理和智能任務決策。
 
-### 核心定位
-- **統一決策引擎**: 整合七大業務流程的統一調度系統
-- **智能任務管理**: Work ID 分類管理和批次最佳化
-- **資料庫增強**: 批次查詢機制，減少 70% 資料庫負載
-- **Rack 智能分析**: A/B 面管理和容量計算
+### AI WCS 工作空間特有功能
+- **🧠 統一決策引擎**: 整合七大業務流程的統一調度系統
+- **⚡ 智能任務管理**: Work ID 分類管理和批次最佳化
+- **📊 資料庫增強**: 批次查詢機制，減少 70% 資料庫負載
+- **🗂️ Rack 智能分析**: A/B 面管理和容量計算
 
 詳細系統設計請參考: 
 - @docs-ai/knowledge/agv-domain/wcs-system-design.md - WCS 系統架構和七大業務流程
@@ -83,15 +72,20 @@ ai_wcs_ws/
 
 詳細檔案說明請參考: @docs-ai/context/workspaces/agvc-workspaces.md
 
-## 🔧 開發環境
+## 🚀 AI WCS 專用開發
 
-### 容器環境要求
-**⚠️ 重要**: 所有 ROS 2 程式必須在 AGVC Docker 容器內執行
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
-詳細開發環境設定請參考: 
-- @docs-ai/context/system/dual-environment.md - 雙環境架構說明
-- @docs-ai/operations/development/docker-development.md - 容器開發指導
-- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
+### AI WCS 特定啟動
+```bash
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
+
+# 【直接啟動】AI WCS 決策引擎
+cd /app/ai_wcs_ws
+build_ws ai_wcs_ws
+ros2 run ai_wcs unified_decision_engine_node
+```
 
 ## 🚀 核心技術特點
 
@@ -291,26 +285,19 @@ ros2 topic echo /ai_wcs/unified_task_updates
 - **房間擴展支援**: 動態支援房間1-10擴展
 - **完整測試覆蓋**: 涵蓋所有關鍵功能的測試體系
 
-## 🚨 故障排除
+## 🚨 AI WCS 專項故障排除
 
-詳細故障排除指導請參考: 
-- @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
-- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
-- @docs-ai/operations/tools/unified-tools.md - 統一工具系統
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
-### 常見問題快速解決
+### AI WCS 特有問題檢查
 ```bash
-# 節點無法啟動
-r agvc-check                         # 檢查 AGVC 系統狀態
+# 決策引擎問題
 ros2 node list | grep ai_wcs         # 檢查節點是否運行
+ros2 topic echo /wcs/task_decision   # 檢查任務決策輸出
 
-# 資料庫連接問題
-r containers-status                  # 檢查 PostgreSQL 容器
-ros2 service list | grep db_proxy    # 檢查 db_proxy 服務
-
-# ROS 2 環境問題  
-echo $ROS_DISTRO                    # 檢查 ROS 2 版本
-echo $RMW_IMPLEMENTATION            # 檢查 RMW 實作
+# Work ID 系統問題
+ros2 service call /wcs/work_id_classify # 測試 Work ID 分類
+ros2 param list /unified_decision_engine # 檢查決策引擎參數
 all_source                          # 重新載入工作空間
 
 # 決策引擎問題
@@ -350,14 +337,15 @@ ros2 log view                       # 查看節點日誌
 詳細開發工作流程請參考: @docs-ai/operations/development/ros2-development.md
 
 ## 🔗 交叉引用
-- 系統概覽: @docs-ai/context/system/rosagv-overview.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
-- WCS 系統設計: @docs-ai/knowledge/agv-domain/wcs-system-design.md
-- Work ID 系統: @docs-ai/knowledge/agv-domain/wcs-workid-system.md
-- 資料庫設計: @docs-ai/knowledge/agv-domain/wcs-database-design.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 容器開發: @docs-ai/operations/development/docker-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
-- 統一工具: @docs-ai/operations/tools/unified-tools.md
+
+### 領域知識 
+- **WCS 系統設計**: @docs-ai/knowledge/agv-domain/wcs-system-design.md
+- **Work ID 系統**: @docs-ai/knowledge/agv-domain/wcs-workid-system.md
+- **資料庫設計**: @docs-ai/knowledge/agv-domain/wcs-database-design.md
+
+### 相關模組
+- **資料庫代理**: `../db_proxy_ws/CLAUDE.md` - 資料庫操作整合
+- **Web API 服務**: `../web_api_ws/CLAUDE.md` - Web 界面整合
+
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

@@ -7,6 +7,11 @@
 
 ## 📋 模組文檔索引
 
+### 🏭 業務領域知識
+當需要理解 RosAGV 實際應用場景和業務流程時，請參考以下文檔：
+
+- **眼鏡生產流程**: @docs-ai/knowledge/business/eyewear-production-process.md - 射出機作業、OPUI叫車、KUKA AGV配送的完整業務流程
+
 ### 🚗 AGV 車載系統
 當涉及 AGV 車載控制、狀態機、硬體整合相關功能時，請參考以下文檔：
 
@@ -64,6 +69,64 @@
 - **測試驗證** → 開發操作文檔 (@docs-ai/operations/development/)
   - **測試標準**: @docs-ai/operations/development/testing-standards.md - pytest 統一測試規範
 - **部署維護** → 維護操作文檔 (@docs-ai/operations/maintenance/)
+
+## 🛠️ 系統工具和腳本
+
+### 資料庫工具 (db_proxy_ws/scripts/)
+當需要資料庫初始化、狀態檢查時，請參考以下工具：
+
+- **init_database.sh** - 資料庫用戶和資料庫初始化
+  - 功能: 創建 agvc 用戶、agvc 資料庫、test_db 資料庫
+  - 使用: `cd /home/ct/RosAGV/app/db_proxy_ws/scripts && ./init_database.sh`
+  - 注意: 在宿主機執行，自動檢查和驗證
+
+- **check_db_status.sh** - 資料庫狀態檢查
+- **test_connection.py** - 連接測試
+
+### 系統診斷工具 (scripts/)
+當需要系統診斷、效能監控時，請參考以下工具：
+
+#### 統一診斷工具 (r 指令)
+- **r agvc-check** - AGVC 系統健康檢查
+- **r containers-status** - 容器狀態檢查
+- **r network-check** - 網路連接檢查
+- **r quick-diag** - 快速綜合診斷
+
+#### 專業工具集
+- **system-tools/** - 系統健康檢查工具集
+- **network-tools/** - 網路診斷工具集
+- **docker-tools/** - 容器管理工具集
+- **log-tools/** - 日誌分析工具集
+- **dev-tools/** - 開發工作流工具集
+
+### 工具使用最佳實踐
+
+#### AI Agent 搜尋策略
+**重要教訓**: 避免搜尋盲區，採用多維度搜尋
+
+```bash
+# ✅ 好的搜尋方式
+find . -name "*init*" -o -name "*database*" -o -name "scripts"
+grep -r "CREATE USER\|CREATE DATABASE" . --include="*.sh" --include="*.sql"
+find . -type f -name "*.sh" | xargs grep -l "關鍵字"
+
+# ❌ 不完整的搜尋方式
+grep "pattern" **/*.py  # 只搜尋 Python 檔案
+```
+
+#### 工具發現原則
+1. **檔案類型多樣化**: 不只搜尋 .py，也要包含 .sh, .sql, .yml
+2. **目錄結構探索**: 重點關注 scripts/, tools/, config/ 目錄
+3. **關鍵字交叉驗證**: 使用多個相關關鍵字組合搜尋
+4. **工具腳本優先**: 很多重要功能在腳本中實現
+
+#### 藏匿工具探索
+**常見藏匿目錄**:
+- `scripts/` - 系統初始化和管理腳本
+- `tools/` - 開發和部署工具
+- `bin/` - 可執行檔案
+- `config/` - 配置腳本和樣板
+- `docs/examples/` - 實用範例腳本
 
 ## 📋 文檔維護指南
 

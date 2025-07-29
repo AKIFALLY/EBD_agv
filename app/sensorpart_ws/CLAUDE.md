@@ -1,13 +1,8 @@
 # sensorpart_ws CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
+../../CLAUDE.md  # 引用根目錄系統文档
+@docs-ai/knowledge/business/eyewear-production-process.md
 
 ## 🎯 適用場景
 - AGV 車載系統的外部感測器資料接收
@@ -32,7 +27,11 @@
 - **系統整合**: 無縫整合到 ROS 2 生態系統
 - **穩定通訊**: 自動處理網路中斷和重連
 
-**⚠️ 重要**: 所有 ROS 2 程式必須在 Docker 容器內執行，宿主機無 ROS 2 環境。
+### 感測器資料接收工作空間特有功能
+- **📡 TCP 客戶端**: 連接外部感測器伺服器 (192.168.2.100:2005)
+- **🔄 自動重連**: 內建重連機制確保連線穩定性
+- **🧵 多執行緒設計**: 獨立執行緒處理 TCP 通訊
+- **📊 資料解析**: 支援 3D 定位和 OCR 兩種資料格式
 
 ### 通訊架構
 ```
@@ -263,20 +262,18 @@ def main(args=None):
 解析結果: ocr_result = "AGV001"
 ```
 
-## 🚀 開發環境設定和節點啟動
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/development/ros2-development.md
+## 🚀 感測器專用開發
 
-### sensorpart_ws 特定指令
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
+
+### 感測器節點特定啟動
 ```bash
-# 啟動感測器節點 (包含 TCP 客戶端)
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
+
+# 【直接啟動】感測器節點
 ros2 run sensorpart test_sensorpart_node
-
-# 或單獨運行 TCP 客戶端
-ros2 run sensorpart sensorpart
 ```
-
-詳細的容器環境設定、工作空間載入、建置和除錯指令請參考上方 docs-ai 連結。
 
 ## 💡 使用範例和實際整合
 
@@ -343,37 +340,25 @@ port = int(os.getenv('SENSOR_PORT', '2005'))
 client = SensorPart(host=host, port=port)
 ```
 
-## 🚨 故障排除
-@docs-ai/operations/maintenance/troubleshooting.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/tools/unified-tools.md
+## 🚨 感測器專項故障排除
 
-### sensorpart_ws 特定問題
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
-#### TCP 連線診斷
-- 檢查感測器伺服器 `192.168.2.100:2005` 的連通性
-- 確認感測器伺服器正在運行且端口開放
-- 檢查網路設定和防火牆配置
+### 感測器特有問題診斷
+```bash
+# TCP 連線診斷
+telnet 192.168.2.100 2005  # 測試感測器伺服器連接
+netstat -an | grep 2005     # 檢查端口狀態
 
-#### 資料接收診斷
-```python
-# 建議的錯誤處理擴展 (可加入到 TestSensorPartNode)
-def timer_callback(self):
-    try:
-        # 檢查 TCP 客戶端連線狀態
-        if not self.tcp_client.is_connected:
-            self.get_logger().warn("TCP客戶端未連接")
-            return
-            
-        # 實際代碼的基本功能 (來自 test_sensorpart_node.py 第 19-23 行)
-        self.get_logger().info(f"Position Data: {self.tcp_client.position_data}")
-        self.get_logger().info(f"OCR Result: {self.tcp_client.ocr_result}")
-            
-    except Exception as e:
-        self.get_logger().error(f"處理感測器資料時發生錯誤: {e}")
+# 感測器節點診斷
+ros2 node info /sensorpart_node
+ros2 run sensorpart test_sensorpart_node  # 查看即時日誌
 ```
 
-通用的故障排除流程、系統診斷方法、網路診斷指令和統一診斷工具請參考上方的 docs-ai 連結。
+### 關鍵依賴檢查
+- **感測器伺服器**: 192.168.2.100:2005 需正常運行
+- **網路連接**: TCP 連線穩定性
+- **資料格式**: 3D定位和OCR資料格式正確性
 
 ## ⚡ 效能特性
 
@@ -425,19 +410,8 @@ AGV 車載系統 (定位和識別資料)
 ## 🔗 交叉引用
 
 ### 相關模組
-- **AGV 狀態機**: `app/agv_ws/src/agv_base/CLAUDE.md` - 可使用感測器資料進行定位
-- **路徑規劃**: `app/path_algorithm/CLAUDE.md` - 可結合 3D 定位資料
+- **AGV 狀態機**: `../agv_ws/src/agv_base/CLAUDE.md` - 感測器資料應用於定位
+- **路徑規劃**: `../path_algorithm/CLAUDE.md` - 3D 定位資料整合
 
-### 通用指導
-- **ROS 2 開發指導**: @docs-ai/operations/development/ros2-development.md
-- **容器開發環境**: @docs-ai/operations/development/docker-development.md
-
-### 運維支援
-- **系統診斷工具**: @docs-ai/operations/maintenance/system-diagnostics.md
-- **故障排除流程**: @docs-ai/operations/maintenance/troubleshooting.md
-- **統一工具系統**: @docs-ai/operations/tools/unified-tools.md
-
-### 系統架構
-- **雙環境架構**: @docs-ai/context/system/dual-environment.md
-- **技術棧說明**: @docs-ai/context/system/technology-stack.md
-- **模組索引導航**: @docs-ai/context/structure/module-index.md
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

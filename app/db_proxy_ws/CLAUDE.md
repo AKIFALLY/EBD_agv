@@ -1,17 +1,18 @@
 # db_proxy_ws - PostgreSQL 資料庫代理服務工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/operations/development/database-operations.md
-@docs-ai/operations/maintenance/system-diagnostics.md
 
-## 📋 模組概述
+## 📋 工作空間概述
 
-**db_proxy_ws** 是 RosAGV AGVC 管理系統中的核心資料庫代理服務工作空間，為整個系統提供統一的 PostgreSQL 資料庫存取介面。
+**資料庫代理服務工作空間** 專注於為 RosAGV AGVC 管理系統提供統一的 PostgreSQL 資料庫存取介面和資料管理服務。
+
+### 資料庫代理服務工作空間特有功能
+- **🗄️ 統一資料庫存取**: 提供標準化的資料庫操作介面
+- **🔄 ROS 2 服務整合**: 將資料庫操作封裝為 ROS 2 服務
+- **📊 CRUD 操作支援**: 完整的建立、讀取、更新、刪除功能
+- **🛠️ 資料庫管理工具**: 初始化、狀態檢查、連接測試工具
 
 **⚠️ 重要**: 此模組專為 AGVC 管理系統設計，必須在 AGVC 容器內執行，需要與 PostgreSQL 容器通訊。
 
@@ -67,26 +68,19 @@ db_proxy_ws/
 - **統一介面**: create, read, update, delete, get_by_id, get_all 等
 - **關係處理**: 支援複雜的資料庫關係查詢
 
-## 🚀 開發環境
+## 🚀 資料庫代理服務專用開發
 
-**⚠️ 環境要求**: 必須在 AGVC 管理容器內開發，需要與 PostgreSQL 容器通訊。
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
-### 環境準備
+### 資料庫代理服務特定啟動
 ```bash
-# 1. 進入 AGVC 容器
-docker compose -f docker-compose.agvc.yml exec agvc_server bash
+# 【推薦方式】透過根目錄統一工具
+# 參考: ../../CLAUDE.md 開發指導
 
-# 2. 載入 AGVC 工作空間
-all_source  # 智能載入，或使用 agvc_source
-
-# 3. 進入工作空間目錄
+# 【直接啟動】資料庫代理服務
 cd /app/db_proxy_ws
-```
-
-### 建置和啟動
-```bash
-# 建置 db_proxy 套件
-colcon build --packages-select db_proxy db_proxy_interfaces
+build_ws db_proxy_ws
+ros2 run db_proxy db_proxy_node
 
 # 檢查 PostgreSQL 連接
 python3 scripts/test_connection.py
@@ -211,13 +205,11 @@ with pool_manager.get_session() as session:
     initialize_all_data(session)
 ```
 
-## 🚨 故障排除
+## 🚨 資料庫代理服務專項故障排除
 
-**詳細的資料庫故障排除請參考**: @docs-ai/operations/development/database-operations.md
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
-### 模組特有診斷
-
-#### 快速檢查
+### 資料庫代理服務特有問題
 ```bash
 # 使用統一工具進行 AGVC 健康檢查
 r agvc-check
@@ -264,10 +256,12 @@ docker compose -f docker-compose.agvc.yml ps postgres_container
 
 ## 🔗 交叉引用
 
-- **資料庫操作指導**: @docs-ai/operations/development/database-operations.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- Docker 開發: @docs-ai/operations/development/docker-development.md
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- 技術棧: @docs-ai/context/system/technology-stack.md
+### 相關模組
+- **Web API 服務**: `../web_api_ws/CLAUDE.md` - 資料庫整合使用者
+- **AI WCS 系統**: `../ai_wcs_ws/CLAUDE.md` - 決策引擎資料存取
+
+### 專業指導
+- **資料庫操作**: @docs-ai/operations/development/database-operations.md
+
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

@@ -1,15 +1,12 @@
-# agv_ws - AGV 核心控制系統
+# agv_ws - AGV 核心控制系統工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/technology-stack.md
-@docs-ai/context/workspaces/agv-workspaces.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/agv-domain/vehicle-types.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/development/docker-development.md
 
-## 📋 模組概述
-AGV核心控制系統，採用3層狀態機架構：Base層(通用邏輯) → AGV層(車型特定) → Robot層(機械臂任務)
+## 📋 工作空間概述
+
+**AGV 核心控制系統工作空間** 專注於實現 3層狀態機架構的 AGV 控制邏輯：Base層(通用邏輯) → AGV層(車型特定) → Robot層(機械臂任務)。
 
 ## 🏗️ 專案結構
 ```
@@ -24,8 +21,9 @@ src/
 ### 3層狀態機設計
 @docs-ai/context/workspaces/agv-workspaces.md
 
-## 🔧 開發環境
-@docs-ai/operations/development/docker-development.md
+## 🚀 AGV 核心系統專用開發
+
+**⚠️ 通用開發環境請參考**: ../../CLAUDE.md 開發指導章節
 
 ## 📋 車型開發
 @docs-ai/knowledge/agv-domain/vehicle-types.md
@@ -70,10 +68,19 @@ cd src/cargo_mover_agv && python3 -m pytest test/ -v
 cd src/unloader_agv && python3 -m pytest test/ -v
 ```
 
-## 🚨 故障排除
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
+## 🚨 AGV 核心系統專項故障排除
 
-## 💡 開發最佳實踐  
-@docs-ai/operations/development/core-principles.md
-@docs-ai/operations/tools/unified-tools.md
+**⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
+
+## 🔗 交叉引用
+
+### 車型實作
+- **Cargo Mover AGV**: `src/cargo_mover_agv/CLAUDE.md`
+- **Loader AGV**: `src/loader_agv/CLAUDE.md`
+- **Unloader AGV**: `src/unloader_agv/CLAUDE.md`
+
+### 專業指導
+- **車型特性**: @docs-ai/knowledge/agv-domain/vehicle-types.md
+
+### 通用支援
+詳細指導請參考: ../../CLAUDE.md 交叉引用章節

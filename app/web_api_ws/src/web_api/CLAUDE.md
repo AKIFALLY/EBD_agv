@@ -1,13 +1,12 @@
-# web_api - 核心Web API服務
+# web_api - API Gateway 核心服務
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/knowledge/protocols/kuka-fleet-api.md
-@docs-ai/knowledge/protocols/kuka-fleet-callback.md
+../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档
 
-## 專案概述
-web_api是RosAGV系統的核心Web API服務，提供RESTful API接口整合各系統模組。基於FastAPI框架，統一管理PLC控制、門控制、交通管制、地圖匯入、KUKA Fleet整合等功能，為前端界面和外部系統提供標準化的HTTP API。
+## 📋 套件概述
+web_api 是 Web API 工作空間中的 **API Gateway 服務**，專注於外部系統整合。基於 FastAPI 框架，提供標準化的 HTTP API 端點，統一管理 PLC 控制、門控制、交通管制、地圖匯入、KUKA Fleet 整合等核心功能。
+
+**🎯 定位**: Port 8000 的 API Gateway，負責外部系統整合中心
 
 ## 核心模組
 
@@ -45,86 +44,57 @@ routers/
 - `/tests/test_parameters_update.py` - 參數更新測試
 - `/tests/quick_test.py` - 快速測試腳本
 
-## 開發指令
+## 🚀 套件特定啟動
 
-### 基本操作
+### API Gateway 服務啟動
 ```bash
-# 進入AGVC容器
-docker compose -f docker-compose.agvc.yml exec agvc_server bash
-source /app/setup.bash && all_source
+# 【推薦方式】透過上層工作空間工具
+# 參考: ../CLAUDE.md 開發環境設定
 
-# 構建web_api_ws
-build_ws web_api_ws
-# 或單獨構建
-colcon build --packages-select web_api
-
-# 啟動API伺服器
+# 【直接啟動】API Gateway 服務
 cd /app/web_api_ws/src/web_api
 python3 web_api/api_server.py
-```
 
-### 開發模式啟動
-```bash
-# 使用uvicorn開發模式
+# 開發模式 (自動重載)
 uvicorn web_api.api_server:app --host 0.0.0.0 --port 8000 --reload
-
-# 檢查API文檔
-curl http://localhost:8000/docs
-curl http://localhost:8000/redoc
 ```
 
-### 測試指令
+### 套件特定測試
 ```bash
-# 執行API測試
-cd /app/web_api_ws/src/web_api
+# API Gateway 專項測試
 python3 -m pytest tests/ -v
+python3 tests/test_kuka_api.py       # KUKA 整合測試
+python3 tests/quick_test.py          # 快速功能驗證
+python3 tests/test_parameters_update.py  # 參數更新測試
 
-# 執行特定測試
-python3 tests/test_kuka_api.py
-python3 tests/quick_test.py
-python3 tests/test_parameters_update.py
-
-# 檢查API健康狀態
+# API 健康檢查
 curl http://localhost:8000/health
+curl http://localhost:8000/docs      # Swagger UI
 ```
 
-## 配置設定
+## 📊 API Gateway 特定配置
 
-### API伺服器配置
+### 服務器配置 (api_server.py)
 ```python
-# api_server.py 配置
-HOST = "0.0.0.0"
-PORT = 8000
-LOG_LEVEL = "debug"
-
-# 資料庫連接
-DATABASE_URL = "postgresql+psycopg2://agvc:password@192.168.100.254/agvc"
+HOST = "0.0.0.0"      # API Gateway 監聽地址
+PORT = 8000           # API Gateway 端口 (外部系統整合)
+LOG_LEVEL = "debug"   # 詳細日誌用於外部系統調試
 ```
 
-### 路由器配置
-- PLC客戶端配置: `PlcClientNode('plc_client', 'agvc')`
-- 門控制配置: `/app/config/door_config.yaml`
-- 交通控制: ConnectionPoolManager整合
-- KUKA整合: 資料庫池管理
+### 路由器整合配置
+- **PLC 整合**: `PlcClientNode('plc_client', 'agvc')`
+- **門控整合**: `/app/config/door_config.yaml`
+- **交通管制**: ConnectionPoolManager 資料庫池整合
+- **KUKA Fleet**: 資料庫池管理，支援任務狀態回調接收
 
-### 環境變數
-```bash
-export API_HOST="0.0.0.0"              # API伺服器主機
-export API_PORT="8000"                 # API伺服器端口
-export DATABASE_URL="postgresql+psycopg2://agvc:password@192.168.100.254/agvc"
-export LOG_LEVEL="debug"               # 日誌級別
-```
+## 🔗 外部系統整合點
 
-## 整合點
-
-### 與其他專案整合
-- **plc_proxy_ws**: 透過PlcClientNode進行PLC控制
-- **ecs_ws**: 使用DoorLogic進行門控制
-- **db_proxy_ws**: 透過ConnectionPoolManager存取資料庫
-- **traffic_manager**: 交通管制區域管理
-- **kuka_fleet_ws**: KUKA Fleet系統整合 (詳見 @docs-ai/knowledge/protocols/kuka-fleet-api.md)
-- **agvcui**: 提供API給管理界面
-- **opui**: 提供API給操作界面
+### API Gateway 特有整合
+- **plc_proxy_ws**: 透過 PlcClientNode 進行 PLC 設備控制
+- **ecs_ws**: 使用 DoorLogic 進行門控制系統整合
+- **db_proxy_ws**: 透過 ConnectionPoolManager 存取資料庫
+- **traffic_manager**: 交通管制區域管理 (KUKA AGV 交管)
+- **kuka_fleet_ws**: KUKA Fleet 系統整合和任務狀態回調
 
 ### KUKA Fleet 整合詳細說明
 web_api 透過 `/interfaces/api/amr/missionStateCallback` 端點接收 KUKA Fleet Manager 的任務狀態回調：
@@ -164,129 +134,60 @@ GET  /map/status                    # 地圖狀態查詢
 POST /interfaces/api/amr/missionStateCallback  # 任務狀態回調接收 (實際實作)
 ```
 
-## 測試方法
+## 🧪 API Gateway 專項測試
 
-### API功能測試
+### 外部系統整合測試
 ```bash
-# 健康檢查
+# 核心 API 端點測試
 curl -X GET http://localhost:8000/health
+curl -X GET http://localhost:8000/docs  # API 文檔
 
-# PLC API測試
-curl -X GET http://localhost:8000/plc/status
+# PLC 整合測試
 curl -X POST http://localhost:8000/plc/read_data \
   -H "Content-Type: application/json" \
   -d '{"address": "DM100", "length": 10}'
 
-# 門控制API測試
-curl -X GET http://localhost:8000/door/status
-curl -X POST http://localhost:8000/door/open \
+# KUKA Fleet 回調測試
+curl -X POST http://localhost:8000/interfaces/api/amr/missionStateCallback \
   -H "Content-Type: application/json" \
-  -d '{"door_id": "door_01"}'
+  -d '{"missionId": "test001", "state": "COMPLETED"}'
 
-# 交通管制API測試
-curl -X GET http://localhost:8000/traffic/areas
+# 交通管制整合測試
 curl -X POST http://localhost:8000/traffic/acquire \
   -H "Content-Type: application/json" \
-  -d '{"area_id": "area_01", "agv_id": "agv01"}'
+  -d '{"area_id": "area_01", "agv_id": "kuka01"}'
 ```
 
-### 整合測試
+## 🚨 API Gateway 專項故障排除
+
+**⚠️ 通用故障排除請參考**: ../CLAUDE.md 故障排除章節
+
+### 套件特有問題
+
+#### 外部系統整合失敗
 ```bash
-# 執行完整API測試套件
-python3 -m pytest tests/ -v --tb=short
+# KUKA Fleet 回調接收問題
+curl -X GET http://localhost:8000/health
+# 檢查 `/interfaces/api/amr/missionStateCallback` 端點
 
-# KUKA API整合測試
-python3 tests/test_kuka_api.py
-
-# 參數更新測試
-python3 tests/test_parameters_update.py
-
-# 快速功能驗證
-python3 tests/quick_test.py
-```
-
-### 負載測試
-```bash
-# 使用Apache Bench進行負載測試
-ab -n 1000 -c 10 http://localhost:8000/health
-
-# 使用curl進行併發測試
-for i in {1..10}; do
-  curl -X GET http://localhost:8000/plc/status &
-done
-wait
-```
-
-## 故障排除
-
-### 常見問題
-
-#### API伺服器啟動失敗
-```bash
-# 檢查端口佔用
-netstat -tulpn | grep :8000
-sudo lsof -i :8000
-
-# 檢查依賴模組
-python3 -c "import fastapi, uvicorn; print('Dependencies OK')"
-
-# 檢查配置檔案
-cat /app/config/door_config.yaml
-```
-
-#### PLC連接失敗
-```bash
-# 檢查PLC客戶端狀態
+# PLC 通訊異常
+ros2 service call /plc/reconnect
 curl -X GET http://localhost:8000/plc/status
 
-# 重新初始化PLC連接
-ros2 service call /plc/reconnect
-
-# 檢查網路連通性
-ping <PLC_IP_ADDRESS>
+# 交通管制整合問題
+curl -X GET http://localhost:8000/traffic/areas
 ```
 
-#### 資料庫連接問題
+#### API Gateway 特有配置
 ```bash
-# 檢查資料庫連接
-python3 -c "
-from db_proxy.connection_pool_manager import ConnectionPoolManager
-db = ConnectionPoolManager('postgresql+psycopg2://agvc:password@192.168.100.254/agvc')
-print('Database connection OK')"
+# 檢查 Port 8000 專用配置
+netstat -tulpn | grep :8000
 
-# 檢查PostgreSQL服務
-docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c 'SELECT 1;'
+# 檢查路由器模組載入
+python3 -c "from web_api.routers import kuka, plc, door, traffic, map_importer"
 ```
 
-#### API回應緩慢
-```bash
-# 檢查API回應時間
-curl -w "@curl-format.txt" -X GET http://localhost:8000/health
-
-# 監控API日誌
-tail -f /var/log/web_api.log
-
-# 檢查系統資源
-htop
-df -h
-```
-
-### 除錯技巧
-- 啟用debug級別日誌觀察詳細錯誤信息
-- 使用FastAPI自動生成的`/docs`端點測試API
-- 監控uvicorn日誌掌握請求處理狀況
-- 使用Postman或curl進行API端點測試
-- 檢查各路由器模組的依賴服務狀態
-
-### 效能監控
-- API回應時間分析
-- 併發請求處理能力
-- 資料庫連接池使用率
-- PLC通訊延遲監控
-- 記憶體和CPU使用情況
-- 錯誤率和成功率統計
-
-### API文檔
-- 訪問 `http://localhost:8000/docs` 查看Swagger UI
-- 訪問 `http://localhost:8000/redoc` 查看ReDoc文檔
-- 使用OpenAPI規範進行API測試和整合
+### API 文檔和除錯
+- **Swagger UI**: http://localhost:8000/docs (互動式 API 測試)
+- **ReDoc**: http://localhost:8000/redoc (API 文檔)
+- **OpenAPI 規範**: 自動生成，支援外部系統整合測試

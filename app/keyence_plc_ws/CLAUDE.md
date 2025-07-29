@@ -1,20 +1,21 @@
-# keyence_plc_ws CLAUDE.md
+# keyence_plc_ws - Keyence PLC 通訊庫工作空間
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
+../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/protocols/keyence-plc-protocol.md
 @docs-ai/operations/development/plc-communication.md
-@docs-ai/knowledge/protocols/ros2-interfaces.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/docker-development.md
 
-## 系統概述
-Keyence PLC通訊庫，提供低層TCP Socket連線與Keyence專用協議實現，為AGV/AGVC系統提供PLC控制基礎服務。
+## 📋 工作空間概述
 
-**⚠️ 重要**: 所有 ROS 2 程式必須在 Docker 容器內執行，宿主機無 ROS 2 環境。
+**Keyence PLC 通訊庫工作空間** 專注於提供底層 TCP Socket 連線與 Keyence 專用協議實現，為 AGV/AGVC 系統提供 PLC 控制基礎服務。
 
-**🔗 重要**: 這是純Python庫(非ROS節點)，被plc_proxy_ws封裝為ROS 2服務使用。
+### Keyence PLC 工作空間特有功能
+- **🔌 TCP Socket 通訊**: 底層 TCP 連線和協議處理
+- **📡 Keyence 協議**: 專用協議指令封裝和解析
+- **🔄 連線池管理**: 高效的連線池實現
+- **🐍 純 Python 庫**: 非 ROS 節點，被 plc_proxy_ws 封裝使用
+
+**⚠️ 重要**: 這是純 Python 庫(非 ROS 節點)，被 plc_proxy_ws 封裝為 ROS 2 服務使用。
 
 ## 核心架構
 ```
