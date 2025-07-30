@@ -204,7 +204,7 @@ pre_deployment_check() {
     local required_ports=(7447 8000 8001 8002 5432 80 2200)
     
     for port in "${required_ports[@]}"; do
-        if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+        if ss -tuln 2>/dev/null | grep -q ":$port "; then
             check_results+=("WARNING:端口 $port 已被佔用")
             warning_issues=$((warning_issues + 1))
         else
@@ -817,7 +817,7 @@ show_deployment_status() {
         local port=$(echo "$endpoint" | cut -d':' -f1)
         local service=$(echo "$endpoint" | cut -d':' -f2)
         
-        if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+        if ss -tuln 2>/dev/null | grep -q ":$port "; then
             echo -e "  ${GREEN}✓${NC} $service (端口 $port)"
         else
             echo -e "  ${RED}✗${NC} $service (端口 $port)"

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RosAGV 系統架構技術文件 2025</title>
+    <link rel="stylesheet" href="assets/css/rosagv-common.css">
+</head>
+<body class="bg-purple">
+    <!-- 標題區域 -->
+    <header class="header theme-purple">
+        <div class="container">
+            <h1>🏗️ RosAGV 系統架構技術文件</h1>
+            <p class="subtitle">企業級 AGV 控制系統技術架構和模組設計</p>
+            <div class="last-updated">系統架構、模組設計、資料流向、API接口設計等技術細節完整說明</div>
+        </div>
+    </header>
+
+    <!-- 導航選單 -->
+    <nav class="nav">
+        <div class="nav-content">
+            <ul class="nav-links">
+                <li><a href="#overview" class="theme-purple">📊 架構概覽</a></li>
+                <li><a href="#agv-environment" class="theme-purple">🚗 AGV 車載系統</a></li>
+                <li><a href="#agvc-environment" class="theme-purple">🖥️ AGVC 管理系統</a></li>
+                <li><a href="#shared-modules" class="theme-purple">🔗 共用模組</a></li>
+                <li><a href="#technology-stack" class="theme-purple">🔧 技術棧</a></li>
+                <li><a href="#deployment" class="theme-purple">🚀 部署架構</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 架構概覽 -->
+            <section id="overview" class="section theme-purple">
+                <h2>📊 RosAGV 系統架構概覽</h2>
+                <p style="font-size: 1.2em; margin-bottom: 40px; text-align: center;">
+                    RosAGV 採用雙環境容器化架構，分離 AGV 車載系統與 AGVC 管理系統，基於 ROS 2 Jazzy 和 Zenoh RMW 構建
+                </p>
+                
+                <div class="stats-grid">
+                    <div class="stat-item theme-purple">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">核心環境</div>
+                    </div>
+                    <div class="stat-item theme-purple">
+                        <div class="stat-number">20</div>
+                        <div class="stat-label">ROS 2 工作空間</div>
+                    </div>
+                    <div class="stat-item theme-purple">
+                        <div class="stat-number">95+</div>
+                        <div class="stat-label">Work ID</div>
+                    </div>
+                    <div class="stat-item theme-purple">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">容器化率</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 40px;">
+                    <h3>🎯 架構設計原則</h3>
+                    <p><strong>分離關注點</strong>：將即時控制與管理功能分離，AGV 車載系統專注即時控制和硬體整合，AGVC 管理系統專注車隊管理和資料處理，透過 Zenoh RMW 實現高效通訊。</p>
+                </div>
+            </section>
+
+            <!-- AGV 車載系統 -->
+            <section id="agv-environment" class="section theme-green">
+                <h2>🚗 AGV 車載系統架構</h2>
+                
+                <div class="alert alert-success">
+                    <h3>🎯 系統特性</h3>
+                    <p><strong>部署位置</strong>：AGV 車輛邊緣計算設備 | <strong>網路模式</strong>：Host 網路 | <strong>容器名稱</strong>：rosagv</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🤖</div>
+                            <div class="card-title">agv_ws - 核心控制系統</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>3層狀態機架構</strong></p>
+                            <ul>
+                                <li><strong>agv_base</strong>: 基礎狀態機框架</li>
+                                <li><strong>cargo_mover_agv</strong>: Cargo 車型實作</li>
+                                <li><strong>loader_agv</strong>: Loader 車型實作</li>
+                                <li><strong>unloader_agv</strong>: Unloader 車型實作</li>
+                            </ul>
+                            <p><strong>技術特點</strong>：Base-AGV-Robot 三層狀態管理，支援多車型特化</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🎮</div>
+                            <div class="card-title">agv_cmd_service_ws - 手動控制</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>手動操作介面</strong></p>
+                            <ul>
+                                <li>手動指令服務</li>
+                                <li>操作員手動介入</li>
+                                <li>緊急停止機制</li>
+                                <li>狀態機手動切換</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🕹️</div>
+                            <div class="card-title">joystick_ws - 搖桿控制</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>USB 搖桿整合</strong></p>
+                            <ul>
+                                <li>USB 搖桿設備驅動</li>
+                                <li>手動移動控制</li>
+                                <li>精確定位操作</li>
+                                <li>維護模式支援</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">📡</div>
+                            <div class="card-title">sensorpart_ws - 感測器處理</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>感測器資料整合</strong></p>
+                            <ul>
+                                <li>SICK SLAM 感測器</li>
+                                <li>雷射掃描資料處理</li>
+                                <li>定位和導航支援</li>
+                                <li>障礙物偵測</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success" style="margin-top: 30px;">
+                    <h3>🔧 AGV 車載系統特點</h3>
+                    <ul>
+                        <li><strong>即時性</strong>：Host 網路模式提供最低延遲</li>
+                        <li><strong>硬體直接存取</strong>：直接控制 PLC、感測器設備</li>
+                        <li><strong>邊緣計算</strong>：本地決策和安全機制</li>
+                        <li><strong>獨立運行</strong>：可在網路中斷時持續工作</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- AGVC 管理系統 -->
+            <section id="agvc-environment" class="section theme-orange">
+                <h2>🖥️ AGVC 管理系統架構</h2>
+                
+                <div class="alert alert-warning">
+                    <h3>🎯 系統特性</h3>
+                    <p><strong>部署位置</strong>：中央管理伺服器 | <strong>網路模式</strong>：Bridge (192.168.100.0/24) | <strong>容器群組</strong>：agvc_server, postgres, nginx</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🌐</div>
+                            <div class="card-title">web_api_ws - Web 服務核心</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>FastAPI + Socket.IO</strong></p>
+                            <ul>
+                                <li><strong>web_api</strong>: 核心 API 服務 (Port 8000)</li>
+                                <li><strong>agvcui</strong>: 管理員界面 (Port 8001)</li>
+                                <li><strong>opui</strong>: 操作員界面 (Port 8002)</li>
+                                <li>即時通訊和狀態同步</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🗄️</div>
+                            <div class="card-title">db_proxy_ws - 資料庫代理</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>PostgreSQL ORM 和 CRUD</strong></p>
+                            <ul>
+                                <li>SQLAlchemy + SQLModel</li>
+                                <li>資料庫連接池管理</li>
+                                <li>CRUD 操作封裝</li>
+                                <li>資料持久化服務</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🚪</div>
+                            <div class="card-title">ecs_ws - 設備控制系統</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>門控和設備管理</strong></p>
+                            <ul>
+                                <li>門控系統控制</li>
+                                <li>設備狀態監控</li>
+                                <li>安全聯鎖機制</li>
+                                <li>設備協調管理</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🤖</div>
+                            <div class="card-title">rcs_ws - 機器人控制系統</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>RCS 和交通管理</strong></p>
+                            <ul>
+                                <li>機器人控制系統</li>
+                                <li>交通管理和路徑規劃</li>
+                                <li>任務調度和分配</li>
+                                <li>避障和協調</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🧠</div>
+                            <div class="card-title">ai_wcs_ws - AI 倉庫控制</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>AI WCS 統一決策引擎</strong></p>
+                            <ul>
+                                <li>AI 驅動的倉庫控制系統</li>
+                                <li>統一決策引擎</li>
+                                <li>智能任務分配</li>
+                                <li>原 wcs_ws 已整合至此</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🔗</div>
+                            <div class="card-title">kuka_fleet_ws - KUKA 整合</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>KUKA Fleet Adapter</strong></p>
+                            <ul>
+                                <li>KUKA Fleet Manager API</li>
+                                <li>外部 AGV 系統整合</li>
+                                <li>任務狀態雙向同步</li>
+                                <li>統一調度協調</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning" style="margin-top: 30px;">
+                    <h3>🔧 AGVC 管理系統特點</h3>
+                    <ul>
+                        <li><strong>企業級架構</strong>：Bridge 網路提供隔離和安全</li>
+                        <li><strong>高可用性</strong>：多容器部署和負載均衡</li>
+                        <li><strong>資料中心化</strong>：統一的資料管理和分析</li>
+                        <li><strong>外部整合</strong>：與 KUKA Fleet 等外部系統協作</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 共用模組 -->
+            <section id="shared-modules" class="section">
+                <h2>🔗 跨環境共用模組</h2>
+                
+                <div class="alert alert-info">
+                    <h3>🎯 共用設計理念</h3>
+                    <p>PLC 通訊、路徑規劃等核心功能模組在 AGV 和 AGVC 環境中共用，確保一致性和維護效率</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🏭</div>
+                            <div class="card-title">keyence_plc_ws - PLC 通訊</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>Keyence PLC 協議</strong></p>
+                            <ul>
+                                <li>純 Python 通訊庫</li>
+                                <li>TCP Socket 連接管理</li>
+                                <li>指令格式和錯誤處理</li>
+                                <li>連接池和重連機制</li>
+                            </ul>
+                            <p><strong>共用範圍</strong>：AGV 車載 + AGVC 管理</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🔌</div>
+                            <div class="card-title">plc_proxy_ws - PLC 代理</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>ROS 2 服務封裝</strong></p>
+                            <ul>
+                                <li>ROS 2 服務介面</li>
+                                <li>PLC 操作抽象化</li>
+                                <li>跨環境服務調用</li>
+                                <li>統一的 PLC 存取接口</li>
+                            </ul>
+                            <p><strong>共用範圍</strong>：AGV 車載 + AGVC 管理</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🗺️</div>
+                            <div class="card-title">path_algorithm - 路徑規劃</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>A* 演算法實現</strong></p>
+                            <ul>
+                                <li>A* 路徑規劃演算法</li>
+                                <li>動態障礙物處理</li>
+                                <li>路徑最佳化</li>
+                                <li>碰撞檢測和避障</li>
+                            </ul>
+                            <p><strong>共用範圍</strong>：AGV 車載 + AGVC 管理</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 技術棧 -->
+            <section id="technology-stack" class="section theme-purple">
+                <h2>🔧 核心技術棧</h2>
+                
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🤖</div>
+                            <div class="card-title">ROS 2 生態系統</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>ROS 2 Jazzy</strong>: 最新 LTS 版本</li>
+                                <li><strong>Zenoh RMW</strong>: 高效能中間件</li>
+                                <li><strong>Python 3.12</strong>: 主要開發語言</li>
+                                <li><strong>Colcon</strong>: 建置系統</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🐳</div>
+                            <div class="card-title">容器化技術</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>Docker Compose V2</strong>: 容器編排</li>
+                                <li><strong>Ubuntu 24.04</strong>: 基礎映像</li>
+                                <li><strong>Multi-stage Build</strong>: 映像優化</li>
+                                <li><strong>Volume Mounting</strong>: 開發同步</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🌐</div>
+                            <div class="card-title">Web 技術棧</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>FastAPI</strong>: 高效能 Web 框架</li>
+                                <li><strong>Socket.IO</strong>: 即時通訊</li>
+                                <li><strong>SQLAlchemy</strong>: ORM 框架</li>
+                                <li><strong>PostgreSQL</strong>: 主要資料庫</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🏭</div>
+                            <div class="card-title">工業通訊</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>Keyence PLC</strong>: 設備控制</li>
+                                <li><strong>Modbus TCP</strong>: 工業協定</li>
+                                <li><strong>KUKA Fleet</strong>: 外部系統整合</li>
+                                <li><strong>Zenoh Router</strong>: 跨環境通訊</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 部署架構 -->
+            <section id="deployment" class="section">
+                <h2>🚀 部署架構和網路設計</h2>
+                
+                <div class="alert alert-info">
+                    <h3>🎯 雙環境網路架構</h3>
+                    <p>AGV 使用 Host 網路直接存取硬體，AGVC 使用 Bridge 網路提供企業級隔離，透過 Zenoh Router 實現跨環境通訊</p>
+                </div>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🚗 AGV 車載部署 (Host 網路)</div>
+                            <div class="timeline-description">
+                                <strong>容器</strong>: rosagv<br>
+                                <strong>網路模式</strong>: host<br>
+                                <strong>Zenoh Router</strong>: 0.0.0.0:7447<br>
+                                <strong>特點</strong>: 直接硬體存取，最低延遲
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🖥️ AGVC 管理部署 (Bridge 網路)</div>
+                            <div class="timeline-description">
+                                <strong>容器群組</strong>: agvc_server, postgres_container, nginx<br>
+                                <strong>網路模式</strong>: bridge (192.168.100.0/24)<br>
+                                <strong>Zenoh Router</strong>: 192.168.100.100:7447<br>
+                                <strong>特點</strong>: 企業級隔離，固定 IP 管理
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🌐 跨環境通訊 (Zenoh RMW)</div>
+                            <div class="timeline-description">
+                                <strong>通訊協定</strong>: Zenoh 0.11.x<br>
+                                <strong>配置檔案</strong>: /app/routerconfig.json5<br>
+                                <strong>功能</strong>: ROS 2 主題/服務跨環境發現<br>
+                                <strong>特點</strong>: 高效能、低延遲、自動發現
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔗 外部系統整合</div>
+                            <div class="timeline-description">
+                                <strong>KUKA Fleet</strong>: 192.168.10.3:10870<br>
+                                <strong>PLC 設備</strong>: 192.168.2.101:8501<br>
+                                <strong>Web 服務</strong>: Port 8000-8002<br>
+                                <strong>特點</strong>: 標準化 API 整合
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-item theme-green">
+                        <div class="feature-icon">🚗</div>
+                        <div class="feature-title">AGV 車載環境</div>
+                        <div class="feature-description">
+                            <strong>優點</strong>: 即時控制、硬體直接存取<br>
+                            <strong>用途</strong>: 感測器整合、PLC 控制<br>
+                            <strong>部署</strong>: 每台 AGV 獨立部署
+                        </div>
+                    </div>
+
+                    <div class="feature-item theme-orange">
+                        <div class="feature-icon">🖥️</div>
+                        <div class="feature-title">AGVC 管理環境</div>
+                        <div class="feature-description">
+                            <strong>優點</strong>: 企業級架構、統一管理<br>
+                            <strong>用途</strong>: 車隊管理、資料分析<br>
+                            <strong>部署</strong>: 中央伺服器集中部署
+                        </div>
+                    </div>
+
+                    <div class="feature-item theme-purple">
+                        <div class="feature-icon">🌐</div>
+                        <div class="feature-title">跨環境通訊</div>
+                        <div class="feature-description">
+                            <strong>優點</strong>: 高效能、低延遲通訊<br>
+                            <strong>用途</strong>: ROS 2 服務和主題同步<br>
+                            <strong>部署</strong>: Zenoh RMW 自動配置
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🔧</div>
+                        <div class="feature-title">統一工具系統</div>
+                        <div class="feature-description">
+                            <strong>優點</strong>: 簡化運維、標準化操作<br>
+                            <strong>用途</strong>: 系統診斷、容器管理<br>
+                            <strong>部署</strong>: r 命令統一入口
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 系統架構優勢 -->
+            <section class="section">
+                <h2>🌟 系統架構核心優勢</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">🔄</div>
+                        <div class="feature-title">分離關注點</div>
+                        <div class="feature-description">AGV 車載系統專注即時控制，AGVC 管理系統專注車隊管理，各司其職提高系統穩定性</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">⚡</div>
+                        <div class="feature-title">高效能通訊</div>
+                        <div class="feature-description">Zenoh RMW 提供低延遲 (<1ms) 的跨環境通訊，確保即時控制和資料同步的效能要求</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🛡️</div>
+                        <div class="feature-title">企業級安全</div>
+                        <div class="feature-description">Bridge 網路提供網路隔離，統一的認證和授權機制，確保企業級安全要求</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">📈</div>
+                        <div class="feature-title">可擴展架構</div>
+                        <div class="feature-description">水平擴展 AGV 數量，垂直擴展 AGVC 處理能力，支援企業級規模部署</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🔧</div>
+                        <div class="feature-title">維護友好</div>
+                        <div class="feature-description">容器化部署、統一工具系統、完整的監控和診斷機制，大幅降低維護成本</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🔗</div>
+                        <div class="feature-title">標準化整合</div>
+                        <div class="feature-description">標準化的 API 接口、ROS 2 生態系統整合，支援與第三方系統無縫對接</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 40px;">
+                    <h3>🎯 架構設計最佳實踐</h3>
+                    <div style="margin-top: 15px;">
+                        <h4><strong>📚 建議學習順序</strong></h4>
+                        <ol style="margin-left: 20px; line-height: 1.8;">
+                            <li><strong>理解雙環境設計理念</strong><br>
+                                <em style="color: #6c757d;">掌握車載系統與管理系統的分離架構</em></li>
+                            <li><strong>掌握 ROS 2 + Zenoh RMW 技術棧</strong><br>
+                                <em style="color: #6c757d;">學習高效能通訊中間件和節點管理</em></li>
+                            <li><strong>熟悉容器化部署</strong><br>
+                                <em style="color: #6c757d;">Docker Compose 雙容器環境配置</em></li>
+                            <li><strong>學習跨環境通訊機制</strong><br>
+                                <em style="color: #6c757d;">Zenoh Router 跨容器資料傳輸</em></li>
+                            <li><strong>了解外部系統整合</strong><br>
+                                <em style="color: #6c757d;">KUKA Fleet、PLC、OPUI 介面整合</em></li>
+                            <li><strong>掌握運維和監控體系</strong><br>
+                                <em style="color: #6c757d;">系統診斷、故障排除、效能監控</em></li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 RosAGV Project - Intelligent Manufacturing Execution System</p>
+            <p>Powered by ROS 2 Jazzy + Zenoh RMW + Docker Compose V2</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/rosagv-common.js"></script>
+    <script>
+        // 頁面特定初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 統計數據動畫
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(number => {
+                const finalValue = number.textContent;
+                number.textContent = '0';
+                let current = 0;
+                const increment = finalValue.includes('+') ? 1 : parseInt(finalValue) / 20;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= parseInt(finalValue)) {
+                        number.textContent = finalValue;
+                        clearInterval(timer);
+                    } else {
+                        number.textContent = Math.floor(current) + (finalValue.includes('+') ? '+' : '');
+                    }
+                }, 50);
+            });
+
+            // 平滑滾動導航
+            document.querySelectorAll('.nav-links a').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // 卡片懸停效果增強
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                    this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -89,8 +89,11 @@ r containers-status
 # 2. 查看啟動日誌
 docker compose -f docker-compose.agvc.yml logs agvc_server
 
-# 3. 檢查端口衝突
-netstat -tulpn | grep -E "(8000|8001|8002|5432|7447)"
+# 3. 檢查端口衝突 (推薦使用 ss)
+ss -tulpn | rg "(8000|8001|8002|5432|7447)"
+
+# 備選：netstat
+netstat -tulpn | rg "(8000|8001|8002|5432|7447)"
 
 # 4. 檢查磁碟空間
 df -h
@@ -156,11 +159,14 @@ tail -f /tmp/agv.log
 r zenoh-check
 
 # 2. 檢查 Zenoh 進程
-ps aux | grep zenoh
+ps aux | rg zenoh
 cat /tmp/zenoh_router.pid
 
-# 3. 檢查端口監聽
-netstat -tulpn | grep 7447
+# 3. 檢查端口監聽 (推薦使用 ss)
+ss -tulpn | rg 7447
+
+# 備選：netstat
+netstat -tulpn | rg 7447
 
 # 4. 測試跨容器連接
 # 在 AGV 容器中
@@ -282,7 +288,7 @@ docker compose -f docker-compose.agvc.yml up -d postgres_container
 
 # 連接參數錯誤
 # 解決: 檢查環境變數和配置
-docker compose -f docker-compose.agvc.yml exec agvc_server env | grep POSTGRES
+docker compose -f docker-compose.agvc.yml exec agvc_server env | rg POSTGRES
 
 # 資料庫損壞
 # 解決: 檢查資料庫完整性

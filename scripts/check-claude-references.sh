@@ -49,7 +49,7 @@ check_claude_file() {
     echo "----------------------------------------"
     
     # 提取所有 @ 引用
-    local references=$(grep -o '@[^[:space:]]*\.md' "$claude_file" | sort | uniq)
+    local references=$(rg -o '@[^[:space:]]*\.md' "$claude_file" | sort | uniq)
     
     if [ -z "$references" ]; then
         echo "  ℹ️  沒有找到 @ 引用"

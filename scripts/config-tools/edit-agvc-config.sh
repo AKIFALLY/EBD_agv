@@ -330,7 +330,7 @@ show_post_edit_suggestions() {
     echo ""
     echo "通用檢查:"
     echo "4. 檢查主要服務端口:"
-    echo "   netstat -tuln | grep -E '800[0-2]|7447'"
+    echo "   ss -tuln | grep -E '800[0-2]|7447'"
     echo ""
     echo "5. 監控系統運行:"
     echo "   docker compose -f docker-compose.agvc.yml logs -f agvc_server"

@@ -296,15 +296,7 @@ check_router_status() {
     
     # 檢查端口監聽
     log_info "檢查端口監聽狀況..."
-    if command -v netstat &> /dev/null; then
-        local listening_ports=$(netstat -tlnp 2>/dev/null | grep :$DEFAULT_ZENOH_PORT || true)
-        if [ -n "$listening_ports" ]; then
-            log_success "✅ 端口 $DEFAULT_ZENOH_PORT 正在監聽"
-            echo "$listening_ports"
-        else
-            log_warning "⚠️  端口 $DEFAULT_ZENOH_PORT 未在監聽"
-        fi
-    elif command -v ss &> /dev/null; then
+    if command -v ss &> /dev/null; then
         local listening_ports=$(ss -tlnp | grep :$DEFAULT_ZENOH_PORT || true)
         if [ -n "$listening_ports" ]; then
             log_success "✅ 端口 $DEFAULT_ZENOH_PORT 正在監聽"
@@ -312,8 +304,16 @@ check_router_status() {
         else
             log_warning "⚠️  端口 $DEFAULT_ZENOH_PORT 未在監聽"
         fi
+    elif command -v netstat &> /dev/null; then
+        local listening_ports=$(netstat -tlnp 2>/dev/null | grep :$DEFAULT_ZENOH_PORT || true)
+        if [ -n "$listening_ports" ]; then
+            log_success "✅ 端口 $DEFAULT_ZENOH_PORT 正在監聽"
+            echo "$listening_ports"
+        else
+            log_warning "⚠️  端口 $DEFAULT_ZENOH_PORT 未在監聽"
+        fi
     else
-        log_warning "無法檢查端口狀態，缺少 netstat 或 ss 工具"
+        log_warning "無法檢查端口狀態，缺少 ss 或 netstat 工具"
     fi
     
     echo ""

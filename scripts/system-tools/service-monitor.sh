@@ -575,8 +575,8 @@ show_alerts() {
     
     if [ -f "$LOG_FILE" ]; then
         echo -e "${YELLOW}最近的警報和錯誤:${NC}"
-        tail -20 "$LOG_FILE" | grep -E "(WARN|ERROR)" | while read line; do
-            if echo "$line" | grep -q "ERROR"; then
+        tail -20 "$LOG_FILE" | rg "(WARN|ERROR)" | while read line; do
+            if echo "$line" | rg -q "ERROR"; then
                 echo -e "${RED}$line${NC}"
             else
                 echo -e "${YELLOW}$line${NC}"
@@ -585,8 +585,8 @@ show_alerts() {
         
         echo ""
         echo -e "${YELLOW}統計資訊:${NC}"
-        local total_errors=$(grep -c "ERROR" "$LOG_FILE" 2>/dev/null || echo 0)
-        local total_warnings=$(grep -c "WARN" "$LOG_FILE" 2>/dev/null || echo 0)
+        local total_errors=$(rg -c "ERROR" "$LOG_FILE" 2>/dev/null || echo 0)
+        local total_warnings=$(rg -c "WARN" "$LOG_FILE" 2>/dev/null || echo 0)
         echo -e "錯誤總數: ${RED}$total_errors${NC}"
         echo -e "警告總數: ${YELLOW}$total_warnings${NC}"
         echo -e "日誌檔案: $LOG_FILE"

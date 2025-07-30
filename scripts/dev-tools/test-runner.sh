@@ -479,7 +479,7 @@ analyze_test_results() {
         )
         
         for pattern in "${error_patterns[@]}"; do
-            local pattern_count=$(grep -r "$pattern" "$actual_log_dir" 2>/dev/null | wc -l)
+            local pattern_count=$(rg -r "$pattern" "$actual_log_dir" 2>/dev/null | wc -l)
             if [ $pattern_count -gt 0 ]; then
                 echo -e "  ${RED}$pattern: $pattern_count 次${NC}"
             fi

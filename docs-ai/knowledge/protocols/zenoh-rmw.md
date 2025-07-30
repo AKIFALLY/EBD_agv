@@ -174,13 +174,15 @@ ROS 2 QoS → Zenoh QoS
 ### Zenoh 狀態檢查
 ```bash
 # 檢查 Zenoh Router 運行狀態
-ps aux | grep zenoh
+ps aux | rg zenoh
 cat /tmp/zenoh_router.pid
 pgrep -f rmw_zenohd
 
-# 檢查 Zenoh 連接
-netstat -tulpn | grep 7447
-ss -tulpn | grep 7447
+# 檢查 Zenoh 連接 (推薦使用 ss)
+ss -tulpn | rg 7447
+
+# 備選：netstat (舊工具)
+netstat -tulpn | rg 7447
 ```
 
 ### 連接診斷
@@ -221,7 +223,7 @@ ros2 topic list
 #### Zenoh Router 無法啟動
 ```bash
 # 檢查端口佔用
-netstat -tulpn | grep 7447
+ss -tulpn | rg 7447
 lsof -i :7447
 
 # 檢查配置檔案

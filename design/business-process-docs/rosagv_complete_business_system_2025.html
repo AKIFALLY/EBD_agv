@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RosAGV 完整業務系統指南 2025</title>
+    <link rel="stylesheet" href="assets/css/rosagv-common.css">
+</head>
+<body class="bg-orange">
+    <!-- 標題區域 -->
+    <header class="header theme-orange">
+        <div class="container">
+            <h1>🏢 RosAGV 完整業務系統指南</h1>
+            <p class="subtitle">企業級智能製造執行系統 - 完整業務架構和系統整合</p>
+            <div class="last-updated">眼鏡生產工廠 × KUKA 車隊 × CT AGV 系統 × 智能倉儲管理的完整解決方案</div>
+        </div>
+    </header>
+
+    <!-- 導航選單 -->
+    <nav class="nav">
+        <div class="nav-content">
+            <ul class="nav-links">
+                <li><a href="#overview" class="theme-orange">📊 系統概覽</a></li>
+                <li><a href="#kuka-fleet" class="theme-orange">🚛 KUKA 車隊</a></li>
+                <li><a href="#wcs-system" class="theme-orange">🏗️ WCS 決策引擎</a></li>
+                <li><a href="#agvcui" class="theme-orange">🖥️ AGVCUI 管理</a></li>
+                <li><a href="#opui" class="theme-orange">📱 OPUI 操作</a></li>
+                <li><a href="#cargo-agv" class="theme-orange">🔍 Cargo 品檢</a></li>
+                <li><a href="#architecture" class="theme-orange">⚙️ 技術架構</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 系統概覽 -->
+            <section id="overview" class="section theme-orange">
+                <h2>📊 RosAGV 完整業務系統概覽</h2>
+                <p style="font-size: 1.2em; margin-bottom: 40px; text-align: center;">
+                    RosAGV 是一套完整的企業級智能製造執行系統(MES)，整合了 KUKA 車隊、CT AGV 系統、智能倉儲管理等多個子系統
+                </p>
+                
+                <div class="stats-grid">
+                    <div class="stat-item theme-orange">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">KUKA AGV</div>
+                    </div>
+                    <div class="stat-item theme-orange">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">CT AGV</div>
+                    </div>
+                    <div class="stat-item theme-orange">
+                        <div class="stat-number">7</div>
+                        <div class="stat-label">WCS 業務流程</div>
+                    </div>
+                    <div class="stat-item theme-orange">
+                        <div class="stat-number">5</div>
+                        <div class="stat-label">核心子系統</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning" style="margin-top: 40px;">
+                    <h3>🎯 系統核心價值</h3>
+                    <p>這是一套完整的<strong>企業級智能製造執行系統(MES)</strong>，不是簡單的AGV搬運，而是集成了智能倉儲、品質管制、任務調度的完整解決方案。</p>
+                </div>
+            </section>
+
+            <!-- KUKA 車隊系統 -->
+            <section id="kuka-fleet" class="section theme-green">
+                <h2>🚛 KUKA AGV 車隊系統 - 房間外智能搬運核心</h2>
+                
+                <div class="alert alert-success">
+                    <h3>🎯 KUKA車隊核心職責</h3>
+                    <p><strong>2台 KUKA robot 400i</strong> 負責房間外的長距離搬運、Rack 180度轉向、以及七大業務流程的智能調度</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🌐</div>
+                            <div class="card-title">KUKA Fleet Manager 整合</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>API 整合規格</strong></p>
+                            <ul>
+                                <li><strong>主機:</strong> 192.168.10.3:10870</li>
+                                <li><strong>版本:</strong> 2.13.0</li>
+                                <li><strong>認證:</strong> Token-based (2小時有效)</li>
+                                <li><strong>任務類型:</strong> MOVE、RACK_MOVE、WORKFLOW</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🗺️</div>
+                            <div class="card-title">導航系統</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>地圖和定位</strong></p>
+                            <ul>
+                                <li><strong>地圖系統:</strong> KUKA自有地圖系統</li>
+                                <li><strong>座標轉換:</strong> 0.0125m → 1px</li>
+                                <li><strong>地圖匯入:</strong> 支援 KUKA Fleet JSON格式</li>
+                                <li><strong>即時監控:</strong> AGVCUI Leaflet.js 視覺化</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🚦</div>
+                            <div class="card-title">交通管制與門控系統</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>智能控制流程</strong></p>
+                            <ul>
+                                <li><strong>步驟 1:</strong> 申請交管區使用權</li>
+                                <li><strong>步驟 2:</strong> 門控制系統自動開啟</li>
+                                <li><strong>步驟 3:</strong> 執行搬運任務</li>
+                                <li><strong>步驟 4:</strong> 釋放交管區使用權</li>
+                                <li><strong>步驟 5:</strong> 門狀態確認</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- WCS 統一決策引擎 -->
+            <section id="wcs-system" class="section theme-purple">
+                <h2>🏗️ WCS 統一決策引擎 - 房間外 Rack 流程系統</h2>
+                
+                <div class="alert alert-info">
+                    <h3>⚠️ 重要概念修正</h3>
+                    <p>這不是簡單的「室內AGV搬運」，而是完整的<strong>企業級智能倉儲管理系統</strong>，包含七大業務流程的統一調度引擎</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🗂️</div>
+                            <div class="card-title">系統區域配置架構</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>📍 主要區域配置</h4>
+                            <ul>
+                                <li><strong>系統準備區:</strong> Location 11-18</li>
+                                <li><strong>系統空架區:</strong> Location 31-34</li>
+                                <li><strong>人工收料區:</strong> Location 51-55</li>
+                                <li><strong>空架回收區:</strong> Location 51-54</li>
+                                <li><strong>NG處理區:</strong> Location 71-72</li>
+                                <li><strong>人工回收區:</strong> Location 91-92</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🎯</div>
+                            <div class="card-title">WCS 七級優先度調度系統</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>🚨 優先度層級</h4>
+                            <ul>
+                                <li><strong>Priority 100:</strong> AGV旋轉檢查</li>
+                                <li><strong>Priority 90:</strong> NG料架回收</li>
+                                <li><strong>Priority 80:</strong> 滿料架到人工收料區</li>
+                                <li><strong>Priority 80:</strong> 人工收料區搬運</li>
+                                <li><strong>Priority 60:</strong> 系統準備區到房間</li>
+                                <li><strong>Priority 40:</strong> 空料架搬運</li>
+                                <li><strong>Priority 40:</strong> 人工回收空料架</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🧠</div>
+                            <div class="card-title">AI 統一決策引擎特點</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>⚡ 核心優勢</h4>
+                            <ul>
+                                <li><strong>智能調度:</strong> Python原生業務規則引擎</li>
+                                <li><strong>批次最佳化:</strong> 減少70%資料庫查詢次數</li>
+                                <li><strong>衝突解決:</strong> 位置衝突自動檢測</li>
+                                <li><strong>動態擴展:</strong> 支援房間1-10靈活配置</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AGVCUI 車隊管理系統 -->
+            <section id="agvcui" class="section theme-blue">
+                <h2>🖥️ AGVCUI 車隊管理系統 - 企業級監控平台</h2>
+                
+                <div class="alert alert-info">
+                    <h3>🎛️ Port 8001 企業級管理界面</h3>
+                    <p>基於 <strong>FastAPI + Socket.IO + Jinja2</strong> 的完整MVC架構，提供即時車隊監控、任務管理、地圖視覺化等核心管理功能</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🔧</div>
+                            <div class="card-title">完整後端架構</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>🏗️ 核心組件</h4>
+                            <ul>
+                                <li><strong>AgvcUIServer:</strong> FastAPI伺服器</li>
+                                <li><strong>AgvcUISocket:</strong> WebSocket即時通訊</li>
+                                <li><strong>Database:</strong> 完整CRUD操作層</li>
+                                <li><strong>Auth:</strong> JWT 認證和會話管理</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🎨</div>
+                            <div class="card-title">前端架構</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>🌐 技術組件</h4>
+                            <ul>
+                                <li><strong>靜態資源:</strong> CSS、JavaScript、圖像</li>
+                                <li><strong>模板系統:</strong> Jinja2 HTML模板</li>
+                                <li><strong>地圖系統:</strong> Leaflet.js 雙地圖顯示</li>
+                                <li><strong>即時通訊:</strong> Socket.IO 資料推送</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🗺️</div>
+                            <div class="card-title">即時地圖監控系統</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>📊 地圖功能</h4>
+                            <ul>
+                                <li><strong>資料源:</strong> PostgreSQL 地圖節點</li>
+                                <li><strong>API 查詢:</strong> Web API + Socket.IO 推送</li>
+                                <li><strong>視覺化:</strong> Leaflet.js 渲染</li>
+                                <li><strong>雙地圖:</strong> CT AGV (藍色) + KUKA AGV (綠色)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">核心管理功能</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>🎛️ 主要功能</h4>
+                            <ul>
+                                <li><strong>儀表板:</strong> 系統總覽、AGV狀態統計</li>
+                                <li><strong>地圖視圖:</strong> 即時地圖、AGV軌跡</li>
+                                <li><strong>任務管理:</strong> 任務創建、編輯、調度</li>
+                                <li><strong>AGV 監控:</strong> 即時位置、狀態、電池</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- OPUI 操作員界面 -->
+            <section id="opui" class="section">
+                <h2>📱 OPUI 操作員界面 - 智能任務管理終端</h2>
+                
+                <div class="alert alert-warning">
+                    <h3>💡 重要理解修正</h3>
+                    <p>OPUI 不只是「叫車派車」的簡單界面，而是包含<strong>完整業務流程管理</strong>、<strong>12種任務狀態追蹤</strong>、<strong>設備認證</strong>的智能管理終端</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🎯</div>
+                            <div class="card-title">核心操作功能</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>叫車:</strong> KUKA AGV送空rack</li>
+                                <li><strong>派車:</strong> WCS調度搬運</li>
+                                <li><strong>確認送達:</strong> 關鍵流程控制</li>
+                                <li><strong>業務設定:</strong> 產品、數量、房間配置</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🔐</div>
+                            <div class="card-title">設備認證系統</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>device_id:</strong> Android平板識別</li>
+                                <li><strong>license表:</strong> 白名單驗證</li>
+                                <li><strong>URL認證:</strong> 自動設備綁定</li>
+                                <li><strong>4台平板:</strong> 全螢幕 webview 配置</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">任務狀態管理</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>🔄 12種狀態系統</h4>
+                            <ul>
+                                <li><strong>正常流程:</strong> 0(請求中) → 1(待處理) → 2(待執行) → 3(執行中) → 4(已完成)</li>
+                                <li><strong>異常處理:</strong> 5(取消中) → 51-54(各階段取消) → 6(錯誤)</li>
+                                <li><strong>即時追蹤:</strong> Socket.IO同步</li>
+                                <li><strong>異常處理:</strong> 取消和重試機制</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🔧</div>
+                            <div class="card-title">Modular 前端架構</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>模組化設計:</strong> index.js, homePage.js, settingPage.js</li>
+                                <li><strong>統一狀態管理:</strong> userStore, dataStore, tasksStore</li>
+                                <li><strong>後端分離:</strong> FastAPI + Socket.IO + 任務監控</li>
+                                <li><strong>設備整合:</strong> Android 平板優化</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cargo AGV 智能品質管制 -->
+            <section id="cargo-agv" class="section theme-green">
+                <h2>🔍 Cargo AGV 智能品質管制 - 3D視覺+OCR識別系統</h2>
+                
+                <div class="alert alert-success">
+                    <h3>🎯 重要概念修正</h3>
+                    <p>Cargo AGV 不只是「搬運車」，而是具備<strong>3D視覺定位</strong>、<strong>OCR識別</strong>、<strong>製程適配性檢查</strong>的智能品質管制系統</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">📸</div>
+                            <div class="card-title">3D視覺定位</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>整個Rack的3D掃描</strong></li>
+                                <li><strong>識別所有Carrier位置座標</strong></li>
+                                <li><strong>建立抓取路徑規劃</strong></li>
+                                <li><strong>更新定位基準點到機械臂座標系</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🔍</div>
+                            <div class="card-title">OCR識別</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>讀取產品編號/條碼</strong></li>
+                                <li><strong>識別產品類型</strong></li>
+                                <li><strong>取得製程需求資訊</strong></li>
+                                <li><strong>查詢product.process_settings_id</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">✅</div>
+                            <div class="card-title">製程匹配檢查</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>比對房間製程能力</strong></li>
+                                <li><strong>判斷製程適配性</strong></li>
+                                <li><strong>泡藥1次 vs 2次 能力匹配</strong></li>
+                                <li><strong>防止製程能力不匹配的產品進入</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🚨</div>
+                            <div class="card-title">品質管制</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>製程匹配→正常處理</strong></li>
+                                <li><strong>不匹配→標記NG</strong></li>
+                                <li><strong>異常處理不影響其他產品</strong></li>
+                                <li><strong>完整的品質追溯記錄</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🚛 KUKA AGV 送達</div>
+                            <div class="timeline-description">
+                                KUKA AGV 將滿載 Rack 送到房間門口 (A面朝向)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔍 Cargo AGV 處理 A 面</div>
+                            <div class="timeline-description">
+                                3D 掃描整個 A 面 → OCR 識別每個 Carrier → 製程匹配檢查 → 符合製程送入口傳送箱，不符合標記 NG
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔄 WCS 產生轉向任務</div>
+                            <div class="timeline-description">
+                                A 面處理完成後，WCS 系統產生 Rack 180 度轉向任務
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔄 KUKA AGV 執行轉向</div>
+                            <div class="timeline-description">
+                                KUKA AGV 執行轉向任務，將 Rack 轉 180 度 (B面朝向)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔍 Cargo AGV 處理 B 面</div>
+                            <div class="timeline-description">
+                                重複 A 面的完整流程，處理 B 面所有 Carrier
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🎯 最終狀態判定</div>
+                            <div class="timeline-description">
+                                正常 Rack 送到下一製程或回收循環，NG Rack 送到 NG 處理區 (71-72)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 技術架構總結 -->
+            <section id="architecture" class="section theme-purple">
+                <h2>⚙️ 企業級技術架構總結</h2>
+                
+                <div class="alert alert-info">
+                    <h3>🎯 系統核心價值</h3>
+                    <p>這是一套完整的<strong>企業級智能製造執行系統(MES)</strong>，不是簡單的AGV搬運，而是集成了智能倉儲、品質管制、任務調度的完整解決方案</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🏭</div>
+                            <div class="card-title">射出機作業區</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li>人工製品上架</li>
+                                <li>OPUI任務管理終端</li>
+                                <li>設備認證系統</li>
+                                <li>產品類型和數量管理</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🚛</div>
+                            <div class="card-title">KUKA車隊系統</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li>房間外長距離智能搬運</li>
+                                <li>七大業務流程調度</li>
+                                <li>交通與門控管理</li>
+                                <li>Rack 180度轉向操作</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🏭</div>
+                            <div class="card-title">房間內製程</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li>CT AGV系統精密操作</li>
+                                <li>Cargo品檢+Loader/Unloader製程</li>
+                                <li>3D視覺+OCR智能識別</li>
+                                <li>清洗、泡藥、預烘、烘烤製程</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🧠</div>
+                            <div class="card-title">WCS統一決策</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li>AI驅動的七級優先度引擎</li>
+                                <li>智能任務調度</li>
+                                <li>衝突解決與資源最佳化</li>
+                                <li>多房間動態擴展支援</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🖥️</div>
+                            <div class="card-title">AGVCUI管理台</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li>企業級車隊監控</li>
+                                <li>即時地圖系統</li>
+                                <li>完整管理功能</li>
+                                <li>JWT認證和審計日誌</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-item theme-purple">
+                        <div class="feature-icon">🔄</div>
+                        <div class="feature-title">完整生命週期</div>
+                        <div class="feature-description">從射出機到最終收料，包含異常處理和回收，閉環式資源管理</div>
+                    </div>
+
+                    <div class="feature-item theme-orange">
+                        <div class="feature-icon">🧠</div>
+                        <div class="feature-title">智能決策</div>
+                        <div class="feature-description">AI驅動的調度引擎，七級優先度系統，自動衝突解決</div>
+                    </div>
+
+                    <div class="feature-item theme-green">
+                        <div class="feature-icon">👥</div>
+                        <div class="feature-title">人機協作</div>
+                        <div class="feature-description">關鍵點人工介入，自動化主導流程，品質管制完整性</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">📈</div>
+                        <div class="feature-title">企業級擴展</div>
+                        <div class="feature-description">支援多房間配置，車隊動態擴展，模組化架構設計</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 統一技術棧 -->
+            <section class="section">
+                <h2>💻 統一技術棧</h2>
+                
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🤖</div>
+                            <div class="card-title">ROS 2 生態系統</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>ROS 2 Jazzy:</strong> 最新 LTS 版本</li>
+                                <li><strong>Zenoh RMW:</strong> 高效能中間件</li>
+                                <li><strong>Python 3.12:</strong> 主要開發語言</li>
+                                <li><strong>Colcon:</strong> 建置系統</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🐳</div>
+                            <div class="card-title">容器化技術</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>Docker Compose V2:</strong> 容器編排</li>
+                                <li><strong>Ubuntu 24.04:</strong> 基礎映像</li>
+                                <li><strong>Multi-stage Build:</strong> 映像優化</li>
+                                <li><strong>Volume Mounting:</strong> 開發同步</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🌐</div>
+                            <div class="card-title">Web 技術棧</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>FastAPI:</strong> 高效能 Web 框架</li>
+                                <li><strong>Socket.IO:</strong> 即時通訊</li>
+                                <li><strong>SQLAlchemy:</strong> ORM 框架</li>
+                                <li><strong>PostgreSQL:</strong> 主要資料庫</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🏭</div>
+                            <div class="card-title">工業通訊</div>
+                        </div>
+                        <div class="card-content">
+                            <ul>
+                                <li><strong>Keyence PLC:</strong> 設備控制</li>
+                                <li><strong>KUKA Fleet API:</strong> 外部系統整合</li>
+                                <li><strong>Zenoh Router:</strong> 跨環境通訊</li>
+                                <li><strong>3D視覺+OCR:</strong> 智能識別</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 RosAGV Project - Intelligent Manufacturing Execution System</p>
+            <p>Powered by ROS 2 Jazzy + Zenoh RMW + Docker Compose V2</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/rosagv-common.js"></script>
+    <script>
+        // 頁面特定初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 統計數據動畫
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(number => {
+                const finalValue = number.textContent;
+                number.textContent = '0';
+                let current = 0;
+                const increment = finalValue.includes('+') ? 1 : parseInt(finalValue) / 20;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= parseInt(finalValue)) {
+                        number.textContent = finalValue;
+                        clearInterval(timer);
+                    } else {
+                        number.textContent = Math.floor(current) + (finalValue.includes('+') ? '+' : '');
+                    }
+                }, 50);
+            });
+
+            // 平滑滾動導航
+            document.querySelectorAll('.nav-links a').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // 卡片懸停效果增強
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                    this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

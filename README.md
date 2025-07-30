@@ -211,23 +211,67 @@ r network-check
 
 ### 🎯 核心文檔
 
+#### 系統架構
 - **系統概覽**: [@docs-ai/context/system/rosagv-overview.md](docs-ai/context/system/rosagv-overview.md)
 - **雙環境架構**: [@docs-ai/context/system/dual-environment.md](docs-ai/context/system/dual-environment.md)
 - **技術棧詳解**: [@docs-ai/context/system/technology-stack.md](docs-ai/context/system/technology-stack.md)
+- **語言配置**: [@docs-ai/context/system/language-configuration.md](docs-ai/context/system/language-configuration.md)
+- **系統現狀**: [@docs-ai/knowledge/system/current-system-status.md](docs-ai/knowledge/system/current-system-status.md)
+
+#### 工作空間結構
+- **AGV 工作空間**: [@docs-ai/context/workspaces/agv-workspaces.md](docs-ai/context/workspaces/agv-workspaces.md)
+- **AGVC 工作空間**: [@docs-ai/context/workspaces/agvc-workspaces.md](docs-ai/context/workspaces/agvc-workspaces.md)
 
 ### 🔧 開發文檔
 
+#### 核心開發指導
+- **核心開發原則**: [@docs-ai/operations/development/core-principles.md](docs-ai/operations/development/core-principles.md)
 - **ROS 2 開發**: [@docs-ai/operations/development/ros2-development.md](docs-ai/operations/development/ros2-development.md)
 - **Docker 開發**: [@docs-ai/operations/development/docker-development.md](docs-ai/operations/development/docker-development.md)
+
+#### 技術專項開發
 - **Web 開發**: [@docs-ai/operations/development/web-development.md](docs-ai/operations/development/web-development.md)
 - **資料庫操作**: [@docs-ai/operations/development/database-operations.md](docs-ai/operations/development/database-operations.md)
+- **PLC 通訊開發**: [@docs-ai/operations/development/plc-communication.md](docs-ai/operations/development/plc-communication.md)
+
+#### 測試和建置
+- **測試程序**: [@docs-ai/operations/development/testing-procedures.md](docs-ai/operations/development/testing-procedures.md)
+- **測試標準**: [@docs-ai/operations/development/testing-standards.md](docs-ai/operations/development/testing-standards.md)
+- **建置和測試**: [@docs-ai/operations/development/build-and-test.md](docs-ai/operations/development/build-and-test.md)
+
+### 🛠️ 運維和維護
+
+#### 系統診斷和維護
+- **系統診斷**: [@docs-ai/operations/maintenance/system-diagnostics.md](docs-ai/operations/maintenance/system-diagnostics.md)
+- **故障排除**: [@docs-ai/operations/maintenance/troubleshooting.md](docs-ai/operations/maintenance/troubleshooting.md)
+- **日誌分析**: [@docs-ai/operations/maintenance/log-analysis.md](docs-ai/operations/maintenance/log-analysis.md)
+- **維護工具指南**: [@docs-ai/operations/maintenance/unified-tools.md](docs-ai/operations/maintenance/unified-tools.md)
+
+#### 開發和工具系統
+- **統一工具系統**: [@docs-ai/operations/tools/unified-tools.md](docs-ai/operations/tools/unified-tools.md)
+
+#### 部署和容器管理
+- **容器管理**: [@docs-ai/operations/deployment/container-management.md](docs-ai/operations/deployment/container-management.md)
 
 ### 🧠 領域知識
 
-- **AGV 車型**: [@docs-ai/knowledge/agv-domain/vehicle-types.md](docs-ai/knowledge/agv-domain/vehicle-types.md)
+#### AGV 車型和系統
+- **AGV 車型**: [@docs-ai/knowledge/agv-domain/vehicle-types.md](docs-ai/knowledge/agv-domain/vehicle-types.md)  
+- **WCS 系統設計**: [@docs-ai/knowledge/agv-domain/wcs-system-design.md](docs-ai/knowledge/agv-domain/wcs-system-design.md)
+- **WCS 資料庫設計**: [@docs-ai/knowledge/agv-domain/wcs-database-design.md](docs-ai/knowledge/agv-domain/wcs-database-design.md)
+- **WCS WorkID 系統**: [@docs-ai/knowledge/agv-domain/wcs-workid-system.md](docs-ai/knowledge/agv-domain/wcs-workid-system.md)
+- **Robot PGNO 規則**: [@docs-ai/knowledge/agv-domain/robot-pgno-rules.md](docs-ai/knowledge/agv-domain/robot-pgno-rules.md)
+
+#### 業務領域知識
+- **眼鏡生產流程**: [@docs-ai/knowledge/business/eyewear-production-process.md](docs-ai/knowledge/business/eyewear-production-process.md)
+
+#### 通訊協定
 - **PLC 通訊**: [@docs-ai/knowledge/protocols/keyence-plc-protocol.md](docs-ai/knowledge/protocols/keyence-plc-protocol.md)
 - **Zenoh RMW**: [@docs-ai/knowledge/protocols/zenoh-rmw.md](docs-ai/knowledge/protocols/zenoh-rmw.md)
-- **KUKA Fleet**: [@docs-ai/knowledge/protocols/kuka-fleet-api.md](docs-ai/knowledge/protocols/kuka-fleet-api.md)
+- **KUKA Fleet API**: [@docs-ai/knowledge/protocols/kuka-fleet-api.md](docs-ai/knowledge/protocols/kuka-fleet-api.md)
+- **KUKA Fleet 回調**: [@docs-ai/knowledge/protocols/kuka-fleet-callback.md](docs-ai/knowledge/protocols/kuka-fleet-callback.md)
+- **ROS 2 介面**: [@docs-ai/knowledge/protocols/ros2-interfaces.md](docs-ai/knowledge/protocols/ros2-interfaces.md)
+- **PLC-ROS2 介面**: [@docs-ai/knowledge/protocols/plc-ros2-interfaces.md](docs-ai/knowledge/protocols/plc-ros2-interfaces.md)
 
 ### 📋 模組索引
 

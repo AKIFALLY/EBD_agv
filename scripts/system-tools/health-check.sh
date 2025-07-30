@@ -247,7 +247,7 @@ check_configuration_files() {
     # Zenoh 配置
     if [ -f "$ZENOH_CONFIG" ]; then
         # JSON5 格式較寬鬆，簡單檢查基本結構
-        if grep -q "mode.*:.*\"router\"" "$ZENOH_CONFIG" 2>/dev/null; then
+        if json5 "$ZENOH_CONFIG" | jq -r '.mode' 2>/dev/null | grep -q "router"; then
             record_check "PASS" "Zenoh 配置檔案存在"
         else
             record_check "WARN" "Zenoh 配置可能不完整"

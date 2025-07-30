@@ -72,7 +72,7 @@ agvc_source            # 載入 AGVC 工作空間
 
 # 檢查載入狀態
 echo $ROS_WORKSPACE    # 顯示當前載入的工作空間
-printenv | grep ROS   # 檢查 ROS 2 環境變數
+printenv | rg ROS   # 檢查 ROS 2 環境變數
 ```
 
 ### 基本開發工具
@@ -219,7 +219,7 @@ telnet localhost 7447  # 測試 Zenoh Router
 ls -la /app/workspace/src/
 
 # 檢查掛載點
-mount | grep /app
+mount | rg /app
 
 # 同步檔案變更 (自動同步)
 # 宿主機的變更會自動反映到容器內
@@ -270,9 +270,9 @@ df -h
 ros2 topic hz /topic_name
 ros2 topic bw /topic_name
 
-# 網路效能
+# 網路效能  
 iftop
-netstat -i
+netstat -i                  # 網路介面統計 (ss 無法替代此功能)
 ```
 
 ## 🛠️ 開發最佳實踐
@@ -331,7 +331,7 @@ colcon build
 # 問題：跨容器通訊失敗
 # 解決：檢查 Zenoh Router
 check_zenoh_status
-ps aux | grep zenoh
+ps aux | rg zenoh
 
 # 問題：主題無法發現
 # 解決：重啟 ROS 2 daemon

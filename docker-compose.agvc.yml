@@ -7,6 +7,8 @@ services:
     volumes:
   #    - ~/agvc/nginx:/etc/nginx/conf.d:ro
       - ~/RosAGV/nginx:/etc/nginx/conf.d:ro
+      # 新增：直接掛載說明文件目錄
+      - ~/RosAGV/design/business-process-docs:/usr/share/nginx/html/docs:ro
     restart: always
     networks:
       bridge_network:

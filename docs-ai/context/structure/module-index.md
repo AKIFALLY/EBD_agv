@@ -107,11 +107,11 @@
 ```bash
 # ✅ 好的搜尋方式
 find . -name "*init*" -o -name "*database*" -o -name "scripts"
-grep -r "CREATE USER\|CREATE DATABASE" . --include="*.sh" --include="*.sql"
-find . -type f -name "*.sh" | xargs grep -l "關鍵字"
+rg "CREATE USER|CREATE DATABASE" --type sh --type sql
+find . -type f -name "*.sh" | xargs rg -l "關鍵字"
 
 # ❌ 不完整的搜尋方式
-grep "pattern" **/*.py  # 只搜尋 Python 檔案
+rg "pattern" --type py  # 只搜尋 Python 檔案
 ```
 
 #### 工具發現原則

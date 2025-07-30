@@ -337,12 +337,12 @@ analyze_build_error() {
         
         echo -e "${YELLOW}常見錯誤檢查:${NC}"
         for pattern in "${error_patterns[@]}"; do
-            local error_count=$(grep -r "$pattern" "$actual_log_dir" 2>/dev/null | wc -l)
+            local error_count=$(rg -r "$pattern" "$actual_log_dir" 2>/dev/null | wc -l)
             if [ "$error_count" -gt 0 ]; then
                 echo -e "  ${RED}$pattern: $error_count 次${NC}"
                 
                 # 顯示第一個錯誤的上下文
-                local first_error=$(grep -r "$pattern" "$actual_log_dir" 2>/dev/null | head -1)
+                local first_error=$(rg -r "$pattern" "$actual_log_dir" 2>/dev/null | head -1)
                 if [ -n "$first_error" ]; then
                     echo -e "    ${BLUE}範例: $first_error${NC}"
                 fi

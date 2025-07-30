@@ -172,10 +172,10 @@ get_port_info() {
     
     # 檢查端口是否在監聽
     local listening_info=""
-    if command -v netstat &> /dev/null; then
-        listening_info=$(netstat -tlnp 2>/dev/null | grep ":$port " || true)
-    elif command -v ss &> /dev/null; then
+    if command -v ss &> /dev/null; then
         listening_info=$(ss -tlnp | grep ":$port " || true)
+    elif command -v netstat &> /dev/null; then
+        listening_info=$(netstat -tlnp 2>/dev/null | grep ":$port " || true)
     fi
     
     if [ -n "$listening_info" ]; then
@@ -190,10 +190,10 @@ get_process_using_port() {
     
     if command -v lsof &> /dev/null; then
         lsof -ti:$port 2>/dev/null | head -1
-    elif command -v netstat &> /dev/null; then
-        netstat -tlnp 2>/dev/null | grep ":$port " | awk '{print $7}' | cut -d/ -f1
     elif command -v ss &> /dev/null; then
         ss -tlnp | grep ":$port " | grep -o 'pid=[0-9]*' | cut -d= -f2 | head -1
+    elif command -v netstat &> /dev/null; then
+        netstat -tlnp 2>/dev/null | grep ":$port " | awk '{print $7}' | cut -d/ -f1
     fi
 }
 
@@ -508,12 +508,12 @@ check_listening_ports() {
     echo ""
     
     local listening_ports=""
-    if command -v netstat &> /dev/null; then
-        listening_ports=$(netstat -tlnp 2>/dev/null)
-    elif command -v ss &> /dev/null; then
+    if command -v ss &> /dev/null; then
         listening_ports=$(ss -tlnp)
+    elif command -v netstat &> /dev/null; then
+        listening_ports=$(netstat -tlnp 2>/dev/null)
     else
-        log_error "缺少 netstat 或 ss 工具，無法檢查監聽端口"
+        log_error "缺少 ss 或 netstat 工具，無法檢查監聽端口"
         return 1
     fi
     

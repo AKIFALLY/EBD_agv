@@ -1,0 +1,34 @@
+
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "WebFetch",
+      "Bash(dotnet:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(git tag:*)",
+      "Bash(find:*)",
+      "Bash(sed:*)",
+      "Bash(rg:*)",
+      "Bash(npx husky:*)",
+      "Bash(npm init:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npm run quality:fix:*)",
+      "Bash(gh repo create:*)",
+      "Bash(gh repo edit:*)",
+      "Bash(gh pr:*)"
+    ],
+    "deny": []
+  }
+}

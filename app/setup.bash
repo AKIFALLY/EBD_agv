@@ -795,7 +795,7 @@ check_zenoh_status() {
     fi
 
     # 檢查端口
-    if netstat -tuln 2>/dev/null | grep ":7447 " > /dev/null; then
+    if ss -tuln 2>/dev/null | rg ":7447 " > /dev/null; then
         echo "✅ Zenoh Router 端口 7447 已開啟"
     else
         echo "⚠️ Zenoh Router 端口 7447 未開啟"

@@ -98,34 +98,35 @@ show_zenoh_overview() {
     echo "🕒 修改時間: $(stat -c %y "$ZENOH_CONFIG_FILE" 2>/dev/null || echo "無法獲取")"
     echo ""
     
-    # 使用 Python 解析 JSON5 配置並顯示關鍵資訊
+    # 使用 json5 工具解析配置並顯示關鍵資訊
+    if ! command -v json5 &> /dev/null; then
+        log_error "json5 工具未安裝，無法解析 JSON5 配置檔案"
+        log_info "請安裝: npm install -g json5"
+        return 1
+    fi
+    
+    # 驗證 JSON5 語法
+    if ! json5 --validate "$ZENOH_CONFIG_FILE" >/dev/null 2>&1; then
+        log_error "Zenoh 配置檔案語法錯誤"
+        log_info "顯示原始檔案前 20 行:"
+        head -20 "$ZENOH_CONFIG_FILE" | cat -n
+        return 1
+    fi
+    
+    # 解析 JSON5 並顯示配置資訊
     python3 -c "
 import json
-import re
-
-def parse_json5_simple(content):
-    \"\"\"簡單的 JSON5 解析，移除註釋並處理基本 JSON5 語法\"\"\"
-    # 移除三斜線註釋 /// 
-    content = re.sub(r'///.*', '', content)
-    # 移除單行註釋 // 
-    content = re.sub(r'//.*', '', content)
-    # 移除多行註釋 /* */
-    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-    # 為未加引號的屬性名稱添加引號 (JSON5 -> JSON)
-    content = re.sub(r'(\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1\"\2\":', content)
-    # 移除尾隨逗號
-    content = re.sub(r',(\s*[}\]])', r'\1', content)
-    
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError as e:
-        return None
+import sys
 
 try:
-    with open('$ZENOH_CONFIG_FILE', 'r', encoding='utf-8') as f:
-        content = f.read()
+    # 使用 json5 工具轉換為標準 JSON
+    import subprocess
+    result = subprocess.run(['json5', '$ZENOH_CONFIG_FILE'], capture_output=True, text=True)
+    if result.returncode != 0:
+        print('❌ 無法解析 Zenoh 配置檔案')
+        sys.exit(1)
     
-    config = parse_json5_simple(content)
+    config = json.loads(result.stdout)
     
     if config is None:
         print('❌ 無法解析 Zenoh 配置檔案')
@@ -294,29 +295,18 @@ validate_zenoh_config() {
     echo "======================"
     echo ""
     
-    # 使用 Python 驗證 JSON5 格式
+    # 使用 json5 工具驗證格式
+    if ! command -v json5 &> /dev/null; then
+        log_error "json5 工具未安裝，無法驗證 JSON5 配置檔案"
+        log_info "請安裝: npm install -g json5"
+        return 1
+    fi
+    
     python3 -c "
 import json
-import re
 import socket
-
-def parse_json5_simple(content):
-    \"\"\"簡單的 JSON5 解析\"\"\"
-    # 移除三斜線註釋 ///
-    content = re.sub(r'///.*', '', content)
-    # 移除單行註釋 //
-    content = re.sub(r'//.*', '', content)
-    # 移除多行註釋 /* */
-    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-    # 為未加引號的屬性名稱添加引號 (JSON5 -> JSON)
-    content = re.sub(r'(\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1\"\2\":', content)
-    # 移除尾隨逗號
-    content = re.sub(r',(\s*[}\]])', r'\1', content)
-    
-    try:
-        return json.loads(content), None
-    except json.JSONDecodeError as e:
-        return None, str(e)
+import subprocess
+import sys
 
 def validate_endpoint(endpoint):
     \"\"\"驗證端點格式\"\"\"
@@ -348,16 +338,21 @@ def validate_endpoint(endpoint):
         return False, str(e)
 
 try:
-    with open('$ZENOH_CONFIG_FILE', 'r', encoding='utf-8') as f:
-        content = f.read()
-    
     print('🔧 解析 JSON5 格式...')
-    config, error = parse_json5_simple(content)
     
-    if config is None:
-        print(f'❌ JSON5 格式錯誤: {error}')
-        exit(1)
+    # 使用 json5 工具驗證和解析
+    result = subprocess.run(['json5', '--validate', '$ZENOH_CONFIG_FILE'], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f'❌ JSON5 格式錯誤: {result.stderr}')
+        sys.exit(1)
     
+    # 解析為 JSON
+    result = subprocess.run(['json5', '$ZENOH_CONFIG_FILE'], capture_output=True, text=True)
+    if result.returncode != 0:
+        print('❌ 無法解析 JSON5 檔案')
+        sys.exit(1)
+    
+    config = json.loads(result.stdout)
     print('✅ JSON5 格式檢查通過')
     
     # 驗證必要欄位
@@ -475,9 +470,9 @@ check_zenoh_status() {
     echo "================="
     
     # 檢查是否有程序在監聽 7447 端口
-    if netstat -tuln 2>/dev/null | grep ":7447 " > /dev/null; then
+    if ss -tuln 2>/dev/null | grep ":7447 " > /dev/null; then
         echo "✅ 端口 7447 已開放 (有服務在監聽)"
-        netstat -tuln | grep ":7447 " | sed 's/^/  /'
+        ss -tuln | grep ":7447 " | sed 's/^/  /'
     else
         echo "❌ 端口 7447 未開放"
     fi
@@ -562,7 +557,7 @@ show_restart_guide() {
     echo "如果遇到問題，可以檢查："
     echo "- 配置檔案: $0 validate"
     echo "- 網路連接: ping <目標IP>"
-    echo "- 端口佔用: netstat -tuln | grep 7447"
+    echo "- 端口佔用: ss -tuln | grep 7447"
     echo "- 服務日誌: tail -f /tmp/zenoh_router.log (容器內)"
     echo "- 強制重啟容器:"
     echo "  docker compose -f docker-compose.yml restart rosagv"

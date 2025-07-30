@@ -111,6 +111,67 @@ scripts/config-tools/edit-agvc-config.sh [config_type]
 
 **配置檔案**: `/app/config/hardware_mapping.yaml`
 
+### 結構化資料處理工具
+**⚠️ 現代工具：jq/yq 已安裝在容器內，提供專業的結構化資料處理**
+
+#### JSON5 配置處理 (json5 + jq)
+**⚠️ 注意：RosAGV 使用 JSON5 格式 (routerconfig.json5)，需要先轉換**
+
+```bash
+# Zenoh 配置分析 (JSON5 格式)
+json5 /app/routerconfig.json5 | jq '.mode'                    # 查看運行模式
+json5 /app/routerconfig.json5 | jq '.listen.endpoints[]'      # 查看監聽端點
+json5 /app/routerconfig.json5 | jq '.transport.unicast.lowlatency'  # 查看效能配置
+json5 /app/routerconfig.json5 | jq '.connect.endpoints[]'     # 查看連接端點
+
+# JSON5 格式驗證和處理
+json5 --validate /app/routerconfig.json5                      # 驗證 JSON5 語法
+json5 /app/routerconfig.json5 | jq . | head -20              # 預覽配置結構
+json5 /app/routerconfig.json5 | jq -C . | less               # 彩色分頁顯示
+
+# 配置查詢和分析
+json5 /app/routerconfig.json5 | jq 'keys'                     # 查看所有頂層配置項
+json5 /app/routerconfig.json5 | jq '.plugins | keys'          # 查看插件列表
+```
+
+#### YAML 配置處理 (yq)
+```bash
+# Docker Compose 配置分析
+yq '.services.agvc_server.ports' docker-compose.agvc.yml     # 查看服務端口
+yq '.networks' docker-compose.agvc.yml                       # 查看網路配置
+yq '.services.*.image' docker-compose.agvc.yml               # 查看所有映像
+
+# 硬體映射配置分析
+yq '.devices[] | select(.type == "agv")' /app/config/hardware_mapping.yaml
+yq '.devices[].mac_address' /app/config/hardware_mapping.yaml
+
+# 配置驗證和格式化
+yq . docker-compose.agvc.yml                             # 驗證 YAML 格式
+```
+
+#### 配置管理最佳實踐
+```bash
+# 備份配置檔案
+cp /app/routerconfig.json5 /app/routerconfig.json5.backup
+
+# JSON5 配置修改 (需要手動編輯或轉換)
+# ⚠️ 注意：JSON5 → JSON → 修改 → 手動還原為 JSON5
+json5 /app/routerconfig.json5 | jq '.listen.endpoints[0] = "tcp/0.0.0.0:7448"' > /tmp/config.json
+# 然後需要手動將 JSON 轉回 JSON5 格式 (加入註解等)
+
+# 推薦：直接編輯 JSON5 檔案 (保留註解和格式)
+vim /app/routerconfig.json5
+# 或使用配置工具
+scripts/config-tools/zenoh-config.sh edit
+
+# YAML 配置安全修改
+yq '.services.agvc_server.ports[0] = "8001:8000"' docker-compose.agvc.yml > /tmp/compose.yml && mv /tmp/compose.yml docker-compose.agvc.yml
+
+# 配置驗證流程
+json5 --validate /app/routerconfig.json5                      # 驗證語法
+json5 /app/routerconfig.json5 | jq empty                      # 驗證結構
+```
+
 ### 連線測試最佳實踐
 ```bash
 # 測試單一端點
@@ -184,7 +245,8 @@ scripts/docker-tools/quick-exec.sh [command]       # 快速容器指令執行
 - `health` - 健康檢查
 
 ## 🔗 交叉引用
+- **維護工具指南**: @docs-ai/operations/maintenance/unified-tools.md - 日常運維和故障排除的實用指南
 - 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
 - 容器管理: @docs-ai/operations/deployment/container-management.md
-- 網路診斷: @docs-ai/operations/maintenance/network-diagnostics.md
-- 開發工具: @docs-ai/operations/development/development-tools.md
+- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
+- 開發環境: @docs-ai/operations/development/docker-development.md

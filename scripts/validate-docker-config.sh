@@ -107,10 +107,10 @@ echo "4. 檢查端口可用性..."
 ports_to_check=(80 2200 5432 5050 7447 8000 8001 8002 5173)
 
 for port in "${ports_to_check[@]}"; do
-    if netstat -tulpn 2>/dev/null | grep ":$port " > /dev/null; then
+    if ss -tulpn 2>/dev/null | grep ":$port " > /dev/null; then
         check_warning "端口 $port 已被使用"
         # 顯示佔用端口的程序
-        netstat -tulpn 2>/dev/null | grep ":$port " | head -1
+        ss -tulpn 2>/dev/null | grep ":$port " | head -1
     else
         check_success "端口 $port 可用"
     fi

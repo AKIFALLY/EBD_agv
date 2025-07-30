@@ -37,7 +37,7 @@ echo ""
 # 1. 檢查 Docker 容器狀態
 echo -e "${BLUE}1. Docker 容器狀態${NC}"
 echo "PostgreSQL 容器:"
-if docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | grep -q "Up"; then
+if docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | rg -q "Up"; then
     echo -e "${GREEN}✅ postgres_container 運行中${NC}"
     docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | tail -n +2
 else
@@ -46,7 +46,7 @@ fi
 
 echo ""
 echo "pgAdmin4 容器:"
-if docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps pgadmin | grep -q "Up"; then
+if docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps pgadmin | rg -q "Up"; then
     echo -e "${GREEN}✅ pgadmin_container 運行中${NC}"
     docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps pgadmin | tail -n +2
 else
@@ -74,7 +74,7 @@ fi
 
 # 檢查端口
 echo "端口使用情況:"
-netstat -tulpn 2>/dev/null | grep -E "(5432|5050)" || ss -tulpn 2>/dev/null | grep -E "(5432|5050)"
+ss -tulpn 2>/dev/null | rg -E "(5432|5050)" || netstat -tulpn 2>/dev/null | rg -E "(5432|5050)"
 
 # 4. 檢查資料庫連線數
 echo ""
@@ -145,15 +145,15 @@ echo ""
 echo -e "${BLUE}8. ROS 2 服務狀態${NC}"
 if command -v ros2 >/dev/null 2>&1; then
     echo "AGVC 相關服務:"
-    ros2 service list 2>/dev/null | grep agvc || echo "沒有找到 AGVC 相關服務"
+    ros2 service list 2>/dev/null | rg agvc || echo "沒有找到 AGVC 相關服務"
     
     echo ""
     echo "AGVC 相關節點:"
-    ros2 node list 2>/dev/null | grep agvc || echo "沒有找到 AGVC 相關節點"
+    ros2 node list 2>/dev/null | rg agvc || echo "沒有找到 AGVC 相關節點"
     
     echo ""
     echo "AGVC 相關主題:"
-    ros2 topic list 2>/dev/null | grep agvc || echo "沒有找到 AGVC 相關主題"
+    ros2 topic list 2>/dev/null | rg agvc || echo "沒有找到 AGVC 相關主題"
 else
     echo -e "${YELLOW}⚠️ ROS 2 不可用，跳過 ROS 2 服務檢查${NC}"
 fi
@@ -166,7 +166,7 @@ free -h
 
 echo ""
 echo "磁碟使用:"
-df -h | grep -E "(Filesystem|/app|/var/lib/docker)"
+df -h | rg -E "(Filesystem|/app|/var/lib/docker)"
 
 # 10. 檢查 PostgreSQL 配置
 echo ""

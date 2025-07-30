@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RosAGV 房間內製程操作指南 2025</title>
+    <link rel="stylesheet" href="assets/css/rosagv-common.css">
+</head>
+<body class="bg-blue">
+    <!-- 標題區域 -->
+    <header class="header">
+        <div class="container">
+            <h1>🏭 RosAGV 房間內製程操作指南</h1>
+            <p class="subtitle">企業級眼鏡生產線房間內 AGV 自動化系統</p>
+            <div class="last-updated">專注於房間內的眼鏡生產製程，從清洗到烘烤的完整 AGV 自動化作業流程</div>
+        </div>
+    </header>
+
+    <!-- 導航選單 -->
+    <nav class="nav">
+        <div class="nav-content">
+            <ul class="nav-links">
+                <li><a href="#overview">📊 系統概覽</a></li>
+                <li><a href="#production">🏭 生產流程</a></li>
+                <li><a href="#agv-types">🚛 AGV 車型</a></li>
+                <li><a href="#workflow">🔄 工作流程</a></li>
+                <li><a href="#interfaces">💻 操作介面</a></li>
+                <li><a href="#timeline">⏱️ 作業時序</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 系統概覽 -->
+            <section id="overview" class="section">
+                <h2>📊 房間內製程系統概覽</h2>
+                <p style="font-size: 1.2em; margin-bottom: 40px; text-align: center;">
+                    專注於房間內的眼鏡生產製程，涵蓋清洗、泡藥、預烘、烘烤等核心工序的 AGV 自動化操作
+                </p>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">房間內工站</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">主要 AGV</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">25+</div>
+                        <div class="stat-label">房間內 Work ID</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">自動化率</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 生產流程 -->
+            <section id="production" class="section">
+                <h2>🏭 房間內眼鏡製程流程</h2>
+                
+                <div class="alert alert-info">
+                    <h3>🎯 房間內製程目標</h3>
+                    <p>專注於房間內的眼鏡鏡片精密處理工序，包括清洗、化學處理、預烘、烘烤等關鍵製程，確保產品品質達到最高標準</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📦</div>
+                            <div class="card-title">料件接收</div>
+                        </div>
+                        <div class="card-content">
+                            <p>Loader AGV 從傳送箱接收待處理的鏡片</p>
+                            <p><strong>🚛 負責 AGV:</strong> Loader AGV</p>
+                            <p><strong>📋 Work ID:</strong> 2001-2004: 取入口傳送箱，支援 4 個接收端口</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🧽</div>
+                            <div class="card-title">清洗處理</div>
+                        </div>
+                        <div class="card-content">
+                            <p>Loader AGV 執行清洗機的放取作業</p>
+                            <p><strong>🚛 負責 AGV:</strong> Loader AGV</p>
+                            <p><strong>📋 Work ID:</strong> 2011: 放清洗機, 2021: 取清洗機</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🧪</div>
+                            <div class="card-title">泡藥處理</div>
+                        </div>
+                        <div class="card-content">
+                            <p>化學處理提升鏡片表面特性</p>
+                            <p><strong>🚛 負責 AGV:</strong> Loader AGV</p>
+                            <p><strong>📋 Work ID:</strong> 2031-2036: 放泡藥機, 2041-2046: 取泡藥機，支援 6 個泡藥槽</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🌡️</div>
+                            <div class="card-title">預烘處理</div>
+                        </div>
+                        <div class="card-content">
+                            <p>預備烘乾程序，為後續烘烤做準備</p>
+                            <p><strong>🚛 負責 AGV:</strong> Loader AGV → Unloader AGV</p>
+                            <p><strong>📋 Work ID:</strong> 2051-2058: Loader 放預烘, 3001-3004: Unloader 取預烘，支援 8 個預烘位</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon" style="color: #c0392b;">🔥</div>
+                            <div class="card-title">烘烤處理</div>
+                        </div>
+                        <div class="card-content">
+                            <p>高溫烘烤程序，完成鏡片最終處理</p>
+                            <p><strong>🚛 負責 AGV:</strong> Unloader AGV</p>
+                            <p><strong>📋 Work ID:</strong> 3011-3012: 放烘烤機, 3021-3022: 取烘烤機，高溫處理工站</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">📤</div>
+                            <div class="card-title">料件輸出</div>
+                        </div>
+                        <div class="card-content">
+                            <p>Unloader AGV 將處理完成的鏡片送至出口</p>
+                            <p><strong>🚛 負責 AGV:</strong> Unloader AGV</p>
+                            <p><strong>📋 Work ID:</strong> 3031-3032: 放出口傳送箱，完成房間內製程循環，準備交接至房間外流程</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AGV 車型詳解 -->
+            <section id="agv-types" class="section">
+                <h2>🚛 房間內主要 AGV 車型</h2>
+                
+                <div class="alert alert-info">
+                    <h3>⚠️ 重要特徵</h3>
+                    <p>房間內主要使用 <strong>Loader AGV</strong> 和 <strong>Unloader AGV</strong>，都配備<strong>麥克納姆輪</strong>（全向移動）和<strong>機械臂</strong>系統，專精於房間內精密製程操作</p>
+                </div>
+
+                <div class="feature-grid">
+                    <!-- Loader AGV -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🏗️</div>
+                            <div class="card-title">Loader AGV - 裝載車</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>房間內前段製程專家</strong></p>
+                            
+                            <h4>🏷️ 房間內 Work ID 範圍</h4>
+                            <p><strong>2001-2004:</strong> 取入口傳送箱</p>
+                            <p><strong>2011, 2021:</strong> 清洗機放取作業</p>
+                            <p><strong>2031-2036, 2041-2046:</strong> 泡藥機放取作業</p>
+                            <p><strong>2051-2058:</strong> 放預烘機</p>
+
+                            <h4>🎯 房間內主要任務</h4>
+                            <ul>
+                                <li>料件接收 - 從入口傳送箱取料</li>
+                                <li>Put/Take Cleaner - 清潔機雙向作業</li>
+                                <li>Put/Take Soaker - 泡藥機雙向作業</li>
+                                <li>Put Pre-dryer - 預乾燥機載料</li>
+                            </ul>
+                            
+                            <h4>🔧 房間內技術特點</h4>
+                            <ul>
+                                <li>精密製程操作（100% 完成度）</li>
+                                <li>化學處理環境適應</li>
+                                <li>多工位順序處理</li>
+                                <li>與 Unloader AGV 協作銜接</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Unloader AGV -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon" style="color: #e74c3c;">🏭</div>
+                            <div class="card-title">Unloader AGV - 卸載車</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>房間內後段製程專家</strong></p>
+                            
+                            <h4>🏷️ 房間內 Work ID 範圍</h4>
+                            <p><strong>3001-3004:</strong> 取預烘機</p>
+                            <p><strong>3011-3012, 3021-3022:</strong> 烘烤機放取作業</p>
+                            <p><strong>3031-3032:</strong> 放出口傳送箱</p>
+
+                            <h4>🎯 房間內主要任務</h4>
+                            <ul>
+                                <li>Take/Put Pre Dryer - 預乾燥雙向作業</li>
+                                <li>Take/Put Oven - 烘烤機雙向作業</li>
+                                <li>料件輸出 - 放出口傳送箱</li>
+                                <li>與 Loader AGV 接力協作</li>
+                            </ul>
+                            
+                            <h4>🔧 房間內技術特點</h4>
+                            <ul>
+                                <li>高溫環境操作（40% 實作）</li>
+                                <li>後段製程專業化</li>
+                                <li>與 Loader AGV 協作銜接</li>
+                                <li>房間內製程完成點</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 工作流程圖 -->
+            <section id="workflow" class="section">
+                <h2>🔄 房間內 AGV 協作工作流程</h2>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">📦 Loader AGV - 料件接收</div>
+                            <div class="timeline-description">
+                                執行 Work ID 2001-2004，從入口傳送箱接收來自房間外的鏡片，開始房間內製程處理。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🧽 Loader AGV - 清洗處理</div>
+                            <div class="timeline-description">
+                                Work ID 2011 放入清洗機，經過清洗處理後，Work ID 2021 取出清洗完成的鏡片。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🧪 Loader AGV - 泡藥處理</div>
+                            <div class="timeline-description">
+                                Work ID 2031-2036 將鏡片放入6個泡藥槽進行化學處理，完成後 Work ID 2041-2046 取出。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔄 AGV 協作切換 - 預烘工站</div>
+                            <div class="timeline-description">
+                                Loader AGV 執行 Work ID 2051-2058 放入預烘，Unloader AGV 執行 Work ID 3001-3004 從預烘取出，實現協作銜接。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔥 Unloader AGV - 烘烤處理</div>
+                            <div class="timeline-description">
+                                Work ID 3011-3012 放入烘烤機，Work ID 3021-3022 取出完成高溫處理的鏡片。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">📤 Unloader AGV - 料件輸出</div>
+                            <div class="timeline-description">
+                                Work ID 3031-3032 放入出口傳送箱，完成房間內所有製程，準備交接至房間外流程。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 30px;">
+                    <h3>🎯 房間內協作重點</h3>
+                    <p><strong>Loader ↔ Unloader 接力點</strong>：預烘工站是房間內兩種 AGV 的主要協作點。Loader AGV 負責前段製程（料件接收→清洗→泡藥→放預烘），Unloader AGV 負責後段製程（取預烘→烘烤→料件輸出），實現房間內製程的完整銜接</p>
+                </div>
+            </section>
+
+            <!-- 操作介面 -->
+            <section id="interfaces" class="section">
+                <h2>💻 系統操作介面</h2>
+                
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👨‍💼</div>
+                            <div class="card-title">AGVCUI - 管理員界面</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>Port 8001</strong></p>
+                            <ul>
+                                <li>車隊整體狀態監控</li>
+                                <li>任務調度和優先級管理</li>
+                                <li>系統配置和參數設定</li>
+                                <li>歷史資料和報表分析</li>
+                                <li>故障診斷和維護管理</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👷‍♀️</div>
+                            <div class="card-title">OPUI - 操作員界面</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>Port 8002</strong></p>
+                            <ul>
+                                <li>即時生產狀態監控</li>
+                                <li>任務發起和狀態追蹤</li>
+                                <li>設備運行狀態顯示</li>
+                                <li>異常告警和處理</li>
+                                <li>手動干預操作</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🤖</div>
+                            <div class="card-title">KUKA Fleet 整合</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>外部系統整合</strong></p>
+                            <ul>
+                                <li>KUKA 機器人系統協作</li>
+                                <li>任務狀態雙向同步</li>
+                                <li>統一調度和協調</li>
+                                <li>API 介面整合</li>
+                                <li>外部系統狀態監控</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 作業時序 -->
+            <section id="timeline" class="section">
+                <h2>⏱️ 房間內典型作業時序流程</h2>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">📋 房間內任務啟動 (T+0分)</div>
+                            <div class="timeline-description">
+                                房間內製程任務啟動，Loader AGV 準備接收來自房間外流程的鏡片，開始房間內精密製程處理。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🏗️ Loader AGV 料件接收 (T+1分)</div>
+                            <div class="timeline-description">
+                                Loader AGV 執行 Work ID 2001-2004，從入口傳送箱接收來自房間外的鏡片，開始房間內的精密製程處理流程。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🧽 清洗處理 (T+3分)</div>
+                            <div class="timeline-description">
+                                Loader AGV 執行房間內首道製程，Work ID 2011 放入清洗機，經過精密清洗處理後，Work ID 2021 取出清洗完成的鏡片。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🧪 泡藥處理 (T+8分)</div>
+                            <div class="timeline-description">
+                                進入房間內核心製程，Work ID 2031-2036 將鏡片放入6個泡藥槽進行化學處理，完成後 Work ID 2041-2046 取出處理完成的鏡片。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🔄 房間內 AGV 協作切換 (T+20分)</div>
+                            <div class="timeline-description">
+                                Loader AGV 執行 Work ID 2051-2058 將鏡片放入預烘工站，完成前段製程。Unloader AGV 準備接手後段製程，實現房間內 AGV 協作切換。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">🌡️ 預烘和烘烤 (T+25分)</div>
+                            <div class="timeline-description">
+                                Unloader AGV 接手房間內後段製程，Work ID 3001-3004 從預烘取出，Work ID 3011-3012 放入烘烤機，完成房間內最終高溫處理工序。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">📤 房間內製程完成 (T+35分)</div>
+                            <div class="timeline-description">
+                                Unloader AGV 執行 Work ID 3021-3022 從烘烤機取出完成品，Work ID 3031-3032 放入出口傳送箱，完成房間內所有製程，準備交接至房間外流程。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">✅ 房間內任務完成 (T+40分)</div>
+                            <div class="timeline-description">
+                                房間內製程循環完成，AGVCUI 記錄房間內製程數據，OPUI 顯示房間內任務完成狀態，系統準備處理下一批次或交接至房間外流程。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 系統特色 -->
+            <section class="section">
+                <h2>🌟 房間內製程系統核心特色</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">🧪</div>
+                        <div class="feature-title">精密化學處理</div>
+                        <div class="feature-description">專業的清洗和泡藥工序，確保鏡片表面處理達到最高品質標準</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🔄</div>
+                        <div class="feature-title">房間內 AGV 協作</div>
+                        <div class="feature-description">Loader 和 Unloader AGV 在預烘工站實現完美接力，確保房間內製程的連續性和效率</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🌡️</div>
+                        <div class="feature-title">溫度控制處理</div>
+                        <div class="feature-description">專業的預烘和烘烤工序，精確控制溫度和時間，確保鏡片最終品質</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div class="feature-title">房間內製程監控</div>
+                        <div class="feature-description">專門針對房間內製程的即時監控，包括化學處理參數、溫度控制和 AGV 協作狀態</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">⚡</div>
+                        <div class="feature-title">高精度操作</div>
+                        <div class="feature-description">麥克納姆輪和機械臂系統提供精確定位，適應房間內精密製程的嚴格要求</div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🛡️</div>
+                        <div class="feature-title">化學安全防護</div>
+                        <div class="feature-description">針對化學處理環境的特殊安全機制，包括防腐蝕、防溢出和緊急處理功能</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 40px;">
+                    <h3>🎯 房間內製程操作指南</h3>
+                    <div style="margin-top: 15px;">
+                        <h4><strong>📚 建議學習路徑</strong></h4>
+                        <ol style="margin-left: 20px; line-height: 1.8;">
+                            <li><strong>理解房間內製程工藝</strong><br>
+                                <em style="color: #6c757d;">掌握清洗、泡藥、預烘、烘烤等化學處理流程</em></li>
+                            <li><strong>掌握 Loader/Unloader AGV 分工</strong><br>
+                                <em style="color: #6c757d;">學習雙AGV協同作業和工位職責分配</em></li>
+                            <li><strong>熟悉房間內 Work ID 編碼</strong><br>
+                                <em style="color: #6c757d;">掌握 25+ 任務編碼和工作流程標識</em></li>
+                            <li><strong>學習化學處理參數</strong><br>
+                                <em style="color: #6c757d;">了解溫度、時間、濃度等關鍵參數控制</em></li>
+                            <li><strong>了解溫度控制流程</strong><br>
+                                <em style="color: #6c757d;">掌握預烘乾機和烘乾機的溫度管理</em></li>
+                            <li><strong>掌握房間內外協作機制</strong><br>
+                                <em style="color: #6c757d;">學習與 Cargo AGV 和 KUKA 系統的銜接</em></li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 RosAGV Project - Intelligent Manufacturing Execution System</p>
+            <p>Powered by ROS 2 Jazzy + Zenoh RMW + Docker Compose V2</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/rosagv-common.js"></script>
+    <script>
+        // 頁面特定初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 統計數據動畫
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(number => {
+                const finalValue = number.textContent;
+                number.textContent = '0';
+                let current = 0;
+                const increment = finalValue.includes('+') ? 1 : parseInt(finalValue) / 20;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= parseInt(finalValue)) {
+                        number.textContent = finalValue;
+                        clearInterval(timer);
+                    } else {
+                        number.textContent = Math.floor(current) + (finalValue.includes('+') ? '+' : '');
+                    }
+                }, 50);
+            });
+
+            // 平滑滾動導航
+            document.querySelectorAll('.nav-links a').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // 卡片懸停效果增強
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                    this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -625,7 +625,7 @@ cmd_doctor() {
     # 檢查端口衝突
     local required_ports=(7447 8000 8001 8002 5432 80)
     for port in "${required_ports[@]}"; do
-        if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+        if ss -tuln 2>/dev/null | grep -q ":$port "; then
             issues+=("端口 $port 被佔用")
             suggestions+=("停止佔用端口 $port 的服務或更改配置")
         fi

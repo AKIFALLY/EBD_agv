@@ -80,7 +80,7 @@ for file in $CLAUDE_FILES; do
         new_ref="${reference_map[$old_ref]}"
         
         # 檢查文件中是否包含舊引用
-        if grep -q "$old_ref" "$file" 2>/dev/null; then
+        if rg -q "$old_ref" "$file" 2>/dev/null; then
             echo "  🔄 替換: $old_ref → $new_ref"
             
             # 使用 sed 進行替換

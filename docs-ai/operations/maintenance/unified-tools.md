@@ -196,3 +196,13 @@ r log-errors > error-analysis.log
 | 開發 | `dev-build` | 快速建置 | 容器內 |
 | 開發 | `dev-test` | 快速測試 | 容器內 |
 | 開發 | `dev-check` | 代碼品質檢查 | 容器內 |
+
+## 🔗 相關文檔
+
+### 完整工具系統文檔
+- **統一工具系統**: @docs-ai/operations/tools/unified-tools.md - 完整的工具生態系統和配置管理
+
+### 其他維護文檔
+- **系統診斷**: @docs-ai/operations/maintenance/system-diagnostics.md - 詳細的診斷程序
+- **故障排除**: @docs-ai/operations/maintenance/troubleshooting.md - 故障排除流程
+- **容器管理**: @docs-ai/operations/deployment/container-management.md - 容器部署和管理

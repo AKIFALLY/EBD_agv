@@ -142,8 +142,11 @@ scripts/network-tools/port-check.sh system           # 系統端口檢查
 scripts/network-tools/port-check.sh --port 8000-8002 # Web 服務端口
 scripts/network-tools/connectivity-test.sh performance --target localhost
 
-# 手動端口檢查
-netstat -tulpn | grep -E "(8000|8001|8002|5432|5050|80|7447)"
+# 網路端口檢查 (推薦使用 ss)
+ss -tulpn | rg "(8000|8001|8002|5432|5050|80|7447)"
+
+# 備選：netstat (舊工具，但仍可用)
+netstat -tulpn | rg "(8000|8001|8002|5432|5050|80|7447)"
 
 # 端口可達性測試
 telnet localhost 8000
@@ -157,7 +160,7 @@ telnet localhost 7447
 r zenoh-check
 
 # 手動 Zenoh 檢查
-ps aux | grep zenoh
+ps aux | rg zenoh
 cat /tmp/zenoh_router.pid
 pgrep -f rmw_zenohd
 

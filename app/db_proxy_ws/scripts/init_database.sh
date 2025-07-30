@@ -42,7 +42,7 @@ echo ""
 echo -e "${BLUE}檢查先決條件...${NC}"
 
 # 1. 檢查 PostgreSQL 容器狀態
-if ! docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | grep -q "Up"; then
+if ! docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | rg -q "Up"; then
     echo -e "${RED}❌ PostgreSQL 容器未運行${NC}"
     echo "正在啟動 PostgreSQL 容器..."
     docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml up -d postgres

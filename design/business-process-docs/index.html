@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RosAGV 業務流程文件導航 2025</title>
+    <link rel="stylesheet" href="assets/css/rosagv-common.css">
+</head>
+<body class="bg-blue">
+    <!-- 標題區域 -->
+    <header class="header">
+        <div class="container">
+            <h1>🤖 RosAGV 業務流程文件中心</h1>
+            <p class="subtitle">智能製造執行系統 - 完整業務流程指導文件</p>
+            <div class="last-updated">最後更新：2025年1月30日</div>
+        </div>
+    </header>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 系統概覽 -->
+            <section class="section">
+                <h2>📋 文件導航概覽</h2>
+                <p>歡迎使用 RosAGV 業務流程文件中心。本文件庫為新進工程師和系統維護人員提供完整的業務流程指導，涵蓋室內外製程、系統架構、以及完整業務系統等多個面向。</p>
+                
+                <div class="alert alert-info" style="margin: 20px 0;">
+                    <h3>🎯 入門必知：RosAGV 系統架構概念</h3>
+                    <p><strong>RosAGV</strong> 是一套<strong>眼鏡生產工廠</strong>的智能製造執行系統，整合了多套AGV系統協同作業：</p>
+                    <ul>
+                        <li><strong>CT AGV (3車型)：</strong>系統直接管理的核心車隊 - Cargo搬運架台、Loader精密載料、Unloader後段卸料</li>
+                        <li><strong>KUKA AGV (2台)：</strong>外部整合的Robot 400i，負責房間外走廊搬運和架台轉向</li>
+                        <li><strong>95+ Work ID：</strong>涵蓋房間內精密製程(25+)、房間外物流作業(30+)、系統整合任務(40+)</li>
+                        <li><strong>雙環境架構：</strong>車載即時控制 + 中央車隊管理，透過容器化部署和Zenoh通訊</li>
+                    </ul>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">核心文件</div>
+                        <div class="stat-description">完整業務流程指導文件</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">業務模組</div>
+                        <div class="stat-description">涵蓋製程、控制、整合等模組</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">CT AGV車型</div>
+                        <div class="stat-description">Cargo/Loader/Unloader (系統直管)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">95+</div>
+                        <div class="stat-label">Work ID</div>
+                        <div class="stat-description">涵蓋房間內外製程任務編碼</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 文件導航卡片 -->
+            <section class="section">
+                <h2>📚 核心文件導航</h2>
+                
+                <div class="feature-grid">
+                    <!-- 房間內製程 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🏠</div>
+                            <div class="card-title">房間內製程操作指南</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>適用對象：</strong>製程工程師、AGV操作員</p>
+                            <p><strong>主要內容：</strong>Loader AGV、Unloader AGV協同作業流程，包含清洗、泡藥、預烘、烘烤等精密製程操作。</p>
+                            <p><strong>關鍵特色：</strong>4個室內工位、25+ Work ID、雙AGV協同</p>
+                            <div style="margin-top: 20px;">
+                                <a href="rosagv_business_process_2025.html" class="btn">查看詳細內容</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 房間外製程 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-green">🌿</div>
+                            <div class="card-title">房間外製程操作指南</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>適用對象：</strong>射出工程師、KUKA操作員、OPUI使用者</p>
+                            <p><strong>主要內容：</strong>射出成型→OPUI叫車→KUKA AGV搬運→Cargo AGV銜接→包裝出貨的完整外部流程。</p>
+                            <p><strong>關鍵特色：</strong>KUKA Fleet整合、架台管理、三系統協同</p>
+                            <div style="margin-top: 20px;">
+                                <a href="rosagv_outdoor_process_2025.html" class="btn theme-green">查看詳細內容</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 系統架構 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-purple">🏗️</div>
+                            <div class="card-title">系統架構技術文件</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>適用對象：</strong>系統架構師、後端工程師、DevOps工程師</p>
+                            <p><strong>主要內容：</strong>RosAGV系統的技術架構、模組設計、資料流向、API接口設計等技術細節。</p>
+                            <p><strong>關鍵特色：</strong>微服務架構、容器化部署、API設計</p>
+                            <div style="margin-top: 20px;">
+                                <a href="rosagv_architecture_2025.html" class="btn theme-purple">查看詳細內容</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 完整業務系統 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon theme-orange">🏢</div>
+                            <div class="card-title">完整業務系統指南</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>適用對象：</strong>專案經理、業務分析師、系統整合工程師</p>
+                            <p><strong>主要內容：</strong>RosAGV完整業務系統的整體視角，涵蓋所有模組的協同運作和企業級整合方案。</p>
+                            <p><strong>關鍵特色：</strong>企業級整合、業務流程設計、系統協同</p>
+                            <div style="margin-top: 20px;">
+                                <a href="rosagv_complete_business_system_2025.html" class="btn theme-orange">查看詳細內容</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 快速導航 -->
+            <section class="section">
+                <h2>⚡ 快速導航</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">🚛</div>
+                        <div class="feature-title">CT AGV車型指南 (系統直管)</div>
+                        <div class="feature-description">
+                            <strong>Cargo Mover:</strong> 架台搬運，房間內外銜接<br>
+                            <strong>Loader:</strong> 多工位載料，精密製程前段<br>
+                            <strong>Unloader:</strong> 後段卸料，完成品處理<br>
+                            <em>註：均配備麥克納姆輪+機械臂，ROS 2控制</em>
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🔧</div>
+                        <div class="feature-title">系統整合架構</div>
+                        <div class="feature-description">
+                            <strong>KUKA Fleet:</strong> 外部AGV系統 (Robot 400i×2台)<br>
+                            <strong>OPUI:</strong> 操作員介面，叫車/派車功能<br>
+                            <strong>PLC:</strong> Keyence設備控制，工業通訊<br>
+                            <em>註：雙環境架構，容器化部署</em>
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div class="feature-title">Work ID系統 (95+任務)</div>
+                        <div class="feature-description">
+                            <strong>1000s:</strong> Cargo AGV 任務編碼<br>
+                            <strong>2000s:</strong> Loader AGV 任務編碼<br>
+                            <strong>3000s:</strong> Unloader AGV 任務編碼<br>
+                            <strong>220001/230001:</strong> KUKA AGV 任務<br>
+                            <strong>100001/100002:</strong> OPUI 叫車/派車
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🏭</div>
+                        <div class="feature-title">製程流程</div>
+                        <div class="feature-description">
+                            <strong>房間內:</strong> 精密化學處理<br>
+                            <strong>房間外:</strong> 走廊搬運作業<br>
+                            <strong>整合:</strong> 端到端流程
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 使用指南 -->
+            <section class="section">
+                <h2>📖 使用指南</h2>
+                
+                <div class="alert alert-info">
+                    <h3>🎯 針對不同角色的建議閱讀順序：</h3>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👨‍💻</div>
+                            <div class="card-title">新進工程師</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>建議順序：</strong></p>
+                            <ol>
+                                <li>完整業務系統指南（整體概念）</li>
+                                <li>系統架構技術文件（技術基礎）</li>
+                                <li>房間內/外製程指南（具體流程）</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👨‍🔧</div>
+                            <div class="card-title">現場操作員</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>建議順序：</strong></p>
+                            <ol>
+                                <li>房間內製程操作指南（日常作業）</li>
+                                <li>房間外製程操作指南（配合作業）</li>
+                                <li>完整業務系統指南（全局理解）</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👨‍💼</div>
+                            <div class="card-title">管理階層</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>建議順序：</strong></p>
+                            <ol>
+                                <li>完整業務系統指南（策略視角）</li>
+                                <li>系統架構技術文件（投資決策）</li>
+                                <li>製程指南（營運管理）</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 技術支援 -->
+            <section class="section">
+                <h2>🔧 技術支援資訊</h2>
+                
+                <div class="alert alert-warning">
+                    <h3>⚠️ 重要概念說明：</h3>
+                    <ul>
+                        <li><strong>雙環境架構：</strong>AGV車載系統(即時控制) + AGVC管理系統(車隊調度)</li>
+                        <li><strong>CT vs KUKA AGV：</strong>CT AGV系統直管3車型，KUKA AGV透過API整合</li>
+                        <li><strong>Work ID分層：</strong>95+任務編碼涵蓋房間內外製程、系統整合、設備控制</li>
+                        <li><strong>容器化開發：</strong>所有ROS 2程式須在Docker容器內執行和測試</li>
+                        <li><strong>通訊機制：</strong>Zenoh RMW跨容器 + KUKA Fleet API + PLC協議</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-success">
+                    <h3>🚀 快速上手指令</h3>
+                    <div class="command-section">
+                        <h4>🔍 系統診斷 (宿主機執行)</h4>
+                        <div class="command-block">
+                            <div class="command-comment"># 快速健康檢查</div>
+                            <div>r agvc-check <span class="command-description"># AGVC 管理系統健康檢查</span></div>
+                            <div>r containers-status <span class="command-description"># 所有容器運行狀態</span></div>
+                            <div>r network-check <span class="command-description"># 網路連接和端口檢查</span></div>
+                            <div>r quick-diag <span class="command-description"># 快速綜合診斷</span></div>
+                        </div>
+                        
+                        <h4>🐳 容器開發 (進入開發環境)</h4>
+                        <div class="command-block">
+                            <div class="command-type-diagnostic"># 進入 AGVC 管理容器</div>
+                            <div>agvc_enter <span class="command-description"># 自動載入環境</span></div>
+                            <div>all_source <span class="command-description"># 載入所有工作空間</span></div>
+                            <div class="command-type-diagnostic" style="margin-top: 8px;"># 進入 AGV 車載容器</div>
+                            <div>agv_enter <span class="command-description"># 進入車載開發環境</span></div>
+                        </div>
+                        
+                        <h4>🏗️ 常用開發指令 (容器內執行)</h4>
+                        <div class="command-block">
+                            <div class="command-type-development"># ROS 2 開發</div>
+                            <div>colcon build --packages-select 套件名</div>
+                            <div>ros2 launch 套件名 launch檔案.py</div>
+                            <div>ros2 topic list <span class="command-description"># 查看主題列表</span></div>
+                            <div class="command-type-development" style="margin-top: 8px;"># 系統狀態檢查</div>
+                            <div>check_system_status <span class="command-description"># 容器內系統狀態</span></div>
+                            <div>check_zenoh_status <span class="command-description"># Zenoh 通訊狀態</span></div>
+                        </div>
+                    </div>
+                    
+                    <p><strong>💡 提示：</strong>更多詳細的開發指導和故障排除，請參考各核心文件中的技術章節。</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 RosAGV Project - Intelligent Manufacturing Execution System</p>
+            <p>Powered by ROS 2 Jazzy + Zenoh RMW + Docker Compose V2</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/rosagv-common.js"></script>
+    <script>
+        // 頁面特定初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 統計數據動畫
+            RosAGV.page.updateStats({
+                'documents': 4,
+                'modules': 12,
+                'agv-types': 3,
+                'work-ids': 95
+            });
+
+            // 卡片懸停效果增強
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                    this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
