@@ -128,7 +128,7 @@ is_agvc_container_running() {
 check_postgres_service() {
     if is_service_running "postgres"; then
         # 檢查 PostgreSQL 連接
-        if docker exec postgres pg_isready -U rosagv >/dev/null 2>&1; then
+        if docker exec postgres pg_isready -U agvc >/dev/null 2>&1; then
             print_success "PostgreSQL: 正常運行"
             return 0
         else

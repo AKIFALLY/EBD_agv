@@ -64,14 +64,26 @@ def initialize_locations(session):
         {"id": 1008, "location_status_id": 1,
             "node_id": 1008, "name": "射出機4-停車位置2", "description": "射出機4-OP2叫車/停車位置"},
 
-        {"id": 10101, "location_status_id": 1, "room_id": 2, "node_id": 10101,
+        {"id": 10001, "location_status_id": 1, "room_id": 1, "node_id": 10001,
             "name": "room01 Loader Box", "description": "房間1入口傳送箱"},
-        {"id": 10201, "location_status_id": 1, "room_id": 2, "node_id": 10201,
+        {"id": 10002, "location_status_id": 1, "room_id": 1, "node_id": 10002,
             "name": "room01 Unloader Box", "description": "房間1出口傳送箱"},
         {"id": 20001, "location_status_id": 1, "room_id": 2, "node_id": 20001,
             "name": "room02 Loader Box", "description": "房間2入口傳送箱"},
         {"id": 20002, "location_status_id": 1, "room_id": 2, "node_id": 20002,
             "name": "room02 Unloader Box", "description": "房間2出口傳送箱"},
+        {"id": 30001, "location_status_id": 1, "room_id": 3, "node_id": 30001,
+            "name": "room03 Loader Box", "description": "房間3入口傳送箱"},
+        {"id": 30002, "location_status_id": 1, "room_id": 3, "node_id": 30002,
+            "name": "room03 Unloader Box", "description": "房間3出口傳送箱"},
+        {"id": 40001, "location_status_id": 1, "room_id": 4, "node_id": 40001,
+            "name": "room04 Loader Box", "description": "房間4入口傳送箱"},
+        {"id": 40002, "location_status_id": 1, "room_id": 4, "node_id": 40002,
+            "name": "room04 Unloader Box", "description": "房間4出口傳送箱"},
+        {"id": 50001, "location_status_id": 1, "room_id": 5, "node_id": 50001,
+            "name": "room05 Loader Box", "description": "房間5入口傳送箱"},
+        {"id": 50002, "location_status_id": 1, "room_id": 5, "node_id": 50002,
+            "name": "room05 Unloader Box", "description": "房間5出口傳送箱"},
         {"id": 20101, "location_status_id": 1, "room_id": 2, "node_id": 20101,
             "name": "LoaderAGV Loader Box", "description": "房間內入口傳送箱"},
         {"id": 20301, "location_status_id": 1, "room_id": 2, "node_id": 20301,
@@ -121,6 +133,14 @@ def initialize_locations(session):
         {"id": 20201, "location_status_id": 1, "room_id": 2, "node_id": 20201,
             "name": "UnloaderAGV Unload Box", "description": "房間內出口傳送箱"},
 
+        # 傳送箱出口位置 - Simple WCS 專用 (支持滿料架檢測)
+        {"id": 20003, "location_status_id": 2, "room_id": 2, "node_id": 20003,
+            "name": "傳送箱出口_03", "description": "傳送箱出口位置3 - Simple WCS"},
+        {"id": 20004, "location_status_id": 2, "room_id": 2, "node_id": 20004,
+            "name": "傳送箱出口_04", "description": "傳送箱出口位置4 - Simple WCS"},
+        {"id": 20005, "location_status_id": 2, "room_id": 2, "node_id": 20005,
+            "name": "傳送箱出口_05", "description": "傳送箱出口位置5 - Simple WCS"},
+
         # 區域定義
         {"id": 11, "location_status_id": 1, "room_id": 1, "node_id": 11,
             "name": "SystemReadyArea_11", "description": "系統準備區"},
@@ -149,6 +169,29 @@ def initialize_locations(session):
             {"id": 34, "location_status_id": 1, "room_id": 1, "node_id": 34,
             "name": "SystemEmptyRackArea_4", "description": "系統空車區"},
 
+            # 人工收料區 - Simple WCS 專用 (支持中文名稱查詢)
+            {"id": 31001, "location_status_id": 2, "room_id": 1, "node_id": 31001,
+            "name": "人工收料區_01", "description": "人工收料區位置1 - Simple WCS"},
+            {"id": 31002, "location_status_id": 2, "room_id": 1, "node_id": 31002,
+            "name": "人工收料區_02", "description": "人工收料區位置2 - Simple WCS"},
+            {"id": 31003, "location_status_id": 2, "room_id": 1, "node_id": 31003,
+            "name": "人工收料區_03", "description": "人工收料區位置3 - Simple WCS"},
+            {"id": 31004, "location_status_id": 2, "room_id": 1, "node_id": 31004,
+            "name": "人工收料區_04", "description": "人工收料區位置4 - Simple WCS"},
+            {"id": 31005, "location_status_id": 2, "room_id": 1, "node_id": 31005,
+            "name": "人工收料區_05", "description": "人工收料區位置5 - Simple WCS"},
+            {"id": 31006, "location_status_id": 2, "room_id": 1, "node_id": 31006,
+            "name": "人工收料區_06", "description": "人工收料區位置6 - Simple WCS"},
+            {"id": 31007, "location_status_id": 2, "room_id": 1, "node_id": 31007,
+            "name": "人工收料區_07", "description": "人工收料區位置7 - Simple WCS"},
+            {"id": 31008, "location_status_id": 2, "room_id": 1, "node_id": 31008,
+            "name": "人工收料區_08", "description": "人工收料區位置8 - Simple WCS"},
+            {"id": 31009, "location_status_id": 2, "room_id": 1, "node_id": 31009,
+            "name": "人工收料區_09", "description": "人工收料區位置9 - Simple WCS"},
+            {"id": 31010, "location_status_id": 2, "room_id": 1, "node_id": 31010,
+            "name": "人工收料區_10", "description": "人工收料區位置10 - Simple WCS"},
+
+            # 原有的手動回收區 (保持向後相容)
             {"id": 51, "location_status_id": 1, "room_id": 1, "node_id": 51,
             "name": "ManualReceiveArea_1", "description": "手動回收區"},
             {"id": 52, "location_status_id": 1, "room_id": 1, "node_id": 52,
@@ -178,7 +221,8 @@ def initialize_locations(session):
 # 區域定義
 SYSTEM_READY_AREA = [11, 12, 13, 14, 15, 16, 17, 18]  # 系統準備區
 SYSTEM_EMPTY_RACK_AREA = [31, 32, 33, 34]  # 系統空車區
-MANUAL_RECEIVE_AREA = [51, 52, 53, 54, 55]  # 手動回收區
+MANUAL_COLLECTION_AREA = [31001, 31002, 31003, 31004, 31005, 31006, 31007, 31008, 31009, 31010]  # 人工收料區 (Simple WCS)
+MANUAL_RECEIVE_AREA = [51, 52, 53, 54, 55]  # 手動回收區 (原有)
 NG_RECYCLE_AREA = [71, 72]  # NG回收區
 
 

@@ -667,7 +667,7 @@ class OpUiSocket:
         """叫空車任務"""
         try:
             from opui.database.operations import create_task, get_call_empty_work_id
-            from db_proxy.models import TaskStatus
+            from shared_constants.task_status import TaskStatus
 
             # 獲取側邊和機台資訊
             side = data.get("side")  # "left" 或 "right"
@@ -742,7 +742,7 @@ class OpUiSocket:
         """派滿車任務"""
         try:
             from opui.database.operations import create_task, get_dispatch_full_work_id
-            from db_proxy.models import TaskStatus
+            from shared_constants.task_status import TaskStatus
 
             # 獲取任務參數
             side = data.get("side")  # "left" 或 "right"
@@ -904,7 +904,8 @@ class OpUiSocket:
                     return {"success": False, "message": f"找不到任務 ID {task_id}"}
 
                 # 更新任務狀態為已完成
-                task.status_id = 3
+                from shared_constants.task_status import TaskStatus
+                task.status_id = TaskStatus.EXECUTING  # 執行中 (AGV-任務正在執行)
                 task_crud.update(session, task.id, task)
 
                 print(f"🧪 測試：手動完成任務 {task_id}")
@@ -983,7 +984,7 @@ class OpUiSocket:
     async def _notify_task_status_change(self, machine_id, task_info, new_status):
         """推送任務狀態變更給前端"""
         try:
-            from db_proxy.models import TaskStatus
+            from shared_constants.task_status import TaskStatus
 
             # 構建任務狀態更新資料
             task_update = {
@@ -1012,7 +1013,7 @@ class OpUiSocket:
         try:
             from opui.database.operations import connection_pool
             from db_proxy.crud.task_crud import task_crud
-            from db_proxy.models import TaskStatus
+            from shared_constants.task_status import TaskStatus
 
             with connection_pool.get_session() as session:
                 task = task_crud.get_by_id(session, task_id)
@@ -1054,7 +1055,7 @@ class OpUiSocket:
     async def _notify_task_creation(self, task_id: int, machine_id: int, task_info: dict):
         """通知任務創建（新增方法）"""
         try:
-            from db_proxy.models import TaskStatus
+            from shared_constants.task_status import TaskStatus
 
             # 構建任務創建通知資料
             creation_notification = {
@@ -1237,7 +1238,7 @@ class OpUiSocket:
         try:
             from opui.database.operations import connection_pool
             from db_proxy.crud.task_crud import task_crud
-            from db_proxy.models import TaskStatus
+            from shared_constants.task_status import TaskStatus
 
             task_id = data.get("task_id")
             if not task_id:
@@ -1278,7 +1279,7 @@ class OpUiSocket:
         try:
             from opui.database.operations import connection_pool
             from db_proxy.crud.task_crud import task_crud
-            from db_proxy.models import TaskStatus
+            from shared_constants.task_status import TaskStatus
             from sqlmodel import select
 
             clientId, machine_id, err = self._require_client_and_machine(sid)

@@ -35,6 +35,10 @@ show_main_menu() {
     echo -e "  ${GREEN}network-check${NC}      # 系統端口檢查"
     echo -e "  ${GREEN}zenoh-check${NC}        # Zenoh 連接檢查"
     echo ""
+    echo -e "${YELLOW}⚙️ 配置管理工具:${NC}"
+    echo -e "  ${GREEN}zenoh-config${NC}       # Zenoh Router 配置管理"
+    echo -e "  ${GREEN}hardware-config${NC}    # 硬體映射配置管理"
+    echo ""
     echo -e "${YELLOW}📋 日誌分析工具:${NC}"
     echo -e "  ${GREEN}log-scan${NC}           # 日誌錯誤掃描"
     echo -e "  ${GREEN}log-errors${NC}         # 高級錯誤掃描"
@@ -48,6 +52,11 @@ show_main_menu() {
     echo -e "${YELLOW}❓ 幫助說明:${NC}"
     echo -e "  ${GREEN}tools-help${NC}         # 工具詳細說明"
     echo -e "  ${GREEN}menu${NC}               # 顯示此選單"
+    echo ""
+    echo -e "${BLUE}⚠️ 使用前提條件:${NC}"
+    echo -e "  ${YELLOW}必須將 RosAGV 目錄加入 PATH 環境變數${NC}"
+    echo -e "  在 ~/.bashrc 中添加: export PATH=\"/home/ct/RosAGV:\$PATH\""
+    echo -e "  然後執行: source ~/.bashrc"
     echo ""
     echo -e "${BLUE}使用方法:${NC}"
     echo -e "  r agvc-check        # 執行 AGVC 健康檢查 (推薦短命令)"
@@ -63,6 +72,12 @@ show_main_menu() {
 show_tools_help() {
     echo -e "${CYAN}🛠️ RosAGV 工具詳細說明${NC}"
     echo -e "${CYAN}=====================${NC}"
+    echo ""
+    echo -e "${RED}⚠️ 重要前提條件:${NC}"
+    echo -e "  使用 r 工具集之前，必須將 RosAGV 目錄加入 PATH 環境變數"
+    echo -e "  在 ~/.bashrc 中添加: ${YELLOW}export PATH=\"/home/ct/RosAGV:\$PATH\"${NC}"
+    echo -e "  設定完成後執行: ${YELLOW}source ~/.bashrc${NC}"
+    echo -e "  驗證設定: ${YELLOW}which r${NC} (應顯示 /home/ct/RosAGV/r)"
     echo ""
     echo -e "${YELLOW}系統診斷工具:${NC}"
     echo -e "  agvc-check       - 檢查 AGVC 管理系統健康狀況"
@@ -80,6 +95,10 @@ show_tools_help() {
     echo -e "${YELLOW}網路診斷工具:${NC}"
     echo -e "  network-check    - 檢查系統關鍵端口連接狀況"
     echo -e "  zenoh-check      - 檢查 Zenoh Router 連接狀況"
+    echo ""
+    echo -e "${YELLOW}配置管理工具:${NC}"
+    echo -e "  zenoh-config     - 管理 Zenoh Router 配置 (查看/編輯/驗證)"
+    echo -e "  hardware-config  - 管理硬體映射配置 (設備/MAC地址)"
     echo ""
     echo -e "${YELLOW}日誌分析工具:${NC}"
     echo -e "  log-scan         - 掃描所有容器日誌中的警告和錯誤"
@@ -179,6 +198,16 @@ run_dev_check() {
     bash -c "cd '$SCRIPT_DIR' && scripts/dev-tools/code-analyzer.sh style"
 }
 
+run_zenoh_config() {
+    echo -e "${BLUE}⚙️ Zenoh Router 配置管理...${NC}"
+    bash -c "cd '$SCRIPT_DIR' && scripts/config-tools/zenoh-config.sh"
+}
+
+run_hardware_config() {
+    echo -e "${BLUE}⚙️ 硬體映射配置管理...${NC}"
+    bash -c "cd '$SCRIPT_DIR' && scripts/config-tools/hardware-mapping.sh"
+}
+
 # 主程式邏輯
 case "${1:-menu}" in
     # 系統診斷
@@ -218,6 +247,14 @@ case "${1:-menu}" in
         ;;
     "zenoh-check")
         run_zenoh_check
+        ;;
+        
+    # 配置管理
+    "zenoh-config")
+        run_zenoh_config
+        ;;
+    "hardware-config")
+        run_hardware_config
         ;;
         
     # 日誌分析

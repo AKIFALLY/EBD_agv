@@ -140,7 +140,7 @@ check_zenoh_service() {
 
 check_postgres_service() {
     if check_container_running "postgres"; then
-        docker exec postgres pg_isready -U rosagv >/dev/null 2>&1
+        docker exec postgres pg_isready -U agvc >/dev/null 2>&1
     else
         return 1
     fi

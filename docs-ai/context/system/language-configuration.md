@@ -1,79 +1,79 @@
-# 語言配置
+# Language Configuration
 
-## 🎯 適用場景
-- AI Agent 與用戶的互動語言設定
-- 代碼註釋和文檔的語言規範
-- 系統介面和錯誤訊息的語言統一
+## 🎯 Use Cases
+- AI Agent interaction language settings
+- Code comments and documentation language standards
+- System interface and error message language consistency
 
-## 📋 語言配置規範
+## 📋 Language Configuration Standards
 
-### CLI 互動語言
-- **主要語言**: 繁體中文
-- **適用範圍**: 
-  - AI Agent 回應和說明
-  - 系統狀態報告
-  - 錯誤訊息和警告
-  - 操作指導和建議
+### CLI Interaction Language
+- **Primary Language**: English
+- **Scope**: 
+  - AI Agent responses and explanations
+  - System status reports
+  - Error messages and warnings
+  - Operation guidance and suggestions
 
-### 代碼註釋語言
-- **註釋語言**: 繁體中文
-- **適用範圍**:
-  - Python 代碼註釋
-  - ROS 2 節點說明
-  - 配置檔案註釋
-  - 腳本工具說明
+### Code Comments Language
+- **Comment Language**: English
+- **Scope**:
+  - Python code comments
+  - ROS 2 node descriptions
+  - Configuration file comments
+  - Script tool descriptions
 
-### 文檔語言
-- **技術文檔**: 繁體中文
-- **API 文檔**: 英文 + 繁體中文註解
-- **README**: 繁體中文為主
-- **CLAUDE.md**: 繁體中文
+### Documentation Language
+- **Technical Documentation**: English
+- **API Documentation**: English
+- **README**: English
+- **CLAUDE.md**: English
 
-### 變數和函數命名
-- **變數名稱**: 英文 (snake_case)
-- **函數名稱**: 英文 (snake_case) 
-- **類別名稱**: 英文 (PascalCase)
-- **檔案名稱**: 英文 (snake_case.py/.md)
+### Variable and Function Naming
+- **Variable Names**: English (snake_case)
+- **Function Names**: English (snake_case) 
+- **Class Names**: English (PascalCase)
+- **File Names**: English (snake_case.py/.md)
 
-## 🔧 實施指導
+## 🔧 Implementation Guidelines
 
-### AI Agent 互動
-- 使用繁體中文進行技術說明
-- 保持專業術語的一致性
-- 錯誤訊息提供中文說明和英文參考
+### AI Agent Interaction
+- Use English for technical explanations
+- Maintain consistency in professional terminology
+- Provide clear and concise error messages
 
-### 代碼開發
-- 代碼邏輯註釋使用繁體中文
-- 保留英文的技術關鍵字和 API 名稱
-- 文檔字串 (docstring) 使用繁體中文
+### Code Development
+- Code logic comments in English
+- Preserve English technical keywords and API names
+- Documentation strings (docstrings) in English
 
-### 文檔撰寫
-- 技術概念使用繁體中文解釋
-- 保留原始英文術語並提供中文對照
-- 範例代碼註釋使用繁體中文
+### Documentation Writing
+- Explain technical concepts in English
+- Use standard English technical terminology
+- Example code comments in English
 
-## 📋 術語對照
+## 📋 Technical Terminology
 
-### 常用技術術語
-- **Container** → 容器
-- **Workspace** → 工作空間  
-- **Node** → 節點
-- **Topic** → 主題
-- **Service** → 服務
-- **AGV** → 自動導引車
-- **AGVC** → 車隊控制系統
-- **State Machine** → 狀態機
-- **Robot** → 機器人/機械臂
+### Common Technical Terms
+- **Container** - Docker container
+- **Workspace** - ROS 2 workspace
+- **Node** - ROS 2 node
+- **Topic** - ROS 2 topic
+- **Service** - ROS 2 service
+- **AGV** - Automated Guided Vehicle
+- **AGVC** - AGV Control System
+- **State Machine** - Finite state machine
+- **Robot** - Robot/Robotic arm
 
-### ROS 2 專用術語
-- **Publisher** → 發布者
-- **Subscriber** → 訂閱者
-- **Launch** → 啟動
-- **Package** → 套件
-- **Build** → 建置
-- **Colcon** → Colcon (保留原名)
+### ROS 2 Specific Terms
+- **Publisher** - ROS 2 publisher
+- **Subscriber** - ROS 2 subscriber
+- **Launch** - ROS 2 launch system
+- **Package** - ROS 2 package
+- **Build** - Build process
+- **Colcon** - Colcon build tool
 
-## 🔗 交叉引用
-- 系統概覽: @docs-ai/context/system/rosagv-overview.md
-- 開發規範: @docs-ai/operations/development/core-principles.md
-- 文檔標準: @docs-ai/context/structure/module-index.md
+## 🔗 Cross References
+- System Overview: @docs-ai/context/system/rosagv-overview.md
+- Development Standards: @docs-ai/operations/development/core-principles.md
+- Documentation Standards: @docs-ai/context/structure/module-index.md

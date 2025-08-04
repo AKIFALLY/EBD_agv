@@ -133,7 +133,7 @@ Multi-stage Build
   - 優秀的效能
   - 完整的 ACID 支援
 - **配置**: 
-  - 容器: postgres_container
+  - 容器: postgres
   - 端口: 5432
   - 管理工具: pgAdmin4 (Port 5050)
 

@@ -66,9 +66,10 @@ class OpuiTaskService:
                 "node_id": node_id
             }
             
+            from shared_constants.task_status import TaskStatus
             task = Task(
                 node_id=node_id,
-                status_id=1,  # 待執行
+                status_id=TaskStatus.PENDING,  # 待處理 (WCS-任務已接受，待處理)
                 parameters=task_data,
                 priority=5
             )
@@ -118,7 +119,7 @@ class OpuiTaskService:
             
             task = Task(
                 room_id=room_id,
-                status_id=1,  # 待執行
+                status_id=TaskStatus.PENDING,  # 待處理 (WCS-任務已接受，待處理)
                 parameters=task_data,
                 priority=3
             )
@@ -158,9 +159,10 @@ class OpuiTaskService:
             
             # 查找相關的待執行任務
             from sqlmodel import select
+            from shared_constants.task_status import TaskStatus
             stmt = select(Task).where(
                 Task.node_id == node_id,
-                Task.status_id == 1  # 待執行
+                Task.status_id == TaskStatus.PENDING  # 待處理 (WCS-任務已接受，待處理)
             )
             tasks = session.exec(stmt).all()
             
@@ -173,7 +175,7 @@ class OpuiTaskService:
                     params.get("space_num") == space_num):
                     
                     # 取消任務
-                    task.status_id = 3  # 已取消
+                    task.status_id = TaskStatus.CANCELLED  # 已取消
                     self.task_crud.update(session, task.id, task)
                     cancelled_count += 1
             

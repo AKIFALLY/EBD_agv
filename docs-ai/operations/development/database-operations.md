@@ -328,8 +328,20 @@ Password: postgres
 -- 檢查連接數
 SELECT count(*) FROM pg_stat_activity;
 
+-- 檢查當前活動連接詳情
+SELECT 
+    pid,
+    usename,
+    application_name,
+    client_addr,
+    state,
+    query_start,
+    now() - query_start as duration
+FROM pg_stat_activity 
+WHERE state = 'active';
+
 -- 檢查資料庫大小
-SELECT pg_size_pretty(pg_database_size('postgres'));
+SELECT pg_size_pretty(pg_database_size('agvc'));
 
 -- 檢查表大小
 SELECT 
@@ -340,11 +352,30 @@ FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 
--- 檢查慢查詢
-SELECT query, mean_time, calls 
-FROM pg_stat_statements 
-ORDER BY mean_time DESC 
-LIMIT 10;
+-- 檢查資料庫活動統計
+SELECT 
+    datname,
+    numbackends as active_connections,
+    xact_commit,
+    xact_rollback,
+    blks_read,
+    blks_hit,
+    temp_files,
+    temp_bytes
+FROM pg_stat_database 
+WHERE datname = 'agvc';
+
+-- 檢查活動連接
+SELECT 
+    datname,
+    usename,
+    application_name,
+    client_addr,
+    state,
+    query_start,
+    state_change
+FROM pg_stat_activity 
+WHERE datname = 'agvc';
 ```
 
 ## 🔒 安全性考量
@@ -454,6 +485,146 @@ async with AsyncSession(engine) as session:
 # 解決：統一事務順序，減少事務時間
 ```
 
+### PostgreSQL 監控最佳實踐
+
+#### 資料庫整體狀態監控
+**⚠️ 重要：理解每個監控欄位的含義對於系統健康評估至關重要**
+
+```sql
+-- 監控資料庫整體狀態 (包含詳細欄位說明)
+SELECT 
+    pg_database.datname,                              -- 資料庫名稱
+    pg_stat_database.numbackends as active_connections,     -- 當前活動連接數
+    pg_stat_database.xact_commit,                     -- 成功提交的交易總數
+    pg_stat_database.xact_rollback,                   -- 回滾的交易總數
+    pg_stat_database.blks_read,                       -- 從磁碟讀取的區塊數
+    pg_stat_database.blks_hit,                        -- 從緩存命中的區塊數
+    pg_stat_database.temp_files,                      -- 建立的臨時檔案數量
+    pg_stat_database.temp_bytes,                      -- 臨時檔案使用的總位元組數
+    -- 計算欄位 (健康指標)
+    round(pg_stat_database.blks_hit::numeric / 
+          NULLIF(pg_stat_database.blks_hit + pg_stat_database.blks_read, 0) * 100, 2) as cache_hit_ratio,
+    round(pg_stat_database.xact_rollback::numeric / 
+          NULLIF(pg_stat_database.xact_commit + pg_stat_database.xact_rollback, 0) * 100, 2) as rollback_ratio
+FROM pg_database 
+JOIN pg_stat_database ON pg_database.oid = pg_stat_database.datid
+WHERE pg_database.datname = 'agvc';
+```
+
+#### PostgreSQL 監控欄位詳解
+
+| 欄位名稱 | 含義 | 健康標準 | 說明 |
+|---------|------|---------|------|
+| **active_connections** | 當前活動連接數 | < 50 (正常) | 過高可能導致效能問題 |
+| **xact_commit** | 成功提交交易數 | 增長正常 | 應用程式正常運作的指標 |
+| **xact_rollback** | 回滾交易數 | < 10% 總交易 | 高回滾率表示程式邏輯或鎖衝突問題 |
+| **blks_read** | 磁碟讀取區塊數 | 穩定/下降 | 過高表示緩存不足 |
+| **blks_hit** | 緩存命中區塊數 | 高比例 | 高命中率表示記憶體使用效率好 |
+| **temp_files** | 臨時檔案數量 | = 0 (理想) | > 0 表示記憶體不足，查詢溢出到磁碟 |
+| **temp_bytes** | 臨時檔案大小 | = 0 (理想) | 大值表示複雜查詢或記憶體配置問題 |
+| **cache_hit_ratio** | 緩存命中率 | > 95% (優秀) | 低於 90% 需要檢查記憶體配置 |
+| **rollback_ratio** | 回滾比例 | < 10% (穩定) | 高比例表示應用程式問題或死鎖 |
+
+#### 實際資料分析範例
+**根據實際系統資料的分析示例**：
+
+```sql
+-- 假設查詢結果:
+-- datname | active_connections | xact_commit | xact_rollback | blks_read | blks_hit | temp_files | cache_hit_ratio | rollback_ratio
+-- agvc    |                  4 |        1801 |         16774 |       741 |   167548 |          0 |           99.6% |           9.7%
+
+-- 分析說明:
+-- ✅ active_connections: 4 (健康 - 遠低於50的警戒值)
+-- ⚠️  rollback_ratio: 9.7% (接近10%警戒線 - 需要調查高回滾原因)
+-- ✅ cache_hit_ratio: 99.6% (優秀 - 記憶體使用效率極佳)
+-- ✅ temp_files: 0 (理想 - 沒有記憶體溢出問題)
+```
+
+#### 資料表使用統計監控
+```sql
+-- 監控資料表使用統計 (包含索引使用率)
+SELECT 
+    schemaname,
+    tablename,
+    n_tup_ins as inserts,                             -- 插入記錄數
+    n_tup_upd as updates,                             -- 更新記錄數
+    n_tup_del as deletes,                             -- 刪除記錄數
+    n_live_tup as live_tuples,                        -- 活動記錄數
+    n_dead_tup as dead_tuples,                        -- 無效記錄數 (需要VACUUM清理)
+    -- 計算活動度指標
+    n_tup_ins + n_tup_upd + n_tup_del as total_activity,
+    round(n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0) * 100, 2) as dead_tuple_ratio
+FROM pg_stat_user_tables 
+ORDER BY n_tup_ins + n_tup_upd + n_tup_del DESC;
+```
+
+#### 索引使用情況監控  
+```sql
+-- 監控索引使用情況 (包含使用率計算)
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    idx_tup_read,                                     -- 索引掃描次數
+    idx_tup_fetch,                                    -- 透過索引獲取的記錄數
+    pg_size_pretty(pg_relation_size(indexrelid)) as index_size,  -- 索引大小
+    -- 計算索引使用率
+    round(idx_tup_read::numeric / NULLIF(idx_tup_read + idx_tup_fetch, 0) * 100, 2) as index_usage_ratio
+FROM pg_stat_user_indexes 
+ORDER BY idx_tup_read DESC;
+
+-- 檢查未使用的索引 (可能需要刪除以節省空間)
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    pg_size_pretty(pg_relation_size(indexrelid)) as wasted_size
+FROM pg_stat_user_indexes 
+WHERE idx_tup_read = 0 AND idx_tup_fetch = 0
+ORDER BY pg_relation_size(indexrelid) DESC;
+```
+
+#### 健康檢查自動化腳本
+```sql
+-- 一鍵健康檢查 (綜合所有關鍵指標)
+WITH health_metrics AS (
+    SELECT 
+        datname,
+        numbackends as connections,
+        round(blks_hit::numeric / NULLIF(blks_hit + blks_read, 0) * 100, 2) as cache_hit_ratio,
+        round(xact_rollback::numeric / NULLIF(xact_commit + xact_rollback, 0) * 100, 2) as rollback_ratio,
+        temp_files
+    FROM pg_stat_database 
+    WHERE datname = 'agvc'
+)
+SELECT 
+    datname,
+    connections,
+    CASE 
+        WHEN connections < 50 THEN '✅ 健康'
+        WHEN connections < 100 THEN '⚠️ 注意'
+        ELSE '❌ 異常'
+    END as connection_status,
+    cache_hit_ratio,
+    CASE 
+        WHEN cache_hit_ratio > 95 THEN '✅ 優秀'
+        WHEN cache_hit_ratio > 90 THEN '⚠️ 可接受'
+        ELSE '❌ 需優化'
+    END as cache_status,
+    rollback_ratio,
+    CASE 
+        WHEN rollback_ratio < 10 THEN '✅ 穩定'
+        WHEN rollback_ratio < 20 THEN '⚠️ 注意'
+        ELSE '❌ 異常'
+    END as rollback_status,
+    temp_files,
+    CASE 
+        WHEN temp_files = 0 THEN '✅ 理想'
+        ELSE '⚠️ 有溢出'
+    END as memory_status
+FROM health_metrics;
+```
+
 ### 效能調優
 ```sql
 -- 分析查詢計劃
@@ -465,6 +636,17 @@ CREATE INDEX idx_task_agv_id ON tasks(agv_id);
 
 -- 更新統計資訊
 ANALYZE agvs;
+
+-- 檢查未使用的索引
+SELECT 
+    schemaname,
+    tablename,
+    indexname,
+    idx_tup_read,
+    idx_tup_fetch,
+    pg_size_pretty(pg_relation_size(indexrelid)) as index_size
+FROM pg_stat_user_indexes 
+WHERE idx_tup_read = 0 AND idx_tup_fetch = 0;
 ```
 
 ## 🔗 交叉引用

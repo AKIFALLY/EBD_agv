@@ -67,9 +67,10 @@ class MissionSelectState(State):
         self.node.get_logger().info(f"📦 收到 {len(tasks)} 個任務")
 
         # 篩選已執行卻未完成的任務 或是未執行但AGV已選擇
+        from shared_constants.task_status import TaskStatus
         running_tasks = [
             t for t in tasks
-            if (t.status_id == 2 or t.status_id == 1) and t.agv_id == self.node.AGV_id
+            if (t.status_id == TaskStatus.READY_TO_EXECUTE or t.status_id == TaskStatus.PENDING) and t.agv_id == self.node.AGV_id
         ]
 
         if len(running_tasks) > 0:
@@ -90,11 +91,11 @@ class MissionSelectState(State):
             # ✅ 篩選符合未執行條件的任務
             filtered_tasks = [
                 t for t in tasks
-                if t.status_id == 1 and t.work_id >= 2000 and t.work_id < 3000 and t.agv_id == 0 and t.room_id == self.node.room_id
+                if t.status_id == TaskStatus.PENDING and t.work_id >= 2000 and t.work_id < 3000 and t.agv_id == 0 and t.room_id == self.node.room_id
             ]
 
             if not filtered_tasks:
-                # self.node.get_logger().warn("⚠️ 沒有符合條件的任務 (status_id=1 且 work_id<100)")
+                # self.node.get_logger().warn("⚠️ 沒有符合條件的任務 (status_id=PENDING 且 work_id 在 2000-3000 範圍)")
                 return
 
             # ✅ 找出 priority 最大的那一筆

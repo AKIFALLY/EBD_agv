@@ -35,7 +35,7 @@ class WritePathState(State):
         self.node.get_logger().info("AGV 離開 WritePathState 狀態")
 
     def handle(self, context):
-
+        #self.node.get_logger().info(f"路徑資料:{self.node.agv_status.AGV_PATH}")
         # self.node.get_logger().info("AGV WritePathState 狀態")
         # 檢查寫入次數是否超過5次
         if self.count > 5:
@@ -47,10 +47,11 @@ class WritePathState(State):
         # 檢查是否已經有路徑資料
         # 如果已經有路徑資料，則直接切換到下一個狀態
         if self.node.agv_status.AGV_PATH:
-            self.node.get_logger().info("AGV 已有路徑資料，離開 WritePathState 狀態")
+            self.node.get_logger().info("AGV 已有路徑資料，離開 WritePathState-->RunningState ")
             # 跳過寫入路徑狀態，直接切換到下一個狀態
             from agv_base.agv_states.Running_state import RunningState
             context.set_state(RunningState(self.node))  # 切換狀態
+            return
 
         if self.step >= 3:
             self.step += 1  # 增加步驟計數器

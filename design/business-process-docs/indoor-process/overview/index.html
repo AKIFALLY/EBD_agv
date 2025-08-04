@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統概覽 - 房間內製程操作指南 - RosAGV 2025</title>
+    <link rel="stylesheet" href="../../assets/css/rosagv-common.css">
+</head>
+<body class="bg-blue">
+    <!-- 標題區域 -->
+    <header class="header">
+        <div class="container">
+            <h1>📊 房間內製程系統概覽</h1>
+            <p class="subtitle">專注於房間內的眼鏡生產製程，涵蓋清洗、泡藥、預烘、烘烤等核心工序的 AGV 自動化操作</p>
+            <div class="last-updated">系統架構、統計數據和核心特色完整說明</div>
+        </div>
+    </header>
+
+    <!-- 面包屑導航 -->
+    <nav class="breadcrumb">
+        <div class="container">
+            <a href="../../index.html">🏠 首頁</a> > 
+            <a href="../index.html">房間內製程操作指南</a> > 
+            <span>系統概覽</span>
+        </div>
+    </nav>
+
+    <!-- 子頁面導航 -->
+    <nav class="sub-nav">
+        <div class="nav-content">
+            <ul class="nav-links">
+                <li><a href="../overview/index.html" class="active">📊 系統概覽</a></li>
+                <li><a href="../production/index.html">🏭 生產流程</a></li>
+                <li><a href="../agv-types/index.html">🚛 AGV 車型</a></li>
+                <li><a href="../workflow/index.html">🔄 工作流程</a></li>
+                <li><a href="../interfaces/index.html">💻 操作介面</a></li>
+                <li><a href="../timeline/index.html">⏱️ 作業時序</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container">
+            <section class="section">
+                <h2>📊 房間內製程系統概覽</h2>
+                <p style="font-size: 1.2em; margin-bottom: 40px; text-align: center;">
+                    專注於房間內的眼鏡生產製程，涵蓋清洗、泡藥、預烘、烘烤等核心工序的 AGV 自動化操作
+                </p>
+                
+                <div class="alert alert-warning" style="margin: 20px 0;">
+                    <h3>⚠️ 系統工具使用前提條件</h3>
+                    <p><strong>使用 RosAGV <code>r</code> 工具集進行系統診斷和管理之前，必須將 RosAGV 目錄加入 PATH 環境變數</strong></p>
+                    <p>在 <code>~/.bashrc</code> 中添加：<code>export PATH="/home/ct/RosAGV:$PATH"</code></p>
+                    <p>重新載入環境：<code>source ~/.bashrc</code> | 驗證配置：<code>which r</code></p>
+                    <p>房間內製程診斷：<code>r agvc-check</code>, <code>r containers-status</code></p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">房間內工站</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">主要 AGV</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">25+</div>
+                        <div class="stat-label">房間內 Work ID</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">自動化率</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 40px;">
+                    <h3>🎯 房間內製程特色</h3>
+                    <p>房間內製程專注於精密的化學處理和溫度控制，是整個眼鏡生產流程中最關鍵的品質控制環節。系統採用 Loader AGV 和 Unloader AGV 協同作業，確保製程的連續性和一致性。</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🏭</div>
+                            <div class="card-title">核心工站</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>4個關鍵工站</h4>
+                            <ul>
+                                <li><strong>Transfer 傳送箱</strong>：料件接收和分發</li>
+                                <li><strong>Cleaner 清洗機</strong>：鏡片清潔處理</li>
+                                <li><strong>Soaker 浸潤機</strong>：化學溶液處理</li>
+                                <li><strong>Pre-dryer 預烘機</strong>：預乾燥處理</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🤖</div>
+                            <div class="card-title">AGV 配置</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>雙 AGV 協同系統</h4>
+                            <ul>
+                                <li><strong>Loader AGV</strong>：負責料件裝載和工站間搬運</li>
+                                <li><strong>Unloader AGV</strong>：負責完成品卸載和後段處理</li>
+                                <li><strong>智能調度</strong>：自動任務分配和路徑最佳化</li>
+                                <li><strong>狀態同步</strong>：即時狀態監控和回報</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⚙️</div>
+                            <div class="card-title">技術架構</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>現代化技術棧</h4>
+                            <ul>
+                                <li><strong>ROS 2 Jazzy</strong>：最新的機器人作業系統</li>
+                                <li><strong>Zenoh RMW</strong>：高效能通訊中間件</li>
+                                <li><strong>Docker 容器化</strong>：雙環境部署架構</li>
+                                <li><strong>AI WCS 決策引擎</strong>：智能任務調度</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">效能指標</div>
+                        </div>
+                        <div class="card-content">
+                            <h4>關鍵效能數據</h4>
+                            <ul>
+                                <li><strong>處理能力</strong>：每小時 120+ 批次</li>
+                                <li><strong>精度控制</strong>：±0.5mm 定位精度</li>
+                                <li><strong>可用率</strong>：99.5% 系統可用時間</li>
+                                <li><strong>品質保證</strong>：100% 製程追蹤記錄</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 頁腳導航 -->
+    <footer class="page-footer">
+        <div class="container">
+            <div class="footer-nav">
+                <span class="prev-link disabled">← 上一頁</span>
+                <a href="../index.html" class="home-link">返回目錄</a>
+                <a href="../production/index.html" class="next-link">下一頁：生產流程 →</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../../assets/js/rosagv-common.js"></script>
+</body>
+</html>

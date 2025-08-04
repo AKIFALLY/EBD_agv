@@ -9,6 +9,29 @@
 
 RosAGV 提供完整的工具生態系統，分為宿主機統一工具和容器內專業工具集兩個層次。
 
+### ⚠️ 工具使用前提條件
+**使用 `r` 工具集之前，必須將 RosAGV 目錄加入 PATH 環境變數**
+
+在 `~/.bashrc` 中添加以下設定：
+```bash
+# RosAGV 工具路徑配置
+export PATH="/home/ct/RosAGV:$PATH"
+
+# 或者根據您的實際安裝路徑調整
+# export PATH="/path/to/your/RosAGV:$PATH"
+```
+
+設定完成後，重新載入環境：
+```bash
+source ~/.bashrc
+```
+
+驗證配置是否正確：
+```bash
+which r                    # 應該顯示 /home/ct/RosAGV/r
+r menu                     # 應該顯示工具選單
+```
+
 ### 宿主機統一工具 (r 命令)
 ```bash
 r                           # 顯示所有可用工具
@@ -16,6 +39,9 @@ r agvc-check               # AGVC 系統健康檢查
 r agv-check                # AGV 系統健康檢查
 r containers-status        # 容器狀態檢查
 r network-check            # 網路連接檢查
+r zenoh-check              # Zenoh 連接檢查
+r zenoh-config             # Zenoh Router 配置管理
+r hardware-config          # 硬體映射配置管理
 r quick-diag               # 快速綜合診斷
 ```
 
@@ -74,8 +100,21 @@ dev_check                  # 代碼檢查
 
 ## 🔧 配置管理工具集
 
-### Zenoh 路由器配置管理
+### 統一配置管理 (r 命令)
 ```bash
+# 推薦使用統一入口
+r zenoh-config             # Zenoh Router 配置管理 (顯示概況)
+r hardware-config          # 硬體映射配置管理 (顯示概況)
+```
+
+### 詳細配置管理工具
+
+#### Zenoh 路由器配置管理
+```bash
+# 統一工具入口 (推薦)
+r zenoh-config             # 顯示配置概況和使用說明
+
+# 直接使用專業工具
 scripts/config-tools/zenoh-config.sh [action]
 ```
 **主要功能**：
@@ -88,8 +127,24 @@ scripts/config-tools/zenoh-config.sh [action]
 
 **配置檔案**: `/app/routerconfig.json5` (JSON5格式)
 
-### 硬體映射配置管理
+**使用範例**：
 ```bash
+# 快速查看配置概況
+r zenoh-config
+
+# 驗證配置檔案
+scripts/config-tools/zenoh-config.sh validate
+
+# 編輯配置檔案
+scripts/config-tools/zenoh-config.sh edit
+```
+
+#### 硬體映射配置管理
+```bash
+# 統一工具入口 (推薦)
+r hardware-config         # 顯示硬體映射概況和使用說明
+
+# 直接使用專業工具
 scripts/config-tools/hardware-mapping.sh [action] [device_id]
 ```
 
@@ -110,6 +165,49 @@ scripts/config-tools/edit-agvc-config.sh [config_type]
 - `overview` - 顯示硬體映射概況（預設）
 
 **配置檔案**: `/app/config/hardware_mapping.yaml`
+
+### 服務管理工具
+**⚠️ 統一服務管理：載入 setup.bash 後可用的專業服務管理介面**
+
+```bash
+# 統一服務管理 API (所有服務遵循相同介面)
+manage_zenoh {start|stop|restart|status}           # Zenoh Router 管理
+manage_web_api_launch {start|stop|restart|status}  # Web API Launch 群組管理
+manage_ssh {start|stop|restart|status}             # SSH 服務管理
+```
+
+#### Web API Launch 服務管理
+```bash
+# Web API Launch 服務群組管理 (定義在 setup.bash)
+manage_web_api_launch start     # 啟動 Web API Launch 服務群組
+manage_web_api_launch stop      # 停止所有相關進程
+manage_web_api_launch restart   # 重新啟動服務群組
+manage_web_api_launch status    # 詳細狀態檢查
+
+# 服務群組包含:
+# - ros2 launch web_api_launch launch.py (主進程)
+# - agvc_ui_server (Port 8001)
+# - op_ui_server (Port 8002)  
+# - api_server (Port 8000)
+
+# 自動啟動控制 (在 startup.agvc.bash)
+AUTO_START_WEB_API_LAUNCH=true   # 啟用自動啟動
+AUTO_START_WEB_API_LAUNCH=false  # 停用自動啟動 (測試用)
+```
+
+#### 服務管理最佳實踐
+```bash
+# 統一管理模式 - 所有服務都遵循相同 API
+manage_<service> start    # 啟動服務 (重複啟動檢查)
+manage_<service> stop     # 停止服務 (優雅清理)
+manage_<service> restart  # 重啟服務 (stop + start)
+manage_<service> status   # 狀態檢查 (詳細報告)
+
+# 服務狀態檢查
+manage_zenoh status              # Zenoh Router 狀態
+manage_web_api_launch status     # Web API 服務群組狀態  
+manage_ssh status                # SSH 服務狀態
+```
 
 ### 結構化資料處理工具
 **⚠️ 現代工具：jq/yq 已安裝在容器內，提供專業的結構化資料處理**

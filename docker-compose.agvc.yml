@@ -72,15 +72,15 @@ services:
 
   postgres:
     image: postgres:latest
-    container_name: postgres_container
+    container_name: postgres #claude 很容易搞混(容器名稱跟容器)，所以我們直接把他們名稱改為一樣減少出錯機會
     restart: always
     networks:
       bridge_network:
         ipv4_address: 192.168.100.254 # 固定 IP
     environment:
-      POSTGRES_USER: postgres # 系統管理員帳號
+      POSTGRES_USER: agvc # 系統管理員帳號 (我們直接 建立agvc的帳號密碼都設定在這裡 
       POSTGRES_PASSWORD: password # 系統管理員密碼
-      POSTGRES_DB: postgres # 預設資料庫
+      POSTGRES_DB: agvc # 預設資料庫
     ports:
       - "5432:5432"
     volumes:
@@ -88,7 +88,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin_container
+    container_name: pgadmin #claude 很容易搞混(容器名稱跟容器)，所以我們直接把他們名稱改為一樣減少出錯機會
     restart: always
     networks:
       bridge_network:

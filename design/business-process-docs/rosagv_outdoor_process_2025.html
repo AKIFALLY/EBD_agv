@@ -39,6 +39,14 @@
                     專注於房間外的眼鏡生產流程，涵蓋射出成型、傳送作業、包裝出貨等關鍵工序的 AGV 自動化操作
                 </p>
                 
+                <div class="alert alert-warning" style="margin: 20px 0;">
+                    <h3>⚠️ 系統工具使用前提條件</h3>
+                    <p><strong>使用 RosAGV <code>r</code> 工具集進行系統診斷和管理之前，必須將 RosAGV 目錄加入 PATH 環境變數</strong></p>
+                    <p>在 <code>~/.bashrc</code> 中添加：<code>export PATH="/home/ct/RosAGV:$PATH"</code></p>
+                    <p>重新載入環境：<code>source ~/.bashrc</code> | 驗證配置：<code>which r</code></p>
+                    <p>房間外製程診斷：<code>r agvc-check</code>, <code>r zenoh-check</code></p>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-item theme-green">
                         <div class="stat-number">5</div>

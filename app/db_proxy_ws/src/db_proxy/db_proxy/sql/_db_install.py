@@ -661,11 +661,11 @@ def initialize_default_data(pool_agvc):
 
         # 預設 AGV
         default_agv = [
-            {"name": "Cargo02", "model": "Cargo", "x": 0.0, "y": 0.0,
+            {"name": "cargo02", "model": "Cargo", "x": 0.0, "y": 0.0,
                 "heading": 0.0, "description": "走廊AGV(暫時規劃僅負責房間2)"},
-            {"name": "Loader02", "model": "Loader", "x": 0.0, "y": 0.0,
+            {"name": "loader02", "model": "Loader", "x": 0.0, "y": 0.0,
                 "heading": 0.0, "description": "房間2Loader(取入口傳送箱、清洗、泡藥、放預烘)"},
-            {"name": "Unloader02", "model": "Unloader", "x": 0.0, "y": 0.0,
+            {"name": "unloader02", "model": "Unloader", "x": 0.0, "y": 0.0,
                 "heading": 0.0, "description": "房間2Unloader(取預烘、烤箱、放出口傳送箱)"},
             {"id": 8506941, "name": "KUKA001", "model": "KUKA400i", "x": 3116,
                 "y": 1852, "heading": 0.0, "description": "在房間外負責料架搬運"},

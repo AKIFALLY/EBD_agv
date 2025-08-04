@@ -1,5 +1,5 @@
 """
-  DEPRECATION WARNING: Pygame-based joystick handling is deprecated.
+ DEPRECATION WARNING: Pygame-based joystick handling is deprecated.
 
 This package contains deprecated Pygame-based joystick handling code:
 - JoystickHandler: Deprecated Pygame-based direct joystick access
@@ -34,6 +34,6 @@ from .joystick_test_node import JoystickTestNode  # Deprecated
 
 __all__ = [
     'JoyHandler',        #  Still supported for ROS 2 Joy
-    'JoystickHandler',   #   Deprecated Pygame-based
-    'JoystickTestNode',  #   Deprecated Pygame-based
+    'JoystickHandler',   #  Deprecated Pygame-based
+    'JoystickTestNode',  #  Deprecated Pygame-based
 ]

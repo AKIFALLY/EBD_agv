@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房間內製程操作指南 - RosAGV 2025</title>
+    <link rel="stylesheet" href="../assets/css/rosagv-common.css">
+</head>
+<body class="bg-blue">
+    <!-- 標題區域 -->
+    <header class="header">
+        <div class="container">
+            <h1>🏭 RosAGV 房間內製程操作指南</h1>
+            <p class="subtitle">企業級眼鏡生產線房間內 AGV 自動化系統</p>
+            <div class="last-updated">專注於房間內的眼鏡生產製程，從清洗到烘烤的完整 AGV 自動化作業流程</div>
+        </div>
+    </header>
+
+    <!-- 面包屑導航 -->
+    <nav class="breadcrumb">
+        <div class="container">
+            <a href="../index.html">🏠 首頁</a> > 
+            <span>房間內製程操作指南</span>
+        </div>
+    </nav>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 系統概覽 -->
+            <section class="section">
+                <h2>📋 房間內製程章節導航</h2>
+                <p style="font-size: 1.2em; margin-bottom: 40px; text-align: center;">
+                    專注於房間內的眼鏡生產製程，涵蓋清洗、泡藥、預烘、烘烤等核心工序的 AGV 自動化操作
+                </p>
+                
+                <div class="alert alert-warning" style="margin: 20px 0;">
+                    <h3>⚠️ 系統工具使用前提條件</h3>
+                    <p><strong>使用 RosAGV <code>r</code> 工具集進行系統診斷和管理之前，必須將 RosAGV 目錄加入 PATH 環境變數</strong></p>
+                    <p>在 <code>~/.bashrc</code> 中添加：<code>export PATH="/home/ct/RosAGV:$PATH"</code></p>
+                    <p>重新載入環境：<code>source ~/.bashrc</code> | 驗證配置：<code>which r</code></p>
+                    <p>房間內製程診斷：<code>r agvc-check</code>, <code>r containers-status</code></p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">房間內工站</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">主要 AGV</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">25+</div>
+                        <div class="stat-label">房間內 Work ID</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">自動化率</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 章節導航 -->
+            <section class="section">
+                <div class="feature-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">系統概覽</div>
+                        </div>
+                        <div class="card-content">
+                            <p>房間內製程系統的整體介紹、統計數據和核心特色</p>
+                            <a href="overview/index.html" class="btn btn-primary">查看詳情</a>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🏭</div>
+                            <div class="card-title">生產流程</div>
+                        </div>
+                        <div class="card-content">
+                            <p>眼鏡製程的完整流程：清洗、泡藥、預烘、烘烤等工序</p>
+                            <a href="production/index.html" class="btn btn-primary">查看詳情</a>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🚛</div>
+                            <div class="card-title">AGV 車型</div>
+                        </div>
+                        <div class="card-content">
+                            <p>Loader AGV 和 Unloader AGV 的技術規格和應用場景</p>
+                            <a href="agv-types/index.html" class="btn btn-primary">查看詳情</a>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🔄</div>
+                            <div class="card-title">工作流程</div>
+                        </div>
+                        <div class="card-content">
+                            <p>AGV 協同作業流程、任務分配和執行邏輯</p>
+                            <a href="workflow/index.html" class="btn btn-primary">查看詳情</a>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💻</div>
+                            <div class="card-title">操作介面</div>
+                        </div>
+                        <div class="card-content">
+                            <p>AGVCUI 和 OPUI 介面操作指導和功能說明</p>
+                            <a href="interfaces/index.html" class="btn btn-primary">查看詳情</a>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⏱️</div>
+                            <div class="card-title">作業時序</div>
+                        </div>
+                        <div class="card-content">
+                            <p>製程時間控制、AGV 調度時序和效率最佳化</p>
+                            <a href="timeline/index.html" class="btn btn-primary">查看詳情</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 頁腳導航 -->
+    <footer class="page-footer">
+        <div class="container">
+            <div class="footer-nav">
+                <a href="../index.html" class="home-link">返回主導航</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../assets/js/rosagv-common.js"></script>
+</body>
+</html>

@@ -15,12 +15,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 # 導入被測試模組
 try:
     from db_proxy.connection_pool_manager import ConnectionPoolManager
-    from db_proxy.models import Task, AGV, Work, TaskStatus
+    from db_proxy.models import Task, AGV, Work
+    from shared_constants.task_status import TaskStatus
     from sqlmodel import select
     from sqlalchemy import text
     DB_AVAILABLE = True
 except ImportError:
     DB_AVAILABLE = False
+
+try:
+    from shared_constants.work_ids import WorkIds
+    WORK_IDS_AVAILABLE = True
+except ImportError:
+    WORK_IDS_AVAILABLE = False
 
 try:
     from rcs.simple_ct_manager import CtManager
@@ -38,18 +45,15 @@ RCS_AVAILABLE = CT_MANAGER_AVAILABLE or KUKA_MANAGER_AVAILABLE
 
 
 # 基本數據測試 (類似 ai_wcs_ws 的簡單函數測試)
+@pytest.mark.skipif(not WORK_IDS_AVAILABLE, reason="WorkIds 不可用")
 def test_work_id_categories():
     """測試工作 ID 分類數值"""
-    # 測試基本 Work ID 分類
-    kuka_move_id = 210001
-    kuka_rack_move_id = 220001  
-    opui_call_empty_id = 100001
-    ct_agv_id = 2000102
-    
-    assert kuka_move_id == 210001
-    assert kuka_rack_move_id == 220001
-    assert opui_call_empty_id == 100001
-    assert ct_agv_id == 2000102
+    # 測試使用 WorkIds 常數
+    assert WorkIds.KUKA_MOVE == 210001
+    assert WorkIds.KUKA_RACK_MOVE == 220001
+    assert WorkIds.KUKA_WORKFLOW == 230001
+    assert WorkIds.OPUI_CALL_EMPTY == 100001
+    assert WorkIds.CT_AGV_WORK == 2000102
 
 
 def test_agv_model_types():
@@ -61,6 +65,52 @@ def test_agv_model_types():
         assert model in expected_models
         assert isinstance(model, str)
         assert len(model) > 0
+
+
+@pytest.mark.skipif(not WORK_IDS_AVAILABLE, reason="WorkIds 不可用")
+def test_work_ids_functionality():
+    """測試 WorkIds 類別功能"""
+    # 測試基本常數
+    assert WorkIds.KUKA_MOVE == 210001
+    assert WorkIds.KUKA_RACK_MOVE == 220001
+    assert WorkIds.KUKA_WORKFLOW == 230001
+    
+    # 測試描述功能
+    assert WorkIds.get_description(WorkIds.KUKA_MOVE) == "KUKA 移動"
+    assert WorkIds.get_description(WorkIds.KUKA_RACK_MOVE) == "KUKA 移動貨架"
+    assert WorkIds.get_description(999999) == "未知工作 ID"
+    
+    # 測試名稱功能
+    assert WorkIds.get_name(WorkIds.KUKA_MOVE) == "KUKA_MOVE"
+    assert WorkIds.get_name(999999) == "UNKNOWN"
+    
+    # 測試 KUKA 支援檢查
+    assert WorkIds.is_kuka_supported(WorkIds.KUKA_MOVE) == True
+    assert WorkIds.is_kuka_supported(WorkIds.OPUI_CALL_EMPTY) == False
+    
+    # 測試 KUKA API 類型
+    assert WorkIds.get_kuka_api_type(WorkIds.KUKA_MOVE) == "move"
+    assert WorkIds.get_kuka_api_type(WorkIds.KUKA_RACK_MOVE) == "rack_move"
+    assert WorkIds.get_kuka_api_type(WorkIds.KUKA_WORKFLOW) == "workflow"
+    assert WorkIds.get_kuka_api_type(WorkIds.OPUI_CALL_EMPTY) == ""
+
+
+@pytest.mark.skipif(not WORK_IDS_AVAILABLE, reason="WorkIds 不可用")
+def test_kuka_supported_work_ids():
+    """測試 KUKA 支援的工作 ID 列表"""
+    kuka_ids = WorkIds.get_kuka_work_ids()
+    
+    # 驗證包含預期的工作 ID
+    assert WorkIds.KUKA_MOVE in kuka_ids
+    assert WorkIds.KUKA_RACK_MOVE in kuka_ids
+    assert WorkIds.KUKA_WORKFLOW in kuka_ids
+    
+    # 驗證不包含非 KUKA 工作 ID
+    assert WorkIds.OPUI_CALL_EMPTY not in kuka_ids
+    assert WorkIds.CT_AGV_WORK not in kuka_ids
+    
+    # 驗證長度
+    assert len(kuka_ids) == 3
 
 
 def test_task_status_values():
@@ -103,19 +153,22 @@ def test_dispatch_priority_system():
     assert min(priorities) == 1  # 最高優先級
 
 
-@pytest.mark.parametrize("work_id,expected_route", [
-    (210001, "move"),
-    (220001, "rack_move"),
-    (230001, "workflow"),
-    (100001, "workflow"),
-    (2000102, "workflow"),
-])
+# 定義測試參數（使用數字避免載入問題）
+WORK_ID_ROUTE_PARAMS = [
+    (210001, "move"),      # WorkIds.KUKA_MOVE
+    (220001, "rack_move"), # WorkIds.KUKA_RACK_MOVE
+    (230001, "workflow"),  # WorkIds.KUKA_WORKFLOW
+    (100001, "workflow"),  # WorkIds.OPUI_CALL_EMPTY
+    (2000102, "workflow"), # WorkIds.CT_AGV_WORK
+]
+
+@pytest.mark.parametrize("work_id,expected_route", WORK_ID_ROUTE_PARAMS)
 def test_work_id_routing_logic(work_id, expected_route):
     """測試工作 ID 路由邏輯"""
     # 實現 RCS 簡化版本的路由邏輯
-    if work_id == 210001:
+    if work_id == 210001:  # KUKA_MOVE
         route_type = "move"
-    elif work_id == 220001:
+    elif work_id == 220001:  # KUKA_RACK_MOVE
         route_type = "rack_move"
     else:
         route_type = "workflow"
@@ -177,7 +230,7 @@ def test_task_model_filtering(db_connection):
         # 測試 KUKA400i 任務篩選
         kuka_tasks = session.exec(
             select(Task).where(
-                Task.status_id == 1,
+                Task.status_id == TaskStatus.PENDING,  # 待處理 (WCS-任務已接受，待處理)
                 Task.parameters["model"].as_string() == "KUKA400i"
             )
         ).all()
@@ -185,7 +238,7 @@ def test_task_model_filtering(db_connection):
         # 測試 CT 任務篩選
         ct_tasks = session.exec(
             select(Task).where(
-                Task.status_id == 1,
+                Task.status_id == TaskStatus.PENDING,  # 待處理 (WCS-任務已接受，待處理)
                 Task.parameters["model"].as_string() != "KUKA400i"
             )
         ).all()

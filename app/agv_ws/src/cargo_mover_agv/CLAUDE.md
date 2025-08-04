@@ -128,8 +128,8 @@ cat test/async_update_task_analysis_report.md
 ## 📊 配置設定
 
 ### AGV 配置檔案
-- `/app/config/agv/cargo01_config.yaml` - Cargo01 配置
-- `/app/config/agv/cargo02_config.yaml` - Cargo02 配置
+- `/app/config/agv/cargo01_config.yaml` - cargo01 配置
+- `/app/config/agv/cargo02_config.yaml` - cargo02 配置
 
 ### 關鍵配置參數
 ```yaml

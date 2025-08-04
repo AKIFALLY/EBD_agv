@@ -7,8 +7,8 @@
 
 ## 📋 AGVC 工作空間架構
 
-### 工作空間總覽 (11個)
-AGVC 管理系統包含 11 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
+### 工作空間總覽 (12個)
+AGVC 管理系統包含 12 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
 
 ```
 AGVC 管理系統工作空間
@@ -19,10 +19,12 @@ AGVC 管理系統工作空間
 # (wcs_ws 已整合至 ai_wcs_ws)
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
 ├── ai_wcs_ws/                 # AI 倉庫控制系統
+├── simple_wcs_ws/             # Simple WCS 決策引擎
 ├── keyence_plc_ws/            # Keyence PLC 通訊 (共用)
 ├── plc_proxy_ws/              # PLC 代理服務 (共用)
 ├── path_algorithm/            # 路徑規劃演算法 (共用)
-└── [1個預留工作空間]          # 未來擴展使用
+├── launch_ws/                 # Launch 編排服務
+└── [預留空間]                  # 未來擴展使用
 ```
 
 ## 🌐 Web 服務工作空間
@@ -181,6 +183,38 @@ ai_wcs_ws/src/
 - 負載預測和平衡
 - 異常檢測和預警
 - 效能分析和改進建議
+
+### simple_wcs_ws/ - Simple WCS 決策引擎
+**職責**: 極簡化配置驅動的 WCS 決策引擎，專注於業務流程自動化
+
+#### 套件結構
+```
+simple_wcs_ws/src/
+├── simple_wcs/               # Simple WCS 核心
+│   ├── wcs_engine.py         # 主要決策引擎 (ROS 2 節點)
+│   ├── flow_parser.py        # YAML 業務流程解析器
+│   ├── database_client.py    # SQLModel 資料庫客戶端
+│   └── __init__.py
+├── launch/                   # Launch 檔案
+│   └── simple_wcs_launch.py
+└── config/                   # 配置檔案
+    ├── flows.md              # 業務流程說明
+    └── locations.yaml        # 位置配置
+```
+
+#### 核心特色
+- **配置驅動**: 純 YAML 配置的業務邏輯
+- **多檔案架構**: 每個業務流程獨立 YAML 檔案
+- **ROS 2 + Zenoh**: 原生 ROS 2 節點，支援跨容器通訊
+- **AI Agent 友好**: 支援 `yq` 工具自動化配置管理
+- **SQLModel 整合**: 直接使用現有 db_proxy 系統
+
+#### 決策流程
+- 每10秒執行決策循環
+- 載入 `/app/config/wcs/flows/` 中所有業務流程
+- 按優先級順序評估觸發條件
+- 生成任務決策並透過 ROS 2 發布
+- 支援 Rack 旋轉檢查等核心業務流程
 
 ### kuka_fleet_ws/ - KUKA Fleet 整合
 **職責**: 與 KUKA Fleet 系統的整合和通訊

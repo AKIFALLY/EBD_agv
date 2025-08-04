@@ -39,6 +39,7 @@ class KukaManager:
             
             with self.db_pool.get_session() as session:
                 from db_proxy.models import AGV, Task
+                from shared_constants.task_status import TaskStatus
                 from sqlmodel import select
                 
                 # 2. 確認資料庫中的 AGV 狀態
@@ -57,13 +58,15 @@ class KukaManager:
 
                 self.get_logger().info(f"閒置且可用 KUKA400i AGV: {available_kuka400i_agv_ids}")
 
-                # 3. 查詢待執行的 KUKA 任務
+                # 3. 查詢待執行的 KUKA 任務 (只選擇支援的 work_id)
+                from shared_constants.work_ids import WorkIds
                 kuka400i_tasks = session.exec(
                     select(Task).where(
-                        Task.status_id == 1,  # 待執行
+                        Task.status_id == TaskStatus.PENDING,  # 待處理 (WCS-任務已接受，待處理)
                         Task.mission_code == None,  # 尚未指定任務代碼
-                        Task.parameters["model"].as_string() == "KUKA400i"  # 使用小寫 model
-                    ).order_by(Task.priority.asc())  # 優先級低的數字先執行
+                        Task.parameters["model"].as_string() == "KUKA400i",  # 使用小寫 model
+                        Task.work_id.in_(WorkIds.KUKA_SUPPORTED_WORK_IDS)  # 只選擇支援的 work_id
+                    ).order_by(Task.priority.desc())  # 優先級高的數字先執行
                 ).all()
                 
                 if not kuka400i_tasks:
@@ -106,9 +109,10 @@ class KukaManager:
             # 生成任務代碼
             kuka_mission_code = str(uuid.uuid4())
             
+            from shared_constants.work_ids import WorkIds
             self.get_logger().info(
                 f"預派發任務 {task.id} 給 AGV {agv_id} kuka_mission_code:{kuka_mission_code}")
-            self.get_logger().info(f"work_id: {task.work_id}")
+            self.get_logger().info(f"work_id: {task.work_id} ({WorkIds.get_description(task.work_id)})")
             
             # 根據 work_id 執行對應的 KUKA API
             result = self._execute_kuka_api(task, agv_id, kuka_mission_code)
@@ -123,10 +127,44 @@ class KukaManager:
                 return True
             else:
                 self.get_logger().error(f"KUKA API 調用失敗: {result}")
+                # 記錄失敗信息到 task.parameters 中的 rcs_kuka_response
+                if task.parameters is None:
+                    task.parameters = {}
+                task.parameters["rcs_kuka_response"] = {
+                    "success": False,
+                    "error_code": result.get("code", "UNKNOWN"),
+                    "error_message": result.get("message", "Unknown error"),
+                    "full_response": result,
+                    "failed_agv_id": agv_id,
+                    "failed_mission_code": kuka_mission_code,
+                    "failure_timestamp": str(uuid.uuid4())  # 使用 uuid 作為唯一時間戳
+                }
+                # 更新任務狀態為錯誤狀態，防止重複選擇
+                from shared_constants.task_status import TaskStatus as const_task_status
+                task.status_id = const_task_status.ERROR  # 設置為錯誤狀態 (6)
+                self.get_logger().warning(
+                    f"任務 {task.id} 派發失敗，已記錄錯誤信息並更新狀態為錯誤 (status_id: {const_task_status.ERROR})")
                 return False
                 
         except Exception as e:
             self.get_logger().error(f"派發任務給 AGV {agv_id} 時發生錯誤: {e}")
+            # 記錄異常信息到 task.parameters 中的 rcs_kuka_response
+            if task.parameters is None:
+                task.parameters = {}
+            task.parameters["rcs_kuka_response"] = {
+                "success": False,
+                "error_code": "EXCEPTION",
+                "error_message": str(e),
+                "full_response": {"error": "Exception occurred", "details": str(e)},
+                "failed_agv_id": agv_id,
+                "failed_mission_code": kuka_mission_code,
+                "failure_timestamp": str(uuid.uuid4())  # 使用 uuid 作為唯一時間戳
+            }
+            # 更新任務狀態為錯誤狀態，防止重複選擇
+            from shared_constants.task_status import TaskStatus
+            task.status_id = TaskStatus.ERROR  # 設置為錯誤狀態 (6)
+            self.get_logger().warning(
+                f"任務 {task.id} 派發異常，已記錄錯誤信息並更新狀態為錯誤 (status_id: {TaskStatus.ERROR})")
             return False
 
     def _execute_kuka_api(self, task, agv_id: int, mission_code: str) -> dict:
@@ -142,10 +180,11 @@ class KukaManager:
             dict: API 調用結果
         """
         try:
+            from shared_constants.work_ids import WorkIds
             result = {"success": False}
             
             # 基於 work_id 的簡單派發邏輯
-            if task.work_id == 210001:  # KUKA 移動
+            if task.work_id == WorkIds.KUKA_MOVE:  # KUKA 移動
                 self.get_logger().info(f"parameters['nodes']: {task.parameters['nodes']}")
                 if task.parameters['nodes']:
                     result = self.kuka_fleet.move(
@@ -154,7 +193,7 @@ class KukaManager:
                     self.get_logger().warn(
                         f"缺少參數 parameters['nodes'] 無法執行任務 {task.id}")
                         
-            elif task.work_id == 220001:  # KUKA 移動貨架
+            elif task.work_id == WorkIds.KUKA_RACK_MOVE:  # KUKA 移動貨架
                 self.get_logger().info(f"parameters['nodes']: {task.parameters['nodes']}")
                 if task.parameters['nodes']:
                     result = self.kuka_fleet.rack_move(
@@ -162,8 +201,8 @@ class KukaManager:
                 else:
                     self.get_logger().warn(
                         f"缺少參數 parameters['nodes'] 無法執行任務 {task.id}")
-                        
-            else:  # 其他任務作為 workflow 處理
+
+            elif task.work_id == WorkIds.KUKA_WORKFLOW:  # KUKA template 流程任務
                 template_code = task.parameters.get('templateCode')
                 self.get_logger().info(f"templateCode: {template_code}")
                 if template_code:
@@ -172,7 +211,9 @@ class KukaManager:
                 else:
                     self.get_logger().warn(
                         f"缺少參數 parameters['templateCode'] 無法執行任務 {task.id}")
-            
+
+            else:  # 理論上不會到達這裡，因為查詢時已過濾
+                self.get_logger().error(f"意外的 task.work_id: {task.work_id} ({WorkIds.get_description(task.work_id)}) (應該已在查詢時過濾)")
             return result
             
         except Exception as e:

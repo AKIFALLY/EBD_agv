@@ -9,31 +9,31 @@ class RoomCRUD(BaseCRUD):
 
     def get_enter_location_id(self, session: Session, room_id: int) -> Optional[int]:
         """
-        取得房間的入口位置ID
+        取得房間的入口位置ID（使用硬編碼規則）
 
         Args:
             session: 資料庫 session
             room_id: 房間ID
 
         Returns:
-            入口位置ID，如果房間不存在則回傳 None
+            入口位置ID，格式：room_id * 10000 + 1，如果房間不存在則回傳 None
         """
         room = self.get_by_id(session, room_id)
-        return room.enter_location_id if room else None
+        return room_id * 10000 + 1 if room else None
 
     def get_exit_location_id(self, session: Session, room_id: int) -> Optional[int]:
         """
-        取得房間的出口位置ID
+        取得房間的出口位置ID（使用硬編碼規則）
 
         Args:
             session: 資料庫 session
             room_id: 房間ID
 
         Returns:
-            出口位置ID，如果房間不存在則回傳 None
+            出口位置ID，格式：room_id * 10000 + 2，如果房間不存在則回傳 None
         """
         room = self.get_by_id(session, room_id)
-        return room.exit_location_id if room else None
+        return room_id * 10000 + 2 if room else None
 
     def get_process_settings_id(self, session: Session, room_id: int) -> Optional[int]:
         """
@@ -51,7 +51,7 @@ class RoomCRUD(BaseCRUD):
 
     def get_room_locations(self, session: Session, room_id: int) -> Optional[dict]:
         """
-        取得房間的入口和出口位置ID
+        取得房間的入口和出口位置ID（使用硬編碼規則）
 
         Args:
             session: 資料庫 session
@@ -65,8 +65,8 @@ class RoomCRUD(BaseCRUD):
         room = self.get_by_id(session, room_id)
         if room:
             return {
-                "enter_location_id": room.enter_location_id,
-                "exit_location_id": room.exit_location_id
+                "enter_location_id": room_id * 10000 + 1,
+                "exit_location_id": room_id * 10000 + 2
             }
         return None
 

@@ -1,0 +1,688 @@
+[
+    {
+        "TagNo": 1,
+        "Tag_X": 2000,
+        "Tag_Y": 8000,
+        "Station": 1,
+        "CanToMoveSet": [
+            {
+                "CanToMoveTag": 5,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    -10
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            }
+        ]
+    },
+    {
+        "TagNo": 2,
+        "Tag_X": 8925,
+        "Tag_Y": 7883,
+        "Station": 1,
+        "CanToMoveSet": [
+            {
+                "CanToMoveTag": 3,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    1763
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            }
+        ]
+    },
+    {
+        "TagNo": 3,
+        "Tag_X": 8810,
+        "Tag_Y": 6225,
+        "Station": 0,
+        "CanToMoveSet": [
+            {
+                "CanToMoveTag": 4,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    1762
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 2,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    1763
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            }
+        ]
+    },
+    {
+        "TagNo": 4,
+        "Tag_X": 3620,
+        "Tag_Y": 6115,
+        "Station": 0,
+        "CanToMoveSet": [
+            {
+                "CanToMoveTag": 3,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    -6
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 5,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    -6
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            }
+        ]
+    },
+    {
+        "TagNo": 5,
+        "Tag_X": 3620,
+        "Tag_Y": 7960,
+        "Station": 0,
+        "CanToMoveSet": [
+            {
+                "CanToMoveTag": 1,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    -10
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 4,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    -6
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            }
+        ]
+    },
+    {
+        "TagNo": 6,
+        "Tag_X": 0,
+        "Tag_Y": 0,
+        "Station": 0,
+        "CanToMoveSet": [
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    12,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            }
+        ]
+    },
+    {
+        "TagNo": 7,
+        "Tag_X": 0,
+        "Tag_Y": 0,
+        "Station": 1,
+        "CanToMoveSet": [
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    12,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            },
+            {
+                "CanToMoveTag": 0,
+                "PGV": 0,
+                "加權": 0,
+                "Act": [
+                    0,
+                    0,
+                    0
+                ],
+                "Speed": [],
+                "SHIFT": [
+                    0,
+                    0,
+                    0
+                ],
+                "Inposition": [],
+                "SafeSensorSetting": []
+            }
+        ]
+    }
+]

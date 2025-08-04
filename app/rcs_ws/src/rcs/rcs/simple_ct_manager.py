@@ -145,12 +145,13 @@ class CtManager:
         try:
             with self.db_pool.get_session() as session:
                 from db_proxy.models import Task
+                from shared_constants.task_status import TaskStatus
                 from sqlmodel import select
                 
-                # 查詢待執行的 CT 任務 (使用大寫 Model，排除 KUKA400i)
+                # 查詢待執行的 CT 任務 (使用小寫 model，排除 KUKA400i)
                 ct_tasks = session.exec(
                     select(Task).where(
-                        Task.status_id == 1,  # 待執行
+                        Task.status_id == TaskStatus.PENDING,  # 待處理 (WCS-任務已接受，待處理)
                         Task.mission_code == None,  # 尚未指定任務代碼
                         Task.parameters["model"].as_string() != "KUKA400i"  # 排除 KUKA 任務
                     ).order_by(Task.priority.asc())  # 優先級低的數字先執行

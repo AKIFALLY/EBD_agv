@@ -56,6 +56,10 @@ def initialize_kuka_nodes(session):
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
         {"id": 92, "uuid": "KUKA092", "node_type_id": 2, "name": "Room2入口", "description": "Room2入口",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
+        {"id": 20001, "uuid": "KUKA20001", "node_type_id": 2, "name": "Room2入口", "description": "Room2入口",
+        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
+        {"id": 20002, "uuid": "KUKA20002", "node_type_id": 2, "name": "Room2入口", "description": "Room2入口",
+        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
 
         
     ]

@@ -416,8 +416,8 @@ check_service_health() {
         # AGVC 管理環境：檢查完整的服務健康
         
         # PostgreSQL 健康檢查
-        if docker ps -q -f name=postgres_container >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=postgres_container)" ]; then
-            if docker exec postgres_container pg_isready -U postgres >/dev/null 2>&1; then
+        if docker ps -q -f name=postgres >/dev/null 2>&1 && [ -n "$(docker ps -q -f name=postgres)" ]; then
+            if docker exec postgres pg_isready -U agvc >/dev/null 2>&1; then
                 record_check "PASS" "PostgreSQL 服務健康"
             else
                 record_check "FAIL" "PostgreSQL 服務異常"

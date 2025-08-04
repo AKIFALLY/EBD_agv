@@ -69,6 +69,7 @@ test_all() {
 
     # 定義要測試的 workspace 路徑
     local workspaces=(
+        "/app/shared_constants_ws"
         "/app/keyence_plc_ws"
         "/app/plc_proxy_ws"
         "/app/agv_cmd_service_ws"
@@ -78,6 +79,7 @@ test_all() {
         "/app/ecs_ws"
         "/app/rcs_ws"
         "/app/ai_wcs_ws"
+        "/app/simple_wcs_ws"
         "/app/web_api_ws"
         "/app/kuka_fleet_ws"
         "/app/launch_ws"
@@ -158,23 +160,41 @@ test_single() {
 }
 
 
-# 建置所有工作空間
-build_all() {
-    echo "🔧 開始建置所有工作空間..."
+# AGV 專用工作空間建置函數
+build_agv() {
+    echo "🚗 開始建置 AGV 車載系統專用工作空間..."
 
     BASE_DIR="/app/"
     local success_count=0
     local total_count=0
 
-    # 查找所有 _ws 結尾的資料夾並執行 colcon build
-    for dir in "$BASE_DIR"/*_ws; do
-        if [ -d "$dir" ]; then
-            ((total_count++))
-            local ws_name=$(basename "$dir")
-            echo "🔨 建置工作空間: $ws_name"
+    # AGV 車載系統專用工作空間 (按依賴順序排列)
+    local agv_base_workspaces=(
+        "shared_constants_ws"    # 共享常數 (最優先)
+        "keyence_plc_ws"
+        "plc_proxy_ws"  
+        "path_algorithm"
+    )
 
-            # 進入資料夾並執行 colcon build
-            cd "$dir" || continue
+    local agv_app_workspaces=(
+        "agv_cmd_service_ws"
+        "joystick_ws"
+        "agv_ws"
+        "sensorpart_ws"
+        "uno_gpio_ws"
+        "launch_ws"
+    )
+
+    # 建置 AGV 基礎工作空間
+    echo "📦 建置 AGV 基礎工作空間..."
+    for ws_name in "${agv_base_workspaces[@]}"; do
+        local workspace_path="$BASE_DIR$ws_name"
+        
+        if [ -d "$workspace_path" ]; then
+            ((total_count++))
+            echo "🔨 建置工作空間: $ws_name (AGV 基礎)"
+
+            cd "$workspace_path" || continue
 
             if colcon build --event-handlers console_direct+; then
                 echo "✅ $ws_name 建置成功"
@@ -184,10 +204,304 @@ build_all() {
             fi
 
             cd "$BASE_DIR" || continue
+        else
+            echo "⚠️  工作空間不存在: $ws_name"
+        fi
+    done
+
+    # 建置 AGV 應用工作空間
+    echo "🚀 建置 AGV 應用工作空間..."
+    for ws_name in "${agv_app_workspaces[@]}"; do
+        local workspace_path="$BASE_DIR$ws_name"
+        
+        if [ -d "$workspace_path" ]; then
+            ((total_count++))
+            echo "🔨 建置工作空間: $ws_name (AGV 應用)"
+
+            cd "$workspace_path" || continue
+
+            if colcon build --event-handlers console_direct+; then
+                echo "✅ $ws_name 建置成功"
+                ((success_count++))
+            else
+                echo "❌ $ws_name 建置失敗"
+            fi
+
+            cd "$BASE_DIR" || continue
+        else
+            echo "⚠️  工作空間不存在: $ws_name"
+        fi
+    done
+
+    echo "📊 AGV 建置完成: $success_count/$total_count 個工作空間建置成功"
+}
+
+# AGVC 專用工作空間建置函數  
+build_agvc() {
+    echo "🖥️ 開始建置 AGVC 管理系統專用工作空間..."
+
+    BASE_DIR="/app/"
+    local success_count=0
+    local total_count=0
+
+    # AGVC 管理系統專用工作空間 (按依賴順序排列)
+    local agvc_base_workspaces=(
+        "shared_constants_ws"    # 共享常數 (最優先)
+        "keyence_plc_ws"
+        "plc_proxy_ws"
+        "path_algorithm"
+        "agv_ws"
+        "db_proxy_ws"
+    )
+
+    local agvc_app_workspaces=(
+        "ecs_ws"
+        "rcs_ws"
+        "ai_wcs_ws"
+        "simple_wcs_ws"
+        "web_api_ws"
+        "kuka_fleet_ws"
+        "launch_ws"
+    )
+
+    # 建置 AGVC 基礎工作空間
+    echo "📦 建置 AGVC 基礎工作空間..."
+    for ws_name in "${agvc_base_workspaces[@]}"; do
+        local workspace_path="$BASE_DIR$ws_name"
+        
+        if [ -d "$workspace_path" ]; then
+            ((total_count++))
+            echo "🔨 建置工作空間: $ws_name (AGVC 基礎)"
+
+            cd "$workspace_path" || continue
+
+            if colcon build --event-handlers console_direct+; then
+                echo "✅ $ws_name 建置成功"
+                ((success_count++))
+            else
+                echo "❌ $ws_name 建置失敗"
+            fi
+
+            cd "$BASE_DIR" || continue
+        else
+            echo "⚠️  工作空間不存在: $ws_name"
+        fi
+    done
+
+    # 建置 AGVC 應用工作空間
+    echo "🚀 建置 AGVC 應用工作空間..."
+    for ws_name in "${agvc_app_workspaces[@]}"; do
+        local workspace_path="$BASE_DIR$ws_name"
+        
+        if [ -d "$workspace_path" ]; then
+            ((total_count++))
+            echo "🔨 建置工作空間: $ws_name (AGVC 應用)"
+
+            cd "$workspace_path" || continue
+
+            if colcon build --event-handlers console_direct+; then
+                echo "✅ $ws_name 建置成功"
+                ((success_count++))
+            else
+                echo "❌ $ws_name 建置失敗"
+            fi
+
+            cd "$BASE_DIR" || continue
+        else
+            echo "⚠️  工作空間不存在: $ws_name"
+        fi
+    done
+
+    echo "📊 AGVC 建置完成: $success_count/$total_count 個工作空間建置成功"
+}
+
+# 智能建置函數 (根據環境自動選擇)
+build_all() {
+    echo "🔧 智能建置工作空間 (根據容器環境自動選擇)..."
+
+    # 檢測當前環境並選擇對應的建置策略
+    if [ "$CONTAINER_TYPE" = "agv" ]; then
+        echo "🚗 檢測到 AGV 車載環境，建置 AGV 專用工作空間"
+        build_agv
+    elif [ "$CONTAINER_TYPE" = "agvc" ]; then
+        echo "🖥️ 檢測到 AGVC 管理環境，建置 AGVC 專用工作空間"  
+        build_agvc
+    elif is_agvc_environment; then
+        echo "🖥️ 檢測到 AGVC 管理環境，建置 AGVC 專用工作空間"
+        build_agvc
+    else
+        echo "🔄 無法確定環境類型，建置 AGV 工作空間 (預設)"
+        build_agv
+    fi
+}
+
+# 建置所有工作空間 (傳統方式，包含所有工作空間)
+build_all_workspaces() {
+    echo "🔧 開始建置所有工作空間..."
+
+    BASE_DIR="/app/"
+    local success_count=0
+    local total_count=0
+
+    # 定義依賴順序的工作空間列表
+    local ordered_workspaces=(
+        # 共享常數 (最優先，所有工作空間的基礎依賴)
+        "shared_constants_ws"
+        
+        # 基礎依賴工作空間 (其他工作空間的依賴)
+        "keyence_plc_ws"
+        "plc_proxy_ws" 
+        "path_algorithm"
+        
+        # 核心服務工作空間
+        "db_proxy_ws"          # 資料庫服務，被 simple_wcs_ws 等依賴
+        
+        # AGV 相關工作空間
+        "agv_ws"               # 核心 AGV 控制
+        "agv_cmd_service_ws"   # 手動指令服務
+        "joystick_ws"          # 搖桿控制
+        "sensorpart_ws"        # 感測器處理
+        
+        # AGVC 應用工作空間 (依賴 db_proxy_ws)
+        "ecs_ws"               # 設備控制系統
+        "rcs_ws"               # 機器人控制系統
+        "ai_wcs_ws"            # AI 倉庫控制系統
+        "simple_wcs_ws"        # Simple WCS (依賴 db_proxy_ws)
+        "web_api_ws"           # Web API 服務
+        "kuka_fleet_ws"        # KUKA Fleet 整合
+        
+        # 啟動配置工作空間 (最後建置)
+        "launch_ws"            # Launch 配置
+        
+        # 其他工作空間
+        "uno_gpio_ws"          # GPIO 控制
+    )
+
+    # 按順序建置工作空間
+    for ws_name in "${ordered_workspaces[@]}"; do
+        local workspace_path="$BASE_DIR$ws_name"
+        
+        if [ -d "$workspace_path" ]; then
+            ((total_count++))
+            echo "🔨 建置工作空間: $ws_name (按依賴順序)"
+
+            # 進入資料夾並執行 colcon build
+            cd "$workspace_path" || continue
+
+            if colcon build --event-handlers console_direct+; then
+                echo "✅ $ws_name 建置成功"
+                ((success_count++))
+            else
+                echo "❌ $ws_name 建置失敗"
+                # 可選：是否在依賴失敗時停止建置
+                # echo "⚠️  由於 $ws_name 建置失敗，可能影響後續依賴工作空間"
+            fi
+
+            cd "$BASE_DIR" || continue
+        else
+            echo "⚠️  工作空間不存在: $ws_name"
         fi
     done
 
     echo "📊 建置完成: $success_count/$total_count 個工作空間建置成功"
+}
+
+# 使用 colcon 依賴解析的智能建置函數
+build_all_smart() {
+    echo "🧠 開始智能建置所有工作空間 (使用 colcon 依賴解析)..."
+
+    BASE_DIR="/app/"
+    
+    # 收集所有工作空間的源碼目錄
+    local workspace_src_dirs=()
+    for dir in "$BASE_DIR"/*_ws; do
+        if [ -d "$dir/src" ]; then
+            workspace_src_dirs+=("$dir/src")
+        fi
+    done
+    
+    if [ ${#workspace_src_dirs[@]} -eq 0 ]; then
+        echo "❌ 未找到任何有效的工作空間源碼目錄"
+        return 1
+    fi
+    
+    echo "📦 找到 ${#workspace_src_dirs[@]} 個工作空間源碼目錄"
+    
+    # 在根目錄創建臨時統一建置空間
+    local unified_build_dir="/tmp/rosagv_unified_build"
+    rm -rf "$unified_build_dir"
+    mkdir -p "$unified_build_dir/src"
+    
+    # 將所有套件鏈接到統一建置空間
+    echo "🔗 建立統一建置空間..."
+    for src_dir in "${workspace_src_dirs[@]}"; do
+        for package_dir in "$src_dir"/*; do
+            if [ -d "$package_dir" ] && [ -f "$package_dir/package.xml" ]; then
+                local package_name=$(basename "$package_dir")
+                ln -sf "$package_dir" "$unified_build_dir/src/$package_name"
+                echo "  🔗 鏈接套件: $package_name"
+            fi
+        done
+    done
+    
+    # 切換到統一建置空間
+    cd "$unified_build_dir" || return 1
+    
+    echo "🚀 執行統一建置 (colcon 將自動解析依賴關係)..."
+    
+    # 使用 colcon 的依賴解析功能進行建置
+    if colcon build \
+        --event-handlers console_direct+ \
+        --executor sequential \
+        --continue-on-error; then
+        echo "✅ 統一建置成功"
+        
+        # 將建置結果複製回各個工作空間
+        echo "📋 複製建置結果回各工作空間..."
+        copy_build_results_back "$unified_build_dir" "$BASE_DIR"
+        
+    else
+        echo "❌ 統一建置失敗"
+        cd "$BASE_DIR"
+        return 1
+    fi
+    
+    # 清理臨時目錄
+    cd "$BASE_DIR"
+    rm -rf "$unified_build_dir"
+    
+    echo "🎉 智能建置完成"
+}
+
+# 複製建置結果回各工作空間的輔助函數
+copy_build_results_back() {
+    local unified_dir="$1"
+    local base_dir="$2"
+    
+    # 遍歷每個套件的建置結果
+    for package_install in "$unified_dir/install"/*; do
+        if [ -d "$package_install" ]; then
+            local package_name=$(basename "$package_install")
+            
+            # 找到該套件原始所屬的工作空間
+            for ws_dir in "$base_dir"/*_ws; do
+                if [ -d "$ws_dir/src/$package_name" ]; then
+                    echo "  📋 複製 $package_name 建置結果到 $(basename "$ws_dir")"
+                    
+                    # 複製 install 目錄
+                    cp -r "$package_install" "$ws_dir/install/"
+                    
+                    # 複製 build 目錄 (如果存在)
+                    if [ -d "$unified_dir/build/$package_name" ]; then
+                        mkdir -p "$ws_dir/build"
+                        cp -r "$unified_dir/build/$package_name" "$ws_dir/build/"
+                    fi
+                    
+                    break
+                fi
+            done
+        fi
+    done
 }
 
 # 建置單一工作空間
@@ -392,6 +706,7 @@ agv_source() {
 
     # AGV 車載系統專用工作空間 (按依賴順序排列)
     local agv_base_workspaces=(
+        "/app/shared_constants_ws/install"  # 共享常數 (最優先)
         "/app/keyence_plc_ws/install"
         "/app/plc_proxy_ws/install"  
         "/app/path_algorithm/install"
@@ -448,9 +763,11 @@ agvc_source() {
 
     # AGVC 管理系統專用工作空間 (按依賴順序排列)
     local agvc_base_workspaces=(
+        "/app/shared_constants_ws/install"  # 共享常數 (最優先)
         "/app/keyence_plc_ws/install"
         "/app/plc_proxy_ws/install"
         "/app/path_algorithm/install"
+        "/app/agv_ws/install"
         "/app/db_proxy_ws/install"
     )
 
@@ -458,6 +775,7 @@ agvc_source() {
         "/app/ecs_ws/install"
         "/app/rcs_ws/install"
         "/app/ai_wcs_ws/install"
+        "/app/simple_wcs_ws/install"
         "/app/web_api_ws/install"
         "/app/kuka_fleet_ws/install"
         "/app/launch_ws/install"
@@ -517,7 +835,11 @@ show_help() {
     log_header "RosAGV 開發環境 - 可用命令"
 
     echo -e "${CYAN}🔧 建置和測試:${NC}"
-    echo "  build_all/ba           - 建置所有工作空間"
+    echo "  build_all/ba           - 智能建置工作空間 (根據容器類型自動選擇)"
+    echo "  build_agv              - 建置 AGV 車載系統專用工作空間"
+    echo "  build_agvc             - 建置 AGVC 管理系統專用工作空間"
+    echo "  build_all_workspaces   - 建置所有工作空間 (傳統方式)"
+    echo "  build_all_smart/bas    - 智能建置 (使用 colcon 依賴解析)"
     echo "  build_ws/build_single  - 建置指定的單一工作空間"
     echo "  test_all/ta            - 測試所有工作空間"
     echo "  test_ws/test_single    - 測試指定的單一工作空間"
@@ -538,6 +860,7 @@ show_help() {
     echo -e "${CYAN}⚙️  服務管理:${NC}"
     echo "  manage_ssh <action>    - SSH 服務管理 (start|stop|restart|status)"
     echo "  manage_zenoh <action>  - Zenoh Router 管理 (start|stop|restart|status)"
+    echo "  manage_web_api_launch <action> - Web API Launch 管理 (start|stop|restart|status)"
     if is_agvc_environment; then
         echo "  start_db/stop_db       - 啟動/停止資料庫服務 (僅 AGVC 環境)"
         echo "  start_ecs              - 啟動 ECS 設備控制系統 (僅 AGVC 環境)"
@@ -679,6 +1002,163 @@ manage_zenoh() {
 
         *)
             echo "用法: manage_zenoh {start|stop|restart|status}"
+            return 1
+            ;;
+    esac
+}
+
+# ===== Web API Launch 控制函式 =====
+manage_web_api_launch() {
+    local WEB_API_LOG_FILE="/tmp/web_api_launch.log"
+    local WEB_API_PID_FILE="/tmp/web_api_launch.pid"
+
+    case "$1" in
+        start)
+            # 檢查是否已經在運行，避免重複啟動
+            if [ -f "$WEB_API_PID_FILE" ] && pgrep -F "$WEB_API_PID_FILE" > /dev/null; then
+                echo "✅ Web API Launch 已經在運行中 (PID: $(cat $WEB_API_PID_FILE))"
+                return 0
+            fi
+
+            echo "🚀 啟動 Web API Launch 服務群組..."
+            nohup ros2 launch web_api_launch launch.py > "$WEB_API_LOG_FILE" 2>&1 &
+            echo $! > "$WEB_API_PID_FILE"
+
+            # 等待服務啟動並檢查狀態
+            sleep 3
+
+            # 檢查 Web API Launch 是否正常啟動
+            if [ -f "$WEB_API_PID_FILE" ] && pgrep -F "$WEB_API_PID_FILE" > /dev/null; then
+                echo "✅ Web API Launch 已啟動 (PID: $(cat $WEB_API_PID_FILE))"
+                
+                # 檢查端口是否開啟（需要更多時間讓 Web 服務完全啟動）
+                sleep 5
+                echo "🔍 檢查 Web 服務端口狀態..."
+                
+                if ss -tuln 2>/dev/null | grep -q ":8000 "; then
+                    echo "✅ Web API 端口 8000 已開啟"
+                else
+                    echo "⚠️ Web API 端口 8000 未開啟，服務可能仍在啟動中"
+                fi
+                
+                if ss -tuln 2>/dev/null | grep -q ":8001 "; then
+                    echo "✅ AGVCUI 端口 8001 已開啟"
+                else
+                    echo "⚠️ AGVCUI 端口 8001 未開啟，服務可能仍在啟動中"
+                fi
+                
+                if ss -tuln 2>/dev/null | grep -q ":8002 "; then
+                    echo "✅ OPUI 端口 8002 已開啟"
+                else
+                    echo "⚠️ OPUI 端口 8002 未開啟，服務可能仍在啟動中"
+                fi
+                
+                return 0
+            else
+                echo "❌ Web API Launch 啟動失敗"
+                echo "📝 檢查日誌: tail -f $WEB_API_LOG_FILE"
+                return 1
+            fi
+            ;;
+
+        stop)
+            if [ -f "$WEB_API_PID_FILE" ]; then
+                WEB_API_PID=$(cat "$WEB_API_PID_FILE")
+                echo "⏳ 停止 Web API Launch (PID: $WEB_API_PID)..."
+                
+                # 停止主進程，這會連帶停止所有子進程
+                kill "$WEB_API_PID" 2>/dev/null
+                sleep 3
+                
+                # 確保所有相關進程都已停止
+                pkill -f "web_api_launch" 2>/dev/null
+                pkill -f "agvc_ui_server" 2>/dev/null
+                pkill -f "op_ui_server" 2>/dev/null
+                pkill -f "api_server" 2>/dev/null
+                
+                sleep 2
+                rm -f "$WEB_API_PID_FILE"
+                echo "✅ Web API Launch 已停止"
+            else
+                # 確保停止所有與 Web API Launch 相關的進程
+                echo "🚨 Web API Launch PID 檔案未找到，檢查相關進程..."
+                if pgrep -f "web_api_launch" > /dev/null || pgrep -f "agvc_ui_server" > /dev/null || pgrep -f "op_ui_server" > /dev/null; then
+                    echo "⏳ 停止 Web API Launch 相關進程..."
+                    pkill -f "web_api_launch"
+                    pkill -f "agvc_ui_server"
+                    pkill -f "op_ui_server"
+                    pkill -f "api_server"
+                    sleep 2
+                    echo "✅ Web API Launch 相關進程已停止"
+                else
+                    echo "ℹ️ 未發現運行中的 Web API Launch 進程"
+                fi
+                
+                # 清理可能存在的 PID 檔案
+                rm -f "$WEB_API_PID_FILE"
+            fi
+            ;;
+
+        restart)
+            echo "🔄 重新啟動 Web API Launch..."
+            manage_web_api_launch stop
+            sleep 2
+            manage_web_api_launch start
+            ;;
+
+        status)
+            if [ -f "$WEB_API_PID_FILE" ] && pgrep -F "$WEB_API_PID_FILE" > /dev/null; then
+                echo "✅ Web API Launch 正在運行 (PID: $(cat $WEB_API_PID_FILE))"
+                
+                # 檢查子進程狀態
+                echo "🔍 子服務狀態："
+                if pgrep -f "agvc_ui_server" > /dev/null; then
+                    echo "  ✅ AGVCUI 服務運行中"
+                else
+                    echo "  ❌ AGVCUI 服務未運行"
+                fi
+                
+                if pgrep -f "op_ui_server" > /dev/null; then
+                    echo "  ✅ OPUI 服務運行中"
+                else
+                    echo "  ❌ OPUI 服務未運行"
+                fi
+                
+                if pgrep -f "api_server" > /dev/null; then
+                    echo "  ✅ Web API 服務運行中"
+                else
+                    echo "  ❌ Web API 服務未運行"
+                fi
+                
+                # 檢查端口狀態
+                echo "🔍 端口狀態："
+                if ss -tuln 2>/dev/null | grep -q ":8000 "; then
+                    echo "  ✅ 端口 8000 已開啟"
+                else
+                    echo "  ❌ 端口 8000 未開啟"
+                fi
+                
+                if ss -tuln 2>/dev/null | grep -q ":8001 "; then
+                    echo "  ✅ 端口 8001 已開啟"
+                else
+                    echo "  ❌ 端口 8001 未開啟"
+                fi
+                
+                if ss -tuln 2>/dev/null | grep -q ":8002 "; then
+                    echo "  ✅ 端口 8002 已開啟"
+                else
+                    echo "  ❌ 端口 8002 未開啟"
+                fi
+                
+                return 0
+            else
+                echo "❌ Web API Launch 未運行"
+                return 1
+            fi
+            ;;
+
+        *)
+            echo "用法: manage_web_api_launch {start|stop|restart|status}"
             return 1
             ;;
     esac
@@ -873,6 +1353,7 @@ alias ri='ros2 interface list'
 
 # 工作空間管理別名
 alias ba='build_all'
+alias bas='build_all_smart'    # 智能建置 (使用 colcon 依賴解析)
 alias ta='test_all'
 alias ca='clean_all'
 alias sa='all_source'
@@ -1034,7 +1515,7 @@ check_agvc_status() {
 
     # 檢查 AGVC 專用工作空間
     echo "=== AGVC 工作空間狀態 ==="
-    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "ai_wcs_ws" "web_api_ws" "kuka_fleet_ws")
+    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "ai_wcs_ws" "simple_wcs_ws" "web_api_ws" "kuka_fleet_ws")
     for ws in "${agvc_workspaces[@]}"; do
         if [ -d "/app/$ws/install" ]; then
             echo "✅ $ws 已建置"
@@ -1055,7 +1536,11 @@ else
 fi
 
 echo "🔧 通用指令："
-echo "  build_all/ba         - 建置所有工作空間"
+echo "  build_all/ba         - 智能建置工作空間 (根據容器類型自動選擇)"
+echo "  build_agv            - 建置 AGV 車載系統專用工作空間"
+echo "  build_agvc           - 建置 AGVC 管理系統專用工作空間"
+echo "  build_all_workspaces - 建置所有工作空間 (傳統方式)"
+echo "  build_all_smart/bas  - 智能建置 (使用 colcon 依賴解析)"
 echo "  build_ws <name>      - 建置指定工作空間"
 echo "  test_all/ta          - 測試所有工作空間"
 echo "  test_ws <name>       - 測試指定工作空間"
@@ -1068,6 +1553,7 @@ echo "  check_system_status/status - 檢查系統狀態"
 echo "  check_zenoh_status/zenoh   - 檢查 Zenoh 狀態"
 echo "  check_ros_env/rosenv       - 檢查 ROS 2 環境"
 echo "  manage_zenoh <cmd>         - 管理 Zenoh Router"
+echo "  manage_web_api_launch <cmd> - 管理 Web API Launch"
 echo "  manage_ssh <cmd>           - 管理 SSH 服務"
 
 if is_agvc_environment; then

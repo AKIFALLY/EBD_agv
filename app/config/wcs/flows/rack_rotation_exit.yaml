@@ -1,0 +1,59 @@
+# Rack旋轉檢查 - 房間出口
+name: "Rack旋轉檢查-房間出口"
+description: "當房間出口有Rack且B面完成後，需要旋轉回A面以便後續搬運"
+priority: 90  # 比入口旋轉稍低，但仍然是高優先級
+work_id: "220001"  # 使用 KUKA Rack 移動的 work_id
+enabled: true
+
+# 觸發條件 - 所有條件必須為 true 才執行
+trigger_conditions:
+  - condition: "rack_at_location_exists"
+    description: "房間出口位置有 Rack"
+    parameters:
+      location_type: "room_exit"
+      
+  - condition: "rack_side_completed"
+    description: "Rack B面已完成 (沒有任何待處理的 carrier，都被搬走了)"
+    parameters:
+      side: "B"
+      
+  - condition: "rack_has_a_side_work"
+    description: "Rack A面有待處理工作 (還有 carrier 在該 Rack 上)"
+    parameters:
+      side: "A"
+      
+  - condition: "rack_needs_rotation_for_a_side"
+    description: "Rack 需要旋轉以處理 A面 (從 180度 → 0度)"
+    parameters:
+      location_type: "room_exit"
+      from_direction: 180
+      to_direction: 0
+      
+  - condition: "no_active_task"
+    description: "該位置無衝突任務"
+    parameters:
+      work_id: "220001"
+
+# 執行動作
+action:
+  type: "create_task"
+  task_type: "rack_rotation"
+  function: "rack_move"
+  model: "KUKA400i"
+  api: "submit_mission"
+  mission_type: "RACK_MOVE"
+  
+  # 路徑配置
+  path:
+    type: "rotation_at_exit"
+    rotation_angle: 180  # 180度 → 0度
+    description: "房間出口 B面→A面 旋轉"
+
+# 適用房間 (檢查哪些房間的出口)
+applicable_rooms: [1, 2, 3, 4, 5]
+
+# 調試選項
+debug:
+  enabled: false
+  log_conditions: true
+  dry_run: false

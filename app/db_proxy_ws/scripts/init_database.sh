@@ -27,7 +27,7 @@ NC='\033[0m' # No Color
 # 資料庫連線參數 (基於 docker-compose.agvc.yml)
 DB_HOST="192.168.100.254"
 DB_PORT="5432"
-ADMIN_USER="postgres"
+ADMIN_USER="agvc"
 ADMIN_PASSWORD="password"
 APP_USER="agvc"
 APP_PASSWORD="password"

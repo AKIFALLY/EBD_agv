@@ -59,6 +59,14 @@
                     </div>
                 </div>
 
+                <div class="alert alert-warning" style="margin-top: 40px;">
+                    <h3>⚠️ 系統工具使用前提條件</h3>
+                    <p><strong>使用 RosAGV <code>r</code> 工具集進行系統診斷和管理之前，必須將 RosAGV 目錄加入 PATH 環境變數</strong></p>
+                    <p>在 <code>~/.bashrc</code> 中添加：<code>export PATH="/home/ct/RosAGV:$PATH"</code></p>
+                    <p>重新載入環境：<code>source ~/.bashrc</code> | 驗證配置：<code>which r</code></p>
+                    <p>常用診斷指令：<code>r agvc-check</code>, <code>r containers-status</code>, <code>r network-check</code></p>
+                </div>
+
                 <div class="alert alert-info" style="margin-top: 40px;">
                     <h3>🎯 架構設計原則</h3>
                     <p><strong>分離關注點</strong>：將即時控制與管理功能分離，AGV 車載系統專注即時控制和硬體整合，AGVC 管理系統專注車隊管理和資料處理，透過 Zenoh RMW 實現高效通訊。</p>
@@ -244,6 +252,23 @@
 
                     <div class="card">
                         <div class="card-header">
+                            <div class="card-icon theme-orange">🚀</div>
+                            <div class="card-title">launch_ws - 服務啟動編排</div>
+                        </div>
+                        <div class="card-content">
+                            <p><strong>ROS 2 Launch 服務群組管理</strong></p>
+                            <ul>
+                                <li><strong>web_api_launch</strong>: Web API 服務群組編排</li>
+                                <li>統一的服務啟動配置</li>
+                                <li>多服務協調啟動管理</li>
+                                <li>服務健康檢查和監控</li>
+                            </ul>
+                            <p><strong>技術特點</strong>：管理 Web API、AGVCUI、OPUI 服務群組</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
                             <div class="card-icon theme-orange">🔗</div>
                             <div class="card-title">kuka_fleet_ws - KUKA 整合</div>
                         </div>
@@ -349,6 +374,7 @@
                                 <li><strong>Zenoh RMW</strong>: 高效能中間件</li>
                                 <li><strong>Python 3.12</strong>: 主要開發語言</li>
                                 <li><strong>Colcon</strong>: 建置系統</li>
+                                <li><strong>ROS 2 Launch</strong>: 服務群組編排和統一管理</li>
                             </ul>
                         </div>
                     </div>
@@ -499,8 +525,9 @@
                         <div class="feature-title">統一工具系統</div>
                         <div class="feature-description">
                             <strong>優點</strong>: 簡化運維、標準化操作<br>
-                            <strong>用途</strong>: 系統診斷、容器管理<br>
-                            <strong>部署</strong>: r 命令統一入口
+                            <strong>用途</strong>: 系統診斷、容器管理、服務管理<br>
+                            <strong>部署</strong>: r 命令統一入口 + 統一服務管理 API<br>
+                            <strong>服務管理</strong>: manage_zenoh, manage_web_api_launch, manage_ssh
                         </div>
                     </div>
                 </div>

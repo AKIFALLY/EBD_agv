@@ -320,8 +320,8 @@ check_network_config() {
         print_warning "• nginx: 容器未運行"
     fi
     
-    if is_container_running "postgres_container"; then
-        local postgres_ip=$(get_container_ip "postgres_container")
+    if is_container_running "postgres"; then
+        local postgres_ip=$(get_container_ip "postgres")
         print_info "• postgres: $postgres_ip"
     else
         print_warning "• postgres: 容器未運行"
@@ -383,7 +383,7 @@ check_intelligent_health() {
             print_error "AGVC 容器: 未運行"
         fi
         
-        if is_container_running "postgres_container"; then
+        if is_container_running "postgres"; then
             print_success "PostgreSQL 容器: 運行中"
             ((total_score += 1))
             ((agvc_running++))
@@ -402,7 +402,7 @@ check_intelligent_health() {
         # 服務檢查 (只有在容器運行時才檢查)
         if [ $agvc_running -gt 0 ]; then
             # PostgreSQL 服務
-            if docker exec postgres_container pg_isready -U rosagv >/dev/null 2>&1; then
+            if docker exec postgres pg_isready -U agvc >/dev/null 2>&1; then
                 print_success "PostgreSQL 服務: 正常"
                 ((total_score += 1))
             else
@@ -525,7 +525,7 @@ show_status_summary() {
         local total_services=3
         
         if is_container_running "agvc_server"; then ((running_services++)); fi
-        if is_container_running "postgres_container"; then ((running_services++)); fi
+        if is_container_running "postgres"; then ((running_services++)); fi
         if is_container_running "nginx"; then ((running_services++)); fi
         
         if [ $running_services -eq $total_services ]; then
@@ -585,7 +585,7 @@ check_all_containers() {
     fi
 
     # 檢查 AGVC 容器（只有在實際存在時才顯示）
-    if [ -f "$AGVC_COMPOSE_FILE" ] && (container_exists "agvc_server" || container_exists "postgres_container" || container_exists "nginx"); then
+    if [ -f "$AGVC_COMPOSE_FILE" ] && (container_exists "agvc_server" || container_exists "postgres" || container_exists "nginx"); then
         echo -e "\n${CYAN}🖥️ AGVC 容器${NC}"
         local agvc_status=$(get_agvc_containers)
         if [ -n "$agvc_status" ]; then
@@ -623,9 +623,9 @@ check_all_containers() {
             fi
         fi
 
-        if container_exists "postgres_container"; then
+        if container_exists "postgres"; then
             ((total_containers++))
-            if is_container_running "postgres_container"; then
+            if is_container_running "postgres"; then
                 ((healthy_containers++))
                 print_success "postgres: 運行正常"
             else
@@ -699,8 +699,8 @@ check_agvc_only() {
             print_warning "agvc_server: 未運行"
         fi
         
-        if is_container_running "postgres_container"; then
-            local ip=$(get_container_ip "postgres_container")
+        if is_container_running "postgres"; then
+            local ip=$(get_container_ip "postgres")
             print_success "postgres: 運行中 (IP: $ip)"
         else
             print_warning "postgres: 未運行"

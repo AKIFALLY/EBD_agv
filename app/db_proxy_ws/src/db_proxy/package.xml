@@ -3,9 +3,13 @@
 <package format="3">
   <name>db_proxy</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="yaze.lin.j303@gmail.com">root</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Database proxy service for RosAGV AGVC system</description>
+  <maintainer email="dev@rosagv.com">RosAGV Development Team</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>db_proxy_interfaces</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

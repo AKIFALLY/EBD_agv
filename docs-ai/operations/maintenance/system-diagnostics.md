@@ -8,6 +8,26 @@
 
 ## 📋 RosAGV 診斷工具體系
 
+### ⚠️ 診斷工具使用前提條件
+**使用 `r` 診斷工具之前，必須將 RosAGV 目錄加入 PATH 環境變數**
+
+在 `~/.bashrc` 中添加以下設定：
+```bash
+# RosAGV 工具路徑配置
+export PATH="/home/ct/RosAGV:$PATH"
+```
+
+設定完成後，重新載入環境：
+```bash
+source ~/.bashrc
+```
+
+驗證配置是否正確：
+```bash
+which r                    # 應該顯示 /home/ct/RosAGV/r
+r agvc-check              # 測試 AGVC 健康檢查功能
+```
+
 ### 統一診斷入口 (r 命令)
 RosAGV 提供統一的診斷工具入口，簡化日常維護操作：
 
@@ -112,7 +132,7 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "check_system
 ```bash
 # 查看容器日誌
 docker compose -f docker-compose.agvc.yml logs -f agvc_server
-docker compose -f docker-compose.agvc.yml logs -f postgres_container
+docker compose -f docker-compose.agvc.yml logs -f postgres
 docker compose -f docker-compose.agvc.yml logs -f nginx
 
 # 查看最近日誌
@@ -126,7 +146,7 @@ docker network ls
 docker network inspect rosagv_agvc_network
 
 # 容器間連接測試
-docker compose -f docker-compose.agvc.yml exec agvc_server ping postgres_container
+docker compose -f docker-compose.agvc.yml exec agvc_server ping postgres
 docker compose -f docker-compose.agvc.yml exec agvc_server ping nginx
 ```
 
@@ -204,7 +224,7 @@ nethogs
 docker stats
 
 # 特定容器資源監控
-docker stats agvc_server postgres_container nginx
+docker stats agvc_server postgres nginx
 
 # 容器內資源檢查
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "top -bn1 | head -20"
@@ -216,8 +236,71 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "free -h"
 # Web 服務效能
 curl -w "@curl-format.txt" -o /dev/null -s "http://localhost:8000/health"
 
-# 資料庫效能
-docker compose -f docker-compose.agvc.yml exec postgres_container psql -U postgres -c "SELECT * FROM pg_stat_activity;"
+# 資料庫效能監控 (包含詳細欄位說明和健康分析)
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    datname,                                          -- 資料庫名稱
+    numbackends as active_connections,                -- 當前活動連接數
+    xact_commit,                                      -- 成功提交的交易總數
+    xact_rollback,                                    -- 回滾的交易總數  
+    blks_read,                                        -- 從磁碟讀取的區塊數
+    blks_hit,                                         -- 從緩存命中的區塊數
+    temp_files,                                       -- 建立的臨時檔案數量
+    temp_bytes,                                       -- 臨時檔案使用的總位元組數
+    -- 計算健康指標
+    round(blks_hit::numeric / NULLIF(blks_hit + blks_read, 0) * 100, 2) as cache_hit_ratio,
+    round(xact_rollback::numeric / NULLIF(xact_commit + xact_rollback, 0) * 100, 2) as rollback_ratio
+FROM pg_stat_database 
+WHERE datname = 'agvc';"
+
+# 一鍵健康檢查 (自動評估系統狀態)
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+WITH health_metrics AS (
+    SELECT 
+        datname,
+        numbackends as connections,
+        round(blks_hit::numeric / NULLIF(blks_hit + blks_read, 0) * 100, 2) as cache_hit_ratio,
+        round(xact_rollback::numeric / NULLIF(xact_commit + xact_rollback, 0) * 100, 2) as rollback_ratio,
+        temp_files
+    FROM pg_stat_database 
+    WHERE datname = 'agvc'
+)
+SELECT 
+    datname,
+    connections,
+    CASE 
+        WHEN connections < 50 THEN '✅ 健康'
+        WHEN connections < 100 THEN '⚠️ 注意'
+        ELSE '❌ 異常'
+    END as connection_status,
+    cache_hit_ratio || '%' as cache_hit,
+    CASE 
+        WHEN cache_hit_ratio > 95 THEN '✅ 優秀'
+        WHEN cache_hit_ratio > 90 THEN '⚠️ 可接受'
+        ELSE '❌ 需優化'
+    END as cache_status,
+    rollback_ratio || '%' as rollback_rate,
+    CASE 
+        WHEN rollback_ratio < 10 THEN '✅ 穩定'
+        WHEN rollback_ratio < 20 THEN '⚠️ 注意'
+        ELSE '❌ 異常'
+    END as rollback_status,
+    temp_files,
+    CASE 
+        WHEN temp_files = 0 THEN '✅ 理想'
+        ELSE '⚠️ 有溢出'
+    END as memory_status
+FROM health_metrics;"
+
+# 資料庫活動連接詳細檢查
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    COUNT(*) as total_connections,
+    COUNT(CASE WHEN state = 'active' THEN 1 END) as active_queries,
+    COUNT(CASE WHEN state = 'idle' THEN 1 END) as idle_connections,
+    COUNT(CASE WHEN state = 'idle in transaction' THEN 1 END) as idle_in_transaction
+FROM pg_stat_activity 
+WHERE datname = 'agvc';"
 
 # ROS 2 主題效能
 ros2 topic hz /topic_name
@@ -240,15 +323,146 @@ curl http://localhost:8002/
 ```
 
 ### 資料庫診斷
+
+#### 基礎連接測試
 ```bash
 # PostgreSQL 連接測試
-docker compose -f docker-compose.agvc.yml exec postgres_container psql -U postgres -c "SELECT version();"
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT version();"
 
 # 資料庫狀態檢查
-docker compose -f docker-compose.agvc.yml exec postgres_container psql -U postgres -c "SELECT * FROM pg_stat_database;"
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT * FROM pg_stat_database;"
 
 # 資料庫大小檢查
-docker compose -f docker-compose.agvc.yml exec postgres_container psql -U postgres -c "SELECT pg_size_pretty(pg_database_size('postgres'));"
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT pg_size_pretty(pg_database_size('agvc'));"
+```
+
+#### PostgreSQL 監控欄位詳解
+
+**⚠️ 重要：理解 PostgreSQL 統計數據是系統健康診斷的關鍵**
+
+| 欄位名稱 | 含義 | 健康標準 | 故障排除指引 |
+|---------|------|---------|-------------|
+| **active_connections** | 當前活動連接數 | < 50 (正常)<br/>< 100 (可接受) | 超過100需檢查連接池配置或連接洩漏 |
+| **xact_commit** | 成功提交交易數 | 穩定增長 | 停止增長可能表示應用程式無法正常運作 |
+| **xact_rollback** | 回滾交易數 | < 10% 總交易 | 高回滾率檢查：死鎖、約束衝突、應用邏輯錯誤 |
+| **blks_read** | 磁碟讀取區塊數 | 穩定或下降 | 持續增長表示緩存不足，需增加shared_buffers |
+| **blks_hit** | 緩存命中區塊數 | 高且穩定增長 | 低增長率表示查詢模式問題或記憶體不足 |
+| **temp_files** | 臨時檔案數量 | = 0 (理想) | > 0表示work_mem不足，複雜查詢溢出到磁碟 |
+| **temp_bytes** | 臨時檔案大小 | = 0 (理想) | 大值需檢查查詢效率和work_mem配置 |
+| **cache_hit_ratio** | 緩存命中率 | > 95% (優秀)<br/>> 90% (可接受) | < 90%需增加shared_buffers或最佳化查詢 |
+| **rollback_ratio** | 回滾比例 | < 10% (穩定)<br/>< 20% (可接受) | > 20%嚴重問題，需檢查應用程式邏輯 |
+
+#### 實際資料分析案例
+
+**基於真實系統資料的健康評估範例**：
+
+```bash
+# 假設系統返回以下資料:
+# datname | active_connections | xact_commit | xact_rollback | blks_read | blks_hit | temp_files | cache_hit_ratio | rollback_ratio
+# agvc    |                  4 |        1801 |         16774 |       741 |   167548 |          0 |           99.6% |           9.7%
+
+# 分析結果:
+# ✅ active_connections: 4 
+#    狀態: 健康 (遠低於50的警戒值)
+#    建議: 無需採取行動
+
+# ⚠️ rollback_ratio: 9.7% 
+#    狀態: 接近10%警戒線，需要關注
+#    建議: 檢查應用程式日誌，查找回滾原因：
+#          - 死鎖衝突
+#          - 約束違反
+#          - 事務邏輯錯誤
+
+# ✅ cache_hit_ratio: 99.6% 
+#    狀態: 優秀 (記憶體使用效率極佳)
+#    建議: 無需調整，維持當前配置
+
+# ✅ temp_files: 0 
+#    狀態: 理想 (沒有記憶體溢出)
+#    建議: work_mem配置合適，無需調整
+```
+
+#### 問題診斷工作流程
+
+**當發現異常指標時的標準診斷流程**：
+
+```bash
+# 1. 高回滾率診斷 (rollback_ratio > 10%)
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    datname, 
+    xact_rollback, 
+    xact_commit,
+    round(xact_rollback::numeric / (xact_commit + xact_rollback) * 100, 2) as rollback_rate
+FROM pg_stat_database 
+WHERE datname = 'agvc';"
+
+# 檢查當前阻塞的查詢
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    pid, 
+    usename, 
+    application_name, 
+    state, 
+    query_start, 
+    now() - query_start as duration,
+    left(query, 100) as query_preview
+FROM pg_stat_activity 
+WHERE state = 'active' AND datname = 'agvc'
+ORDER BY query_start;"
+
+# 2. 低緩存命中率診斷 (cache_hit_ratio < 90%)
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    shared_buffers, 
+    current_setting('effective_cache_size') as effective_cache_size
+FROM pg_settings 
+WHERE name = 'shared_buffers';"
+
+# 3. 臨時檔案問題診斷 (temp_files > 0)
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    temp_files,
+    pg_size_pretty(temp_bytes) as temp_size,
+    current_setting('work_mem') as work_mem_setting
+FROM pg_stat_database 
+WHERE datname = 'agvc';"
+
+# 檢查最耗費臨時空間的查詢
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    query,
+    temp_blks_read + temp_blks_written as temp_blocks_used
+FROM pg_stat_statements 
+ORDER BY temp_blks_read + temp_blks_written DESC 
+LIMIT 5;"
+```
+
+#### 效能調優建議
+
+**根據監控結果的具體調優措施**：
+
+```bash
+# 調優建議1: 高回滾率處理
+# 如果 rollback_ratio > 10%:
+# 1. 檢查應用程式日誌中的錯誤模式
+# 2. 分析死鎖頻率
+# 3. 檢查事務隔離等級設定
+# 4. 優化事務邊界和持續時間
+
+# 調優建議2: 緩存命中率最佳化  
+# 如果 cache_hit_ratio < 90%:
+# 1. 增加 shared_buffers (建議為總記憶體的25%)
+# 2. 調整 effective_cache_size
+# 3. 檢查查詢是否有全表掃描
+# 4. 添加適當的索引
+
+# 調優建議3: 臨時檔案問題解決
+# 如果 temp_files > 0:
+# 1. 增加 work_mem 設定
+# 2. 最佳化複雜查詢的 JOIN 順序
+# 3. 檢查是否需要分區表
+# 4. 考慮使用物化視圖預計算複雜聚合
 ```
 
 ### ROS 2 服務診斷
@@ -359,6 +573,7 @@ echo "健康檢查完成，報告已產生"
 ## 🔗 交叉引用
 - 故障排除流程: @docs-ai/operations/maintenance/troubleshooting.md
 - 日誌分析方法: @docs-ai/operations/maintenance/log-analysis.md
-- 效能監控: @docs-ai/operations/maintenance/performance-monitoring.md
+- 效能監控詳解: @docs-ai/operations/maintenance/performance-monitoring.md
+- 資料庫操作: @docs-ai/operations/development/database-operations.md
 - 容器管理: @docs-ai/operations/deployment/container-management.md
 - 網路診斷: @docs-ai/knowledge/protocols/zenoh-rmw.md

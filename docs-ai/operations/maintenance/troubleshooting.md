@@ -271,28 +271,195 @@ sudo lsof -i :8000
 **診斷步驟**:
 ```bash
 # 1. 檢查資料庫容器
-docker compose -f docker-compose.agvc.yml ps postgres_container
+docker compose -f docker-compose.agvc.yml ps postgres
 
 # 2. 測試資料庫連接
-docker compose -f docker-compose.agvc.yml exec postgres_container psql -U postgres -c "SELECT version();"
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT version();"
 
-# 3. 檢查連接配置
-# 檢查應用程式的資料庫連接字串
+# 3. 檢查連接配置和資料庫健康狀態
+docker compose -f docker-compose.agvc.yml exec agvc_server env | rg POSTGRES
+
+# 4. 執行完整資料庫健康檢查
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+WITH health_metrics AS (
+    SELECT 
+        datname,
+        numbackends as connections,
+        round(blks_hit::numeric / NULLIF(blks_hit + blks_read, 0) * 100, 2) as cache_hit_ratio,
+        round(xact_rollback::numeric / NULLIF(xact_commit + xact_rollback, 0) * 100, 2) as rollback_ratio,
+        temp_files
+    FROM pg_stat_database 
+    WHERE datname = 'agvc'
+)
+SELECT 
+    datname,
+    connections,
+    CASE 
+        WHEN connections < 50 THEN '✅ 健康'
+        WHEN connections < 100 THEN '⚠️ 注意'
+        ELSE '❌ 異常'
+    END as connection_status,
+    cache_hit_ratio || '%' as cache_hit,
+    CASE 
+        WHEN cache_hit_ratio > 95 THEN '✅ 優秀'
+        WHEN cache_hit_ratio > 90 THEN '⚠️ 可接受'
+        ELSE '❌ 需優化'
+    END as cache_status,
+    rollback_ratio || '%' as rollback_rate,
+    CASE 
+        WHEN rollback_ratio < 10 THEN '✅ 穩定'
+        WHEN rollback_ratio < 20 THEN '⚠️ 注意'
+        ELSE '❌ 異常'
+    END as rollback_status
+FROM health_metrics;"
 ```
 
 **解決方案**:
 ```bash
 # PostgreSQL 服務未啟動
 # 解決: 啟動資料庫服務
-docker compose -f docker-compose.agvc.yml up -d postgres_container
+docker compose -f docker-compose.agvc.yml up -d postgres
 
 # 連接參數錯誤
 # 解決: 檢查環境變數和配置
 docker compose -f docker-compose.agvc.yml exec agvc_server env | rg POSTGRES
 
-# 資料庫損壞
-# 解決: 檢查資料庫完整性
-docker compose -f docker-compose.agvc.yml exec postgres_container pg_dump -U postgres > backup.sql
+# 資料庫效能問題 (根據健康檢查結果)
+# 問題1: 連接數過高 (> 100)
+# 解決: 檢查連接池配置，查找連接洩漏
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT pid, usename, application_name, state, query_start 
+FROM pg_stat_activity 
+WHERE datname = 'agvc' AND state != 'idle';"
+
+# 問題2: 高回滾率 (> 10%)
+# 解決: 檢查應用程式日誌，查找死鎖和約束違反
+docker compose -f docker-compose.agvc.yml logs agvc_server | rg -i "rollback|deadlock|constraint"
+
+# 問題3: 低緩存命中率 (< 90%)
+# 解決: 檢查記憶體配置和查詢效率
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT name, setting, unit, short_desc 
+FROM pg_settings 
+WHERE name IN ('shared_buffers', 'effective_cache_size', 'work_mem');"
+
+# 資料庫損壞或數據不一致
+# 解決: 檢查資料庫完整性並備份
+docker compose -f docker-compose.agvc.yml exec postgres pg_dump -U agvc -d agvc > backup-$(date +%Y%m%d).sql
+
+# 檢查資料庫完整性
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT schemaname, tablename, n_dead_tup, n_live_tup,
+       round(n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0) * 100, 2) as dead_ratio
+FROM pg_stat_user_tables 
+WHERE n_dead_tup > 0
+ORDER BY dead_ratio DESC;"
+```
+
+### 資料庫效能問題
+**症狀**: 資料庫回應緩慢、查詢超時、高資源使用
+
+**診斷步驟**:
+```bash
+# 1. 檢查資料庫統計指標並分析健康狀態
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    datname,                                          -- 資料庫名稱
+    numbackends as active_connections,                -- 當前活動連接數
+    xact_commit,                                      -- 成功提交的交易總數
+    xact_rollback,                                    -- 回滾的交易總數  
+    blks_read,                                        -- 從磁碟讀取的區塊數
+    blks_hit,                                         -- 從緩存命中的區塊數
+    temp_files,                                       -- 建立的臨時檔案數量
+    -- 計算健康指標
+    round(blks_hit::numeric / NULLIF(blks_hit + blks_read, 0) * 100, 2) as cache_hit_ratio,
+    round(xact_rollback::numeric / NULLIF(xact_commit + xact_rollback, 0) * 100, 2) as rollback_ratio
+FROM pg_stat_database 
+WHERE datname = 'agvc';"
+
+# 2. 檢查當前運行的查詢
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    pid, 
+    usename, 
+    application_name, 
+    state, 
+    query_start, 
+    now() - query_start as duration,
+    left(query, 100) as query_preview
+FROM pg_stat_activity 
+WHERE state = 'active' AND datname = 'agvc' AND query != '<IDLE>'
+ORDER BY query_start;"
+
+# 3. 檢查阻塞和鎖定情況
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    blocked_locks.pid AS blocked_pid,
+    blocked_activity.usename AS blocked_user,
+    blocking_locks.pid AS blocking_pid,
+    blocking_activity.usename AS blocking_user,
+    blocked_activity.query AS blocked_statement,
+    blocking_activity.query AS current_statement_in_blocking_process
+FROM pg_catalog.pg_locks blocked_locks
+JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks blocking_locks ON blocking_locks.locktype = blocked_locks.locktype
+JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
+WHERE NOT blocked_locks.granted AND blocking_locks.granted;"
+```
+
+**解決方案** (基於診斷結果):
+```bash
+# 根據 PostgreSQL 監控指標的不同問題採取相應措施:
+
+# 問題1: active_connections > 50 (連接數過高)
+# 原因: 連接池配置不當或連接洩漏
+# 解決: 
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "
+# 檢查應用程式連接池配置
+python3 -c 'from db_proxy.connection_pool import ConnectionPoolManager; print(ConnectionPoolManager.get_pool_status())'
+"
+
+# 問題2: rollback_ratio > 10% (回滾率過高)  
+# 原因: 死鎖、約束衝突、事務邏輯錯誤
+# 解決:
+# 查看具體的回滾原因
+docker compose -f docker-compose.agvc.yml logs agvc_server | rg -i "IntegrityError|DeadlockDetected|rollback" | tail -20
+
+# 分析死鎖模式
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT query, calls, mean_exec_time, rows, 100.0 * shared_blks_hit / nullif(shared_blks_hit + shared_blks_read, 0) AS hit_percent
+FROM pg_stat_statements 
+ORDER BY mean_exec_time DESC 
+LIMIT 10;"
+
+# 問題3: cache_hit_ratio < 90% (緩存命中率低)
+# 原因: shared_buffers太小或查詢模式問題
+# 解決:
+# 檢查當前記憶體配置
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    name,
+    setting,
+    unit,
+    boot_val,
+    short_desc
+FROM pg_settings 
+WHERE name IN ('shared_buffers', 'effective_cache_size', 'work_mem', 'maintenance_work_mem');"
+
+# 問題4: temp_files > 0 (有臨時檔案)
+# 原因: work_mem不足，複雜查詢溢出到磁碟
+# 解決:
+# 找出產生臨時檔案的查詢
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+SELECT 
+    temp_files,
+    pg_size_pretty(temp_bytes) as temp_size,
+    current_setting('work_mem') as current_work_mem
+FROM pg_stat_database 
+WHERE datname = 'agvc';"
+
+# 長時間運行查詢終止 (謹慎使用)
+# docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT pg_terminate_backend(PID);"
 ```
 
 ## 🚗 AGV 功能故障
@@ -396,7 +563,8 @@ ros2 param get /sensor_node sensor_config
 while true; do
     r agvc-check > /tmp/health-$(date +%Y%m%d-%H%M).log
     if [ $? -ne 0 ]; then
-        echo "Health check failed at $(date)" | mail -s "RosAGV Alert" admin@company.com
+        echo "Health check failed at $(date)" >> /tmp/health-alerts.log
+        # 可配置為發送通知到系統管理員或 Slack/Teams 頻道
     fi
     sleep 300  # 每5分鐘檢查一次
 done
@@ -405,7 +573,7 @@ done
 ### 備份和恢復
 ```bash
 # 定期備份重要資料
-docker compose -f docker-compose.agvc.yml exec postgres_container pg_dump -U postgres > backup-$(date +%Y%m%d).sql
+docker compose -f docker-compose.agvc.yml exec postgres pg_dump -U agvc -d agvc > backup-$(date +%Y%m%d).sql
 
 # 配置檔案備份
 tar -czf config-backup-$(date +%Y%m%d).tar.gz app/config/
@@ -426,6 +594,8 @@ tar -czf config-backup-$(date +%Y%m%d).tar.gz app/config/
 
 ## 🔗 交叉引用
 - 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 效能監控: @docs-ai/operations/maintenance/performance-monitoring.md
+- 資料庫操作: @docs-ai/operations/development/database-operations.md
 - 日誌分析: @docs-ai/operations/maintenance/log-analysis.md
 - 容器管理: @docs-ai/operations/deployment/container-management.md
 - 雙環境架構: @docs-ai/context/system/dual-environment.md

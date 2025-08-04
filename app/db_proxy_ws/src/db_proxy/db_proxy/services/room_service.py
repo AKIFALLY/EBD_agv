@@ -31,35 +31,35 @@ class RoomService:
     
     def get_enter_location_id(self, room_id: int, session: Session) -> Optional[int]:
         """
-        取得房間的入口位置ID
+        取得房間的入口位置ID（使用硬編碼規則）
         
         Args:
             room_id: 房間ID
             session: 資料庫 session
             
         Returns:
-            入口位置ID，如果房間不存在則回傳 None
+            入口位置ID，格式：room_id * 10000 + 1，如果房間不存在則回傳 None
         """
         room = self.crud.get_by_id(session, room_id)
-        return room.enter_location_id if room else None
+        return room_id * 10000 + 1 if room else None
     
     def get_exit_location_id(self, room_id: int, session: Session) -> Optional[int]:
         """
-        取得房間的出口位置ID
+        取得房間的出口位置ID（使用硬編碼規則）
         
         Args:
             room_id: 房間ID
             session: 資料庫 session
             
         Returns:
-            出口位置ID，如果房間不存在則回傳 None
+            出口位置ID，格式：room_id * 10000 + 2，如果房間不存在則回傳 None
         """
         room = self.crud.get_by_id(session, room_id)
-        return room.exit_location_id if room else None
+        return room_id * 10000 + 2 if room else None
     
     def get_room_locations(self, room_id: int, session: Session) -> Optional[Dict[str, int]]:
         """
-        取得房間的入口和出口位置ID
+        取得房間的入口和出口位置ID（使用硬編碼規則）
         
         Args:
             room_id: 房間ID
@@ -73,8 +73,8 @@ class RoomService:
         room = self.crud.get_by_id(session, room_id)
         if room:
             return {
-                "enter_location_id": room.enter_location_id,
-                "exit_location_id": room.exit_location_id
+                "enter_location_id": room_id * 10000 + 1,
+                "exit_location_id": room_id * 10000 + 2
             }
         return None
     

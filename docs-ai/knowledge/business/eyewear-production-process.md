@@ -7,6 +7,27 @@
 
 ## 🏭 系統實際部署狀況 (實驗階段)
 
+### ⚠️ 系統管理前提條件
+**在進行系統管理和監控之前，必須將 RosAGV 目錄加入 PATH 環境變數**
+
+在 `~/.bashrc` 中添加以下設定：
+```bash
+# RosAGV 工具路徑配置
+export PATH="/home/ct/RosAGV:$PATH"
+```
+
+設定完成後，重新載入環境：
+```bash
+source ~/.bashrc
+```
+
+驗證配置是否正確：
+```bash
+which r                    # 應該顯示 /home/ct/RosAGV/r
+r agvc-check              # 執行 AGVC 系統健康檢查
+r containers-status       # 檢查容器運行狀態
+```
+
 ### 當前部署規模
 - **KUKA AGV**: 2台 (負責房間外長距離搬運和 Rack 轉向)
 - **CT AGV 系統**: 3台 (Cargo、Loader、Unloader 各1台)

@@ -42,11 +42,24 @@ echo "ROS_DISTRO=$ROS_DISTRO"
 echo "ZENOH_ROUTER_CONFIG_URI=$ZENOH_ROUTER_CONFIG_URI"
 echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
 
-source /opt/ros/$ROS_DISTRO/setup.bash
-source /opt/ws_rmw_zenoh/install/setup.bash
-#ros套件的interfaces source
-source /app/keyence_plc_ws/install/setup.bash
-source /app/plc_proxy_ws/install/setup.bash
+# 載入完整的 setup.bash 環境 (包含智能 all_source 和所有工具)
+if [ -f "/app/setup.bash" ]; then
+    echo "🔧 載入完整 setup.bash 環境..."
+    source /app/setup.bash
+    echo "✅ setup.bash 環境載入完成"
+    
+    # 明確載入 AGVC 工作空間 (包含 web_api_launch)
+    echo "🔧 載入 AGVC 專用工作空間..."
+    agvc_source > /dev/null 2>&1  # 靜默載入避免過多輸出
+    echo "✅ AGVC 工作空間載入完成 (包含 web_api_launch)"
+else
+    echo "❌ setup.bash 不存在，使用基礎環境載入"
+    source /opt/ros/$ROS_DISTRO/setup.bash
+    source /opt/ws_rmw_zenoh/install/setup.bash
+    #ros套件的interfaces source
+    source /app/keyence_plc_ws/install/setup.bash
+    source /app/plc_proxy_ws/install/setup.bash
+fi
 
 #啟動時自動執行的腳本，可以在這裡定義各種函式，並在啟動時自動執行。
 #啟動SSH
@@ -110,96 +123,43 @@ else
     echo "❌ Zenoh Router 啟動失敗"
 fi
 
+# =============================================================================
+# 🔧 Web API Launch 啟動控制
+# =============================================================================
 
+# 設定自動啟動開關 (true=啟動, false=跳過)
+AUTO_START_WEB_API_LAUNCH=false
 
-#if [ $NODE_INSTALLED -eq 0 ]; then
-#    # 循環檢查第一個 Node.js 服務 最多檢查 10 秒
-#    START_TIME=$SECONDS
-#    TIMEOUT=10
-#    while [ $(($SECONDS - $START_TIME)) -lt $TIMEOUT ]; do
-#        if pgrep -xaf "node $AGVC_NODE_SCRIPT" > /dev/null && [ -f "$AGVC_PID_FILE" ] && pgrep -F "$AGVC_PID_FILE" > /dev/null; then
-#            echo "✅ 第一個 Node.js 應用程式(agvc.ui)已經在運行中 (PID: $(cat $AGVC_PID_FILE))"
-#            break
-#        else
-#            echo "⏳ 等待第一個 Node.js 應用程式(agvc.ui)啟動... 已經等待 $(($SECONDS - $START_TIME)) 秒"
-#        fi
-#        sleep 1  # 每次檢查後等待 1 秒
-#    done
-#    # 如果超過 10 秒仍然沒有啟動成功，則顯示錯誤訊息
-#    if [ $(($SECONDS - $START_TIME)) -ge $TIMEOUT ]; then
-#        echo "❌ 第一個 Node.js 應用程式啟動失敗"
-#    fi
+# 根據開關決定是否啟動 Web API Launch
+if [ "$AUTO_START_WEB_API_LAUNCH" = "true" ]; then
+    echo "🌐 啟動 Web API Launch 服務群組..."
+    manage_web_api_launch start
+else
+    echo "⏸️ Web API Launch 自動啟動已停用 (AUTO_START_WEB_API_LAUNCH=false)"
+fi
+
+# =============================================================================
+# 📖 使用說明
+# =============================================================================
 #
-#    # 循環檢查第二個 Node.js 服務
-#    START_TIME=$SECONDS
-#    while [ $(($SECONDS - $START_TIME)) -lt $TIMEOUT ]; do
-#        if pgrep -xaf "node $OPUI_NODE_SCRIPT" > /dev/null && [ -f "$OPUI_PID_FILE" ] && pgrep -F "$OPUI_PID_FILE" > /dev/null; then
-#            echo "✅ 第二個 Node.js 應用程式(op.ui)已經在運行中 (PID: $(cat $OPUI_PID_FILE))"
-#            break
-#        else
-#            echo "⏳ 等待第二個 Node.js 應用程式(op.ui)啟動... 已經等待 $(($SECONDS - $START_TIME)) 秒"
-#        fi
-#        sleep 1  # 每次檢查後等待 1 秒
-#    done
-#    # 如果超過 10 秒仍然沒有啟動成功，則顯示錯誤訊息
-#    if [ $(($SECONDS - $START_TIME)) -ge $TIMEOUT ]; then
-#        echo "❌ 第二個 Node.js 應用程式啟動失敗"
-#    fi
-#else
-#    echo "❌ Node.js 未安裝"
-#fi
+# 🔧 控制 Web API Launch 自動啟動:
+#   - 啟用自動啟動: 將 AUTO_START_WEB_API_LAUNCH 設為 true
+#   - 停用自動啟動: 將 AUTO_START_WEB_API_LAUNCH 設為 false
+#
+# 🚀 手動管理 Web API Launch:
+#   在容器內執行以下指令:
+#   manage_web_api_launch start     # 啟動服務
+#   manage_web_api_launch stop      # 停止服務
+#   manage_web_api_launch restart   # 重啟服務
+#   manage_web_api_launch status    # 檢查狀態
+#
+# 📋 函式說明:
+#   manage_web_api_launch {start|stop|restart|status}
+#   - 統一的服務管理介面 (定義在 setup.bash 中)
+#   - 自動檢查重複啟動
+#   - 完整的健康檢查和端口驗證
+#   - 支援啟動、停止、重啟、狀態檢查等操作
+#
+# =============================================================================
 
-
-# -lt	less than	小於 <	[ "$a" -lt "$b" ]
-# -le	less or equal	小於或等於 ≤	[ "$a" -le "$b" ]
-# -eq	equal	等於 =	[ "$a" -eq "$b" ]
-# -ne	not equal	不等於 ≠	[ "$a" -ne "$b" ]
-# -gt	greater than	大於 >	[ "$a" -gt "$b" ]
-# -ge	greater or equal	大於或等於 ≥	[ "$a" -ge "$b" ]
-
-
-
-all_source() { 
-    # 設定要載入的 workspace 路徑
-    workspaces=(
-        "/app/keyence_plc_ws/install"
-        "/app/plc_proxy_ws/install"
-        "/app/agv_cmd_service_ws/install"        
-        "/app/joystick_ws/install"
-        "/app/agv_ws/install"
-        "/app/path_algorithm/install"
-    )
-
-    # 逐一檢查並 source
-    for ws in "${workspaces[@]}"; do 
-        if [ -d "$ws" ]; then 
-            echo "Sourcing $ws/setup.bash"
-            source "$ws/setup.bash"
-        else
-            echo "Warning: $ws 不存在，略過"
-        fi
-    done
-}
-
-all_source
-export PYTHONPATH=/opt/pyvenv_env/lib/python3.12/site-packages:$PYTHONPATH
-source /opt/pyvenv_env/bin/activate
-
-#啟動agv launch
-# AGV_LOG_FILE="/tmp/agv.log"
-# AGV_PID_FILE="/tmp/agv.pid"
-# echo "🚀 啟動 agv launch..."
-# nohup ros2 launch loader_agv launch.py > "$AGV_LOG_FILE" 2>&1 &
-# echo $! > "$AGV_PID_FILE"
-# 
-# 
-# # 檢查 agv launch 是否已經運行
-# if [ -f "$AGV_PID_FILE" ] && pgrep -F "$AGV_PID_FILE" > /dev/null; then
-#     python3 -c "import sqlmodel; print(sqlmodel.__version__)"
-#     python3 -c "import networkx; print(networkx.__version__)"
-# 
-# 
-#     echo "✅ agv launch 已經在運行中 (PID: $(cat $AGV_PID_FILE))"
-# else
-#     echo "❌ agv launch 啟動失敗"
-# fi
+echo "📦 工作空間載入完成，準備啟動 AGVC 專用服務..."

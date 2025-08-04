@@ -79,7 +79,7 @@ startup.agv.bash
 
 ### 部署特性
 ```yaml
-容器名稱: agvc_server, postgres_container, nginx
+容器名稱: agvc_server, postgres, nginx
 網路模式: bridge (192.168.100.0/24)
 部署位置: 中央管理伺服器或雲端
 Docker Compose: docker-compose.agvc.yml

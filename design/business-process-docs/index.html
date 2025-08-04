@@ -3,327 +3,1874 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RosAGV 業務流程文件導航 2025</title>
-    <link rel="stylesheet" href="assets/css/rosagv-common.css">
+    <title>RosAGV 技術指南</title>
+    <!-- 本地化資源 (與 CDN 版本完全一致) -->
+    <!-- Tailwind CSS Play 本地版本 (JavaScript 運行時) -->
+    <script src="js/vendors/tailwind-play.js"></script>
+    <!-- Prism.js 語法高亮本地版本 -->
+    <link rel="stylesheet" href="css/vendors/prism-theme.css">
+    <script src="js/vendors/prism-core.js"></script>
+    <script src="js/vendors/prism-autoloader.js"></script>
+    <!-- Marked.js 本地版本 -->
+    <script src="js/vendors/marked.js"></script>
+    <script src="js/content-loader.js"></script>
+    <script src="js/navigation.js"></script>
+    
+    <!-- 自定義樣式 (載入在 Prism CSS 之後以確保優先級) -->
+    <style>
+        /* 全域字體配置 - 使用系統內建字體 */
+        * {
+            font-family: 
+                "Ubuntu", "Ubuntu Sans",
+                "Noto Sans CJK TC", "Noto Sans CJK SC", 
+                "Microsoft JhengHei", "微軟正黑體",
+                "PingFang TC", "PingFang SC", 
+                "Source Han Sans TC", "Source Han Sans SC", "思源黑體",
+                "DejaVu Sans", "Liberation Sans",
+                "Helvetica Neue", "Arial", 
+                sans-serif !important;
+        }
+        
+        /* 等寬字體配置 - 用於代碼顯示 */
+        code, pre, .code, .monospace,
+        code[class*="language-"], 
+        pre[class*="language-"],
+        .token,
+        .prose code,
+        .prose pre,
+        .prose pre code {
+            font-family: 
+                "Ubuntu Mono", "Ubuntu Sans Mono",
+                "JetBrains Mono", "JetBrainsMono Nerd Font",
+                "DejaVu Sans Mono", 
+                "Liberation Mono",
+                "Fira Code", 
+                "Consolas", "Monaco", 
+                "Courier New", 
+                monospace !important;
+        }
+        
+        /* 確保 Prism.js 代碼塊使用等寬字體 */
+        pre[class*="language-"] code,
+        pre[class*="language-"] .token,
+        code[class*="language-"] .token {
+            font-family: 
+                "Ubuntu Mono", "Ubuntu Sans Mono",
+                "JetBrains Mono", "JetBrainsMono Nerd Font",
+                "DejaVu Sans Mono", 
+                "Liberation Mono",
+                "Fira Code", 
+                "Consolas", "Monaco", 
+                "Courier New", 
+                monospace !important;
+        }
+
+        /* 修復代碼區塊縮排問題 - 重置所有可能造成縮排的屬性 */
+        pre[class*="language-"],
+        pre code,
+        .prose pre,
+        .prose pre code,
+        code[class*="language-"] {
+            text-indent: 0 !important;
+            padding-left: 1em !important;
+            margin-left: 0 !important;
+            text-align: left !important;
+            white-space: pre !important;
+            tab-size: 4 !important;
+        }
+
+        /* 防止列表項目樣式影響代碼塊 */
+        pre[class*="language-"] li,
+        .prose pre li,
+        pre code li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            text-indent: 0 !important;
+            line-height: inherit !important;
+        }
+
+        /* 重置代碼塊內所有元素的縮排 */
+        pre[class*="language-"] *,
+        .prose pre *,
+        pre code * {
+            text-indent: 0 !important;
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+        }
+
+        /* 特別處理第一行縮排問題 */
+        pre[class*="language-"]:before,
+        pre code:before {
+            content: none !important;
+        }
+        
+        /* 載入遮罩層 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+        }
+        
+        .loading-overlay.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        /* 載入動畫 */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 載入文字動畫 */
+        .loading-text {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .loading-subtext {
+            color: #94a3b8;
+            font-size: 12px;
+            text-align: center;
+            max-width: 300px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* 主要內容初始隱藏 */
+        .main-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        
+        .main-content.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* 防止初始渲染時的閃動 */
+        body {
+            visibility: hidden;
+        }
+        
+        body.loading-ready {
+            visibility: visible;
+        }
+        
+        /* 頁面切換載入動畫 */
+        .page-loading-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            padding: 2rem;
+        }
+        
+        .page-loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+        
+        .page-loading-text {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .page-loading-subtext {
+            color: #94a3b8;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        /* 內容區域轉場動畫 */
+        #main-content {
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        
+        /* 導航連結樣式 */
+        .nav-link {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border-left: 2px solid transparent;
+        }
+        
+        .nav-link:hover {
+            border-left-color: currentColor;
+            transform: translateX(2px);
+        }
+        
+        .nav-section {
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 1rem;
+        }
+        
+        .nav-section:last-child {
+            border-bottom: none;
+        }
+    </style>
 </head>
-<body class="bg-blue">
-    <!-- 標題區域 -->
-    <header class="header">
-        <div class="container">
-            <h1>🤖 RosAGV 業務流程文件中心</h1>
-            <p class="subtitle">智能製造執行系統 - 完整業務流程指導文件</p>
-            <div class="last-updated">最後更新：2025年1月30日</div>
+<body class="bg-stone-50 text-stone-800">
+    <!-- 載入遮罩層 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">載入中...</div>
+        <div class="loading-subtext">正在準備 RosAGV 技術指南，請稍候</div>
+    </div>
+    
+    <!-- 主要內容 -->
+    <div id="main-app" class="main-content">
+        <!-- 頂部標題欄 -->
+        <header class="bg-gradient-to-r from-slate-50 to-stone-100 border-b border-stone-200">
+        <div class="max-w-7xl mx-auto px-6 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-light text-stone-900 mb-1">RosAGV 技術指南</h1>
+                    <p class="text-stone-600 text-sm">企業級 AGV 控制系統完整文檔</p>
+                </div>
+                <div class="flex items-center">
+                    <button data-navigate="home" class="text-stone-600 hover:text-blue-600 transition-colors px-3 py-2 rounded-lg hover:bg-white/50 cursor-pointer">
+                        首頁
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
 
-    <!-- 主要內容 -->
-    <main class="main-content">
-        <div class="container">
-            <!-- 系統概覽 -->
-            <section class="section">
-                <h2>📋 文件導航概覽</h2>
-                <p>歡迎使用 RosAGV 業務流程文件中心。本文件庫為新進工程師和系統維護人員提供完整的業務流程指導，涵蓋室內外製程、系統架構、以及完整業務系統等多個面向。</p>
-                
-                <div class="alert alert-info" style="margin: 20px 0;">
-                    <h3>🎯 入門必知：RosAGV 系統架構概念</h3>
-                    <p><strong>RosAGV</strong> 是一套<strong>眼鏡生產工廠</strong>的智能製造執行系統，整合了多套AGV系統協同作業：</p>
-                    <ul>
-                        <li><strong>CT AGV (3車型)：</strong>系統直接管理的核心車隊 - Cargo搬運架台、Loader精密載料、Unloader後段卸料</li>
-                        <li><strong>KUKA AGV (2台)：</strong>外部整合的Robot 400i，負責房間外走廊搬運和架台轉向</li>
-                        <li><strong>95+ Work ID：</strong>涵蓋房間內精密製程(25+)、房間外物流作業(30+)、系統整合任務(40+)</li>
-                        <li><strong>雙環境架構：</strong>車載即時控制 + 中央車隊管理，透過容器化部署和Zenoh通訊</li>
-                    </ul>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number">4</div>
-                        <div class="stat-label">核心文件</div>
-                        <div class="stat-description">完整業務流程指導文件</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">12</div>
-                        <div class="stat-label">業務模組</div>
-                        <div class="stat-description">涵蓋製程、控制、整合等模組</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">3</div>
-                        <div class="stat-label">CT AGV車型</div>
-                        <div class="stat-description">Cargo/Loader/Unloader (系統直管)</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">95+</div>
-                        <div class="stat-label">Work ID</div>
-                        <div class="stat-description">涵蓋房間內外製程任務編碼</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 文件導航卡片 -->
-            <section class="section">
-                <h2>📚 核心文件導航</h2>
-                
-                <div class="feature-grid">
-                    <!-- 房間內製程 -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon">🏠</div>
-                            <div class="card-title">房間內製程操作指南</div>
-                        </div>
-                        <div class="card-content">
-                            <p><strong>適用對象：</strong>製程工程師、AGV操作員</p>
-                            <p><strong>主要內容：</strong>Loader AGV、Unloader AGV協同作業流程，包含清洗、泡藥、預烘、烘烤等精密製程操作。</p>
-                            <p><strong>關鍵特色：</strong>4個室內工位、25+ Work ID、雙AGV協同</p>
-                            <div style="margin-top: 20px;">
-                                <a href="rosagv_business_process_2025.html" class="btn">查看詳細內容</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 房間外製程 -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon theme-green">🌿</div>
-                            <div class="card-title">房間外製程操作指南</div>
-                        </div>
-                        <div class="card-content">
-                            <p><strong>適用對象：</strong>射出工程師、KUKA操作員、OPUI使用者</p>
-                            <p><strong>主要內容：</strong>射出成型→OPUI叫車→KUKA AGV搬運→Cargo AGV銜接→包裝出貨的完整外部流程。</p>
-                            <p><strong>關鍵特色：</strong>KUKA Fleet整合、架台管理、三系統協同</p>
-                            <div style="margin-top: 20px;">
-                                <a href="rosagv_outdoor_process_2025.html" class="btn theme-green">查看詳細內容</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 系統架構 -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon theme-purple">🏗️</div>
-                            <div class="card-title">系統架構技術文件</div>
-                        </div>
-                        <div class="card-content">
-                            <p><strong>適用對象：</strong>系統架構師、後端工程師、DevOps工程師</p>
-                            <p><strong>主要內容：</strong>RosAGV系統的技術架構、模組設計、資料流向、API接口設計等技術細節。</p>
-                            <p><strong>關鍵特色：</strong>微服務架構、容器化部署、API設計</p>
-                            <div style="margin-top: 20px;">
-                                <a href="rosagv_architecture_2025.html" class="btn theme-purple">查看詳細內容</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 完整業務系統 -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon theme-orange">🏢</div>
-                            <div class="card-title">完整業務系統指南</div>
-                        </div>
-                        <div class="card-content">
-                            <p><strong>適用對象：</strong>專案經理、業務分析師、系統整合工程師</p>
-                            <p><strong>主要內容：</strong>RosAGV完整業務系統的整體視角，涵蓋所有模組的協同運作和企業級整合方案。</p>
-                            <p><strong>關鍵特色：</strong>企業級整合、業務流程設計、系統協同</p>
-                            <div style="margin-top: 20px;">
-                                <a href="rosagv_complete_business_system_2025.html" class="btn theme-orange">查看詳細內容</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 快速導航 -->
-            <section class="section">
-                <h2>⚡ 快速導航</h2>
-                
-                <div class="feature-grid">
-                    <div class="feature-item">
-                        <div class="feature-icon">🚛</div>
-                        <div class="feature-title">CT AGV車型指南 (系統直管)</div>
-                        <div class="feature-description">
-                            <strong>Cargo Mover:</strong> 架台搬運，房間內外銜接<br>
-                            <strong>Loader:</strong> 多工位載料，精密製程前段<br>
-                            <strong>Unloader:</strong> 後段卸料，完成品處理<br>
-                            <em>註：均配備麥克納姆輪+機械臂，ROS 2控制</em>
-                        </div>
-                    </div>
-
-                    <div class="feature-item">
-                        <div class="feature-icon">🔧</div>
-                        <div class="feature-title">系統整合架構</div>
-                        <div class="feature-description">
-                            <strong>KUKA Fleet:</strong> 外部AGV系統 (Robot 400i×2台)<br>
-                            <strong>OPUI:</strong> 操作員介面，叫車/派車功能<br>
-                            <strong>PLC:</strong> Keyence設備控制，工業通訊<br>
-                            <em>註：雙環境架構，容器化部署</em>
-                        </div>
-                    </div>
-
-                    <div class="feature-item">
-                        <div class="feature-icon">📊</div>
-                        <div class="feature-title">Work ID系統 (95+任務)</div>
-                        <div class="feature-description">
-                            <strong>1000s:</strong> Cargo AGV 任務編碼<br>
-                            <strong>2000s:</strong> Loader AGV 任務編碼<br>
-                            <strong>3000s:</strong> Unloader AGV 任務編碼<br>
-                            <strong>220001/230001:</strong> KUKA AGV 任務<br>
-                            <strong>100001/100002:</strong> OPUI 叫車/派車
-                        </div>
-                    </div>
-
-                    <div class="feature-item">
-                        <div class="feature-icon">🏭</div>
-                        <div class="feature-title">製程流程</div>
-                        <div class="feature-description">
-                            <strong>房間內:</strong> 精密化學處理<br>
-                            <strong>房間外:</strong> 走廊搬運作業<br>
-                            <strong>整合:</strong> 端到端流程
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 使用指南 -->
-            <section class="section">
-                <h2>📖 使用指南</h2>
-                
-                <div class="alert alert-info">
-                    <h3>🎯 針對不同角色的建議閱讀順序：</h3>
-                </div>
-
-                <div class="feature-grid">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon">👨‍💻</div>
-                            <div class="card-title">新進工程師</div>
-                        </div>
-                        <div class="card-content">
-                            <p><strong>建議順序：</strong></p>
-                            <ol>
-                                <li>完整業務系統指南（整體概念）</li>
-                                <li>系統架構技術文件（技術基礎）</li>
-                                <li>房間內/外製程指南（具體流程）</li>
-                            </ol>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon">👨‍🔧</div>
-                            <div class="card-title">現場操作員</div>
-                        </div>
-                        <div class="card-content">
-                            <p><strong>建議順序：</strong></p>
-                            <ol>
-                                <li>房間內製程操作指南（日常作業）</li>
-                                <li>房間外製程操作指南（配合作業）</li>
-                                <li>完整業務系統指南（全局理解）</li>
-                            </ol>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon">👨‍💼</div>
-                            <div class="card-title">管理階層</div>
-                        </div>
-                        <div class="card-content">
-                            <p><strong>建議順序：</strong></p>
-                            <ol>
-                                <li>完整業務系統指南（策略視角）</li>
-                                <li>系統架構技術文件（投資決策）</li>
-                                <li>製程指南（營運管理）</li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 技術支援 -->
-            <section class="section">
-                <h2>🔧 技術支援資訊</h2>
-                
-                <div class="alert alert-warning">
-                    <h3>⚠️ 重要概念說明：</h3>
-                    <ul>
-                        <li><strong>雙環境架構：</strong>AGV車載系統(即時控制) + AGVC管理系統(車隊調度)</li>
-                        <li><strong>CT vs KUKA AGV：</strong>CT AGV系統直管3車型，KUKA AGV透過API整合</li>
-                        <li><strong>Work ID分層：</strong>95+任務編碼涵蓋房間內外製程、系統整合、設備控制</li>
-                        <li><strong>容器化開發：</strong>所有ROS 2程式須在Docker容器內執行和測試</li>
-                        <li><strong>通訊機制：</strong>Zenoh RMW跨容器 + KUKA Fleet API + PLC協議</li>
-                    </ul>
-                </div>
-
-                <div class="alert alert-success">
-                    <h3>🚀 快速上手指令</h3>
-                    <div class="command-section">
-                        <h4>🔍 系統診斷 (宿主機執行)</h4>
-                        <div class="command-block">
-                            <div class="command-comment"># 快速健康檢查</div>
-                            <div>r agvc-check <span class="command-description"># AGVC 管理系統健康檢查</span></div>
-                            <div>r containers-status <span class="command-description"># 所有容器運行狀態</span></div>
-                            <div>r network-check <span class="command-description"># 網路連接和端口檢查</span></div>
-                            <div>r quick-diag <span class="command-description"># 快速綜合診斷</span></div>
-                        </div>
-                        
-                        <h4>🐳 容器開發 (進入開發環境)</h4>
-                        <div class="command-block">
-                            <div class="command-type-diagnostic"># 進入 AGVC 管理容器</div>
-                            <div>agvc_enter <span class="command-description"># 自動載入環境</span></div>
-                            <div>all_source <span class="command-description"># 載入所有工作空間</span></div>
-                            <div class="command-type-diagnostic" style="margin-top: 8px;"># 進入 AGV 車載容器</div>
-                            <div>agv_enter <span class="command-description"># 進入車載開發環境</span></div>
-                        </div>
-                        
-                        <h4>🏗️ 常用開發指令 (容器內執行)</h4>
-                        <div class="command-block">
-                            <div class="command-type-development"># ROS 2 開發</div>
-                            <div>colcon build --packages-select 套件名</div>
-                            <div>ros2 launch 套件名 launch檔案.py</div>
-                            <div>ros2 topic list <span class="command-description"># 查看主題列表</span></div>
-                            <div class="command-type-development" style="margin-top: 8px;"># 系統狀態檢查</div>
-                            <div>check_system_status <span class="command-description"># 容器內系統狀態</span></div>
-                            <div>check_zenoh_status <span class="command-description"># Zenoh 通訊狀態</span></div>
-                        </div>
+    <!-- 主要布局容器 -->
+    <div class="flex max-w-7xl mx-auto bg-white shadow-sm">
+        <!-- 緊湊式側邊導航 -->
+        <nav id="sidebar" class="w-60 bg-gradient-to-b from-slate-50 to-stone-50 border-r border-stone-200 min-h-screen sticky top-0 flex-shrink-0 hidden xl:block overflow-y-auto">
+            <div class="p-4">
+                <div class="space-y-4">
+                    <!-- 快速開始 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-red-600 mb-2 px-2 uppercase tracking-wide">📖 快速開始</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="getting-started/what-is-rosagv.md" class="nav-link text-red-700 hover:bg-red-50">什麼是 RosAGV？</a></li>
+                            <li><a data-navigate="getting-started/system-overview.md" class="nav-link text-red-700 hover:bg-red-50">系統整體概覽</a></li>
+                            <li><a data-navigate="getting-started/key-concepts.md" class="nav-link text-red-700 hover:bg-red-50">核心概念解釋</a></li>
+                            <li><a data-navigate="getting-started/quick-start-guide.md" class="nav-link text-red-700 hover:bg-red-50">快速上手指導</a></li>
+                        </ul>
                     </div>
                     
-                    <p><strong>💡 提示：</strong>更多詳細的開發指導和故障排除，請參考各核心文件中的技術章節。</p>
+                    <!-- 業務流程 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-orange-600 mb-2 px-2 uppercase tracking-wide">🏭 業務流程</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="business-processes/eyewear-production.md" class="nav-link text-orange-700 hover:bg-orange-50">眼鏡生產流程</a></li>
+                            <li><a data-navigate="business-processes/indoor-process.md" class="nav-link text-orange-700 hover:bg-orange-50">室內物料搬運</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- AGV 車型 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-yellow-600 mb-2 px-2 uppercase tracking-wide">🚗 AGV 車型</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="agv-vehicles/vehicle-types.md" class="nav-link text-yellow-700 hover:bg-yellow-50">車型介紹</a></li>
+                            <li><a data-navigate="agv-vehicles/cargo-mover.md" class="nav-link text-yellow-700 hover:bg-yellow-50">Cargo Mover</a></li>
+                            <li><a data-navigate="agv-vehicles/loader.md" class="nav-link text-yellow-700 hover:bg-yellow-50">Loader AGV</a></li>
+                            <li><a data-navigate="agv-vehicles/unloader.md" class="nav-link text-yellow-700 hover:bg-yellow-50">Unloader AGV</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 系統架構 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-green-600 mb-2 px-2 uppercase tracking-wide">🏛️ 系統架構</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="system-architecture/dual-environment.md" class="nav-link text-green-700 hover:bg-green-50">雙環境架構</a></li>
+                            <li><a data-navigate="system-architecture/technology-stack.md" class="nav-link text-green-700 hover:bg-green-50">技術棧架構</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 運維操作 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-blue-600 mb-2 px-2 uppercase tracking-wide">⚙️ 運維操作</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="operations/deployment.md" class="nav-link text-blue-700 hover:bg-blue-50">部署指南</a></li>
+                            <li><a data-navigate="operations/development.md" class="nav-link text-blue-700 hover:bg-blue-50">開發環境</a></li>
+                            <li><a data-navigate="operations/maintenance.md" class="nav-link text-blue-700 hover:bg-blue-50">維護操作</a></li>
+                            <li><a data-navigate="operations/troubleshooting.md" class="nav-link text-blue-700 hover:bg-blue-50">故障排除</a></li>
+                            <li><a data-navigate="operations/system-diagnostics.md" class="nav-link text-blue-700 hover:bg-blue-50">系統診斷</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 技術實作 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-purple-600 mb-2 px-2 uppercase tracking-wide">🔧 技術實作</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="technical-details/ros2-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">ROS 2 整合</a></li>
+                            <li><a data-navigate="technical-details/zenoh-communication.md" class="nav-link text-purple-700 hover:bg-purple-50">Zenoh 通訊</a></li>
+                            <li><a data-navigate="technical-details/plc-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">PLC 整合</a></li>
+                            <li><a data-navigate="technical-details/kuka-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">KUKA 整合</a></li>
+                            <li><a data-navigate="technical-details/ai-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">AI WCS</a></li>
+                            <li><a data-navigate="technical-details/performance-optimization.md" class="nav-link text-purple-700 hover:bg-purple-50">效能調優</a></li>
+                            <li><a data-navigate="technical-details/monitoring-setup.md" class="nav-link text-purple-700 hover:bg-purple-50">監控配置</a></li>
+                        </ul>
+                    </div>
                 </div>
-            </section>
-        </div>
-    </main>
+            </div>
+        </nav>
+
+        <!-- 移動端導航按鈕 -->
+        <button id="mobile-nav-toggle" class="xl:hidden fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+
+        <!-- 移動端側邊導航遮罩 -->
+        <div id="mobile-sidebar-overlay" class="xl:hidden fixed inset-0 bg-black/30 z-40 hidden backdrop-blur-sm"></div>
+        
+        <!-- 移動端側邊導航 -->
+        <nav id="mobile-sidebar" class="xl:hidden fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-slate-50 to-stone-50 transform -translate-x-full transition-transform duration-300 ease-in-out z-50 overflow-y-auto shadow-xl">
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-medium text-stone-900">導航選單</h2>
+                    <button id="mobile-nav-close" class="text-stone-500 hover:text-stone-700 p-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 與桌面版相同的導航內容 -->
+                <div class="space-y-4">
+                    <!-- 快速開始 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-red-600 mb-2 px-2 uppercase tracking-wide">📖 快速開始</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="getting-started/what-is-rosagv.md" class="nav-link text-red-700 hover:bg-red-50">什麼是 RosAGV？</a></li>
+                            <li><a data-navigate="getting-started/system-overview.md" class="nav-link text-red-700 hover:bg-red-50">系統整體概覽</a></li>
+                            <li><a data-navigate="getting-started/key-concepts.md" class="nav-link text-red-700 hover:bg-red-50">核心概念解釋</a></li>
+                            <li><a data-navigate="getting-started/quick-start-guide.md" class="nav-link text-red-700 hover:bg-red-50">快速上手指導</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 業務流程 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-orange-600 mb-2 px-2 uppercase tracking-wide">🏭 業務流程</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="business-processes/eyewear-production.md" class="nav-link text-orange-700 hover:bg-orange-50">眼鏡生產流程</a></li>
+                            <li><a data-navigate="business-processes/indoor-process.md" class="nav-link text-orange-700 hover:bg-orange-50">室內物料搬運</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- AGV 車型 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-yellow-600 mb-2 px-2 uppercase tracking-wide">🚗 AGV 車型</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="agv-vehicles/vehicle-types.md" class="nav-link text-yellow-700 hover:bg-yellow-50">車型介紹</a></li>
+                            <li><a data-navigate="agv-vehicles/cargo-mover.md" class="nav-link text-yellow-700 hover:bg-yellow-50">Cargo Mover</a></li>
+                            <li><a data-navigate="agv-vehicles/loader.md" class="nav-link text-yellow-700 hover:bg-yellow-50">Loader AGV</a></li>
+                            <li><a data-navigate="agv-vehicles/unloader.md" class="nav-link text-yellow-700 hover:bg-yellow-50">Unloader AGV</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 系統架構 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-green-600 mb-2 px-2 uppercase tracking-wide">🏛️ 系統架構</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="system-architecture/dual-environment.md" class="nav-link text-green-700 hover:bg-green-50">雙環境架構</a></li>
+                            <li><a data-navigate="system-architecture/technology-stack.md" class="nav-link text-green-700 hover:bg-green-50">技術棧架構</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 運維操作 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-blue-600 mb-2 px-2 uppercase tracking-wide">⚙️ 運維操作</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="operations/deployment.md" class="nav-link text-blue-700 hover:bg-blue-50">部署指南</a></li>
+                            <li><a data-navigate="operations/development.md" class="nav-link text-blue-700 hover:bg-blue-50">開發環境</a></li>
+                            <li><a data-navigate="operations/maintenance.md" class="nav-link text-blue-700 hover:bg-blue-50">維護操作</a></li>
+                            <li><a data-navigate="operations/troubleshooting.md" class="nav-link text-blue-700 hover:bg-blue-50">故障排除</a></li>
+                            <li><a data-navigate="operations/system-diagnostics.md" class="nav-link text-blue-700 hover:bg-blue-50">系統診斷</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 技術實作 -->
+                    <div class="nav-section">
+                        <h3 class="text-xs font-semibold text-purple-600 mb-2 px-2 uppercase tracking-wide">🔧 技術實作</h3>
+                        <ul class="space-y-1">
+                            <li><a data-navigate="technical-details/ros2-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">ROS 2 整合</a></li>
+                            <li><a data-navigate="technical-details/zenoh-communication.md" class="nav-link text-purple-700 hover:bg-purple-50">Zenoh 通訊</a></li>
+                            <li><a data-navigate="technical-details/plc-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">PLC 整合</a></li>
+                            <li><a data-navigate="technical-details/kuka-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">KUKA 整合</a></li>
+                            <li><a data-navigate="technical-details/ai-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">AI WCS</a></li>
+                            <li><a data-navigate="technical-details/performance-optimization.md" class="nav-link text-purple-700 hover:bg-purple-50">效能調優</a></li>
+                            <li><a data-navigate="technical-details/monitoring-setup.md" class="nav-link text-purple-700 hover:bg-purple-50">監控配置</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主要內容區域 -->
+        <main class="flex-1 min-h-screen">
+            <div class="max-w-4xl mx-auto px-8 py-12" id="main-content">
+                <!-- 內容將由 JavaScript 動態載入 -->
+                <div class="flex items-center justify-center py-32">
+                    <div class="text-center">
+                        <div class="animate-pulse">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full mx-auto mb-6 opacity-70"></div>
+                        </div>
+                        <p class="text-stone-600 text-lg font-light">正在載入 RosAGV 技術指南...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <!-- 頁腳 -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 RosAGV Project - Intelligent Manufacturing Execution System</p>
-            <p>Powered by ROS 2 Jazzy + Zenoh RMW + Docker Compose V2</p>
+    <footer class="bg-stone-100 border-t border-stone-200">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="text-center text-stone-500 text-sm font-light">
+                &copy; 2025 RosAGV 技術指南 | 擎添工業 (Ching Tech) | 基於 Markdown + JavaScript 動態載入
+            </div>
         </div>
     </footer>
 
-    <script src="assets/js/rosagv-common.js"></script>
     <script>
-        // 頁面特定初始化
+        // 初始化文檔系統
         document.addEventListener('DOMContentLoaded', function() {
-            // 統計數據動畫
-            RosAGV.page.updateStats({
-                'documents': 4,
-                'modules': 12,
-                'agv-types': 3,
-                'work-ids': 95
-            });
-
-            // 卡片懸停效果增強
-            const cards = document.querySelectorAll('.card');
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-10px) scale(1.02)';
-                    this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0) scale(1)';
-                });
-            });
+            // 注意：ContentLoader 和 NavigationManager 已在對應的 JS 文件中初始化
+            // 等待一小段時間確保所有腳本載入完成
+            setTimeout(function() {
+                // 檢查實例是否存在
+                if (window.contentLoader && window.navigationManager) {
+                    console.log('文檔系統初始化完成');
+                    // 如果 URL 中沒有 hash，則顯示首頁
+                    if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#home') {
+                        loadContent('index.md');
+                    }
+                } else {
+                    console.error('文檔系統初始化失敗');
+                }
+            }, 200);
         });
+
+        // 載入首頁 - 使用 NavigationManager 的方法
+        function loadHomePage() {
+            if (window.navigationManager) {
+                window.navigationManager.navigateTo('home');
+            }
+        }
+
+        // 載入內容的主要函數 - 委託給 NavigationManager
+        async function loadContent(filePath) {
+            if (window.navigationManager) {
+                await window.navigationManager.loadContent(filePath);
+            }
+            // 移動端點擊連結後關閉側邊欄
+            if (window.innerWidth < 1280) {
+                toggleMobileSidebar();
+            }
+        }
+
+        // 更新使用者角色 - 使用 NavigationManager 的方法
+        function updateUserRole(role) {
+            console.log('角色切換到:', role);
+            if (window.navigationManager) {
+                window.navigationManager.setRole(role);
+            }
+            
+            // 根據角色顯示推薦內容
+            if (role && role !== 'all') {
+                const paths = {
+                    'product-manager': ['getting-started/what-is-rosagv.md', 'business-processes/eyewear-production.md'],
+                    'system-engineer': ['getting-started/system-overview.md', 'system-architecture/dual-environment.md'],
+                    'ops-engineer': ['getting-started/quick-start-guide.md', 'technical-details/ros2-integration.md'],
+                    'agv-expert': ['agv-vehicles/vehicle-types.md', 'business-processes/indoor-process.md']
+                };
+                
+                if (paths[role] && paths[role].length > 0) {
+                    // 載入該角色的第一個推薦內容
+                    loadContent(paths[role][0]);
+                }
+            } else {
+                // 載入首頁
+                loadContent('index.md');
+            }
+        }
+
+        // 移動端側邊欄控制
+        const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+        const mobileNavClose = document.getElementById('mobile-nav-close');
+        
+        function toggleMobileSidebar() {
+            mobileSidebar.classList.toggle('-translate-x-full');
+            mobileSidebarOverlay.classList.toggle('hidden');
+        }
+        
+        mobileNavToggle.addEventListener('click', toggleMobileSidebar);
+        mobileSidebarOverlay.addEventListener('click', toggleMobileSidebar);
+        mobileNavClose.addEventListener('click', toggleMobileSidebar);
+        
+        // 處理瀏覽器返回按鈕 - NavigationManager 已經處理
+        // 這些事件監聽器在 NavigationManager 中已經設置，不需要重複
+    </script>
+
+    
+    <style>
+        /* 全域移除所有列表項目的點點 */
+        ul, ol {
+            list-style: none !important;
+            padding-left: 0 !important;
+        }
+        
+        li {
+            list-style: none !important;
+            list-style-type: none !important;
+        }
+        
+        li::before, li::after {
+            display: none !important;
+        }
+        
+        /* 側邊導航特別處理 */
+        nav ul, nav ol, nav li {
+            list-style: none !important;
+            list-style-type: none !important;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* 書籍風格的舒適閱讀樣式 */
+        .prose {
+            max-width: none;
+            line-height: 1.8;
+            color: #374151; /* 更溫和的文字顏色 */
+        }
+        
+        /* 標題層次 - 書籍風格 */
+        .prose h1 {
+            font-size: 3rem !important;        /* 48px - 相當於 text-5xl */
+            font-weight: 300 !important;       /* font-light */
+            color: #0f172a !important;         /* text-slate-900 */
+            margin-bottom: 1.5rem !important;  /* 減少間距 */
+            margin-top: 0 !important;          /* mt-0 */
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+        
+        
+        .prose h2 {
+            font-size: 1.875rem !important;    /* 30px - 相當於 text-3xl */
+            font-weight: 500 !important;       /* font-medium */
+            color: #1e293b !important;         /* text-slate-800 */
+            margin-bottom: 1rem !important;    /* 減少間距 */
+            margin-top: 2.5rem !important;     /* 減少間距 */
+            padding-bottom: 0.75rem !important; /* 減少內邊距 */
+            line-height: 1.25;
+            border-bottom: 2px solid #e2e8f0;
+            position: relative;
+        }
+        
+        /* 連續標題間距優化 */
+        .prose h1 + h2 {
+            margin-top: 1rem !important;      /* h1 後面的 h2 間距更小 */
+        }
+        
+        .prose h2 + h3 {
+            margin-top: 1rem !important;      /* h2 後面的 h3 間距更小 */
+        }
+        
+        .prose h3 + h4 {
+            margin-top: 0.75rem !important;   /* h3 後面的 h4 間距更小 */
+        }
+        
+        
+        .prose h3 {
+            font-size: 1.5rem !important;      /* 24px - 相當於 text-2xl */
+            font-weight: 500 !important;       /* font-medium */
+            color: #334155 !important;         /* text-slate-700 */
+            margin-bottom: 0.75rem !important; /* 減少間距 */
+            margin-top: 2rem !important;       /* 減少間距 */
+            line-height: 1.3;
+            position: relative;
+        }
+        
+        .prose h4 {
+            font-size: 1.25rem !important;     /* 20px - 相當於 text-xl */
+            font-weight: 500 !important;       /* font-medium */
+            color: #334155 !important;         /* text-slate-700 */
+            margin-bottom: 1rem !important;    /* mb-4 */
+            margin-top: 2.5rem !important;     /* mt-10 */
+            line-height: 1.4;
+        }
+        
+        .prose h5 {
+            font-size: 1.125rem !important;    /* 18px - 相當於 text-lg */
+            font-weight: 500 !important;       /* font-medium */
+            color: #475569 !important;         /* text-slate-600 */
+            margin-bottom: 0.75rem !important; /* mb-3 */
+            margin-top: 2rem !important;       /* mt-8 */
+        }
+        
+        .prose h6 {
+            font-size: 0.875rem !important;    /* 14px - 相當於 text-sm */
+            font-weight: 500 !important;       /* font-medium */
+            color: #475569 !important;         /* text-slate-600 */
+            margin-bottom: 0.5rem !important;  /* mb-2 */
+            margin-top: 1.5rem !important;     /* mt-6 */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* 段落和文字 */
+        .prose p {
+            color: #334155 !important;         /* text-slate-700 */
+            margin-bottom: 2rem !important;    /* mb-8 */
+            line-height: 1.625 !important;     /* leading-relaxed */
+            font-size: 16px;
+            text-align: justify;
+            text-justify: inter-character;
+        }
+        
+        .prose strong {
+            font-weight: 600 !important;       /* font-semibold */
+            color: #1e293b !important;         /* text-slate-800 */
+        }
+        
+        .prose em {
+            font-style: italic !important;
+            color: #475569 !important;         /* text-slate-600 */
+        }
+        
+        /* 列表樣式 - 書籍風格 */
+        .prose ul, .prose ol {
+            margin-bottom: 2rem !important;    /* mb-8 */
+            color: #334155 !important;         /* text-slate-700 */
+            padding-left: 2rem;
+        }
+        
+        .prose li {
+            margin-bottom: 0.75rem !important; /* mb-3 */
+            line-height: 1.625 !important;     /* leading-relaxed */
+            position: relative;
+        }
+        
+        .prose ul li {
+            list-style: none;
+        }
+        
+        .prose ul li::before {
+            content: '';
+            position: absolute;
+            left: -1.5rem;
+            top: 0.7rem;
+            width: 6px;
+            height: 6px;
+            background: #3b82f6;
+            border-radius: 50%;
+        }
+        
+        .prose ol li {
+            @apply list-decimal;
+            counter-increment: item;
+        }
+        
+        .prose ol li::marker {
+            @apply text-blue-600 font-medium;
+        }
+        
+        /* 嵌套列表 */
+        .prose ul ul li::before {
+            background: #8b5cf6;
+            width: 4px;
+            height: 4px;
+            top: 0.8rem;
+        }
+        
+        /* 連結樣式 */
+        .prose a {
+            @apply text-blue-600 hover:text-blue-800 no-underline;
+            position: relative;
+            transition: all 0.3s ease;
+            background: linear-gradient(to right, #3b82f6, #3b82f6);
+            background-size: 0% 1px;
+            background-position: 0 100%;
+            background-repeat: no-repeat;
+        }
+        
+        .prose a:hover {
+            background-size: 100% 1px;
+            color: #1e40af;
+        }
+        
+        /* 代碼樣式 - 清爽簡潔設計與 Prism.js 整合 */
+        .prose code:not([class*="language-"]) {
+            background: #f8fafc !important;        /* 非常淡的背景 */
+            color: #475569 !important;
+            padding: 0.125rem 0.375rem !important; /* 更小的內邊距 */
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace !important;
+            font-size: 0.875em !important;
+            font-weight: 500 !important;
+            /* 移除邊框和圓角，完全清爽 */
+        }
+        
+        .prose pre {
+            background: #f8fafc !important;        /* 非常淡的背景 */
+            color: #334155 !important;
+            overflow-x: auto !important;
+            margin-bottom: 2rem !important;
+            margin-top: 1.5rem !important;
+            line-height: 1.6;
+            padding: 1.25rem 1.5rem !important;    /* 適中但不過多的內邊距 */
+            /* 移除所有裝飾：邊框、圓角、陰影 */
+        }
+        
+        /* Prism.js 自定義主題 - 清爽風格 */
+        .prose pre[class*="language-"] {
+            background: #f8fafc !important;        /* 保持清爽背景 */
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            margin: 1.5rem 0 2rem 0 !important;
+            padding: 1.25rem 1.5rem !important;
+            font-size: 0.875rem !important;
+            line-height: 1.6 !important;
+        }
+        
+        .prose code[class*="language-"] {
+            background: transparent !important;
+            color: inherit !important;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace !important;
+            font-size: 0.875rem !important;
+            line-height: 1.6 !important;
+            text-shadow: none !important;
+        }
+        
+        /* 語法高亮顏色 - 清淡優雅的配色 */
+        .prose .token.comment,
+        .prose .token.prolog,
+        .prose .token.doctype,
+        .prose .token.cdata {
+            color: #94a3b8 !important;
+            font-style: italic;
+        }
+        
+        .prose .token.punctuation {
+            color: #64748b !important;
+        }
+        
+        .prose .token.property,
+        .prose .token.tag,
+        .prose .token.boolean,
+        .prose .token.number,
+        .prose .token.constant,
+        .prose .token.symbol,
+        .prose .token.deleted {
+            color: #dc2626 !important;
+        }
+        
+        .prose .token.selector,
+        .prose .token.attr-name,
+        .prose .token.string,
+        .prose .token.char,
+        .prose .token.builtin,
+        .prose .token.inserted {
+            color: #059669 !important;
+        }
+        
+        .prose .token.operator,
+        .prose .token.entity,
+        .prose .token.url,
+        .prose .language-css .token.string,
+        .prose .style .token.string {
+            color: #0891b2 !important;
+        }
+        
+        .prose .token.atrule,
+        .prose .token.attr-value,
+        .prose .token.keyword {
+            color: #7c3aed !important;
+            font-weight: 500;
+        }
+        
+        .prose .token.function,
+        .prose .token.class-name {
+            color: #2563eb !important;
+            font-weight: 500;
+        }
+        
+        .prose .token.regex,
+        .prose .token.important,
+        .prose .token.variable {
+            color: #ea580c !important;
+        }
+        
+        /* 語言標籤樣式 */
+        .prose pre[class*="language-"]:before {
+            content: attr(data-language);
+            position: absolute;
+            top: 0.5rem;
+            right: 1rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        
+        .prose pre[class*="language-"] {
+            position: relative;
+        }
+        
+        .prose pre code {
+            background: transparent !important;
+            color: #334155 !important;
+            padding: 0 !important;
+            font-size: 0.875em !important;
+            font-weight: 400 !important;
+        }
+        
+        /* 引用樣式 - 優雅設計 */
+        .prose blockquote {
+            border-left: 4px solid #60a5fa !important;
+            padding-left: 2rem !important;
+            padding-right: 1rem !important;
+            font-style: italic !important;
+            color: #334155 !important;
+            margin-bottom: 2.5rem !important;
+            background: rgba(239, 246, 255, 0.5) !important;
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+            border-radius: 0 1rem 1rem 0 !important;
+            position: relative;
+            margin-left: 0;
+            margin-right: 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .prose blockquote::before {
+            content: '"';
+            position: absolute;
+            left: 16px;
+            top: 8px;
+            font-size: 3rem;
+            color: #3b82f6;
+            font-family: serif;
+            line-height: 1;
+            opacity: 0.3;
+        }
+        
+        .prose blockquote p {
+            margin-bottom: 0;
+            font-size: 1.1em;
+        }
+        
+        /* 表格樣式 - 優雅現代設計 */
+        .prose table {
+            width: 100% !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            margin-bottom: 2.5rem !important;
+            margin-top: 1.5rem !important;
+            background: white !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+        
+        .prose thead {
+            background: #f8fafc !important; /* 淡雅的灰色背景 */
+        }
+        
+        .prose th {
+            color: #334155 !important;         /* 深灰色文字 */
+            padding: 1rem 1.5rem !important;   /* 舒適的內邊距 */
+            text-align: left !important;
+            font-weight: 600 !important;       /* 適中的字重 */
+            font-size: 0.875rem !important;    /* 稍小的字體 */
+            letter-spacing: 0.05em !important; /* 適當的字間距 */
+            text-transform: uppercase !important; /* 大寫增加專業感 */
+            border-bottom: 2px solid #e2e8f0 !important;
+            border-right: 1px solid #f1f5f9 !important;
+            background: linear-gradient(to bottom, #f8fafc, #f1f5f9) !important;
+        }
+        
+        .prose th:last-child {
+            border-right: none !important;
+        }
+        
+        .prose td {
+            color: #475569 !important;         /* 中等灰色文字 */
+            padding: 1rem 1.5rem !important;   /* 與 th 一致的內邊距 */
+            font-size: 0.9rem !important;      /* 略小於內文的字體 */
+            line-height: 1.5 !important;       /* 良好的行高 */
+            border-bottom: 1px solid #f1f5f9 !important;
+            border-right: 1px solid #f8fafc !important;
+            vertical-align: top !important;
+        }
+        
+        .prose td:last-child {
+            border-right: none !important;
+        }
+        
+        .prose tbody tr:hover {
+            background: #f8fafc !important;    /* 輕微的懸停效果 */
+        }
+        
+        .prose tbody tr:hover td {
+            background: transparent !important; /* 確保懸停時背景一致 */
+        }
+        
+        .prose tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+        
+        /* 圖片樣式 */
+        .prose img {
+            border-radius: 1rem !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+            margin-bottom: 2.5rem !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .prose img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 分隔線樣式 */
+        .prose hr {
+            border-color: #cbd5e1 !important;
+            margin-top: 4rem !important;
+            margin-bottom: 4rem !important;
+            border-width: 1px;
+            background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+            border: none;
+            height: 1px;
+        }
+        
+        /* 特殊內容區塊 - 清爽簡潔設計 */
+        .prose .hero-section {
+            padding: 2.5rem !important;
+            margin-bottom: 3rem !important;
+            /* 移除所有裝飾：圓角、陰影、邊框、漸層 */
+        }
+        
+        /* 按鈕樣式增強 */
+        .prose .btn-primary, .prose .btn-secondary {
+            display: inline-flex !important;
+            align-items: center !important;
+            padding: 0.75rem 2rem !important;
+            border-radius: 1rem !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .prose .btn-primary {
+            background: #2563eb !important;
+            color: white !important;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        
+        .prose .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+        
+        .prose .btn-secondary {
+            background: #f1f5f9 !important;
+            color: #334155 !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        
+        .prose .btn-secondary:hover {
+            background: #e2e8f0 !important;
+            border-color: #94a3b8 !important;
+            transform: translateY(-1px);
+        }
+        
+        /* 導航列表樣式 - 移除所有點點 */
+        .bookmark-section ul {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .bookmark-section li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            position: relative;
+        }
+        
+        .bookmark-section li::before {
+            display: none !important;
+        }
+        
+        .bookmark-section li::marker {
+            display: none !important;
+        }
+        
+        .bookmark-section a {
+            cursor: pointer !important;
+        }
+        
+        /* 確保移動版導航也沒有點點 */
+        #mobile-sidebar ul {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        #mobile-sidebar li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            position: relative;
+        }
+        
+        #mobile-sidebar li::before {
+            display: none !important;
+        }
+        
+        #mobile-sidebar li::marker {
+            display: none !important;
+        }
+
+        /* 段落間距優化 - 書籍風格 */
+        .prose > * + * {
+            margin-top: 2rem;
+        }
+        
+        .prose > h1 + * {
+            margin-top: 2.5rem;
+        }
+        
+        .prose > h2 + * {
+            margin-top: 1.5rem;
+        }
+        
+        .prose > h3 + * {
+            margin-top: 1rem;
+        }
+        
+        .prose > h4 + * {
+            margin-top: 0.75rem;
+        }
+        
+        /* 特殊區塊間距 */
+        .prose > .hero-section + *,
+        .prose > .feature-grid + *,
+        .prose > .role-selector + * {
+            margin-top: 3rem;
+        }
+        
+        /* 自定義渲染器生成的組件樣式 */
+        
+        /* 智能段落組件 */
+        .prose .prose-paragraph {
+            @apply text-slate-700 mb-8 leading-relaxed;
+            font-size: 16px;
+            text-align: justify;
+            text-justify: inter-character;
+        }
+        
+        /* 按鈕組合樣式 */
+        .prose .prose-button-group {
+            @apply flex flex-wrap gap-4 my-8 items-center justify-start;
+        }
+        
+        /* 提示框樣式 */
+        .prose .prose-alert {
+            @apply p-6 rounded-2xl mb-8 border-l-4;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .prose .prose-alert-info {
+            @apply bg-blue-50/80 border-blue-400 text-blue-900;
+        }
+        
+        .prose .prose-alert-warning {
+            @apply bg-amber-50/80 border-amber-400 text-amber-900;
+        }
+        
+        .prose .prose-alert-success {
+            @apply bg-emerald-50/80 border-emerald-400 text-emerald-900;
+        }
+        
+        .prose .prose-alert-error {
+            @apply bg-red-50/80 border-red-400 text-red-900;
+        }
+        
+        .prose .prose-alert-note {
+            @apply bg-slate-50/80 border-slate-400 text-slate-900;
+        }
+        
+        /* 統計項目樣式 */
+        .prose .prose-stat-item {
+            @apply bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl mb-6 border border-blue-100;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 列表樣式增強 */
+        .prose .prose-unordered-list {
+            @apply mb-8 text-slate-700;
+            padding-left: 2rem;
+        }
+        
+        .prose .prose-ordered-list {
+            @apply mb-8 text-slate-700;
+            padding-left: 2rem;
+        }
+        
+        .prose .prose-list-item {
+            @apply mb-3 leading-relaxed;
+            position: relative;
+        }
+        
+        .prose .prose-list-item-featured {
+            @apply bg-blue-50/30 px-4 py-2 rounded-lg border-l-3 border-blue-400;
+            margin-left: -1rem;
+            font-weight: 500;
+        }
+        
+        /* 連結樣式增強 */
+        .prose .prose-link-internal {
+            @apply text-blue-600 hover:text-blue-800 no-underline;
+            position: relative;
+            transition: all 0.3s ease;
+            background: linear-gradient(to right, #3b82f6, #3b82f6);
+            background-size: 0% 1px;
+            background-position: 0 100%;
+            background-repeat: no-repeat;
+        }
+        
+        .prose .prose-link-internal:hover {
+            background-size: 100% 1px;
+            color: #1e40af;
+        }
+        
+        .prose .prose-link-external {
+            @apply text-purple-600 hover:text-purple-800 no-underline;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .prose .prose-link-external::after {
+            content: '↗';
+            @apply text-xs ml-1 opacity-60;
+        }
+        
+        .prose .prose-link-external:hover::after {
+            @apply opacity-100;
+        }
+        
+        /* 代碼塊組件 */
+        .prose .prose-code-block {
+            @apply mb-10 rounded-2xl overflow-hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .prose .prose-code-label {
+            @apply bg-slate-800 text-slate-300 px-4 py-2 text-sm font-medium;
+            border-bottom: 1px solid #475569;
+        }
+        
+        .prose .prose-pre {
+            @apply bg-slate-900 text-slate-100 p-8 overflow-x-auto;
+            line-height: 1.6;
+            margin: 0;
+        }
+        
+        .prose .prose-code-content {
+            @apply bg-transparent text-slate-100;
+            font-size: 0.9em;
+        }
+        
+        .prose .prose-inline-code {
+            @apply bg-slate-100 text-slate-800 px-2 py-1 rounded font-mono;
+            font-size: 0.9em;
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* 引用組件增強 */
+        .prose .prose-blockquote {
+            @apply border-l-4 border-blue-400 pl-8 pr-4 italic text-slate-700 mb-10 bg-blue-50/50 py-6 rounded-r-2xl;
+            position: relative;
+            margin-left: 0;
+            margin-right: 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .prose .prose-blockquote::before {
+            content: '"';
+            position: absolute;
+            left: 16px;
+            top: 8px;
+            font-size: 3rem;
+            color: #3b82f6;
+            font-family: serif;
+            line-height: 1;
+            opacity: 0.3;
+        }
+        
+        /* 表格組件 */
+        .prose .prose-table-container {
+            @apply overflow-x-auto mb-10;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .prose .prose-table {
+            @apply w-full border-collapse;
+            background: white;
+            margin: 0;
+        }
+        
+        .prose .prose-table-header {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        }
+        
+        .prose .prose-table-header-cell {
+            @apply text-white px-6 py-4 text-left font-semibold;
+            border: none;
+            font-size: 0.95em;
+            letter-spacing: 0.025em;
+        }
+        
+        .prose .prose-table-body {
+            background: white;
+        }
+        
+        .prose .prose-table-row:hover {
+            @apply bg-slate-50;
+        }
+        
+        .prose .prose-table-cell {
+            @apply border-b border-slate-200 px-6 py-4 text-slate-700;
+            font-size: 0.95em;
+        }
+        
+        .prose .prose-table-row:last-child .prose-table-cell {
+            border-bottom: none;
+        }
+        
+        /* 圖片組件 */
+        .prose .prose-figure {
+            @apply mb-10;
+            text-align: center;
+        }
+        
+        .prose .prose-image {
+            @apply rounded-2xl shadow-lg;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .prose .prose-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .prose .prose-figcaption {
+            @apply text-slate-600 text-sm mt-4 italic;
+        }
+        
+        /* 分隔線組件 */
+        .prose .prose-divider {
+            @apply border-slate-300 my-16;
+            border-width: 1px;
+            background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+            border: none;
+            height: 1px;
+        }
+        
+        /* 任務列表樣式 */
+        .prose .prose-task-completed {
+            @apply text-slate-500 line-through;
+        }
+        
+        .prose .prose-task-pending {
+            @apply text-slate-700;
+        }
+        
+        .prose .prose-checkbox {
+            @apply mr-3;
+            accent-color: #3b82f6;
+        }
+        
+        /* 特殊標題樣式覆蓋 */
+        .prose .prose-heading-1 {
+            @apply text-4xl font-light text-slate-900 mb-10 mt-0;
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+        
+        .prose .prose-heading-1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 2px;
+        }
+        
+        .prose .prose-heading-2 {
+            @apply text-2xl font-medium text-slate-800 mb-8 mt-16 pb-4;
+            line-height: 1.25;
+            border-bottom: 2px solid #e2e8f0;
+            position: relative;
+        }
+        
+        .prose .prose-heading-2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 2px;
+        }
+        
+        .prose .prose-heading-3 {
+            @apply text-xl font-medium text-slate-700 mb-6 mt-12;
+            line-height: 1.3;
+            padding-left: 16px;
+            border-left: 3px solid #cbd5e1;
+            position: relative;
+        }
+        
+        .prose .prose-heading-4 {
+            @apply text-lg font-medium text-slate-700 mb-4 mt-10;
+            line-height: 1.4;
+        }
+        
+        .prose .prose-heading-5 {
+            @apply text-base font-medium text-slate-600 mb-3 mt-8;
+        }
+        
+        .prose .prose-heading-6 {
+            @apply text-sm font-medium text-slate-600 mb-2 mt-6 uppercase tracking-wider;
+        }
+        
+        /* CSS Grid 佈局系統 - Phase 4 響應式佈局優化 */
+        .prose {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 2rem;
+            align-content: start;
+        }
+        
+        /* Grid 容器 - 自適應內容佈局 */
+        .prose .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .prose .content-grid-large {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2.5rem;
+            margin: 3rem 0;
+        }
+        
+        .prose .content-grid-small {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        /* 學習路徑 Grid 佈局 */
+        .prose .learning-path {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 1rem;
+            @apply bg-slate-50/80 p-8 rounded-2xl mb-12;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .prose .path-step {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.25rem 2rem !important;    /* 更寬鬆的內邊距 */
+            line-height: 1.6 !important;         /* 更舒適的行高 */
+            font-size: 1rem !important;          /* 確保字體大小適中 */
+            /* 移除背景和邊框，保持清爽 */
+            transition: all 0.3s ease;
+        }
+        
+        .prose .path-step:hover {
+            background: #f8fafc !important;      /* 微妙的 hover 背景 */
+            transform: translateY(-1px);         /* 減少移動幅度 */
+            cursor: pointer !important;
+        }
+        
+        .prose .path-step a {
+            text-decoration: none !important;
+            cursor: pointer !important;
+        }
+        
+        /* Hero Section Grid 佈局 - 清爽版本 */
+        .prose .hero-section {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 2rem;
+            padding: 2.5rem !important;
+            /* 完全清爽：沒有背景、沒有裝飾、沒有動畫 */
+        }
+        
+        /* 雙欄比較佈局 - 用於系統架構對比 */
+        .prose .dual-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin: 2rem 0;
+        }
+        
+        .prose .dual-column .column {
+            /* 清爽的內容區塊，沒有邊框和背景 */
+        }
+        
+        .prose .dual-column h3 {
+            margin-top: 0 !important;
+            margin-bottom: 1.5rem !important;
+            font-size: 1.25rem !important;
+            font-weight: 600 !important;
+        }
+        
+        .prose .dual-column ul {
+            list-style: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        .prose .dual-column li {
+            margin-bottom: 0.75rem !important;
+            padding-left: 0 !important;
+            list-style: none !important;
+        }
+        
+        .prose .dual-column li::before {
+            display: none !important;
+        }
+        
+        /* 響應式：小螢幕時改為垂直排列 */
+        @media (max-width: 768px) {
+            .prose .dual-column {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        
+        /* Quick Stats Grid 佈局 */
+        .prose .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .prose .stat-item {
+            display: grid;
+            place-items: center;
+            gap: 0.75rem;
+            padding: 2rem 1.5rem !important;
+            text-align: center;
+            /* 清爽設計：移除所有裝飾 */
+            transition: all 0.3s ease;
+        }
+        
+        .prose .stat-number {
+            font-size: 3rem !important;          /* 48px - 大數字 */
+            font-weight: 700 !important;         /* 非常粗的字體 */
+            color: #1e293b !important;           /* 深色突出 */
+            line-height: 1 !important;
+            margin: 0 !important;
+        }
+        
+        .prose .stat-label {
+            font-size: 0.875rem !important;      /* 14px - 小標籤 */
+            font-weight: 500 !important;         /* 中等字重 */
+            color: #64748b !important;           /* 淡灰色 */
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            margin: 0 !important;
+        }
+        
+        .prose .stat-item:hover .stat-number {
+            color: #0f172a !important;           /* hover 時數字更深 */
+        }
+        
+        /* Feature Grid 增強佈局 */
+        .prose .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            margin: 4rem 0;
+        }
+        
+        .prose .feature-grid > div {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 1.5rem;
+            @apply p-8 bg-white rounded-2xl border border-slate-200/60;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .prose .feature-grid > div::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            transform: translateX(-4px);
+            transition: transform 0.3s ease;
+        }
+        
+        .prose .feature-grid > div:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 32px rgba(59, 130, 246, 0.12);
+        }
+        
+        .prose .feature-grid > div:hover::before {
+            transform: translateX(0);
+        }
+        
+        /* Action Buttons Grid 佈局 */
+        .prose .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0;
+            justify-items: center;
+        }
+        
+        /* Document Navigation Grid 佈局 - 清爽重排 */
+        .prose .doc-navigation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+            margin: 3rem 0;
+        }
+        
+        .prose .doc-navigation > div {
+            /* 移除背景和邊框，讓內容更清楚 */
+            padding: 0 !important;
+        }
+        
+        .prose .doc-navigation h3 {
+            margin-bottom: 1.25rem !important;
+            padding-bottom: 0.75rem !important;
+            border-bottom: 2px solid #e2e8f0 !important;  /* 清楚的分隔線 */
+            font-size: 1.125rem !important;               /* 稍微大一點的標題 */
+            font-weight: 600 !important;
+        }
+        
+        .prose .doc-navigation ul {
+            list-style: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        .prose .doc-navigation li {
+            margin-bottom: 0.5rem !important;
+            padding-left: 0 !important;
+        }
+        
+        .prose .doc-navigation li::before {
+            display: none !important;
+        }
+        
+        .prose .doc-navigation a {
+            display: block !important;
+            padding: 0.5rem 0 !important;
+            color: #475569 !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
+            transition: color 0.2s ease !important;
+        }
+        
+        .prose .doc-navigation a:hover {
+            color: #1e293b !important;
+            padding-left: 0.5rem !important;     /* 微妙的縮進效果 */
+        }
+        
+        /* 角色選擇器 Grid 佈局 */
+        .prose .role-selector {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 3rem;
+            margin: 4rem 0;
+        }
+        
+        /* 響應式調整 */
+        @media (max-width: 1024px) {
+            .prose .content-grid,
+            .prose .content-grid-large {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 2rem;
+            }
+            
+            .prose .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .prose .quick-stats {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 1.5rem;
+            }
+            
+            .prose .hero-section {
+                padding: 2rem !important;
+                gap: 1.5rem;
+            }
+            
+            .prose .doc-navigation {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .prose {
+                gap: 1.5rem;
+            }
+            
+            .prose .content-grid,
+            .prose .content-grid-large,
+            .prose .content-grid-small {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin: 2rem 0;
+            }
+            
+            .prose .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            
+            .prose .stat-item {
+                @apply p-6;
+            }
+            
+            .prose .learning-path {
+                @apply p-6;
+                gap: 0.8rem;
+            }
+            
+            .prose .path-step {
+                grid-template-columns: auto 1fr;
+                grid-template-rows: auto auto;
+                gap: 0.8rem 1rem;
+                @apply py-3 px-4;
+            }
+            
+            .prose .path-step .duration {
+                grid-column: 1 / -1;
+                font-size: 0.8rem;
+                @apply text-slate-500 ml-0;
+            }
+            
+            .prose .action-buttons {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                justify-items: stretch;
+            }
+            
+            .prose h1, .prose .prose-heading-1 {
+                @apply text-3xl mb-8;
+            }
+            
+            .prose h2, .prose .prose-heading-2 {
+                @apply text-xl mb-6 mt-12 pl-4;
+            }
+            
+            .prose h2::before, .prose .prose-heading-2::before {
+                width: 3px;
+                height: 20px;
+            }
+            
+            .prose p, .prose .prose-paragraph {
+                font-size: 15px;
+                @apply mb-6;
+            }
+            
+            .prose pre, .prose .prose-pre {
+                @apply p-6 rounded-xl;
+            }
+            
+            .prose blockquote, .prose .prose-blockquote {
+                @apply pl-6 py-4;
+            }
+            
+            .prose .hero-section {
+                padding: 1.5rem !important;
+                gap: 1rem;
+            }
+            
+            .prose .prose-button-group {
+                @apply flex-col items-stretch;
+            }
+            
+            .prose .prose-alert {
+                @apply p-4;
+            }
+            
+            .prose .prose-table-container {
+                border-radius: 12px;
+            }
+            
+            .prose .prose-table-header-cell,
+            .prose .prose-table-cell {
+                @apply px-4 py-3;
+                font-size: 0.9em;
+            }
+        }
+        
+        /* CSS Grid 動畫效果 */
+        @keyframes gridItemIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .prose .content-grid > *,
+        .prose .feature-grid > *,
+        .prose .doc-navigation > * {
+            animation: gridItemIn 0.6s ease forwards;
+        }
+        
+        .prose .content-grid > *:nth-child(2) { animation-delay: 0.1s; }
+        .prose .content-grid > *:nth-child(3) { animation-delay: 0.2s; }
+        .prose .content-grid > *:nth-child(4) { animation-delay: 0.3s; }
+        
+        .prose .feature-grid > *:nth-child(2) { animation-delay: 0.15s; }
+        .prose .feature-grid > *:nth-child(3) { animation-delay: 0.3s; }
+        .prose .feature-grid > *:nth-child(4) { animation-delay: 0.45s; }
+    </style>
+    
+    </div> <!-- 結束 main-app -->
+    
+    <!-- 載入控制腳本 -->
+    <script>
+        // 立即顯示載入畫面
+        document.body.classList.add('loading-ready');
+        
+        // 頁面完全載入後隱藏載入畫面
+        window.addEventListener('load', function() {
+            // 確保 Tailwind CSS 已載入並渲染
+            setTimeout(function() {
+                const loadingOverlay = document.getElementById('loading-overlay');
+                const mainApp = document.getElementById('main-app');
+                
+                // 開始淡出載入畫面
+                loadingOverlay.classList.add('fade-out');
+                
+                // 淡入主要內容
+                mainApp.classList.add('loaded');
+                
+                // 載入動畫完成後移除載入元素
+                setTimeout(function() {
+                    loadingOverlay.remove();
+                }, 600);
+                
+            }, 300); // 給 Tailwind CSS 一點時間渲染
+        });
+        
+        // 如果載入時間過長，強制顯示內容
+        setTimeout(function() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const mainApp = document.getElementById('main-app');
+            
+            if (loadingOverlay && !loadingOverlay.classList.contains('fade-out')) {
+                console.log('載入時間過長，強制顯示內容');
+                loadingOverlay.classList.add('fade-out');
+                mainApp.classList.add('loaded');
+                
+                setTimeout(function() {
+                    if (loadingOverlay.parentNode) {
+                        loadingOverlay.remove();
+                    }
+                }, 600);
+            }
+        }, 5000); // 5秒後強制顯示
     </script>
 </body>
 </html>

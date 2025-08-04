@@ -729,7 +729,8 @@ class OpUiSocket:
                     return {"success": False, "message": f"找不到任務 ID {task_id}"}
 
                 # 更新任務狀態為已完成
-                task.status_id = 3
+                from shared_constants.task_status import TaskStatus
+                task.status_id = TaskStatus.EXECUTING  # 執行中 (AGV-任務正在執行)
                 task_crud.update(session, task.id, task)
 
                 print(f"🧪 測試：手動完成任務 {task_id}")

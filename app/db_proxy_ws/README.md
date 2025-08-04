@@ -462,13 +462,16 @@ cd /app/db_proxy_ws/scripts
 
 **手動初始化** (如果腳本失敗):
 ```bash
-# 連線到 PostgreSQL 並執行 SQL
-PGPASSWORD=password psql -h 192.168.100.254 -p 5432 -U postgres -d postgres -c "
-CREATE USER agvc WITH PASSWORD 'password';
-CREATE DATABASE agvc OWNER agvc;
+# 連線到 PostgreSQL 並執行 SQL (注意：RosAGV 系統中正確的用戶是 agvc，不是 postgres)
+PGPASSWORD=password psql -h 192.168.100.254 -p 5432 -U agvc -d postgres -c "
 CREATE DATABASE test_db OWNER agvc;
-GRANT ALL PRIVILEGES ON DATABASE agvc TO agvc;
 GRANT ALL PRIVILEGES ON DATABASE test_db TO agvc;
+"
+
+# 如果需要重新建立 agvc 資料庫 (通常已存在)
+PGPASSWORD=password psql -h 192.168.100.254 -p 5432 -U agvc -d postgres -c "
+CREATE DATABASE agvc OWNER agvc;
+GRANT ALL PRIVILEGES ON DATABASE agvc TO agvc;
 "
 ```
 

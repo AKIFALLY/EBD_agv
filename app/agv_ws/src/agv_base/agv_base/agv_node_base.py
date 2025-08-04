@@ -37,7 +37,7 @@ class AgvNodebase(Node):
         self.base_context = BaseContext(IdleState(self))  # 初始狀態為 Idle
         # 50ms 執行一次主迴圈(read plc data , context.handle)
         self.timer = self.create_timer(0.05, self.main_loop_timer)
-        self.timer_to_write_status = self.create_timer(1.5, self.toWriteStatus)
+        self.timer_to_write_status = self.create_timer(0.2, self.toWriteStatus)
         self._status_publisher = self.create_publisher(AgvStatusMsg, "/agv/status", 10)
         self.clock = Clock()  # 建立 ROS 2 時鐘
         self.start_time = self.clock.now()  # 記錄請求開始時間
