@@ -1,0 +1,374 @@
+# Rack 旋轉流程 - 房間出口（收料）
+# 檢查所有房間出口位置的 Rack，A 面滿載時旋轉到 B 面
+
+name: 房間出口 Rack 旋轉檢查
+description: 檢查所有房間出口位置的 Rack，A 面放滿 carrier 時生成旋轉任務
+version: "1.0"
+author: Flow Designer
+enabled: true
+priority: 100
+work_id: "220002"
+
+# 業務邏輯節點
+nodes:
+  # 1. 取得所有房間出口位置
+  - id: get_room_outlet_locations
+    type: condition
+    name: 取得房間出口位置
+    description: 從系統中查詢所有房間出口的位置，並過濾出有 Rack 的位置
+    function: get_locations_by_type
+    parameters:
+      location_type: "room_outlet"
+      rooms: [1, 2, 3, 4, 5]
+      filter_has_rack: true
+    outputs:
+      locations: { type: "array", description: "房間出口位置列表" }
+      no_locations: { type: "boolean", description: "無符合位置" }
+
+  # 2. 檢查是否有進行中的旋轉任務
+  - id: check_pending_tasks
+    type: condition
+    name: 檢查進行中任務
+    description: 檢查指定位置是否已有進行中的 Rack 旋轉任務，避免重複派送
+    function: check_pending_rotation_tasks
+    parameters:
+      task_type: "RACK_ROTATION"
+      location_type: "room_outlet"
+    inputs:
+      location: { type: "object", description: "位置資訊" }
+    outputs:
+      has_pending: { type: "boolean", description: "有進行中任務" }
+      no_pending: { type: "boolean", description: "無進行中任務" }
+      location_data: { type: "object", description: "位置資料" }
+
+  # 3. 檢查 Rack A 面是否已滿
+  - id: check_a_side_full
+    type: condition
+    name: 檢查 A 面是否滿載
+    description: 檢查 Rack 的 A 面是否已放滿 carrier，決定是否需要旋轉
+    function: check_rack_side_status
+    parameters:
+      side: "A"
+      check_type: "full_capacity"
+    inputs:
+      location_data: { type: "object", description: "位置資料" }
+    outputs:
+      a_side_full: { type: "boolean", description: "A 面已滿" }
+      a_side_not_full: { type: "boolean", description: "A 面未滿" }
+      rack_info: { type: "object", description: "Rack 資訊" }
+      carrier_count: { type: "integer", description: "Carrier 數量" }
+
+  # 4. 檢查 Rack B 面是否有空位
+  - id: check_b_side_space
+    type: condition
+    name: 檢查 B 面空位
+    description: 確認 Rack 的 B 面有足夠空位，才能執行旋轉作業
+    function: check_rack_side_space
+    parameters:
+      side: "B"
+      min_empty_slots: 1
+    inputs:
+      rack_info: { type: "object", description: "Rack 資訊" }
+    outputs:
+      has_space: { type: "boolean", description: "B 面有空位" }
+      no_space: { type: "boolean", description: "B 面無空位" }
+      final_rack_info: { type: "object", description: "完整 Rack 資訊" }
+      empty_slots: { type: "integer", description: "空位數量" }
+
+  # 5. 生成旋轉任務
+  - id: create_rotation_task
+    type: action
+    name: 生成出口旋轉任務
+    description: 創建 AGV 執行的 Rack 旋轉任務，將 A 面轉向內側，B 面轉向外側
+    function: create_rack_rotation_task
+    parameters:
+      task_type: "RACK_ROTATION"
+      location_type: "room_outlet"
+      rotation_angle: 180
+      priority: "high"
+      work_id: "220002"
+      reason: "A_SIDE_FULL"
+    inputs:
+      rack_info: { type: "object", description: "Rack 資訊" }
+      location_data: { type: "object", description: "位置資料" }
+    outputs:
+      task_id: { type: "string", description: "任務 ID" }
+      success: { type: "boolean", description: "創建成功" }
+
+  # 6. 記錄結果
+  - id: log_task_created
+    type: logic
+    name: 記錄任務創建
+    description: 記錄成功創建的旋轉任務，用於審計和追蹤
+    function: log_task_creation
+    parameters:
+      log_type: "RACK_ROTATION_OUTLET"
+    inputs:
+      task_id: { type: "string", description: "任務 ID" }
+      location_data: { type: "object", description: "位置資料" }
+      carrier_count: { type: "integer", description: "A 面 carrier 數" }
+
+  # 7. 記錄跳過
+  - id: log_skip
+    type: logic
+    name: 記錄跳過原因
+    description: 記錄不執行旋轉的原因，如已有任務進行中、A 面未滿、B 面無空位等
+    function: log_skip_reason
+    parameters:
+      log_type: "RACK_ROTATION_OUTLET_SKIP"
+    inputs:
+      reason: { type: "string", description: "跳過原因" }
+      location_data: { type: "object", description: "位置資料" }
+
+# 連線關係
+connections:
+  # 取得位置後檢查每個位置
+  - from: get_room_outlet_locations.locations
+    to: check_pending_tasks.location
+    
+  # 無進行中任務時檢查 A 面（這應該是觸發條件，不是資料傳遞）
+  # - from: check_pending_tasks.no_pending
+  #   to: check_a_side_full.trigger  # 應該連到觸發端口，而非資料端口
+    
+  # 傳遞位置資料（這個是正確的）
+  - from: check_pending_tasks.location_data
+    to: check_a_side_full.location_data
+    
+  # A 面滿載時檢查 B 面
+  - from: check_a_side_full.a_side_full
+    to: check_b_side_space.rack_info
+    
+  # 傳遞 Rack 資訊
+  - from: check_a_side_full.rack_info
+    to: check_b_side_space.rack_info
+    
+  # B 面有空位時創建任務
+  - from: check_b_side_space.has_space
+    to: create_rotation_task.rack_info
+    
+  # 傳遞完整資訊到任務創建
+  - from: check_b_side_space.final_rack_info
+    to: create_rotation_task.rack_info
+    
+  - from: check_pending_tasks.location_data
+    to: create_rotation_task.location_data
+    
+  # 任務創建成功後記錄
+  - from: create_rotation_task.task_id
+    to: log_task_created.task_id
+    
+  - from: check_pending_tasks.location_data
+    to: log_task_created.location_data
+    
+  - from: check_a_side_full.carrier_count
+    to: log_task_created.carrier_count
+    
+  # 各種跳過情況的記錄
+  - from: check_pending_tasks.has_pending
+    to: log_skip.reason
+    
+  - from: check_a_side_full.a_side_not_full
+    to: log_skip.reason
+    
+  - from: check_b_side_space.no_space
+    to: log_skip.reason
+
+# Flow Designer 視覺化資料
+flow_designer_data:
+  nodes:
+    - id: get_room_outlet_locations
+      position: { x: 100, y: 200 }
+      data:
+        name: 取得房間出口位置
+        type: condition
+        function: get_locations_by_type
+        parameters:
+          location_type: "room_outlet"
+          rooms: [1, 2, 3, 4, 5]
+          filter_has_rack: true
+      inputs: []
+      outputs:
+        - key: locations
+        - key: no_locations
+        
+    - id: check_pending_tasks
+      position: { x: 300, y: 200 }
+      data:
+        name: 檢查進行中任務
+        type: condition
+        function: check_pending_rotation_tasks
+        parameters:
+          task_type: "RACK_ROTATION"
+          location_type: "room_outlet"
+      inputs:
+        - key: location
+      outputs:
+        - key: has_pending
+        - key: no_pending
+        - key: location_data
+        
+    - id: check_a_side_full
+      position: { x: 500, y: 200 }
+      data:
+        name: 檢查 A 面是否滿載
+        type: condition
+        function: check_rack_side_status
+        parameters:
+          side: "A"
+          check_type: "full_capacity"
+      inputs:
+        - key: location_data
+      outputs:
+        - key: a_side_full
+        - key: a_side_not_full
+        - key: rack_info
+        - key: carrier_count
+        
+    - id: check_b_side_space
+      position: { x: 700, y: 200 }
+      data:
+        name: 檢查 B 面空位
+        type: condition
+        function: check_rack_side_space
+        parameters:
+          side: "B"
+          min_empty_slots: 1
+      inputs:
+        - key: rack_info
+      outputs:
+        - key: has_space
+        - key: no_space
+        - key: final_rack_info
+        - key: empty_slots
+        
+    - id: create_rotation_task
+      position: { x: 900, y: 200 }
+      data:
+        name: 生成出口旋轉任務
+        type: action
+        function: create_rack_rotation_task
+        parameters:
+          task_type: "RACK_ROTATION"
+          location_type: "room_outlet"
+          rotation_angle: 180
+          priority: "high"
+          work_id: "220002"
+          reason: "A_SIDE_FULL"
+      inputs:
+        - key: rack_info
+        - key: location_data
+      outputs:
+        - key: task_id
+        - key: success
+        
+    - id: log_task_created
+      position: { x: 1100, y: 200 }
+      data:
+        name: 記錄任務創建
+        type: logic
+        function: log_task_creation
+        parameters:
+          log_type: "RACK_ROTATION_OUTLET"
+      inputs:
+        - key: task_id
+        - key: location_data
+        - key: carrier_count
+      outputs: []
+      
+    - id: log_skip
+      position: { x: 700, y: 400 }
+      data:
+        name: 記錄跳過原因
+        type: logic
+        function: log_skip_reason
+        parameters:
+          log_type: "RACK_ROTATION_OUTLET_SKIP"
+      inputs:
+        - key: reason
+        - key: location_data
+      outputs: []
+      
+  connections:
+    - id: conn_1
+      source: get_room_outlet_locations
+      sourceOutput: locations
+      target: check_pending_tasks
+      targetInput: location
+      
+    # - id: conn_2  # 註解掉類型不匹配的連接
+    #   source: check_pending_tasks
+    #   sourceOutput: no_pending
+    #   target: check_a_side_full
+    #   targetInput: location_data
+      
+    - id: conn_3
+      source: check_pending_tasks
+      sourceOutput: location_data
+      target: check_a_side_full
+      targetInput: location_data
+      
+    - id: conn_4
+      source: check_a_side_full
+      sourceOutput: a_side_full
+      target: check_b_side_space
+      targetInput: rack_info
+      
+    - id: conn_5
+      source: check_a_side_full
+      sourceOutput: rack_info
+      target: check_b_side_space
+      targetInput: rack_info
+      
+    - id: conn_6
+      source: check_b_side_space
+      sourceOutput: has_space
+      target: create_rotation_task
+      targetInput: rack_info
+      
+    - id: conn_7
+      source: check_b_side_space
+      sourceOutput: final_rack_info
+      target: create_rotation_task
+      targetInput: rack_info
+      
+    - id: conn_8
+      source: check_pending_tasks
+      sourceOutput: location_data
+      target: create_rotation_task
+      targetInput: location_data
+      
+    - id: conn_9
+      source: create_rotation_task
+      sourceOutput: task_id
+      target: log_task_created
+      targetInput: task_id
+      
+    - id: conn_10
+      source: check_pending_tasks
+      sourceOutput: location_data
+      target: log_task_created
+      targetInput: location_data
+      
+    - id: conn_11
+      source: check_a_side_full
+      sourceOutput: carrier_count
+      target: log_task_created
+      targetInput: carrier_count
+      
+    - id: conn_12
+      source: check_pending_tasks
+      sourceOutput: has_pending
+      target: log_skip
+      targetInput: reason
+      
+    - id: conn_13
+      source: check_a_side_full
+      sourceOutput: a_side_not_full
+      target: log_skip
+      targetInput: reason
+      
+    - id: conn_14
+      source: check_b_side_space
+      sourceOutput: no_space
+      target: log_skip
+      targetInput: reason

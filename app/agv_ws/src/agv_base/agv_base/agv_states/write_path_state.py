@@ -163,7 +163,7 @@ class WritePathState(State):
 
             # 更新tasks table的狀態
 
-            self.node.task.status_id = 2  # 更新狀態為執行中
+            self.node.task.status_id = 3  # 更新狀態為執行中
             self.node.task.agv_id = self.node.AGV_id  # 更新AGV ID
             self.agvdbclient.async_update_task(
                 self.node.task, self.task_update_callback)  # 更新任務狀態為執行中

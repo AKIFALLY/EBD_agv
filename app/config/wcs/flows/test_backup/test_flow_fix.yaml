@@ -1,0 +1,25 @@
+name: test_flow_fix
+description: Flow Designer 創建的流程 - test_flow_fix
+priority: 50
+work_id: ''
+enabled: true
+trigger_conditions: []
+action:
+  type: create_task
+  task_type: custom
+applicable_locations: []
+debug:
+  enabled: false
+  log_conditions: true
+  dry_run: false
+flow_designer_data:
+  version: '1.0'
+  nodes:
+  - id: node1
+    type: start
+    position:
+      x: 100
+      y: 100
+  connections: []
+  created: null
+  updated: '2025-08-05T14:05:14.759878'

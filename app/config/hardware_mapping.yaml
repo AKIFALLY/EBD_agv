@@ -29,7 +29,6 @@ agv_devices:
   loader02:
     config_file: loader02_config.yaml
     description: '裝載型 AGV #2 (MAC 更新: 2025-07-24 06:15)'
-    description: '裝載型 AGV #2 (MAC 更新: 2025-07-24 06:15)'
     device_type: loader
     launch_file: launch.py
     launch_package: loader_agv

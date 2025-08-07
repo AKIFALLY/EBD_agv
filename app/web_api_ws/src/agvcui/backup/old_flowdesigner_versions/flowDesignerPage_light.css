@@ -1,0 +1,573 @@
+/* WCS Flow Designer 頁面樣式 - Light Theme Edition */
+/* 基於 Bulma CSS 風格，採用透明玻璃感設計 */
+
+/* Flow Designer 頁面 navbar 採用透明玻璃感主題 */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+.navbar .navbar-brand .navbar-item {
+    color: #2c3e50 !important;
+}
+
+.navbar .navbar-brand .navbar-item:hover {
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    color: #2980b9 !important;
+}
+
+.navbar .navbar-menu {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar .navbar-item {
+    color: #34495e !important;
+}
+
+.navbar .navbar-item:hover,
+.navbar .navbar-item:focus {
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    color: #2980b9 !important;
+}
+
+.navbar .navbar-link {
+    color: #34495e !important;
+}
+
+.navbar .navbar-link:hover,
+.navbar .navbar-link:focus {
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    color: #2980b9 !important;
+}
+
+/* navbar dropdown 透明玻璃感主題 */
+.navbar-dropdown,
+.navbar-dropdown.is-boxed {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(200, 200, 200, 0.3) !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+    z-index: 50 !important;
+}
+
+.navbar-dropdown .navbar-item,
+.navbar-dropdown.is-boxed .navbar-item {
+    background-color: transparent !important;
+    color: #34495e !important;
+}
+
+.navbar-dropdown .navbar-item:hover,
+.navbar-dropdown.is-boxed .navbar-item:hover {
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    color: #2980b9 !important;
+}
+
+/* 主要容器布局 - 淺色主題 */
+.flow-designer-container {
+    height: calc(100vh - var(--bulma-navbar-height, 3.25rem));
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    overflow: hidden;
+}
+
+/* 工具列樣式 - 透明玻璃感 */
+.flow-toolbar {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+}
+
+.flow-toolbar .title {
+    margin-bottom: 0;
+    color: #2c3e50;
+}
+
+/* 工具列按鈕樣式 */
+.flow-toolbar .button {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(200, 200, 200, 0.5);
+    color: #34495e;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.flow-toolbar .button:hover {
+    background-color: #ffffff;
+    border-color: #3498db;
+    color: #2980b9;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+.flow-toolbar .button.is-success {
+    background-color: rgba(46, 204, 113, 0.9);
+    border-color: rgba(39, 174, 96, 0.9);
+    color: white;
+}
+
+.flow-toolbar .button.is-success:hover {
+    background-color: #27ae60;
+    border-color: #229954;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+}
+
+/* 主要內容區域 */
+.flow-main-content {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+/* 側邊欄樣式 - 透明玻璃感 */
+.flow-sidebar {
+    width: 280px;
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(200, 200, 200, 0.3);
+    display: flex;
+    flex-direction: column;
+    z-index: 5;
+}
+
+.flow-sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.flow-sidebar-header .subtitle {
+    margin-bottom: 0;
+    color: #2c3e50;
+}
+
+/* 節點選板樣式 */
+.flow-node-palette {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.flow-node-palette::-webkit-scrollbar {
+    width: 8px;
+}
+
+.flow-node-palette::-webkit-scrollbar-track {
+    background: rgba(200, 200, 200, 0.2);
+    border-radius: 4px;
+}
+
+.flow-node-palette::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.5);
+    border-radius: 4px;
+}
+
+.flow-node-palette::-webkit-scrollbar-thumb:hover {
+    background: rgba(130, 130, 130, 0.7);
+}
+
+/* 節點選板區域 */
+.palette-section {
+    margin-bottom: 1.5rem;
+}
+
+.palette-section-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.palette-nodes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* 節點項目樣式 - 透明玻璃感 */
+.palette-node {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(200, 200, 200, 0.3);
+    border-radius: 6px;
+    padding: 0.75rem;
+    cursor: move;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.palette-node:hover {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-color: #3498db;
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+.palette-node .icon {
+    font-size: 1.5rem;
+    width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.palette-node .node-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.palette-node .name {
+    color: #2c3e50;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.palette-node .desc {
+    color: #7f8c8d;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+/* 編輯器容器 - 淺色主題 */
+.flow-editor-container {
+    flex: 1;
+    position: relative;
+    background: #f8f9fa;
+    min-height: 0;
+}
+
+.flow-editor {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(
+        90deg,
+        rgba(200, 200, 200, 0.2) 1px,
+        transparent 1px
+    ),
+    linear-gradient(
+        rgba(200, 200, 200, 0.2) 1px,
+        transparent 1px
+    );
+    background-size: 20px 20px;
+}
+
+/* Canvas 層級樣式 */
+.flow-canvas-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+/* 屬性面板樣式 - 透明玻璃感 */
+.flow-properties-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 320px;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-left: 1px solid rgba(200, 200, 200, 0.3);
+    display: none;
+    flex-direction: column;
+    z-index: 10;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+.flow-properties-panel.is-active {
+    display: flex;
+}
+
+.flow-properties-header {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.flow-properties-header .subtitle {
+    margin-bottom: 0;
+    color: #2c3e50;
+}
+
+.flow-properties-content {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+/* 屬性面板表單元素 */
+.flow-properties-panel .field .label {
+    color: #2c3e50;
+}
+
+.flow-properties-panel .input,
+.flow-properties-panel .textarea,
+.flow-properties-panel .select select {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(200, 200, 200, 0.5);
+    color: #34495e;
+}
+
+.flow-properties-panel .input:focus,
+.flow-properties-panel .textarea:focus,
+.flow-properties-panel .select select:focus {
+    background-color: white;
+    border-color: #3498db;
+    color: #2c3e50;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.flow-properties-panel .input::placeholder,
+.flow-properties-panel .textarea::placeholder {
+    color: #95a5a6;
+}
+
+/* 標籤樣式 */
+.flow-properties-panel .tag {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: #2980b9;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.flow-properties-panel .tag.is-info {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: #2980b9;
+}
+
+.flow-properties-panel .tag.is-success {
+    background-color: rgba(46, 204, 113, 0.1);
+    color: #27ae60;
+}
+
+/* 狀態列樣式 - 透明玻璃感 */
+.flow-status-bar {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(200, 200, 200, 0.3);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    z-index: 9;
+    color: #34495e;
+}
+
+.flow-status-bar .tag {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: #2980b9;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.flow-status-bar .tag.is-info {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: #2980b9;
+}
+
+.flow-status-bar .has-text-grey-light {
+    color: #7f8c8d !important;
+}
+
+/* 模態框樣式 - 透明玻璃感 */
+.modal-card {
+    max-width: 600px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-card-head {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+}
+
+.modal-card-title {
+    color: #2c3e50;
+}
+
+.modal-card-body {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #34495e;
+}
+
+.modal-card-body .field .label {
+    color: #2c3e50;
+}
+
+.modal-card-body .input,
+.modal-card-body .textarea,
+.modal-card-body .select select {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(200, 200, 200, 0.5);
+    color: #34495e;
+}
+
+.modal-card-body .input:focus,
+.modal-card-body .textarea:focus,
+.modal-card-body .select select:focus {
+    background-color: white;
+    border-color: #3498db;
+    color: #2c3e50;
+}
+
+.modal-card-foot {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-top: 1px solid rgba(200, 200, 200, 0.3);
+}
+
+/* 通知樣式 */
+.notification {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.notification.is-success {
+    background-color: rgba(46, 204, 113, 0.9);
+}
+
+.notification.is-info {
+    background-color: rgba(52, 152, 219, 0.9);
+}
+
+.notification.is-warning {
+    background-color: rgba(241, 196, 15, 0.9);
+}
+
+.notification.is-danger {
+    background-color: rgba(231, 76, 60, 0.9);
+}
+
+/* 動畫效果 */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* 響應式設計 */
+@media screen and (max-width: 1215px) {
+    .flow-sidebar {
+        width: 240px;
+    }
+    
+    .flow-properties-panel {
+        width: 280px;
+    }
+}
+
+@media screen and (max-width: 1023px) {
+    .flow-toolbar .level-item {
+        justify-content: flex-start;
+    }
+    
+    .flow-toolbar .buttons {
+        flex-wrap: wrap;
+    }
+    
+    .flow-sidebar {
+        width: 200px;
+    }
+    
+    .flow-properties-panel {
+        width: 240px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .flow-sidebar {
+        position: absolute;
+        left: -280px;
+        transition: left 0.3s ease;
+        z-index: 30;
+    }
+    
+    .flow-sidebar.is-active {
+        left: 0;
+    }
+    
+    .flow-properties-panel {
+        position: absolute;
+        right: -320px;
+        transition: right 0.3s ease;
+        z-index: 30;
+    }
+    
+    .flow-properties-panel.is-active {
+        right: 0;
+    }
+    
+    .flow-toolbar .title {
+        font-size: 1.125rem;
+    }
+}
+
+/* 拖拽狀態樣式 */
+.palette-node.is-dragging {
+    opacity: 0.6;
+    transform: scale(0.95);
+}
+
+/* 高亮狀態 */
+.flow-editor.drop-zone-active {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+/* 加載狀態 */
+.flow-editor.is-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid rgba(52, 152, 219, 0.3);
+    border-top-color: #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -1,0 +1,166 @@
+{
+  "condition_functions": [
+    {
+      "value": "check_room_carrier",
+      "label": "Check Room Carrier",
+      "description": "檢查房間內是否有載體",
+      "module": "wcs.conditions",
+      "parameters": [
+        {
+          "name": "room_id",
+          "type": "str",
+          "required": true,
+          "label": "房間編號",
+          "options": ["01", "02", "03", "04", "05", "FOR_LOOP"]
+        },
+        {
+          "name": "check_exists",
+          "type": "bool", 
+          "required": false,
+          "label": "檢查存在",
+          "default": true,
+          "options": [true, false]
+        }
+      ]
+    },
+    {
+      "value": "check_rack_position",
+      "label": "Check Rack Position", 
+      "description": "檢查貨架位置狀態",
+      "module": "wcs.conditions",
+      "parameters": [
+        {
+          "name": "room_id",
+          "type": "str",
+          "required": true,
+          "label": "房間編號",
+          "options": ["01", "02", "03", "04", "05", "FOR_LOOP"]
+        },
+        {
+          "name": "position",
+          "type": "str",
+          "required": true,
+          "label": "位置類型",
+          "options": ["inlet", "outlet"]
+        },
+        {
+          "name": "rack_side",
+          "type": "str",
+          "required": false,
+          "label": "貨架面",
+          "default": "A",
+          "options": ["A", "B"]
+        }
+      ]
+    }
+  ],
+  "action_functions": [
+    {
+      "value": "create_transport_task",
+      "label": "Create Transport Task",
+      "description": "創建運輸任務", 
+      "module": "wcs.tasks",
+      "parameters": [
+        {
+          "name": "robot_model",
+          "type": "str",
+          "required": true,
+          "label": "機器人型號",
+          "options": ["KUKA400i", "cargo", "loader", "unloader"]
+        },
+        {
+          "name": "source",
+          "type": "str",
+          "required": true,
+          "label": "來源位置",
+          "placeholder": "例如: room_01_exit"
+        },
+        {
+          "name": "destination", 
+          "type": "str",
+          "required": true,
+          "label": "目標位置",
+          "placeholder": "例如: collection_area"
+        },
+        {
+          "name": "task_type",
+          "type": "str",
+          "required": false,
+          "label": "任務類型",
+          "default": "RACK_MOVE",
+          "options": ["RACK_MOVE", "RACK_ROTATION", "CARRIER_TRANSPORT"]
+        },
+        {
+          "name": "timeout",
+          "type": "int",
+          "required": false,
+          "label": "超時時間(秒)",
+          "default": 30,
+          "min": 1,
+          "max": 300
+        }
+      ]
+    },
+    {
+      "value": "submit_mission",
+      "label": "Submit Mission",
+      "description": "提交任務到WCS系統",
+      "module": "wcs.api",
+      "parameters": [
+        {
+          "name": "mission_data",
+          "type": "dict",
+          "required": true,
+          "label": "任務數據",
+          "description": "從上游節點獲取"
+        },
+        {
+          "name": "priority",
+          "type": "int", 
+          "required": false,
+          "label": "優先級",
+          "default": 1,
+          "options": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        }
+      ]
+    }
+  ],
+  "variable_templates": [
+    {
+      "name": "room_variables",
+      "description": "房間相關變數",
+      "variables": [
+        {
+          "name": "room_list",
+          "type": "list",
+          "value": ["01", "02", "03", "04", "05"],
+          "description": "可用房間列表"
+        },
+        {
+          "name": "current_room", 
+          "type": "dynamic",
+          "value": "${loop_variable}",
+          "description": "當前處理房間"
+        }
+      ]
+    },
+    {
+      "name": "robot_variables",
+      "description": "機器人相關變數",
+      "variables": [
+        {
+          "name": "available_robots",
+          "type": "list",
+          "value": ["KUKA400i", "cargo", "loader", "unloader"],
+          "description": "可用機器人型號"
+        },
+        {
+          "name": "selected_robot",
+          "type": "config",
+          "value": "KUKA400i",
+          "description": "選定的機器人型號"
+        }
+      ]
+    }
+  ]
+}

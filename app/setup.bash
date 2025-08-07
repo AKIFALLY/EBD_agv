@@ -159,7 +159,6 @@ test_single() {
     test_ws "$@"
 }
 
-
 # AGV 專用工作空間建置函數
 build_agv() {
     echo "🚗 開始建置 AGV 車載系統專用工作空間..."
@@ -633,8 +632,6 @@ clean_single() {
     clean_ws "$@"
 }
 
-
-
 # 函式：同步檔案到遠端主機
 app_upload() { 
     LOCAL_DIR="/app/"
@@ -933,7 +930,6 @@ manage_ssh() {
             ;;
     esac
 }
-
 
 # ===== Zenoh Router 控制函式 =====
 manage_zenoh() {
@@ -1394,7 +1390,6 @@ is_agvc_environment() {
 
     return 1  # 是 AGV 環境
 }
-
 
 # 啟動資料庫服務
 start_db() {

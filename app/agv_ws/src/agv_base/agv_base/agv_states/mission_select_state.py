@@ -22,6 +22,7 @@ class MissionSelectState(State):
 
     def enter(self):
         self.node.get_logger().info("🎯 AGV 進入: Mission Select")
+        self.node.get_logger().info("🎯 AGV 進入: Mission Select")
 
         # 訂閱 task_table topic
         # self.create_subscription(String,'/task_table',self.task_table_callback)
@@ -30,6 +31,7 @@ class MissionSelectState(State):
         self.locamissiontimer = self.node.create_timer(1.0, self.local_mission)
 
     def leave(self):
+        self.node.get_logger().info("🚪 AGV 離開 Mission Select 狀態")
         self.node.get_logger().info("🚪 AGV 離開 Mission Select 狀態")
         self.remove_subscription()  # 移除訂閱
         self.locamissiontimer.cancel()  # 取消timer
@@ -42,6 +44,7 @@ class MissionSelectState(State):
 
             # 如果已經有路徑
             if self.node.agv_status.AGV_PATH:
+                self.node.get_logger().info("✅ AGV 已有路徑資料，離開 Mission Select 狀態")
                 self.node.get_logger().info("✅ AGV 已有路徑資料，離開 Mission Select 狀態")
                 # 跳過任務選擇狀態，直接切換到下一個狀態
                 from agv_base.agv_states.Running_state import RunningState
@@ -64,6 +67,7 @@ class MissionSelectState(State):
     def tasks_callback(self, msg: Tasks):
         tasks = msg.datas
 
+        self.node.get_logger().info(f"📦 收到 {len(tasks)} 個任務")
         self.node.get_logger().info(f"📦 收到 {len(tasks)} 個任務")
 
         # 篩選已執行卻未完成的任務 或是未執行但AGV已選擇
@@ -137,28 +141,16 @@ string updated_at
 """
 
 
+
+
 """
-2001	"LoaderAGV取入口傳送箱"	"從LoaderAGV取入口傳送箱拿到車上放"	"{}"
-2011	"LoaderAGV放清洗機"	"從LoaderAGV車上放到清洗機"	"{}"
-2021	"LoaderAGV取清洗機"	"從LoaderAGV取清洗機到車上放"	"{}"
-2031	"LoaderAGV放泡藥機A"	"從LoaderAGV車上放到泡藥機A"	"{}"
-2032	"LoaderAGV放泡藥機B"	"從LoaderAGV車上放到泡藥機B"	"{}"
-2033	"LoaderAGV放泡藥機C"	"從LoaderAGV車上放到泡藥機C"	"{}"
-2034	"LoaderAGV放泡藥機D"	"從LoaderAGV車上放到泡藥機D"	"{}"
-2035	"LoaderAGV放泡藥機E"	"從LoaderAGV車上放到泡藥機E"	"{}"
-2036	"LoaderAGV放泡藥機F"	"從LoaderAGV車上放到泡藥機F"	"{}"
-2041	"LoaderAGV拿泡藥機A"	"從泡藥機A拿到LoaderAGV車上放"	"{}"
-2042	"LoaderAGV拿泡藥機B"	"從泡藥機B拿到LoaderAGV車上放"	"{}"
-2043	"LoaderAGV拿泡藥機C"	"從泡藥機C拿到LoaderAGV車上放"	"{}"
-2044	"LoaderAGV拿泡藥機D"	"從泡藥機D拿到LoaderAGV車上放"	"{}"
-2045	"LoaderAGV拿泡藥機E"	"從泡藥機E拿到LoaderAGV車上放"	"{}"
-2046	"LoaderAGV拿泡藥機F"	"從泡藥機F拿到LoaderAGV車上放"	"{}"
-2051	"LoaderAGV放預烘機1"	"從LoaderAGV車上放到預烘機1"	"{}"
-2052	"LoaderAGV放預烘機2"	"從LoaderAGV車上放到預烘機2"	"{}"
-2053	"LoaderAGV放預烘機3"	"從LoaderAGV車上放到預烘機3"	"{}"
-2054	"LoaderAGV放預烘機4"	"從LoaderAGV車上放到預烘機4"	"{}"
-2055	"LoaderAGV放預烘機5"	"從LoaderAGV車上放到預烘機5"	"{}"
-2056	"LoaderAGV放預烘機6"	"從LoaderAGV車上放到預烘機6"	"{}"
-2057	"LoaderAGV放預烘機7"	"從LoaderAGV車上放到預烘機7"	"{}"
-2058	"LoaderAGV放預烘機8"	"從LoaderAGV車上放到預烘機8"	"{}"
+task_status
+id	name	description
+0	請求中	UI-請求執行任務
+1	待處理	WCS-任務已接受，待處理
+2	待執行	RCS-任務已派發，待執行
+3	執行中	AGV-任務正在執行
+4	已完成	AGV-任務已完成
+5	取消中	任務取消中
+6	錯誤	錯誤
 """

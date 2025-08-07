@@ -1,0 +1,348 @@
+# YAML DSL 範例 - NG 料架回收流程
+# 展示批量處理和條件迴圈的 DSL 語法
+
+name: "NG 料架回收流程 DSL"
+description: "檢查並回收 NG 狀態的料架，支援批量處理和優先級管理"
+version: "1.0"
+author: "RosAGV YAML DSL System"
+priority: 90
+work_id: "230001"
+enabled: true
+
+metadata:
+  flow_type: "dsl_script"
+  business_category: "ng_recycling"
+  batch_processing: true
+  compatible_with: ["simple_wcs", "flow_designer"]
+
+# === DSL 變數系統 ===
+variables:
+  # 輸入變數
+  search_locations:
+    type: "list"
+    value: [10001, 10002, 10003, 10004, 10005]  # 房間入口位置
+    description: "搜尋 NG 料架的位置列表"
+    scope: "input"
+  
+  ng_status_filter:
+    type: "integer"
+    value: 3  # 假設 3 = NG 狀態
+    description: "NG 料架狀態篩選值"
+    scope: "input"
+  
+  # 處理變數
+  ng_racks_found:
+    type: "list"
+    value: []
+    description: "找到的 NG 料架列表"
+    scope: "local"
+  
+  recycling_tasks:
+    type: "list"
+    value: []
+    description: "生成的回收任務列表"
+    scope: "local"
+  
+  current_location:
+    type: "integer"
+    value: null
+    description: "當前處理的位置ID"
+    scope: "local"
+  
+  current_rack:
+    type: "object"
+    value: null
+    description: "當前處理的料架資訊"
+    scope: "local"
+  
+  # 輸出變數
+  total_recycled:
+    type: "integer"
+    value: 0
+    description: "總共回收的料架數量"
+    scope: "output"
+  
+  tasks_created:
+    type: "integer"
+    value: 0
+    description: "創建的任務數量"
+    scope: "output"
+
+# === DSL 程式化步驟 ===
+steps:
+  # 步驟1：初始化搜尋參數
+  - id: "initialize_search"
+    type: "script"
+    description: "初始化 NG 料架搜尋參數"
+    function: "log_info"
+    source: "dsl_runtime"
+    parameters:
+      message: "開始 NG 料架回收流程"
+      context:
+        search_locations: "${search_locations}"
+        ng_status: "${ng_status_filter}"
+    variables:
+      search_started:
+        type: "boolean"
+        value: true
+        description: "搜尋已開始標記"
+        scope: "local"
+    next_steps: ["search_ng_racks_batch"]
+
+  # 步驟2：批量搜尋 NG 料架
+  - id: "search_ng_racks_batch"
+    type: "condition"
+    description: "在所有指定位置批量搜尋 NG 料架"
+    function: "check_ng_rack_recycling_flow"
+    source: "unified_decision_engine"
+    parameters:
+      priority: "${priority}"
+      locations: "${search_locations}"
+      status_filter: "${ng_status_filter}"
+    variables:
+      ng_racks_found:
+        type: "list"
+        value: []
+        description: "找到的 NG 料架詳細資訊"
+        scope: "local"
+    conditions:
+      - expression: "len(${search_locations}) > 0"
+        variables: ["search_locations"]
+        functions: ["len"]
+    next_steps: ["check_recycling_needed"]
+
+  # 步驟3：檢查是否需要回收
+  - id: "check_recycling_needed"
+    type: "logic"
+    description: "檢查是否找到需要回收的 NG 料架"
+    function: "evaluate_condition"
+    source: "dsl_runtime"
+    parameters:
+      condition: "len(${ng_racks_found}) > 0"
+    variables:
+      recycling_needed:
+        type: "boolean"
+        value: "len(${ng_racks_found}) > 0"
+        description: "是否需要執行回收"
+        scope: "local"
+    conditions:
+      - expression: "${ng_racks_found} != null"
+        variables: ["ng_racks_found"]
+        functions: []
+    next_steps: ["process_ng_racks_loop"]
+    error_handling:
+      skip_on_error: false
+      fallback_step: "log_no_ng_racks"
+
+  # 步驟4：處理 NG 料架迴圈（模擬迴圈處理）
+  - id: "process_ng_racks_loop"
+    type: "logic"
+    description: "迴圈處理每個找到的 NG 料架"
+    function: "process_list_items"
+    source: "dsl_runtime"
+    parameters:
+      items_list: "${ng_racks_found}"
+      process_function: "create_single_recycling_task"
+    variables:
+      loop_index:
+        type: "integer"
+        value: 0
+        description: "迴圈索引"
+        scope: "local"
+      
+      loop_results:
+        type: "list"
+        value: []
+        description: "迴圈處理結果"
+        scope: "local"
+    conditions:
+      - expression: "${recycling_needed} == true"
+        variables: ["recycling_needed"]
+        functions: []
+    next_steps: ["create_recycling_tasks_batch"]
+
+  # 步驟5：批量創建回收任務
+  - id: "create_recycling_tasks_batch"
+    type: "action"
+    description: "批量創建 NG 料架回收任務"
+    function: "create_tasks_from_decisions"
+    source: "unified_task_manager"
+    parameters:
+      decisions: "${ng_racks_found}"
+      work_id: "${work_id}"
+      priority: "${priority}"
+      task_type: "ng_rack_recycling"
+    variables:
+      batch_creation_result:
+        type: "object"
+        value: null
+        description: "批量創建結果"
+        scope: "local"
+    conditions:
+      - expression: "len(${ng_racks_found}) > 0"
+        variables: ["ng_racks_found"]
+        functions: ["len"]
+    next_steps: ["update_rack_status_batch"]
+
+  # 步驟6：批量更新料架狀態
+  - id: "update_rack_status_batch"
+    type: "action"
+    description: "批量更新 NG 料架狀態為回收中"
+    function: "batch_update_parking_status"
+    source: "enhanced_database_client"
+    parameters:
+      updates: "${rack_status_updates}"
+    variables:
+      rack_status_updates:
+        type: "list"
+        value: []
+        description: "料架狀態更新列表"
+        scope: "local"
+      
+      status_update_result:
+        type: "object"
+        value: null
+        description: "狀態更新結果"
+        scope: "local"
+    conditions:
+      - expression: "${batch_creation_result} != null"
+        variables: ["batch_creation_result"]
+        functions: []
+    next_steps: ["calculate_statistics"]
+
+  # 步驟7：計算統計資訊
+  - id: "calculate_statistics"
+    type: "script"
+    description: "計算回收流程的統計資訊"
+    function: "calculate_recycling_stats"
+    source: "dsl_runtime"
+    parameters:
+      ng_racks: "${ng_racks_found}"
+      creation_result: "${batch_creation_result}"
+      status_result: "${status_update_result}"
+    variables:
+      total_recycled:
+        type: "integer"
+        value: "len(${ng_racks_found})"
+        description: "總回收料架數量"
+        scope: "output"
+      
+      tasks_created:
+        type: "integer"
+        value: "len(${recycling_tasks})"
+        description: "創建的任務數量"
+        scope: "output"
+      
+      success_rate:
+        type: "float"
+        value: "${tasks_created} / ${total_recycled} * 100"
+        description: "成功率百分比"
+        scope: "local"
+    conditions:
+      - expression: "${status_update_result} != null"
+        variables: ["status_update_result"]
+        functions: []
+    next_steps: ["finalize_recycling"]
+
+  # 步驟8：完成回收流程
+  - id: "finalize_recycling"
+    type: "script"
+    description: "完成 NG 料架回收流程並記錄結果"
+    function: "log_info"
+    source: "dsl_runtime"
+    parameters:
+      message: "NG 料架回收流程完成"
+      context:
+        total_recycled: "${total_recycled}"
+        tasks_created: "${tasks_created}"
+        success_rate: "${success_rate}"
+        work_id: "${work_id}"
+    conditions:
+      - expression: "${total_recycled} >= 0"
+        variables: ["total_recycled"]
+        functions: []
+    next_steps: []
+
+  # 錯誤處理步驟
+  - id: "log_no_ng_racks"
+    type: "script"
+    description: "記錄沒有找到 NG 料架"
+    function: "log_info"
+    source: "dsl_runtime"
+    parameters:
+      message: "沒有找到需要回收的 NG 料架"
+      context:
+        searched_locations: "${search_locations}"
+        ng_status_filter: "${ng_status_filter}"
+    next_steps: []
+
+# === DSL 高級控制結構 ===
+control_structures:
+  # 批量處理模式
+  batch_processing:
+    enabled: true
+    batch_size: 10
+    parallel_execution: false
+  
+  # 條件分支
+  conditional_branches:
+    - condition: "len(${ng_racks_found}) == 0"
+      action: "log_no_ng_racks"
+    
+    - condition: "len(${ng_racks_found}) > 0"
+      action: "process_ng_racks_loop"
+  
+  # 迴圈控制
+  loop_control:
+    type: "for_each"
+    items: "${ng_racks_found}"
+    variable: "current_rack"
+    max_iterations: 50
+    break_condition: "${error_count} > 5"
+
+# === 與三種節點類型的對應 ===
+node_type_mapping:
+  condition_nodes:
+    - "search_ng_racks_batch"
+    - "check_recycling_needed"
+  
+  logic_nodes:
+    - "process_ng_racks_loop"
+    - "calculate_statistics"
+  
+  action_nodes:
+    - "create_recycling_tasks_batch"
+    - "update_rack_status_batch"
+    - "finalize_recycling"
+
+# 向下相容性：轉換為原始格式
+legacy_format:
+  trigger_conditions:
+    - condition: "ng_rack_at_location_exists"
+      description: "位置存在 NG 料架"
+      parameters:
+        location_type: "room_inlet"
+        rack_status: 3  # NG 狀態
+    
+    - condition: "recycling_capacity_available"
+      description: "回收處理能力可用"
+      parameters:
+        max_concurrent_recycling: 5
+  
+  action:
+    type: "create_task"
+    task_type: "ng_rack_recycling"
+    function: "ng_rack_recycling"
+    model: "KUKA400i"
+    api: "submit_mission"
+    mission_type: "RACK_RECYCLING"
+    path:
+      type: "recycling_path"
+  
+  applicable_rooms: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  applicable_locations: [10001, 10002, 10003, 10004, 10005]
+  
+  debug:
+    enabled: true
+    log_conditions: true
+    log_batch_processing: true

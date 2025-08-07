@@ -19,6 +19,9 @@ class IdleState(State):
 
         # Hokuyo 初始化狀態
         self.hokuyo_write_completed = False
+        
+        self.node.room_id = self.node.task.room_id
+        self.node.work_id = self.node.task.work_id
 
         # 動態計算工作 ID 範圍
         self.room_id_str = str(self.node.room_id)

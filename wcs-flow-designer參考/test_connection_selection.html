@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>連線選擇測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-info { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .test-steps { background: #e7f3ff; padding: 15px; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>WCS Flow Designer - 連線選擇修復測試</h1>
+    
+    <div class="test-info error">
+        <h3>🐛 原始問題：</h3>
+        <p><strong>問題描述：</strong> 在畫面上任意點擊都會選中同一條連線</p>
+        <p><strong>原因分析：</strong> SVG 元素設置了 <code>width: 100%</code> 和 <code>height: 100%</code>，導致每個連線的 SVG 都覆蓋整個容器</p>
+    </div>
+    
+    <div class="test-info success">
+        <h3>✅ 修復內容：</h3>
+        <ul>
+            <li><strong>SVG 尺寸優化</strong> - SVG 只覆蓋連線路徑的實際區域</li>
+            <li><strong>事件處理改進</strong> - 只在 path 元素上監聽點擊事件，不是整個 SVG</li>
+            <li><strong>pointer-events 控制</strong> - SVG 設為 none，path 設為 auto</li>
+            <li><strong>動態邊界計算</strong> - 根據連線路徑動態計算 SVG 邊界框</li>
+            <li><strong>座標轉換</strong> - 正確處理相對座標和絕對座標轉換</li>
+        </ul>
+    </div>
+    
+    <div class="test-steps">
+        <h3>🧪 詳細測試步驟：</h3>
+        <ol>
+            <li><strong>開啟應用程式</strong>
+                <br>點擊下方按鈕開啟 WCS Flow Designer
+            </li>
+            <li><strong>建立多條連線</strong>
+                <br>• 拖拽 3-4 個節點到畫布的不同位置
+                <br>• 建立多條連線（至少 3 條）
+                <br>• 確保連線不重疊，分佈在畫布不同區域
+            </li>
+            <li><strong>測試精確選擇</strong>
+                <br>• 點擊第一條連線，確認只有該連線被選中（變藍色）
+                <br>• 點擊第二條連線，確認選擇切換到第二條
+                <br>• 點擊第三條連線，確認選擇切換到第三條
+            </li>
+            <li><strong>測試空白區域點擊</strong>
+                <br>• 在連線之間的空白區域點擊
+                <br>• 確認沒有連線被意外選中
+                <br>• 如果有選中的連線，應該被取消選擇
+            </li>
+            <li><strong>測試載入範例</strong>
+                <br>• 載入 flow-examples 中的 JSON 檔案
+                <br>• 測試每條連線的選擇是否準確
+                <br>• 確認刪除按鈕位置正確
+            </li>
+            <li><strong>測試連線密集區域</strong>
+                <br>• 建立多個節點在相近位置
+                <br>• 測試連線較密集時的選擇精確度
+            </li>
+        </ol>
+    </div>
+    
+    <div class="test-info warning">
+        <h3>⚠️ 關鍵測試點：</h3>
+        <ul>
+            <li><strong>選擇精確性</strong>：只有點擊連線路徑才會選中，點擊空白處不會</li>
+            <li><strong>正確連線</strong>：點擊哪條連線就選中哪條，不會選錯</li>
+            <li><strong>視覺回饋</strong>：選中的連線變藍色，未選中的保持灰色</li>
+            <li><strong>刪除按鈕位置</strong>：刪除按鈕應該出現在選中連線的中間位置</li>
+            <li><strong>懸停效果</strong>：滑鼠懸停時連線變紅色</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <h3>🔧 技術修復詳情：</h3>
+        <ul>
+            <li><strong>SVG 尺寸計算</strong>：
+                <br><code>minX/minY = Math.min(startX, endX, midX) - 10</code>
+                <br><code>maxX/maxY = Math.max(startX, endX, midX) + 10</code>
+            </li>
+            <li><strong>事件處理</strong>：
+                <br><code>svg.style.pointerEvents = 'none'</code>
+                <br><code>path.style.pointerEvents = 'auto'</code>
+            </li>
+            <li><strong>座標轉換</strong>：
+                <br>Path 座標轉換為相對於 SVG 的座標系統
+            </li>
+            <li><strong>動態更新</strong>：
+                <br>每次連線更新時重新計算 SVG 邊界框
+            </li>
+        </ul>
+    </div>
+    
+    <button onclick="window.open('index.html', '_blank')">🚀 開啟 WCS Flow Designer</button>
+    <button onclick="window.open('test_condition_properties.html', '_blank')">📋 條件屬性測試</button>
+    
+    <div class="test-info">
+        <h3>📝 預期結果：</h3>
+        <ul>
+            <li>✅ 點擊連線路徑準確選中該連線</li>
+            <li>✅ 點擊空白區域不會選中任何連線</li>
+            <li>✅ 選中狀態正確切換（藍色高亮）</li>
+            <li>✅ 刪除按鈕出現在正確位置</li>
+            <li>✅ 懸停效果正確（紅色高亮）</li>
+            <li>✅ 多條連線可以獨立選擇</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <h3>🐛 如果問題仍存在：</h3>
+        <p>請在 F12 開發者工具中檢查：</p>
+        <ul>
+            <li>每個 SVG 元素的尺寸和位置是否正確</li>
+            <li>Path 元素的 pointer-events 是否為 auto</li>
+            <li>SVG 元素的 pointer-events 是否為 none</li>
+            <li>點擊事件是否正確綁定到 path 而不是 svg</li>
+        </ul>
+    </div>
+</body>
+</html>

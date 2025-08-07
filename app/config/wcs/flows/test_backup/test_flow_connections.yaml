@@ -1,0 +1,50 @@
+name: test_flow_connections
+description: Flow Designer 創建的流程 - test_flow_connections
+priority: 50
+work_id: ''
+enabled: true
+trigger_conditions: []
+action:
+  type: create_task
+  task_type: custom
+applicable_locations: []
+applicable_rooms: []
+debug:
+  enabled: false
+  log_conditions: true
+  dry_run: false
+flow_designer_data:
+  version: '1.0'
+  nodes:
+  - id: check_agv_rotation_flow_1
+    type: check_agv_rotation_flow
+    name: AGV 旋轉流程檢查
+    description: 檢查 AGV 是否需要執行旋轉流程
+    position:
+      x: 199
+      y: 570
+    parameters: {}
+  - id: create_task_from_decision_2
+    type: create_task_from_decision
+    name: 從決策創建任務
+    description: 根據決策結果創建 WCS 任務
+    position:
+      x: 654
+      y: 239
+    parameters: {}
+  - id: create_task_from_decision_1
+    type: create_task_from_decision
+    name: 從決策創建任務
+    description: 根據決策結果創建 WCS 任務
+    position:
+      x: 530
+      y: 573
+    parameters: {}
+  connections:
+  - id: b1565c9c91d5b636
+    source: check_agv_rotation_flow_1
+    sourceOutput: decisions
+    target: create_task_from_decision_2
+    targetInput: decision
+  created: '2025-08-05T15:02:05.518Z'
+  updated: '2025-08-05T15:02:05.534503'

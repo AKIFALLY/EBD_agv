@@ -172,7 +172,6 @@ except Exception as e:
         return 1
     fi
 }
-}
 
 ping_host() {
     local host="$1"
@@ -713,7 +712,6 @@ except Exception as e:
 " 2>/dev/null || {
     log_error "驗證過程中發生錯誤，請檢查 Python 環境和 PyYAML 套件"
     return 1
-}
 }
 
 # ============================================================================

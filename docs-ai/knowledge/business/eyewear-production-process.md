@@ -1076,7 +1076,7 @@ curl -X DELETE http://localhost:8000/map_importer/delete-kuka-map
 ```
 
 #### AGVCUI 地圖查看
-1. **開啟地圖頁面**: 瀏覽器前往 `http://localhost:8001/map`
+1. **開啟地圖頁面**: 瀏覽器前往 `http://localhost:8001/map` 或 `http://agvc.ui/map`
 2. **地圖載入**: 自動從資料庫載入所有節點和邊資料
 3. **即時顯示**: 
    - 藍色系統: CT AGV 的 node 和 edge

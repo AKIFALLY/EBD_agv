@@ -1,0 +1,55 @@
+# Rack旋轉檢查-房間入口流程
+name: "Rack旋轉檢查-房間入口"
+description: "當 Rack A面完成後，檢查是否需要旋轉處理 B面"
+priority: 100
+work_id: "220001"
+enabled: true
+
+# 觸發條件 - 所有條件必須為 true 才執行
+trigger_conditions:
+  - condition: "rack_at_location_exists"
+    description: "房間入口位置有 Rack"
+    parameters:
+      location_type: "room_inlet"
+      
+  - condition: "rack_side_completed" 
+    description: "Rack A面已完成 (沒有任何待處理的 carrier，都被搬走了)"
+    parameters:
+      side: "A"
+      
+  - condition: "rack_has_b_side_work"
+    description: "Rack B面有待處理工作 (還有 carrier 在該 Rack 上)"
+    parameters:
+      side: "B"
+      
+  - condition: "rack_needs_rotation_for_b_side"
+    description: "Rack 需要旋轉以處理 B面"
+    parameters:
+      location_type: "room_inlet"
+      
+  - condition: "no_active_task"
+    description: "該位置無衝突任務"
+    parameters:
+      work_id: "220001"
+
+# 執行動作
+action:
+  type: "create_task"
+  task_type: "rack_rotation"
+  function: "rack_move"
+  model: "KUKA400i"
+  api: "submit_mission"
+  mission_type: "RACK_MOVE"
+  
+  # 路徑配置
+  path:
+    type: "inlet_rotation"
+    
+# 適用房間 (空表示所有房間)
+applicable_rooms: [1, 2, 3, 4, 5]
+
+# 調試選項
+debug:
+  enabled: true
+  log_conditions: true
+  dry_run: false

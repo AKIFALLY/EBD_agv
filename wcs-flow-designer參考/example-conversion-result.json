@@ -1,0 +1,39 @@
+{
+  "workflow": {
+    "name": "WCS Flow Export",
+    "description": "Generated executable workflow from WCS Flow Designer",
+    "version": "1.0",
+    "execution_mode": "single",
+    "variables": {},
+    "steps": [
+      {
+        "type": "condition",
+        "id": "room-has-carrier_1",
+        "function": "room_has_carrier",
+        "description": "房間內是否有Carrier",
+        "parameters": {
+          "room_id": "01",
+          "check_exists": true
+        },
+        "on_true": "create-task_2",
+        "on_false": "end_step"
+      },
+      {
+        "type": "create_task",
+        "id": "create-task_2",
+        "description": "創建任務",
+        "api": "submit_mission",
+        "parameters": {
+          "task_type": "rack_transport",
+          "model": "KUKA400i",
+          "mission_type": "RACK_MOVE",
+          "path": {
+            "type": "transport",
+            "source": "",
+            "destination": ""
+          }
+        }
+      }
+    ]
+  }
+}

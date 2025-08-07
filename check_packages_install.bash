@@ -93,6 +93,5 @@ else
   echo -e "${GREEN}所有必要的套件都已經安裝。${NC}"
 fi
 
-
 echo ""
 echo -e "${YELLOW}===== 檢查完畢 =====${NC}"

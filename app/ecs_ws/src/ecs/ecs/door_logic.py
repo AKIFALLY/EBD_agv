@@ -1,6 +1,7 @@
-from typing import Dict, Callable
+from typing import Dict, Callable, Union
 from ecs.door_controller_config import DoorControllerConfig
 from plc_proxy.plc_client import PlcClient
+from plc_proxy.plc_client_node import PlcClientNode
 from dataclasses import dataclass
 
 
@@ -11,14 +12,23 @@ class DoorState:
 
 
 class DoorLogic:
-    def __init__(self, plc_client: PlcClient, config: DoorControllerConfig):
+    def __init__(self, plc_client: Union[PlcClient, PlcClientNode], config: DoorControllerConfig):
         """
         初始化 DoorLogic，並傳入 PLC 客戶端和門設定。
-        :param plc_client: 用來與 PLC 通訊的 PlcClient 實例
+        :param plc_client: 用來與 PLC 通訊的 PlcClient 或 PlcClientNode 實例
         :param config: DoorControllerConfig 實例，提供門控制配置
         """
         self.plc_client = plc_client
         self.config = config
+        
+        # Get the logger based on the type of plc_client
+        # PlcClient has a 'node' attribute, PlcClientNode IS a Node
+        if hasattr(plc_client, 'node'):
+            # It's a PlcClient
+            self._logger_node = plc_client.node
+        else:
+            # It's a PlcClientNode (or other Node-based class)
+            self._logger_node = plc_client
 
     def async_control_door(self, door_id: int, is_open: bool) -> Dict:
         """
@@ -45,13 +55,15 @@ class DoorLogic:
         控制門的回呼函數。
         :param response: PLC 回應
         """
+        logger = self._logger_node.get_logger()
+        
         if response is None:
-            self.plc_client.node.get_logger().error("未收到 PLC 的回應")
+            logger.error("未收到 PLC 的回應")
             return
         if not response.success:
-            self.plc_client.node.get_logger().error("控制門失敗")
+            logger.error("控制門失敗")
             return
-        self.plc_client.node.get_logger().info("控制門成功")
+        logger.info("控制門成功")
 
     def async_state_door(self, door_id: int, callback: Callable[[Dict], None]) -> None:
         cfg = self.config.get_config(door_id)

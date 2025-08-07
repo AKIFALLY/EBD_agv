@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 布局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-sitemap"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/flows">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表單包裝在 box 中 -->
+        <div class="box">
+            <form method="post" action="{{ form_action }}" accept-charset="UTF-8">
+                <div class="columns">
+                    <div class="column is-half">
+                        <!-- 流程名稱 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-format-title"></i>
+                                    </span>
+                                    <span>流程名稱 *</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="text" name="name"
+                                    value="{{ flow.get('name', '') if flow else '' }}" 
+                                    placeholder="請輸入流程名稱" required
+                                    {% if flow %}readonly{% endif %}>
+                            </div>
+                            <p class="help">流程的唯一識別名稱{% if flow %}（編輯時不可修改）{% endif %}</p>
+                        </div>
+
+                        <!-- 流程描述 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-text"></i>
+                                    </span>
+                                    <span>流程描述</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <textarea class="textarea" name="description" rows="3"
+                                    placeholder="請輸入流程描述">{{ flow.get('description', '') if flow else '' }}</textarea>
+                            </div>
+                            <p class="help">流程的詳細說明</p>
+                        </div>
+
+                        <!-- 優先級 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-priority-high"></i>
+                                    </span>
+                                    <span>優先級</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="number" name="priority" min="0" max="100"
+                                    value="{{ flow.get('priority', 50) if flow else 50 }}" required>
+                            </div>
+                            <p class="help">流程執行優先級 (0-100，數字越大優先級越高)</p>
+                        </div>
+                    </div>
+
+                    <div class="column is-half">
+                        <!-- Work ID -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-identifier"></i>
+                                    </span>
+                                    <span>Work ID</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="text" name="work_id"
+                                    value="{{ flow.get('work_id', '') if flow else '' }}" 
+                                    placeholder="例如: 220001">
+                            </div>
+                            <p class="help">關聯的工作類型 ID</p>
+                        </div>
+
+                        <!-- 啟用狀態 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-toggle-switch"></i>
+                                    </span>
+                                    <span>啟用狀態</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="enabled" value="true"
+                                        {% if flow and flow.get('enabled', False) %}checked{% endif %}>
+                                    啟用此流程
+                                </label>
+                            </div>
+                            <p class="help">只有啟用的流程才會執行</p>
+                        </div>
+
+                        <!-- 適用位置 -->
+                        <div class="field">
+                            <label class="label">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="mdi mdi-map-marker-multiple"></i>
+                                    </span>
+                                    <span>適用位置</span>
+                                </span>
+                            </label>
+                            <div class="control">
+                                <input class="input" type="text" name="applicable_locations"
+                                    {% if flow and flow.get('applicable_locations') %}value="{{ flow.applicable_locations|join(', ') }}"{% endif %}
+                                    placeholder="例如: 20001, 20002, 20003">
+                            </div>
+                            <p class="help">適用的位置 ID，用逗號分隔</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 說明文字 -->
+                <div class="notification is-info is-light">
+                    <span class="icon">
+                        <i class="mdi mdi-information"></i>
+                    </span>
+                    <strong>注意：</strong>
+                    <ul class="mt-2">
+                        <li>此表單僅用於創建基本流程框架</li>
+                        <li>詳細的觸發條件和動作配置需要在 Flow Designer 中進行</li>
+                        <li>創建後可以點擊編輯按鈕進入可視化編輯器</li>
+                    </ul>
+                </div>
+
+                <!-- 提交按鈕 -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <span class="icon">
+                                <i class="mdi mdi-content-save"></i>
+                            </span>
+                            <span>{{ "更新流程" if flow else "創建流程" }}</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a class="button is-light" href="/flows">
+                            <span class="icon">
+                                <i class="mdi mdi-cancel"></i>
+                            </span>
+                            <span>取消</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

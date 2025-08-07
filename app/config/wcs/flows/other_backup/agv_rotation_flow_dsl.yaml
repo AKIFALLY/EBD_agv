@@ -1,0 +1,232 @@
+# YAML DSL 範例 - AGV 旋轉流程
+# 基於 rack_rotation_inlet.yaml 格式，展示 DSL 程式語言特性
+# 目標：讓 WCS 執行、Flow Designer 編輯
+
+name: "AGV 旋轉流程 DSL 範例"
+description: "展示 YAML DSL 語法的 AGV 旋轉檢查和任務創建流程"
+version: "1.0"
+author: "RosAGV YAML DSL System"
+priority: 100
+work_id: "220001"
+enabled: true
+
+metadata:
+  flow_type: "dsl_script"
+  original_format: "rack_rotation_inlet"
+  compatible_with: ["simple_wcs", "flow_designer"]
+
+# === DSL 變數系統 ===
+variables:
+  # 輸入變數
+  target_room_id:
+    type: "integer"
+    value: 1
+    description: "目標房間ID"
+    scope: "input"
+  
+  current_agv_location:
+    type: "integer" 
+    value: 10001
+    description: "當前AGV位置"
+    scope: "input"
+  
+  # 處理變數
+  rotation_needed:
+    type: "boolean"
+    value: false
+    description: "是否需要旋轉"
+    scope: "local"
+  
+  room_inlet_location:
+    type: "integer"
+    value: null
+    description: "房間入口位置ID"
+    scope: "local"
+    
+  # 輸出變數
+  task_decisions:
+    type: "list"
+    value: []
+    description: "生成的任務決策列表"
+    scope: "output"
+
+# === DSL 程式化步驟 ===
+steps:
+  # 步驟1：計算房間入口位置
+  - id: "calculate_room_inlet"
+    type: "logic"
+    description: "計算目標房間的入口位置ID"
+    function: "get_room_location_info"
+    source: "unified_decision_engine"
+    parameters:
+      room_id: "${target_room_id}"
+    variables:
+      room_inlet_location:
+        type: "integer"
+        value: "${target_room_id * 10000 + 1}"  # X0001格式：房間1->10001
+        description: "計算得出的房間入口位置"
+        scope: "local"
+    conditions:
+      - expression: "${target_room_id} >= 1 && ${target_room_id} <= 10"
+        variables: ["target_room_id"]
+        functions: []
+    next_steps: ["check_rotation_condition"]
+    error_handling:
+      retry: true
+      retry_count: 2
+      skip_on_error: false
+
+  # 步驟2：檢查是否需要旋轉
+  - id: "check_rotation_condition"
+    type: "condition"
+    description: "檢查AGV是否需要進行旋轉"
+    function: "check_agv_rotation_flow"
+    source: "unified_decision_engine"
+    parameters:
+      priority: "${priority}"
+    variables:
+      rotation_needed:
+        type: "boolean"
+        value: "${current_agv_location} != ${room_inlet_location}"
+        description: "根據位置差異判斷是否需要旋轉"
+        scope: "local"
+    conditions:
+      - expression: "${room_inlet_location} != null"
+        variables: ["room_inlet_location"]
+        functions: []
+    next_steps: ["generate_rotation_path"]
+    error_handling:
+      skip_on_error: true
+      fallback_step: "log_error"
+
+  # 步驟3：生成旋轉路徑
+  - id: "generate_rotation_path"
+    type: "logic"
+    description: "生成AGV旋轉的3個節點路徑"
+    function: "generate_rotation_nodes"
+    source: "unified_decision_engine"
+    parameters:
+      target_location: "${room_inlet_location}"
+      current_location: "${current_agv_location}"
+    variables:
+      rotation_nodes:
+        type: "list"
+        value: []
+        description: "旋轉路徑節點列表"
+        scope: "local"
+    conditions:
+      - expression: "${rotation_needed} == true"
+        variables: ["rotation_needed"]
+        functions: []
+    next_steps: ["create_rotation_task"]
+
+  # 步驟4：創建旋轉任務
+  - id: "create_rotation_task"
+    type: "action"
+    description: "基於路徑生成實際的旋轉任務"
+    function: "create_task_from_decision_dict"
+    source: "enhanced_database_client"
+    parameters:
+      work_id: "${work_id}"
+      status_id: 0
+      room_id: "${target_room_id}"
+      node_id: "${room_inlet_location}"
+      name: "AGV旋轉任務 - 房間${target_room_id}"
+      description: "DSL生成：AGV從${current_agv_location}旋轉到${room_inlet_location}"
+      priority: "${priority}"
+      parameters:
+        type: "create_task"
+        task_type: "rack_rotation"
+        function: "rack_move"
+        model: "KUKA400i"
+        api: "submit_mission"
+        mission_type: "RACK_MOVE"
+        path:
+          type: "inlet_rotation"
+          nodes: "${rotation_nodes}"
+    variables:
+      created_task_id:
+        type: "integer"
+        value: null
+        description: "創建的任務ID"
+        scope: "output"
+    conditions:
+      - expression: "len(${rotation_nodes}) > 0"
+        variables: ["rotation_nodes"]
+        functions: ["len"]
+    next_steps: ["update_task_decisions"]
+
+  # 步驟5：更新任務決策列表
+  - id: "update_task_decisions"
+    type: "script"
+    description: "將創建的任務加入決策列表"
+    function: "append_to_list"
+    source: "dsl_runtime"
+    parameters:
+      target_list: "task_decisions"
+      new_item:
+        task_id: "${created_task_id}"
+        work_id: "${work_id}"
+        priority: "${priority}"
+        room_id: "${target_room_id}"
+        status: "created"
+    variables:
+      task_count:
+        type: "integer"
+        value: "len(${task_decisions})"
+        description: "任務數量統計"
+        scope: "local"
+    conditions:
+      - expression: "${created_task_id} != null"
+        variables: ["created_task_id"]
+        functions: []
+    next_steps: []
+
+  # 錯誤處理步驟
+  - id: "log_error"
+    type: "script"
+    description: "記錄錯誤資訊"
+    function: "log_error"
+    source: "dsl_runtime"
+    parameters:
+      message: "AGV 旋轉流程執行錯誤"
+      context:
+        target_room_id: "${target_room_id}"
+        current_location: "${current_agv_location}"
+    next_steps: []
+
+# === 與原始格式的對應關係 ===
+# 原始 trigger_conditions -> DSL steps (condition type)
+# 原始 action -> DSL steps (action type)  
+# 原始 parameters -> DSL variables
+# 新增 script 步驟用於複雜邏輯處理
+
+# 向下相容性：可以轉換回原始 BusinessFlow 格式
+legacy_format:
+  trigger_conditions:
+    - condition: "rack_at_location_exists"
+      description: "房間入口位置有 Rack"
+      parameters:
+        location_type: "room_inlet"
+        room_id: "${target_room_id}"
+    
+    - condition: "rack_side_completed"
+      description: "Rack A面已完成"
+      parameters:
+        side: "A"
+  
+  action:
+    type: "create_task"
+    task_type: "rack_rotation"
+    function: "rack_move"
+    model: "KUKA400i"
+    api: "submit_mission"
+    mission_type: "RACK_MOVE"
+    path:
+      type: "inlet_rotation"
+  
+  applicable_rooms: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  
+  debug:
+    enabled: false
+    log_conditions: true

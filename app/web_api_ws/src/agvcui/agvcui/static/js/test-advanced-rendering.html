@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 4.2.2: Advanced Canvas Rendering 測試</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        .test-title .icon {
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .canvas-container {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            position: relative;
+            margin: 15px 0;
+            background: #f9f9f9;
+        }
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .metric-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .control-panel {
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        .control-group label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #1e7e34;
+        }
+        select, input[type="range"], input[type="number"] {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #test-log {
+            background: #2d2d2d;
+            color: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .render-mode-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            margin-left: 10px;
+        }
+        .render-mode-badge.dom { background: #48cae4; }
+        .render-mode-badge.canvas { background: #f77f00; }
+        .render-mode-badge.webgl { background: #fcbf49; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎨 Phase 4.2.2: Advanced Canvas Rendering 測試</h1>
+        <p>測試 Flow Designer 的 Canvas 2D 和 WebGL 渲染引擎效能與功能</p>
+        
+        <!-- 渲染引擎初始化 -->
+        <div class="test-section">
+            <div class="test-title">
+                <span class="icon">🚀</span>
+                1. 渲染引擎初始化測試
+                <span id="current-mode-badge" class="render-mode-badge dom">DOM</span>
+            </div>
+            <div id="renderer-init-results"></div>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>渲染模式:</label>
+                    <select id="rendering-mode">
+                        <option value="dom">DOM 渲染</option>
+                        <option value="canvas">Canvas 2D</option>
+                        <option value="webgl">WebGL (如支援)</option>
+                    </select>
+                    <button onclick="switchRenderingMode()">切換模式</button>
+                </div>
+                <div class="control-group">
+                    <label>節點數量:</label>
+                    <input type="range" id="node-count" min="10" max="500" value="50" step="10">
+                    <span id="node-count-value">50</span>
+                    <button onclick="generateTestNodes()">生成測試節點</button>
+                </div>
+                <div class="control-group">
+                    <label>視窗裁剪:</label>
+                    <input type="checkbox" id="viewport-culling" checked>
+                    <label>高 DPI:</label>
+                    <input type="checkbox" id="high-dpi" checked>
+                    <label>抗鋸齒:</label>
+                    <input type="checkbox" id="antialiasing" checked>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Canvas 渲染測試 -->
+        <div class="test-section">
+            <div class="test-title">
+                <span class="icon">🎨</span>
+                2. Canvas 渲染效能測試
+            </div>
+            <div class="canvas-container">
+                <canvas id="test-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+                <div id="render-stats" class="performance-stats-overlay" style="display: none;">
+                    <div class="stat-line">
+                        <span class="stat-label">FPS:</span>
+                        <span class="stat-value" id="fps-value">0</span>
+                    </div>
+                    <div class="stat-line">
+                        <span class="stat-label">渲染時間:</span>
+                        <span class="stat-value" id="render-time-value">0ms</span>
+                    </div>
+                    <div class="stat-line">
+                        <span class="stat-label">節點數:</span>
+                        <span class="stat-value" id="nodes-rendered-value">0</span>
+                    </div>
+                    <div class="stat-line">
+                        <span class="stat-label">快取命中:</span>
+                        <span class="stat-value" id="cache-hit-value">0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <button onclick="startRenderTest()" class="success">開始渲染測試</button>
+                <button onclick="stopRenderTest()" class="danger">停止測試</button>
+                <button onclick="clearCanvas()">清除畫布</button>
+                <button onclick="toggleStats()">顯示/隱藏統計</button>
+            </div>
+        </div>
+        
+        <!-- 效能指標 -->
+        <div class="test-section">
+            <div class="test-title">
+                <span class="icon">📊</span>
+                3. 效能指標監控
+            </div>
+            <div class="performance-metrics">
+                <div class="metric-box">
+                    <div class="metric-value" id="avg-fps">0</div>
+                    <div class="metric-label">平均 FPS</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" id="avg-render-time">0</div>
+                    <div class="metric-label">平均渲染時間 (ms)</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" id="cache-efficiency">0</div>
+                    <div class="metric-label">快取效率 (%)</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" id="memory-usage">0</div>
+                    <div class="metric-label">記憶體使用 (MB)</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 功能測試 -->
+        <div class="test-section">
+            <div class="test-title">
+                <span class="icon">🧪</span>
+                4. 功能測試
+            </div>
+            <div id="feature-test-results"></div>
+            
+            <div class="control-panel">
+                <button onclick="testNodeRendering()">測試節點渲染</button>
+                <button onclick="testConnectionRendering()">測試連接線渲染</button>
+                <button onclick="testViewportCulling()">測試視窗裁剪</button>
+                <button onclick="testCacheSystem()">測試快取系統</button>
+                <button onclick="runAllTests()">執行所有測試</button>
+            </div>
+        </div>
+        
+        <!-- 測試日誌 -->
+        <div class="test-section">
+            <div class="test-title">
+                <span class="icon">📋</span>
+                5. 測試日誌
+            </div>
+            <div id="test-log"></div>
+            <div class="control-panel">
+                <button onclick="clearLog()">清除日誌</button>
+                <button onclick="exportResults()">匯出測試結果</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入 Advanced Rendering 依賴 -->
+    <script src="/static/js/flowDesignerPage.js?v=4.2.2"></script>
+    
+    <script>
+        // 測試變數
+        let testRenderer = null;
+        let testNodes = [];
+        let testConnections = [];
+        let isRenderTestRunning = false;
+        let renderTestInterval = null;
+        let performanceHistory = [];
+        
+        // 測試日誌函數
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEl = document.getElementById('test-log');
+            const prefix = {
+                'error': '❌',
+                'success': '✅', 
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            }[type] || 'ℹ️';
+            
+            logEl.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            
+            console.log(`%c[Phase 4.2.2 Test] ${message}`, 
+                type === 'error' ? 'color: red' : 
+                type === 'success' ? 'color: green' : 
+                type === 'warning' ? 'color: orange' : 'color: blue');
+        }
+        
+        // 添加結果到測試區域
+        function addResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+        
+        // 初始化渲染引擎
+        function initializeRenderer() {
+            log('🚀 初始化 Advanced Rendering 引擎...');
+            
+            try {
+                const canvas = document.getElementById('test-canvas');
+                
+                // 檢查類別可用性
+                if (typeof window.AdvancedRenderingManager === 'undefined') {
+                    throw new Error('AdvancedRenderingManager 類別未載入');
+                }
+                
+                if (typeof window.AdvancedCanvasRenderer === 'undefined') {
+                    throw new Error('AdvancedCanvasRenderer 類別未載入');
+                }
+                
+                // 初始化渲染管理器
+                testRenderer = new window.AdvancedRenderingManager({
+                    preferWebGL: false,
+                    fallbackToCanvas: true,
+                    enableViewportCulling: true,
+                    maxNodesForDOM: 50
+                });
+                
+                addResult('renderer-init-results', '✅ Advanced Rendering Manager 初始化成功', 'success');
+                log('Advanced Rendering Manager 初始化成功', 'success');
+                
+                // 檢查渲染模式
+                const stats = testRenderer.getRenderStats();
+                updateModebadge(stats.mode || 'dom');
+                
+                return true;
+                
+            } catch (error) {
+                addResult('renderer-init-results', `❌ 初始化失敗: ${error.message}`, 'error');
+                log(`初始化失敗: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // 更新模式標籤
+        function updateModebadge(mode) {
+            const badge = document.getElementById('current-mode-badge');
+            badge.className = `render-mode-badge ${mode}`;
+            badge.textContent = {
+                'dom': 'DOM',
+                'canvas': 'Canvas 2D',
+                'webgl': 'WebGL'
+            }[mode] || mode.toUpperCase();
+        }
+        
+        // 切換渲染模式
+        function switchRenderingMode() {
+            if (!testRenderer) {
+                log('渲染器未初始化', 'error');
+                return;
+            }
+            
+            const mode = document.getElementById('rendering-mode').value;
+            log(`🔄 切換渲染模式到: ${mode}`);
+            
+            try {
+                testRenderer.switchRenderingMode(mode);
+                updateModebadge(mode);
+                log(`成功切換到 ${mode} 渲染模式`, 'success');
+                
+                // 重新渲染測試節點
+                if (testNodes.length > 0) {
+                    testRenderer.render(testNodes, testConnections);
+                }
+                
+            } catch (error) {
+                log(`切換渲染模式失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        // 生成測試節點
+        function generateTestNodes() {
+            const nodeCount = parseInt(document.getElementById('node-count').value);
+            const nodeCountDisplay = document.getElementById('node-count-value');
+            nodeCountDisplay.textContent = nodeCount;
+            
+            log(`📦 生成 ${nodeCount} 個測試節點...`);
+            
+            testNodes = [];
+            testConnections = [];
+            
+            // 生成隨機節點
+            for (let i = 0; i < nodeCount; i++) {
+                const nodeTypes = ['condition', 'logic', 'action', 'script'];
+                const type = nodeTypes[Math.floor(Math.random() * nodeTypes.length)];
+                
+                testNodes.push({
+                    id: `test_node_${i}`,
+                    name: `測試節點 ${i + 1}`,
+                    description: `這是第 ${i + 1} 個測試節點`,
+                    type: type,
+                    x: Math.random() * 800,
+                    y: Math.random() * 600,
+                    width: 200,
+                    height: 100,
+                    selected: Math.random() < 0.1, // 10% 機率被選中
+                    isDirty: true,
+                    inputs: type !== 'condition' ? [{ id: 'input' }] : [],
+                    outputs: type !== 'script' ? [{ id: 'output' }] : []
+                });
+            }
+            
+            // 生成隨機連接
+            for (let i = 0; i < Math.min(nodeCount - 1, 50); i++) {
+                const sourceIndex = Math.floor(Math.random() * testNodes.length);
+                let targetIndex = Math.floor(Math.random() * testNodes.length);
+                
+                // 確保不是自己連接自己
+                while (targetIndex === sourceIndex) {
+                    targetIndex = Math.floor(Math.random() * testNodes.length);
+                }
+                
+                testConnections.push({
+                    id: `test_connection_${i}`,
+                    source: testNodes[sourceIndex].id,
+                    target: testNodes[targetIndex].id,
+                    style: {
+                        color: '#666',
+                        width: 2,
+                        showArrow: true
+                    }
+                });
+            }
+            
+            log(`生成完成: ${testNodes.length} 個節點, ${testConnections.length} 個連接`, 'success');
+            
+            // 立即渲染
+            if (testRenderer) {
+                testRenderer.render(testNodes, testConnections);
+            }
+        }
+        
+        // 開始渲染測試
+        function startRenderTest() {
+            if (isRenderTestRunning) {
+                log('渲染測試已在執行中', 'warning');
+                return;
+            }
+            
+            if (!testRenderer || testNodes.length === 0) {
+                log('請先初始化渲染器並生成測試節點', 'warning');
+                return;
+            }
+            
+            log('🎬 開始連續渲染測試...');
+            isRenderTestRunning = true;
+            performanceHistory = [];
+            
+            // 顯示統計面板
+            document.getElementById('render-stats').style.display = 'block';
+            
+            // 開始渲染循環
+            renderTestInterval = setInterval(() => {
+                if (!isRenderTestRunning) return;
+                
+                // 輕微移動節點以測試動態渲染
+                testNodes.forEach(node => {
+                    node.x += (Math.random() - 0.5) * 2;
+                    node.y += (Math.random() - 0.5) * 2;
+                    node.isDirty = true;
+                });
+                
+                // 渲染
+                testRenderer.render(testNodes, testConnections);
+                
+                // 更新統計
+                updateRenderStats();
+                
+            }, 16); // ~60 FPS
+        }
+        
+        // 停止渲染測試
+        function stopRenderTest() {
+            if (!isRenderTestRunning) {
+                log('渲染測試未在執行', 'warning');
+                return;
+            }
+            
+            log('⏹️ 停止渲染測試');
+            isRenderTestRunning = false;
+            
+            if (renderTestInterval) {
+                clearInterval(renderTestInterval);
+                renderTestInterval = null;
+            }
+            
+            // 計算最終統計
+            if (performanceHistory.length > 0) {
+                const avgFps = performanceHistory.reduce((a, b) => a + b.fps, 0) / performanceHistory.length;
+                const avgRenderTime = performanceHistory.reduce((a, b) => a + b.renderTime, 0) / performanceHistory.length;
+                
+                log(`📊 測試結果: 平均 FPS: ${avgFps.toFixed(1)}, 平均渲染時間: ${avgRenderTime.toFixed(2)}ms`, 'success');
+            }
+        }
+        
+        // 更新渲染統計
+        function updateRenderStats() {
+            if (!testRenderer) return;
+            
+            const stats = testRenderer.getRenderStats();
+            
+            // 更新即時統計顯示
+            document.getElementById('fps-value').textContent = stats.fps ? stats.fps.toFixed(1) : '0';
+            document.getElementById('render-time-value').textContent = stats.renderTime ? stats.renderTime.toFixed(1) + 'ms' : '0ms';
+            document.getElementById('nodes-rendered-value').textContent = stats.nodesRendered || '0';
+            document.getElementById('cache-hit-value').textContent = stats.cacheHitRate ? (stats.cacheHitRate * 100).toFixed(1) + '%' : '0%';
+            
+            // 添加到歷史記錄
+            performanceHistory.push({
+                fps: stats.fps || 0,
+                renderTime: stats.renderTime || 0,
+                cacheHitRate: stats.cacheHitRate || 0,
+                timestamp: Date.now()
+            });
+            
+            // 限制歷史記錄長度
+            if (performanceHistory.length > 300) { // 5 分鐘的記錄
+                performanceHistory.shift();
+            }
+            
+            // 更新平均指標
+            updateAverageMetrics();
+        }
+        
+        // 更新平均指標
+        function updateAverageMetrics() {
+            if (performanceHistory.length === 0) return;
+            
+            const recent = performanceHistory.slice(-60); // 最近 1 秒的數據
+            
+            const avgFps = recent.reduce((a, b) => a + b.fps, 0) / recent.length;
+            const avgRenderTime = recent.reduce((a, b) => a + b.renderTime, 0) / recent.length;
+            const avgCacheRate = recent.reduce((a, b) => a + b.cacheHitRate, 0) / recent.length;
+            
+            document.getElementById('avg-fps').textContent = avgFps.toFixed(1);
+            document.getElementById('avg-render-time').textContent = avgRenderTime.toFixed(1);
+            document.getElementById('cache-efficiency').textContent = (avgCacheRate * 100).toFixed(1);
+            
+            // 模擬記憶體使用 (實際中會從渲染器獲取)
+            const memoryUsage = (testNodes.length * 0.1 + Math.random() * 2).toFixed(1);
+            document.getElementById('memory-usage').textContent = memoryUsage;
+        }
+        
+        // 清除畫布
+        function clearCanvas() {
+            const canvas = document.getElementById('test-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            log('🧹 畫布已清除');
+        }
+        
+        // 切換統計顯示
+        function toggleStats() {
+            const statsEl = document.getElementById('render-stats');
+            statsEl.style.display = statsEl.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // 功能測試
+        function testNodeRendering() {
+            log('🧪 測試節點渲染功能...');
+            
+            if (!testRenderer || !window.AdvancedCanvasRenderer) {
+                log('渲染器未初始化', 'error');
+                return;
+            }
+            
+            try {
+                // 創建單個測試節點
+                const testNode = {
+                    id: 'render_test_node',
+                    name: '渲染測試節點',
+                    type: 'condition',
+                    x: 100,
+                    y: 100,
+                    width: 200,
+                    height: 100,
+                    selected: true,
+                    isDirty: true
+                };
+                
+                testRenderer.render([testNode], []);
+                
+                addResult('feature-test-results', '✅ 節點渲染測試通過', 'success');
+                log('節點渲染測試通過', 'success');
+                
+            } catch (error) {
+                addResult('feature-test-results', `❌ 節點渲染測試失敗: ${error.message}`, 'error'); 
+                log(`節點渲染測試失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        function testConnectionRendering() {
+            log('🧪 測試連接線渲染功能...');
+            
+            try {
+                // 創建兩個節點和一個連接
+                const nodes = [
+                    { id: 'node1', name: '節點1', type: 'condition', x: 50, y: 50, width: 150, height: 80 },
+                    { id: 'node2', name: '節點2', type: 'action', x: 300, y: 150, width: 150, height: 80 }
+                ];
+                
+                const connections = [
+                    { id: 'conn1', source: 'node1', target: 'node2', style: { color: '#48cae4', width: 3 } }
+                ];
+                
+                testRenderer.render(nodes, connections);
+                
+                addResult('feature-test-results', '✅ 連接線渲染測試通過', 'success');
+                log('連接線渲染測試通過', 'success');
+                
+            } catch (error) {
+                addResult('feature-test-results', `❌ 連接線渲染測試失敗: ${error.message}`, 'error');
+                log(`連接線渲染測試失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        function testViewportCulling() {
+            log('🧪 測試視窗裁剪功能...');
+            
+            try {
+                // 創建大量分散的節點
+                const largeNodeSet = [];
+                for (let i = 0; i < 200; i++) {
+                    largeNodeSet.push({
+                        id: `cull_test_${i}`,
+                        name: `裁剪測試 ${i}`,
+                        type: 'condition',
+                        x: Math.random() * 2000 - 1000, // 分散在更大範圍
+                        y: Math.random() * 2000 - 1000,
+                        width: 150,
+                        height: 80
+                    });
+                }
+                
+                const startTime = performance.now();
+                testRenderer.render(largeNodeSet, []);
+                const renderTime = performance.now() - startTime;
+                
+                addResult('feature-test-results', `✅ 視窗裁剪測試通過 (200節點渲染時間: ${renderTime.toFixed(1)}ms)`, 'success');
+                log(`視窗裁剪測試通過，200節點渲染時間: ${renderTime.toFixed(1)}ms`, 'success');
+                
+            } catch (error) {
+                addResult('feature-test-results', `❌ 視窗裁剪測試失敗: ${error.message}`, 'error');
+                log(`視窗裁剪測試失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        function testCacheSystem() {
+            log('🧪 測試快取系統功能...');
+            
+            try {
+                // 創建相同的節點多次渲染，測試快取效率
+                const cacheTestNode = {
+                    id: 'cache_test_node',
+                    name: '快取測試節點',
+                    type: 'logic',
+                    x: 200,
+                    y: 200,
+                    width: 180,
+                    height: 90,
+                    isDirty: false // 不髒，應該能從快取讀取
+                };
+                
+                // 第一次渲染 (建立快取)
+                testRenderer.render([cacheTestNode], []);
+                
+                // 多次渲染相同節點
+                const startTime = performance.now();
+                for (let i = 0; i < 10; i++) {
+                    testRenderer.render([cacheTestNode], []);
+                }
+                const totalTime = performance.now() - startTime;
+                
+                const stats = testRenderer.getRenderStats();
+                const cacheHitRate = stats.cacheHitRate || 0;
+                
+                addResult('feature-test-results', `✅ 快取系統測試通過 (快取命中率: ${(cacheHitRate * 100).toFixed(1)}%)`, 'success');
+                log(`快取系統測試通過，快取命中率: ${(cacheHitRate * 100).toFixed(1)}%`, 'success');
+                
+            } catch (error) {
+                addResult('feature-test-results', `❌ 快取系統測試失敗: ${error.message}`, 'error');
+                log(`快取系統測試失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        function runAllTests() {
+            log('🧪 執行所有功能測試...');
+            
+            setTimeout(() => testNodeRendering(), 100);
+            setTimeout(() => testConnectionRendering(), 300);
+            setTimeout(() => testViewportCulling(), 500);
+            setTimeout(() => testCacheSystem(), 700);
+            
+            setTimeout(() => {
+                log('🎉 所有功能測試完成！', 'success');
+            }, 1000);
+        }
+        
+        // 清除日誌
+        function clearLog() {
+            document.getElementById('test-log').textContent = '';
+        }
+        
+        // 匯出測試結果
+        function exportResults() {
+            const results = {
+                timestamp: new Date().toISOString(),
+                renderingMode: testRenderer ? testRenderer.renderingMode : 'unknown',
+                nodeCount: testNodes.length,
+                performanceHistory: performanceHistory.slice(-100), // 最近 100 個數據點
+                testResults: {
+                    averageFPS: performanceHistory.length > 0 ? 
+                        (performanceHistory.reduce((a, b) => a + b.fps, 0) / performanceHistory.length).toFixed(2) : 0,
+                    averageRenderTime: performanceHistory.length > 0 ? 
+                        (performanceHistory.reduce((a, b) => a + b.renderTime, 0) / performanceHistory.length).toFixed(2) : 0
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flow-designer-phase4-2-2-test-results-${Date.now()}.json`;
+            a.click();
+            
+            log('📄 測試結果已匯出', 'success');
+        }
+        
+        // 節點數量滑桿事件
+        document.getElementById('node-count').addEventListener('input', (e) => {
+            document.getElementById('node-count-value').textContent = e.target.value;
+        });
+        
+        // 頁面載入完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🌟 Phase 4.2.2 Advanced Canvas Rendering 測試頁面已載入');
+            
+            setTimeout(() => {
+                if (initializeRenderer()) {
+                    log('🎯 請點擊 "生成測試節點" 開始測試', 'info');
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

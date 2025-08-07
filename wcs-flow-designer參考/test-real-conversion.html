@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>實際JSON轉換測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .json-input, .json-output { 
+            background: #2d2d2d; 
+            color: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .json-input { border: 2px solid #dc3545; }
+        .json-output { border: 2px solid #28a745; }
+        button { 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #0056b3; }
+        .section { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+        h2 { color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🔄 實際JSON轉換測試</h1>
+    
+    <div class="section">
+        <h2>📝 輸入格式（現有保存格式）</h2>
+        <div class="json-input" id="inputJson">
+{
+  "id": "wcs-flow@0.1.0",
+  "nodes": [
+    {
+      "id": "room-has-carrier_1",
+      "label": "房間內是否有Carrier",
+      "data": {
+        "name": "房間內是否有Carrier",
+        "type": "room-has-carrier",
+        "category": "condition",
+        "description": "",
+        "roomNumber": "01"
+      },
+      "position": [0, 0]
+    },
+    {
+      "id": "create-task_2",
+      "label": "創建任務",
+      "data": {
+        "name": "創建任務",
+        "type": "create-task",
+        "category": "action",
+        "description": "",
+        "capacity": 1000,
+        "processingTime": 10,
+        "efficiency": 95,
+        "equipmentId": "WCS_CREATE-TASK_2",
+        "plcAddress": "192.168.1.100",
+        "zone": "",
+        "priority": "normal",
+        "missionType": "RACK_MOVE"
+      },
+      "position": [0, 0]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0ca26d1a8b64cdd",
+      "source": "room-has-carrier_1",
+      "target": "create-task_2",
+      "sourceOutput": "result",
+      "targetInput": "trigger"
+    }
+  ]
+}
+        </div>
+    </div>
+    
+    <button onclick="convertToPythonFormat()">🔄 轉換為Python可執行格式</button>
+    <button onclick="convertWithRoomLoop()">🔄 轉換為房間迴圈格式</button>
+    <button onclick="showAnalysis()">🔍 顯示分析過程</button>
+    
+    <div class="section">
+        <h2>🐍 輸出格式（Python可執行）</h2>
+        <div class="json-output" id="outputJson">點擊上方按鈕開始轉換...</div>
+    </div>
+    
+    <div class="section" id="analysisSection" style="display: none;">
+        <h2>🔍 轉換分析過程</h2>
+        <div id="analysisOutput"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            console.log(message);
+            const analysis = document.getElementById('analysisOutput');
+            if (analysis) {
+                analysis.innerHTML += '<div>' + message + '</div>';
+            }
+        }
+
+        function showAnalysis() {
+            document.getElementById('analysisSection').style.display = 'block';
+            document.getElementById('analysisOutput').innerHTML = '';
+            
+            const inputData = JSON.parse(document.getElementById('inputJson').textContent);
+            
+            log('=== 開始分析輸入JSON ===');
+            log('節點數量: ' + inputData.nodes.length);
+            log('連接數量: ' + inputData.connections.length);
+            
+            // 分析節點
+            log('\\n=== 節點分析 ===');
+            inputData.nodes.forEach(node => {
+                log(`節點 ${node.id}:`);
+                log(`  類型: ${node.data.category} (${node.data.type})`);
+                log(`  名稱: ${node.data.name}`);
+                if (node.data.roomNumber) log(`  房間編號: ${node.data.roomNumber}`);
+                if (node.data.missionType) log(`  任務類型: ${node.data.missionType}`);
+            });
+            
+            // 分析連接
+            log('\\n=== 連接分析 ===');
+            inputData.connections.forEach(conn => {
+                log(`連接 ${conn.id}: ${conn.source} → ${conn.target}`);
+            });
+            
+            // 分析執行流程
+            log('\\n=== 執行流程分析 ===');
+            const conditionNodes = inputData.nodes.filter(n => n.data.category === 'condition');
+            const actionNodes = inputData.nodes.filter(n => n.data.category === 'action');
+            
+            log(`條件節點: ${conditionNodes.length} 個`);
+            log(`動作節點: ${actionNodes.length} 個`);
+            
+            // 檢查房間迴圈需求
+            const hasRoomLoop = conditionNodes.some(n => n.data.roomNumber === 'FOR_LOOP');
+            log(`\\n房間迴圈需求: ${hasRoomLoop ? '是' : '否'}`);
+            
+            log('\\n=== 分析完成 ===');
+        }
+
+        function convertToPythonFormat() {
+            try {
+                const inputData = JSON.parse(document.getElementById('inputJson').textContent);
+                
+                // 模擬新的轉換邏輯
+                const workflow = {
+                    workflow: {
+                        name: "WCS Flow Export",
+                        description: "Generated executable workflow from WCS Flow Designer", 
+                        version: "1.0",
+                        execution_mode: "single", // 因為房間編號是具體的 "01"
+                        variables: {
+                            // 不需要房間變數，因為是特定房間
+                        },
+                        steps: []
+                    }
+                };
+                
+                // 轉換條件節點
+                const conditionNode = inputData.nodes.find(n => n.data.category === 'condition');
+                if (conditionNode) {
+                    workflow.workflow.steps.push({
+                        type: "condition",
+                        id: conditionNode.id,
+                        function: "room_has_carrier",
+                        description: conditionNode.data.name,
+                        parameters: {
+                            room_id: conditionNode.data.roomNumber, // "01"
+                            check_exists: true
+                        },
+                        on_true: "create-task_2",
+                        on_false: "end_step"
+                    });
+                }
+                
+                // 轉換動作節點
+                const actionNode = inputData.nodes.find(n => n.data.category === 'action');
+                if (actionNode) {
+                    workflow.workflow.steps.push({
+                        type: "create_task",
+                        id: actionNode.id,
+                        description: actionNode.data.name,
+                        api: "submit_mission",
+                        parameters: {
+                            task_type: "rack_transport",
+                            model: "KUKA400i",
+                            mission_type: actionNode.data.missionType || "RACK_MOVE",
+                            path: {
+                                type: "transport",
+                                source: "room_01_exit", // 基於房間編號生成
+                                destination: "manual_collection_area"
+                            }
+                        }
+                    });
+                }
+                
+                document.getElementById('outputJson').textContent = JSON.stringify(workflow, null, 2);
+                
+            } catch (error) {
+                document.getElementById('outputJson').textContent = '轉換錯誤: ' + error.message;
+            }
+        }
+        
+        function convertWithRoomLoop() {
+            try {
+                const inputData = JSON.parse(document.getElementById('inputJson').textContent);
+                
+                // 模擬房間迴圈轉換
+                const workflow = {
+                    workflow: {
+                        name: "WCS Flow Export (Room Loop)",
+                        description: "Generated executable workflow with room iteration",
+                        version: "1.0", 
+                        execution_mode: "foreach_room",
+                        variables: {
+                            rooms: ["01", "02", "03", "04", "05"],
+                            current_room: null
+                        },
+                        steps: [
+                            {
+                                type: "foreach",
+                                id: "room_iteration",
+                                iterator: "rooms",
+                                variable: "current_room",
+                                steps: [
+                                    {
+                                        type: "condition",
+                                        id: "room-has-carrier_check",
+                                        function: "room_has_carrier",
+                                        description: "房間內是否有Carrier",
+                                        parameters: {
+                                            room_id: "${current_room}", // 動態變數
+                                            check_exists: true
+                                        },
+                                        on_true: "create_transport_task",
+                                        on_false: "end_room_iteration"
+                                    },
+                                    {
+                                        type: "create_task", 
+                                        id: "create_transport_task",
+                                        description: "創建搬運任務",
+                                        api: "submit_mission",
+                                        parameters: {
+                                            task_type: "rack_transport",
+                                            model: "KUKA400i", 
+                                            mission_type: "RACK_MOVE",
+                                            path: {
+                                                type: "transport", 
+                                                source: "room_${current_room}_exit", // 動態路徑
+                                                destination: "manual_collection_area"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                };
+                
+                document.getElementById('outputJson').textContent = JSON.stringify(workflow, null, 2);
+                
+            } catch (error) {
+                document.getElementById('outputJson').textContent = '轉換錯誤: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

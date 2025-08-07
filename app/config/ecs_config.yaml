@@ -35,20 +35,21 @@ unloader02:
 
 
 agvc:
-  plc_service:
+  plc_service: #定時讀回DM範圍
     ros__parameters:
-      plc_ip: "192.168.2.100"
+      plc_ip: "192.168.10.4"
       read_ranges:
         - "DM,7600,20"
         - "DM,11000,20"
 
-  ecs_core:
+  ecs_core: 
     ros__parameters:
       read_ranges:
         - "DM,7600,200"
         - "DM,11000,20"
+  #門控設定PLC的MR DM 位置在door_config.yaml中設定
 
-  door_controller_node_mqtt:
+  door_controller_node_mqtt: #MQTT版的門控已不再使用 ,以下設定可略過
     ros__parameters:
       broker_host: "192.168.11.206"
       broker_port: 2883

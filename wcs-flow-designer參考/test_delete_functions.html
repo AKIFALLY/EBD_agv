@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>刪除功能測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-info { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .test-steps { background: #e7f3ff; padding: 15px; border-left: 4px solid #007bff; }
+        .key-combo { background: #f8f9fa; padding: 2px 6px; border: 1px solid #dee2e6; border-radius: 3px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>WCS Flow Designer - 刪除功能測試</h1>
+    
+    <div class="test-info error">
+        <h3>🐛 問題報告：</h3>
+        <p>用戶反映現在的連接線和節點刪除都不能使用</p>
+    </div>
+    
+    <div class="test-info success">
+        <h3>✅ 修復內容：</h3>
+        <ul>
+            <li><strong>連接線刪除</strong> - 點擊選擇連接線 → 按 Delete/Backspace 鍵或點擊 ✕ 按鈕</li>
+            <li><strong>節點刪除</strong> - 點擊選擇節點 → 按 Delete/Backspace 鍵</li>
+            <li><strong>級聯刪除</strong> - 刪除節點時會自動刪除相關的所有連接線</li>
+            <li><strong>視覺回饋</strong> - 選中的節點顯示藍色邊框，選中的連接線顯示藍色加粗</li>
+        </ul>
+    </div>
+    
+    <div class="test-steps">
+        <h3>🧪 詳細測試步驟：</h3>
+        
+        <h4>📍 連接線刪除測試：</h4>
+        <ol>
+            <li><strong>建立測試環境</strong>
+                <br>• 開啟 WCS Flow Designer
+                <br>• 拖拽 2-3 個節點到畫布
+                <br>• 建立幾條連接線
+            </li>
+            <li><strong>測試點擊選擇</strong>
+                <br>• 點擊一條連接線
+                <br>• 確認連接線變成藍色並加粗（選中狀態）
+                <br>• 確認連接線中間出現紅色 ✕ 刪除按鈕
+            </li>
+            <li><strong>測試按鈕刪除</strong>
+                <br>• 點擊紅色 ✕ 按鈕
+                <br>• 確認連接線被刪除
+            </li>
+            <li><strong>測試鍵盤刪除</strong>
+                <br>• 點擊選擇另一條連接線
+                <br>• 按 <span class="key-combo">Delete</span> 鍵或 <span class="key-combo">Backspace</span> 鍵
+                <br>• 確認連接線被刪除
+            </li>
+        </ol>
+        
+        <h4>🟦 節點刪除測試：</h4>
+        <ol>
+            <li><strong>測試節點選擇</strong>
+                <br>• 點擊一個節點
+                <br>• 確認節點邊框變成藍色（選中狀態）
+                <br>• 確認屬性面板打開
+            </li>
+            <li><strong>測試節點刪除</strong>
+                <br>• 保持節點選中狀態
+                <br>• 按 <span class="key-combo">Delete</span> 鍵或 <span class="key-combo">Backspace</span> 鍵
+                <br>• 確認節點被刪除
+                <br>• 確認相關的連接線也被自動刪除
+                <br>• 確認屬性面板關閉
+            </li>
+            <li><strong>測試級聯刪除</strong>
+                <br>• 建立一個有多條連接線的節點
+                <br>• 刪除該節點
+                <br>• 確認所有相關連接線都被自動刪除
+            </li>
+        </ol>
+        
+        <h4>🔄 混合測試：</h4>
+        <ol>
+            <li>測試選擇切換：節點選中 → 點擊連接線 → 確認選擇切換</li>
+            <li>測試空白點擊：點擊空白處 → 確認取消所有選擇</li>
+            <li>測試 F12 控制台：確認沒有 JavaScript 錯誤</li>
+        </ol>
+    </div>
+    
+    <div class="test-info warning">
+        <h3>⚠️ 重要測試點：</h3>
+        <ul>
+            <li><strong>選擇狀態</strong>：確認選中的元素有正確的視覺回饋</li>
+            <li><strong>刪除優先級</strong>：如果同時有選中的連接線和節點，應該優先刪除連接線</li>
+            <li><strong>級聯效果</strong>：刪除節點時必須同時刪除相關連接線</li>
+            <li><strong>狀態清理</strong>：刪除後應該清理選擇狀態和屬性面板</li>
+            <li><strong>控制台檢查</strong>：不應該有 JavaScript 錯誤</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <h3>🔧 技術實現詳情：</h3>
+        <ul>
+            <li><code>deleteConnection()</code> - 處理連接線刪除和相關清理</li>
+            <li><code>deleteNode()</code> - 新增的節點刪除方法，包含級聯刪除</li>
+            <li><strong>鍵盤事件</strong> - Delete/Backspace 鍵同時支援節點和連接線刪除</li>
+            <li><strong>視覺回饋</strong> - 節點藍色邊框，連接線藍色加粗</li>
+            <li><strong>事件優先級</strong> - 連接線刪除優先於節點刪除</li>
+        </ul>
+    </div>
+    
+    <button onclick="window.open('index.html', '_blank')">🚀 開啟 WCS Flow Designer</button>
+    
+    <div class="test-info">
+        <h3>📝 測試清單：</h3>
+        <ul>
+            <li>[ ] 連接線點擊選擇正常（藍色加粗）</li>
+            <li>[ ] 連接線 ✕ 按鈕刪除正常</li>
+            <li>[ ] 連接線鍵盤刪除正常（Delete/Backspace）</li>
+            <li>[ ] 節點點擊選擇正常（藍色邊框）</li>
+            <li>[ ] 節點鍵盤刪除正常（Delete/Backspace）</li>
+            <li>[ ] 節點刪除時連接線級聯刪除正常</li>
+            <li>[ ] 刪除後狀態清理正常（屬性面板關閉）</li>
+            <li>[ ] 選擇狀態切換正常</li>
+            <li>[ ] 空白點擊取消選擇正常</li>
+            <li>[ ] F12 控制台無錯誤</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <h3>💡 使用說明：</h3>
+        <p><strong>刪除操作流程：</strong></p>
+        <ol>
+            <li>點擊要刪除的元素（節點或連接線）</li>
+            <li>確認元素被選中（顯示選中狀態）</li>
+            <li>按 Delete 或 Backspace 鍵進行刪除</li>
+            <li>或者對於連接線，點擊出現的紅色 ✕ 按鈕</li>
+        </ol>
+    </div>
+</body>
+</html>

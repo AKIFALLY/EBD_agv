@@ -9,7 +9,7 @@ class AGVCommandProxy:
         self.node = node
         self.namespace = node.get_namespace()
 
-        config_path = "/app/agv_cmd_service_ws/src/agv_cmd_service/config/agv_cmd_service.yaml"
+        config_path = "/app/config/agv_cmd_service.yaml"
         self.address_map = {}
 
         if os.path.exists(config_path):
@@ -28,14 +28,14 @@ class AGVCommandProxy:
 
     def default_map(self):
         return dict([
-            ('forward', '3708'),
-            ('backward', '3709'),
-            ('rotate_left', '3712'),
-            ('rotate_right', '3713'),
-            ('shift_left', '3801'),
-            ('shift_right', '3802'),
-            ('break', '3714'),
-            ('enable', '3715'),
+            ('forward', '3600'),
+            ('backward', '3601'),
+            ('rotate_left', '3602'),
+            ('rotate_right', '3603'),
+            ('shift_left', '3604'),
+            ('shift_right', '3605'),
+            ('break', '3606'),
+            ('enable', '3607'),
             ('auto1', '4001'),
             ('auto2', '0000'),
             ('stop', '3701'),

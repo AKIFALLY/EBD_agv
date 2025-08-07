@@ -1,0 +1,273 @@
+# 智能任務分配流程
+name: "智能任務分配流程"
+description: "根據多維度評分智能分配任務給最適合的 AGV"
+version: "1.0"
+priority: 85
+work_id: "400001"
+enabled: true
+
+# 變數定義
+variables:
+  task_queue_limit: 10           # 任務隊列上限
+  agv_utilization_target: 0.8    # AGV 使用率目標
+  distance_weight: 0.3           # 距離權重
+  battery_weight: 0.2            # 電量權重
+  load_weight: 0.3               # 負載權重
+  skill_weight: 0.2             # 技能匹配權重
+
+# 數據流腳本
+script:
+  # 步驟1: 獲取待分配任務
+  - step: "get_pending_tasks"
+    type: "condition_call"
+    node_type: "condition"
+    function: "check_pending_tasks"
+    parameters:
+      status: "pending"
+      limit: ${task_queue_limit}
+      order_by: "priority"
+    store_result: "pending_tasks"
+    description: "獲取待分配的任務列表"
+
+  # 步驟2: 獲取可用 AGV 列表
+  - step: "get_available_agvs"
+    type: "condition_call"
+    node_type: "condition"
+    function: "check_agv_availability"
+    parameters:
+      status: ["idle", "working"]
+      min_battery: 15
+      exclude_maintenance: true
+    store_result: "available_agvs"
+    condition: "${pending_tasks.length} > 0"
+    description: "獲取可用的 AGV 列表"
+
+  # 步驟3: 分析任務需求
+  - step: "analyze_task_requirements"
+    type: "logic_call"
+    node_type: "logic"
+    function: "extract_task_requirements"
+    parameters:
+      task: ${pending_tasks[0]}
+      analyze_path: true
+      analyze_load: true
+      analyze_skills: true
+    store_result: "task_requirements"
+    condition: "${available_agvs.length} > 0"
+    description: "分析任務的具體需求"
+
+  # 步驟4: 計算 AGV 評分矩陣
+  - step: "calculate_agv_scores"
+    type: "logic_call"
+    node_type: "logic"
+    function: "calculate_multi_factor_scores"
+    parameters:
+      agvs: ${available_agvs}
+      task_requirements: ${task_requirements}
+      scoring_factors:
+        - factor: "distance"
+          weight: ${distance_weight}
+          calculation: "inverse_linear"
+        - factor: "battery"
+          weight: ${battery_weight}
+          calculation: "linear"
+        - factor: "current_load"
+          weight: ${load_weight}
+          calculation: "inverse_exponential"
+        - factor: "skill_match"
+          weight: ${skill_weight}
+          calculation: "binary"
+    store_result: "agv_scores"
+    condition: "${task_requirements} != null"
+    description: "計算每個 AGV 的綜合評分"
+
+  # 步驟5: 選擇最佳 AGV
+  - step: "select_best_agv"
+    type: "logic_call"
+    node_type: "logic"
+    function: "select_by_highest_score"
+    parameters:
+      scored_items: ${agv_scores}
+      min_score: 0.6
+      tie_breaker: "lowest_utilization"
+    store_result: "selected_agv"
+    condition: "${agv_scores.length} > 0"
+    description: "選擇評分最高的 AGV"
+
+  # 步驟6: 驗證 AGV 能力
+  - step: "validate_agv_capability"
+    type: "condition_call"
+    node_type: "condition"
+    function: "check_agv_task_compatibility"
+    parameters:
+      agv_id: ${selected_agv.id}
+      task_type: ${task_requirements.type}
+      required_payload: ${task_requirements.payload}
+      required_range: ${task_requirements.estimated_distance}
+    store_result: "capability_check"
+    condition: "${selected_agv} != null"
+    description: "驗證 AGV 是否真的能執行此任務"
+
+  # 步驟7: 生成任務執行計劃
+  - step: "generate_execution_plan"
+    type: "logic_call"
+    node_type: "logic"
+    function: "create_task_execution_plan"
+    parameters:
+      agv: ${selected_agv}
+      task: ${pending_tasks[0]}
+      requirements: ${task_requirements}
+      optimization_mode: "balanced"
+    store_result: "execution_plan"
+    condition: "${capability_check.compatible} == true"
+    description: "生成詳細的任務執行計劃"
+
+  # 步驟8: 預測任務完成時間
+  - step: "predict_completion_time"
+    type: "logic_call"
+    node_type: "logic"
+    function: "estimate_task_duration"
+    parameters:
+      execution_plan: ${execution_plan}
+      agv_speed: ${selected_agv.average_speed}
+      include_loading_time: true
+      include_traffic_factor: true
+      traffic_congestion_level: ${execution_plan.route_congestion}
+    store_result: "time_estimation"
+    condition: "${execution_plan} != null"
+    description: "預測任務完成時間"
+
+  # 步驟9: 分配任務給 AGV
+  - step: "assign_task_to_agv"
+    type: "action_call"
+    node_type: "action"
+    function: "assign_task"
+    parameters:
+      task_id: ${pending_tasks[0].id}
+      agv_id: ${selected_agv.id}
+      execution_plan: ${execution_plan}
+      estimated_duration: ${time_estimation.total_minutes}
+      assignment_reason: ${agv_scores[0].score_breakdown}
+    store_result: "assignment_result"
+    condition: "${time_estimation} != null"
+    description: "正式分配任務給選定的 AGV"
+
+  # 步驟10: 更新 AGV 狀態和統計
+  - step: "update_agv_statistics"
+    type: "action_call"
+    node_type: "action"
+    function: "update_agv_utilization"
+    parameters:
+      agv_id: ${selected_agv.id}
+      new_task_id: ${assignment_result.task_id}
+      estimated_duration: ${time_estimation.total_minutes}
+      update_fields:
+        - "utilization_rate"
+        - "total_tasks_today"
+        - "estimated_next_available"
+    store_result: "statistics_update"
+    condition: "${assignment_result.success} == true"
+    description: "更新 AGV 使用統計資料"
+
+  # 步驟11: 優化剩餘任務隊列
+  - step: "optimize_task_queue"
+    type: "logic_call"
+    node_type: "logic"
+    function: "reorder_task_queue"
+    parameters:
+      remaining_tasks: ${pending_tasks.slice(1)}
+      optimization_criteria:
+        - "urgency"
+        - "resource_availability"
+        - "path_efficiency"
+    store_result: "optimized_queue"
+    condition: "${pending_tasks.length} > 1"
+    description: "重新優化剩餘任務的順序"
+
+  # 步驟12: 發布任務分配事件
+  - step: "publish_assignment_event"
+    type: "action_call"
+    node_type: "action"
+    function: "publish_event"
+    parameters:
+      event_type: "task_assigned"
+      event_data:
+        task_id: ${pending_tasks[0].id}
+        agv_id: ${selected_agv.id}
+        score: ${agv_scores[0].total_score}
+        estimated_completion: ${time_estimation.estimated_completion_time}
+        assignment_timestamp: ${Date.now()}
+      publish_to:
+        - "monitoring_system"
+        - "agv_fleet_manager"
+        - "task_scheduler"
+    condition: "${assignment_result.success} == true"
+    description: "發布任務分配事件通知"
+
+# 適用範圍
+scope:
+  applicable_rooms: []  # 適用於所有房間
+  applicable_locations: []  # 適用於所有位置
+
+# 調試配置
+debug:
+  enabled: true
+  log_conditions: true
+  log_variables: true
+  dry_run: false
+
+# Flow Designer 視覺化數據
+flow_designer_data:
+  version: "1.0"
+  nodes:
+    - id: "get_pending_tasks"
+      type: "condition"
+      data:
+        name: "獲取待分配任務"
+        function: "check_pending_tasks"
+        icon: "📋"
+        category: "data_source"
+        outputs:
+          - name: "pending_tasks"
+            type: "array"
+            schema: "Task[]"
+      position: {x: 100, y: 100}
+
+    - id: "calculate_agv_scores"
+      type: "logic"
+      data:
+        name: "計算AGV評分"
+        function: "calculate_multi_factor_scores"
+        icon: "🧮"
+        category: "calculation"
+        inputs:
+          - name: "agvs"
+            type: "array"
+          - name: "task_requirements"
+            type: "object"
+          - name: "scoring_factors"
+            type: "array"
+        outputs:
+          - name: "agv_scores"
+            type: "array"
+            schema: "ScoredAGV[]"
+      position: {x: 400, y: 200}
+
+    - id: "assign_task_to_agv"
+      type: "action"
+      data:
+        name: "分配任務"
+        function: "assign_task"
+        icon: "✅"
+        category: "task_management"
+        inputs:
+          - name: "task_id"
+            type: "string"
+          - name: "agv_id"
+            type: "string"
+          - name: "execution_plan"
+            type: "object"
+        outputs:
+          - name: "assignment_result"
+            type: "object"
+      position: {x: 700, y: 300}

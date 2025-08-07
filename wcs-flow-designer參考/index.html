@@ -1,0 +1,3342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WCS Flow Designer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #2d2d2d;
+            border-right: 1px solid #404040;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #404040;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-subtitle {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .node-palette {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 120px);
+        }
+
+        .node-palette::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .node-palette::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 4px;
+        }
+
+        .node-palette::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 4px;
+        }
+
+        .node-palette::-webkit-scrollbar-thumb:hover {
+            background: #505050;
+        }
+
+        .palette-section {
+            margin-bottom: 20px;
+        }
+
+        .palette-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ccc;
+        }
+
+        .node-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 5px;
+            background: #404040;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .node-item:hover {
+            background: #505050;
+        }
+
+        .node-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+
+        .input-node { background: #4CAF50; }
+        .process-node { background: #2196F3; }
+        .control-node { background: #FF9800; }
+        .output-node { background: #F44336; }
+        .storage-node { background: #9C27B0; }
+        .condition-node { background: #00BCD4; }
+        .logic-node { background: #607D8B; }
+        .action-node { background: #795548; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            height: 50px;
+            background: #2d2d2d;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 10px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .toolbar-button {
+            padding: 8px 16px;
+            background: #404040;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .toolbar-button:hover {
+            background: #505050;
+        }
+
+        .toolbar-button.primary {
+            background: #2196F3;
+        }
+
+        .toolbar-button.primary:hover {
+            background: #1976D2;
+        }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+            background: #1e1e1e;
+            z-index: 1;
+        }
+
+        #rete {
+            width: 100%;
+            height: 100%;
+            overflow: visible !important;
+        }
+
+        .properties-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: calc(100vh - 60px);
+            background: #2d2d2d;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 20px;
+            display: none;
+            overflow-y: auto;
+        }
+
+        .properties-panel.active {
+            display: block;
+        }
+
+        .properties-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #404040;
+        }
+
+        .property-section {
+            margin-bottom: 20px;
+            border: 1px solid #404040;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .property-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #404040;
+        }
+
+        .property-group {
+            margin-bottom: 12px;
+        }
+
+        .property-label {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .property-input {
+            width: 100%;
+            padding: 8px;
+            background: #404040;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .property-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .property-checkbox {
+            width: auto !important;
+            margin: 0;
+            accent-color: #2196F3;
+        }
+
+        textarea.property-input {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        select.property-input {
+            cursor: pointer;
+        }
+
+        select.property-input option {
+            background: #404040;
+            color: white;
+        }
+
+        .status-bar {
+            height: 30px;
+            background: #2d2d2d;
+            border-top: 1px solid #404040;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .status-toggle {
+            background: #404040;
+            color: white;
+            border: 1px solid #666;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .status-toggle:hover {
+            background: #555;
+        }
+
+        .variables-panel {
+            position: absolute;
+            bottom: 40px;
+            left: 20px;
+            width: 350px;
+            max-height: 400px;
+            background: #2d2d2d;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .variables-header {
+            background: #3d3d3d;
+            padding: 12px 16px;
+            border-bottom: 1px solid #404040;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .variables-title {
+            font-weight: bold;
+            color: white;
+        }
+
+        .variables-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .variables-close:hover {
+            color: white;
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .variables-content {
+            padding: 16px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .variable-templates {
+            margin-bottom: 16px;
+        }
+
+        .custom-variables {
+            margin-bottom: 16px;
+        }
+
+        .variable-item {
+            background: #3d3d3d;
+            border: 1px solid #404040;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .variable-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .variable-name {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .variable-delete {
+            background: #F44336;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .variable-delete:hover {
+            background: #d32f2f;
+        }
+
+        .btn-add-variable {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .btn-add-variable:hover {
+            background: #45a049;
+        }
+
+        .rete-node {
+            background: #2d2d2d !important;
+            border: 2px solid #404040 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+        }
+
+        .rete-node.selected {
+            border-color: #2196F3 !important;
+        }
+
+        .rete-socket {
+            background: #666 !important;
+            border: 2px solid #888 !important;
+        }
+
+        .rete-socket.input {
+            background: #4CAF50 !important;
+        }
+
+        .rete-socket.output {
+            background: #F44336 !important;
+        }
+
+        .rete-connection .connection {
+            stroke: #666 !important;
+            stroke-width: 2px !important;
+        }
+
+        .rete-connection.selected .connection {
+            stroke: #2196F3 !important;
+        }
+        
+        /* 變數面板顯示/隱藏 */
+        .variables-section {
+            transition: all 0.3s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .variables-section.active {
+            max-height: 800px;
+        }
+        
+        .variables-toggle {
+            font-size: 12px !important;
+        }
+    </style>
+    
+    <script>
+        // 全域函數：切換變數面板
+        function toggleVariablesPanel() {
+            const panel = document.getElementById('variablesPanel');
+            if (panel.style.display === 'none' || panel.style.display === '') {
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+        
+        // 全域函數：新增自訂變數
+        function addCustomVariable() {
+            const name = prompt('輸入變數名稱:');
+            if (!name) return;
+            
+            const type = prompt('輸入變數類型 (str/int/float/bool/list):') || 'str';
+            const value = prompt('輸入變數值:') || '';
+            
+            // 創建變數對象
+            const variable = {
+                name: name,
+                type: type,
+                value: value,
+                description: '自定義變數'
+            };
+            
+            // 使用WCS Designer實例來添加變數
+            if (window.wcsDesigner) {
+                window.wcsDesigner.addVariableFromTemplate(variable);
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">WCS 流程設計器</div>
+                <div class="sidebar-subtitle">倉庫控制系統</div>
+                <button class="variables-toggle" onclick="toggleVariablesPanel()" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">🔧 變數面板</button>
+            </div>
+            
+            <!-- 變數宣告區域 -->
+            <div class="variables-section" id="variablesSection" style="display: none; padding: 15px; border-bottom: 1px solid #404040;">
+                <div class="variable-group" style="margin-bottom: 15px;">
+                    <div class="variable-group-title" style="color: #3498db; font-weight: bold; margin-bottom: 8px; font-size: 13px;">🏠 房間變數</div>
+                    <div class="variable-item" style="margin-bottom: 8px; padding: 8px; background: #3a3a3a; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span class="var-name" style="font-weight: bold; color: white; font-size: 12px;">room_list</span>
+                            <span class="var-type" style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Array</span>
+                        </div>
+                        <input type="text" class="var-input" value='["01","02","03","04","05"]' readonly style="width: 100%; padding: 4px; background: #2c2c2c; border: 1px solid #555; color: white; border-radius: 3px; font-size: 11px;">
+                    </div>
+                    <div class="variable-item" style="margin-bottom: 8px; padding: 8px; background: #3a3a3a; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span class="var-name" style="font-weight: bold; color: white; font-size: 12px;">current_room</span>
+                            <span class="var-type" style="background: #f39c12; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Dynamic</span>
+                        </div>
+                        <input type="text" class="var-input" value="${loop_variable}" readonly style="width: 100%; padding: 4px; background: #2c2c2c; border: 1px solid #555; color: #3498db; border-radius: 3px; font-size: 11px;">
+                    </div>
+                </div>
+                
+                <div class="variable-group" style="margin-bottom: 15px;">
+                    <div class="variable-group-title" style="color: #3498db; font-weight: bold; margin-bottom: 8px; font-size: 13px;">🤖 機器人變數</div>
+                    <div class="variable-item" style="margin-bottom: 8px; padding: 8px; background: #3a3a3a; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span class="var-name" style="font-weight: bold; color: white; font-size: 12px;">selected_robot</span>
+                            <span class="var-type" style="background: #27ae60; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Config</span>
+                        </div>
+                        <select class="var-input" style="width: 100%; padding: 4px; background: #2c2c2c; border: 1px solid #555; color: white; border-radius: 3px; font-size: 11px;">
+                            <option value="KUKA400i">KUKA400i</option>
+                            <option value="cargo">cargo</option>
+                            <option value="loader">loader</option>
+                            <option value="unloader">unloader</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="variable-group" style="margin-bottom: 15px;">
+                    <div class="variable-group-title" style="color: #3498db; font-weight: bold; margin-bottom: 8px; font-size: 13px;">📍 路徑變數</div>
+                    <div class="variable-item" style="margin-bottom: 8px; padding: 8px; background: #3a3a3a; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span class="var-name" style="font-weight: bold; color: white; font-size: 12px;">path_template</span>
+                            <span class="var-type" style="background: #9b59b6; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Template</span>
+                        </div>
+                        <input type="text" class="var-input" value="room_{current_room}_exit → collection_area" style="width: 100%; padding: 4px; background: #2c2c2c; border: 1px solid #555; color: white; border-radius: 3px; font-size: 11px;">
+                    </div>
+                </div>
+                
+                <button class="add-variable-btn" onclick="addCustomVariable()" style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">+ 新增自訂變數</button>
+            </div>
+            <div class="node-palette" id="nodePalette">
+                <!-- 動態生成的節點將插入此處 -->
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="toolbar">
+                <button class="toolbar-button primary">新建流程</button>
+                <button class="toolbar-button">載入</button>
+                <button class="toolbar-button">儲存</button>
+                <div class="execution-mode-selector" style="display: flex; align-items: center; margin: 0 15px;">
+                    <label for="executionMode" style="color: white; margin-right: 8px; font-size: 12px;">執行模式:</label>
+                    <select id="executionMode" style="padding: 4px 8px; border: 1px solid #666; border-radius: 3px; background: #2d2d2d; color: white; font-size: 12px;">
+                        <option value="single">單次執行</option>
+                        <option value="foreach_room">房間迴圈執行</option>
+                    </select>
+                </div>
+                <div style="flex: 1;"></div>
+                <button class="toolbar-button">執行模擬</button>
+                <button class="toolbar-button">匯出</button>
+            </div>
+            
+            <div class="editor-container">
+                <div id="rete"></div>
+                
+                <div class="properties-panel" id="propertiesPanel">
+                    <div class="properties-title">節點屬性</div>
+                    
+                    <!-- Basic Properties -->
+                    <div class="property-group">
+                        <div class="property-label">名稱</div>
+                        <input type="text" class="property-input" id="nodeName" placeholder="輸入節點名稱">
+                    </div>
+                    <div class="property-group">
+                        <div class="property-label">描述</div>
+                        <textarea class="property-input" id="nodeDescription" placeholder="輸入描述" rows="2"></textarea>
+                    </div>
+                    
+                    <!-- Performance Properties -->
+                    <div class="property-section">
+                        <div class="property-section-title">效能</div>
+                        <div class="property-group">
+                            <div class="property-label">容量 (單位/小時)</div>
+                            <input type="number" class="property-input" id="nodeCapacity" placeholder="1000" min="1">
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">處理時間 (秒)</div>
+                            <input type="number" class="property-input" id="nodeProcessingTime" placeholder="10" min="0" step="0.1">
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">效率 (%)</div>
+                            <input type="number" class="property-input" id="nodeEfficiency" placeholder="95" min="0" max="100">
+                        </div>
+                    </div>
+                    
+                    <!-- WCS Specific Properties -->
+                    <div class="property-section">
+                        <div class="property-section-title">WCS 配置</div>
+                        <div class="property-group">
+                            <div class="property-label">Equipment ID</div>
+                            <input type="text" class="property-input" id="nodeEquipmentId" placeholder="WCS_001">
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">PLC Address</div>
+                            <input type="text" class="property-input" id="nodePlcAddress" placeholder="192.168.1.100">
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">Zone</div>
+                            <select class="property-input" id="nodeZone">
+                                <option value="">Select Zone</option>
+                                <option value="receiving">Receiving Zone</option>
+                                <option value="storage">Storage Zone</option>
+                                <option value="picking">Picking Zone</option>
+                                <option value="packing">Packing Zone</option>
+                                <option value="shipping">Shipping Zone</option>
+                            </select>
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">Priority Level</div>
+                            <select class="property-input" id="nodePriority">
+                                <option value="low">Low</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    
+                    
+                    <!-- Condition Parameters (only for condition nodes) -->
+                    <div class="property-section" id="conditionParams" style="display: none;">
+                        <div class="property-section-title">條件參數</div>
+                        <div class="property-group">
+                            <div class="property-label">選擇函數</div>
+                            <select class="property-input" id="conditionFunctionSelector">
+                                <option value="">請選擇條件函數...</option>
+                            </select>
+                        </div>
+                        <div id="conditionDynamicParams">
+                            <!-- Dynamic parameters will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Action Parameters (only for action nodes) -->
+                    <div class="property-section" id="actionParams" style="display: none;">
+                        <div class="property-section-title">動作參數</div>
+                        <div class="property-group">
+                            <div class="property-label">選擇函數</div>
+                            <select class="property-input" id="actionFunctionSelector">
+                                <option value="">請選擇動作函數...</option>
+                            </select>
+                        </div>
+                        <div id="actionDynamicParams">
+                            <!-- Dynamic parameters will be generated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LabVIEW-style Variable Declaration Panel -->
+                <div class="variables-panel" id="variablesPanel" style="display: none;">
+                    <div class="variables-header">
+                        <span class="variables-title">變數聲明</span>
+                        <button class="variables-close" onclick="toggleVariablesPanel()">&times;</button>
+                    </div>
+                    <div class="variables-content">
+                        <div class="variable-templates">
+                            <div class="property-label">預設範本</div>
+                            <select class="property-input" id="variableTemplate">
+                                <option value="">選擇變數範本...</option>
+                            </select>
+                        </div>
+                        <div class="custom-variables" id="customVariables">
+                            <!-- Custom variables will be rendered here -->
+                        </div>
+                        <button class="btn-add-variable" onclick="addCustomVariable()">+ 新增變數</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <span>就緒 | 節點: <span id="nodeCount">0</span> | 連接: <span id="connectionCount">0</span> | 
+                <button class="status-toggle" onclick="toggleVariablesPanel()">變數面板</button></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/rete@2.0.6/rete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-area-plugin@2.1.3/rete-area-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-connection-plugin@2.0.5/rete-connection-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-render-utils@2.0.5/rete-render-utils.min.js"></script>
+
+    <script>
+        class WcsFlowDesigner {
+            constructor() {
+                this.editor = null;
+                this.area = null;
+                this.selectedNode = null;
+                this.nodeCounter = 0;
+                this.connections = new Map(); // Track visual connections
+                this.canvasOffset = { x: 0, y: 0 }; // Canvas pan offset
+                this.executionMode = 'single'; // Default to single execution
+                this.functionsConfig = null; // 載入的函數配置
+                this.customVariables = new Map(); // 自定義變數儲存
+                this.init();
+            }
+
+            async init() {
+                await this.setupEditor();
+                this.setupEventListeners();
+                this.updateStatusBar();
+            }
+
+            async setupEditor() {
+                const container = document.getElementById('rete');
+                
+                // Create editor using Rete.js v2 API
+                this.editor = new Rete.NodeEditor();
+                
+                // Create area plugin for visualization
+                this.area = new ReteAreaPlugin.AreaPlugin(container);
+                
+                // Use area plugin with editor
+                this.editor.use(this.area);
+                
+                // Add custom DOM renderer
+                this.setupRenderer();
+                
+                // Setup area extensions for zoom and selection
+                ReteAreaPlugin.AreaExtensions.selectableNodes(this.area, ReteAreaPlugin.AreaExtensions.selector(), {
+                    accumulating: ReteAreaPlugin.AreaExtensions.accumulateOnCtrl()
+                });
+                
+                // Add connection plugin for creating connections
+                try {
+                    if (window.ReteConnectionPlugin && window.ReteConnectionPlugin.ConnectionPlugin) {
+                        const connection = new ReteConnectionPlugin.ConnectionPlugin();
+                        this.area.use(connection);
+                        console.log('Connection plugin loaded successfully');
+                    } else {
+                        console.warn('Connection plugin not available');
+                    }
+                } catch (error) {
+                    console.error('Error loading connection plugin:', error);
+                }
+                
+                // 載入函數配置
+                await this.loadFunctionsConfig();
+                
+                this.registerNodes();
+                
+                // Setup canvas interactions
+                this.setupCanvasInteractions();
+                
+                // Event listeners for v2 API
+                this.editor.addPipe(context => {
+                    if (context.type === 'nodeselected') {
+                        this.selectNode(context.data.node);
+                    } else if (context.type === 'connectionremoved') {
+                        console.log('Connection removed event:', context.data);
+                        if (context.data && context.data.connection) {
+                            this.handleConnectionRemoved(context.data.connection);
+                        }
+                        this.updateStatusBar();
+                    } else if (context.type === 'connectioncreated') {
+                        this.updateStatusBar();
+                    } else if (context.type === 'noderemoved' || context.type === 'nodecreated') {
+                        this.updateStatusBar();
+                    }
+                    return context;
+                });
+            }
+
+            setupRenderer() {
+                // Custom DOM renderer for nodes
+                this.area.addPipe(context => {
+                    if (context.type === 'render' && context.data.type === 'node') {
+                        return this.renderNodeElement(context.data);
+                    }
+                    return context;
+                });
+            }
+
+            renderNodeElement(data) {
+                const { payload } = data;
+                const node = payload;
+                
+                // Create node element
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'rete-node';
+                nodeEl.style.position = 'absolute';
+                nodeEl.style.background = '#2d2d2d';
+                nodeEl.style.border = '2px solid #404040';
+                nodeEl.style.borderRadius = '8px';
+                nodeEl.style.padding = '10px';
+                nodeEl.style.minWidth = '120px';
+                nodeEl.style.color = 'white';
+                nodeEl.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+                nodeEl.style.cursor = 'move';
+                
+                // Add node title
+                const title = document.createElement('div');
+                title.textContent = node.label || node.data?.name || 'Node';
+                title.style.fontWeight = 'bold';
+                title.style.marginBottom = '8px';
+                title.style.textAlign = 'center';
+                nodeEl.appendChild(title);
+                
+                // Add category indicator
+                if (node.data?.category) {
+                    const category = document.createElement('div');
+                    category.textContent = node.data.category;
+                    category.style.fontSize = '10px';
+                    category.style.opacity = '0.7';
+                    category.style.textAlign = 'center';
+                    nodeEl.appendChild(category);
+                }
+                
+                // Add sockets (simplified)
+                if (node.inputs && Object.keys(node.inputs).length > 0) {
+                    const inputSocket = document.createElement('div');
+                    inputSocket.className = 'rete-socket input';
+                    inputSocket.style.width = '12px';
+                    inputSocket.style.height = '12px';
+                    inputSocket.style.background = '#4CAF50';
+                    inputSocket.style.borderRadius = '50%';
+                    inputSocket.style.position = 'absolute';
+                    inputSocket.style.left = '-6px';
+                    inputSocket.style.top = '50%';
+                    inputSocket.style.transform = 'translateY(-50%)';
+                    nodeEl.appendChild(inputSocket);
+                }
+                
+                if (node.outputs && Object.keys(node.outputs).length > 0) {
+                    const outputSocket = document.createElement('div');
+                    outputSocket.className = 'rete-socket output';
+                    outputSocket.style.width = '12px';
+                    outputSocket.style.height = '12px';
+                    outputSocket.style.background = '#F44336';
+                    outputSocket.style.borderRadius = '50%';
+                    outputSocket.style.position = 'absolute';
+                    outputSocket.style.right = '-6px';
+                    outputSocket.style.top = '50%';
+                    outputSocket.style.transform = 'translateY(-50%)';
+                    nodeEl.appendChild(outputSocket);
+                }
+                
+                // Add click handler
+                nodeEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.selectNode(node);
+                });
+                
+                return {
+                    ...data,
+                    element: nodeEl
+                };
+            }
+
+            setupCanvasInteractions() {
+                const container = document.getElementById('rete');
+                let isPanning = false;
+                let lastPanPoint = { x: 0, y: 0 };
+                
+                // Apply initial transform (translation only, no scaling)
+                this.updateCanvasTransform();
+                
+                // Mouse events for panning
+                container.addEventListener('mousedown', (e) => {
+                    // Only pan if clicking on empty space (not on nodes or sockets)
+                    const isOnNode = e.target.closest('.rete-node');
+                    const isOnSocket = e.target.classList.contains('rete-socket');
+                    const isOnConnection = e.target.closest('.rete-connection');
+                    
+                    // Allow panning if not clicking on interactive elements
+                    if (!isOnNode && !isOnSocket && !isOnConnection) {
+                        isPanning = true;
+                        lastPanPoint = { x: e.clientX, y: e.clientY };
+                        container.style.cursor = 'grabbing';
+                        e.preventDefault();
+                    }
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (isPanning) {
+                        const deltaX = e.clientX - lastPanPoint.x;
+                        const deltaY = e.clientY - lastPanPoint.y;
+                        
+                        this.canvasOffset.x += deltaX;
+                        this.canvasOffset.y += deltaY;
+                        
+                        lastPanPoint = { x: e.clientX, y: e.clientY };
+                        this.updateCanvasTransform();
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    if (isPanning) {
+                        isPanning = false;
+                        container.style.cursor = 'default';
+                    }
+                });
+                
+                // Keyboard shortcuts (only reset view)
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case '0':
+                                e.preventDefault();
+                                this.resetCanvasView();
+                                break;
+                        }
+                    }
+                    
+                    // Delete key to delete selected connection or node
+                    if (e.key === 'Delete' || e.key === 'Backspace') {
+                        e.preventDefault();
+                        
+                        // Check if a connection is selected
+                        const selectedConnection = document.querySelector('.rete-connection.selected');
+                        if (selectedConnection) {
+                            // The SVG id is 'connection-{actualConnectionId}', so we need to extract the actual ID
+                            const fullId = selectedConnection.id; // e.g., 'connection-59308e295e113af7'
+                            const connectionId = fullId.replace('connection-', ''); // e.g., '59308e295e113af7'
+                            this.deleteConnection(connectionId);
+                            
+                            // No need to remove delete button as we don't create them anymore
+                            return;
+                        }
+                        
+                        // Check if a node is selected
+                        if (this.selectedNode) {
+                            this.deleteNode(this.selectedNode.id);
+                        }
+                    }
+                });
+                
+                // Click on empty space to deselect connections
+                container.addEventListener('click', (e) => {
+                    // Only if clicking on the container itself (empty space)
+                    if (e.target === container) {
+                        this.deselectAllConnections();
+                    }
+                });
+            }
+
+            updateCanvasTransform() {
+                const container = document.getElementById('rete');
+                container.style.transform = `translate(${this.canvasOffset.x}px, ${this.canvasOffset.y}px)`;
+                
+                // Update all connections when canvas transforms
+                console.log(`updateCanvasTransform: Updating ${this.connections.size} connections:`, Array.from(this.connections.keys()));
+                for (const connectionId of this.connections.keys()) {
+                    console.log(`Updating connection path for: ${connectionId}`);
+                    this.updateConnectionPath(connectionId);
+                }
+            }
+
+            resetCanvasView() {
+                this.canvasOffset = { x: 0, y: 0 };
+                this.updateCanvasTransform();
+            }
+
+
+            registerNodes() {
+                // Store node types for creating nodes later
+                this.nodeTypes = {
+                    // Condition nodes
+                    'room-has-carrier': { name: '房間內是否有Carrier', category: 'condition', color: '#00BCD4' },
+                    'room-inlet-has-rack': { name: '房間入口是否有Rack', category: 'condition', color: '#00BCD4' },
+                    'room-outlet-has-rack': { name: '房間出口是否有Rack', category: 'condition', color: '#00BCD4' },
+                    'no-conflict-task': { name: '無衝突任務', category: 'condition', color: '#00BCD4' },
+                    'rack-side-has-carrier': { name: 'Rack面上是否有Carrier', category: 'condition', color: '#00BCD4' },
+                    // Logic nodes
+                    'and-gate': { name: 'AND 閘', category: 'logic', color: '#607D8B' },
+                    'or-gate': { name: 'OR 閘', category: 'logic', color: '#607D8B' },
+                    // Action nodes
+                    'create-task': { name: '創建任務', category: 'action', color: '#795548' }
+                };
+
+                // Create a common socket for all connections
+                this.socket = new Rete.ClassicPreset.Socket('flow');
+            }
+            
+            async loadFunctionsConfig() {
+                console.log('載入Python函數配置...');
+                // 使用內嵌配置以避免CORS問題
+                this.functionsConfig = {
+                    "condition_functions": [
+                        {
+                            "value": "check_room_carrier",
+                            "label": "Check Room Carrier",
+                            "description": "檢查房間內是否有載體",
+                            "module": "wcs.conditions",
+                            "parameters": [
+                                {
+                                    "name": "room_id",
+                                    "type": "str",
+                                    "required": true,
+                                    "label": "房間編號",
+                                    "options": ["01", "02", "03", "04", "05", "FOR_LOOP"]
+                                },
+                                {
+                                    "name": "check_exists",
+                                    "type": "bool", 
+                                    "required": false,
+                                    "label": "檢查存在",
+                                    "default": true,
+                                    "options": [true, false]
+                                }
+                            ]
+                        },
+                        {
+                            "value": "check_rack_position",
+                            "label": "Check Rack Position", 
+                            "description": "檢查貨架位置狀態",
+                            "module": "wcs.conditions",
+                            "parameters": [
+                                {
+                                    "name": "room_id",
+                                    "type": "str",
+                                    "required": true,
+                                    "label": "房間編號",
+                                    "options": ["01", "02", "03", "04", "05", "FOR_LOOP"]
+                                },
+                                {
+                                    "name": "position",
+                                    "type": "str",
+                                    "required": true,
+                                    "label": "位置類型",
+                                    "options": ["inlet", "outlet"]
+                                },
+                                {
+                                    "name": "rack_side",
+                                    "type": "str",
+                                    "required": false,
+                                    "label": "貨架面",
+                                    "default": "A",
+                                    "options": ["A", "B"]
+                                }
+                            ]
+                        }
+                    ],
+                    "action_functions": [
+                        {
+                            "value": "create_transport_task",
+                            "label": "Create Transport Task",
+                            "description": "創建運輸任務", 
+                            "module": "wcs.tasks",
+                            "parameters": [
+                                {
+                                    "name": "robot_model",
+                                    "type": "str",
+                                    "required": true,
+                                    "label": "機器人型號",
+                                    "options": ["KUKA400i", "cargo", "loader", "unloader"]
+                                },
+                                {
+                                    "name": "source",
+                                    "type": "str",
+                                    "required": true,
+                                    "label": "來源位置",
+                                    "placeholder": "例如: room_01_exit"
+                                },
+                                {
+                                    "name": "destination", 
+                                    "type": "str",
+                                    "required": true,
+                                    "label": "目標位置",
+                                    "placeholder": "例如: collection_area"
+                                },
+                                {
+                                    "name": "task_type",
+                                    "type": "str",
+                                    "required": false,
+                                    "label": "任務類型",
+                                    "default": "RACK_MOVE",
+                                    "options": ["RACK_MOVE", "RACK_ROTATION", "CARRIER_TRANSPORT"]
+                                },
+                                {
+                                    "name": "timeout",
+                                    "type": "int",
+                                    "required": false,
+                                    "label": "超時時間(秒)",
+                                    "default": 30,
+                                    "min": 1,
+                                    "max": 300
+                                }
+                            ]
+                        },
+                        {
+                            "value": "submit_mission",
+                            "label": "Submit Mission",
+                            "description": "提交任務到WCS系統",
+                            "module": "wcs.api",
+                            "parameters": [
+                                {
+                                    "name": "mission_data",
+                                    "type": "dict",
+                                    "required": true,
+                                    "label": "任務數據",
+                                    "description": "從上游節點獲取"
+                                },
+                                {
+                                    "name": "priority",
+                                    "type": "int", 
+                                    "required": false,
+                                    "label": "優先級",
+                                    "default": 1,
+                                    "options": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                                }
+                            ]
+                        }
+                    ],
+                    "variable_templates": [
+                        {
+                            "name": "room_variables",
+                            "description": "房間相關變數",
+                            "variables": [
+                                {
+                                    "name": "room_list",
+                                    "type": "list",
+                                    "value": ["01", "02", "03", "04", "05"],
+                                    "description": "可用房間列表"
+                                },
+                                {
+                                    "name": "current_room", 
+                                    "type": "dynamic",
+                                    "value": "${loop_variable}",
+                                    "description": "當前處理房間"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "robot_variables",
+                            "description": "機器人相關變數",
+                            "variables": [
+                                {
+                                    "name": "available_robots",
+                                    "type": "list",
+                                    "value": ["KUKA400i", "cargo", "loader", "unloader"],
+                                    "description": "可用機器人型號"
+                                },
+                                {
+                                    "name": "selected_robot",
+                                    "type": "config",
+                                    "value": "KUKA400i",
+                                    "description": "選定的機器人型號"
+                                }
+                            ]
+                        }
+                    ]
+                };
+                
+                console.log('函數配置載入成功:', this.functionsConfig);
+                this.updateFunctionSelectors();
+                this.updateNodePalette();
+            }
+            
+            updateFunctionSelectors() {
+                console.log('更新函數選擇器...');
+                
+                if (!this.functionsConfig) {
+                    console.warn('函數配置未載入');
+                    return;
+                }
+                
+                // 更新條件函數選擇器
+                const conditionSelector = document.getElementById('conditionFunctionSelector');
+                if (conditionSelector && this.functionsConfig.condition_functions) {
+                    conditionSelector.innerHTML = '<option value="">請選擇條件函數...</option>';
+                    this.functionsConfig.condition_functions.forEach(func => {
+                        const option = document.createElement('option');
+                        option.value = func.value;
+                        option.textContent = func.label;
+                        option.title = func.description;
+                        conditionSelector.appendChild(option);
+                    });
+                }
+                
+                // 更新動作函數選擇器
+                const actionSelector = document.getElementById('actionFunctionSelector');
+                if (actionSelector && this.functionsConfig.action_functions) {
+                    actionSelector.innerHTML = '<option value="">請選擇動作函數...</option>';
+                    this.functionsConfig.action_functions.forEach(func => {
+                        const option = document.createElement('option');
+                        option.value = func.value;
+                        option.textContent = func.label;
+                        option.title = func.description;
+                        actionSelector.appendChild(option);
+                    });
+                }
+                
+                // 更新變數範本選擇器
+                const variableTemplate = document.getElementById('variableTemplate');
+                if (variableTemplate && this.functionsConfig.variable_templates) {
+                    variableTemplate.innerHTML = '<option value="">選擇變數範本...</option>';
+                    this.functionsConfig.variable_templates.forEach(template => {
+                        const option = document.createElement('option');
+                        option.value = template.name;
+                        option.textContent = template.description;
+                        variableTemplate.appendChild(option);
+                    });
+                }
+            }
+
+            updateNodePalette() {
+                console.log('更新節點調色盤...');
+                
+                const palette = document.getElementById('nodePalette');
+                if (!palette || !this.functionsConfig) {
+                    console.warn('無法更新節點調色盤');
+                    return;
+                }
+                
+                // 清空現有內容
+                palette.innerHTML = '';
+                
+                // 生成條件節點區塊
+                if (this.functionsConfig.condition_functions && this.functionsConfig.condition_functions.length > 0) {
+                    const conditionSection = document.createElement('div');
+                    conditionSection.className = 'palette-section';
+                    
+                    const conditionTitle = document.createElement('div');
+                    conditionTitle.className = 'palette-section-title';
+                    conditionTitle.textContent = '條件節點';
+                    conditionSection.appendChild(conditionTitle);
+                    
+                    this.functionsConfig.condition_functions.forEach(func => {
+                        const nodeItem = document.createElement('div');
+                        nodeItem.className = 'node-item';
+                        nodeItem.setAttribute('data-node-type', func.value);
+                        nodeItem.setAttribute('data-category', 'condition');
+                        nodeItem.title = func.description || func.label;
+                        
+                        const nodeIcon = document.createElement('div');
+                        nodeIcon.className = 'node-icon condition-node';
+                        nodeItem.appendChild(nodeIcon);
+                        
+                        const nodeLabel = document.createElement('span');
+                        nodeLabel.textContent = func.label;
+                        nodeItem.appendChild(nodeLabel);
+                        
+                        conditionSection.appendChild(nodeItem);
+                    });
+                    
+                    palette.appendChild(conditionSection);
+                }
+                
+                // 生成邏輯節點區塊（固定項目）
+                const logicSection = document.createElement('div');
+                logicSection.className = 'palette-section';
+                
+                const logicTitle = document.createElement('div');
+                logicTitle.className = 'palette-section-title';
+                logicTitle.textContent = '邏輯節點';
+                logicSection.appendChild(logicTitle);
+                
+                // AND 閘
+                const andGate = document.createElement('div');
+                andGate.className = 'node-item';
+                andGate.setAttribute('data-node-type', 'and-gate');
+                andGate.setAttribute('data-category', 'logic');
+                andGate.title = '邏輯AND運算';
+                
+                const andIcon = document.createElement('div');
+                andIcon.className = 'node-icon logic-node';
+                andGate.appendChild(andIcon);
+                
+                const andLabel = document.createElement('span');
+                andLabel.textContent = 'AND 閘';
+                andGate.appendChild(andLabel);
+                
+                logicSection.appendChild(andGate);
+                
+                // OR 閘
+                const orGate = document.createElement('div');
+                orGate.className = 'node-item';
+                orGate.setAttribute('data-node-type', 'or-gate');
+                orGate.setAttribute('data-category', 'logic');
+                orGate.title = '邏輯OR運算';
+                
+                const orIcon = document.createElement('div');
+                orIcon.className = 'node-icon logic-node';
+                orGate.appendChild(orIcon);
+                
+                const orLabel = document.createElement('span');
+                orLabel.textContent = 'OR 閘';
+                orGate.appendChild(orLabel);
+                
+                logicSection.appendChild(orGate);
+                palette.appendChild(logicSection);
+                
+                // 生成動作節點區塊
+                if (this.functionsConfig.action_functions && this.functionsConfig.action_functions.length > 0) {
+                    const actionSection = document.createElement('div');
+                    actionSection.className = 'palette-section';
+                    
+                    const actionTitle = document.createElement('div');
+                    actionTitle.className = 'palette-section-title';
+                    actionTitle.textContent = '動作節點';
+                    actionSection.appendChild(actionTitle);
+                    
+                    this.functionsConfig.action_functions.forEach(func => {
+                        const nodeItem = document.createElement('div');
+                        nodeItem.className = 'node-item';
+                        nodeItem.setAttribute('data-node-type', func.value);
+                        nodeItem.setAttribute('data-category', 'action');
+                        nodeItem.title = func.description || func.label;
+                        
+                        const nodeIcon = document.createElement('div');
+                        nodeIcon.className = 'node-icon action-node';
+                        nodeItem.appendChild(nodeIcon);
+                        
+                        const nodeLabel = document.createElement('span');
+                        nodeLabel.textContent = func.label;
+                        nodeItem.appendChild(nodeLabel);
+                        
+                        actionSection.appendChild(nodeItem);
+                    });
+                    
+                    palette.appendChild(actionSection);
+                }
+                
+                // 重新綁定點擊事件
+                this.bindPaletteEvents();
+                
+                console.log('節點調色盤更新完成');
+            }
+
+            bindPaletteEvents() {
+                // 為動態生成的節點項目綁定點擊事件
+                const nodeItems = document.querySelectorAll('.node-item');
+                console.log(`綁定 ${nodeItems.length} 個節點項目的點擊事件`);
+                
+                nodeItems.forEach((item, index) => {
+                    const nodeType = item.dataset.nodeType;
+                    const category = item.dataset.category;
+                    console.log(`節點 ${index}: ${nodeType} (${category})`);
+                    
+                    item.addEventListener('click', () => {
+                        console.log(`點擊節點: ${nodeType}, 類別: ${category}`);
+                        this.addNode(nodeType);
+                    });
+                });
+            }
+
+            generateDynamicParameters(functionConfig, containerId, parameterPrefix) {
+                const container = document.getElementById(containerId);
+                if (!container || !functionConfig || !functionConfig.parameters) {
+                    return;
+                }
+                
+                // Clear existing parameters
+                container.innerHTML = '';
+                
+                // Generate parameter inputs based on function configuration
+                functionConfig.parameters.forEach(param => {
+                    const paramGroup = document.createElement('div');
+                    paramGroup.className = 'property-group';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'property-label';
+                    label.textContent = param.label || param.name;
+                    if (param.required) {
+                        label.textContent += ' *';
+                        label.style.color = '#ff6b6b';
+                    }
+                    paramGroup.appendChild(label);
+                    
+                    let input;
+                    const inputId = `${parameterPrefix}_${param.name}`;
+                    
+                    if (param.options && param.options.length > 0) {
+                        // Create dropdown for options
+                        input = document.createElement('select');
+                        input.className = 'property-input';
+                        
+                        // Add empty option for non-required fields
+                        if (!param.required) {
+                            const emptyOption = document.createElement('option');
+                            emptyOption.value = '';
+                            emptyOption.textContent = `選擇${param.label || param.name}...`;
+                            input.appendChild(emptyOption);
+                        }
+                        
+                        // Add options
+                        param.options.forEach(option => {
+                            const optionElement = document.createElement('option');
+                            optionElement.value = option;
+                            optionElement.textContent = option;
+                            if (param.default === option) {
+                                optionElement.selected = true;
+                            }
+                            input.appendChild(optionElement);
+                        });
+                    } else {
+                        // Create input field based on type
+                        input = document.createElement('input');
+                        input.className = 'property-input';
+                        
+                        switch (param.type) {
+                            case 'int':
+                                input.type = 'number';
+                                input.step = '1';
+                                if (param.min !== undefined) input.min = param.min;
+                                if (param.max !== undefined) input.max = param.max;
+                                break;
+                            case 'float':
+                                input.type = 'number';
+                                input.step = 'any';
+                                if (param.min !== undefined) input.min = param.min;
+                                if (param.max !== undefined) input.max = param.max;
+                                break;
+                            case 'bool':
+                                input.type = 'checkbox';
+                                break;
+                            default:
+                                input.type = 'text';
+                        }
+                        
+                        if (param.placeholder) {
+                            input.placeholder = param.placeholder;
+                        }
+                        
+                        if (param.default !== undefined) {
+                            if (param.type === 'bool') {
+                                input.checked = param.default;
+                            } else {
+                                input.value = param.default;
+                            }
+                        }
+                    }
+                    
+                    input.id = inputId;
+                    input.dataset.paramName = param.name;
+                    input.dataset.paramType = param.type;
+                    input.dataset.required = param.required || false;
+                    
+                    // Add event listener to update node data
+                    input.addEventListener('change', (e) => {
+                        if (this.selectedNode) {
+                            if (!this.selectedNode.data.functionParams) {
+                                this.selectedNode.data.functionParams = {};
+                            }
+                            
+                            let value = e.target.value;
+                            if (param.type === 'int') {
+                                value = parseInt(value) || param.default || 0;
+                            } else if (param.type === 'float') {
+                                value = parseFloat(value) || param.default || 0.0;
+                            } else if (param.type === 'bool') {
+                                value = e.target.checked;
+                            }
+                            
+                            this.selectedNode.data.functionParams[param.name] = value;
+                            console.log(`Updated parameter ${param.name}:`, value);
+                        }
+                    });
+                    
+                    paramGroup.appendChild(input);
+                    
+                    // Add description if available
+                    if (param.description) {
+                        const description = document.createElement('div');
+                        description.className = 'property-description';
+                        description.style.fontSize = '11px';
+                        description.style.color = '#888';
+                        description.style.marginTop = '4px';
+                        description.textContent = param.description;
+                        paramGroup.appendChild(description);
+                    }
+                    
+                    container.appendChild(paramGroup);
+                });
+            }
+
+            onFunctionSelectionChanged(type, selectedFunctionValue) {
+                if (!this.functionsConfig) return;
+                
+                const functions = type === 'condition' 
+                    ? this.functionsConfig.condition_functions 
+                    : this.functionsConfig.action_functions;
+                
+                const selectedFunction = functions.find(f => f.value === selectedFunctionValue);
+                
+                if (selectedFunction) {
+                    const containerId = type === 'condition' ? 'conditionDynamicParams' : 'actionDynamicParams';
+                    const parameterPrefix = type === 'condition' ? 'condition' : 'action';
+                    
+                    this.generateDynamicParameters(selectedFunction, containerId, parameterPrefix);
+                    
+                    // Update selected node data
+                    if (this.selectedNode) {
+                        this.selectedNode.data.selectedFunction = selectedFunction;
+                        this.selectedNode.data.functionParams = {};
+                        
+                        // Set default values
+                        if (selectedFunction.parameters) {
+                            selectedFunction.parameters.forEach(param => {
+                                if (param.default !== undefined) {
+                                    this.selectedNode.data.functionParams[param.name] = param.default;
+                                }
+                            });
+                        }
+                    }
+                    
+                    console.log(`Selected ${type} function:`, selectedFunction);
+                } else {
+                    // Clear parameters if no function selected
+                    const containerId = type === 'condition' ? 'conditionDynamicParams' : 'actionDynamicParams';
+                    const container = document.getElementById(containerId);
+                    if (container) container.innerHTML = '';
+                    
+                    if (this.selectedNode) {
+                        this.selectedNode.data.selectedFunction = null;
+                        this.selectedNode.data.functionParams = {};
+                    }
+                }
+            }
+
+            onVariableTemplateSelected(templateName) {
+                if (!this.functionsConfig || !templateName) return;
+                
+                const template = this.functionsConfig.variable_templates.find(t => t.name === templateName);
+                if (template) {
+                    template.variables.forEach(variable => {
+                        this.addVariableFromTemplate(variable);
+                    });
+                }
+            }
+
+            addVariableFromTemplate(variable) {
+                const customVariables = document.getElementById('customVariables');
+                if (!customVariables) return;
+                
+                const variableItem = document.createElement('div');
+                variableItem.className = 'variable-item';
+                
+                const header = document.createElement('div');
+                header.className = 'variable-item-header';
+                
+                const name = document.createElement('span');
+                name.className = 'variable-name';
+                name.textContent = variable.name;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'variable-delete';
+                deleteBtn.textContent = '刪除';
+                deleteBtn.onclick = () => {
+                    customVariables.removeChild(variableItem);
+                    this.customVariables.delete(variable.name);
+                };
+                
+                header.appendChild(name);
+                header.appendChild(deleteBtn);
+                
+                const typeLabel = document.createElement('div');
+                typeLabel.className = 'property-label';
+                typeLabel.textContent = `類型: ${variable.type}`;
+                typeLabel.style.fontSize = '12px';
+                typeLabel.style.color = '#888';
+                
+                const valueLabel = document.createElement('div');
+                valueLabel.className = 'property-label';
+                valueLabel.textContent = `值: ${JSON.stringify(variable.value)}`;
+                valueLabel.style.fontSize = '12px';
+                valueLabel.style.color = '#888';
+                
+                const descLabel = document.createElement('div');
+                descLabel.className = 'property-label';
+                descLabel.textContent = variable.description;
+                descLabel.style.fontSize = '11px';
+                descLabel.style.color = '#666';
+                
+                variableItem.appendChild(header);
+                variableItem.appendChild(typeLabel);
+                variableItem.appendChild(valueLabel);
+                variableItem.appendChild(descLabel);
+                
+                customVariables.appendChild(variableItem);
+                
+                // Store in customVariables map
+                this.customVariables.set(variable.name, variable);
+            }
+
+            setupEventListeners() {
+                // 節點項目的點擊事件現在由 bindPaletteEvents() 處理
+
+                // Toolbar button event listeners
+                const toolbarButtons = document.querySelectorAll('.toolbar-button');
+                toolbarButtons[0]?.addEventListener('click', () => this.newFlow()); // New Flow
+                toolbarButtons[1]?.addEventListener('click', () => this.loadFlow()); // Load
+                toolbarButtons[2]?.addEventListener('click', () => this.saveFlow()); // Save
+                toolbarButtons[3]?.addEventListener('click', () => this.runSimulation()); // Run Simulation
+                toolbarButtons[4]?.addEventListener('click', () => this.exportToJson()); // Export
+
+                // Setup execution mode selector
+                document.getElementById('executionMode').addEventListener('change', (e) => {
+                    this.executionMode = e.target.value;
+                    console.log('Execution mode changed to:', this.executionMode);
+                });
+
+                // Setup property event listeners
+                this.setupPropertyListeners();
+            }
+
+            setupPropertyListeners() {
+                // Basic properties
+                document.getElementById('nodeName').addEventListener('input', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.name = e.target.value;
+                });
+                document.getElementById('nodeDescription').addEventListener('input', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.description = e.target.value;
+                });
+                
+                // Performance properties
+                document.getElementById('nodeCapacity').addEventListener('input', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.capacity = parseFloat(e.target.value) || 0;
+                });
+                document.getElementById('nodeProcessingTime').addEventListener('input', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.processingTime = parseFloat(e.target.value) || 0;
+                });
+                document.getElementById('nodeEfficiency').addEventListener('input', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.efficiency = parseFloat(e.target.value) || 0;
+                });
+                
+                // WCS Configuration properties
+                document.getElementById('nodeEquipmentId').addEventListener('input', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.equipmentId = e.target.value;
+                });
+                document.getElementById('nodePlcAddress').addEventListener('input', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.plcAddress = e.target.value;
+                });
+                document.getElementById('nodeZone').addEventListener('change', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.zone = e.target.value;
+                });
+                document.getElementById('nodePriority').addEventListener('change', (e) => {
+                    if (this.selectedNode) this.selectedNode.data.priority = e.target.value;
+                });
+                
+                // Function Selector Parameters
+                document.getElementById('conditionFunctionSelector').addEventListener('change', (e) => {
+                    this.onFunctionSelectionChanged('condition', e.target.value);
+                });
+                
+                document.getElementById('actionFunctionSelector').addEventListener('change', (e) => {
+                    this.onFunctionSelectionChanged('action', e.target.value);
+                });
+                
+                // Variable Template Selection
+                document.getElementById('variableTemplate').addEventListener('change', (e) => {
+                    this.onVariableTemplateSelected(e.target.value);
+                });
+            }
+
+            async addNode(type) {
+                console.log(`嘗試添加節點: ${type}`);
+                let config = this.nodeTypes[type];
+                let category = 'unknown';
+                let name = type;
+                
+                console.log(`在 nodeTypes 中找到配置:`, config);
+                
+                // 如果在固定nodeTypes中找不到，嘗試從函數配置中查找
+                if (!config && this.functionsConfig) {
+                    console.log('在函數配置中搜索節點類型...');
+                    // 檢查條件函數
+                    const conditionFunc = this.functionsConfig.condition_functions?.find(f => f.value === type);
+                    if (conditionFunc) {
+                        console.log('找到條件函數:', conditionFunc);
+                        config = {
+                            name: conditionFunc.label,
+                            category: 'condition', 
+                            color: '#00BCD4'
+                        };
+                        category = 'condition';
+                        name = conditionFunc.label;
+                    }
+                    
+                    // 檢查動作函數
+                    if (!config) {
+                        const actionFunc = this.functionsConfig.action_functions?.find(f => f.value === type);
+                        if (actionFunc) {
+                            console.log('找到動作函數:', actionFunc);
+                            config = {
+                                name: actionFunc.label,
+                                category: 'action',
+                                color: '#795548'
+                            };
+                            category = 'action';
+                            name = actionFunc.label;
+                        }
+                    }
+                }
+                
+                if (!config) {
+                    console.warn(`未找到節點類型配置: ${type}`);
+                    return;
+                }
+                
+                // Create node using Rete.js v2 ClassicPreset
+                const node = new Rete.ClassicPreset.Node(config.name);
+                node.id = `${type}_${++this.nodeCounter}`;
+                
+                // Set custom data with comprehensive WCS properties  
+                node.data = {
+                    name: config.name,
+                    type: type,
+                    category: config.category,
+                    description: ''
+                };
+                
+                // 只有動作節點需要WCS配置和效能參數
+                if (config.category === 'action') {
+                    Object.assign(node.data, {
+                        // Performance
+                        capacity: 1000,
+                        processingTime: 10,
+                        efficiency: 95,
+                        // WCS Configuration
+                        equipmentId: `WCS_${type.toUpperCase()}_${this.nodeCounter}`,
+                        plcAddress: '192.168.1.100',
+                        zone: '',
+                        priority: 'normal',
+                        // 固定任務類型
+                        missionType: 'RACK_MOVE'
+                    });
+                }
+                
+                // Add inputs and outputs based on category
+                if (config.category === 'condition') {
+                    // Condition nodes only output boolean results
+                    node.addOutput('result', new Rete.ClassicPreset.Output(this.socket, '結果'));
+                } else if (config.category === 'logic') {
+                    // Logic nodes start with one input and dynamically add more
+                    node.addInput('condition1', new Rete.ClassicPreset.Input(this.socket, '條件 1'));
+                    node.addOutput('result', new Rete.ClassicPreset.Output(this.socket, '結果'));
+                    
+                    // Store logic node metadata
+                    node.data.logicType = type;
+                    node.data.nextInputIndex = 2;
+                } else if (config.category === 'action') {
+                    // Action nodes accept logic input and execute tasks
+                    node.addInput('trigger', new Rete.ClassicPreset.Input(this.socket, '觸發'));
+                    node.addOutput('completed', new Rete.ClassicPreset.Output(this.socket, '完成'));
+                } else {
+                    // Original logic for existing node types
+                    if (config.category !== 'input') {
+                        node.addInput('in', new Rete.ClassicPreset.Input(this.socket, 'Input'));
+                    }
+                    
+                    if (config.category !== 'output') {
+                        node.addOutput('out', new Rete.ClassicPreset.Output(this.socket, 'Output'));
+                    }
+                    
+                    if (config.category === 'control' && type === 'decision') {
+                        node.addOutput('yes', new Rete.ClassicPreset.Output(this.socket, 'Yes'));
+                        node.addOutput('no', new Rete.ClassicPreset.Output(this.socket, 'No'));
+                    }
+                }
+                
+                // Add node to editor
+                await this.editor.addNode(node);
+                
+                // Position node in area and render manually
+                const x = 250 + Math.random() * 200;
+                const y = 200 + Math.random() * 200;
+                
+                if (this.area) {
+                    await this.area.translate(node.id, { x, y });
+                }
+                
+                // Manual DOM rendering
+                this.renderNodeManually(node, x, y);
+                
+                this.updateStatusBar();
+            }
+
+            renderNodeManually(node, x, y) {
+                const container = document.getElementById('rete');
+                
+                // Create node element
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'rete-node';
+                nodeEl.id = `node-${node.id}`;
+                nodeEl.style.position = 'absolute';
+                nodeEl.style.left = x + 'px';
+                nodeEl.style.top = y + 'px';
+                nodeEl.style.background = '#2d2d2d';
+                nodeEl.style.border = '2px solid #404040';
+                nodeEl.style.borderRadius = '8px';
+                nodeEl.style.padding = '15px';
+                nodeEl.style.minWidth = '140px';
+                nodeEl.style.color = 'white';
+                nodeEl.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+                nodeEl.style.cursor = 'move';
+                nodeEl.style.zIndex = '10';
+                nodeEl.style.fontFamily = 'Arial, sans-serif';
+                
+                // Add node title
+                const title = document.createElement('div');
+                title.textContent = node.data?.name || 'Node';
+                title.style.fontWeight = 'bold';
+                title.style.marginBottom = '5px';
+                title.style.textAlign = 'center';
+                title.style.fontSize = '14px';
+                nodeEl.appendChild(title);
+                
+                // Add category indicator with color
+                if (node.data?.category) {
+                    const category = document.createElement('div');
+                    category.textContent = node.data.category.toUpperCase();
+                    category.style.fontSize = '10px';
+                    category.style.opacity = '0.8';
+                    category.style.textAlign = 'center';
+                    category.style.padding = '2px 6px';
+                    category.style.background = this.getCategoryColor(node.data.category);
+                    category.style.borderRadius = '10px';
+                    category.style.marginTop = '5px';
+                    nodeEl.appendChild(category);
+                }
+                
+                // Add input sockets
+                if (node.inputs && Object.keys(node.inputs).length > 0) {
+                    const inputKeys = Object.keys(node.inputs);
+                    inputKeys.forEach((key, index) => {
+                        const inputSocket = document.createElement('div');
+                        inputSocket.className = 'rete-socket input';
+                        inputSocket.style.width = '12px';
+                        inputSocket.style.height = '12px';
+                        inputSocket.style.background = '#4CAF50';
+                        inputSocket.style.border = '2px solid #fff';
+                        inputSocket.style.borderRadius = '50%';
+                        inputSocket.style.position = 'absolute';
+                        inputSocket.style.left = '-8px';
+                        
+                        // Position multiple inputs vertically
+                        if (inputKeys.length === 1) {
+                            inputSocket.style.top = '50%';
+                            inputSocket.style.transform = 'translateY(-50%)';
+                        } else {
+                            const spacing = 60 / (inputKeys.length + 1);
+                            inputSocket.style.top = `${20 + spacing * (index + 1)}%`;
+                        }
+                        
+                        inputSocket.style.cursor = 'crosshair';
+                        inputSocket.dataset.nodeId = node.id;
+                        inputSocket.dataset.socketType = 'input';
+                        inputSocket.dataset.socketKey = key;
+                        this.addSocketEvents(inputSocket);
+                        nodeEl.appendChild(inputSocket);
+                    });
+                }
+                
+                // Add output sockets
+                if (node.outputs && Object.keys(node.outputs).length > 0) {
+                    const outputKeys = Object.keys(node.outputs);
+                    outputKeys.forEach((key, index) => {
+                        const outputSocket = document.createElement('div');
+                        outputSocket.className = 'rete-socket output';
+                        outputSocket.style.width = '12px';
+                        outputSocket.style.height = '12px';
+                        outputSocket.style.background = '#F44336';
+                        outputSocket.style.border = '2px solid #fff';
+                        outputSocket.style.borderRadius = '50%';
+                        outputSocket.style.position = 'absolute';
+                        outputSocket.style.right = '-8px';
+                        
+                        // Position multiple outputs vertically
+                        if (outputKeys.length === 1) {
+                            outputSocket.style.top = '50%';
+                            outputSocket.style.transform = 'translateY(-50%)';
+                        } else {
+                            const spacing = 60 / (outputKeys.length + 1);
+                            outputSocket.style.top = `${20 + spacing * (index + 1)}%`;
+                        }
+                        
+                        outputSocket.style.cursor = 'crosshair';
+                        outputSocket.dataset.nodeId = node.id;
+                        outputSocket.dataset.socketType = 'output';
+                        outputSocket.dataset.socketKey = key;
+                        this.addSocketEvents(outputSocket);
+                        nodeEl.appendChild(outputSocket);
+                    });
+                }
+                
+                // Add click handler for selection
+                nodeEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Remove selection from other nodes
+                    document.querySelectorAll('.rete-node').forEach(n => {
+                        n.style.border = '2px solid #404040';
+                    });
+                    // Select this node
+                    nodeEl.style.border = '2px solid #2196F3';
+                    this.selectNode(node);
+                });
+                
+                // Add drag functionality
+                this.makeDraggable(nodeEl, node);
+                
+                // Append to container
+                container.appendChild(nodeEl);
+                
+                console.log(`Node ${node.id} rendered at (${x}, ${y})`);
+            }
+
+            getCategoryColor(category) {
+                const colors = {
+                    'input': '#4CAF50',
+                    'process': '#2196F3', 
+                    'control': '#FF9800',
+                    'storage': '#9C27B0',
+                    'output': '#F44336',
+                    'condition': '#00BCD4',
+                    'logic': '#607D8B',
+                    'action': '#795548'
+                };
+                return colors[category] || '#666666';
+            }
+
+            makeDraggable(element, node) {
+                let isDragging = false;
+                let startX, startY, startLeft, startTop;
+                
+                // Create unique event handlers for this specific node
+                const mouseMoveHandler = (e) => {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    
+                    element.style.left = (startLeft + deltaX) + 'px';
+                    element.style.top = (startTop + deltaY) + 'px';
+                    
+                    // Update all connections related to this node
+                    this.updateConnectionsForNode(node.id);
+                };
+                
+                const mouseUpHandler = () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        // Update position in area if needed
+                        if (this.area) {
+                            const x = parseInt(element.style.left);
+                            const y = parseInt(element.style.top);
+                            this.area.translate(node.id, { x, y }).catch(console.error);
+                        }
+                        
+                        // Remove event listeners after drag completes
+                        document.removeEventListener('mousemove', mouseMoveHandler);
+                        document.removeEventListener('mouseup', mouseUpHandler);
+                    }
+                };
+                
+                element.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('rete-socket')) return; // Don't drag on sockets
+                    
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = parseInt(element.style.left);
+                    startTop = parseInt(element.style.top);
+                    
+                    // Add event listeners only when dragging starts
+                    document.addEventListener('mousemove', mouseMoveHandler);
+                    document.addEventListener('mouseup', mouseUpHandler);
+                    
+                    e.preventDefault();
+                    e.stopPropagation(); // Prevent background panning when dragging nodes
+                });
+            }
+
+            addSocketEvents(socket) {
+                // Use instance variables for connection state
+                if (!this.connectionState) {
+                    this.connectionState = {
+                        isConnecting: false,
+                        startSocket: null,
+                        tempLine: null
+                    };
+                }
+                
+                socket.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    if (socket.dataset.socketType === 'output') {
+                        // Start connection from output
+                        this.connectionState.isConnecting = true;
+                        this.connectionState.startSocket = socket;
+                        
+                        // Create temporary line
+                        this.connectionState.tempLine = this.createTempLine(e.clientX, e.clientY);
+                        this.connectionState.tempLine.startSocket = socket; // Store reference
+                        document.body.appendChild(this.connectionState.tempLine);
+                        
+                        console.log('Starting connection from:', socket.dataset.nodeId);
+                    }
+                });
+                
+                socket.addEventListener('mouseup', (e) => {
+                    if (this.connectionState.isConnecting && this.connectionState.startSocket && 
+                        socket.dataset.socketType === 'input' && socket !== this.connectionState.startSocket) {
+                        // Complete connection to input
+                        e.stopPropagation();
+                        this.createConnection(this.connectionState.startSocket, socket);
+                    }
+                    
+                    // Clean up
+                    this.connectionState.isConnecting = false;
+                    this.connectionState.startSocket = null;
+                    if (this.connectionState.tempLine) {
+                        this.connectionState.tempLine.remove();
+                        this.connectionState.tempLine = null;
+                    }
+                });
+                
+                socket.addEventListener('mouseover', (e) => {
+                    if (this.connectionState.isConnecting && socket.dataset.socketType === 'input' && 
+                        socket !== this.connectionState.startSocket) {
+                        socket.style.background = '#ffeb3b'; // Highlight potential target
+                    }
+                });
+                
+                socket.addEventListener('mouseout', (e) => {
+                    if (socket.dataset.socketType === 'input') {
+                        socket.style.background = '#4CAF50'; // Reset color
+                    }
+                });
+                
+                // Global mouse move for temp line (add only once)
+                if (!this.globalEventsAdded) {
+                    this.globalEventsAdded = true;
+                    
+                    document.addEventListener('mousemove', (e) => {
+                        if (this.connectionState.isConnecting && this.connectionState.tempLine) {
+                            this.updateTempLine(this.connectionState.tempLine, e.clientX, e.clientY);
+                        }
+                    });
+                    
+                    // Global mouse up to cancel connection
+                    document.addEventListener('mouseup', (e) => {
+                        if (this.connectionState.isConnecting && !e.target.classList.contains('rete-socket')) {
+                            this.connectionState.isConnecting = false;
+                            this.connectionState.startSocket = null;
+                            if (this.connectionState.tempLine) {
+                                this.connectionState.tempLine.remove();
+                                this.connectionState.tempLine = null;
+                            }
+                        }
+                    });
+                }
+            }
+
+            createTempLine(x, y) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                line.style.position = 'fixed';
+                line.style.top = '0';
+                line.style.left = '0';
+                line.style.width = '100%';
+                line.style.height = '100%';
+                line.style.pointerEvents = 'none';
+                line.style.zIndex = '1000';
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke', '#2196F3');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                line.appendChild(path);
+                
+                return line;
+            }
+
+            updateTempLine(line, x, y) {
+                // Get start socket from line data
+                const startSocket = line.startSocket;
+                if (!startSocket) return;
+                
+                const startRect = startSocket.getBoundingClientRect();
+                const startX = startRect.left + startRect.width / 2;
+                const startY = startRect.top + startRect.height / 2;
+                
+                const path = line.querySelector('path');
+                const d = `M ${startX} ${startY} Q ${(startX + x) / 2} ${startY} ${x} ${y}`;
+                path.setAttribute('d', d);
+            }
+
+            createConnection(startSocket, endSocket) {
+                try {
+                    const sourceNodeId = startSocket.dataset.nodeId;
+                    const targetNodeId = endSocket.dataset.nodeId;
+                    const sourceKey = startSocket.dataset.socketKey;
+                    const targetKey = endSocket.dataset.socketKey;
+                    
+                    console.log(`Creating connection: ${sourceNodeId}.${sourceKey} -> ${targetNodeId}.${targetKey}`);
+                    
+                    // Check for duplicate connections to the same input socket
+                    const existingConnections = this.editor.getConnections();
+                    const duplicateConnection = existingConnections.find(conn => 
+                        conn.target === targetNodeId && conn.targetInput === targetKey
+                    );
+                    
+                    if (duplicateConnection) {
+                        console.warn('Socket already has a connection');
+                        return;
+                    }
+                    
+                    // Get nodes from editor
+                    const sourceNode = this.editor.getNode(sourceNodeId);
+                    const targetNode = this.editor.getNode(targetNodeId);
+                    
+                    if (sourceNode && targetNode) {
+                        // Create connection using Rete.js
+                        const connection = new Rete.ClassicPreset.Connection(
+                            sourceNode, sourceKey,
+                            targetNode, targetKey
+                        );
+                        
+                        this.editor.addConnection(connection);
+                        
+                        // Render connection visually
+                        this.renderConnection(startSocket, endSocket, connection.id);
+                        
+                        // Handle dynamic port addition for logic nodes
+                        if (targetNode.data.category === 'logic') {
+                            console.log('Target node is logic node, calling handleLogicNodeConnection');
+                            // Use setTimeout to ensure connection is fully added first
+                            setTimeout(() => {
+                                this.handleLogicNodeConnection(targetNode, targetKey);
+                            }, 200);
+                        }
+                        
+                        this.updateStatusBar();
+                        console.log('Connection created successfully');
+                    }
+                } catch (error) {
+                    console.error('Error creating connection:', error);
+                }
+            }
+            
+            handleLogicNodeConnection(logicNode, connectedKey) {
+                console.log('handleLogicNodeConnection called for:', logicNode.id);
+                
+                // Check if all current inputs are connected
+                const connections = this.editor.getConnections();
+                const nodeConnections = connections.filter(conn => conn.target === logicNode.id);
+                const connectedInputs = nodeConnections.map(conn => conn.targetInput);
+                
+                console.log('Current connections:', connectedInputs);
+                
+                // Count current inputs
+                const currentInputs = Object.keys(logicNode.inputs);
+                const maxInputs = 6; // Reasonable limit
+                
+                console.log('Current inputs:', currentInputs);
+                console.log('Connected inputs count:', connectedInputs.length);
+                console.log('Current inputs count:', currentInputs.length);
+                
+                // If all inputs are connected and we haven't reached the limit, add a new input
+                if (currentInputs.length < maxInputs && connectedInputs.length === currentInputs.length) {
+                    const newInputKey = `condition${logicNode.data.nextInputIndex}`;
+                    const newInputLabel = `條件 ${logicNode.data.nextInputIndex}`;
+                    
+                    logicNode.addInput(newInputKey, new Rete.ClassicPreset.Input(this.socket, newInputLabel));
+                    logicNode.data.nextInputIndex++;
+                    
+                    console.log(`Added new input ${newInputKey} to logic node ${logicNode.id}`);
+                    
+                    // Use setTimeout to ensure the connection is fully processed first
+                    setTimeout(() => {
+                        this.reRenderNode(logicNode);
+                    }, 100);
+                } else {
+                    console.log('Not adding new input - condition not met');
+                }
+            }
+            
+            reRenderNode(node) {
+                console.log('reRenderNode called for:', node.id);
+                
+                // Store current connections before re-rendering
+                const currentConnections = this.editor.getConnections();
+                const nodeConnections = currentConnections.filter(conn => 
+                    conn.source === node.id || conn.target === node.id
+                );
+                
+                console.log('Preserving connections:', nodeConnections.length);
+                
+                // Remove existing node element
+                const existingElement = document.getElementById(`node-${node.id}`);
+                if (existingElement) {
+                    existingElement.remove();
+                }
+                
+                // Get current position
+                let x = 250, y = 200;
+                if (existingElement) {
+                    x = parseInt(existingElement.style.left) || x;
+                    y = parseInt(existingElement.style.top) || y;
+                }
+                
+                // Re-render the node
+                this.renderNodeManually(node, x, y);
+                
+                // Re-establish visual connections for this node
+                nodeConnections.forEach(conn => {
+                    // Find the DOM elements for the sockets
+                    const sourceElement = document.querySelector(`[data-node-id="${conn.source}"][data-socket-key="${conn.sourceOutput}"]`);
+                    const targetElement = document.querySelector(`[data-node-id="${conn.target}"][data-socket-key="${conn.targetInput}"]`);
+                    
+                    if (sourceElement && targetElement) {
+                        // Remove old visual connection if it exists
+                        const oldConnectionElement = document.getElementById(`connection-${conn.id}`);
+                        if (oldConnectionElement) {
+                            oldConnectionElement.remove();
+                            this.connections.delete(conn.id);
+                        }
+                        
+                        // Re-render the visual connection
+                        this.renderConnection(sourceElement, targetElement, conn.id);
+                        console.log('Re-established visual connection:', conn.id);
+                    } else {
+                        console.warn('Could not find socket elements for connection:', conn.id);
+                    }
+                });
+            }
+            
+            handleConnectionRemoved(connection) {
+                // Check if connection is valid
+                if (!connection || !connection.id) {
+                    console.warn('Invalid connection object in handleConnectionRemoved');
+                    return;
+                }
+                
+                console.log('handleConnectionRemoved called for:', connection.id);
+                
+                // Remove visual connection (if still exists - may have been cleaned by deleteConnection)
+                const connectionElement = document.getElementById(`connection-${connection.id}`);
+                if (connectionElement) {
+                    connectionElement.remove();
+                    console.log(`Visual connection ${connection.id} removed by event handler`);
+                } else {
+                    console.log(`Visual connection ${connection.id} already removed`);
+                }
+                
+                // Remove from our connections map (if still exists)
+                if (this.connections.has(connection.id)) {
+                    this.connections.delete(connection.id);
+                    console.log(`Connection ${connection.id} removed from connections map`);
+                } else {
+                    console.log(`Connection ${connection.id} already removed from connections map`);
+                }
+                
+                // Clear any selected connection state
+                this.deselectAllConnections();
+                
+                // Handle dynamic port removal for logic nodes
+                const targetNode = this.editor.getNode(connection.target);
+                if (targetNode && targetNode.data.category === 'logic') {
+                    this.handleLogicNodeDisconnection(targetNode);
+                }
+                
+                this.updateStatusBar();
+            }
+            
+            handleLogicNodeDisconnection(logicNode) {
+                // Get remaining connections to this node
+                const connections = this.editor.getConnections();
+                const nodeConnections = connections.filter(conn => conn.target === logicNode.id);
+                const connectedInputs = nodeConnections.map(conn => conn.targetInput);
+                
+                // Get current inputs
+                const currentInputs = Object.keys(logicNode.inputs);
+                const minInputs = 1; // Always keep at least one input
+                
+                // Remove unused inputs (keep them in order)
+                const sortedInputs = currentInputs.sort();
+                const inputsToRemove = [];
+                
+                // Find unused inputs that can be removed (starting from the end)
+                for (let i = sortedInputs.length - 1; i >= minInputs; i--) {
+                    const inputKey = sortedInputs[i];
+                    if (!connectedInputs.includes(inputKey)) {
+                        inputsToRemove.push(inputKey);
+                    } else {
+                        break; // Stop when we find a connected input
+                    }
+                }
+                
+                // Remove unused inputs
+                inputsToRemove.forEach(inputKey => {
+                    logicNode.removeInput(inputKey);
+                    console.log(`Removed unused input ${inputKey} from logic node ${logicNode.id}`);
+                });
+                
+                // Re-render the node if inputs were removed
+                if (inputsToRemove.length > 0) {
+                    this.reRenderNode(logicNode);
+                }
+            }
+            
+            deleteConnection(connectionId) {
+                try {
+                    console.log('Attempting to delete connection:', connectionId);
+                    
+                    // Find the connection in the editor FIRST
+                    const connections = this.editor.getConnections();
+                    const connection = connections.find(conn => conn.id === connectionId);
+                    
+                    if (connection) {
+                        console.log('Removing connection from editor first:', connectionId);
+                        
+                        // Handle dynamic port removal for logic nodes BEFORE removing connection
+                        const targetNode = this.editor.getNode(connection.target);
+                        if (targetNode && targetNode.data.category === 'logic') {
+                            this.handleLogicNodeDisconnection(targetNode);
+                        }
+                        
+                        // Remove from editor FIRST - this prevents reRenderNode from seeing it
+                        this.editor.removeConnection(connectionId);
+                        console.log(`Connection ${connectionId} removed from editor`);
+                    } else {
+                        console.log(`Connection ${connectionId} not found in editor`);
+                    }
+                    
+                    // Now clean up visual element
+                    const connectionElement = document.getElementById(`connection-${connectionId}`);
+                    console.log(`Looking for connection element: connection-${connectionId}`, connectionElement);
+                    
+                    if (connectionElement) {
+                        // Immediately hide and remove the element
+                        connectionElement.style.display = 'none';
+                        connectionElement.classList.remove('selected');
+                        connectionElement.remove();
+                        console.log(`Visual connection ${connectionId} removed from DOM`);
+                    } else {
+                        console.log(`Connection element ${connectionId} not found in DOM`);
+                    }
+                    
+                    // Remove from our connections map
+                    this.connections.delete(connectionId);
+                    console.log(`Connection ${connectionId} removed from connections map`);
+                    
+                    this.updateStatusBar();
+                    console.log(`Connection deletion completed: ${connectionId}`);
+                    
+                } catch (error) {
+                    console.error('Error deleting connection:', error);
+                }
+            }
+
+            deleteNode(nodeId) {
+                try {
+                    const node = this.editor.getNode(nodeId);
+                    if (!node) {
+                        console.warn(`Node ${nodeId} not found`);
+                        return;
+                    }
+                    
+                    // Remove all connections related to this node
+                    const connections = this.editor.getConnections();
+                    const nodeConnections = connections.filter(conn => 
+                        conn.source === nodeId || conn.target === nodeId
+                    );
+                    
+                    nodeConnections.forEach(conn => {
+                        this.deleteConnection(conn.id);
+                    });
+                    
+                    // Remove visual node element
+                    const nodeElement = document.getElementById(`node-${nodeId}`);
+                    if (nodeElement) {
+                        nodeElement.remove();
+                    }
+                    
+                    // Remove from editor
+                    this.editor.removeNode(nodeId);
+                    
+                    // Clear selection if this was the selected node
+                    if (this.selectedNode && this.selectedNode.id === nodeId) {
+                        this.selectedNode = null;
+                        const panel = document.getElementById('propertiesPanel');
+                        panel.classList.remove('active');
+                    }
+                    
+                    this.updateStatusBar();
+                    console.log(`Node ${nodeId} deleted successfully`);
+                    
+                } catch (error) {
+                    console.error('Error deleting node:', error);
+                }
+            }
+
+            renderConnection(startSocket, endSocket, connectionId) {
+                const container = document.getElementById('rete');
+                
+                // Store connection info for updates
+                this.connections.set(connectionId, {
+                    startSocket: startSocket,
+                    endSocket: endSocket,
+                    startNodeId: startSocket.dataset.nodeId,
+                    endNodeId: endSocket.dataset.nodeId
+                });
+                
+                // Create SVG for connection
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.style.position = 'absolute';
+                svg.style.pointerEvents = 'none'; // Initially disable pointer events
+                svg.style.zIndex = '1';
+                svg.id = `connection-${connectionId}`;
+                svg.classList.add('rete-connection');
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke', '#666');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                path.style.cursor = 'pointer';
+                path.style.pointerEvents = 'auto'; // Enable pointer events only on path
+                
+                // Click to select/deselect connection (on path, not svg)
+                path.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.selectConnection(connectionId, svg, path);
+                });
+                
+                // Hover effect (on path, not svg)
+                path.addEventListener('mouseenter', () => {
+                    if (!svg.classList.contains('selected')) {
+                        path.setAttribute('stroke', '#ff4444');
+                        path.setAttribute('stroke-width', '3');
+                    }
+                });
+                
+                path.addEventListener('mouseleave', () => {
+                    if (!svg.classList.contains('selected')) {
+                        path.setAttribute('stroke', '#666');
+                        path.setAttribute('stroke-width', '2');
+                    }
+                });
+                
+                svg.appendChild(path);
+                container.appendChild(svg);
+                
+                // Initial positioning
+                this.updateConnectionPath(connectionId);
+            }
+
+            updateConnectionPath(connectionId) {
+                const connectionInfo = this.connections.get(connectionId);
+                if (!connectionInfo) {
+                    console.log(`updateConnectionPath: No connection info for ${connectionId}`);
+                    return;
+                }
+                
+                const svg = document.getElementById(`connection-${connectionId}`);
+                if (!svg) {
+                    console.log(`updateConnectionPath: No SVG element found for ${connectionId}`);
+                    return;
+                }
+                
+                const path = svg.querySelector('path');
+                if (!path) {
+                    console.log(`updateConnectionPath: No path element found for ${connectionId}`);
+                    return;
+                }
+                
+                console.log(`updateConnectionPath: Updating path for ${connectionId}`);
+                
+                const container = document.getElementById('rete');
+                
+                // Get socket positions relative to the canvas (not the viewport)
+                const startNode = document.getElementById(`node-${connectionInfo.startNodeId}`);
+                const endNode = document.getElementById(`node-${connectionInfo.endNodeId}`);
+                
+                if (!startNode || !endNode) return;
+                
+                // Calculate socket positions based on node positions
+                const startNodeX = parseInt(startNode.style.left) || 0;
+                const startNodeY = parseInt(startNode.style.top) || 0;
+                const endNodeX = parseInt(endNode.style.left) || 0;
+                const endNodeY = parseInt(endNode.style.top) || 0;
+                
+                // Get socket offset within the node
+                const startSocketRect = connectionInfo.startSocket.getBoundingClientRect();
+                const endSocketRect = connectionInfo.endSocket.getBoundingClientRect();
+                const startNodeRect = startNode.getBoundingClientRect();
+                const endNodeRect = endNode.getBoundingClientRect();
+                
+                const startSocketOffsetX = startSocketRect.left - startNodeRect.left + startSocketRect.width / 2;
+                const startSocketOffsetY = startSocketRect.top - startNodeRect.top + startSocketRect.height / 2;
+                const endSocketOffsetX = endSocketRect.left - endNodeRect.left + endSocketRect.width / 2;
+                const endSocketOffsetY = endSocketRect.top - endNodeRect.top + endSocketRect.height / 2;
+                
+                // Calculate final socket positions in canvas coordinates
+                const startX = startNodeX + startSocketOffsetX;
+                const startY = startNodeY + startSocketOffsetY;
+                const endX = endNodeX + endSocketOffsetX;
+                const endY = endNodeY + endSocketOffsetY;
+                
+                // Create curved path
+                const midX = (startX + endX) / 2;
+                const d = `M ${startX} ${startY} Q ${midX} ${startY} ${endX} ${endY}`;
+                path.setAttribute('d', d);
+                
+                // Update SVG size and position to match path bounds
+                if (svg) {
+                    const minX = Math.min(startX, endX, midX) - 10;
+                    const minY = Math.min(startY, endY) - 10;
+                    const maxX = Math.max(startX, endX, midX) + 10;
+                    const maxY = Math.max(startY, endY) + 10;
+                    
+                    svg.style.left = minX + 'px';
+                    svg.style.top = minY + 'px';
+                    svg.style.width = (maxX - minX) + 'px';
+                    svg.style.height = (maxY - minY) + 'px';
+                    
+                    // Adjust path coordinates relative to SVG position
+                    const relativePath = `M ${startX - minX} ${startY - minY} Q ${midX - minX} ${startY - minY} ${endX - minX} ${endY - minY}`;
+                    path.setAttribute('d', relativePath);
+                }
+            }
+
+            updateConnectionsForNode(nodeId) {
+                // Update all connections that involve this node
+                for (const [connectionId, connectionInfo] of this.connections) {
+                    if (connectionInfo.startNodeId === nodeId || connectionInfo.endNodeId === nodeId) {
+                        this.updateConnectionPath(connectionId);
+                    }
+                }
+            }
+
+            selectConnection(connectionId, svg, path) {
+                // Deselect all other connections
+                document.querySelectorAll('.rete-connection.selected').forEach(conn => {
+                    conn.classList.remove('selected');
+                    const connPath = conn.querySelector('path');
+                    if (connPath) {
+                        connPath.setAttribute('stroke', '#666');
+                        connPath.setAttribute('stroke-width', '2');
+                    }
+                });
+                
+                // Remove any existing delete button (no longer used)
+                const existingBtn = document.getElementById('connection-delete-btn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
+                
+                // Toggle selection of clicked connection
+                if (svg.classList.contains('selected')) {
+                    // Deselect
+                    svg.classList.remove('selected');
+                    path.setAttribute('stroke', '#666');
+                    path.setAttribute('stroke-width', '2');
+                } else {
+                    // Select
+                    svg.classList.add('selected');
+                    path.setAttribute('stroke', '#2196F3'); // Blue for selected
+                    path.setAttribute('stroke-width', '4');
+                    
+                    // Connection selected - can be deleted with Delete/Backspace key
+                }
+            }
+
+            // showConnectionDeleteButton method removed - connections now deleted with keyboard only
+
+            deselectAllConnections() {
+                // Deselect all connections and clean up any orphaned elements
+                document.querySelectorAll('.rete-connection.selected').forEach(conn => {
+                    conn.classList.remove('selected');
+                    const connPath = conn.querySelector('path');
+                    if (connPath) {
+                        connPath.setAttribute('stroke', '#666');
+                        connPath.setAttribute('stroke-width', '2');
+                    }
+                });
+                
+                // Also clean up any orphaned connection elements that may still exist
+                document.querySelectorAll('svg[id^="connection-"]').forEach(svg => {
+                    const connectionId = svg.id.replace('connection-', '');
+                    // Check if this connection still exists in the editor
+                    const connections = this.editor.getConnections();
+                    const exists = connections.some(conn => conn.id === connectionId);
+                    if (!exists) {
+                        console.log(`Removing orphaned visual connection: ${connectionId}`);
+                        svg.remove();
+                        this.connections.delete(connectionId);
+                    }
+                });
+                
+                // No need to remove delete button as we don't create them anymore
+            }
+
+
+            populateConditionFunction(nodeData) {
+                const selector = document.getElementById('conditionFunctionSelector');
+                if (!selector) return;
+                
+                if (nodeData.selectedFunction) {
+                    // Set the selected function
+                    selector.value = nodeData.selectedFunction.value;
+                    
+                    // Generate parameters for the selected function
+                    this.generateDynamicParameters(nodeData.selectedFunction, 'conditionDynamicParams', 'condition');
+                    
+                    // Populate parameter values
+                    if (nodeData.functionParams) {
+                        Object.keys(nodeData.functionParams).forEach(paramName => {
+                            const input = document.querySelector(`#conditionDynamicParams [data-param-name="${paramName}"]`);
+                            if (input) {
+                                const paramType = input.dataset.paramType;
+                                if (paramType === 'bool') {
+                                    input.checked = nodeData.functionParams[paramName];
+                                } else {
+                                    input.value = nodeData.functionParams[paramName];
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    // Clear selection
+                    selector.value = '';
+                    document.getElementById('conditionDynamicParams').innerHTML = '';
+                }
+            }
+
+            populateActionFunction(nodeData) {
+                const selector = document.getElementById('actionFunctionSelector');
+                if (!selector) return;
+                
+                if (nodeData.selectedFunction) {
+                    // Set the selected function
+                    selector.value = nodeData.selectedFunction.value;
+                    
+                    // Generate parameters for the selected function
+                    this.generateDynamicParameters(nodeData.selectedFunction, 'actionDynamicParams', 'action');
+                    
+                    // Populate parameter values
+                    if (nodeData.functionParams) {
+                        Object.keys(nodeData.functionParams).forEach(paramName => {
+                            const input = document.querySelector(`#actionDynamicParams [data-param-name="${paramName}"]`);
+                            if (input) {
+                                const paramType = input.dataset.paramType;
+                                if (paramType === 'bool') {
+                                    input.checked = nodeData.functionParams[paramName];
+                                } else {
+                                    input.value = nodeData.functionParams[paramName];
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    // Clear selection
+                    selector.value = '';
+                    document.getElementById('actionDynamicParams').innerHTML = '';
+                }
+            }
+
+            selectNode(node) {
+                this.selectedNode = node;
+                
+                // Deselect any selected connections when selecting a node
+                this.deselectAllConnections();
+                
+                const panel = document.getElementById('propertiesPanel');
+                panel.classList.add('active');
+                
+                // Fill all property fields
+                document.getElementById('nodeName').value = node.data.name || '';
+                document.getElementById('nodeDescription').value = node.data.description || '';
+                
+                // Show/hide sections based on node category
+                const conditionParams = document.getElementById('conditionParams');
+                const actionParams = document.getElementById('actionParams');
+                
+                // 獲取所有屬性區塊（安全方式）
+                const allSections = document.querySelectorAll('.property-section');
+                const performanceSection = allSections[0]; // 效能區塊
+                const wcsSection = allSections[1]; // WCS 配置區塊
+                
+                // 安全的設置顯示狀態函數
+                const safeSetDisplay = (element, display) => {
+                    if (element && element.style) {
+                        element.style.display = display;
+                    }
+                };
+                
+                // 根據節點類型顯示/隱藏區塊
+                if (node.data.category === 'condition') {
+                    if (conditionParams) conditionParams.style.display = 'block';
+                    if (actionParams) actionParams.style.display = 'none';
+                    safeSetDisplay(performanceSection, 'none');
+                    safeSetDisplay(wcsSection, 'none'); // 條件節點不需要WCS配置
+                    
+                    // 設置已選擇的函數和參數
+                    this.populateConditionFunction(node.data);
+                } else if (node.data.category === 'logic') {
+                    if (conditionParams) conditionParams.style.display = 'none';
+                    if (actionParams) actionParams.style.display = 'none';
+                    safeSetDisplay(performanceSection, 'none');
+                    safeSetDisplay(wcsSection, 'none');
+                } else if (node.data.category === 'action') {
+                    if (conditionParams) conditionParams.style.display = 'none';
+                    if (actionParams) actionParams.style.display = 'block';
+                    safeSetDisplay(performanceSection, 'none');
+                    safeSetDisplay(wcsSection, 'block');
+                    
+                    // 設置已選擇的函數和參數
+                    this.populateActionFunction(node.data);
+                } else {
+                    // Show all for other node types
+                    if (conditionParams) conditionParams.style.display = 'none';
+                    if (actionParams) actionParams.style.display = 'none';
+                    safeSetDisplay(performanceSection, 'block');
+                    safeSetDisplay(wcsSection, 'block');
+                }
+                
+                // Performance (safe access)
+                const capacityEl = document.getElementById('nodeCapacity');
+                const processingTimeEl = document.getElementById('nodeProcessingTime');
+                const efficiencyEl = document.getElementById('nodeEfficiency');
+                
+                if (capacityEl) capacityEl.value = node.data.capacity || '';
+                if (processingTimeEl) processingTimeEl.value = node.data.processingTime || '';
+                if (efficiencyEl) efficiencyEl.value = node.data.efficiency || '';
+                
+                // WCS Configuration (safe access)
+                const equipmentIdEl = document.getElementById('nodeEquipmentId');
+                const plcAddressEl = document.getElementById('nodePlcAddress');
+                const zoneEl = document.getElementById('nodeZone');
+                const priorityEl = document.getElementById('nodePriority');
+                
+                if (equipmentIdEl) equipmentIdEl.value = node.data.equipmentId || '';
+                if (plcAddressEl) plcAddressEl.value = node.data.plcAddress || '';
+                if (zoneEl) zoneEl.value = node.data.zone || '';
+                if (priorityEl) priorityEl.value = node.data.priority || 'normal';
+            }
+
+            updateStatusBar() {
+                const nodeCount = this.editor.getNodes().length;
+                const connectionCount = this.editor.getConnections().length;
+                
+                document.getElementById('nodeCount').textContent = nodeCount;
+                document.getElementById('connectionCount').textContent = connectionCount;
+            }
+
+            newFlow() {
+                this.editor.clear();
+                this.nodeCounter = 0;
+                this.selectedNode = null;
+                
+                // Clear connections tracking
+                this.connections.clear();
+                
+                // Clear manually rendered nodes and connections
+                const container = document.getElementById('rete');
+                const nodes = container.querySelectorAll('.rete-node');
+                const connections = container.querySelectorAll('svg[id^="connection-"]');
+                nodes.forEach(node => node.remove());
+                connections.forEach(conn => conn.remove());
+                
+                document.getElementById('propertiesPanel').classList.remove('active');
+                this.updateStatusBar();
+            }
+
+            saveFlow() {
+                // Create a simple data structure for saving
+                const nodes = this.editor.getNodes();
+                const connections = this.editor.getConnections();
+                
+                const data = {
+                    id: 'wcs-flow@0.1.0',
+                    nodes: nodes.map(node => ({
+                        id: node.id,
+                        label: node.label,
+                        data: node.data,
+                        position: node.position || [0, 0]
+                    })),
+                    connections: connections.map(conn => ({
+                        id: conn.id,
+                        source: conn.source,
+                        target: conn.target,
+                        sourceOutput: conn.sourceOutput,
+                        targetInput: conn.targetInput
+                    }))
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'wcs-flow.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            async loadFlow() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        try {
+                            const text = await file.text();
+                            const data = JSON.parse(text);
+                            
+                            // Clear current flow
+                            this.newFlow();
+                            
+                            // Load nodes
+                            if (data.nodes) {
+                                for (const nodeData of data.nodes) {
+                                    let config = this.nodeTypes[nodeData.data?.type];
+                                    
+                                    // 如果在固定nodeTypes中找不到，嘗試從函數配置中查找
+                                    if (!config && this.functionsConfig && nodeData.data?.type) {
+                                        // 檢查條件函數  
+                                        const conditionFunc = this.functionsConfig.condition_functions?.find(f => f.value === nodeData.data.type);
+                                        if (conditionFunc) {
+                                            config = {
+                                                name: conditionFunc.label,
+                                                category: 'condition',
+                                                color: '#00BCD4'
+                                            };
+                                        }
+                                        
+                                        // 檢查動作函數
+                                        if (!config) {
+                                            const actionFunc = this.functionsConfig.action_functions?.find(f => f.value === nodeData.data.type);
+                                            if (actionFunc) {
+                                                config = {
+                                                    name: actionFunc.label,
+                                                    category: 'action',
+                                                    color: '#795548'
+                                                };
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (config) {
+                                        const node = new Rete.ClassicPreset.Node(config.name);
+                                        node.id = nodeData.id;
+                                        node.data = nodeData.data;
+                                        
+                                        // Add inputs and outputs based on category (same logic as addNode)
+                                        if (config.category === 'condition') {
+                                            node.addOutput('result', new Rete.ClassicPreset.Output(this.socket, '結果'));
+                                        } else if (config.category === 'logic') {
+                                            // For logic nodes, check if we need to add specific inputs based on connections
+                                            const nodeConnections = data.connections?.filter(conn => conn.target === node.id) || [];
+                                            const maxInputIndex = Math.max(
+                                                1, // At least condition1
+                                                ...nodeConnections.map(conn => {
+                                                    const match = conn.targetInput.match(/condition(\d+)/);
+                                                    return match ? parseInt(match[1]) : 1;
+                                                })
+                                            );
+                                            
+                                            // Add required inputs
+                                            for (let i = 1; i <= maxInputIndex; i++) {
+                                                node.addInput(`condition${i}`, new Rete.ClassicPreset.Input(this.socket, `條件 ${i}`));
+                                            }
+                                            
+                                            node.addOutput('result', new Rete.ClassicPreset.Output(this.socket, '結果'));
+                                            node.data.nextInputIndex = maxInputIndex + 1;
+                                        } else if (config.category === 'action') {
+                                            node.addInput('trigger', new Rete.ClassicPreset.Input(this.socket, '觸發'));
+                                            node.addOutput('completed', new Rete.ClassicPreset.Output(this.socket, '完成'));
+                                        } else {
+                                            // Original logic for other node types
+                                            if (config.category !== 'input') {
+                                                node.addInput('in', new Rete.ClassicPreset.Input(this.socket, 'Input'));
+                                            }
+                                            
+                                            if (config.category !== 'output') {
+                                                node.addOutput('out', new Rete.ClassicPreset.Output(this.socket, 'Output'));
+                                            }
+                                            
+                                            if (config.category === 'control' && nodeData.data?.type === 'decision') {
+                                                node.addOutput('yes', new Rete.ClassicPreset.Output(this.socket, 'Yes'));
+                                                node.addOutput('no', new Rete.ClassicPreset.Output(this.socket, 'No'));
+                                            }
+                                        }
+                                        
+                                        await this.editor.addNode(node);
+                                        
+                                        // Position node and render manually
+                                        const x = nodeData.position ? nodeData.position[0] : 250 + Math.random() * 200;
+                                        const y = nodeData.position ? nodeData.position[1] : 200 + Math.random() * 200;
+                                        
+                                        if (this.area) {
+                                            await this.area.translate(node.id, { x, y });
+                                        }
+                                        
+                                        // Manual rendering to show the node
+                                        this.renderNodeManually(node, x, y);
+                                    }
+                                }
+                            }
+                            
+                            // Load connections after all nodes are created and rendered
+                            if (data.connections) {
+                                // Wait a bit for all nodes to be fully rendered
+                                setTimeout(async () => {
+                                    for (const connData of data.connections) {
+                                        try {
+                                            const sourceNode = this.editor.getNode(connData.source);
+                                            const targetNode = this.editor.getNode(connData.target);
+                                            if (sourceNode && targetNode) {
+                                                const connection = new Rete.ClassicPreset.Connection(
+                                                    sourceNode, connData.sourceOutput || 'out',
+                                                    targetNode, connData.targetInput || 'in'
+                                                );
+                                                await this.editor.addConnection(connection);
+                                                
+                                                // Find socket elements for visual connection
+                                                const sourceSocket = document.querySelector(`[data-node-id="${connData.source}"][data-socket-key="${connData.sourceOutput}"]`);
+                                                const targetSocket = document.querySelector(`[data-node-id="${connData.target}"][data-socket-key="${connData.targetInput}"]`);
+                                                
+                                                if (sourceSocket && targetSocket) {
+                                                    this.renderConnection(sourceSocket, targetSocket, connection.id);
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.warn('Could not load connection:', e);
+                                        }
+                                    }
+                                    
+                                    this.updateStatusBar();
+                                    console.log('Flow loaded successfully');
+                                }, 500);
+                            } else {
+                                this.updateStatusBar();
+                                console.log('Flow loaded successfully');
+                            }
+                        } catch (error) {
+                            console.error('Error loading flow:', error);
+                            alert('Error loading flow file');
+                        }
+                    }
+                };
+                input.click();
+            }
+
+            exportToJson() {
+                console.log('Starting workflow export...');
+                
+                // Analyze the workflow structure
+                const workflowAnalysis = this.analyzeWorkflow();
+                
+                // Generate structured workflow
+                const workflow = {
+                    workflow: {
+                        name: "WCS Flow Export",
+                        description: "Generated executable workflow from WCS Flow Designer",
+                        version: "1.0",
+                        execution_mode: this.executionMode,
+                        variables: this.generateWorkflowVariables(workflowAnalysis),
+                        steps: this.generateWorkflowSteps(workflowAnalysis)
+                    }
+                };
+                
+                console.log('Generated workflow:', workflow);
+                
+                // Export as JSON
+                const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'wcs-flow-export.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log('Flow exported:', flow);
+            }
+            
+            analyzeWorkflow() {
+                console.log('Analyzing workflow structure...');
+                
+                const nodes = this.editor.getNodes();
+                const connections = this.editor.getConnections();
+                
+                // Group nodes by category
+                const nodesByCategory = {
+                    condition: nodes.filter(n => n.data.category === 'condition'),
+                    logic: nodes.filter(n => n.data.category === 'logic'),
+                    action: nodes.filter(n => n.data.category === 'action')
+                };
+                
+                // Build connection map for easy lookup
+                const connectionMap = {
+                    outgoing: new Map(), // nodeId -> [connections]
+                    incoming: new Map()  // nodeId -> [connections]
+                };
+                
+                connections.forEach(conn => {
+                    // Outgoing connections
+                    if (!connectionMap.outgoing.has(conn.source)) {
+                        connectionMap.outgoing.set(conn.source, []);
+                    }
+                    connectionMap.outgoing.get(conn.source).push(conn);
+                    
+                    // Incoming connections
+                    if (!connectionMap.incoming.has(conn.target)) {
+                        connectionMap.incoming.set(conn.target, []);
+                    }
+                    connectionMap.incoming.get(conn.target).push(conn);
+                });
+                
+                // Find starting nodes (nodes with no incoming connections)
+                const startingNodes = nodes.filter(node => 
+                    !connectionMap.incoming.has(node.id) || 
+                    connectionMap.incoming.get(node.id).length === 0
+                );
+                
+                // Analyze room iteration requirements
+                const roomIterationNodes = nodes.filter(node => 
+                    node.data.roomNumber === 'FOR_LOOP' || 
+                    (node.data.roomNumber && node.data.roomNumber !== '')
+                );
+                
+                const hasRoomIteration = roomIterationNodes.some(node => 
+                    node.data.roomNumber === 'FOR_LOOP'
+                ) || this.executionMode === 'foreach_room';
+                
+                return {
+                    nodes,
+                    connections,
+                    nodesByCategory,
+                    connectionMap,
+                    startingNodes,
+                    roomIterationNodes,
+                    hasRoomIteration
+                };
+            }
+            
+            generateWorkflowVariables(analysis) {
+                console.log('Generating workflow variables...');
+                
+                const variables = {};
+                
+                // Add room variables if needed
+                if (analysis.hasRoomIteration) {
+                    variables.rooms = ["01", "02", "03", "04", "05"];
+                    variables.current_room = null;
+                }
+                
+                // Add any other dynamic variables based on node parameters
+                analysis.nodes.forEach(node => {
+                    if (node.data.workId) {
+                        variables.work_id = node.data.workId;
+                    }
+                });
+                
+                return variables;
+            }
+            
+            generateWorkflowSteps(analysis) {
+                console.log('Generating workflow steps...');
+                
+                const steps = [];
+                
+                // If we need room iteration, wrap everything in a foreach step
+                if (analysis.hasRoomIteration) {
+                    const foreachStep = {
+                        type: "foreach",
+                        id: "room_iteration",
+                        iterator: "rooms",
+                        variable: "current_room",
+                        steps: this.generateStepsFromNodes(analysis)
+                    };
+                    steps.push(foreachStep);
+                } else {
+                    // Direct steps without room iteration
+                    steps.push(...this.generateStepsFromNodes(analysis));
+                }
+                
+                return steps;
+            }
+            
+            generateStepsFromNodes(analysis) {
+                console.log('Generating steps from nodes...');
+                
+                const steps = [];
+                const processedNodes = new Set();
+                
+                // Process nodes in execution order (breadth-first from starting nodes)
+                const queue = [...analysis.startingNodes];
+                
+                while (queue.length > 0) {
+                    const currentNode = queue.shift();
+                    
+                    if (processedNodes.has(currentNode.id)) {
+                        continue;
+                    }
+                    
+                    processedNodes.add(currentNode.id);
+                    
+                    // Generate step based on node type
+                    const step = this.nodeToStep(currentNode, analysis);
+                    if (step) {
+                        steps.push(step);
+                    }
+                    
+                    // Add connected nodes to queue
+                    const outgoingConnections = analysis.connectionMap.outgoing.get(currentNode.id) || [];
+                    outgoingConnections.forEach(conn => {
+                        const targetNode = analysis.nodes.find(n => n.id === conn.target);
+                        if (targetNode && !processedNodes.has(targetNode.id)) {
+                            queue.push(targetNode);
+                        }
+                    });
+                }
+                
+                return steps;
+            }
+            
+            nodeToStep(node, analysis) {
+                console.log(`Converting node ${node.id} (${node.data.category}) to step...`);
+                
+                switch (node.data.category) {
+                    case 'condition':
+                        return this.conditionNodeToStep(node, analysis);
+                    case 'logic':
+                        return this.logicNodeToStep(node, analysis);
+                    case 'action':
+                        return this.actionNodeToStep(node, analysis);
+                    default:
+                        console.warn(`Unknown node category: ${node.data.category}`);
+                        return null;
+                }
+            }
+            
+            conditionNodeToStep(node, analysis) {
+                if (!node.data.selectedFunction) {
+                    console.warn(`Condition node ${node.id} has no selected function`);
+                    return null;
+                }
+                
+                const step = {
+                    type: "condition",
+                    id: node.id,
+                    function: node.data.selectedFunction.value,
+                    module: node.data.selectedFunction.module,
+                    description: node.data.description || node.data.name,
+                    parameters: {}
+                };
+                
+                // Add function parameters from the node's functionParams
+                if (node.data.functionParams) {
+                    Object.keys(node.data.functionParams).forEach(paramName => {
+                        let value = node.data.functionParams[paramName];
+                        
+                        // Handle FOR_LOOP special case for room_id parameter
+                        if (paramName === 'room_id' && value === 'FOR_LOOP') {
+                            value = "${current_room}";
+                        }
+                        
+                        step.parameters[paramName] = value;
+                    });
+                }
+                
+                // Determine next steps based on connections
+                const outgoingConnections = analysis.connectionMap.outgoing.get(node.id) || [];
+                if (outgoingConnections.length > 0) {
+                    step.on_true = outgoingConnections[0].target;
+                    step.on_false = "end_step";
+                } else {
+                    step.on_true = "end_step";
+                    step.on_false = "end_step";
+                }
+                
+                return step;
+            }
+            
+            logicNodeToStep(node, analysis) {
+                const isAndGate = node.data.logicType === 'and-gate';
+                
+                const step = {
+                    type: isAndGate ? "logic_and" : "logic_or",
+                    id: node.id,
+                    description: node.data.description || node.data.name,
+                    conditions: []
+                };
+                
+                // Get all incoming connections as conditions
+                const incomingConnections = analysis.connectionMap.incoming.get(node.id) || [];
+                step.conditions = incomingConnections.map(conn => conn.source);
+                
+                // Determine next steps
+                const outgoingConnections = analysis.connectionMap.outgoing.get(node.id) || [];
+                if (outgoingConnections.length > 0) {
+                    if (isAndGate) {
+                        step.on_all_true = outgoingConnections[0].target;
+                        step.on_any_false = "end_step";
+                    } else {
+                        step.on_any_true = outgoingConnections[0].target;
+                        step.on_all_false = "end_step";
+                    }
+                }
+                
+                return step;
+            }
+            
+            actionNodeToStep(node, analysis) {
+                if (!node.data.selectedFunction) {
+                    console.warn(`Action node ${node.id} has no selected function`);
+                    return null;
+                }
+                
+                const step = {
+                    type: "action",
+                    id: node.id,
+                    function: node.data.selectedFunction.value,
+                    module: node.data.selectedFunction.module,
+                    description: node.data.description || node.data.name,
+                    parameters: {}
+                };
+                
+                // Add function parameters from the node's functionParams
+                if (node.data.functionParams) {
+                    Object.keys(node.data.functionParams).forEach(paramName => {
+                        let value = node.data.functionParams[paramName];
+                        
+                        // Handle room variable substitution for text parameters
+                        if (typeof value === 'string') {
+                            value = this.substituteRoomVariables(value);
+                        }
+                        
+                        step.parameters[paramName] = value;
+                    });
+                }
+                
+                return step;
+            }
+            
+            substituteRoomVariables(text) {
+                if (!text) return text;
+                
+                // Replace room placeholders with variable references
+                return text.replace(/room_(\d+)/g, 'room_${current_room}')
+                          .replace(/\{room\}/g, '${current_room}');
+            }
+            
+            getConditionFunction(nodeType) {
+                const mapping = {
+                    'room-has-carrier': 'room_has_carrier',
+                    'room-inlet-has-rack': 'room_inlet_has_rack',
+                    'room-outlet-has-rack': 'room_outlet_has_rack',
+                    'no-conflict-task': 'no_conflict_task',
+                    'rack-side-has-carrier': 'rack_side_has_carrier'
+                };
+                return mapping[nodeType] || nodeType;
+            }
+            
+            getConditionType(nodeType) {
+                const mapping = {
+                    'rack-location-check': 'rack_at_location_exists',
+                    'rack-side-completed': 'rack_side_completed',
+                    'rack-has-work': 'rack_has_b_side_work',
+                    'rack-is-full': 'rack_is_full',
+                    'no-active-task': 'no_active_task',
+                    'area-available': 'manual_collection_area_available'
+                };
+                return mapping[nodeType] || nodeType;
+            }
+            
+            runSimulation() {
+                // Simple simulation - trace through connected nodes
+                const nodes = this.editor.getNodes();
+                const connections = this.editor.getConnections();
+                
+                console.log('=== WCS Flow Simulation ===');
+                console.log('Nodes:', nodes.length);
+                console.log('Connections:', connections.length);
+                
+                // Find condition nodes and evaluate
+                const conditionNodes = nodes.filter(n => n.data.category === 'condition');
+                const results = {};
+                
+                conditionNodes.forEach(node => {
+                    // Simulate condition evaluation (randomly for demo)
+                    const result = Math.random() > 0.5;
+                    results[node.id] = result;
+                    console.log(`Condition ${node.data.name}: ${result ? 'TRUE' : 'FALSE'}`);
+                });
+                
+                // Find logic nodes and evaluate
+                const logicNodes = nodes.filter(n => n.data.category === 'logic');
+                logicNodes.forEach(node => {
+                    const inputs = connections
+                        .filter(c => c.target === node.id)
+                        .map(c => results[c.source]);
+                    
+                    let result = false;
+                    if (node.data.type === 'and-gate') {
+                        result = inputs.every(Boolean);
+                    } else if (node.data.type === 'or-gate') {
+                        result = inputs.some(Boolean);
+                    }
+                    
+                    results[node.id] = result;
+                    console.log(`Logic ${node.data.name}: ${result ? 'TRUE' : 'FALSE'}`);
+                });
+                
+                // Find action nodes
+                const actionNodes = nodes.filter(n => n.data.category === 'action');
+                actionNodes.forEach(node => {
+                    const inputs = connections
+                        .filter(c => c.target === node.id)
+                        .map(c => results[c.source]);
+                    
+                    const shouldExecute = inputs.length === 0 || inputs.some(Boolean);
+                    if (shouldExecute) {
+                        console.log(`Action ${node.data.name}: EXECUTED`);
+                        console.log(`  Task Type: ${node.data.taskType}`);
+                        console.log(`  Robot: ${node.data.robotModel}`);
+                        console.log(`  From: ${node.data.source} To: ${node.data.destination}`);
+                    } else {
+                        console.log(`Action ${node.data.name}: SKIPPED`);
+                    }
+                });
+                
+                console.log('=== Simulation Complete ===');
+                alert('Simulation complete! Check console for results.');
+            }
+        }
+
+        // Make it globally accessible for debugging
+        window.wcsDesigner = new WcsFlowDesigner();
+        console.log('WcsFlowDesigner created:', window.wcsDesigner);
+    </script>
+</body>
+</html>

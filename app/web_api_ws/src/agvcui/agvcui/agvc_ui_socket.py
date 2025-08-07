@@ -33,6 +33,11 @@ class AgvcUiSocket:
         self.sio.on('disconnect')(self.disconnect)
         self.sio.on('user_login')(self.user_login)
         self.sio.on('user_logout')(self.user_logout)
+        
+        # Flow Designer 事件
+        self.sio.on('flow_save')(self.flow_save)
+        self.sio.on('flow_load')(self.flow_load)
+        self.sio.on('flow_validate')(self.flow_validate)
 
         # 如果還有其他事件，這裡可以繼續綁定
 
@@ -118,6 +123,59 @@ class AgvcUiSocket:
         return {
             "success": True,
             "message": "登出成功"
+        }
+
+    async def flow_save(self, sid, data):
+        """處理流程保存事件"""
+        print(f"💾 Flow Designer 保存請求 (sid: {sid}): {data.get('name', 'Unknown')}")
+        
+        # 這裡可以添加保存邏輯，或者只是廣播事件
+        await self.sio.emit('flow_saved', {
+            'name': data.get('name', 'Unknown'),
+            'timestamp': time.time()
+        }, room=sid)
+        
+        return {
+            "success": True,
+            "message": f"流程 '{data.get('name', 'Unknown')}' 已保存"
+        }
+
+    async def flow_load(self, sid, data):
+        """處理流程載入事件"""
+        print(f"📂 Flow Designer 載入請求 (sid: {sid}): {data.get('name', 'Unknown')}")
+        
+        await self.sio.emit('flow_loaded', {
+            'name': data.get('name', 'Unknown'),
+            'timestamp': time.time()
+        }, room=sid)
+        
+        return {
+            "success": True,
+            "message": f"流程 '{data.get('name', 'Unknown')}' 已載入"
+        }
+
+    async def flow_validate(self, sid, data):
+        """處理流程驗證事件"""
+        print(f"✅ Flow Designer 驗證請求 (sid: {sid})")
+        
+        # Simple validation logic - can be enhanced
+        valid = True
+        errors = []
+        
+        if not data.get('nodes'):
+            valid = False
+            errors.append("流程必須包含至少一個節點")
+        
+        await self.sio.emit('flow_validation_result', {
+            'valid': valid,
+            'errors': errors,
+            'timestamp': time.time()
+        }, room=sid)
+        
+        return {
+            "success": True,
+            "valid": valid,
+            "errors": errors
         }
 
     async def notify_machines(self, sid):

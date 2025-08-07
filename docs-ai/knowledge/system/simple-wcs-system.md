@@ -1,27 +1,52 @@
 # Simple WCS 系統設計文檔
 
+## 🎯 系統定位說明
+**Simple WCS** 是 RosAGV 系統中的**主要 WCS 核心系統**，基於配置檔案驅動的決策引擎，與 Flow Designer 可視化介面整合，提供靈活且易於維護的倉庫控制解決方案。
+
 ## 🎯 適用場景
-- 理解 Simple WCS 極簡化配置驅動的 WCS 決策引擎
-- 為業務流程配置和管理提供技術指導
-- Simple WCS 開發、部署和故障排除指導
+- **生產環境**: 主要的 WCS 決策引擎，處理所有倉庫控制邏輯
+- **配置驅動**: 基於 YAML/JSON 檔案的靈活業務流程配置
+- **可視化管理**: 透過 Flow Designer 進行流程設計和管理
+- **易於維護**: 無需修改程式碼即可調整業務邏輯
 
 ## 📋 系統概述
 
-### 系統定位
-**Simple WCS** 是一個極簡化配置驅動的 WCS (Warehouse Control System) 決策引擎，基於 ROS 2 Jazzy 和 Zenoh RMW 構建，採用 YAML 配置系統，專注於 Rack 旋轉檢查和滿料架運輸等核心業務流程的自動化決策。
+### 🎯 主要系統定位
+**Simple WCS** 是 RosAGV 的主要 WCS (Warehouse Control System) 決策引擎，基於 ROS 2 Jazzy 和 Zenoh RMW 構建，採用配置檔案驅動系統，專注於透過 YAML/JSON flow 檔案實現靈活的業務流程自動化決策。
 
-### 核心特色
-- **配置驅動**: 純 YAML 配置驅動的業務邏輯
-- **多檔案架構**: 每個業務流程一個獨立 YAML 檔案
+### 🆚 與 AI WCS 的關係
+```
+RosAGV WCS 系統架構:
+├── 🎯 simple_wcs_ws (主要生產系統)
+│   ├── 生產環境使用
+│   ├── 配置驅動決策引擎
+│   ├── Flow 檔案驅動業務流程
+│   └── Flow Designer 可視化配置整合
+└── 🔬 ai_wcs_ws (實驗性系統)
+    ├── 研究和對比測試使用
+    ├── Python 原生決策邏輯
+    ├── 實驗性演算法驗證
+    └── 非主要生產系統
+```
+
+### 🎯 主要系統特色
+- **配置驅動**: Flow 檔案 (YAML/JSON) 定義業務邏輯，靈活且易於維護
+- **Flow Designer 整合**: 可視化設計介面產生 flow 檔案
 - **ROS 2 + Zenoh 整合**: 原生 ROS 2 節點實作，使用 Zenoh RMW 支援分散式部署
 - **資料庫整合**: 直接整合現有 db_proxy 資料庫系統和連接池
-- **智能決策**: 基於實際資料庫狀態的智能任務決策
+- **Python 邏輯執行**: 根據 flow 檔案配置執行對應的 Python 程式邏輯
 
-### 業務價值
-- **自動化決策**: Rack 旋轉和運輸任務的全自動檢測和執行
-- **配置靈活**: 業務流程配置化，易於調整和擴展
-- **防衝突機制**: 完整的任務衝突檢查和防護邏輯
-- **系統整合**: 無縫整合 KUKA Fleet 和現有 RosAGV 系統
+### 🎯 生產價值
+- **易於維護**: 透過修改 flow 檔案即可調整業務邏輯，無需修改程式碼
+- **可視化管理**: Flow Designer 提供直觀的流程設計和管理介面
+- **靈活配置**: 支援動態優先度、條件判斷、自定義動作等靈活配置
+- **擴展性**: 新的業務流程可透過新增 flow 檔案輕鬆實現
+
+### ⚠️ 使用建議
+- **生產環境**: **建議使用 simple_wcs_ws** 作為主要 WCS 系統
+- **Flow Designer**: 使用 AGVCUI 中的 Flow Designer 進行流程設計
+- **配置管理**: 透過 flow 檔案進行業務邏輯配置和調整
+- **實驗對比**: ai_wcs_ws 可用於演算法研究和對比測試
 
 ## 🏗️ 系統架構
 
@@ -424,8 +449,27 @@ python3 create_exit_test_data.py    # 建立出口測試資料
 5. **資料庫連接**: 檢查資料庫連接和查詢效能
 
 ## 🔗 交叉引用
-- WCS 系統設計: @docs-ai/knowledge/agv-domain/wcs-system-design.md
-- 資料庫設計: @docs-ai/knowledge/agv-domain/wcs-database-design.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 資料庫操作: @docs-ai/operations/development/database-operations.md
-- 容器開發: @docs-ai/operations/development/docker-development.md
+
+### 🎯 主要 WCS 系統
+- **Simple WCS 統一架構**: @docs-ai/knowledge/agv-domain/wcs-system-design.md - **主要 WCS 系統設計**
+- **Simple WCS 實作**: `app/simple_wcs_ws/CLAUDE.md` - **生產環境使用的 WCS 核心**
+- **Flow Designer**: `app/web_api_ws/src/agvcui/CLAUDE.md` - **可視化流程設計器**
+
+### 🎯 Simple WCS 相關
+- **Simple WCS 開發**: @docs-ai/operations/development/simple-wcs-development.md - 生產系統開發指導
+- **Simple WCS 實作**: `app/simple_wcs_ws/` - 主要 WCS 實作代碼
+
+### 🔬 AI WCS (實驗性)
+- **AI WCS 實作**: `app/ai_wcs_ws/CLAUDE.md` - 實驗性決策引擎
+
+### 📚 共用資源
+- **資料庫設計**: @docs-ai/knowledge/agv-domain/wcs-database-design.md
+- **Work ID 系統**: @docs-ai/knowledge/agv-domain/wcs-workid-system.md
+- **ROS 2 開發**: @docs-ai/operations/development/ros2-development.md
+- **資料庫操作**: @docs-ai/operations/development/database-operations.md
+- **容器開發**: @docs-ai/operations/development/docker-development.md
+
+### ⚠️ 選擇指導
+- **🏭 生產環境**: 使用 simple_wcs_ws + Flow Designer
+- **🔬 研究實驗**: 使用 ai_wcs_ws 進行演算法研究和對比測試
+- **📖 學習理解**: 主要學習 simple_wcs_ws，ai_wcs_ws 可作為對比參考

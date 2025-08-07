@@ -301,7 +301,7 @@ class NavigationManager {
             
             let filePath = path;
             
-            // 如果不是 .md 文件，查找配置中的對應文件
+            // 如果不是 .md 檔案，查找配置中的對應檔案
             if (!path.endsWith('.md')) {
                 const fileInfo = this.findFileByPath(path);
                 if (fileInfo) {
@@ -385,22 +385,22 @@ class NavigationManager {
     }
 
     /**
-     * 根據路徑查找文件資訊
+     * 根據路徑查找檔案資訊
      */
     findFileByPath(path) {
         for (const section of this.navigationConfig.sections) {
             for (const item of section.items) {
-                // 直接匹配 ID 或文件路徑
+                // 直接匹配 ID 或檔案路徑
                 if (item.id === path || item.file === path) {
                     return item;
                 }
                 
-                // 匹配文件路徑去掉 .md 後綴
+                // 匹配檔案路徑去掉 .md 後綴
                 if (item.file === path + '.md') {
                     return item;
                 }
                 
-                // 匹配完整路徑的文件名部分和 ID
+                // 匹配完整路徑的檔案名部分和 ID
                 if (path.includes('/')) {
                     const pathFileName = path.split('/').pop();
                     const itemFileDir = item.file.includes('/') ? 
@@ -469,7 +469,7 @@ class NavigationManager {
             fullCurrentPath += '.md';
         }
         
-        // 獲取當前文件的目錄路徑
+        // 獲取當前檔案的目錄路徑
         const currentDir = fullCurrentPath.includes('/') ? 
             fullCurrentPath.substring(0, fullCurrentPath.lastIndexOf('/')) : '';
         

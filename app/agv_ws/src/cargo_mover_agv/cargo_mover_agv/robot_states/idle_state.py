@@ -15,7 +15,10 @@ class IdleState(State):
         self.node = node
         # Hokuyo 寫入相關變數
         self.hokuyo_write_completed = False
-
+                
+        self.node.room_id = self.node.task.room_id
+        self.node.work_id = self.node.task.work_id
+        
         # 動態計算工作 ID
         self.entrance_work = int(str(self.node.room_id) + "00" + self.ENTRANCE + self.PUT)
         self.exit_work = int(str(self.node.room_id)+"00" + self.EXIT + self.TAKE)
@@ -23,6 +26,7 @@ class IdleState(State):
     def enter(self):
         self.node.get_logger().info("🤖robot 目前狀態: Idle")
 
+        
     def leave(self):
         self.node.get_logger().info("robot 離開 Idle 狀態")
 
@@ -96,6 +100,7 @@ class IdleState(State):
                 self.hokuyo_write_completed = True
 
     def handle(self, context: RobotContext):
+        work_id = self.node.task.work_id
         self.node.get_logger().info("robot Idle 狀態")
 
         # 執行 Hokuyo 參數初始化（同時對兩個 Hokuyo 物件進行設定）
@@ -115,7 +120,6 @@ class IdleState(State):
                 self.node.get_logger().warn("⚠️ rack_id 解析失敗，將使用 fallback 值 123")
 
             # 簡化的 work_id 取得方式
-            work_id = self.node.work_id
             self.node.get_logger().info(f"檢查工作 ID: {work_id}")
 
             # 使用預計算的動態工作ID進行比較

@@ -1,0 +1,234 @@
+# 測試流程：AGV 調度測試
+# 用於驗證 Simple WCS 的並行執行機制
+
+name: "AGV 調度測試"
+description: "測試 Simple WCS 的條件判斷、邏輯運算和動作執行"
+version: "1.0.0"
+author: "Test"
+enabled: true
+priority: 5
+work_id: "100"
+
+# 節點定義（業務邏輯）
+nodes:
+  - id: "check_agv_available"
+    type: "condition"
+    function: "check_agv_available"
+    parameters:
+      agv_id: "AGV001"
+    description: "檢查 AGV001 是否可用"
+  
+  - id: "check_task_pending"
+    type: "condition"
+    function: "check_task_pending"
+    parameters:
+      task_type: "transport"
+    description: "檢查是否有待處理的運輸任務"
+  
+  - id: "check_battery_level"
+    type: "condition"
+    function: "check_battery_level"
+    parameters:
+      agv_id: "AGV001"
+      min_level: 30
+    description: "檢查電池電量是否足夠"
+  
+  - id: "can_dispatch"
+    type: "logic"
+    function: "and_gate"
+    inputs: ["check_agv_available", "check_task_pending", "check_battery_level"]
+    description: "判斷是否可以調度 AGV"
+  
+  - id: "need_charging"
+    type: "logic"
+    function: "not_gate"
+    inputs: ["check_battery_level"]
+    description: "判斷是否需要充電"
+  
+  - id: "assign_task"
+    type: "action"
+    function: "assign_task_to_agv"
+    parameters:
+      agv_id: "AGV001"
+      task_type: "transport"
+    description: "分配任務給 AGV"
+  
+  - id: "send_to_charging"
+    type: "action"
+    function: "send_agv_to_charging"
+    parameters:
+      agv_id: "AGV001"
+      station_id: "CS001"
+    description: "送 AGV 去充電"
+  
+  - id: "update_status"
+    type: "action"
+    function: "update_agv_status"
+    parameters:
+      agv_id: "AGV001"
+      status: "busy"
+    description: "更新 AGV 狀態"
+
+# 連接定義（使用標準 from/to 格式）
+connections:
+  - from: "check_agv_available.output"
+    to: "can_dispatch.input1"
+    description: "AGV 可用性檢查結果"
+  
+  - from: "check_task_pending.output"
+    to: "can_dispatch.input2"
+    description: "待處理任務檢查結果"
+  
+  - from: "check_battery_level.output"
+    to: "can_dispatch.input3"
+    description: "電池電量檢查結果"
+  
+  - from: "check_battery_level.output"
+    to: "need_charging.input"
+    description: "電池電量給充電判斷"
+  
+  - from: "can_dispatch.output"
+    to: "assign_task.trigger"
+    description: "可調度時分配任務"
+  
+  - from: "can_dispatch.output"
+    to: "update_status.trigger"
+    description: "可調度時更新狀態"
+  
+  - from: "need_charging.output"
+    to: "send_to_charging.trigger"
+    description: "需充電時送去充電站"
+
+# Flow Designer 視覺化資料
+flow_designer_data:
+  nodes:
+    - id: "check_agv_available"
+      type: "condition"
+      position:
+        x: 100
+        y: 100
+      data:
+        label: "檢查 AGV 可用"
+        function: "check_agv_available"
+        parameters:
+          agv_id: "AGV001"
+    
+    - id: "check_task_pending"
+      type: "condition"
+      position:
+        x: 100
+        y: 200
+      data:
+        label: "檢查待處理任務"
+        function: "check_task_pending"
+        parameters:
+          task_type: "transport"
+    
+    - id: "check_battery_level"
+      type: "condition"
+      position:
+        x: 100
+        y: 300
+      data:
+        label: "檢查電池電量"
+        function: "check_battery_level"
+        parameters:
+          agv_id: "AGV001"
+          min_level: 30
+    
+    - id: "can_dispatch"
+      type: "logic"
+      position:
+        x: 400
+        y: 150
+      data:
+        label: "可以調度"
+        function: "and_gate"
+    
+    - id: "need_charging"
+      type: "logic"
+      position:
+        x: 400
+        y: 300
+      data:
+        label: "需要充電"
+        function: "not_gate"
+    
+    - id: "assign_task"
+      type: "action"
+      position:
+        x: 700
+        y: 100
+      data:
+        label: "分配任務"
+        function: "assign_task_to_agv"
+        parameters:
+          agv_id: "AGV001"
+          task_type: "transport"
+    
+    - id: "update_status"
+      type: "action"
+      position:
+        x: 700
+        y: 200
+      data:
+        label: "更新狀態"
+        function: "update_agv_status"
+        parameters:
+          agv_id: "AGV001"
+          status: "busy"
+    
+    - id: "send_to_charging"
+      type: "action"
+      position:
+        x: 700
+        y: 350
+      data:
+        label: "送去充電"
+        function: "send_agv_to_charging"
+        parameters:
+          agv_id: "AGV001"
+          station_id: "CS001"
+  
+  connections:
+    - id: "conn1"
+      source: "check_agv_available"
+      sourceOutput: "output"
+      target: "can_dispatch"
+      targetInput: "input1"
+    
+    - id: "conn2"
+      source: "check_task_pending"
+      sourceOutput: "output"
+      target: "can_dispatch"
+      targetInput: "input2"
+    
+    - id: "conn3"
+      source: "check_battery_level"
+      sourceOutput: "output"
+      target: "can_dispatch"
+      targetInput: "input3"
+    
+    - id: "conn4"
+      source: "check_battery_level"
+      sourceOutput: "output"
+      target: "need_charging"
+      targetInput: "input"
+    
+    - id: "conn5"
+      source: "can_dispatch"
+      sourceOutput: "output"
+      target: "assign_task"
+      targetInput: "input"
+    
+    - id: "conn6"
+      source: "can_dispatch"
+      sourceOutput: "output"
+      target: "update_status"
+      targetInput: "input"
+    
+    - id: "conn7"
+      source: "need_charging"
+      sourceOutput: "output"
+      target: "send_to_charging"
+      targetInput: "input"

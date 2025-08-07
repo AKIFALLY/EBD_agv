@@ -239,9 +239,9 @@ cat /app/routerconfig.json5
 **診斷步驟**:
 ```bash
 # 1. 檢查服務端口
-curl http://localhost:8000/health
-curl http://localhost:8001/
-curl http://localhost:8002/
+curl http://localhost:8000/health    # 或 http://agvc.webapi/health
+curl http://localhost:8001/          # 或 http://agvc.ui/
+curl http://localhost:8002/          # 或 http://op.ui/
 
 # 2. 檢查 Nginx 狀態
 docker compose -f docker-compose.agvc.yml exec nginx nginx -t

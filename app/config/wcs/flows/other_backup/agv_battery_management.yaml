@@ -1,0 +1,261 @@
+# AGV 電池管理流程
+name: "AGV電池管理流程"
+description: "監控 AGV 電池狀態並自動安排充電任務"
+version: "1.0"
+priority: 95
+work_id: "300001"
+enabled: true
+
+# 變數定義
+variables:
+  battery_low_threshold: 20      # 低電量閾值 (%)
+  battery_critical_threshold: 10 # 危急電量閾值 (%)
+  charging_station_id: 1001      # 充電站位置ID
+  max_charging_slots: 4          # 充電站最大容量
+
+# 數據流腳本
+script:
+  # 步驟1: 獲取所有 AGV 狀態
+  - step: "get_all_agv_status"
+    type: "condition_call"
+    node_type: "condition"
+    function: "check_all_agv_status"
+    parameters:
+      include_battery: true
+      include_location: true
+      include_task: true
+    store_result: "all_agv_status"
+    description: "獲取所有 AGV 的完整狀態資訊"
+
+  # 步驟2: 篩選低電量 AGV
+  - step: "filter_low_battery_agv"
+    type: "logic_call"
+    node_type: "logic"
+    function: "filter_by_battery_level"
+    parameters:
+      agv_list: ${all_agv_status}
+      threshold: ${battery_low_threshold}
+      comparison: "less_than"
+    store_result: "low_battery_agvs"
+    condition: "${all_agv_status.length} > 0"
+    description: "篩選出電量低於閾值的 AGV"
+
+  # 步驟3: 檢查充電站可用性
+  - step: "check_charging_station"
+    type: "condition_call"
+    node_type: "condition"
+    function: "check_location_capacity"
+    parameters:
+      location_id: ${charging_station_id}
+      max_capacity: ${max_charging_slots}
+    store_result: "charging_station_status"
+    condition: "${low_battery_agvs.length} > 0"
+    description: "檢查充電站的可用充電位"
+
+  # 步驟4: 計算充電優先級
+  - step: "calculate_charging_priority"
+    type: "logic_call"
+    node_type: "logic"
+    function: "sort_by_multiple_criteria"
+    parameters:
+      items: ${low_battery_agvs}
+      criteria:
+        - field: "battery_level"
+          order: "ascending"
+          weight: 0.7
+        - field: "distance_to_charging"
+          order: "ascending"
+          weight: 0.3
+    store_result: "prioritized_agvs"
+    condition: "${charging_station_status.available_slots} > 0"
+    description: "根據電量和距離計算充電優先級"
+
+  # 步驟5: 選擇要充電的 AGV
+  - step: "select_agv_for_charging"
+    type: "logic_call"
+    node_type: "logic"
+    function: "select_top_items"
+    parameters:
+      items: ${prioritized_agvs}
+      count: ${charging_station_status.available_slots}
+      min_count: 1
+    store_result: "selected_agvs"
+    condition: "${prioritized_agvs.length} > 0"
+    description: "選擇優先級最高的 AGV 進行充電"
+
+  # 步驟6: 生成充電路徑
+  - step: "generate_charging_path"
+    type: "logic_call"
+    node_type: "logic"
+    function: "calculate_optimal_path"
+    parameters:
+      from_location: ${selected_agvs[0].current_location}
+      to_location: ${charging_station_id}
+      agv_type: ${selected_agvs[0].type}
+      avoid_congestion: true
+    store_result: "charging_path"
+    condition: "${selected_agvs.length} > 0"
+    description: "計算到充電站的最優路徑"
+
+  # 步驟7: 檢查是否需要中斷當前任務
+  - step: "check_task_interruption"
+    type: "logic_call"
+    node_type: "logic"
+    function: "evaluate_task_interruption"
+    parameters:
+      agv_id: ${selected_agvs[0].id}
+      current_task: ${selected_agvs[0].current_task}
+      battery_level: ${selected_agvs[0].battery_level}
+      critical_threshold: ${battery_critical_threshold}
+    store_result: "interruption_decision"
+    condition: "${selected_agvs[0].current_task} != null"
+    description: "評估是否需要中斷當前任務"
+
+  # 步驟8: 創建充電任務
+  - step: "create_charging_task"
+    type: "action_call"
+    node_type: "action"
+    function: "create_charging_task"
+    parameters:
+      agv_id: ${selected_agvs[0].id}
+      charging_station_id: ${charging_station_id}
+      path: ${charging_path}
+      priority: ${interruption_decision.priority || 90}
+      interrupt_current: ${interruption_decision.should_interrupt}
+      estimated_charging_time: ${selected_agvs[0].estimated_charging_time}
+    store_result: "charging_task"
+    condition: "${charging_path} != null"
+    description: "創建 AGV 充電任務"
+
+  # 步驟9: 更新充電站預約
+  - step: "update_charging_reservation"
+    type: "action_call"
+    node_type: "action"
+    function: "reserve_charging_slot"
+    parameters:
+      charging_station_id: ${charging_station_id}
+      agv_id: ${selected_agvs[0].id}
+      task_id: ${charging_task.task_id}
+      estimated_arrival: ${charging_task.estimated_arrival_time}
+      estimated_duration: ${selected_agvs[0].estimated_charging_time}
+    store_result: "reservation_result"
+    condition: "${charging_task.success} == true"
+    description: "預約充電站位置"
+
+  # 步驟10: 發送通知
+  - step: "send_battery_notification"
+    type: "action_call"
+    node_type: "action"
+    function: "send_system_notification"
+    parameters:
+      type: "battery_management"
+      severity: ${selected_agvs[0].battery_level < battery_critical_threshold ? "critical" : "warning"}
+      message: "AGV ${selected_agvs[0].id} 電量 ${selected_agvs[0].battery_level}%，已安排充電"
+      task_id: ${charging_task.task_id}
+      metadata:
+        agv_id: ${selected_agvs[0].id}
+        battery_level: ${selected_agvs[0].battery_level}
+        charging_station: ${charging_station_id}
+    condition: "${reservation_result.success} == true"
+    description: "發送電池管理通知"
+
+# 適用範圍
+scope:
+  applicable_rooms: []  # 適用於所有房間
+  applicable_locations: []  # 適用於所有位置
+
+# 調試配置
+debug:
+  enabled: true
+  log_conditions: true
+  log_variables: true
+  dry_run: false
+
+# Flow Designer 視覺化數據
+flow_designer_data:
+  version: "1.0"
+  nodes:
+    - id: "get_all_agv_status"
+      type: "condition"
+      data:
+        name: "獲取AGV狀態"
+        function: "check_all_agv_status"
+        icon: "🤖"
+        category: "monitoring"
+        outputs:
+          - name: "all_agv_status"
+            type: "array"
+            schema: "AGVStatus[]"
+      position: {x: 100, y: 100}
+
+    - id: "filter_low_battery_agv"
+      type: "logic"
+      data:
+        name: "篩選低電量"
+        function: "filter_by_battery_level"
+        icon: "🔋"
+        category: "filtering"
+        inputs:
+          - name: "agv_list"
+            type: "array"
+            required: true
+          - name: "threshold"
+            type: "number"
+            required: true
+        outputs:
+          - name: "low_battery_agvs"
+            type: "array"
+      position: {x: 300, y: 100}
+
+    - id: "calculate_charging_priority"
+      type: "logic"
+      data:
+        name: "計算優先級"
+        function: "sort_by_multiple_criteria"
+        icon: "📊"
+        category: "sorting"
+        inputs:
+          - name: "items"
+            type: "array"
+          - name: "criteria"
+            type: "object"
+        outputs:
+          - name: "prioritized_agvs"
+            type: "array"
+      position: {x: 500, y: 200}
+
+    - id: "create_charging_task"
+      type: "action"
+      data:
+        name: "創建充電任務"
+        function: "create_charging_task"
+        icon: "⚡"
+        category: "task_creation"
+        inputs:
+          - name: "agv_id"
+            type: "string"
+          - name: "charging_station_id"
+            type: "number"
+          - name: "path"
+            type: "object"
+        outputs:
+          - name: "charging_task"
+            type: "object"
+            schema: "Task"
+      position: {x: 700, y: 300}
+
+  connections:
+    - from: "get_all_agv_status"
+      from_output: "all_agv_status"
+      to: "filter_low_battery_agv"
+      to_input: "agv_list"
+      
+    - from: "filter_low_battery_agv"
+      from_output: "low_battery_agvs"
+      to: "calculate_charging_priority"
+      to_input: "items"
+      
+    - from: "calculate_charging_priority"
+      from_output: "prioritized_agvs"
+      to: "create_charging_task"
+      to_input: "agv_data"

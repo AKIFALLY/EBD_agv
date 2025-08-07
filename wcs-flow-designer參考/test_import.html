@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WCS Flow Import Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-info { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>WCS Flow Designer - Import Test</h1>
+    
+    <div class="test-info">
+        <h3>Test Instructions:</h3>
+        <ol>
+            <li>Click "Open WCS Flow Designer" to open the main application</li>
+            <li>In the main application, click "載入" (Load) button</li>
+            <li>Select one of the JSON files from the flow-examples directory</li>
+            <li>Verify that nodes are loaded and displayed correctly</li>
+            <li>Try to drag the imported nodes to verify they are draggable</li>
+            <li>Check that connections are properly displayed and follow node movement</li>
+        </ol>
+    </div>
+    
+    <div class="test-info">
+        <h3>Recent Fixes Applied:</h3>
+        <ul>
+            <li>✅ Fixed makeDraggable method to use unique event handlers per node</li>
+            <li>✅ Removed unused Status & Monitoring properties</li>
+            <li>✅ Removed unused Physical Properties</li>
+            <li>✅ Cleaned up property event listeners</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <h3>Available Test Files:</h3>
+        <ul>
+            <li><code>flow-examples/full_rack_to_manual_area.json</code> - 4 conditions + AND gate + action</li>
+            <li><code>flow-examples/rack_rotation_exit.json</code> - 5 conditions + AND gate + action</li>
+            <li><code>flow-examples/rack_rotation_inlet.json</code> - 5 conditions + AND gate + action</li>
+        </ul>
+    </div>
+    
+    <button onclick="window.open('index.html', '_blank')">Open WCS Flow Designer</button>
+    
+    <div class="test-info">
+        <h3>Expected Behavior After Import:</h3>
+        <ul>
+            <li>All nodes should be visible on the canvas</li>
+            <li>Nodes should be positioned according to their JSON coordinates</li>
+            <li>All connections should be visible and properly rendered</li>
+            <li><strong>Nodes should be draggable</strong> (this was the main issue)</li>
+            <li>Property panel should work when clicking on nodes</li>
+            <li>Dynamic ports should work correctly for AND gates</li>
+        </ul>
+    </div>
+</body>
+</html>

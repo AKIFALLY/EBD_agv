@@ -1,0 +1,135 @@
+{
+  "id": "wcs-flow@0.1.0",
+  "name": "滿料架到人工收料區",
+  "description": "當傳送箱出口有滿車時，需要搬運到人工收料區進行處理",
+  "nodes": [
+    {
+      "id": "condition_1",
+      "label": "貨架位置檢查",
+      "data": {
+        "name": "傳送箱出口有滿料架",
+        "type": "rack-location-check",
+        "category": "condition",
+        "description": "傳送箱出口位置有滿料架",
+        "locationType": "transfer_exit",
+        "rackSide": "",
+        "workId": "",
+        "checkType": ""
+      },
+      "position": [100, 100]
+    },
+    {
+      "id": "condition_2", 
+      "label": "貨架已滿",
+      "data": {
+        "name": "架上 Carrier 已滿載",
+        "type": "rack-is-full",
+        "category": "condition",
+        "description": "架上的 Carrier 已滿載",
+        "locationType": "",
+        "rackSide": "",
+        "workId": "",
+        "checkType": "full_capacity"
+      },
+      "position": [100, 200]
+    },
+    {
+      "id": "condition_3",
+      "label": "無活動任務", 
+      "data": {
+        "name": "來源地無進行中任務",
+        "type": "no-active-task",
+        "category": "condition",
+        "description": "來源地沒有進行中的運輸任務 (避免重複派車)",
+        "locationType": "transfer_exit",
+        "rackSide": "",
+        "workId": "220001",
+        "checkType": ""
+      },
+      "position": [100, 300]
+    },
+    {
+      "id": "condition_4",
+      "label": "區域可用",
+      "data": {
+        "name": "人工收料區可用",
+        "type": "area-available", 
+        "category": "condition",
+        "description": "人工收料區有可用空間 (包含位置分配和衝突檢查)",
+        "locationType": "manual_collection",
+        "rackSide": "",
+        "workId": "",
+        "checkType": "available"
+      },
+      "position": [100, 400]
+    },
+    {
+      "id": "and_gate_1",
+      "label": "AND 閘",
+      "data": {
+        "name": "所有條件檢查",
+        "type": "and-gate",
+        "category": "logic",
+        "description": "所有觸發條件必須為 true 才執行",
+        "nextInputIndex": 5
+      },
+      "position": [400, 250]
+    },
+    {
+      "id": "action_1",
+      "label": "創建任務",
+      "data": {
+        "name": "搬運到人工收料區",
+        "type": "create-task",
+        "category": "action", 
+        "description": "執行滿料架搬運任務",
+        "taskType": "rack_transport",
+        "robotModel": "KUKA400i",
+        "missionType": "RACK_MOVE",
+        "source": "transfer_exit",
+        "destination": "manual_collection_area",
+        "equipmentId": "KUKA_001",
+        "workId": "220001",
+        "priority": "high"
+      },
+      "position": [700, 250]
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_1",
+      "source": "condition_1",
+      "target": "and_gate_1", 
+      "sourceOutput": "result",
+      "targetInput": "condition1"
+    },
+    {
+      "id": "conn_2",
+      "source": "condition_2", 
+      "target": "and_gate_1",
+      "sourceOutput": "result",
+      "targetInput": "condition2"
+    },
+    {
+      "id": "conn_3",
+      "source": "condition_3",
+      "target": "and_gate_1",
+      "sourceOutput": "result", 
+      "targetInput": "condition3"
+    },
+    {
+      "id": "conn_4",
+      "source": "condition_4",
+      "target": "and_gate_1",
+      "sourceOutput": "result",
+      "targetInput": "condition4"
+    },
+    {
+      "id": "conn_5",
+      "source": "and_gate_1",
+      "target": "action_1",
+      "sourceOutput": "result",
+      "targetInput": "trigger"
+    }
+  ]
+}

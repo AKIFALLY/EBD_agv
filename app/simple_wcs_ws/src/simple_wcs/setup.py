@@ -25,7 +25,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'simple_wcs_node = simple_wcs.wcs_engine:main',
+            'simple_wcs_node = simple_wcs.simple_wcs_node:main',
+            'simple_wcs_engine = simple_wcs.wcs_engine:main',  # Keep old one for compatibility
         ],
     },
 )

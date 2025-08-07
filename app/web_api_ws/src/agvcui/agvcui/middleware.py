@@ -53,7 +53,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self.public_paths = [
             "/", "/login", "/logout", "/init-admin", "/static", "/favicon.ico",
             "/map", "/tasks", "/devices", "/signals", "/clients",
-            "/racks", "/products", "/carriers", "/agvs", "/rosout_logs", "/runtime_logs"
+            "/racks", "/products", "/carriers", "/agvs", "/rosout_logs", "/runtime_logs",
+            "/flows"  # 流程管理頁面 - 允許公開訪問但會檢查權限
         ]
 
     async def dispatch(self, request: Request, call_next):

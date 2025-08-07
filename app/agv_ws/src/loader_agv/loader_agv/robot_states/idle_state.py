@@ -20,6 +20,9 @@ class IdleState(State):
 
         # Hokuyo 初始化狀態
         self.hokuyo_write_completed = False
+        
+        self.node.room_id = self.node.task.room_id
+        self.node.work_id = self.node.task.work_id
 
         # 動態計算工作 ID 範圍
         self.room_id_str = str(self.node.room_id)
@@ -111,10 +114,6 @@ class IdleState(State):
                 self.node.get_logger().info(f"切換到 TAKE_CLEANER 流程 (work_id: {work_id})")
                 from loader_agv.robot_states.take_cleaner.cleaner_vision_position_state import CleanerVisionPositionState
                 context.set_state(CleanerVisionPositionState(self.node))
-            elif self.take_pre_dryer_start <= work_id <= self.take_pre_dryer_end:
-                self.node.get_logger().info(f"切換到 TAKE_PRE_DRYER 流程 (work_id: {work_id})")
-                from loader_agv.robot_states.take_pre_dryer.pre_dryer_vision_position_state import PreDryerVisionPositionState
-                context.set_state(PreDryerVisionPositionState(self.node))
             elif self.put_soaker_start <= work_id <= self.put_soaker_end:
                 self.node.get_logger().info(f"切換到 PUT_SOAKER 流程 (work_id: {work_id})")
                 from loader_agv.robot_states.put_soaker.soaker_vision_position_state import SoakerVisionPositionState

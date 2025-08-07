@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WCS Flow Designer Integration Test</title>
+</head>
+<body>
+    <h1>WCS Flow Designer Integration Test</h1>
+    <p>This page tests if the main index.html loads without errors.</p>
+    
+    <script>
+        // Test loading the functions-config.json
+        fetch('./functions-config.json')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Functions config loaded successfully:', data);
+                document.body.innerHTML += '<p style="color: green;">✓ Functions config loaded successfully</p>';
+                
+                // Test the structure
+                if (data.condition_functions && data.action_functions && data.variable_templates) {
+                    document.body.innerHTML += '<p style="color: green;">✓ All required sections found in config</p>';
+                } else {
+                    document.body.innerHTML += '<p style="color: red;">✗ Missing sections in config</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading functions config:', error);
+                document.body.innerHTML += '<p style="color: red;">✗ Error loading functions config: ' + error.message + '</p>';
+            });
+    </script>
+    
+    <iframe src="index.html" width="100%" height="600" style="border: 1px solid #ccc; margin-top: 20px;">
+        <p>Your browser does not support iframes.</p>
+    </iframe>
+</body>
+</html>

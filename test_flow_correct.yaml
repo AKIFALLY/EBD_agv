@@ -1,0 +1,65 @@
+# WCS 流程測試範例 - 正確的 YAML DSL 格式
+# 描述: 測試 AGV 旋轉流程和任務創建的完整流程
+# 版本: 1.0
+# 創建時間: 2024-01-01T00:00:00Z
+# 生成工具: Flow Designer v3.2
+
+# 流程元資料
+flow_metadata:
+  name: "AGV旋轉任務流程"
+  description: "檢查 AGV 旋轉需求並創建相應任務的完整流程"
+  version: "1.0"
+  created_at: "2024-01-01T00:00:00Z"
+  generated_by: "Flow Designer v3.2"
+
+# 變數定義
+variables:
+  room_id: 1
+  agv_id: "AGV01"
+  default_priority: 5
+
+# 執行步驟
+steps:
+  - id: "step1"
+    name: "檢查 AGV 旋轉流程"
+    description: "檢查 AGV 是否需要執行旋轉流程"
+    type: "condition_nodes"
+    function: "check_agv_rotation_flow"
+    parameters:
+      room_id: 1
+      agv_id: "AGV01"
+      
+  - id: "step2"
+    name: "取得房間入口點"
+    description: "根據房間ID獲取入口停靠點"
+    type: "logic_nodes"
+    function: "get_room_inlet_point"
+    parameters:
+      room_id: 1
+      
+  - id: "step3"
+    name: "創建任務決策"
+    description: "根據條件檢查結果創建 WCS 任務"
+    type: "action_nodes"
+    function: "create_task_from_decision"
+    parameters:
+      priority: 5
+      
+  - id: "step4"
+    name: "條件分支控制"
+    description: "根據旋轉檢查結果決定執行路徑"
+    type: "script_nodes"
+    function: "if_else"
+    parameters:
+      condition: true
+      if_branch:
+        - type: "action_nodes"
+          function: "update_machine_parking_status"
+          parameters:
+            machine_id: "AGV01"
+            parking_status: "moving"
+      else_branch:
+        - type: "logic_nodes"
+          function: "find_available_manual_location"
+          parameters:
+            area_type: "manual_collection"

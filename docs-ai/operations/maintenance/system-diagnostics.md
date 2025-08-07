@@ -312,14 +312,14 @@ ros2 topic bw /topic_name
 ### Web 服務診斷
 ```bash
 # API 服務檢查
-curl http://localhost:8000/health
-curl http://localhost:8000/docs
+curl http://localhost:8000/health    # 或 http://agvc.webapi/health
+curl http://localhost:8000/docs      # 或 http://agvc.webapi/docs
 
 # AGVCUI 檢查
-curl http://localhost:8001/
+curl http://localhost:8001/          # 或 http://agvc.ui/
 
 # OPUI 檢查
-curl http://localhost:8002/
+curl http://localhost:8002/          # 或 http://op.ui/
 ```
 
 ### 資料庫診斷

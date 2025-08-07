@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WCS Flow Designer - 刪除操作指南</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .section { background: #f8f9fa; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #007bff; }
+        .error-section { border-left: 4px solid #dc3545; background: #f8d7da; }
+        .success-section { border-left: 4px solid #28a745; background: #d4edda; }
+        .step { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #dee2e6; }
+        .step-number { background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; }
+        .key-combo { background: #343a40; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+        .highlight { background: #fff3cd; padding: 2px 6px; border-radius: 3px; }
+        button { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #0056b3; }
+        .warning { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 15px 0; border-radius: 5px; }
+        h1 { color: #343a40; text-align: center; }
+        h2 { color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ WCS Flow Designer - 刪除操作指南</h1>
+        
+        <div class="success-section">
+            <h2>✅ 最新更新</h2>
+            <ul>
+                <li><strong>統一刪除方式：</strong> 移除連線刪除按鈕，連線和節點都使用鍵盤 Delete 鍵刪除</li>
+                <li><strong>簡化操作：</strong> 點擊選中 → 按 Delete 鍵，操作更一致</li>
+            </ul>
+        </div>
+
+        <div class="success-section">
+            <h2>✅ 正確的刪除方法</h2>
+            
+            <h3>🔗 連線刪除</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>點擊連線選擇</strong>
+                <p>• 點擊連線路徑（不是空白處）</p>
+                <p>• 連線會變成<span class="highlight">藍色加粗</span>表示選中</p>
+                <p>• 不會出現刪除按鈕（統一使用鍵盤刪除）</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>鍵盤刪除</strong>
+                <p>• 確保連線已選中（藍色加粗狀態）</p>
+                <p>• 按 <span class="key-combo">Delete</span> 鍵或 <span class="key-combo">Backspace</span> 鍵</p>
+                <p>• 連線被刪除</p>
+            </div>
+
+            <h3>🟦 節點刪除</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>點擊節點選擇</strong>
+                <p>• 點擊任何節點</p>
+                <p>• 節點邊框變成<span class="highlight">藍色</span>表示選中</p>
+                <p>• 右側屬性面板會打開</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>鍵盤刪除節點</strong>
+                <p>• 確保節點已選中（藍色邊框）</p>
+                <p>• 按 <span class="key-combo">Delete</span> 鍵或 <span class="key-combo">Backspace</span> 鍵</p>
+                <p>• 節點和所有相關連線都會被刪除</p>
+                <p>• 屬性面板會關閉</p>
+            </div>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ 重要提醒</h3>
+            <ul>
+                <li><strong>必須先選中再刪除：</strong>不管是節點還是連線，都必須先點擊選中（看到視覺回饋）再按刪除鍵</li>
+                <li><strong>節點刪除會級聯：</strong>刪除節點時，所有連接到該節點的連線也會一起被刪除</li>
+                <li><strong>連線選擇要精確：</strong>要點擊連線路徑本身，不要點擊空白處</li>
+                <li><strong>統一鍵盤刪除：</strong>節點和連線都只能用 Delete/Backspace 鍵刪除，沒有刪除按鈕</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🔧 調試信息</h2>
+            <p>如果連線刪除仍有問題，請：</p>
+            <ol>
+                <li>打開瀏覽器開發者工具（F12）</li>
+                <li>查看Console標籤</li>
+                <li>嘗試刪除連線時觀察輸出信息</li>
+                <li>檢查是否有新的錯誤信息</li>
+            </ol>
+            <p>現在已添加調試信息來幫助診斷連線刪除問題。</p>
+        </div>
+
+        <button onclick="window.open('index.html', '_blank')">🚀 開啟 WCS Flow Designer</button>
+        <button onclick="window.open('test_delete_functions.html', '_blank')">🧪 刪除功能詳細測試</button>
+        
+        <div class="section">
+            <h2>📋 測試清單</h2>
+            <h3>連線刪除測試：</h3>
+            <ul>
+                <li>[ ] 能精確點擊選中連線（變藍色加粗）</li>
+                <li>[ ] 不會出現紅色刪除按鈕（已移除）</li>
+                <li>[ ] Delete/Backspace鍵能刪除選中的連線</li>
+                <li>[ ] F12控制台沒有錯誤信息</li>
+            </ul>
+            
+            <h3>節點刪除測試：</h3>
+            <ul>
+                <li>[ ] 點擊節點能選中（藍色邊框）</li>
+                <li>[ ] 屬性面板正確打開</li>
+                <li>[ ] Delete/Backspace鍵能刪除選中的節點</li>
+                <li>[ ] 節點刪除時相關連線一起被刪除</li>
+                <li>[ ] 刪除後屬性面板關閉</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

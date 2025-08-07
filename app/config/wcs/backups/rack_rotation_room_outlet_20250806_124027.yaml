@@ -1,0 +1,185 @@
+nodes:
+- id: get_room_outlet_locations
+  position:
+    x: 100
+    y: 200
+  data:
+    name: 取得房間出口位置
+    type: condition
+    function: get_locations_by_type
+    parameters:
+      location_type: room_outlet
+      rooms:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      filter_has_rack: true
+  inputs: []
+  outputs:
+  - key: '0'
+  - key: '1'
+- id: check_pending_tasks
+  position:
+    x: 300
+    y: 200
+  data:
+    name: 檢查進行中任務
+    type: condition
+    function: check_pending_rotation_tasks
+    parameters:
+      task_type: RACK_ROTATION
+      location_type: room_outlet
+  inputs:
+  - key: '0'
+  outputs:
+  - key: '0'
+  - key: '1'
+  - key: '2'
+- id: check_a_side_full
+  position:
+    x: 500
+    y: 200
+  data:
+    name: 檢查 A 面是否滿載
+    type: condition
+    function: check_rack_side_status
+    parameters:
+      side: A
+      check_type: full_capacity
+  inputs:
+  - key: '0'
+  outputs:
+  - key: '0'
+  - key: '1'
+  - key: '2'
+  - key: '3'
+- id: check_b_side_space
+  position:
+    x: 700
+    y: 200
+  data:
+    name: 檢查 B 面空位
+    type: condition
+    function: check_rack_side_space
+    parameters:
+      side: B
+      min_empty_slots: 1
+  inputs:
+  - key: '0'
+  outputs:
+  - key: '0'
+  - key: '1'
+  - key: '2'
+  - key: '3'
+- id: create_rotation_task
+  position:
+    x: 900
+    y: 200
+  data:
+    name: 生成出口旋轉任務
+    type: action
+    function: create_rack_rotation_task
+    parameters:
+      task_type: RACK_ROTATION
+      location_type: room_outlet
+      rotation_angle: 180
+      priority: high
+      work_id: '220002'
+      reason: A_SIDE_FULL
+  inputs:
+  - key: '0'
+  - key: '1'
+  outputs:
+  - key: '0'
+  - key: '1'
+- id: log_task_created
+  position:
+    x: 1100
+    y: 200
+  data:
+    name: 記錄任務創建
+    type: logic
+    function: log_task_creation
+    parameters:
+      log_type: RACK_ROTATION_OUTLET
+  inputs:
+  - key: '0'
+  - key: '1'
+  - key: '2'
+  outputs: []
+- id: log_skip
+  position:
+    x: 636
+    y: 813
+  data:
+    name: 記錄跳過原因
+    type: logic
+    function: log_skip_reason
+    parameters:
+      log_type: RACK_ROTATION_OUTLET_SKIP
+  inputs:
+  - key: '0'
+  - key: '1'
+  outputs: []
+connections:
+- source: get_room_outlet_locations
+  sourceOutput: locations
+  target: check_pending_tasks
+  targetInput: location
+- source: check_pending_tasks
+  sourceOutput: no_pending
+  target: check_a_side_full
+  targetInput: location_data
+- source: check_pending_tasks
+  sourceOutput: location_data
+  target: check_a_side_full
+  targetInput: location_data
+- source: check_a_side_full
+  sourceOutput: a_side_full
+  target: check_b_side_space
+  targetInput: rack_info
+- source: check_a_side_full
+  sourceOutput: rack_info
+  target: check_b_side_space
+  targetInput: rack_info
+- source: check_b_side_space
+  sourceOutput: has_space
+  target: create_rotation_task
+  targetInput: rack_info
+- source: check_b_side_space
+  sourceOutput: final_rack_info
+  target: create_rotation_task
+  targetInput: rack_info
+- source: check_pending_tasks
+  sourceOutput: location_data
+  target: create_rotation_task
+  targetInput: location_data
+- source: create_rotation_task
+  sourceOutput: task_id
+  target: log_task_created
+  targetInput: task_id
+- source: check_pending_tasks
+  sourceOutput: location_data
+  target: log_task_created
+  targetInput: location_data
+- source: check_a_side_full
+  sourceOutput: carrier_count
+  target: log_task_created
+  targetInput: carrier_count
+- source: check_pending_tasks
+  sourceOutput: has_pending
+  target: log_skip
+  targetInput: reason
+- source: check_a_side_full
+  sourceOutput: a_side_not_full
+  target: log_skip
+  targetInput: reason
+- source: check_b_side_space
+  sourceOutput: no_space
+  target: log_skip
+  targetInput: reason
+name: rack_rotation_room_outlet
+metadata:
+  updated_at: '2025-08-06T12:40:19.091759'

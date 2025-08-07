@@ -104,10 +104,6 @@ echo $! > "$ZENOH_PID_FILE"
 #    fi
 #fi
 
-
-
-
-
 #檢查服務是否都已經啟動
 # 檢查 SSH 是否已經運行
 if pgrep -f "sshd" > /dev/null; then

@@ -1,0 +1,36 @@
+name: test_flow_designer_v2
+description: Test flow created by Flow Designer V2
+version: '1.0'
+author: Flow Designer V2
+enabled: true
+priority: 100
+work_id: test_001
+nodes:
+- id: node_1
+  type: condition
+  name: Test Condition
+  function: get_locations_by_type
+  parameters:
+    location_type: test
+  inputs: {}
+  outputs:
+    locations:
+      type: array
+      description: Test locations
+connections: []
+flow_designer_data:
+  nodes:
+  - id: node_1
+    position:
+      x: 100
+      y: 100
+    data:
+      name: Test Condition
+      type: condition
+      function: get_locations_by_type
+      parameters:
+        location_type: test
+    inputs: []
+    outputs:
+    - key: locations
+  connections: []

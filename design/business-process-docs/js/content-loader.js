@@ -153,8 +153,8 @@ class ContentLoader {
     }
 
     /**
-     * 載入 Markdown 文件
-     * @param {string} filePath - 文件路徑 (例如: 'getting-started/overview.md')
+     * 載入 Markdown 檔案
+     * @param {string} filePath - 檔案路徑 (例如: 'getting-started/overview.md')
      * @returns {Promise<string>} 解析後的 HTML
      */
     async loadMarkdown(filePath) {
@@ -194,19 +194,19 @@ class ContentLoader {
             console.error(`載入 Markdown 失敗: ${filePath}`, error);
             return `<div class="error">
                 <h3>📄 內容載入失敗</h3>
-                <p>無法載入文件: <code>${filePath}</code></p>
+                <p>無法載入檔案: <code>${filePath}</code></p>
                 <p>錯誤: ${error.message}</p>
                 ${this.isLocalFile ? 
-                    '<p><strong>本地模式提示:</strong> 請確保文件存在於 content/ 目錄中</p>' :
-                    '<p><strong>伺服器模式提示:</strong> 請檢查 Nginx 配置和文件路徑</p>'
+                    '<p><strong>本地模式提示:</strong> 請確保檔案存在於 content/ 目錄中</p>' :
+                    '<p><strong>伺服器模式提示:</strong> 請檢查 Nginx 配置和檔案路徑</p>'
                 }
             </div>`;
         }
     }
 
     /**
-     * 載入 JSON 配置文件
-     * @param {string} filePath - JSON 文件路徑
+     * 載入 JSON 配置檔案
+     * @param {string} filePath - JSON 檔案路徑
      * @returns {Promise<Object>} JSON 對象
      */
     async loadJson(filePath) {
@@ -240,7 +240,7 @@ class ContentLoader {
     }
 
     /**
-     * 預載入常用文件
+     * 預載入常用檔案
      */
     async preloadCommonFiles() {
         const commonFiles = [

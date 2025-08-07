@@ -300,6 +300,19 @@ docker exec -it container_name bash /app/temp.sh
 - **容器內路徑**: `/app/temp.sh`
 - **使用場景**: 複雜的多行指令、需要錯誤處理的腳本、重複執行的操作
 
+#### Interactive Bash Mode 解決方案
+**⚠️ 重要發現**: 當 Bash tool 遇到容器指令超時或 alias 載入問題時，使用 `bash -i` 參數：
+
+```bash
+# ✅ 推薦解決方案: bash -i (interactive flag)
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop && ba && sa && manage_web_api_launch start"
+
+# 原理: 互動式模式確保 alias 和環境正確載入
+# 應用: Web 服務管理、建置工作流、系統重啟等複雜指令序列
+```
+
+**詳細說明**: @docs-ai/operations/development/docker-development.md#容器指令執行技巧
+
 ### 最佳實踐
 1. **簡化邏輯**: 避免過於複雜的嵌套和管道操作
 2. **分步執行**: 將複雜操作分解為多個簡單步驟

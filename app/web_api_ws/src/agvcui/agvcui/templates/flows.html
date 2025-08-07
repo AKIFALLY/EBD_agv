@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}流程管理{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/flowsPage.css">
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 頁面標題 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-sitemap"></i>
+                        </span>
+                        流程管理
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                {% if current_user and current_user.role in ['operator', 'admin'] %}
+                <div class="level-item">
+                    <a href="/flows/create" class="button is-primary">
+                        <span class="icon">
+                            <i class="mdi mdi-plus"></i>
+                        </span>
+                        <span>新增流程</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 切換視圖按鈕 -->
+        <div class="field is-grouped mb-4">
+            <div class="control">
+                <div class="buttons has-addons">
+                    <button class="button is-primary" id="flowsViewBtn">
+                        <span class="icon">
+                            <i class="mdi mdi-file-tree"></i>
+                        </span>
+                        <span>Flows</span>
+                    </button>
+                    <button class="button" id="nodesViewBtn">
+                        <span class="icon">
+                            <i class="mdi mdi-hexagon-multiple"></i>
+                        </span>
+                        <span>Nodes</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flows 視圖 -->
+        <div class="box" id="flowsView">
+            <div class="has-text-centered py-4" id="flows-loading">
+                <span class="icon is-large has-text-grey-light">
+                    <i class="mdi mdi-loading mdi-spin mdi-24px"></i>
+                </span>
+                <p class="has-text-grey">載入中...</p>
+            </div>
+            <div id="flows-content" style="display: none;">
+                <table class="table is-fullwidth is-hoverable">
+                    <thead>
+                        <tr>
+                            <th>名稱</th>
+                            <th>描述</th>
+                            <th>優先級</th>
+                            <th>Work ID</th>
+                            <th>狀態</th>
+                            <th>觸發條件數</th>
+                            <th>適用位置</th>
+                            {% if current_user and current_user.role in ['operator', 'admin'] %}
+                            <th>操作</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody id="flows-table-body">
+                        <!-- 流程數據將通過 JavaScript 動態填充 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="has-text-centered py-6" id="flows-empty" style="display: none;">
+                <span class="icon is-large has-text-grey-light">
+                    <i class="mdi mdi-file-tree mdi-48px"></i>
+                </span>
+                <p class="has-text-grey">沒有找到流程文件</p>
+            </div>
+        </div>
+
+        <!-- Nodes 視圖 -->
+        <div class="box" id="nodesView" style="display: none;">
+            <div class="has-text-centered py-4" id="nodes-loading">
+                <span class="icon is-large has-text-grey-light">
+                    <i class="mdi mdi-loading mdi-spin mdi-24px"></i>
+                </span>
+                <p class="has-text-grey">載入中...</p>
+            </div>
+            <div id="nodes-content" style="display: none;">
+                <!-- Action Nodes -->
+                <div class="mb-5">
+                    <h2 class="subtitle is-5">
+                        <span class="icon">
+                            <i class="mdi mdi-cog"></i>
+                        </span>
+                        動作節點 (Action Nodes)
+                    </h2>
+                    <table class="table is-fullwidth is-hoverable">
+                        <thead>
+                            <tr>
+                                <th>節點名稱</th>
+                                <th>描述</th>
+                                <th>分類</th>
+                                <th>圖標</th>
+                                <th>輸入</th>
+                                <th>輸出</th>
+                                <th>參數數量</th>
+                            </tr>
+                        </thead>
+                        <tbody id="action-nodes-table-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Condition Nodes -->
+                <div class="mb-5">
+                    <h2 class="subtitle is-5">
+                        <span class="icon">
+                            <i class="mdi mdi-help-circle"></i>
+                        </span>
+                        條件節點 (Condition Nodes)
+                    </h2>
+                    <table class="table is-fullwidth is-hoverable">
+                        <thead>
+                            <tr>
+                                <th>節點名稱</th>
+                                <th>描述</th>
+                                <th>分類</th>
+                                <th>圖標</th>
+                                <th>輸入</th>
+                                <th>輸出</th>
+                                <th>參數數量</th>
+                            </tr>
+                        </thead>
+                        <tbody id="condition-nodes-table-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Logic Nodes -->
+                <div class="mb-5">  
+                    <h2 class="subtitle is-5">
+                        <span class="icon">
+                            <i class="mdi mdi-vector-triangle"></i>
+                        </span>
+                        邏輯節點 (Logic Nodes)
+                    </h2>
+                    <table class="table is-fullwidth is-hoverable">
+                        <thead>
+                            <tr>
+                                <th>節點名稱</th>
+                                <th>描述</th>
+                                <th>分類</th>
+                                <th>圖標</th>
+                                <th>輸入</th>
+                                <th>輸出</th>
+                                <th>參數數量</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logic-nodes-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="has-text-centered py-6" id="nodes-empty" style="display: none;">
+                <span class="icon is-large has-text-grey-light">
+                    <i class="mdi mdi-hexagon-multiple mdi-48px"></i>
+                </span>
+                <p class="has-text-grey">沒有找到節點文件</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 刪除確認模態框 -->
+{% if current_user and current_user.role == 'admin' %}
+<div class="modal" id="deleteModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">確認刪除</p>
+            <button class="delete" aria-label="close" onclick="closeDeleteModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>您確定要刪除流程 "<span id="deleteFlowName"></span>" 嗎？</p>
+            <p class="has-text-danger">此操作無法復原！</p>
+        </section>
+        <footer class="modal-card-foot">
+            <form id="deleteForm" method="post">
+                <button class="button is-danger" type="submit">確認刪除</button>
+                <button class="button" type="button" onclick="closeDeleteModal()">取消</button>
+            </form>
+        </footer>
+    </div>
+</div>
+
+<script>
+    function confirmDelete(flowName, filename) {
+        document.getElementById('deleteFlowName').textContent = flowName;
+        document.getElementById('deleteForm').action = `/flows/${encodeURIComponent(filename)}/delete`;
+        document.getElementById('deleteModal').classList.add('is-active');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('is-active');
+    }
+</script>
+{% endif %}
+
+<script>
+    // 將用戶信息傳遞給 JavaScript
+    {% if current_user %}
+    window.currentUser = {
+        username: "{{ current_user.username }}",
+        role: "{{ current_user.role }}"
+    };
+    {% else %}
+    window.currentUser = null;
+    {% endif %}
+</script>
+<script src="/static/js/flowsPage.js"></script>
+{% endblock %}

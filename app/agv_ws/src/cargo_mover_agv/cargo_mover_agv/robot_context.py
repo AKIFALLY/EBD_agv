@@ -2,7 +2,7 @@ from agv_base.base_context import BaseContext
 from agv_base.states.state import State
 from cargo_mover_agv.robot_states.cargo_robot_parameter import CargoRobotParameter
 from agv_base.robot import Robot
-
+import json
 
 class RobotContext(BaseContext):
     """ 管理robot 狀態機 """
@@ -77,7 +77,20 @@ class RobotContext(BaseContext):
 
         self.carrier_id = 0
         self.get_room_id = 0
-        self.rack_id = None  # 新增屬性，用於存儲從 task.parameters 中取得的 rack_id
+
+        # 新增屬性，用於存儲從 task.parameters 中取得的 rack_id
+        params_raw = self.node.task.parameters
+        if isinstance(params_raw, str) and params_raw.strip():
+            try:
+                params_dict = json.loads(params_raw)
+                self.rack_id = params_dict.get("rack_id")
+            except json.JSONDecodeError as e:
+                self.node.get_logger().error(f"❌ JSON decode error: {e} for raw: {params_raw}")
+                self.rack_id = None
+        else:
+            self.node.get_logger().warn("⚠️ parameters is empty or not a valid string")
+            self.rack_id = None
+          
 
         # take transfer 相關狀態
         self.take_transfer_continue = False  # take transfer 是否可以繼續

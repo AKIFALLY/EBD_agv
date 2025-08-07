@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas 交互測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-info { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .test-steps { background: #e7f3ff; padding: 15px; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>WCS Flow Designer - Canvas 交互測試</h1>
+    
+    <div class="test-info success">
+        <h3>✅ 已修復的問題：</h3>
+        <ul>
+            <li><strong>移除縮放功能</strong> - 完全移除放大縮小功能以避免連線位置問題</li>
+            <li><strong>背景拖動失效問題</strong> - 改善了事件判斷邏輯和事件傳播處理</li>
+            <li><strong>節點拖動衝突</strong> - 添加了 stopPropagation 避免觸發背景拖動</li>
+        </ul>
+    </div>
+    
+    <div class="test-steps">
+        <h3>🧪 詳細測試步驟：</h3>
+        <ol>
+            <li><strong>打開應用程式</strong>
+                <br>點擊下方按鈕打開 WCS Flow Designer
+            </li>
+            <li><strong>測試背景拖動</strong>
+                <br>• 在空白區域按住滑鼠左鍵並拖動
+                <br>• 確認整個 canvas 可以平移
+                <br>• 測試是否不會與節點拖動衝突
+            </li>
+            <li><strong>測試視圖重置</strong>
+                <br>• 使用 Ctrl+0 重置視圖到原點
+                <br>• 確認 canvas 回到初始位置
+            </li>
+            <li><strong>加載範例流程</strong>
+                <br>• 點擊「載入」按鈕
+                <br>• 選擇 flow-examples 目錄中的任一 JSON 檔案
+            </li>
+            <li><strong>測試連線跟隨行為</strong>
+                <br>• 載入有連線的流程後
+                <br>• 平移 canvas
+                <br>• 確認連線正確跟隨節點位置
+                <br>• 連線應該保持正確的曲線形狀
+            </li>
+            <li><strong>測試節點拖動</strong>
+                <br>• 拖動節點
+                <br>• 確認連線正確跟隨節點移動
+                <br>• 確認節點拖動不會觸發背景拖動
+            </li>
+        </ol>
+    </div>
+    
+    <div class="test-info warning">
+        <h3>⚠️ 測試重點：</h3>
+        <ul>
+            <li><strong>背景拖動</strong>：在空白區域應該可以拖動整個 canvas</li>
+            <li><strong>連線跟隨</strong>：平移時所有連線應該保持正確位置</li>
+            <li><strong>事件隔離</strong>：節點拖動不應該觸發背景拖動</li>
+            <li><strong>Socket 連接</strong>：Socket 點擊應該開始連線，不觸發其他事件</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <h3>🔧 技術修復說明：</h3>
+        <ul>
+            <li><strong>移除縮放功能</strong> - 移除所有 zoom 相關代碼和事件監聽器</li>
+            <li><code>updateCanvasTransform()</code> - 只使用 translate，不使用 scale</li>
+            <li><code>setupCanvasInteractions()</code> - 改善背景拖動的事件判斷邏輯</li>
+            <li><code>makeDraggable()</code> - 添加 stopPropagation 防止事件衝突</li>
+            <li>連線現在在固定比例下工作更穩定</li>
+        </ul>
+    </div>
+    
+    <button onclick="window.open('index.html', '_blank')">🚀 打開 WCS Flow Designer</button>
+    <button onclick="window.open('test_import.html', '_blank')">📋 打開匯入測試</button>
+    
+    <div class="test-info">
+        <h3>📝 測試結果記錄：</h3>
+        <p>請在測試後記錄以下結果：</p>
+        <ul>
+            <li>[ ] 背景拖動功能正常</li>
+            <li>[ ] 平移時連線正確跟隨</li>
+            <li>[ ] 節點拖動不會觸發背景拖動</li>
+            <li>[ ] 匯入的節點可以正常拖動</li>
+            <li>[ ] Socket 連接功能正常</li>
+            <li>[ ] 無縮放功能（已移除）</li>
+        </ul>
+    </div>
+</body>
+</html>

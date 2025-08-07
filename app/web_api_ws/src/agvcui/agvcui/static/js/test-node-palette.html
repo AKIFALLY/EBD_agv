@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Designer 節點選板測試</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .node-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .node-item {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+        .node-icon {
+            margin-right: 8px;
+        }
+        #test-log {
+            background: #2d2d2d;
+            color: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Flow Designer 節點選板測試</h1>
+        <p>此頁面用於測試 Flow Designer 節點選板顯示修復的效果</p>
+        
+        <div class="test-section">
+            <div class="test-title">1. 依賴檢查</div>
+            <div id="dependency-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">2. 節點類型載入測試</div>
+            <div id="node-loading-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">3. 節點分類統計</div>
+            <div id="node-stats-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">4. 節點列表</div>
+            <div id="node-list-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">5. 測試日誌</div>
+            <div id="test-log"></div>
+        </div>
+    </div>
+
+    <!-- 載入依賴 -->
+    <script src="/static/js/flow-designer/node-types.js?v=3.1.0"></script>
+    
+    <script>
+        // 測試日誌函數
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEl = document.getElementById('test-log');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            logEl.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        // 添加結果到測試區域
+        function addResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+        
+        // 開始測試
+        function runTests() {
+            log('🚀 開始 Flow Designer 節點選板測試...');
+            
+            // 1. 依賴檢查
+            log('1️⃣ 檢查依賴...');
+            
+            if (typeof window.FlowDesigner !== 'undefined') {
+                addResult('dependency-results', '✅ window.FlowDesigner 已載入', 'success');
+                log('window.FlowDesigner 已載入', 'success');
+                
+                // 檢查各個節點類型
+                const nodeTypes = ['CONDITION_NODES', 'LOGIC_NODES', 'ACTION_NODES', 'SCRIPT_NODES'];
+                nodeTypes.forEach(type => {
+                    if (window.FlowDesigner[type]) {
+                        const count = Object.keys(window.FlowDesigner[type]).length;
+                        addResult('dependency-results', `✅ ${type}: ${count} 個節點`, 'success');
+                        log(`${type}: ${count} 個節點`, 'success');
+                    } else {
+                        addResult('dependency-results', `❌ ${type}: 未找到`, 'error');
+                        log(`${type}: 未找到`, 'error');
+                    }
+                });
+                
+            } else {
+                addResult('dependency-results', '❌ window.FlowDesigner 未載入', 'error');
+                log('window.FlowDesigner 未載入', 'error');
+                return;
+            }
+            
+            // 2. 節點類型載入測試
+            log('2️⃣ 測試節點類型載入...');
+            
+            try {
+                // 模擬 Flow Designer 的載入邏輯
+                const nodeTypes = {
+                    ...window.FlowDesigner.CONDITION_NODES,
+                    ...window.FlowDesigner.LOGIC_NODES,
+                    ...window.FlowDesigner.ACTION_NODES,
+                    ...window.FlowDesigner.SCRIPT_NODES
+                };
+                
+                const totalNodes = Object.keys(nodeTypes).length;
+                addResult('node-loading-results', `✅ 成功載入 ${totalNodes} 個節點類型`, 'success');
+                log(`成功載入 ${totalNodes} 個節點類型`, 'success');
+                
+                // 檢查節點結構
+                const firstNode = Object.values(nodeTypes)[0];
+                if (firstNode && firstNode.name && firstNode.category) {
+                    addResult('node-loading-results', '✅ 節點結構正確 (包含 name, category)', 'success');
+                    log('節點結構正確', 'success');
+                } else {
+                    addResult('node-loading-results', '❌ 節點結構不完整', 'error');
+                    log('節點結構不完整', 'error');
+                }
+                
+            } catch (error) {
+                addResult('node-loading-results', `❌ 載入失敗: ${error.message}`, 'error');
+                log(`載入失敗: ${error.message}`, 'error');
+            }
+            
+            // 3. 節點分類統計
+            log('3️⃣ 統計節點分類...');
+            
+            const categories = {
+                condition: 0,
+                logic: 0,
+                action: 0,
+                script: 0
+            };
+            
+            // 統計各類別節點數量
+            Object.values({
+                ...window.FlowDesigner.CONDITION_NODES,
+                ...window.FlowDesigner.LOGIC_NODES,
+                ...window.FlowDesigner.ACTION_NODES,
+                ...window.FlowDesigner.SCRIPT_NODES
+            }).forEach(node => {
+                const category = node.category;
+                if (categories.hasOwnProperty(category)) {
+                    categories[category]++;
+                }
+            });
+            
+            Object.entries(categories).forEach(([category, count]) => {
+                const categoryName = {
+                    condition: '條件節點',
+                    logic: '邏輯節點', 
+                    action: '動作節點',
+                    script: '腳本節點'
+                }[category];
+                
+                if (count > 0) {
+                    addResult('node-stats-results', `✅ ${categoryName}: ${count} 個`, 'success');
+                    log(`${categoryName}: ${count} 個`, 'success');
+                } else {
+                    addResult('node-stats-results', `⚠️ ${categoryName}: 0 個`, 'info');
+                    log(`${categoryName}: 0 個`, 'info');
+                }
+            });
+            
+            // 4. 節點列表顯示
+            log('4️⃣ 生成節點列表...');
+            
+            const nodeListContainer = document.getElementById('node-list-results');
+            const nodeListDiv = document.createElement('div');
+            nodeListDiv.className = 'node-list';
+            
+            Object.entries({
+                ...window.FlowDesigner.CONDITION_NODES,
+                ...window.FlowDesigner.LOGIC_NODES,
+                ...window.FlowDesigner.ACTION_NODES,
+                ...window.FlowDesigner.SCRIPT_NODES
+            }).forEach(([nodeId, nodeType]) => {
+                const nodeItem = document.createElement('div');
+                nodeItem.className = 'node-item';
+                nodeItem.style.backgroundColor = nodeType.color || '#666';
+                nodeItem.innerHTML = `
+                    <span class="node-icon">${nodeType.icon || '❓'}</span>
+                    <div>
+                        <div style="font-weight: bold;">${nodeType.name || nodeId}</div>
+                        <div style="font-size: 10px; opacity: 0.8;">${nodeType.category} | ${nodeType.source || 'unknown'}</div>
+                    </div>
+                `;
+                nodeListDiv.appendChild(nodeItem);
+            });
+            
+            nodeListContainer.appendChild(nodeListDiv);
+            log('節點列表生成完成', 'success');
+            
+            log('🎉 測試完成！');
+        }
+        
+        // 頁面載入後執行測試
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(runTests, 100); // 稍微延遲以確保所有腳本載入完成
+        });
+    </script>
+</body>
+</html>

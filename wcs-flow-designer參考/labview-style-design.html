@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LabVIEW風格流程設計器</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f0f0f0; }
+        .main-container { display: flex; height: 100vh; }
+        
+        /* 變數宣告面板 (類似LabVIEW前面板) */
+        .variables-panel {
+            width: 300px;
+            background: #ffffff;
+            border-right: 2px solid #ccc;
+            overflow-y: auto;
+        }
+        
+        .panel-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .variable-section {
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        
+        .section-title {
+            background: #34495e;
+            color: white;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .variable-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .variable-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .variable-value {
+            font-size: 11px;
+            color: #7f8c8d;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .variable-type {
+            background: #3498db;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        
+        /* 簡化的流程畫布 */
+        .flow-canvas {
+            flex: 1;
+            background: #ecf0f1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .canvas-header {
+            background: #34495e;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .canvas-title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .flow-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .control-btn:hover {
+            background: #2980b9;
+        }
+        
+        /* 簡潔的節點樣式 */
+        .simple-node {
+            position: absolute;
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 15px 20px;
+            min-width: 120px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .simple-node.condition {
+            border-color: #e74c3c;
+            background: #fdf2f2;
+        }
+        
+        .simple-node.logic {
+            border-color: #f39c12;
+            background: #fef9f0;
+        }
+        
+        .simple-node.action {
+            border-color: #27ae60;
+            background: #f0f9f4;
+        }
+        
+        .node-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .node-subtitle {
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+        
+        .node-variables {
+            font-size: 10px;
+            color: #3498db;
+            margin-top: 5px;
+        }
+        
+        /* 函數配置面板 */
+        .function-panel {
+            width: 250px;
+            background: #ffffff;
+            border-left: 2px solid #ccc;
+            overflow-y: auto;
+        }
+        
+        .function-config {
+            padding: 15px;
+        }
+        
+        .config-group {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .config-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        .config-input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .add-variable-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        /* 範例節點位置 */
+        .demo-condition { top: 100px; left: 50px; }
+        .demo-logic { top: 100px; left: 250px; }
+        .demo-action { top: 100px; left: 450px; }
+        
+        /* 連接線樣式 */
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: #3498db;
+            z-index: 1;
+        }
+        
+        .demo-line1 {
+            top: 130px;
+            left: 190px;
+            width: 60px;
+        }
+        
+        .demo-line2 {
+            top: 130px;
+            left: 390px;
+            width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 變數宣告面板 (LabVIEW風格) -->
+        <div class="variables-panel">
+            <div class="panel-header">變數宣告面板</div>
+            
+            <div class="variable-section">
+                <div class="section-title">🏠 房間變數</div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">room_list</div>
+                        <div class="variable-value">["01","02","03","04","05"]</div>
+                    </div>
+                    <span class="variable-type">Array</span>
+                </div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">current_room</div>
+                        <div class="variable-value">dynamic</div>
+                    </div>
+                    <span class="variable-type">String</span>
+                </div>
+            </div>
+            
+            <div class="variable-section">
+                <div class="section-title">🤖 機器人變數</div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">robot_models</div>
+                        <div class="variable-value">["KUKA400i","cargo","loader"]</div>
+                    </div>
+                    <span class="variable-type">Array</span>
+                </div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">selected_robot</div>
+                        <div class="variable-value">KUKA400i</div>
+                    </div>
+                    <span class="variable-type">String</span>
+                </div>
+            </div>
+            
+            <div class="variable-section">
+                <div class="section-title">📍 路徑變數</div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">source_path</div>
+                        <div class="variable-value">room_{room}_exit</div>
+                    </div>
+                    <span class="variable-type">Template</span>
+                </div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">dest_path</div>
+                        <div class="variable-value">collection_area</div>
+                    </div>
+                    <span class="variable-type">String</span>
+                </div>
+            </div>
+            
+            <div class="variable-section">
+                <div class="section-title">⚙️ 系統變數</div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">task_type</div>
+                        <div class="variable-value">RACK_MOVE</div>
+                    </div>
+                    <span class="variable-type">Const</span>
+                </div>
+                <div class="variable-item">
+                    <div>
+                        <div class="variable-name">timeout</div>
+                        <div class="variable-value">30</div>
+                    </div>
+                    <span class="variable-type">Number</span>
+                </div>
+            </div>
+            
+            <button class="add-variable-btn" onclick="addVariable()">+ 新增變數</button>
+        </div>
+        
+        <!-- 簡潔的流程畫布 -->
+        <div class="flow-canvas">
+            <div class="canvas-header">
+                <div class="canvas-title">WCS 流程邏輯</div>
+                <div class="flow-controls">
+                    <button class="control-btn">▶️ 執行</button>
+                    <button class="control-btn">💾 儲存</button>
+                    <button class="control-btn">📤 導出</button>
+                </div>
+            </div>
+            
+            <!-- 簡潔的節點 (只顯示邏輯，不顯示參數) -->
+            <div class="simple-node condition demo-condition">
+                <div class="node-title">房間檢查</div>
+                <div class="node-subtitle">check_room_carrier()</div>
+                <div class="node-variables">使用: current_room</div>
+            </div>
+            
+            <div class="simple-node logic demo-logic">
+                <div class="node-title">邏輯判斷</div>
+                <div class="node-subtitle">AND 閘</div>
+                <div class="node-variables">多條件匯聚</div>
+            </div>
+            
+            <div class="simple-node action demo-action">
+                <div class="node-title">創建任務</div>
+                <div class="node-subtitle">create_transport_task()</div>
+                <div class="node-variables">使用: selected_robot, paths</div>
+            </div>
+            
+            <!-- 簡潔的連接線 -->
+            <div class="connection-line demo-line1"></div>
+            <div class="connection-line demo-line2"></div>
+        </div>
+        
+        <!-- 函數配置面板 -->
+        <div class="function-panel">
+            <div class="panel-header">函數映射配置</div>
+            
+            <div class="function-config">
+                <div class="config-group">
+                    <div class="config-label">選中節點: 房間檢查</div>
+                    
+                    <div style="margin: 10px 0;">
+                        <div class="config-label">Python函數</div>
+                        <input type="text" class="config-input" value="wcs.room.check_carrier" placeholder="輸入Python函數路徑">
+                    </div>
+                    
+                    <div style="margin: 10px 0;">
+                        <div class="config-label">參數綁定</div>
+                        <select class="config-input">
+                            <option>room_id → current_room</option>
+                            <option>check_type → "exists"</option>
+                        </select>
+                    </div>
+                    
+                    <div style="margin: 10px 0;">
+                        <div class="config-label">返回值處理</div>
+                        <select class="config-input">
+                            <option>boolean → 條件分支</option>
+                            <option>object → 變數賦值</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <div class="config-label">測試配置</div>
+                    <button class="control-btn" style="width: 100%;">🧪 測試函數調用</button>
+                </div>
+                
+                <div class="config-group">
+                    <div class="config-label">生成的Python代碼</div>
+                    <textarea class="config-input" rows="4" readonly>
+result = wcs.room.check_carrier(
+    room_id=variables.current_room,
+    check_type="exists"
+)
+if result:
+    goto next_node
+else:
+    goto alternative_path
+                    </textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addVariable() {
+            alert('新增變數功能 - 將打開變數配置對話框');
+        }
+        
+        // 模擬節點選擇
+        document.querySelectorAll('.simple-node').forEach(node => {
+            node.addEventListener('click', function() {
+                // 移除其他選中狀態
+                document.querySelectorAll('.simple-node').forEach(n => {
+                    n.style.borderWidth = '2px';
+                });
+                
+                // 選中當前節點
+                this.style.borderWidth = '3px';
+                
+                // 更新函數配置面板
+                const title = this.querySelector('.node-title').textContent;
+                document.querySelector('.function-config .config-label').textContent = `選中節點: ${title}`;
+            });
+        });
+        
+        console.log('LabVIEW風格流程設計器載入完成');
+        console.log('特點:');
+        console.log('1. 變數宣告面板 - 類似LabVIEW前面板');
+        console.log('2. 簡潔流程邏輯 - 只顯示核心業務邏輯');
+        console.log('3. 函數映射配置 - 分離技術實現細節');
+        console.log('4. 關注點分離 - 流程 vs 變數 vs 實現');
+    </script>
+</body>
+</html>

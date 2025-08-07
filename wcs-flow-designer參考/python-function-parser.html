@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Python函數自動解析器</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .section { background: #f8f9fa; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #007bff; }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background: #e9ecef;
+            border-color: #0056b3;
+        }
+        .function-list {
+            background: #2d2d2d;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .function-item {
+            background: #3a3a3a;
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .function-name {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .function-params {
+            color: #f39c12;
+            margin: 5px 0;
+        }
+        .function-docstring {
+            color: #95a5a6;
+            font-style: italic;
+            margin: 5px 0;
+            font-size: 11px;
+        }
+        .param-item {
+            background: #4a4a4a;
+            display: inline-block;
+            padding: 3px 8px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        .param-type {
+            color: #27ae60;
+        }
+        .param-default {
+            color: #f39c12;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0056b3; }
+        .demo-python {
+            background: #2d2d2d;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        .config-output {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐍 Python函數自動解析器</h1>
+        
+        <div class="section">
+            <h2>📁 函數檔案上傳</h2>
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <h3>📤 點擊上傳Python檔案</h3>
+                <p>支援 .py 檔案，將自動解析所有函數和參數</p>
+                <input type="file" id="fileInput" accept=".py" style="display: none;" onchange="parseUploadedFile(event)">
+            </div>
+            
+            <button onclick="loadDemoFunctions()">📋 載入示範函數</button>
+            <button onclick="parsePythonCode()">🔍 解析Python代碼</button>
+        </div>
+        
+        <div class="section">
+            <h2>📝 示範Python代碼</h2>
+            <div class="demo-python" id="demoPython">
+# WCS條件檢查函數
+def check_room_carrier(room_id: str, check_exists: bool = True) -> bool:
+    """檢查房間內是否有載體
+    
+    Args:
+        room_id: 房間編號 (01-05)
+        check_exists: 檢查是否存在，False為檢查不存在
+    
+    Returns:
+        bool: 載體存在狀態
+    """
+    # 實際實現邏輯
+    return True
+
+def check_rack_position(room_id: str, position: str, rack_side: str = "A") -> dict:
+    """檢查貨架位置狀態
+    
+    Args:
+        room_id: 房間編號
+        position: 位置類型 (inlet/outlet)  
+        rack_side: 貨架面 (A/B)
+    
+    Returns:
+        dict: 貨架狀態信息
+    """
+    return {"status": "occupied", "rack_id": "R001"}
+
+# WCS任務創建函數
+def create_transport_task(robot_model: str, source: str, destination: str, 
+                         task_type: str = "RACK_MOVE", timeout: int = 30) -> str:
+    """創建運輸任務
+    
+    Args:
+        robot_model: 機器人型號 (KUKA400i/cargo/loader/unloader)
+        source: 來源位置
+        destination: 目標位置
+        task_type: 任務類型
+        timeout: 超時時間(秒)
+    
+    Returns:
+        str: 任務ID
+    """
+    return "TASK_001"
+
+def submit_mission(mission_data: dict, priority: int = 1) -> bool:
+    """提交任務到WCS系統
+    
+    Args:
+        mission_data: 任務數據
+        priority: 優先級 (1-10)
+    
+    Returns:
+        bool: 提交成功狀態
+    """
+    return True
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🔍 解析結果</h2>
+            <div class="function-list" id="functionList">
+                點擊 "解析Python代碼" 查看函數列表...
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>⚙️ 生成的WCS配置</h2>
+            <div class="config-output" id="configOutput">
+                解析完成後將顯示可用於WCS Flow Designer的配置...
+            </div>
+        </div>
+        
+        <button onclick="exportToWCSConfig()">📤 導出WCS配置檔</button>
+        <button onclick="generateDropdownOptions()">📋 生成下拉選單選項</button>
+    </div>
+
+    <script>
+        let parsedFunctions = [];
+
+        function parseUploadedFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                document.getElementById('demoPython').textContent = content;
+                parsePythonCode();
+            };
+            reader.readAsText(file);
+        }
+
+        function loadDemoFunctions() {
+            // 示範函數已經在HTML中，直接解析
+            parsePythonCode();
+        }
+
+        function parsePythonCode() {
+            const pythonCode = document.getElementById('demoPython').textContent;
+            parsedFunctions = parsePythonFromText(pythonCode);
+            displayParsedFunctions();
+        }
+
+        function parsePythonFromText(code) {
+            const functions = [];
+            const lines = code.split('\n');
+            
+            let currentFunction = null;
+            let inDocstring = false;
+            let docstringContent = '';
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // 檢測函數定義
+                const funcMatch = line.match(/^def\s+(\w+)\s*\((.*?)\)\s*(?:->\s*(.+?))?\s*:/);
+                if (funcMatch) {
+                    if (currentFunction) {
+                        functions.push(currentFunction);
+                    }
+                    
+                    currentFunction = {
+                        name: funcMatch[1],
+                        params: parseParameters(funcMatch[2]),
+                        returnType: funcMatch[3] ? funcMatch[3].trim() : 'Any',
+                        docstring: '',
+                        category: 'custom'
+                    };
+                    continue;
+                }
+                
+                // 檢測docstring
+                if (currentFunction && line.startsWith('"""')) {
+                    if (inDocstring) {
+                        currentFunction.docstring = docstringContent.trim();
+                        inDocstring = false;
+                        docstringContent = '';
+                    } else {
+                        inDocstring = true;
+                        docstringContent = line.replace(/"""/g, '');
+                    }
+                    continue;
+                }
+                
+                if (inDocstring) {
+                    docstringContent += ' ' + line;
+                }
+                
+                // 如果遇到新的函數或非縮排行，結束當前函數
+                if (currentFunction && line && !line.startsWith(' ') && !line.startsWith('\t') && !line.startsWith('#')) {
+                    if (!line.startsWith('def ')) {
+                        functions.push(currentFunction);
+                        currentFunction = null;
+                    }
+                }
+            }
+            
+            // 添加最後一個函數
+            if (currentFunction) {
+                functions.push(currentFunction);
+            }
+            
+            return functions;
+        }
+
+        function parseParameters(paramString) {
+            if (!paramString.trim()) return [];
+            
+            const params = [];
+            const paramParts = paramString.split(',');
+            
+            paramParts.forEach(part => {
+                part = part.trim();
+                if (!part) return;
+                
+                const param = {
+                    name: '',
+                    type: 'Any',
+                    default: null,
+                    required: true
+                };
+                
+                // 處理默認值
+                let [nameType, defaultValue] = part.split('=').map(s => s.trim());
+                if (defaultValue !== undefined) {
+                    param.default = defaultValue;
+                    param.required = false;
+                }
+                
+                // 處理類型註解
+                if (nameType.includes(':')) {
+                    const [name, type] = nameType.split(':').map(s => s.trim());
+                    param.name = name;
+                    param.type = type;
+                } else {
+                    param.name = nameType;
+                }
+                
+                params.push(param);
+            });
+            
+            return params;
+        }
+
+        function displayParsedFunctions() {
+            const container = document.getElementById('functionList');
+            
+            if (parsedFunctions.length === 0) {
+                container.innerHTML = '<div style="color: #e74c3c;">未找到函數定義</div>';
+                return;
+            }
+            
+            let html = `<div style="color: #3498db; font-weight: bold; margin-bottom: 15px;">
+                        找到 ${parsedFunctions.length} 個函數：
+                       </div>`;
+            
+            parsedFunctions.forEach(func => {
+                html += `
+                    <div class="function-item">
+                        <div class="function-name">${func.name}()</div>
+                        <div class="function-docstring">${func.docstring || '無描述'}</div>
+                        <div class="function-params">
+                            <strong>參數:</strong>
+                            ${func.params.map(p => 
+                                `<span class="param-item">
+                                    ${p.name}: <span class="param-type">${p.type}</span>
+                                    ${p.default !== null ? ` = <span class="param-default">${p.default}</span>` : ''}
+                                    ${p.required ? ' <strong>*</strong>' : ''}
+                                </span>`
+                            ).join('')}
+                        </div>
+                        <div style="color: #27ae60; margin-top: 5px;">
+                            <strong>返回:</strong> ${func.returnType}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function generateDropdownOptions() {
+            const conditionFunctions = parsedFunctions.filter(f => 
+                f.name.includes('check') || f.name.includes('verify') || f.returnType === 'bool'
+            );
+            
+            const actionFunctions = parsedFunctions.filter(f => 
+                f.name.includes('create') || f.name.includes('submit') || f.name.includes('execute')
+            );
+            
+            const config = {
+                condition_functions: conditionFunctions.map(f => ({
+                    value: f.name,
+                    label: f.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    description: f.docstring.split('.')[0] || f.name,
+                    parameters: f.params.map(p => ({
+                        name: p.name,
+                        type: p.type,
+                        required: p.required,
+                        default: p.default,
+                        options: generateParameterOptions(p)
+                    }))
+                })),
+                action_functions: actionFunctions.map(f => ({
+                    value: f.name,
+                    label: f.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    description: f.docstring.split('.')[0] || f.name,
+                    parameters: f.params.map(p => ({
+                        name: p.name,
+                        type: p.type,
+                        required: p.required,
+                        default: p.default,
+                        options: generateParameterOptions(p)
+                    }))
+                }))
+            };
+            
+            document.getElementById('configOutput').innerHTML = 
+                '<pre>' + JSON.stringify(config, null, 2) + '</pre>';
+        }
+
+        function generateParameterOptions(param) {
+            // 根據參數名稱和類型生成選項
+            const options = [];
+            
+            if (param.name.includes('room') && param.name.includes('id')) {
+                return ['01', '02', '03', '04', '05', 'FOR_LOOP'];
+            }
+            
+            if (param.name.includes('robot') && param.name.includes('model')) {
+                return ['KUKA400i', 'cargo', 'loader', 'unloader'];
+            }
+            
+            if (param.name === 'position') {
+                return ['inlet', 'outlet'];
+            }
+            
+            if (param.name.includes('rack') && param.name.includes('side')) {
+                return ['A', 'B'];
+            }
+            
+            if (param.name.includes('task') && param.name.includes('type')) {
+                return ['RACK_MOVE', 'RACK_ROTATION', 'CARRIER_TRANSPORT'];
+            }
+            
+            if (param.type === 'bool') {
+                return [true, false];
+            }
+            
+            return null; // 無預定選項，使用文字輸入
+        }
+
+        function exportToWCSConfig() {
+            generateDropdownOptions();
+            
+            const config = JSON.parse(document.getElementById('configOutput').textContent);
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'wcs-functions-config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('WCS函數配置檔已導出！');
+        }
+
+        // 初始化載入示範函數
+        window.onload = function() {
+            loadDemoFunctions();
+        };
+    </script>
+</body>
+</html>

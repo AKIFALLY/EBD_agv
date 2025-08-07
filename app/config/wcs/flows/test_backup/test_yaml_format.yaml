@@ -1,0 +1,21 @@
+name: test_yaml_format
+description: 測試 YAML 格式保存
+priority: 50
+enabled: true
+flow_designer_data:
+  version: '1.0'
+  nodes:
+  - id: node_1
+    type: check_agv_rotation_flow
+    name: 測試 YAML 節點
+    position:
+      x: 300
+      y: 200
+    parameters:
+      room_id: 2
+  connections: []
+metadata:
+  created_at: '2025-08-05T15:11:25.209363'
+  created_by: anonymous
+  updated_at: '2025-08-05T15:11:25.209363'
+  updated_by: anonymous

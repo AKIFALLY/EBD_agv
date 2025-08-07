@@ -31,7 +31,8 @@ import cargo_mover_agv.robot_states.idle_state
 class AgvCoreNode(AgvNodebase):
     def __init__(self, node_name='agv_node_base', **kwargs):
         super().__init__(node_name=node_name, **kwargs)
-
+        self.room_id = 0  # 設定房間ID
+        self.work_id = 0  # 設定工作ID
         # 使用共用方法設置參數和訂閱
         self.setup_common_parameters()
         self.setup_agv_subscription()

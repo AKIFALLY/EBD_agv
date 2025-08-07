@@ -275,6 +275,62 @@ iftop
 netstat -i                  # 網路介面統計 (ss 無法替代此功能)
 ```
 
+## 🔧 容器指令執行技巧
+
+### Interactive Bash Mode (`bash -i`) 
+**⚠️ 重要發現**: 使用 `bash -i` 可以解決容器內指令執行的問題
+
+#### 問題背景
+在使用 Bash tool 執行容器內指令時，經常遇到以下問題：
+- 指令超時 (timeout after 2 minutes)
+- Alias 無法載入 (如 `ba`, `sa`, `manage_web_api_launch` 等)
+- 非互動式環境導致的指令失敗
+
+#### 解決方案: bash -i 參數
+```bash
+# ✅ 推薦方式：使用 bash -i (interactive flag)
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop"
+
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /app/setup.bash && agvc_source && ba && sa && manage_web_api_launch start"
+
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop && ba && sa && manage_web_api_launch start"
+
+# ❌ 問題方式：不使用 -i 參數
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "manage_web_api_launch stop"  # 會超時或失敗
+```
+
+#### 技術原理
+- **Interactive Mode**: `-i` 參數啟用互動式 bash，確保 alias 和函數正確載入
+- **Alias Loading**: 互動式模式會正確執行 `.bashrc` 和相關配置檔案
+- **Timeout Prevention**: 避免非互動式環境造成的指令掛起
+- **完整環境**: 確保容器內的完整 shell 環境被正確初始化
+
+#### 最佳實踐模式
+```bash
+# 標準容器指令執行模式
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
+source /app/setup.bash && 
+agvc_source && 
+[your_commands_here]
+"
+
+# 實際應用範例
+# 1. 停止服務
+bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop"
+
+# 2. 建置和重啟
+bash -i -c "source /app/setup.bash && agvc_source && ba && sa && manage_web_api_launch start"
+
+# 3. 完整重啟流程
+bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop && ba && sa && manage_web_api_launch start"
+```
+
+#### 應用場景
+- **Web 服務管理**: 使用 `manage_web_api_launch` 工具
+- **建置工作流**: 執行 `ba` (build all) 和 `sa` (source all) 指令
+- **系統重啟**: 完整的停止-建置-啟動流程
+- **複雜指令序列**: 需要多個步驟協同執行的操作
+
 ## 🛠️ 開發最佳實踐
 
 ### 程式碼開發
@@ -282,6 +338,7 @@ netstat -i                  # 網路介面統計 (ss 無法替代此功能)
 2. **工作空間載入**: 使用 `all_source` 載入對應工作空間
 3. **增量建置**: 使用 `--packages-select` 建置特定套件
 4. **即時測試**: 開發過程中持續測試功能
+5. **容器指令**: 使用 `bash -i` 執行容器內的複雜指令序列
 
 ### 依賴管理
 ```bash

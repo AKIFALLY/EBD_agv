@@ -1,0 +1,264 @@
+# WCS Flow Designer - 邏輯判斷節點定義 (基於實際 AI WCS 代碼)
+# 僅包含實際存在於 ai_wcs_ws 中的邏輯處理函數
+
+logic_nodes:
+  # === 決策優先級排序和調度 (統一決策引擎) ===
+  prioritize_and_schedule:
+    name: "優先級排序和調度"
+    description: "按優先度排序決策並解決資源衝突"
+    category: "control"
+    icon: "⚖️"
+    color: "#F59E0B"
+    inputs: ["task_decisions"]
+    outputs: ["scheduled_decisions"]
+    parameters:
+      - name: "sort_order"
+        type: "select"
+        options: ["priority_desc", "priority_asc"]
+        default: "priority_desc"
+        description: "排序方式 (高優先級優先)"
+    logic:
+      - function: "_prioritize_and_schedule"
+        source: "unified_decision_engine"
+        returns: "List[TaskDecision]"
+
+  # === 房間位置資訊處理 ===
+  get_room_location_info:
+    name: "房間位置資訊處理"
+    description: "計算房間入口/出口位置和相關ID"
+    category: "control"
+    icon: "🏠"
+    color: "#F59E0B"
+    inputs: ["room_id"]
+    outputs: ["location_info"]
+    parameters:
+      - name: "room_id"
+        type: "integer"
+        min: 1
+        max: 10
+        required: true
+        description: "房間ID (1-10)"
+    logic:
+      - function: "get_room_location_info"
+        source: "unified_decision_engine"
+        returns: "Dict[str, int]"
+
+  # === OPUI 請求處理邏輯 ===
+  process_opui_call_empty_request:
+    name: "OPUI叫空車請求處理"
+    description: "處理OPUI叫空車請求並更新任務狀態"
+    category: "control"
+    icon: "📞"
+    color: "#F59E0B"
+    inputs: ["opui_request"]
+    outputs: ["task_decision"]
+    parameters:
+      - name: "machine_id"
+        type: "integer"
+        required: true
+        description: "機台ID"
+      - name: "space_num"
+        type: "integer"
+        options: [1, 2]
+        default: 1
+        description: "停車格編號"
+    logic:
+      - function: "_process_opui_call_empty_request"
+        source: "unified_decision_engine"
+        returns: "Optional[TaskDecision]"
+
+  process_opui_dispatch_full_request:
+    name: "OPUI派滿車請求處理"
+    description: "處理OPUI派滿車請求並生成任務決策"
+    category: "control"
+    icon: "🚛"
+    color: "#F59E0B"
+    inputs: ["opui_request"]
+    outputs: ["task_decision"]
+    parameters:
+      - name: "machine_id"
+        type: "integer"
+        required: true
+        description: "機台ID"
+      - name: "rack_id"
+        type: "integer"
+        required: true
+        description: "料架ID"
+      - name: "room_id"
+        type: "integer"
+        required: true
+        description: "目標房間ID"
+    logic:
+      - function: "_process_opui_dispatch_full_request"
+        source: "unified_decision_engine"
+        returns: "Optional[TaskDecision]"
+
+  # === AGV 旋轉路徑生成 ===
+  generate_rotation_nodes:
+    name: "AGV旋轉路徑生成"
+    description: "生成AGV旋轉的3個節點路徑"
+    category: "control"
+    icon: "🔄"
+    color: "#F59E0B"
+    inputs: ["target_location", "current_location"]
+    outputs: ["rotation_nodes"]
+    parameters:
+      - name: "target_location"
+        type: "integer"
+        required: true
+        description: "目標位置ID"
+      - name: "current_location"
+        type: "integer"
+        required: true
+        description: "當前位置ID"
+    logic:
+      - function: "_generate_rotation_nodes"
+        source: "unified_decision_engine"
+        returns: "List[int]"
+
+  # === 位置類型判斷 ===
+  is_room_inlet:
+    name: "房間入口判斷"
+    description: "判斷位置是否為房間入口 (X0001格式)"
+    category: "control"
+    icon: "🚪"
+    color: "#F59E0B"
+    inputs: ["location_id"]
+    outputs: ["is_inlet"]
+    parameters:
+      - name: "location_id"
+        type: "integer"
+        required: true
+        description: "位置ID"
+    logic:
+      - function: "_is_room_inlet"
+        source: "unified_decision_engine"
+        returns: "bool"
+
+  is_room_outlet:
+    name: "房間出口判斷"
+    description: "判斷位置是否為房間出口 (X0002格式)"
+    category: "control"
+    icon: "🚪"
+    color: "#F59E0B"
+    inputs: ["location_id"]
+    outputs: ["is_outlet"]
+    parameters:
+      - name: "location_id"
+        type: "integer"
+        required: true
+        description: "位置ID"
+    logic:
+      - function: "_is_room_outlet"
+        source: "unified_decision_engine"
+        returns: "bool"
+
+  # === 決策統計和監控 ===
+  get_decision_statistics:
+    name: "決策引擎統計"
+    description: "獲取統一決策引擎的運行統計資料"
+    category: "control"
+    icon: "📊"
+    color: "#F59E0B"
+    inputs: []
+    outputs: ["statistics"]
+    parameters: []
+    logic:
+      - function: "get_decision_statistics"
+        source: "unified_decision_engine"
+        returns: "Dict[str, Any]"
+
+  # === Work ID 參數建構 (統一任務管理器) ===
+  build_kuka_rack_move_parameters:
+    name: "KUKA移動貨架參數建構"
+    description: "建立KUKA移動貨架任務參數 (work_id: 220001)"
+    category: "control"
+    icon: "🏗️"
+    color: "#F59E0B"
+    inputs: ["task_decision"]
+    outputs: ["task_parameters"]
+    parameters:
+      - name: "work_id"
+        type: "string"
+        default: "220001"
+        description: "Work ID (kuka-移動貨架)"
+    logic:
+      - function: "build_kuka_rack_move_parameters"
+        source: "unified_task_manager.WorkIDParameterManager"
+        returns: "Dict[str, Any]"
+
+  build_kuka_workflow_parameters:
+    name: "KUKA流程觸發參數建構"
+    description: "建立KUKA流程觸發任務參數 (work_id: 230001)"
+    category: "control"
+    icon: "⚙️"
+    color: "#F59E0B"
+    inputs: ["task_decision"]
+    outputs: ["task_parameters"]
+    parameters:
+      - name: "work_id"
+        type: "string"
+        default: "230001"
+        description: "Work ID (kuka-流程觸發)"
+      - name: "templateCode"
+        type: "string"
+        default: "W000000001"
+        description: "工作流程模板代碼"
+    logic:
+      - function: "build_kuka_workflow_parameters"
+        source: "unified_task_manager.WorkIDParameterManager"
+        returns: "Dict[str, Any]"
+
+  build_opui_call_empty_parameters:
+    name: "OPUI叫空車參數建構"
+    description: "建立OPUI叫空車任務參數 (work_id: 100001)"
+    category: "control"
+    icon: "📱"
+    color: "#F59E0B"
+    inputs: ["task_decision"]
+    outputs: ["task_parameters"]
+    parameters:
+      - name: "work_id"
+        type: "string"
+        default: "100001"
+        description: "Work ID (opui-call-empty)"
+    logic:
+      - function: "build_opui_call_empty_parameters"
+        source: "unified_task_manager.WorkIDParameterManager"
+        returns: "Dict[str, Any]"
+
+  build_opui_dispatch_full_parameters:
+    name: "OPUI派滿車參數建構"  
+    description: "建立OPUI派滿車任務參數 (work_id: 100002)"
+    category: "control"
+    icon: "🚚"
+    color: "#F59E0B"
+    inputs: ["task_decision"]
+    outputs: ["task_parameters"]
+    parameters:
+      - name: "work_id"
+        type: "string"
+        default: "100002"
+        description: "Work ID (opui-dispatch-full)"
+    logic:
+      - function: "build_opui_dispatch_full_parameters"
+        source: "unified_task_manager.WorkIDParameterManager"
+        returns: "Dict[str, Any]"
+
+  build_cargo_agv_parameters:
+    name: "Cargo AGV參數建構"
+    description: "建立Cargo AGV任務參數 (work_id: 2000102/2000201)"
+    category: "control"
+    icon: "🚛"
+    color: "#F59E0B"
+    inputs: ["task_decision"]
+    outputs: ["task_parameters"]
+    parameters:
+      - name: "work_id"
+        type: "select"
+        options: ["2000102", "2000201"]
+        description: "Work ID (CargoAGV入口/出口)"
+    logic:
+      - function: "build_cargo_agv_parameters"
+        source: "unified_task_manager.WorkIDParameterManager"
+        returns: "Dict[str, Any]"

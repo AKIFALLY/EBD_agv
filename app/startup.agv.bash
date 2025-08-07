@@ -90,10 +90,6 @@ echo $! > "$ZENOH_PID_FILE"
 #    fi
 #fi
 
-
-
-
-
 #檢查服務是否都已經啟動
 # 檢查 SSH 是否已經運行
 if pgrep -f "sshd" > /dev/null; then
@@ -108,8 +104,6 @@ if [ -f "$ZENOH_PID_FILE" ] && pgrep -F "$ZENOH_PID_FILE" > /dev/null; then
 else
     echo "❌ Zenoh Router 啟動失敗"
 fi
-
-
 
 #if [ $NODE_INSTALLED -eq 0 ]; then
 #    # 循環檢查第一個 Node.js 服務 最多檢查 10 秒
@@ -148,15 +142,12 @@ fi
 #    echo "❌ Node.js 未安裝"
 #fi
 
-
 # -lt	less than	小於 <	[ "$a" -lt "$b" ]
 # -le	less or equal	小於或等於 ≤	[ "$a" -le "$b" ]
 # -eq	equal	等於 =	[ "$a" -eq "$b" ]
 # -ne	not equal	不等於 ≠	[ "$a" -ne "$b" ]
 # -gt	greater than	大於 >	[ "$a" -gt "$b" ]
 # -ge	greater or equal	大於或等於 ≥	[ "$a" -ge "$b" ]
-
-
 
 all_source() { 
     # 設定要載入的 workspace 路徑
@@ -180,8 +171,6 @@ all_source() {
     done
 }
 
-
-
     #啟動
 
 all_source
@@ -196,12 +185,10 @@ AGV_PID_FILE="/tmp/agv.pid"
 #nohup ros2 launch loader_agv launch.py > "$AGV_LOG_FILE" 2>&1 &
 #echo $! > "$AGV_PID_FILE"
 #
-#
 #    # 檢查 agv launch 是否已經運行
 #if [ -f "$AGV_PID_FILE" ] && pgrep -F "$AGV_PID_FILE" > /dev/null; then
 #    python3 -c "import sqlmodel; print(sqlmodel.__version__)"
 #    python3 -c "import networkx; print(networkx.__version__)"
-#
 #
 #    echo "✅ agv launch 已經在運行中 (PID: $(cat $AGV_PID_FILE))"
 #else

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Rete.js v2</title>
+</head>
+<body>
+    <div id="rete" style="width: 800px; height: 600px; border: 1px solid #ccc;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/rete@2.0.6/rete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-area-plugin@2.1.3/rete-area-plugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rete-connection-plugin@2.1.3/rete-connection-plugin.min.js"></script>
+
+    <script>
+        console.log('=== CHECKING GLOBAL OBJECTS ===');
+        console.log('window.Rete:', typeof window.Rete);
+        console.log('window.ReteAreaPlugin:', typeof window.ReteAreaPlugin);
+        console.log('window.ReteConnectionPlugin:', typeof window.ReteConnectionPlugin);
+        
+        // Check all possible global names
+        const possibleNames = ['Rete', 'ReteAreaPlugin', 'ReteConnectionPlugin', 'ReteSvgPlugin', 'ReteRenderUtils'];
+        possibleNames.forEach(name => {
+            if (window[name]) {
+                console.log(`Found: window.${name}`, window[name]);
+                console.log(`Properties:`, Object.keys(window[name]));
+            }
+        });
+        
+        // Try to access common Rete objects
+        try {
+            if (window.Rete) {
+                console.log('Rete object:', window.Rete);
+                console.log('Rete keys:', Object.keys(window.Rete));
+                
+                // Try to create editor
+                if (window.Rete.NodeEditor) {
+                    console.log('NodeEditor available');
+                } else {
+                    console.log('NodeEditor not found, checking other constructors...');
+                    console.log('Available constructors:', Object.keys(window.Rete).filter(key => 
+                        typeof window.Rete[key] === 'function' && /^[A-Z]/.test(key)
+                    ));
+                }
+            }
+        } catch (error) {
+            console.error('Error accessing Rete:', error);
+        }
+    </script>
+</body>
+</html>

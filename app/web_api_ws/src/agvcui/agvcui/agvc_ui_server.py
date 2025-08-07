@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from agvcui.agvc_ui_socket import AgvcUiSocket
 from agvcui.routers import map, tasks, works, devices, signals
 from agvcui.routers import rosout_logs, runtime_logs, audit_logs
-from agvcui.routers import clients, racks, products, carriers, agvs, auth, users
+from agvcui.routers import clients, racks, products, carriers, agvs, auth, users, flow_designer
 from agvcui.middleware import AuthMiddleware
 from contextlib import asynccontextmanager
 
@@ -148,6 +148,7 @@ class AgvcUiServer:
         self.app.include_router(signals.get_router(self.templates))
         self.app.include_router(auth.get_router(self.templates))
         self.app.include_router(users.get_router(self.templates))
+        self.app.include_router(flow_designer.get_router(self.templates))
 
     def run(self):
         uvicorn.run(self.sio_app, host=self.host, port=self.port)

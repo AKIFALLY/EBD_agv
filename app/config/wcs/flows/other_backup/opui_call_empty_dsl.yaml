@@ -1,0 +1,321 @@
+# YAML DSL 範例 - OPUI 叫空車流程
+# 展示 DSL 語法處理 OPUI 請求和機台停車格管理
+
+name: "OPUI 叫空車流程 DSL"
+description: "處理 OPUI 叫空車請求，檢查機台停車格狀態並創建任務"
+version: "1.0"
+author: "RosAGV YAML DSL System"
+priority: 80
+work_id: "100001"
+enabled: true
+
+metadata:
+  flow_type: "dsl_script"
+  business_category: "opui_request"
+  compatible_with: ["simple_wcs", "flow_designer"]
+
+# === DSL 變數系統 ===
+variables:
+  # 輸入變數（來自 OPUI 請求）
+  machine_id:
+    type: "integer"
+    value: null
+    description: "機台ID"
+    scope: "input"
+    required: true
+  
+  space_num:
+    type: "integer"
+    value: 1
+    description: "停車格編號 (1或2)"
+    scope: "input"
+    options: [1, 2]
+  
+  request_type:
+    type: "string"
+    value: "call_empty"
+    description: "請求類型"
+    scope: "input"
+  
+  # 處理變數
+  parking_available:
+    type: "boolean"
+    value: false
+    description: "停車格是否可用"
+    scope: "local"
+  
+  machine_location_id:
+    type: "integer"
+    value: null
+    description: "機台對應的位置ID"
+    scope: "local"
+  
+  # 輸出變數
+  task_created:
+    type: "boolean"
+    value: false
+    description: "任務是否成功創建"
+    scope: "output"
+  
+  created_task_id:
+    type: "integer"
+    value: null
+    description: "創建的任務ID"
+    scope: "output"
+
+# === DSL 程式化步驟 ===
+steps:
+  # 步驟1：驗證輸入參數
+  - id: "validate_input"
+    type: "condition"
+    description: "驗證 OPUI 請求的輸入參數"
+    function: "validate_parameters"
+    source: "dsl_runtime"
+    parameters:
+      machine_id: "${machine_id}"
+      space_num: "${space_num}"
+    conditions:
+      - expression: "${machine_id} != null && ${machine_id} > 0"
+        variables: ["machine_id"]
+        functions: []
+      - expression: "${space_num} in [1, 2]"
+        variables: ["space_num"]  
+        functions: []
+    next_steps: ["calculate_machine_location"]
+    error_handling:
+      skip_on_error: false
+      fallback_step: "log_validation_error"
+
+  # 步驟2：計算機台位置ID  
+  - id: "calculate_machine_location"
+    type: "logic"
+    description: "根據機台ID計算對應的位置ID"
+    function: "calculate_location_id"
+    source: "dsl_runtime"
+    parameters:
+      machine_id: "${machine_id}"
+    variables:
+      machine_location_id:
+        type: "integer"
+        value: "${20000 + machine_id}"  # 機台位置ID = 20000 + machine_id
+        description: "計算得出的機台位置ID"
+        scope: "local"
+    conditions:
+      - expression: "${machine_id} >= 1 && ${machine_id} <= 999"
+        variables: ["machine_id"]
+        functions: []
+    next_steps: ["check_parking_availability"]
+
+  # 步驟3：檢查停車格可用性
+  - id: "check_parking_availability"
+    type: "condition"
+    description: "檢查機台停車格的可用狀態"
+    function: "check_locations_available"
+    source: "enhanced_database_client"
+    parameters:
+      location_ids: ["${machine_location_id}"]
+      status: 0  # 0=可用
+    variables:
+      parking_available:
+        type: "boolean"
+        value: false
+        description: "停車格可用性檢查結果"
+        scope: "local"
+    conditions:
+      - expression: "${machine_location_id} != null"
+        variables: ["machine_location_id"]
+        functions: []
+    next_steps: ["process_opui_request"]
+    error_handling:
+      retry: true
+      retry_count: 2
+
+  # 步驟4：處理 OPUI 叫空車請求
+  - id: "process_opui_request"
+    type: "logic" 
+    description: "處理 OPUI 叫空車請求邏輯"
+    function: "process_opui_call_empty_request"
+    source: "unified_decision_engine"
+    parameters:
+      machine_id: "${machine_id}"
+      space_num: "${space_num}"
+    variables:
+      opui_task_decision:
+        type: "object"
+        value: null
+        description: "OPUI 任務決策結果"
+        scope: "local"
+    conditions:
+      - expression: "${parking_available} == true"
+        variables: ["parking_available"]
+        functions: []
+    next_steps: ["create_opui_task"]
+    error_handling:
+      skip_on_error: false
+      fallback_step: "log_parking_unavailable"
+
+  # 步驟5：創建 OPUI 任務
+  - id: "create_opui_task"
+    type: "action"
+    description: "創建 OPUI 叫空車任務到資料庫"
+    function: "create_task_from_decision_dict"
+    source: "enhanced_database_client"
+    parameters:
+      work_id: "${work_id}"
+      status_id: 0
+      room_id: null
+      node_id: "${machine_location_id}"
+      name: "OPUI叫空車 - 機台${machine_id}格${space_num}"
+      description: "DSL生成：OPUI叫空車請求處理"
+      priority: "${priority}"
+      parameters:
+        type: "opui_request"
+        task_type: "call_empty"
+        function: "opui_call_empty"
+        model: "KUKA400i"
+        api: "opui_request"
+        mission_type: "CALL_EMPTY"
+        machine_id: "${machine_id}"
+        space_num: "${space_num}"
+        request_type: "${request_type}"
+    variables:
+      created_task_id:
+        type: "integer"
+        value: null
+        description: "創建的任務ID"
+        scope: "output"
+    conditions:
+      - expression: "${opui_task_decision} != null"
+        variables: ["opui_task_decision"]
+        functions: []
+    next_steps: ["update_parking_status"]
+
+  # 步驟6：更新停車格狀態
+  - id: "update_parking_status"
+    type: "action"
+    description: "更新機台停車格狀態為任務中"
+    function: "update_machine_parking_status"
+    source: "enhanced_database_client"
+    parameters:
+      machine_id: "${machine_id}"
+      space_num: "${space_num}"
+      status: 1  # 1=任務中
+    variables:
+      parking_updated:
+        type: "boolean"
+        value: false
+        description: "停車格狀態更新結果"
+        scope: "local"
+    conditions:
+      - expression: "${created_task_id} != null"
+        variables: ["created_task_id"]
+        functions: []
+    next_steps: ["finalize_task"]
+
+  # 步驟7：完成任務處理
+  - id: "finalize_task"
+    type: "script"
+    description: "完成任務處理並設定輸出變數"
+    function: "finalize_processing"
+    source: "dsl_runtime"
+    parameters:
+      task_id: "${created_task_id}"
+      success: "${parking_updated}"
+    variables:
+      task_created:
+        type: "boolean"
+        value: "${created_task_id} != null && ${parking_updated} == true"
+        description: "任務創建成功標記"
+        scope: "output"
+    conditions:
+      - expression: "${created_task_id} != null"
+        variables: ["created_task_id"]
+        functions: []
+    next_steps: []
+
+  # 錯誤處理步驟
+  - id: "log_validation_error"
+    type: "script"
+    description: "記錄參數驗證錯誤"
+    function: "log_error"
+    source: "dsl_runtime"
+    parameters:
+      message: "OPUI 請求參數驗證失敗"
+      context:
+        machine_id: "${machine_id}"
+        space_num: "${space_num}"
+    next_steps: []
+
+  - id: "log_parking_unavailable"
+    type: "script"
+    description: "記錄停車格不可用"
+    function: "log_info"
+    source: "dsl_runtime"
+    parameters:
+      message: "機台停車格不可用，跳過任務創建"
+      context:
+        machine_id: "${machine_id}"
+        space_num: "${space_num}"
+        machine_location_id: "${machine_location_id}"
+    next_steps: []
+
+# === DSL 控制結構範例 ===
+control_structures:
+  # 條件分支
+  if_parking_available:
+    condition: "${parking_available} == true"
+    then: ["create_opui_task"]
+    else: ["log_parking_unavailable"]
+  
+  # 迴圈結構（概念）
+  for_each_space:
+    iterate: "${space_numbers}"
+    variable: "current_space"
+    steps: ["check_space_${current_space}"]
+
+# === 與三種節點類型的對應 ===
+node_type_mapping:
+  condition_nodes:
+    - "validate_input"
+    - "check_parking_availability"
+  
+  logic_nodes:
+    - "calculate_machine_location"
+    - "process_opui_request"
+  
+  action_nodes:
+    - "create_opui_task"
+    - "update_parking_status"
+    - "finalize_task"
+
+# 向下相容性：轉換為原始格式
+legacy_format:
+  trigger_conditions:
+    - condition: "opui_call_empty_request_exists"
+      description: "有 OPUI 叫空車請求"
+      parameters:
+        request_type: "call_empty"
+    
+    - condition: "machine_parking_available"
+      description: "機台停車格可用"
+      parameters:
+        machine_id: "${machine_id}"
+        space_num: "${space_num}"
+        status: 0
+  
+  action:
+    type: "create_task"
+    task_type: "opui_call_empty"
+    function: "opui_call_empty"
+    model: "KUKA400i"
+    api: "opui_request"
+    mission_type: "CALL_EMPTY"
+    path:
+      type: "machine_pickup"
+  
+  applicable_rooms: []
+  applicable_locations: ["${machine_location_id}"]
+  
+  debug:
+    enabled: false
+    log_conditions: true

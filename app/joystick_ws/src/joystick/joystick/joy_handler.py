@@ -2,7 +2,6 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
 import time
-import time
 
 
 class JoyHandler:

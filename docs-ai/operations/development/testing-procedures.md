@@ -535,7 +535,7 @@ class TestE2E:
     
     def test_agvcui_dashboard(self, driver):
         """測試 AGVCUI 儀表板"""
-        driver.get("http://localhost:8001/dashboard")
+        driver.get("http://localhost:8001/dashboard")  # 或 http://agvc.ui/dashboard
         
         # 等待頁面載入
         wait = WebDriverWait(driver, 10)
@@ -550,7 +550,7 @@ class TestE2E:
     
     def test_opui_workflow(self, driver):
         """測試 OPUI 工作流程"""
-        driver.get("http://localhost:8002/")
+        driver.get("http://localhost:8002/")  # 或 http://op.ui/
         
         # 測試叫空車功能
         call_button = driver.find_element(By.ID, "call-empty-agv")
