@@ -14,6 +14,8 @@ from agv_base.agv_status import AgvStatus
 from agv_interfaces.msg import AgvStatus as AgvStatusMsg
 from db_proxy_interfaces.msg import AGVs
 from db_proxy_interfaces.msg import Task as TaskMsg
+import json
+import os
 
 
 class AgvNodebase(Node):
@@ -43,7 +45,7 @@ class AgvNodebase(Node):
         self.start_time = self.clock.now()  # 記錄請求開始時間
         self.requesting = False  # 重置請求狀態
         self.read_cycle_time_ms = 200  # 設定循環時間為 200ms
-        self.robot_finished = False  # 機器人是否完成動作
+        
         self._running = False
         self._thread = None
         self.plc_heartbeat = 0  # PLC 心跳計數器
@@ -59,6 +61,7 @@ class AgvNodebase(Node):
         self.mission_id = None  # 任務ID
         self.node_id = None  # 任務目標節點
         self.AGV_id = 0  # AGV ID
+        self.robot_finished = False  # 機器人是否完成動作
         self.task = TaskMsg()
         self.agvsubscription = None  # AGVs 訂閱物件
 
@@ -212,6 +215,9 @@ class AgvNodebase(Node):
                 self.agv_status.get_agv_inputs(self.dMmemory)
                 self.agv_status.get_agv_outputs(self.dMmemory)
                 self.agv_status.get_alarm_status(self.dMmemory)
+                
+                # 寫入完整狀態到 JSON 檔案
+                self.write_status_to_file()
 
                 # self.get_logger().info(f"Received string: {response.values}")
                 # self.get_logger().info(f"Service call duration: {elapsed_time:.3f} ms")  # 顯示執行時間
@@ -262,6 +268,44 @@ class AgvNodebase(Node):
             pass
         else:
             self.get_logger().warn("⚠️ 狀態寫入PLC失敗")
+    
+    def write_status_to_file(self):
+        """寫入完整 AGV 狀態到 JSON 檔案，保留所有 330+ 屬性"""
+        try:
+            # 建立狀態字典，包含所有屬性
+            status_dict = {}
+            
+            # 將 AgvStatus 物件的所有屬性轉換為字典
+            for attr_name in dir(self.agv_status):
+                # 排除私有屬性和方法
+                if not attr_name.startswith('_') and not callable(getattr(self.agv_status, attr_name)):
+                    value = getattr(self.agv_status, attr_name)
+                    # 處理特殊類型
+                    if value is not None:
+                        if isinstance(value, (int, float, str, bool, list, dict)):
+                            status_dict[attr_name] = value
+                        else:
+                            # 將其他類型轉換為字串
+                            status_dict[attr_name] = str(value)
+                    else:
+                        status_dict[attr_name] = None
+            
+            # 添加時間戳和額外資訊
+            status_dict['timestamp'] = self.clock.now().nanoseconds / 1e9  # 轉換為秒
+            status_dict['namespace'] = self.get_namespace()
+            status_dict['node_name'] = self.get_name()
+            
+            # 寫入 JSON 檔案
+            status_file = '/tmp/agv_status.json'
+            with open(status_file, 'w', encoding='utf-8') as f:
+                json.dump(status_dict, f, ensure_ascii=False, indent=2)
+            
+            # 偶爾記錄成功寫入（避免過多日誌）
+            if self.count % 100 == 0:  # 每100次記錄一次
+                self.get_logger().debug(f"✅ 完整 AGV 狀態已寫入 {status_file}")
+                
+        except Exception as e:
+            self.get_logger().error(f"❌ 寫入狀態檔案失敗: {e}")
 
     # 共用方法
     def setup_common_parameters(self):

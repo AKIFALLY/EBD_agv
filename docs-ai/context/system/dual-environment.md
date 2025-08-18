@@ -99,6 +99,24 @@ Docker Compose: docker-compose.agvc.yml
 - **用戶介面**: Web 管理台、操作員介面
 - **外部整合**: KUKA Fleet、WMS、ERP 系統整合
 
+### 容器服務架構
+```
+AGVC 系統 (4個容器)
+├── nginx (192.168.100.252)
+│   ├── 反向代理服務
+│   ├── 靜態文檔托管
+│   └── WebSocket 支援
+├── agvc_server (192.168.100.100)
+│   ├── ROS 2 核心服務
+│   ├── Web API (8000)
+│   ├── AGVCUI (8001)
+│   └── OPUI (8002)
+├── postgres (192.168.100.254)
+│   └── PostgreSQL 資料庫
+└── pgadmin (192.168.100.101)
+    └── 資料庫管理介面
+```
+
 ### 工作空間配置 (11個)
 ```
 web_api_ws/               # Web API 和 Socket.IO
@@ -129,18 +147,16 @@ Port 80:   Nginx 反向代理
 
 ### 啟動流程
 ```bash
-# 啟動 AGVC 管理系統
+# 啟動 AGVC 管理系統 (4個服務容器)
 docker compose -f docker-compose.agvc.yml up -d
+# 啟動: nginx, agvc_server, postgres, pgadmin
 
-# 容器內自動執行
+# 容器內自動執行 (agvc_server)
 startup.agvc.bash
-├── SSH 服務啟動
-├── Zenoh Router 啟動
-├── PostgreSQL 啟動
-├── pgAdmin4 啟動
-├── Nginx 啟動
+├── SSH 服務啟動 (Port 2200)
+├── Zenoh Router 啟動 (Port 7447)
 ├── 載入 AGVC 工作空間
-└── 手動啟動 AGVC 服務
+└── Web 服務啟動 (Ports 8000-8002)
 ```
 
 ## 🌐 跨環境通訊機制
@@ -171,7 +187,7 @@ AGV 車載 (Host 網路) - 直接硬體存取模式
 AGVC 管理 (Bridge 網路: 192.168.100.0/24) - 企業級隔離模式
 ├── agvc_server: 192.168.100.100
 ├── postgres: 192.168.100.254  
-├── nginx: 192.168.100.200
+├── nginx: 192.168.100.252
 ├── Zenoh Router: 192.168.100.100:7447
 ├── 優點: 網路隔離、固定 IP、安全管理
 └── 用途: 企業系統整合、KUKA Fleet 通訊

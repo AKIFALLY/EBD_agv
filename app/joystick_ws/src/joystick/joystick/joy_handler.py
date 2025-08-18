@@ -204,12 +204,7 @@ class JoyHandler:
         while len(self._prev_axes_int) < len(msg.axes):
             self._prev_axes_int.append(0)
 
-        try:
-            # 處理按鈕事件（保持原有邏輯）  
         
-        # 補長內部整數陣列
-        while len(self._prev_axes_int) < len(msg.axes):
-            self._prev_axes_int.append(0)
 
         try:
             # 處理按鈕事件（保持原有邏輯）  
@@ -259,11 +254,6 @@ class JoyHandler:
                     external_float = self._int_to_float(current_int)
                     
                     if i in self._axis_callbacks:
-                        self._axis_callbacks[i](i, external_float)
-                    
-                    # 同步更新舊的浮點陣列（為了兼容性）
-                    self._prev_axes[i] = external_float
-                    
                         self._axis_callbacks[i](i, external_float)
                     
                     # 同步更新舊的浮點陣列（為了兼容性）

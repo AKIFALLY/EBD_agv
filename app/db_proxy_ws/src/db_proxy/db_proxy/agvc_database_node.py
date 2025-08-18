@@ -58,8 +58,12 @@ class AGVCDatabaseNode(Node):
 
         # self.logger = AgvcLogger(self, self.pool_agvc)
 
-        # 初始化預設資料
-        initialize_default_data(self.pool_agvc)
+        # 初始化預設資料 (加入錯誤處理，避免重複初始化導致節點失敗)
+        try:
+            initialize_default_data(self.pool_agvc)
+        except Exception as e:
+            self.get_logger().warning(f'初始化預設資料時發生錯誤 (可能已存在): {e}')
+            # 不因初始化失敗而終止節點
 
         # 定時發佈 Tasks, Racks, Works 資料
         self.pub_datas = [Work, Works, WorkMsg], [Task, Tasks, TaskMsg], [Rack, Racks, RackMsg], [

@@ -5,6 +5,9 @@
 @docs-ai/knowledge/protocols/kuka-fleet-api.md
 @docs-ai/knowledge/protocols/kuka-fleet-callback.md
 @docs-ai/knowledge/business/eyewear-production-process.md
+@docs-ai/knowledge/system/linear-flow-advanced-features.md
+@docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md
+@docs-ai/operations/development/linear-flow-troubleshooting-cases.md
 
 ## 📋 模組概述
 
@@ -112,6 +115,8 @@ quick_agvc "python3 src/agvcui/agvcui/agvc_ui_server.py"   # AGVCUI 系統
 quick_agvc "python3 src/opui/opui/opui_server.py"          # OPUI 界面
 
 # 【方法2: 手動進入容器】
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
 # 必須先進入AGVC容器並載入環境
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
 source /app/setup.bash && agvc_source

@@ -138,13 +138,26 @@ Multi-stage Build
   - 管理工具: pgAdmin4 (Port 5050)
 
 ### Nginx
-- **版本**: Nginx 1.24+
-- **用途**: 
-  - 反向代理
-  - 靜態檔案服務
-  - 負載均衡
-  - SSL 終止
-- **配置**: Port 80, 代理到各個服務
+- **版本**: nginx:latest
+- **容器配置**:
+  - 容器名稱: nginx
+  - IP 地址: 192.168.100.252
+  - 端口: 80
+- **主要功能**: 
+  - 反向代理 (將域名導向內部服務)
+  - WebSocket 支援 (Socket.IO 通訊)
+  - 靜態檔案服務 (文檔系統)
+  - CORS 處理
+  - gzip 壓縮
+  - 安全標頭設定
+- **虛擬主機配置**:
+  - `agvc.webapi` → :8000 (Web API)
+  - `localhost/agvc.ui` → :8001 (AGVCUI)
+  - `op.ui` → :8002 (OPUI)
+  - `/docs/` → 動態文檔系統
+- **掛載目錄**:
+  - 配置檔案: `/home/ct/RosAGV/nginx`
+  - 文檔檔案: `/home/ct/RosAGV/design/business-process-docs`
 
 ## 🏭 工業通訊技術
 

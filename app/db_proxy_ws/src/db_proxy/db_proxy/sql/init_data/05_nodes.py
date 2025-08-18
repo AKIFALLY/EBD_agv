@@ -4,7 +4,7 @@
 """
 
 from db_proxy.models import Node
-from ..db_install import insert_data_if_not_exists_name
+from ..db_install import insert_data_if_not_exists_name_and_not_exists_id
 
 
 def initialize_nodes(session):
@@ -12,6 +12,12 @@ def initialize_nodes(session):
     print("🗺️ 初始化節點資料...")
 
     default_nodes = [
+        # 基礎測試節點 (被 location 資料參考)
+        {"id": 1, "name": "測試節點1",
+            "description": "測試用節點1", "x": 0.0, "y": 0.0},
+        {"id": 2, "name": "測試節點2",
+            "description": "測試用節點2", "x": 0.0, "y": 0.0},
+        
         {"id": 95, "name": "射出機1-停車位1",
             "description": "射出機1-停車位置1", "x": 0.0, "y": 0.0},
         {"id": 96, "name": "射出機1-停車位2",
@@ -127,13 +133,13 @@ def initialize_nodes(session):
         {"id": 20201, "name": "UnloaderAGV Unload Box",
             "description": "房間內出口傳送箱", "x": 0.0, "y": 0.0},
 
-        # Simple WCS 專用 - 傳送箱出口節點
+        # Flow WCS 系統使用 - 傳送箱出口節點
         {"id": 20003, "name": "傳送箱出口_03",
-            "description": "傳送箱出口節點3 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "傳送箱出口節點3", "x": 0.0, "y": 0.0},
         {"id": 20004, "name": "傳送箱出口_04",
-            "description": "傳送箱出口節點4 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "傳送箱出口節點4", "x": 0.0, "y": 0.0},
         {"id": 20005, "name": "傳送箱出口_05",
-            "description": "傳送箱出口節點5 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "傳送箱出口節點5", "x": 0.0, "y": 0.0},
 
         # 區域節點
         {"id": 11, "name": "SystemReadyArea_11",
@@ -162,27 +168,27 @@ def initialize_nodes(session):
         {"id": 34, "name": "SystemEmptyRackArea_4",
             "description": "系統空車區節點", "x": 0.0, "y": 0.0},
 
-        # 人工收料區節點 - Simple WCS 專用
+        # 人工收料區節點 - Flow WCS 系統使用
         {"id": 31001, "name": "人工收料區_01",
-            "description": "人工收料區節點1 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點1", "x": 0.0, "y": 0.0},
         {"id": 31002, "name": "人工收料區_02",
-            "description": "人工收料區節點2 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點2", "x": 0.0, "y": 0.0},
         {"id": 31003, "name": "人工收料區_03",
-            "description": "人工收料區節點3 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點3", "x": 0.0, "y": 0.0},
         {"id": 31004, "name": "人工收料區_04",
-            "description": "人工收料區節點4 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點4", "x": 0.0, "y": 0.0},
         {"id": 31005, "name": "人工收料區_05",
-            "description": "人工收料區節點5 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點5", "x": 0.0, "y": 0.0},
         {"id": 31006, "name": "人工收料區_06",
-            "description": "人工收料區節點6 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點6", "x": 0.0, "y": 0.0},
         {"id": 31007, "name": "人工收料區_07",
-            "description": "人工收料區節點7 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點7", "x": 0.0, "y": 0.0},
         {"id": 31008, "name": "人工收料區_08",
-            "description": "人工收料區節點8 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點8", "x": 0.0, "y": 0.0},
         {"id": 31009, "name": "人工收料區_09",
-            "description": "人工收料區節點9 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點9", "x": 0.0, "y": 0.0},
         {"id": 31010, "name": "人工收料區_10",
-            "description": "人工收料區節點10 - Simple WCS", "x": 0.0, "y": 0.0},
+            "description": "人工收料區節點10", "x": 0.0, "y": 0.0},
 
         # 手動回收區節點
         {"id": 51, "name": "ManualReceiveArea_1",
@@ -202,5 +208,5 @@ def initialize_nodes(session):
             "description": "NG回收區節點", "x": 0.0, "y": 0.0},
     ]
 
-    insert_data_if_not_exists_name(session, default_nodes, Node)
+    insert_data_if_not_exists_name_and_not_exists_id(session, default_nodes, Node)
     print("✅ 節點資料初始化完成")

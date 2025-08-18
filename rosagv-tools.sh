@@ -31,6 +31,13 @@ show_main_menu() {
     echo -e "  ${GREEN}agvc-start${NC}         # 啟動 AGVC 系統"
     echo -e "  ${GREEN}agvc-stop${NC}          # 停止 AGVC 系統"
     echo ""
+    echo -e "${YELLOW}🎮 節點管理工具:${NC}"
+    echo -e "  ${GREEN}node-status${NC}        # 所有節點狀態"
+    echo -e "  ${GREEN}node-start [name]${NC}  # 啟動特定節點"
+    echo -e "  ${GREEN}node-stop [name]${NC}   # 停止特定節點"
+    echo -e "  ${GREEN}node-restart [name]${NC} # 重啟節點"
+    echo -e "  ${GREEN}agv-nodes [name]${NC}   # 管理遠端 AGV 節點"
+    echo ""
     echo -e "${YELLOW}🌐 網路診斷工具:${NC}"
     echo -e "  ${GREEN}network-check${NC}      # 系統端口檢查"
     echo -e "  ${GREEN}zenoh-check${NC}        # Zenoh 連接檢查"
@@ -38,6 +45,7 @@ show_main_menu() {
     echo -e "${YELLOW}⚙️ 配置管理工具:${NC}"
     echo -e "  ${GREEN}zenoh-config${NC}       # Zenoh Router 配置管理"
     echo -e "  ${GREEN}hardware-config${NC}    # 硬體映射配置管理"
+    echo -e "  ${GREEN}sync-fallback${NC}      # 同步 Linear Flow 靜態備援"
     echo ""
     echo -e "${YELLOW}📋 日誌分析工具:${NC}"
     echo -e "  ${GREEN}log-scan${NC}           # 日誌錯誤掃描"
@@ -208,6 +216,66 @@ run_hardware_config() {
     bash -c "cd '$SCRIPT_DIR' && scripts/config-tools/hardware-mapping.sh"
 }
 
+run_sync_fallback() {
+    echo -e "${BLUE}🔄 同步 Linear Flow 靜態備援...${NC}"
+    bash -c "cd '$SCRIPT_DIR' && scripts/sync-static-fallback.sh sync"
+}
+
+# 節點管理工具
+run_node_status() {
+    echo -e "${BLUE}📊 檢查所有節點狀態...${NC}"
+    bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_all_nodes status'"
+}
+
+run_node_start() {
+    local node_name="${2:-}"
+    if [ -z "$node_name" ]; then
+        echo -e "${BLUE}🚀 啟動所有節點...${NC}"
+        bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_all_nodes start'"
+    else
+        echo -e "${BLUE}🚀 啟動節點: $node_name...${NC}"
+        bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_${node_name} start'"
+    fi
+}
+
+run_node_stop() {
+    local node_name="${2:-}"
+    if [ -z "$node_name" ]; then
+        echo -e "${BLUE}🛑 停止所有節點...${NC}"
+        bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_all_nodes stop'"
+    else
+        echo -e "${BLUE}🛑 停止節點: $node_name...${NC}"
+        bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_${node_name} stop'"
+    fi
+}
+
+run_node_restart() {
+    local node_name="${2:-}"
+    if [ -z "$node_name" ]; then
+        echo -e "${BLUE}🔄 重啟所有節點...${NC}"
+        bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_all_nodes restart'"
+    else
+        echo -e "${BLUE}🔄 重啟節點: $node_name...${NC}"
+        bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_${node_name} restart'"
+    fi
+}
+
+run_agv_nodes() {
+    local agv_name="${2:-}"
+    local action="${3:-status}"
+    
+    if [ -z "$agv_name" ]; then
+        echo -e "${RED}❌ 請指定 AGV 名稱${NC}"
+        echo "用法: r agv-nodes <agv_name> [action]"
+        echo "可用的 AGV: cargo02, loader02, unloader02"
+        echo "可用的動作: status, start, stop, restart"
+        return 1
+    fi
+    
+    echo -e "${BLUE}🚗 管理 AGV 節點: $agv_name...${NC}"
+    bash -c "cd '$SCRIPT_DIR' && docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c 'source /app/setup.bash && agvc_source && manage_agv_launch $agv_name $action'"
+}
+
 # 主程式邏輯
 case "${1:-menu}" in
     # 系統診斷
@@ -277,6 +345,34 @@ case "${1:-menu}" in
         ;;
     "dev-check")
         run_dev_check
+        ;;
+        
+    # 配置管理
+    "zenoh-config")
+        run_zenoh_config
+        ;;
+    "hardware-config")
+        run_hardware_config
+        ;;
+    "sync-fallback")
+        run_sync_fallback
+        ;;
+        
+    # 節點管理
+    "node-status")
+        run_node_status
+        ;;
+    "node-start")
+        run_node_start "$@"
+        ;;
+    "node-stop")
+        run_node_stop "$@"
+        ;;
+    "node-restart")
+        run_node_restart "$@"
+        ;;
+    "agv-nodes")
+        run_agv_nodes "$@"
         ;;
         
     # 幫助選單

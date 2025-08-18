@@ -343,7 +343,7 @@ flow_name: "流程名稱"           # 必需: 流程識別名稱
 description: "流程描述"         # 可選: 流程功能描述  
 version: "1.0"                 # 可選: 版本號
 created_by: "user_name"        # 可選: 建立者
-created_at: "2024-01-15"       # 可選: 建立時間
+created_at: "2025-08-15"       # 可選: 建立時間
 tags: ["production", "agv"]    # 可選: 標籤分類
 
 # 變數定義部分 (可選)
@@ -1294,7 +1294,7 @@ Flow Designer 使用者認證體系:
 ```yaml
 # 38個 WCS 函數詳細說明參考
 詳細文檔位置:
-- Simple WCS 系統文檔: @docs-ai/knowledge/system/simple-wcs-system.md
+- Simple WCS 系統文檔: @docs-ai/knowledge/system/flow-wcs-system.md
 - WCS 函數註冊器: app/simple_wcs_ws/src/simple_wcs/dsl_function_registry.py
 - 函數測試用例: app/simple_wcs_ws/src/simple_wcs/test/
 
@@ -1310,7 +1310,7 @@ Flow Designer 使用者認證體系:
 # 相關系統文檔參考
 1. RosAGV 系統概覽: @docs-ai/context/system/rosagv-overview.md
 2. Web API 工作空間: app/web_api_ws/CLAUDE.md
-3. Simple WCS 開發: @docs-ai/operations/development/simple-wcs-development.md
+3. Simple WCS 開發: @docs-ai/operations/development/flow-wcs-development.md
 4. 容器開發環境: @docs-ai/operations/development/docker-development.md
 ```
 

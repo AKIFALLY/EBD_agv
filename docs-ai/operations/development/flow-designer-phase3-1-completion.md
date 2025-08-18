@@ -174,6 +174,6 @@ async loadNodeConfigurations() {
 ### 文檔檔案
 - `@docs-ai/operations/development/flow-designer-phase3-plan.md` - 整體計劃
 - `@docs-ai/operations/development/core-principles.md` - 開發原則
-- `@docs-ai/knowledge/system/simple-wcs-system.md` - Simple WCS 系統
+- `@docs-ai/knowledge/system/flow-wcs-system.md` - Simple WCS 系統
 
 Phase 3.1 已成功完成，為 Phase 3.2 的代碼生成引擎開發奠定了堅實的基礎。

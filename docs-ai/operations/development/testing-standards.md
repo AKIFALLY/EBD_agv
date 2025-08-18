@@ -9,7 +9,7 @@
 
 **⚠️ 重要決策：RosAGV 專案統一使用 pytest 測試框架**
 
-自 2025-07-29 起，所有新的測試檔案必須使用 **pytest** 框架，不再使用 unittest。
+自 2025-08-11 起，所有新的測試檔案必須使用 **pytest** 框架，不再使用 unittest。
 
 ### 政策範圍
 - **AI WCS**: 已實施 pytest 專用標準
@@ -303,7 +303,7 @@ markers =
     database: 需要資料庫的測試標記
 
 # RosAGV 測試框架政策
-# 注意：自 2025-07-29 起，所有新測試必須使用 pytest 框架
+# 注意：自 2025-08-11 起，所有新測試必須使用 pytest 框架
 # 詳細規範請參考: @docs-ai/operations/development/testing-standards.md
 ```
 
@@ -323,7 +323,7 @@ markers =
 
 ## 🎯 執行標準
 
-**自 2025-07-29 起，所有 RosAGV 相關的新測試開發都必須遵循此 pytest 標準。**
+**自 2025-08-11 起，所有 RosAGV 相關的新測試開發都必須遵循此 pytest 標準。**
 
 違反此標準的程式碼將不被接受，直到修正為符合 pytest 規範為止。
 
@@ -339,6 +339,6 @@ markers =
 - 核心開發原則: @docs-ai/operations/development/core-principles.md
 
 ---
-📅 **生效日期**: 2025-07-29  
-🔄 **最後更新**: 2025-07-29  
+📅 **生效日期**: 2025-08-11  
+🔄 **最後更新**: 2025-08-11  
 👤 **制定者**: RosAGV 開發團隊

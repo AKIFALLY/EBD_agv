@@ -136,7 +136,7 @@ Authorization: Bearer {api_key}
     "status": "executing",
     "progress": 75,
     "current_action": "moving_to_dropoff",
-    "estimated_completion": "2024-12-01T10:30:00Z",
+    "estimated_completion": "2025-12-01T10:30:00Z",
     "robot_id": "kuka_01"
 }
 ```
@@ -154,7 +154,7 @@ Authorization: Bearer {api_key}
     "current_task": "task_12345",
     "position": {"x": 150, "y": 250, "z": 75},
     "battery_level": 85,
-    "last_update": "2024-12-01T10:25:30Z"
+    "last_update": "2025-12-01T10:25:30Z"
 }
 ```
 
@@ -183,7 +183,7 @@ ws.onmessage = function(event) {
     "type": "task_status_update",
     "task_id": "task_12345",
     "status": "completed",
-    "completion_time": "2024-12-01T10:28:45Z",
+    "completion_time": "2025-12-01T10:28:45Z",
     "result": "success"
 }
 ```

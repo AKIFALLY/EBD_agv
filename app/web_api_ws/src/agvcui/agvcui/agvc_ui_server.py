@@ -10,7 +10,8 @@ from fastapi.templating import Jinja2Templates
 from agvcui.agvc_ui_socket import AgvcUiSocket
 from agvcui.routers import map, tasks, works, devices, signals
 from agvcui.routers import rosout_logs, runtime_logs, audit_logs
-from agvcui.routers import clients, racks, products, carriers, agvs, auth, users, flow_designer
+from agvcui.routers import clients, racks, products, carriers, agvs, auth, users
+from agvcui.routers import linear_flow_designer, nodes
 from agvcui.middleware import AuthMiddleware
 from contextlib import asynccontextmanager
 
@@ -148,15 +149,43 @@ class AgvcUiServer:
         self.app.include_router(signals.get_router(self.templates))
         self.app.include_router(auth.get_router(self.templates))
         self.app.include_router(users.get_router(self.templates))
-        self.app.include_router(flow_designer.get_router(self.templates))
+        self.app.include_router(linear_flow_designer.get_router(self.templates))
+        self.app.include_router(nodes.get_router(self.templates))
 
     def run(self):
         uvicorn.run(self.sio_app, host=self.host, port=self.port)
 
 
 def main():
+    import signal
+    import sys
+    
     server = AgvcUiServer()
-    server.run()
+    
+    def signal_handler(sig, frame):
+        """處理 Ctrl+C 信號，優雅地關閉伺服器"""
+        logger.info("\n📛 收到中斷信號 (Ctrl+C)，正在優雅地關閉伺服器...")
+        try:
+            # 如果有需要清理的資源，可以在這裡處理
+            logger.info("✅ AGVCUI 伺服器已安全關閉")
+        except Exception as e:
+            logger.error(f"❌ 關閉時發生錯誤: {e}")
+        finally:
+            sys.exit(0)
+    
+    # 註冊信號處理器
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    try:
+        logger.info(f"🚀 啟動 AGVCUI 伺服器在 {server.host}:{server.port}")
+        server.run()
+    except KeyboardInterrupt:
+        # 這個應該不會被觸發，因為 signal handler 會先處理
+        logger.info("\n⚠️ 接收到鍵盤中斷，正在關閉...")
+    except Exception as e:
+        logger.error(f"❌ 伺服器錯誤: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

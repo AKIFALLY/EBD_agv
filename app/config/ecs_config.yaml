@@ -41,6 +41,7 @@ agvc:
       read_ranges:
         - "DM,7600,20"
         - "DM,11000,20"
+        - "DM,5000,10"  # Added for door state readings
 
   ecs_core: 
     ros__parameters:

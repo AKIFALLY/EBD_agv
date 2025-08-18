@@ -1,23 +1,84 @@
 {% extends "base.html" %}
-{% block title %}agvStatus{% endblock %}
+{% block title %}AGV Complete Status Monitor{% endblock %}
 
 {% block content %}
 <section class="section">
     <div class="container">
-        <h1 class="title">Agv Status</h1>
-        <input class="input is-medium" id="agv-id-input" type="text" placeholder="輸入AGV ID" />
-        <button class="button is-primary" id="example-button">無作用的範例按鈕</button>
-        <table class="table is-fullwidth is-hoverable">
-            <thead>
-                <tr>
-                    <th>Field</th>
-                    <th>Value</th>
-                </tr>
-            </thead>
-            <tbody id="agv_status_body">
-                <!-- Data will be populated by JavaScript -->
-            </tbody>
-        </table>
+        <h1 class="title">AGV Complete Status Monitor</h1>
+        <h2 class="subtitle">
+            {% if is_test_mode %}
+                <span class="has-text-warning">📋 測試模式</span> - 
+                AGV: <span class="has-text-primary has-text-weight-bold">{{ local_agv_id }}</span>
+            {% elif local_agv_id %}
+                本機 AGV: <span class="has-text-primary has-text-weight-bold">{{ local_agv_id }}</span>
+            {% else %}
+                顯示所有 AGV 狀態
+            {% endif %}
+            - 330+ PLC 原始資料屬性
+        </h2>
+        
+        <!-- 隱藏的 AGV ID 資訊，供 JavaScript 使用 -->
+        <input type="hidden" id="local-agv-id" value="{{ local_agv_id or '' }}">
+        <input type="hidden" id="container-type" value="{{ container_type or '' }}">
+        <input type="hidden" id="is-test-mode" value="{{ is_test_mode|lower }}">
+        
+        <div class="field">
+            <div class="control">
+                <button class="button is-primary is-medium" id="refresh-button">
+                    <span class="icon">
+                        <i class="mdi mdi-refresh"></i>
+                    </span>
+                    <span>重新整理</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 狀態摘要 -->
+        <div class="box" id="status-summary" style="display:none;">
+            <nav class="level">
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">AGV ID</p>
+                        <p class="title" id="summary-agv-id">-</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">總屬性數</p>
+                        <p class="title" id="summary-total-attrs">0</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">位置 (X,Y)</p>
+                        <p class="title" id="summary-position">-</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">電池電量</p>
+                        <p class="title" id="summary-power">-</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">狀態模式</p>
+                        <p class="title" id="summary-mode">-</p>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- 詳細狀態資料 - 多欄位排版 -->
+        <div class="box">
+            <h3 class="title is-5">詳細狀態資料 (330+ 屬性)</h3>
+            <div id="status-categories" class="columns is-multiline">
+                <!-- 動態生成的分類區塊會放在這裡 -->
+                <div class="column is-12 has-text-centered has-text-grey">
+                    等待 AGV 狀態資料...
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 {% endblock %}

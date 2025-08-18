@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-08T12:30:00.000000",
+    "timestamp_unix": 1723098600.0,
+    "agv_type": "cargo_mover_agv",
+    "agv_id": "cargo01"
+  },
+  "agv_status_complete": {
+    "POWER": 85.5,
+    "AGV_X_SPEED": 0,
+    "AGV_Y_SPEED": 0,
+    "AGV_THETA_SPEED": 0,
+    "AGV_FPGV": 12,
+    "AGV_BPGV": 15,
+    "AGV_START_POINT": 10,
+    "AGV_END_POINT": 20,
+    "AGV_ACTION": 1,
+    "AGV_ZONE": 2,
+    "AGV_SLAM_X": 1750,
+    "AGV_SLAM_Y": 1120,
+    "AGV_SLAM_THETA": 90,
+    "AGV_LAYER": 1,
+    "AGV_ID1": "cargo01",
+    "MAGIC": 21,
+    "AGV_Auto": true,
+    "AGV_MOVING": false,
+    "AGV_ALARM": false,
+    "AGV_PATH": true,
+    "AGV_PATH_REQ": false,
+    "AGV_IN_MISSION": true,
+    "AGV_LOCAL": true,
+    "AGV_LD_COMPLETE": false,
+    "AGV_UD_COMPLETE": false,
+    "LOW_POWER": false,
+    "MISSION_CANCEL": false,
+    "TRAFFIC_STOP": false,
+    "TRAFFIC_ALLOW": true,
+    "PS_RETRUN": false,
+    "AGV_MANUAL": false,
+    "AGV_2POSITION": false,
+    "IN_1": true,
+    "IN_2": false,
+    "IN_3": true,
+    "IN_4": false,
+    "IN_5": true,
+    "BARCODE_READER_FINISH": false,
+    "TAG_REQ": false,
+    "Req_TAGNo": 25,
+    "DOOR_OPEN_1": false,
+    "DOOR_CLOSE_1": true,
+    "DOOR_OPEN_2": false,
+    "DOOR_CLOSE_2": true,
+    "DOOR_OPEN_3": false,
+    "DOOR_CLOSE_3": true,
+    "DOOR_OPEN_4": false,
+    "DOOR_CLOSE_4": true,
+    "DOOR_OPEN_5": false,
+    "DOOR_CLOSE_5": true,
+    "DOOR_OPEN_6": false,
+    "DOOR_CLOSE_6": true,
+    "DOOR_OPEN_7": false,
+    "DOOR_CLOSE_7": true,
+    "DOOR_OPEN_8": false,
+    "DOOR_CLOSE_8": true
+  },
+  "agv_base_variables": {
+    "pathdata": [10, 15, 20],
+    "mission_id": "M001",
+    "node_id": 20,
+    "AGV_id": "cargo01",
+    "task": {
+      "id": 123,
+      "status": "executing",
+      "description": "運輸任務"
+    },
+    "robot_finished": false
+  },
+  "contexts": {
+    "base_context": {
+      "current_state": "WritePathState",
+      "state_module": "agv_base.agv_states.write_path_state"
+    },
+    "cargo_context": {
+      "current_state": "IdleState",
+      "state_module": "cargo_mover_agv.cargo_states.idle_state"
+    },
+    "robot_context": {
+      "current_state": "RobotIdleState",
+      "state_module": "agv_base.robot_states.robot_idle_state"
+    }
+  }
+}

@@ -1,0 +1,3057 @@
+/* Linear Flow Designer - Bulma Light Theme */
+
+/* Main Container - Material Design with CSS Grid */
+.linear-flow-container {
+    display: grid;
+    grid-template-columns: 400px 1fr 400px;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+        "left middle right-top"
+        "left middle right-bottom";
+    height: calc(100vh - 52px); /* Only deduct navbar (52px) */
+    background-color: #f5f5f5; /* Material Grey 100 */
+    padding: 1rem;
+    gap: 1rem;
+    margin: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Left Panel - Flow Structure - Material Design */
+.flow-structure-panel {
+    grid-area: left;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08); /* Material elevation 2 */
+    background: white;
+}
+
+/* Panel structure - ensure consistency */
+.flow-structure-panel .panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 0;
+    background: #fafafa;  /* Set panel background to match tab content */
+}
+
+/* Panel block - ensure no gaps */
+.flow-structure-panel .panel-block {
+    display: block !important;  /* Override Bulma's flex to allow full width */
+    padding: 0;  /* Remove default padding */
+    background: #f6f8fa;  /* Match the background */
+    border: none;  /* Remove borders */
+    margin: 0;  /* Remove margins */
+}
+
+/* Top Right Panel - Function Library */
+.function-library-panel {
+    grid-area: right-top;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08);
+    background: white;
+}
+
+.function-library-panel .panel {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    background: white;
+    flex: 1;
+    min-height: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+/* Bottom Right Panel - Variables */
+.variables-panel {
+    grid-area: right-bottom;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08);
+    background: white;
+}
+
+.variables-panel .panel {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    background: white;
+    flex: 1;
+    min-height: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+/* Panel backgrounds - keep clean white */
+.function-library-panel .panel,
+.variables-panel .panel {
+    background: white;
+}
+
+/* Function Library Panel heading - Material Design blue */
+.function-library-panel .panel-heading {
+    background: #2196f3 !important; /* Material Blue 500 */
+    color: white !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.function-library-panel .panel-heading .icon {
+    color: white !important;
+}
+
+/* Variables Panel heading - Material Design purple */
+.variables-panel .panel-heading {
+    background: #9c27b0 !important; /* Material Purple 500 */
+    color: white !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.variables-panel .panel-heading .icon {
+    color: white !important;
+}
+
+/* Center Panel - Editor - Material Design */
+.flow-editor-panel {
+    grid-area: middle;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08); /* Material elevation 2 */
+    background: white;
+}
+
+/* Editor Header - Minimal Design */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    background: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0 0.75rem;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+}
+
+/* Make action buttons more subtle */
+.editor-actions .button.is-small {
+    border-radius: 3px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    height: 28px;
+    min-width: 28px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.editor-actions .button.is-small:hover {
+    opacity: 1;
+}
+
+/* Icon-only buttons */
+.editor-actions .button .icon:only-child {
+    margin: 0 !important;
+}
+
+/* Validation Indicator */
+.validation-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+}
+
+.validation-indicator:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.validation-indicator .icon {
+    font-size: 16px;
+}
+
+/* Validation States */
+.validation-indicator.validating .icon {
+    color: #3298dc;
+}
+
+.validation-indicator.valid .icon {
+    color: #48c774;
+}
+
+.validation-indicator.invalid .icon {
+    color: #f14668;
+}
+
+.validation-indicator.warning .icon {
+    color: #ffdd57;
+}
+
+/* Sync button styles */
+.sync-button {
+    transition: all 0.3s ease;
+}
+
+.sync-button.is-synced {
+    background-color: #48c78e !important;
+    color: white !important;
+}
+
+.sync-button.is-synced .icon i::before {
+    content: "\f00c"; /* fa-check */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+}
+
+.sync-button.is-syncing {
+    background-color: #3e8ed0 !important;
+    color: white !important;
+}
+
+.sync-button.is-syncing .icon i {
+    animation: spin 1s linear infinite;
+}
+
+.sync-button.is-modified {
+    background-color: #ffe08a !important;
+    color: #363636 !important;
+}
+
+.sync-button.is-error {
+    background-color: #f14668 !important;
+    color: white !important;
+}
+
+/* Disabled test button */
+.editor-actions .button[disabled] {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Override Bulma panel-heading - Material Design */
+.panel-heading {
+    background: #00d1b2 !important; /* Flat primary color */
+    color: white !important;
+    font-weight: 500;
+    border-radius: 0;
+    padding: 1rem !important;
+    font-size: 0.875rem;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none;
+}
+
+.panel-heading .icon {
+    color: white !important;
+}
+
+/* Panel Tabs - Material Design style */
+.panel-tabs {
+    background: #fafafa; /* Match function-list background */
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0; /* Remove padding */
+    display: flex;
+    align-items: flex-end;
+    min-height: 40px;
+    padding: 0 0.5rem; /* Small horizontal padding only */
+}
+
+.panel-tabs a {
+    color: #586069;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    border-bottom: none;
+    margin-bottom: -1px;
+    margin-right: 0.25rem;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.panel-tabs a:hover {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: #e0e0e0;
+    border-bottom-color: transparent;
+    color: #24292e;
+}
+
+/* Function panel tabs - Blue theme */
+.function-library-panel .panel-tabs a.is-active {
+    background-color: white; /* Keep white for content area */
+    border-color: #e0e0e0;
+    border-bottom-color: white;
+    color: #2196f3;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+}
+
+/* Default panel tabs */
+.panel-tabs a.is-active {
+    background-color: white; /* Keep white for content area */
+    border-color: #e0e0e0;
+    border-bottom-color: white;
+    color: #2196f3; /* Match unified theme */
+    font-weight: 600; /* Match other active tabs */
+    position: relative;
+    z-index: 1;
+}
+
+/* Flow Info */
+.flow-info {
+    padding: 1.25rem;
+    background: #f6f8fa;  /* Match the panel background */
+    margin: 0;  /* Remove margins */
+    border: none;  /* Remove border to blend seamlessly */
+}
+
+.flow-info .field {
+    margin-bottom: 1rem;
+}
+
+.flow-info .label {
+    font-size: 0.875rem;
+    color: #586069;
+    margin-bottom: 0.5rem;
+}
+
+.flow-info .input,
+.flow-info .textarea {
+    background-color: white !important;
+    color: #24292e !important;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.flow-info .input:focus,
+.flow-info .textarea:focus {
+    border-color: #00d1b2;
+    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.1);
+    outline: none;
+}
+
+/* Workflow Sections - Material Design */
+.workflow-sections {
+    padding: 0.75rem;  /* Add padding for sections spacing */
+    flex: 1;
+    overflow-y: auto;
+    background: transparent; /* 使用父元素的背景 */
+    margin: 0;  /* Ensure no margins */
+    box-sizing: border-box;
+}
+
+.workflow-section {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;  /* Rounded corners for card effect */
+    margin-bottom: 0.75rem;  /* Space between sections for shadow visibility */
+    margin-left: 0;
+    margin-right: 0;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);  /* Material Design shadow */
+}
+
+.workflow-section:hover {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12); /* Material elevation 3 */
+}
+
+.workflow-section.active {
+    border-color: #00d1b2;
+    background-color: rgba(0, 209, 178, 0.02);
+}
+
+.workflow-section.active:hover {
+    border-color: #00a693;  /* Darker teal on hover */
+    box-shadow: 0 3px 10px rgba(0, 209, 178, 0.2);
+}
+
+.workflow-section.active .section-title {
+    color: #00d1b2;  /* Teal color when active */
+    font-weight: 600;
+}
+
+.workflow-section.active .section-title .icon {
+    color: #00d1b2;  /* Icon also changes to teal when active */
+}
+
+/* Removed border-radius for expanded section header */
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: #fafbfc;
+    color: #363636;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.section-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #495057;  /* Default gray color like visual section */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Section Actions - same style as visual-step-actions with hover-to-show */
+.section-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Show actions on hover */
+.workflow-section:hover .section-actions,
+.section-header:hover .section-actions {
+    opacity: 1;
+}
+
+.section-actions .button {
+    padding: 4px 8px;
+    border: none;
+    background: #f8f9fa;
+    color: #6c757d;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    min-width: 32px;
+    height: 28px;
+}
+
+.section-actions .button:hover {
+    background: #2196f3;
+    color: white;
+}
+
+/* Icon-based hover colors - unified blue except delete */
+.section-actions .button:has(.fa-trash):hover {
+    background: #dc3545 !important;  /* Red for delete */
+    color: white !important;
+}
+
+.section-actions .button:has(.fa-arrow-up):hover,
+.section-actions .button:has(.fa-arrow-down):hover,
+.section-actions .button:has(.fa-plus):hover {
+    background: #2196f3 !important;  /* Blue for all other actions */
+    color: white !important;
+}
+
+.section-steps {
+    padding: 0.75rem;  /* Add padding for steps */
+    display: block;  /* Always show steps */
+    background: #f6f8fa;
+    border-top: 1px solid #e1e4e8;
+}
+
+.workflow-step {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.workflow-step:hover {
+    border-color: #00d1b2;
+    background: #f0fffc;
+    box-shadow: 0 2px 8px rgba(0, 209, 178, 0.1);
+}
+
+.workflow-step.active {
+    border-color: #00d1b2;
+    background: linear-gradient(to right, #f0fffc 0%, white 100%);
+    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.1);
+}
+
+.step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.step-icon {
+    width: 24px;
+    height: 24px;
+    background: #00d1b2;  /* Back to original green */
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 0.125rem; /* Slight top margin to align with text */
+}
+
+.step-details {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.step-id {
+    font-size: 0.85rem;
+    color: #24292e;
+    font-weight: 600;
+}
+
+.step-function {
+    font-size: 0.75rem;
+    color: #586069;
+    font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+/* Tabs - Material Design style */
+.tabs {
+    margin-bottom: 0 !important;  /* Remove margin to prevent white gap */
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 0; /* Remove padding */
+    border-bottom: 1px solid #e0e0e0;
+    background: #fafafa; /* Match content background */
+}
+
+.tabs.is-boxed {
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 0 !important;  /* Ensure no margin */
+    padding: 0 1rem; /* Add horizontal padding only */
+    background: #fafafa; /* Match content background */
+}
+
+.tabs.is-boxed ul {
+    display: flex !important;
+    align-items: flex-end;
+    border-bottom: none;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    height: 100%;
+}
+
+.tabs.is-boxed li {
+    margin-bottom: -1px;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.tabs.is-boxed a {
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    border-bottom: none;
+    padding: 0.625rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    background: transparent;
+    text-decoration: none;
+    color: #586069;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.tabs.is-boxed a:hover {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: #e0e0e0;
+    color: #24292e;
+}
+
+.tabs.is-boxed li.is-active a {
+    background-color: white; /* White for active tab */
+    border-color: #e0e0e0;
+    border-bottom-color: white;
+    color: #00d1b2;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+}
+
+/* Tab Content Container */
+.tabs-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: transparent;  /* Transparent - parent panel has white background */
+    position: relative; /* For absolute positioned tab contents */
+}
+
+/* Tab Content - Use visibility instead of display to prevent reflow */
+.tab-content {
+    /* Always maintain layout space */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    visibility: hidden;
+    opacity: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: white;  /* White background for content */
+    overflow: hidden;
+    /* 移除所有過渡效果以防止抖動 */
+    transition: none !important;
+    transform: none !important;
+    pointer-events: none; /* Prevent interaction when hidden */
+}
+
+/* Show only active tab content */
+.tab-content.is-active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto; /* Enable interaction when visible */
+    /* 確保穩定的佈局 */
+    min-height: 0;
+    /* 移除所有過渡效果以防止抖動 */
+    transition: none !important;
+    transform: none !important;
+}
+
+/* Visual Editor */
+.visual-editor {
+    flex: 1;
+    padding: 1rem; /* 減少 padding 與左右面板一致 */
+    overflow: auto;
+    background: #f6f8fa;
+    min-height: 0; /* 防止高度跳躍 */
+    transition: none; /* 移除可能的過渡效果 */
+}
+
+.section-editor {
+    min-height: 100%;
+}
+
+.section-editor .notification {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 1.5rem;
+    color: #586069;
+}
+
+.section-editor .notification.is-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3f9ff 100%);
+    border-color: #3298dc;
+    color: #1976d2;
+}
+
+/* YAML Editor */
+.yaml-editor {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    padding: 1rem; /* 減少 padding 與左右面板一致 */
+    min-height: 0; /* 防止高度跳躍 */
+    transition: none !important; /* 移除過渡效果 */
+    background: #f6f8fa; /* 統一背景色 */
+}
+
+#yaml-editor-textarea {
+    width: 100%;
+    height: 100%;
+    background-color: white !important;
+    color: #363636 !important;
+    font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    border: none;
+    padding: 1rem;
+}
+
+/* CodeMirror Light Theme Override with YAML Syntax Highlighting */
+.CodeMirror {
+    height: 100%;
+    font-size: 14px;
+    background-color: #fafbfc !important;  /* Softer background instead of pure white */
+    color: #363636 !important;
+    font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+}
+
+.CodeMirror-gutters {
+    background-color: #f0f2f4 !important;  /* Darker gutter background for less brightness */
+    border-right: 1px solid #e1e4e8 !important;
+}
+
+.CodeMirror-linenumber {
+    color: #999 !important;
+}
+
+.CodeMirror-cursor {
+    border-left: 2px solid #363636 !important;
+}
+
+.CodeMirror-selected {
+    background: rgba(0, 209, 178, 0.1) !important;
+}
+
+.CodeMirror-activeline-background {
+    background: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Code Folding Gutter */
+.CodeMirror-foldgutter {
+    width: 12px;
+}
+
+.CodeMirror-foldgutter-open,
+.CodeMirror-foldgutter-folded {
+    cursor: pointer;
+    color: #00d1b2;
+}
+
+.CodeMirror-foldgutter-open:after {
+    content: "▼";
+    font-size: 10px;
+}
+
+.CodeMirror-foldgutter-folded:after {
+    content: "▶";
+    font-size: 10px;
+}
+
+.CodeMirror-foldmarker {
+    color: #00d1b2;
+    text-shadow: none;
+    font-size: 12px;
+    background: #f0f7f5;
+    border: 1px solid #d4e9e5;
+    padding: 0 4px;
+    border-radius: 3px;
+    margin: 0 3px;
+}
+
+/* Remove indentation guides - they interfere with readability */
+/* CodeMirror doesn't have built-in VSCode-style indent guides */
+/* Focus on code folding instead for better YAML navigation */
+
+/* YAML Syntax Highlighting Colors */
+.cm-s-default .cm-header { color: #00d1b2; font-weight: bold; }  /* YAML keys */
+.cm-s-default .cm-keyword { color: #00d1b2; font-weight: bold; } /* YAML keys */
+.cm-s-default .cm-atom { color: #1565c0; font-weight: 600; }     /* Booleans (dark blue) */
+.cm-s-default .cm-number { color: #ff3860; }                     /* Numbers (red) */
+.cm-s-default .cm-string { color: #ff9f1a; }                     /* Strings (orange) */
+.cm-s-default .cm-string-2 { color: #ff9f1a; }                   /* Multi-line strings (orange) */
+.cm-s-default .cm-comment { color: #999; font-style: italic; }   /* Comments */
+.cm-s-default .cm-variable { color: #1565c0; }                   /* Variables (dark blue) */
+.cm-s-default .cm-variable-2 { color: #1565c0; }                 /* Variables (dark blue) */
+.cm-s-default .cm-variable-3 { color: #9b59b6; font-weight: bold; } /* Custom variables like ${var} */
+.cm-s-default .cm-def { color: #00d1b2; font-weight: bold; }     /* Definitions */
+.cm-s-default .cm-meta { color: #ff3860; }                       /* Meta */
+.cm-s-default .cm-qualifier { color: #00d1b2; }                  /* Qualifiers */
+.cm-s-default .cm-builtin { color: #1565c0; }                    /* Built-ins (dark blue) */
+.cm-s-default .cm-bracket { color: #586069; }                    /* Brackets */
+.cm-s-default .cm-tag { color: #00d1b2; }                        /* Tags */
+.cm-s-default .cm-attribute { color: #ff3860; }                  /* Attributes */
+.cm-s-default .cm-hr { color: #999; }                            /* Horizontal rules */
+.cm-s-default .cm-link { color: #1565c0; text-decoration: underline; } /* Links (dark blue) */
+
+/* Custom variable highlighting for ${...} syntax via overlay mode */
+.cm-s-default .cm-custom-variable {
+    color: #9b59b6 !important;  /* Purple for custom variables */
+    font-weight: bold;
+    background: rgba(155, 89, 182, 0.08);
+    padding: 1px 3px;
+    border-radius: 3px;
+    border: 1px solid rgba(155, 89, 182, 0.3);
+}
+
+/* Function name highlighting for validated function names */
+.cm-s-default .cm-custom-function {
+    color: #3298dc !important;  /* Blue for function names */
+    font-weight: 600;
+    background: rgba(50, 152, 220, 0.08);
+    padding: 1px 2px;
+    border-radius: 2px;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: rgba(50, 152, 220, 0.4);
+}
+
+/* Preview Tab */
+.preview-container {
+    flex: 1;
+    padding: 1rem; /* 減少 padding 與左右面板一致 */
+    overflow: auto;
+    background: #f6f8fa;
+    min-height: 0; /* 防止高度跳躍 */
+    transition: none !important; /* 移除過渡效果 */
+}
+
+#flow-preview {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    min-height: 100%;
+}
+
+#flow-preview h2 {
+    color: #24292e;
+    margin-bottom: 0.5rem;
+}
+
+#flow-preview .subtitle {
+    color: #586069;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Preview content styles - Enhanced for business logic */
+.preview-header {
+    background: #363636 !important; /* 深灰色，與左邊面板區隔，扁平風格 */
+    color: #f5f5f5 !important; /* 淺灰白色文字，確保清晰可見 */
+    padding: 1rem !important;
+    border-radius: 4px 4px 0 0; /* 左上右上小圓角，左下右下直角 */
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    font-weight: 500;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.preview-header .title {
+    color: #f5f5f5 !important; /* 確保標題也是淺灰白色 */
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.preview-header .tags {
+    gap: 0.5rem;
+}
+
+.preview-header .tag {
+    background: #4a4a4a !important; /* 稍淺的灰色背景，有層次感 */
+    color: #f5f5f5 !important; /* 淺灰白色文字 */
+    border: 1px solid #555 !important; /* 輕微的邊框增加區隔 */
+}
+
+.preview-header .subtitle {
+    color: #b5b5b5 !important; /* 淺灰色文字，在深色背景上清晰可見 */
+    opacity: 1 !important;
+}
+
+.preview-header .has-text-grey-dark {
+    color: #b5b5b5 !important; /* 覆蓋 Bulma 的深灰色，改為淺灰色 */
+}
+
+.preview-section {
+    margin-bottom: 2rem;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.preview-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.preview-section-header {
+    margin-bottom: 1rem;
+}
+
+.preview-section-header .title {
+    color: #363636;
+    margin-bottom: 0.5rem;
+}
+
+.preview-steps {
+    margin-top: 1rem;
+}
+
+.preview-step {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.preview-step:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.preview-step-header {
+    margin-bottom: 0.75rem;
+}
+
+.preview-step-id {
+    font-weight: 600;
+    color: #24292e;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.preview-step-exec {
+    margin-top: 0.25rem;
+}
+
+.preview-step-business-logic {
+    background: #f8f9fa;
+    border-left: 3px solid #3273dc;
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.preview-step-condition {
+    margin-top: 0.75rem;
+}
+
+.preview-step-store {
+    margin-top: 0.5rem;
+}
+
+.preview-foreach-body {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #dbdbdb;
+}
+
+/* Different colors for different step types */
+.preview-step.is-query {
+    border-left: 4px solid #3273dc;
+}
+
+.preview-step.is-check {
+    border-left: 4px solid #ffdd57;
+}
+
+.preview-step.is-task {
+    border-left: 4px solid #48c774;
+}
+
+.preview-step.is-action {
+    border-left: 4px solid #f14668;
+}
+
+.preview-step.is-control {
+    border-left: 4px solid #3e8ed0;
+}
+
+.preview-step.is-foreach {
+    border-left: 4px solid #b86bff;
+}
+
+/* Preview summary styles */
+.preview-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.preview-summary .title {
+    margin-bottom: 1.5rem;
+}
+
+.preview-summary .box {
+    text-align: center;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.preview-summary .box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-summary .heading {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+}
+
+.preview-summary .title.is-4 {
+    font-weight: 700;
+    margin-top: 0.5rem;
+}
+
+/* Function Library */
+.function-list {
+    padding: 1rem;
+    overflow-y: auto;
+    background: white; /* Clean white background */
+    flex: 1; /* Take available space in its panel */
+    min-height: 0; /* Allow proper scrolling */
+    max-height: 100%; /* Ensure scrolling works */
+}
+
+.function-category {
+    margin-bottom: 1.25rem;
+}
+
+.function-category-header {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #3298dc;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #24292e;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.function-category-header:hover {
+    color: #3298dc;
+    border-bottom-color: #2196f3;
+    cursor: default;  /* No pointer cursor for headers */
+}
+
+.function-items {
+    padding: 0.5rem 0;
+}
+
+.function-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: white;
+    border: 1px solid #bbdefb;
+    border-radius: 6px;
+    cursor: move;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    color: #24292e;
+}
+
+.function-item:hover {
+    border-color: #3298dc;
+    /* transform: translateX(4px); */ /* Removed slide animation */
+    box-shadow: 0 4px 12px rgba(50, 152, 220, 0.25);
+    background: rgba(227, 242, 253, 0.3);
+}
+
+.function-name {
+    font-weight: 500;
+    color: #3298dc;
+}
+
+.function-description {
+    font-size: 0.8rem;
+    color: #586069;
+}
+
+.function-params {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+}
+
+.function-param {
+    background: #f6f8fa;
+    color: #586069;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+}
+
+.function-item-icon {
+    color: #3298dc;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+/* Variables List */
+.variables-list {
+    padding: 1rem;
+    overflow-y: auto;
+    background: white; /* Clean white background */
+    flex: 1; /* Take available space in its panel */
+    min-height: 0; /* Allow proper scrolling */
+    max-height: 100%; /* Ensure scrolling works */
+}
+
+.variable-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border: 1px solid #e1bee7;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    cursor: pointer;  /* Add pointer cursor for clickable variable items */
+}
+
+.variable-item:hover {
+    border-color: #9b59b6;
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2);
+    background: rgba(243, 229, 245, 0.3);
+}
+
+.var-name {
+    font-weight: 500;
+    color: #7b1fa2;
+    font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+.var-type {
+    color: #7a7a7a;
+    background: #f5f5f5;
+    padding: 0.125rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+}
+
+/* Variable Category Headers and Containers */
+.variables-list .function-category-header {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #9c27b0; /* Purple for variables */
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #24292e;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+.variables-list .function-category-header:first-child {
+    margin-top: 0;
+}
+
+.variables-list .function-category-header:hover {
+    color: #9c27b0;
+    cursor: default;  /* No pointer cursor for headers */
+}
+
+.variables-category {
+    margin-bottom: 15px;
+}
+
+.variable-name {
+    font-weight: 500;
+    color: #7b1fa2;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+}
+
+.variable-type {
+    color: #7a7a7a;
+    background: #f5f5f5;
+    padding: 0.125rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.625rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+}
+
+/* Variable Click Highlight Animation - More subtle */
+@keyframes variableHighlight {
+    0% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+    25% { 
+        background-color: #f3e5f5;
+        box-shadow: 0 0 8px rgba(156, 39, 176, 0.3);
+        transform: scale(1.005);
+    }
+    50% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+    75% { 
+        background-color: #f3e5f5;
+        box-shadow: 0 0 8px rgba(156, 39, 176, 0.3);
+        transform: scale(1.005);
+    }
+    100% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+}
+
+/* Step Click Highlight Animation - More subtle */
+@keyframes stepHighlight {
+    0% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+    25% { 
+        background-color: #e0f2f1;
+        box-shadow: 0 0 8px rgba(0, 150, 136, 0.3);
+        transform: scale(1.005);
+    }
+    50% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+    75% { 
+        background-color: #e0f2f1;
+        box-shadow: 0 0 8px rgba(0, 150, 136, 0.3);
+        transform: scale(1.005);
+    }
+    100% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+}
+
+/* Section Click Highlight Animation - Blue color for section selection */
+@keyframes sectionHighlight {
+    0% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+    25% { 
+        background-color: #e3f2fd;
+        box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+        transform: scale(1.003);
+    }
+    50% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+    75% { 
+        background-color: #e3f2fd;
+        box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+        transform: scale(1.003);
+    }
+    100% { 
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+}
+
+.visual-step.variable-highlight {
+    animation: variableHighlight 1s ease-in-out;
+}
+
+.visual-step.step-highlight {
+    animation: stepHighlight 1s ease-in-out;
+}
+
+.visual-section.section-highlight {
+    animation: sectionHighlight 1s ease-in-out;
+}
+
+.workflow-section.section-highlight {
+    animation: sectionHighlight 1s ease-in-out;
+}
+
+/* Modal Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Modal Fade Effects - Only fade-in animations */
+.modal {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal.is-active .modal-card {
+    animation: slideDown 0.3s ease-out;
+}
+
+.modal.is-active .modal-background {
+    animation: fadeIn 0.25s ease-out;
+}
+
+/* Specific modal transitions */
+#delete-confirmation-modal.is-active,
+#alert-modal.is-active {
+    display: flex !important;
+    animation: fadeIn 0.3s ease-out;
+}
+
+#delete-confirmation-modal .modal-card,
+#alert-modal .modal-card {
+    transform-origin: center center;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+#delete-confirmation-modal.is-active .modal-card,
+#alert-modal.is-active .modal-card {
+    animation: slideDown 0.3s ease-out;
+}
+
+/* Steps List Box - Match section-steps style */
+.steps-list-box {
+    background: #f6f8fa !important;
+    padding: 0.75rem !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.step-media {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.step-media:last-child {
+    margin-bottom: 0;
+}
+
+.step-media:hover {
+    border-color: #00d1b2;
+    background: #f0fffc;
+    box-shadow: 0 2px 8px rgba(0, 209, 178, 0.1);
+}
+
+/* Properties Panel */
+.properties-editor {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    background: white;
+}
+
+.property-group {
+    margin-bottom: 1.5rem;
+}
+
+.property-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #363636;
+}
+
+.property-input {
+    width: 100%;
+    padding: 0.5rem;
+    background-color: white !important;
+    color: #363636 !important;
+    border: 1px solid #dbdbdb !important;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.property-input:focus {
+    outline: none;
+    border-color: #00d1b2 !important;
+    box-shadow: 0 0 0 0.125em rgba(0, 209, 178, 0.25);
+}
+
+textarea.property-input {
+    min-height: 80px;
+    resize: vertical;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    background-color: white !important;
+    color: #363636 !important;
+}
+
+select.property-input {
+    cursor: pointer;
+    background-color: white !important;
+    color: #363636 !important;
+}
+
+/* Modals */
+.modal-card {
+    width: 90%;
+    max-width: 600px;
+}
+
+.modal-card-head {
+    background-color: #00d1b2;
+    border-bottom: 1px solid #00d1b2;
+}
+
+.modal-card-title {
+    color: white;
+    font-weight: 600;
+}
+
+.modal-card-head .delete {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-card-head .delete:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.modal-card-body {
+    background: white;
+}
+
+.modal-card-body .input,
+.modal-card-body .textarea,
+.modal-card-body .select select {
+    background-color: white !important;
+    color: #363636 !important;
+    border: 1px solid #dbdbdb;
+}
+
+.modal-card-body .input:focus,
+.modal-card-body .textarea:focus,
+.modal-card-body .select select:focus {
+    border-color: #00d1b2;
+    box-shadow: 0 0 0 0.125em rgba(0, 209, 178, 0.25);
+}
+
+/* Status Bar */
+.flow-status-bar {
+    background: white;
+    border-top: 1px solid #dbdbdb;
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #4a4a4a;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #48c774;
+}
+
+.status-dot.error {
+    background: #ff3860;
+}
+
+.status-dot.warning {
+    background: #ffdd57;
+}
+
+/* Buttons - Material Design */
+.button {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.button.is-primary {
+    background-color: #00d1b2;
+    border-color: transparent;
+    color: white;
+}
+
+.button.is-primary:hover {
+    background-color: #00b8a1;
+    box-shadow: 0 4px 8px rgba(0, 209, 178, 0.3);
+}
+
+.button.is-info {
+    background-color: #2196f3; /* Material Blue 500 */
+    border-color: transparent;
+    color: white;
+}
+
+.button.is-info:hover {
+    background-color: #1976d2; /* Material Blue 700 */
+    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+.button.is-warning {
+    background-color: #ffc107; /* Material Amber 500 */
+    border-color: transparent;
+    color: rgba(0, 0, 0, 0.87);
+}
+
+.button.is-warning:hover {
+    background-color: #ffa000; /* Material Amber 700 */
+    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+}
+
+/* Drop Zone */
+.drop-zone {
+    min-height: 100px;
+    border: 2px dashed #dbdbdb;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #b5b5b5;
+    background: #fafafa;
+    transition: all 0.3s;
+}
+
+.drop-zone.drag-over {
+    border-color: #00d1b2;
+    background: #f0fffc;
+    color: #00d1b2;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #dbdbdb;
+    border-top-color: #00d1b2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Notification */
+.notification {
+    background-color: #f0f0f0;
+    color: #4a4a4a;
+}
+
+.notification.is-info {
+    background-color: #eff5fb;
+    color: #296fa8;
+}
+
+.notification.is-success {
+    background-color: #effaf5;
+    color: #257953;
+}
+
+.notification.is-warning {
+    background-color: #fffaeb;
+    color: #947600;
+}
+
+.notification.is-danger {
+    background-color: #feecf0;
+    color: #cc0f35;
+}
+
+/* Helper Classes */
+.mr-2 {
+    margin-right: 0.5rem;
+}
+
+.ml-2 {
+    margin-left: 0.5rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+/* Visual Editor Step Display Styles */
+.step-params-display {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.step-param-tag {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+    border: 1px solid #bbdefb;
+    display: inline-block;
+}
+
+.step-store-display {
+    margin-top: 0.5rem;
+}
+
+.step-store-display .tag {
+    font-size: 0.75rem;
+}
+
+.step-media {
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.step-media:last-child {
+    border-bottom: none;
+}
+
+.step-media:hover {
+    background: #f8f9fa;
+}
+
+.steps-list-box {
+    padding: 0 !important;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Function row container - uses flexbox */
+.step-function-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 16px;
+}
+
+/* Function name - allows flexible shrinking */
+.step-function {
+    color: #666;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+/* Left Panel Workflow Step Params Display */
+.workflow-step-params {
+    display: inline-flex;
+    gap: 3px;
+    flex-wrap: nowrap;
+    margin-left: auto;  /* Auto push to right */
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.workflow-step-param {
+    background: rgba(227, 242, 253, 0.95);
+    color: #1976d2;
+    padding: 0 0.25rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+    border: 1px solid rgba(187, 222, 251, 0.6);
+    display: inline-block;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+/* Param tag hover effect */
+.workflow-step-param:hover {
+    background: #e3f2fd;
+    border-color: #90caf9;
+    transform: scale(1.05);
+    transition: all 0.15s ease;
+}
+
+/* Active step param style */
+.workflow-step-simple.active .workflow-step-param {
+    background: #e3f2fd;
+    border-color: #2196f3;
+}
+
+/* 移除響應式排版 - 固定桌面版本 */
+/* @media 規則已被移除，保持固定布局 */
+
+/* 保留原本的樣式但不在 media query 中 */
+.step-function-row {
+    /* 保持單行顯示 */
+        margin-left: 0;
+        margin-top: 2px;
+    }
+}
+
+.workflow-step-store {
+    margin-top: 0.25rem;
+}
+
+.workflow-step-store-tag {
+    background: #f3e7ff;
+    color: #9b59b6;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    display: inline-block;
+    border: 1px solid #e0b3ff;
+}
+
+.workflow-step-store-tag i {
+    font-size: 0.65rem;
+    margin-right: 0.25rem;
+}
+
+/* Visual Step (Center Panel) Params Display */
+.visual-step-params {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.visual-step-param {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+    border: 1px solid #90caf9;
+    display: inline-block;
+}
+
+.visual-step-store {
+    margin-top: 0.5rem;
+}
+
+.visual-step-store-tag {
+    background: #f3e7ff;
+    color: #9b59b6;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    display: inline-block;
+    border: 1px solid #e0b3ff;
+}
+
+.visual-step-store-tag i {
+    font-size: 0.6rem;
+    margin-right: 0.25rem;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #dbdbdb;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #b5b5b5;
+}
+
+/* Notification Animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* 固定桌面布局 - 已移除響應式設計 */
+
+/* 保持所有面板始終顯示 */
+
+/* ===================================
+   Drag and Drop Styles
+   =================================== */
+
+/* ===================================
+   New Layout-specific Styles
+   =================================== */
+
+/* Simplified workflow step for left panel */
+.workflow-step-simple {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    background: white;
+    /* cursor: pointer; -- Removed: steps are display only */
+    transition: all 0.2s ease;
+}
+
+/* Steps in left panel - restored hover effect for better UX */
+.workflow-step-simple:hover {
+    border-color: #2196f3;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);
+    background: #f8fbff;
+    transition: all 0.2s ease;
+}
+
+.workflow-step-simple.active {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.05);
+}
+
+.step-header-simple {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.step-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.workflow-step-simple:hover .step-actions {
+    opacity: 1;
+}
+
+/* Step delete button style - matching section and visual-step styles */
+.delete-step-btn {
+    padding: 4px 8px !important;
+    border: none !important;
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-size: 12px !important;
+    min-width: 32px !important;
+    height: 28px !important;
+}
+
+.delete-step-btn:hover {
+    background: #dc3545 !important;  /* Red for delete */
+    color: white !important;
+}
+
+/* Step action button hover colors - matching visual-step styles */
+.step-actions .button.is-danger:hover,
+.step-actions .delete-step-btn:hover {
+    background: #dc3545 !important;  /* Red for delete */
+    color: white !important;
+}
+
+.step-actions .button.is-info:hover,
+.step-actions .button.is-primary:hover {
+    background: #2196f3 !important;  /* Blue for move/edit */
+    color: white !important;
+}
+
+.step-header-simple .step-icon {
+    background: #f5f5f5;  /* Back to original grey */
+    color: #666;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+/* Add hover effect for step numbers */
+.workflow-step-simple:hover .step-icon {
+    background: #e0e0e0;  /* Lighter grey on hover */
+    transform: scale(1.05);
+}
+
+/* Active state for workflow step numbers */
+.workflow-step-simple.active .step-icon {
+    background: #00d1b2;  /* Green when active */
+    color: white;
+    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.2);
+}
+
+.step-header-simple .step-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.step-header-simple .step-id {
+    font-weight: 500;
+    color: #333;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Function style moved to .step-function-row section */
+
+/* Enhanced editor step for center panel */
+.workflow-step-editor {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.workflow-step-editor:hover {
+    border-color: #2196f3;
+    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.15);
+    /* transform: translateY(-1px); */ /* Removed lift animation */
+}
+
+.workflow-step-editor.active {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.05);
+}
+
+.step-header-editor {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    gap: 12px;
+}
+
+.step-drag-handle {
+    color: #bbb;
+    cursor: grab;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.step-drag-handle:hover {
+    color: #2196f3;
+    background: rgba(33, 150, 243, 0.1);
+    cursor: grabbing;
+}
+
+.step-header-editor .step-icon {
+    background: #2196f3;
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.step-header-editor .step-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.step-header-editor .step-id {
+    font-weight: 600;
+    color: #333;
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.step-header-editor .step-function {
+    color: #2196f3;
+    font-size: 14px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.step-header-editor .step-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.step-condition {
+    margin-top: 4px;
+    padding: 4px 8px;
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 3px solid #ffc107;
+    font-size: 12px;
+    color: #856404;
+    border-radius: 0 4px 4px 0;
+}
+
+.step-store {
+    padding: 8px 12px;
+    padding-left: 48px;
+    font-size: 12px;
+    color: #666;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    background: rgba(76, 175, 80, 0.05);
+    border-top: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+/* Dragging states for editor elements */
+.workflow-step-editor.dragging {
+    opacity: 0.7;
+    transform: scale(1.02) rotate(2deg);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 999;
+    border: 2px dashed #2196f3;
+}
+
+.workflow-step-editor.drag-over {
+    border: 2px solid #2196f3;
+    background: rgba(33, 150, 243, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(33, 150, 243, 0.25);
+}
+
+.workflow-step-editor.drag-over::before {
+    content: "放置於此";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(33, 150, 243, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* Enhanced section styles */
+.section-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.section-header:hover {
+    background-color: rgba(0, 209, 178, 0.05);  /* Light teal hover */
+}
+
+/* Empty states */
+.empty-steps {
+    padding: 16px;
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+/* Smooth transitions */
+.workflow-step-editor,
+.workflow-step-simple {
+    transition: all 0.2s ease;
+}
+
+/* Function drag from right panel */
+.function-item {
+    transition: all 0.2s ease;
+}
+
+.function-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    cursor: grabbing;
+}
+
+/* Visual Editor Styles - REMOVED DUPLICATE - Using unified style above */
+
+.visual-editor-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Visual Section Styles */
+.visual-section {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.visual-section:hover {
+    border-color: #b0b0b0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Ensure selected state hover has higher priority */
+.visual-section.selected:hover {
+    border-color: #1976d2 !important;  /* Darker blue on hover, not transparent */
+    box-shadow: 0 3px 10px rgba(33, 150, 243, 0.2);
+}
+
+.visual-section.drag-over {
+    border: 2px dashed #3b82f6;
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.visual-section.drag-over .visual-section-header {
+    background: #dbeafe;
+}
+
+.visual-section-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.visual-section-header:hover {
+    background: #e9ecef;
+}
+
+/* Selected section styling */
+.visual-section.selected {
+    border-color: #2196f3;
+}
+
+.visual-section.selected .visual-section-header {
+    background: rgba(33, 150, 243, 0.08);
+}
+
+.visual-section.selected .visual-section-header .section-title {
+    color: #2196f3;
+    font-weight: 600;
+}
+
+.visual-section.selected .visual-section-header .section-icon {
+    color: #2196f3;  /* Icon also changes color when selected */
+}
+
+.visual-section-header .section-icon {
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.visual-section-header .section-title {
+    font-weight: 600;
+    color: #495057;
+    flex: 1;
+}
+
+.visual-section-header .section-step-count {
+    font-size: 12px;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Visual Steps Container */
+.visual-steps-container {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Visual Step Styles */
+.visual-step {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.visual-step:hover {
+    border-color: #2196f3;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+    /* transform: translateY(-1px); */ /* Removed lift animation */
+}
+
+/* Removed selected state for visual-step - only drag and drop needed */
+
+.visual-step.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    cursor: grabbing;
+}
+
+/* Visual Step Drag Handle (now with step number) */
+.visual-step-drag-handle {
+    display: flex;
+    align-items: center;
+    cursor: grab;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+    min-width: 35px;
+    position: relative;
+}
+
+/* Step number text - always visible */
+.visual-step-drag-handle .step-number-text {
+    color: #999;
+    font-size: 14px;
+    font-weight: 600;
+    display: block;
+}
+
+/* Drag icon - only visible on hover */
+.visual-step-drag-handle .drag-icon {
+    color: #bbb;
+    display: none;
+    font-size: 14px;
+}
+
+/* On hover, show drag icon and hide number */
+.visual-step:hover .visual-step-drag-handle .step-number-text {
+    display: none;
+}
+
+.visual-step:hover .visual-step-drag-handle .drag-icon {
+    display: block;
+}
+
+.visual-step-drag-handle:hover {
+    background: rgba(33, 150, 243, 0.1);
+}
+
+.visual-step-drag-handle:hover .drag-icon {
+    color: #2196f3;
+}
+
+.visual-step:active .visual-step-drag-handle {
+    cursor: grabbing;
+}
+
+.visual-step:active .visual-step-drag-handle .drag-icon {
+    display: block;
+    color: #2196f3;
+}
+
+.visual-step:active .visual-step-drag-handle .step-number-text {
+    display: none;
+}
+
+/* Visual Step Content */
+.visual-step-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.visual-step-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Step number is now part of drag handle, no separate styles needed */
+
+/* Highlight state for visual step numbers in drag handle */
+.visual-step.step-highlight .visual-step-drag-handle .step-number-text,
+.visual-step.variable-highlight .visual-step-drag-handle .step-number-text {
+    color: #ff9800;  /* Orange when highlighted */
+    font-weight: 700;
+    animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+.visual-step-header .step-id {
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+/* Step Function Display */
+.step-function {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.step-function.valid {
+    background: rgba(76, 175, 80, 0.1);
+    color: #388e3c;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.step-function.invalid {
+    background: rgba(244, 67, 54, 0.1);
+    color: #d32f2f;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.step-params {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.step-conditions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #ff9800;
+}
+
+/* Visual Step Actions */
+.visual-step-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.visual-step:hover .visual-step-actions {
+    opacity: 1;
+}
+
+.visual-step-actions .button {
+    padding: 4px 8px;
+    border: none;
+    background: #f8f9fa;
+    color: #6c757d;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    min-width: 32px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.visual-step-actions .button:hover {
+    background: #2196f3;
+    color: white;
+}
+
+/* Icon-based hover colors - unified blue except delete */
+.visual-step-actions .button:has(.fa-trash):hover {
+    background: #dc3545 !important;  /* Red for delete */
+    color: white !important;
+}
+
+.visual-step-actions .button:has(.fa-arrow-up):hover,
+.visual-step-actions .button:has(.fa-arrow-down):hover,
+.visual-step-actions .button:has(.fa-edit):hover,
+.visual-step-actions .button:has(.fa-plus):hover {
+    background: #2196f3 !important;  /* Blue for all other actions */
+    color: white !important;
+}
+
+/* Visual Drop Zones */
+.visual-drop-zone {
+    padding: 16px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: rgba(245, 245, 245, 0.5);
+}
+
+.visual-drop-zone.drag-over {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.08);
+    color: #2196f3;
+    transform: scale(1.02);
+}
+
+.visual-drop-zone-top {
+    margin-bottom: 8px;
+}
+
+.visual-drop-zone-bottom {
+    margin-top: 8px;
+}
+
+.visual-drop-zone-between {
+    height: 40px;
+    margin: 6px 0;
+    font-size: 12px;
+    padding: 8px;
+}
+
+.visual-drop-zone-empty {
+    margin: 16px 0;
+    padding: 32px;
+    font-style: italic;
+}
+
+/* Drag animations - simplified */
+.visual-drop-zone.drag-over {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+/* 固定視覺步驟布局 */
+
+/* Enhanced hover states */
+.visual-step:not(.dragging):hover {
+    border-color: #2196f3;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+}
+
+/* Removed - this was overriding the hover border color and making it nearly invisible */
+
+/* Drag over state for sections when drop zones are hidden */
+.visual-section.drag-over {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+/* Drop Indicator Line for drag and drop */
+.drop-indicator {
+    position: absolute;
+    width: calc(100% - 20px);
+    height: 3px;
+    background: linear-gradient(90deg, #2196f3 0%, #42a5f5 50%, #2196f3 100%);
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.8);
+    z-index: 1000;
+    pointer-events: none;
+    animation: pulse-indicator 1.5s infinite;
+    left: 10px;
+    margin-top: -2px;
+}
+
+.drop-indicator::before,
+.drop-indicator::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #2196f3;
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 8px rgba(33, 150, 243, 1);
+}
+
+.drop-indicator::before {
+    left: -5px;
+}
+
+.drop-indicator::after {
+    right: -5px;
+}
+
+@keyframes pulse-indicator {
+    0%, 100% {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scaleX(1.02);
+    }
+}
+
+/* Ensure proper positioning context for drop indicator */
+.workflow-step,
+.visual-step,
+.workflow-section .steps,
+.visual-section-steps {
+    position: relative;
+}
+
+.visual-section.drag-over .visual-steps-container {
+    background-color: rgba(33, 150, 243, 0.05);
+}
+
+/* Test Log Terminal Styles */
+#test-log {
+    height: 400px;
+    overflow-y: auto;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Test Log Terminal Color Scheme */
+#test-log .log-section {
+    color: #4ec9b0 !important;  /* 青綠色 - 區段標題 */
+    font-weight: bold;
+    margin-top: 0.5rem;
+    margin-bottom: 0.3rem;
+    border-bottom: 1px solid #3c3c3c;
+    padding-bottom: 0.2rem;
+}
+
+#test-log .log-step {
+    color: #dcdcaa !important;  /* 淺黃色 - 步驟 */
+    margin-left: 1rem;
+}
+
+#test-log .log-success {
+    color: #4fc1ff !important;  /* 亮藍色 - 成功 */
+}
+
+#test-log .log-success strong {
+    color: #4fc1ff !important;  /* 確保 strong 標籤也是亮藍色 */
+    font-weight: bold;
+}
+
+#test-log .log-error {
+    color: #f48771 !important;  /* 亮紅色 - 錯誤 */
+}
+
+#test-log .log-warning {
+    color: #ffcc00 !important;  /* 亮黃色 - 警告 */
+}
+
+#test-log .log-info {
+    color: #9cdcfe !important;  /* 淺藍色 - 資訊 */
+}
+
+#test-log .log-debug {
+    color: #808080 !important;  /* 灰色 - 除錯 */
+}
+
+#test-log .log-timestamp {
+    color: #608b4e !important;  /* 綠色 - 時間戳記 */
+    font-size: 0.85rem;
+}
+
+#test-log .log-function {
+    color: #c586c0 !important;  /* 紫色 - 函數名稱 */
+}
+
+#test-log .log-variable {
+    color: #ce9178 !important;  /* 橙色 - 變數 */
+}
+
+#test-log .has-text-grey {
+    color: #969696 !important;  /* 更亮的灰色 */
+}
+
+/* Auto-save status styles */
+#auto-save-status {
+    margin-left: 0.5rem;
+    font-size: 0.85rem;
+}
+
+#auto-save-status.is-success {
+    background-color: #48c774;
+    color: white;
+}
+
+#auto-save-status.is-warning {
+    background-color: #ffdd57;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+/* Removed blue left bar for selected visual steps */
+
+/* Empty section styling */
+.visual-steps-container:empty::before {
+    content: '此區段暫無步驟，拖放函數到此處以添加步驟';
+    display: block;
+    padding: 32px;
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    background: rgba(245, 245, 245, 0.5);
+}
+
+/* Test Modal Specific Styles */
+#test-report {
+    overflow-x: hidden !important;  /* Prevent horizontal scrollbar */
+    overflow-y: auto !important;    /* Allow vertical scrolling */
+    word-wrap: break-word;         /* Break long words */
+    word-break: break-word;        /* Break words at any point */
+}
+
+#test-report table {
+    width: 100% !important;        /* Ensure table fits container */
+    table-layout: fixed;           /* Fixed table layout */
+}
+
+#test-report th,
+#test-report td {
+    word-wrap: break-word;         /* Break long content */
+    word-break: break-word;        /* Break at any point */
+    overflow-wrap: break-word;     /* Modern word breaking */
+    white-space: normal;           /* Allow wrapping */
+    max-width: 0;                  /* Required for table-layout: fixed */
+}
+
+/* Specific column widths for test report table */
+#test-report th:nth-child(1),
+#test-report td:nth-child(1) {
+    width: 20%;                    /* Step column */
+}
+
+#test-report th:nth-child(2),
+#test-report td:nth-child(2) {
+    width: 30%;                    /* Function column */
+}
+
+#test-report th:nth-child(3),
+#test-report td:nth-child(3) {
+    width: 25%;                    /* Result column */
+}
+
+#test-report th:nth-child(4),
+#test-report td:nth-child(4) {
+    width: 25%;                    /* Time column */
+}
+
+/* Ensure pre and code blocks don't cause overflow */
+#test-report pre,
+#test-report code {
+    white-space: pre-wrap;         /* Wrap preformatted text */
+    word-wrap: break-word;         /* Break long words */
+    max-width: 100%;              /* Don't exceed container */
+    overflow-x: auto;             /* Allow scrolling if needed */
+}
+
+.function-item {
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+/* Left Panel Tab Styles */
+.left-tab-content {
+    display: none;
+    overflow-y: auto;
+    height: 100%;  /* Full height instead of max-height */
+    background: #fafafa; /* 統一背景色 */
+    flex: 1;
+    padding: 0;  /* Remove padding for full width */
+}
+
+.left-tab-content.is-active {
+    display: flex;
+    flex-direction: column;
+    background: #fafafa; /* 確保激活時也是統一背景 */
+    height: 100%;  /* Ensure full height when active */
+}
+
+/* Enhanced workflow sections when in tab */
+#workflow-tab .workflow-sections {
+    padding: 0.75rem;  /* Add padding for shadow visibility */
+    height: 100%;  /* Full height */
+    overflow-y: auto;  /* Allow scrolling if needed */
+    box-sizing: border-box;
+}
+
+/* Flow settings styling in tab - unified with workflow sections */
+.flow-settings {
+    padding: 1rem;  /* Consistent padding with sections */
+    width: calc(100% - 1.5rem);  /* Account for margins */
+    background: white; /* White background like sections */
+    border-radius: 6px;
+    border: 1px solid #e1e4e8;
+    margin: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+}
+
+.flow-settings .field {
+    margin-bottom: 1rem;
+}
+
+.flow-settings .field:last-child {
+    margin-bottom: 0;
+}
+
+.flow-settings .label.is-small {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.flow-settings .input.is-small,
+.flow-settings .textarea.is-small {
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.flow-settings .input.is-small:focus,
+.flow-settings .textarea.is-small:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.flow-settings .input.is-small:hover,
+.flow-settings .textarea.is-small:hover {
+    border-color: #c0c4cc;
+}
+
+/* Checkbox styling */
+.flow-settings .label.is-small input[type="checkbox"] {
+    margin-right: 0.5rem;
+    transform: scale(1.1);
+}
+
+/* Legacy flow-info styling support (in case it's used elsewhere) */
+.left-tab-content .flow-info {
+    width: 100%;
+}
+
+.left-tab-content .flow-info .field {
+    margin-bottom: 1rem;
+}
+
+.left-tab-content .flow-info .label.is-small {
+    font-weight: 600;
+    color: #495057;
+}
+
+.left-tab-content .flow-info .input.is-small,
+.left-tab-content .flow-info .textarea.is-small {
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+}
+
+.left-tab-content .flow-info .input.is-small:focus,
+.left-tab-content .flow-info .textarea.is-small:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+/* Unified Tab Styling for all panels */
+.panel-tabs a[data-tab],
+.panel-tabs a[data-category],
+.editor-tabs a[data-tab] {
+    position: relative;
+    transition: all 0.2s ease;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: 0;
+}
+
+.panel-tabs a[data-tab]:hover,
+.panel-tabs a[data-category]:hover,
+.editor-tabs a[data-tab]:hover {
+    background: rgba(33, 150, 243, 0.05);
+    color: #2196f3;
+}
+
+.panel-tabs a[data-tab].is-active::after,
+.panel-tabs a[data-category].is-active::after,
+.editor-tabs a[data-tab].is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #2196f3;
+    border-radius: 2px 2px 0 0;
+}
+
+/* Editor tabs specific styling */
+.editor-tabs {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+.editor-tabs a {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    text-decoration: none;
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 0.875rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.editor-tabs a:hover {
+    background: rgba(33, 150, 243, 0.05);
+    color: #2196f3;
+}
+
+.editor-tabs a.is-active {
+    color: #2196f3;
+    border-bottom-color: #2196f3;
+    background: transparent;
+}
+
+/* Removed ::after pseudo-element - using border-bottom instead */
+
+/* Workflow sections expanded styling - only when active */
+#workflow-tab.is-active {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fafafa; /* 統一背景色 */
+    height: 100%;  /* Full height */
+}
+
+/* Override: Ensure workflow-tab is hidden when not active */
+#workflow-tab:not(.is-active) {
+    display: none !important;
+}
+
+/* Ensure settings-tab is properly shown when active */
+#settings-tab.is-active {
+    display: flex !important;
+    flex-direction: column;
+    background: #fafafa; /* 統一背景色 */
+    height: 100%;  /* Full height */
+}
+
+#settings-tab:not(.is-active) {
+    display: none !important;
+}
+
+#workflow-tab .workflow-sections {
+    flex: 1;
+    padding: 0.75rem;  /* Padding for shadow visibility */
+    gap: 0;  /* No gap between sections - margin-bottom handles spacing */
+}
+
+/* Note: workflow-section styles are defined earlier in the file */
+
+/* Tab transition animations - disabled for cleaner UX */
+.left-tab-content {
+    /* animation: fadeIn 0.15s ease-out; */
+}
+
+.function-item:hover {
+    background: rgba(33, 150, 243, 0.05);
+    /* transform: translateX(4px); */ /* Removed slide animation for cleaner UX */
+}
+
+/* ========== Drop Insertion Indicator Styles ========== */
+/* Visual indicator for where items will be dropped */
+.drop-insertion-indicator {
+    position: relative;
+}
+
+/* Bottom insertion line indicator */
+.drop-insertion-indicator::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        #3273dc 10%, 
+        #3273dc 90%, 
+        transparent);
+    border-radius: 2px;
+    animation: pulse-indicator 1s ease-in-out infinite;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(50, 115, 220, 0.5);
+}
+
+/* For visual editor steps */
+.visual-step.drop-insertion-indicator::after {
+    left: 20px;
+    right: 20px;
+}
+
+/* For workflow editor steps */
+.workflow-step.drop-insertion-indicator::after {
+    left: 15px;
+    right: 15px;
+}
+
+/* Animation for insertion indicator */
+@keyframes pulse-indicator {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scaleY(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scaleY(1.5);
+    }
+}
+
+/* Insertion hint text */
+.drop-insertion-hint {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3273dc;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    white-space: nowrap;
+    z-index: 1001;
+    pointer-events: none;
+    opacity: 0;
+    animation: show-hint 0.3s ease-out forwards;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+@keyframes show-hint {
+    to {
+        opacity: 1;
+        bottom: -25px;
+    }
+}
+
+/* Enhanced drag-over state with insertion indicator */
+.workflow-step.drag-over.show-insertion-point,
+.visual-step.drag-over.show-insertion-point {
+    background-color: #f0f8ff !important;
+    border-color: #3273dc !important;
+}
+
+/* Cleaner drag-over without insertion (for sections) */
+.visual-section.drag-over:not(.show-insertion-point) {
+    background-color: #f5f9ff;
+    border-color: #90caf9;
+}

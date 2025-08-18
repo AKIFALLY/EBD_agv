@@ -4,16 +4,18 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects.postgresql import JSONB, JSON
 from pydantic import ConfigDict
+import json
 
 
 class Work(SQLModel, table=True):
     __tablename__ = "work"
     id: Optional[int] = Field(default=None, primary_key=True)
+    work_code: Optional[str] = None  # Flow WCS 需要的 work_code 欄位
     name: str
     description: Optional[str] = None
 
     parameters: Optional[Dict[str, Any]] = Field(
-        sa_column=Column(JSON)
+        sa_column=Column(JSON(none_as_null=True))
     )
 
     # ORM 關聯：一對多 (One work to many tasks)
@@ -95,25 +97,28 @@ class TaskStatus(SQLModel, table=True):
 class Task(SQLModel, table=True):
     __tablename__ = "task"
     id: Optional[int] = Field(default=None, primary_key=True)
+    task_id: Optional[str] = None  # Flow WCS 需要的 task_id 欄位
+    type: Optional[str] = None  # Flow WCS 需要的 type 欄位
     parent_task_id: Optional[int] = Field(default=None, foreign_key="task.id")
     work_id: Optional[int] = Field(default=None, foreign_key="work.id")
     status_id: Optional[int] = Field(
         default=None, foreign_key="task_status.id")
     room_id: Optional[int] = Field(default=None, foreign_key="room.id")
     node_id: Optional[int] = Field(default=None, foreign_key="node.id")
+    location_id: Optional[int] = None  # Flow WCS 需要的 location_id 欄位
+    rack_id: Optional[int] = None  # Flow WCS 需要的 rack_id 欄位
     name: str
     description: Optional[str] = None
     mission_code: Optional[str] = None  # Kuka 系統的任務代碼
     agv_id: Optional[int] = Field(default=None, foreign_key="agv.id")
     priority: int = Field(default=0)
     parameters: Optional[Dict[str, Any]] = Field(
-        sa_column=Column(JSON)
+        sa_column=Column(JSON(none_as_null=True))
     )
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = Field(
-        default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True))
 
     # ORM 關聯：多對一 (Many tasks to one work)
@@ -122,4 +127,50 @@ class Task(SQLModel, table=True):
     # ORM 關聯：多對一 (Many tasks to one AGV)
     agv: Optional["AGV"] = Relationship()
 
+    model_config = ConfigDict(from_attributes=True)  # 告訴 Pydantic 這是 ORM 模型
+    
+    def generate_task_id(self, work_code: str = None) -> str:
+        """生成 task_id (for flow_wcs compatibility)"""
+        from datetime import datetime
+        if work_code:
+            return f"TASK_{work_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        else:
+            return f"TASK_{self.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+
+class FlowLog(SQLModel, table=True):
+    """Flow 執行日誌模型 - flow_wcs 整合"""
+    __tablename__ = "flow_log"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    flow_id: str
+    flow_name: Optional[str] = None
+    work_id: Optional[int] = Field(default=None, foreign_key="work.id")
+    section: Optional[str] = None
+    step_id: Optional[str] = None
+    function: Optional[str] = None
+    params: Optional[Dict[str, Any]] = Field(
+        default=None,
+        sa_column=Column(JSON(none_as_null=True))
+    )
+    result: Optional[Dict[str, Any]] = Field(
+        default=None,
+        sa_column=Column(JSON(none_as_null=True))
+    )
+    status: str  # success, failed, skipped
+    error_message: Optional[str] = None
+    duration: Optional[float] = None  # execution time in seconds
+    created_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Legacy fields (for backward compatibility if needed)
+    step_index: Optional[int] = None
+    step_type: Optional[str] = None
+    message: Optional[str] = None
+    flow_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        sa_column=Column(JSON(none_as_null=True), name='metadata')  # 在資料庫中仍叫 metadata
+    )
+    
     model_config = ConfigDict(from_attributes=True)  # 告訴 Pydantic 這是 ORM 模型

@@ -1,7 +1,7 @@
 from agv_base.states.state import State
-from cargo_mover_agv.robot_context import RobotContext
 from rclpy.node import Node
-from cargo_mover_agv.robot_states.entrance.select_rack_port_state import SelectRackPortState
+from db_proxy_interfaces.msg._tasks import Tasks
+
 
 
 class RunningState(State):
@@ -12,17 +12,63 @@ class RunningState(State):
         self.ask_traffic_area = [] #詢問AGVC交管區域
         self.traffic_area_registed = [] #註冊的交管區域
         # 假設有一個 RobotContext 類別來管理機器人狀態
+        
+        # 【新增】任務訂閱相關變數，參考 mission_select_state
+        self.subscription = None
+        self.latest_tasks = []  # 儲存最新的任務資料
 
     def enter(self):
         self.node.get_logger().info("🏃 AGV 進入: Running 狀態")
+        
+        # 【新增】訂閱任務資料，參考 mission_select_state - 使用高效能 QoS 配置
+        from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+        
+        # 設定高效能的 QoS 配置
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            depth=50  # 增加隊列深度以提高訂閱效能
+        )
+        
+        # 直接使用 node.create_subscription() 並手動管理訂閱
+        subscription = self.node.create_subscription(Tasks, '/agvc/tasks', self.tasks_callback, qos_profile)
+        self.subscriptions.append(subscription)
 
     def leave(self):
         self.node.get_logger().info("🚪 AGV 離開 Running 狀態")
+        
+        # 離開前將訂閱到的task表利用agv_id搜尋到當前執行的整個任務欄位丟進self.node.task
+        # 新增 status_id 為 2 (READY_TO_EXECUTE) 或 3 (EXECUTING) 的判斷條件
+        if self.latest_tasks:
+            from shared_constants.task_status import TaskStatus
+            for task in self.latest_tasks:
+                if (task.agv_id == self.node.AGV_id and 
+                    (task.status_id == TaskStatus.READY_TO_EXECUTE or 
+                     task.status_id == TaskStatus.EXECUTING)):
+                    self.node.task = task
+                    self.node.get_logger().info(f"⚠️ 離開前印出當前任務 (status_id={task.status_id}): " + str(self.node.task))
+                    break
+        
+        # 移除訂閱
+        self.remove_subscription()
 
     def handle(self, context):
         # self.node.get_logger().info("AGV Running 狀態")
         if not self.node.agv_status.AGV_PATH:
             self.node.get_logger().info("⚠️ AGV 沒有路徑資料，回到任務選擇狀態")
+            
+            # 在跳轉前先抓取 task，避免因為直接跳出而沒抓到
+            # 新增 status_id 為 2 (READY_TO_EXECUTE) 或 3 (EXECUTING) 的判斷條件
+            if self.latest_tasks:
+                from shared_constants.task_status import TaskStatus
+                for task in self.latest_tasks:
+                    if (task.agv_id == self.node.AGV_id and 
+                        (task.status_id == TaskStatus.READY_TO_EXECUTE or 
+                         task.status_id == TaskStatus.EXECUTING)):
+                        self.node.task = task
+                        self.node.get_logger().info(f"✅ 回到任務選擇前抓取任務 (status_id={task.status_id}): " + str(task.id))
+                        break
+            
             from agv_base.agv_states.mission_select_state import MissionSelectState
             context.set_state(MissionSelectState(self.node))
         # 如果有路徑資料，則持續運行狀態
@@ -36,6 +82,30 @@ class RunningState(State):
 
         if self.node.agv_status.AGV_2POSITION:
             self.node.get_logger().info("✅ AGV 到達目標位置")
-            self.node.robot_finished = False  # 重置機器人完成狀態
-            from agv_base.agv_states.wait_robot_state import WaitRobotState
-            context.set_state(WaitRobotState(self.node))
+            
+            # 在跳轉前先抓取 task，避免因為直接跳出而沒抓到
+            # 新增 status_id 為 2 (READY_TO_EXECUTE) 或 3 (EXECUTING) 的判斷條件
+            task_found = False
+            if self.latest_tasks:
+                from shared_constants.task_status import TaskStatus
+                for task in self.latest_tasks:
+                    if (task.agv_id == self.node.AGV_id and 
+                        (task.status_id == TaskStatus.READY_TO_EXECUTE or 
+                         task.status_id == TaskStatus.EXECUTING)):
+                        self.node.task = task
+                        self.node.get_logger().info(f"✅ 跳轉前抓取任務 (status_id={task.status_id}): " + str(task.id))
+                        task_found = True
+                        break
+            
+            # 檢查 task id，如果為 0 則不進入 waitrobot
+            if task_found and hasattr(self.node, 'task') and self.node.task and self.node.task.id != 0:
+                self.node.robot_finished = False  # 重置機器人完成狀態
+                from agv_base.agv_states.wait_robot_state import WaitRobotState
+                context.set_state(WaitRobotState(self.node))
+            else:
+                self.node.get_logger().warn("⚠️ 任務 ID 為 0 或沒有找到有效任務，不進入 WaitRobot 狀態")
+
+    def tasks_callback(self, msg: Tasks):
+        """任務資料回調函數"""
+        tasks = msg.datas
+        self.latest_tasks = tasks  # 儲存最新的任務資料

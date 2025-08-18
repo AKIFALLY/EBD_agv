@@ -50,3 +50,20 @@
         padding-left: 2rem;
     }
 }
+
+/* 節點狀態動畫 */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.tag.is-loading {
+    animation: pulse 1.5s infinite;
+}

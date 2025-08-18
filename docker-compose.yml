@@ -5,6 +5,7 @@ services:
   rosagv:
     image: yazelin/agv:latest
     container_name: rosagv
+    init: true  # 使用 Docker 的 init 進程，自動回收殭屍進程
     privileged: true # 給予容器完整的裝置存取權限
     devices:
       - "/dev/input:/dev/input" # 掛載 /dev/input 讓容器內可以讀取

@@ -165,8 +165,42 @@ class OpUiServer:
 
 
 def main():
+    import signal
+    import sys
+    import logging
+    
+    # 設定 logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    logger = logging.getLogger(__name__)
+    
     server = OpUiServer()
-    server.run()
+    
+    def signal_handler(sig, frame):
+        """處理 Ctrl+C 信號，優雅地關閉伺服器"""
+        logger.info("\n📛 收到中斷信號 (Ctrl+C)，正在優雅地關閉伺服器...")
+        try:
+            # 如果有需要清理的資源，可以在這裡處理
+            logger.info("✅ OPUI 伺服器已安全關閉")
+        except Exception as e:
+            logger.error(f"❌ 關閉時發生錯誤: {e}")
+        finally:
+            sys.exit(0)
+    
+    # 註冊信號處理器
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    try:
+        logger.info(f"🚀 啟動 OPUI 伺服器在 {server.host}:{server.port}")
+        server.run()
+    except KeyboardInterrupt:
+        logger.info("\n⚠️ 接收到鍵盤中斷，正在關閉...")
+    except Exception as e:
+        logger.error(f"❌ 伺服器錯誤: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

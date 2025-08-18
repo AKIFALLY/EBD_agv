@@ -26,7 +26,7 @@ def initialize_carriers(session):
         {"room_id": 2, "rack_id": 123, "rack_index": 29, "port_id": 2067, "status_id": 4},
         {"room_id": 2, "rack_id": 123, "rack_index": 32, "port_id": 2068, "status_id": 4},
         
-        # Simple WCS 測試用 carriers
+        # Flow WCS 測試用 carriers
         # SWC001 (rack_id: 101) - 滿載 rack 用於 full_rack_to_manual_area flow
         # A面 (rack_index 1-16) 全部完成，B面 (rack_index 17-32) 全部完成 = 滿載狀態
         {"room_id": 2, "rack_id": 101, "rack_index": 1, "port_id": 2021, "status_id": 5},   # A面完成

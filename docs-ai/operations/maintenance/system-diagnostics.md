@@ -118,6 +118,8 @@ r quick-diag && r log-errors && r zenoh-check
 r containers-status
 
 # 詳細容器資訊
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
 docker compose -f docker-compose.agvc.yml ps
 docker compose -f docker-compose.yml ps
 
@@ -125,11 +127,16 @@ docker compose -f docker-compose.yml ps
 docker stats
 
 # 容器健康檢查
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "check_system_status"
 ```
 
 ### 容器日誌檢查
 ```bash
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
+
 # 查看容器日誌
 docker compose -f docker-compose.agvc.yml logs -f agvc_server
 docker compose -f docker-compose.agvc.yml logs -f postgres
@@ -146,6 +153,8 @@ docker network ls
 docker network inspect rosagv_agvc_network
 
 # 容器間連接測試
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
 docker compose -f docker-compose.agvc.yml exec agvc_server ping postgres
 docker compose -f docker-compose.agvc.yml exec agvc_server ping nginx
 ```

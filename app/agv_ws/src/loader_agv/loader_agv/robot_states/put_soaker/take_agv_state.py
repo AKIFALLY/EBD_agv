@@ -6,6 +6,7 @@ from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 
 from loader_agv.robot_states.base_robot_state import BaseRobotState
 
+
 class TakeAgvState(BaseRobotState):
 
     def __init__(self, node: Node):
@@ -23,6 +24,7 @@ class TakeAgvState(BaseRobotState):
     def leave(self):
         self.node.get_logger().info("Loader Robot Put Soaker 離開 TakeAgv 狀態")
         self.sent = False
+
     def handle(self, context: RobotContext):
         self.node.get_logger().info("Loader Robot Put Soaker TakeAgv 狀態")
 
@@ -32,7 +34,8 @@ class TakeAgvState(BaseRobotState):
         # 並行執行：其他操作（不需等待 Hokuyo 完成）
         # 修正 PGNO 常數定義，適用於 loader_agv
         TAKE_LOADER_AGV_PGNO = context.robot.ACTION_FROM + \
-            context.robot.AGV_POSITION_SIDE + context.robot.NONE_POSITION
+            context.robot.AGV_POSITION + context.robot.NONE_POSITION
+        read_pgno = context.robot.read_pgno_response
         context.robot.read_robot_status()
 
         # 更新 Hokuyo Input - 使用統一方法

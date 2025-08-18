@@ -216,7 +216,7 @@ const report = await testSuite.runAllTests();
 ```json
 {
   "suite": "Flow Designer Phase 4.1 完整性測試",
-  "timestamp": "2024-01-15T10:30:00Z",
+  "timestamp": "2025-08-11T10:30:00Z",
   "duration": "3.45s",
   "summary": {
     "totalTests": 6,

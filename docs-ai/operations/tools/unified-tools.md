@@ -310,6 +310,58 @@ done
 - **便捷函數組合**: 載入工具集後使用便捷函數提高效率
 - **場景化選擇**: 根據具體問題類型選擇最適合的工具
 
+## 🚀 Flow Functions 開發工具集
+
+### Flow Functions 自動化管理
+```bash
+# Flow Functions 開發輔助
+scripts/flow-tools/dev-flow-functions.sh [action]
+```
+**主要功能**：
+- `edit` - 編輯 flow_executor.py
+- `validate` - 驗證 Python 語法
+- `test` - 測試函數載入
+- `sync` - 自動同步所有檔案
+- `preview` - 預覽函數變更
+- `workflow` - 完整工作流程（驗證→測試→同步）
+
+### Flow Functions 同步工具
+```bash
+# 超簡單快速更新（推薦！檔案在同目錄）
+scripts/flow-tools/quick-update-functions.sh
+
+# 自動同步所有 Flow Functions 相關檔案
+scripts/flow-tools/auto-sync-functions.sh
+
+# Flow Functions 綜合管理
+scripts/flow-tools/flow-functions-manager.sh [action]
+```
+**管理功能**：
+- `status` - 顯示系統狀態和函數統計
+- `refresh` - 從 API 重新生成快取
+- `update` - 更新手動維護的 flow_functions.yaml
+- `compare` - 比較檔案差異
+- `full` - 執行完整更新流程
+
+### Flow Functions Git 整合
+```bash
+# 安裝 Git Hook 自動同步
+scripts/flow-tools/install-git-hook.sh
+
+# 測試自動化工具
+scripts/flow-tools/test-automation.sh
+```
+
+**使用範例**：
+```bash
+# 典型開發流程
+scripts/flow-tools/dev-flow-functions.sh edit      # 編輯函數
+scripts/flow-tools/dev-flow-functions.sh workflow  # 更新同步
+
+# 查看狀態
+scripts/flow-tools/flow-functions-manager.sh status
+```
+
 ## 🛠️ 維護和驗證工具
 
 ### 文檔引用檢查
@@ -343,6 +395,7 @@ scripts/docker-tools/quick-exec.sh [command]       # 快速容器指令執行
 - `health` - 健康檢查
 
 ## 🔗 交叉引用
+- **Flow Functions 自動化**: @docs-ai/operations/development/flow-functions-automation.md - 完整的自動化開發指南
 - **維護工具指南**: @docs-ai/operations/maintenance/unified-tools.md - 日常運維和故障排除的實用指南
 - 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
 - 容器管理: @docs-ai/operations/deployment/container-management.md

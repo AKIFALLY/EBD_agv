@@ -6,6 +6,7 @@ from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 
 from loader_agv.robot_states.base_robot_state import BaseRobotState
 
+
 class TakeAgvState(BaseRobotState):
 
     def __init__(self, node: Node):
@@ -23,6 +24,7 @@ class TakeAgvState(BaseRobotState):
     def leave(self):
         self.node.get_logger().info("Loader Robot Put PreDryer 離開 TakeAgv 狀態")
         self.sent = False
+
     def handle(self, context: RobotContext):
         self.node.get_logger().info("Loader Robot Put PreDryer TakeAgv 狀態")
 

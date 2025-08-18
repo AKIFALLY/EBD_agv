@@ -192,6 +192,7 @@ cat docker-compose.agvc.yml | grep -A 5 "ports:"
 - **避免虛構範例**: 所有程式碼範例、配置範例都必須來自實際檔案
 - **實時更新**: 當實際程式碼變更時，文檔必須同步更新
 - **疑慮時檢查**: 如有任何疑慮，必須重新檢查確認後再寫入
+- **真實時間記錄**: 所有時間戳記必須使用真實系統時間，禁止編造
 
 #### 文檔寫作工作流程
 ```bash
@@ -200,12 +201,17 @@ ls -la /path/to/file              # 確認檔案存在
 rg "class_name|function_name"     # 確認程式碼存在
 cat /path/to/config               # 確認配置存在
 
-# 2. 寫入真實內容
-# 只寫入經過驗證的內容
+# 2. 取得真實時間 (台灣時區)
+TZ='Asia/Taipei' date '+%Y-%m-%d %H:%M:%S'  # 取得當前時間
 
-# 3. 定期重新驗證
+# 3. 寫入真實內容
+# 只寫入經過驗證的內容和真實時間
+
+# 4. 定期重新驗證
 # 定期重新檢查文檔中引用的內容是否仍然存在
 ```
+
+**📝 完整文檔撰寫標準**: 請參考 @docs-ai/operations/development/documentation-standards.md
 
 ## 🔧 Bash Tool 使用技巧
 

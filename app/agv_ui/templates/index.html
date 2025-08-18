@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargo AGV 即時監控系統</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- 自定義樣式 -->
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-light text-dark">
+    <!-- 導航欄 -->
+    <nav class="navbar navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-robot me-2"></i>
+                Cargo AGV 即時監控系統
+            </span>
+            <div class="d-flex align-items-center">
+                <!-- 連接狀態指示器 -->
+                <span id="connectionStatus" class="badge bg-warning me-3">
+                    <i class="fas fa-circle-notch fa-spin me-1"></i>
+                    連接中...
+                </span>
+                <!-- 最後更新時間 -->
+                <small id="lastUpdate" class="text-light opacity-75">
+                    等待資料...
+                </small>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- 系統概覽卡片 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-white border">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            系統概覽
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <div class="display-6 text-info">
+                                        <i class="fas fa-truck"></i>
+                                    </div>
+                                    <h6>AGV ID</h6>
+                                    <span id="agvId" class="badge bg-primary">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <div class="display-6 text-success">
+                                        <i class="fas fa-battery-three-quarters"></i>
+                                    </div>
+                                    <h6>電池電量</h6>
+                                    <span id="powerVoltage" class="text-success fw-bold">-%</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <div class="display-6" id="autoModeIcon">
+                                        <i class="fas fa-cog"></i>
+                                    </div>
+                                    <h6>運行模式</h6>
+                                    <span id="autoMode" class="badge">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <div class="display-6" id="movingIcon">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <h6>移動狀態</h6>
+                                    <span id="movingStatus" class="badge">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <div class="display-6" id="alarmIcon">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <h6>警報狀態</h6>
+                                    <span id="alarmStatus" class="badge">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <div class="display-6 text-info">
+                                        <i class="fas fa-history"></i>
+                                    </div>
+                                    <h6>歷史記錄</h6>
+                                    <span id="historyCount" class="text-info fw-bold">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 狀態機監控 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card bg-secondary h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-sitemap me-2"></i>
+                            狀態機監控
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Base Context -->
+                        <div class="state-machine-item mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <strong><i class="fas fa-layer-group me-2"></i>Base Context</strong>
+                                <span id="baseState" class="badge bg-primary">-</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Cargo Context -->
+                        <div class="state-machine-item mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <strong><i class="fas fa-boxes me-2"></i>Cargo Context</strong>
+                                <span id="cargoState" class="badge bg-success">-</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Robot Context -->
+                        <div class="state-machine-item mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <strong><i class="fas fa-robot me-2"></i>Robot Context</strong>
+                                <span id="robotState" class="badge bg-warning text-dark">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 設備狀態 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card bg-secondary h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-microchip me-2"></i>
+                            設備狀態
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="devicesList">
+                            <!-- 動態載入設備狀態 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PLC 狀態詳情 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-white border">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>
+                            PLC 狀態詳情
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="plcStatusGrid">
+                            <!-- 動態載入 PLC 狀態 - 8x8 Grid 佈局 (64個變數) -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AGV 狀態變數顯示 (agv_status.py) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-white border">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-microchip me-2"></i>
+                            AGV 狀態變數 (agv_status.py) - 53個變數
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="agvStatusVariables" class="row">
+                            <!-- AGV 狀態變數將動態載入 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AGV 基礎節點變數顯示 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-white border">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>
+                            AGV 基礎節點變數 (agv_node_base.py)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="agvBaseVariables" class="row">
+                            <!-- AGV 基礎節點變數將動態載入 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AGV Core Node 和 Base Node 變數顯示 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card bg-secondary h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-microchip me-2"></i>
+                            AGV Core Node 變數
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="agvCoreNodeVariables">
+                            <!-- AGV Core Node 變數將動態載入 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-secondary h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-layer-group me-2"></i>
+                            AGV Base Node 變數
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="agvBaseNodeVariables">
+                            <!-- AGV Base Node 變數將動態載入 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Context 詳細資訊顯示 -->
+        <div class="row mb-4">
+            <div class="col-lg-4">
+                <div class="card bg-secondary h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-layer-group me-2"></i>
+                            Base Context
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="baseContextDetails">
+                            <!-- Base Context 詳細資訊 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card bg-secondary h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-boxes me-2"></i>
+                            Cargo Context
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="cargoContextDetails">
+                            <!-- Cargo Context 詳細資訊 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card bg-secondary h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-robot me-2"></i>
+                            Robot Context
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="robotContextDetails">
+                            <!-- Robot Context 詳細資訊 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 離線提示 Modal -->
+    <div class="modal fade" id="offlineModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="fas fa-wifi text-danger me-2"></i>
+                        連接中斷
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">重新連接中...</span>
+                        </div>
+                        <p>與 AGV 監控系統的連接已中斷</p>
+                        <p>正在嘗試重新連接...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 自定義 JavaScript -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

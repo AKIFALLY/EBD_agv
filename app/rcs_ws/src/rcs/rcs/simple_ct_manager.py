@@ -134,6 +134,13 @@ class CtManager:
         except Exception as e:
             self.logger.error(f"載入 CT AGV 時發生錯誤: {e}")
 
+    def shutdown(self):
+        """關閉 CT 管理器，清理資源"""
+        self.logger.info("正在關閉 CT Manager...")
+        # CT Manager 沒有定時器，但有訂閱者
+        # 訂閱者會在節點銷毀時自動清理，這裡只記錄日誌
+        self.logger.info("CT Manager 已關閉")
+    
     def dispatch(self):
         """CT AGV 簡單任務派發邏輯"""
         self.logger.debug("執行 CT AGV 任務派發")

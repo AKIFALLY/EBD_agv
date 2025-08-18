@@ -1,0 +1,221 @@
+# RosAGV 統一節點管理註冊表
+# 此檔案定義所有受管理的 ROS 2 節點和服務
+# 用於統一節點管理系統 (manage_all_nodes)
+# 注意: launch 類型的節點名稱必須與 setup.bash 中的 manage_* 函數名稱匹配
+
+nodes:
+  # ===== Web 服務群組 =====
+  web_api_launch:
+    type: launch
+    description: "Web API 服務群組 (3個節點)"
+    package: web_api_launch
+    launch_file: launch.py
+    nodes:
+      - agvc_ui_server    # Port 8001 - AGVCUI
+      - op_ui_server      # Port 8002 - OPUI
+      - web_api_server    # Port 8000 - API Gateway
+    port_check: [8000, 8001, 8002]
+    log_file: /tmp/web_api_launch.log
+    status_check: "ros2 node list | grep -E '(agvc_ui_server|op_ui_server|web_api_server)'"
+    
+  # ===== Flow WCS 系統 =====
+  flow_wcs:
+    type: launch
+    description: "Flow WCS 倉儲控制系統"
+    package: flow_wcs
+    launch_file: flow_wcs_launch.py
+    log_file: /tmp/flow_wcs.log
+    status_check: "ros2 node list | grep flow_wcs_node"
+    
+  # ===== ECS 設備控制系統 =====
+  # 注意: 在 setup.bash 中對應的函數是 manage_ecs_core
+  ecs_core:
+    type: launch
+    description: "ECS 設備控制核心"
+    package: ecs
+    executable: ecs_core
+    params:
+      db_url_agvc: "postgresql+psycopg2://agvc:password@postgres/agvc"
+    log_file: /tmp/ecs.log
+    status_check: "ros2 node list | grep ecs_core"
+    
+  # ===== RCS 機器人控制系統 =====
+  rcs_core:
+    type: launch
+    description: "RCS 機器人控制系統"
+    package: rcs
+    launch_file: rcs_launch.py
+    log_file: /tmp/rcs_launch.log
+    status_check: "ros2 node list | grep rcs_core"
+    
+  # ===== 資料庫代理服務 =====
+  db_proxy:
+    type: launch
+    description: "資料庫代理服務"
+    package: db_proxy
+    executable: agvc_database_node
+    log_file: /tmp/db_proxy.log
+    status_check: "ros2 node list | grep agvc_database_node"
+    
+  # ===== KUKA Fleet 整合 =====
+  kuka_fleet:
+    type: launch
+    description: "KUKA Fleet 整合服務"
+    package: kuka_fleet_adapter
+    executable: kuka_fleet_adapter
+    log_file: /tmp/kuka_fleet.log
+    status_check: "ros2 node list | grep kuka_fleet_adapter"
+    
+  # ===== PLC 代理服務 (AGVC) =====
+  # 注意: 此節點沒有對應的 manage_* 函數，設為 node 類型
+  plc_service_agvc:
+    type: node
+    description: "PLC 服務 (AGVC)"
+    package: plc_proxy
+    executable: plc_service
+    namespace: agvc
+    log_file: /tmp/plc_service_agvc.log
+    status_check: "ros2 node list | grep /agvc/plc_service"
+    
+  # ===== AGV UI 服務 =====
+  # 注意: 在 setup.bash 中對應的函數是 manage_agvui
+  agvui:
+    type: launch
+    description: "AGV UI 服務"
+    port_check: 8003
+    log_file: /tmp/agvui.log
+    status_check: "ros2 node list | grep agv_ui_server"
+    
+  # ===== SSH 服務 =====
+  # 注意: 在 setup.bash 中對應的函數是 manage_ssh  
+  ssh:
+    type: launch
+    description: "SSH 服務"
+    port_check: 2200
+    log_file: /tmp/ssh.log
+    status_check: "pgrep -f '/usr/sbin/sshd -D -p 2200'"
+    
+  # ===== Zenoh Router =====
+  # 注意: 在 setup.bash 中對應的函數是 manage_zenoh
+  zenoh:
+    type: launch
+    description: "Zenoh Router"
+    port_check: 7447
+    log_file: /tmp/zenoh_router.log
+    status_check: "pgrep -f 'rmw_zenohd'"
+
+# ===== AGV 車載節點群組 =====
+# 這些在 AGV 容器中運行，透過 SSH 管理
+agv_nodes:
+  cargo_agv:
+    type: launch
+    description: "Cargo Mover AGV 節點群組"
+    package: cargo_mover_agv
+    launch_file: launch.py
+    nodes:
+      - plc_service
+      - joy_linux_node
+      - agv_core_node
+    namespace: "{agv_id}"  # 動態替換
+    log_file: /tmp/agv_{agv_id}.log
+    
+  loader_agv:
+    type: launch
+    description: "Loader AGV 節點群組"
+    package: loader_agv
+    launch_file: launch.py
+    nodes:
+      - plc_service
+      - joy_linux_node
+      - agv_core_node
+    namespace: "{agv_id}"  # 動態替換
+    log_file: /tmp/agv_{agv_id}.log
+    
+  unloader_agv:
+    type: launch
+    description: "Unloader AGV 節點群組"
+    package: unloader_agv
+    launch_file: launch.py
+    nodes:
+      - plc_service
+      - joy_linux_node
+      - agv_core_node
+    namespace: "{agv_id}"  # 動態替換
+    log_file: /tmp/agv_{agv_id}.log
+
+# ===== 系統基礎服務 =====
+system_services:
+  zenoh_router:
+    type: system
+    description: "Zenoh RMW Router"
+    command: "ros2 run rmw_zenoh_cpp rmw_zenohd"
+    log_file: /tmp/zenoh_router.log
+    pid_file: /tmp/zenoh_router.pid
+    port_check: 7447
+    
+  ssh_service:
+    type: system
+    description: "SSH 服務"
+    command: "/usr/sbin/sshd -D -p 2200"
+    pid_file: /tmp/ssh.pid
+    port_check: 2200
+
+# ===== 節點群組定義 =====
+node_groups:
+  all:
+    description: "所有節點"
+    nodes:
+      - zenoh
+      - ssh
+      - db_proxy
+      - web_api_launch
+      - flow_wcs
+      - ecs_core
+      - rcs_core
+      - kuka_fleet
+      # - plc_service_agvc  # 此函數在 setup.bash 中不存在
+      - agvui
+      
+  web_services:
+    description: "Web 服務群組"
+    nodes:
+      - web_api_launch
+      - agvui
+      
+  core_services:
+    description: "核心服務"
+    nodes:
+      - zenoh
+      - db_proxy
+      - flow_wcs
+      - ecs_core
+      - rcs_core
+      
+  integration:
+    description: "外部整合服務"
+    nodes:
+      - kuka_fleet
+      # - plc_service_agvc  # 此函數在 setup.bash 中不存在
+
+# ===== 遠端 AGV 配置 =====
+remote_agvs:
+  cargo02:
+    ip: "192.168.10.11"
+    port: 2222
+    user: "ct"
+    password: "36274806"
+    type: "cargo_agv"
+    
+  loader02:
+    ip: "192.168.10.12"
+    port: 2222
+    user: "ct"
+    password: "36274806"
+    type: "loader_agv"
+    
+  unloader02:
+    ip: "192.168.10.13"
+    port: 2222
+    user: "ct"
+    password: "36274806"
+    type: "unloader_agv"

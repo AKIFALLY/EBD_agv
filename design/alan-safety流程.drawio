@@ -1,6 +1,6 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.0.6 Chrome/138.0.7204.100 Electron/37.2.3 Safari/537.36" version="28.0.6">
   <diagram name="第1頁" id="8jyaK1RGOkiST5RaNBRb">
-    <mxGraphModel dx="1722" dy="5679" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1828" dy="5794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -2829,213 +2829,213 @@
         <mxCell id="cTDMDp1TktCxlQ5Nw0RW-18" value="" style="rounded=0;whiteSpace=wrap;html=1;fontSize=10;fillColor=#97D077;strokeColor=none;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
           <mxGeometry x="6298" y="-350" width="40" height="10" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-1" target="jYqIwrvFrOcLTldjgNFB-2">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-1" target="jYqIwrvFrOcLTldjgNFB-2" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-1" value="opui 產生任務請求" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-1" value="opui 產生任務請求" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;" parent="1" vertex="1">
           <mxGeometry x="40" y="-946" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-2" target="jYqIwrvFrOcLTldjgNFB-3">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-2" target="jYqIwrvFrOcLTldjgNFB-3" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-2" value="wcs 處理任務&lt;div&gt;(選Rack)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-2" value="wcs 處理任務&lt;div&gt;(選Rack)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" parent="1" vertex="1">
           <mxGeometry x="220" y="-866" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-3" target="jYqIwrvFrOcLTldjgNFB-4">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-3" target="jYqIwrvFrOcLTldjgNFB-4" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-3" value="rcs 處理任務&lt;div&gt;(選車)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-3" value="rcs 處理任務&lt;div&gt;(選車)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" parent="1" vertex="1">
           <mxGeometry x="420" y="-786" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-4" target="jYqIwrvFrOcLTldjgNFB-20">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-4" target="jYqIwrvFrOcLTldjgNFB-20" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-4" value="agv 執行任務&lt;div&gt;(搬運)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-4" value="agv 執行任務&lt;div&gt;(搬運)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;container=0;" parent="1" vertex="1">
           <mxGeometry x="740" y="-723.5" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-5" target="jYqIwrvFrOcLTldjgNFB-6">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-5" target="jYqIwrvFrOcLTldjgNFB-6" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-73" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-5" target="jYqIwrvFrOcLTldjgNFB-16">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-73" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-5" target="jYqIwrvFrOcLTldjgNFB-16" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-76" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-5" target="jYqIwrvFrOcLTldjgNFB-75">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-76" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-5" target="jYqIwrvFrOcLTldjgNFB-75" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-5" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;rcs 更新任務狀態&lt;/span&gt;&lt;/div&gt;&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-5" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;rcs 更新任務狀態&lt;/span&gt;&lt;/div&gt;&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" parent="1" vertex="1">
           <mxGeometry x="420" y="-667.5" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-6" value="wcs 刪除任務&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-6" value="wcs 刪除任務&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" parent="1" vertex="1">
           <mxGeometry x="220" y="-550" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-7" value="opui" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-7" value="opui" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="70" y="-1040" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-8" value="wcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-8" value="wcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="250" y="-1040" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-9" value="rcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-9" value="rcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="450" y="-1040" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-10" value="webapi" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-10" value="webapi" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="570" y="-1040" width="140" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-16" value="opui 畫面更新&lt;div&gt;叫車按鈕解鎖&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;dashed=1;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-16" value="opui 畫面更新&lt;div&gt;叫車按鈕解鎖&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;dashed=1;" parent="1" vertex="1">
           <mxGeometry x="40" y="-594.5" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-17" value="opui ui按鈕鎖定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;dashed=1;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-17" value="opui ui按鈕鎖定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;dashed=1;" parent="1" vertex="1">
           <mxGeometry x="40" y="-880" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-18" value="mission callback api" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-18" value="mission callback api" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="720" y="-637.5" width="130" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-19" value="agv" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-19" value="agv" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="770" y="-1040" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-20" target="jYqIwrvFrOcLTldjgNFB-5">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-20" target="jYqIwrvFrOcLTldjgNFB-5" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-20" value="&lt;div&gt;webapi 更新任務 parameters&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-20" value="&lt;div&gt;webapi 更新任務 parameters&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;container=0;" parent="1" vertex="1">
           <mxGeometry x="580" y="-667.5" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-25" value="請求任務&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;0&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-25" value="請求任務&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;0&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="160" y="-960" width="60" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-33" value="已接受&lt;div&gt;待處理&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;1&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-33" value="已接受&lt;div&gt;待處理&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;1&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="340" y="-900" width="60" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-34" value="已處理&lt;div&gt;待執行&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;2&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-34" value="已處理&lt;div&gt;待執行&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;2&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="540" y="-820" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-38" value="執行中&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;3&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-38" value="執行中&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;3&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="360" y="-710" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-39" value="已完成&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;4&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-39" value="已完成&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;4&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="320" y="-621.5" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-74" value="Rack&lt;div&gt;已搬離&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-74" value="Rack&lt;div&gt;已搬離&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="170" y="-710" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-75" value="opui 畫面更新&lt;div&gt;派車按鈕解鎖&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;dashed=1;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-75" value="opui 畫面更新&lt;div&gt;派車按鈕解鎖&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;dashed=1;" parent="1" vertex="1">
           <mxGeometry x="40" y="-681.5" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-77" value="Rack&lt;div&gt;已抵達&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-77" value="Rack&lt;div&gt;已抵達&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="170" y="-621.5" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-115" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-116" target="jYqIwrvFrOcLTldjgNFB-118">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-115" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-116" target="jYqIwrvFrOcLTldjgNFB-118" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-116" value="wcs 處理任務&lt;div&gt;(選Rack)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-116" value="wcs 處理任務&lt;div&gt;(選Rack)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" parent="1" vertex="1">
           <mxGeometry x="1080" y="-866" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-117" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-118" target="jYqIwrvFrOcLTldjgNFB-120">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-117" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-118" target="jYqIwrvFrOcLTldjgNFB-120" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-118" value="rcs 處理任務&lt;div&gt;(選車)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-118" value="rcs 處理任務&lt;div&gt;(選車)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" parent="1" vertex="1">
           <mxGeometry x="1280" y="-786" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-119" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-120" target="jYqIwrvFrOcLTldjgNFB-124">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-119" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-120" target="jYqIwrvFrOcLTldjgNFB-124" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="1550" y="-586" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-120" value="agv 執行任務&lt;div&gt;(搬運)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-120" value="agv 執行任務&lt;div&gt;(搬運)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;container=0;" parent="1" vertex="1">
           <mxGeometry x="1520" y="-721.5" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-121" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-124" target="jYqIwrvFrOcLTldjgNFB-125">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-121" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-124" target="jYqIwrvFrOcLTldjgNFB-125" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-124" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;rcs 更新任務狀態&lt;/span&gt;&lt;/div&gt;&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-124" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;rcs 更新任務狀態&lt;/span&gt;&lt;/div&gt;&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" parent="1" vertex="1">
           <mxGeometry x="1280" y="-616" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-125" value="wcs 刪除任務&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-125" value="wcs 刪除任務&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" parent="1" vertex="1">
           <mxGeometry x="1080" y="-520" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-127" value="wcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-127" value="wcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="1110" y="-1040" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-128" value="rcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-128" value="rcs" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="1300" y="-1034" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-133" value="agv" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-133" value="agv" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;" parent="1" vertex="1">
           <mxGeometry x="1550" y="-1034" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-137" value="已接受&lt;div&gt;待處理&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;1&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-137" value="已接受&lt;div&gt;待處理&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;1&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="1190" y="-900" width="60" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-138" value="已處理&lt;div&gt;待執行&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;2&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-138" value="已處理&lt;div&gt;待執行&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;2&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="1390" y="-820" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-139" value="執行中&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;3&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-139" value="執行中&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;3&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="1520" y="-661.5" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-140" value="已完成&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;4&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-140" value="已完成&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;4&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="1580" y="-661.5" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-148" value="/agv/state_change" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-148" value="/agv/state_change" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="1430" y="-615" width="120" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-155" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-150" target="jYqIwrvFrOcLTldjgNFB-151">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-155" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-150" target="jYqIwrvFrOcLTldjgNFB-151" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-150" value="wcs 處理任務&lt;div&gt;(選Rack)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-150" value="wcs 處理任務&lt;div&gt;(選Rack)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" parent="1" vertex="1">
           <mxGeometry x="220" y="-360" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-159" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-151" target="jYqIwrvFrOcLTldjgNFB-158">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-159" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-151" target="jYqIwrvFrOcLTldjgNFB-158" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-151" value="rcs 處理任務&lt;div&gt;(選車)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-151" value="rcs 處理任務&lt;div&gt;(選車)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" parent="1" vertex="1">
           <mxGeometry x="420" y="-320" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-152" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-153" target="jYqIwrvFrOcLTldjgNFB-150">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-152" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-153" target="jYqIwrvFrOcLTldjgNFB-150" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-153" value="opui 任務取消" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-153" value="opui 任務取消" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;container=0;" parent="1" vertex="1">
           <mxGeometry x="40" y="-400" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-154" value="取消任務&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;5&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-154" value="取消任務&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;5&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="160" y="-410" width="60" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-156" value="已接受&lt;div&gt;待處理&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;51&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-156" value="已接受&lt;div&gt;待處理&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;51&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="340" y="-390" width="60" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-157" value="取消中&lt;div&gt;stauts_id&lt;/div&gt;&lt;div&gt;52&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-157" value="取消中&lt;div&gt;stauts_id&lt;/div&gt;&lt;div&gt;52&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="540" y="-349.25" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-162" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-158" target="jYqIwrvFrOcLTldjgNFB-161">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-162" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-158" target="jYqIwrvFrOcLTldjgNFB-161" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-158" value="agv 執行任務中" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-158" value="agv 執行任務中" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;container=0;" parent="1" vertex="1">
           <mxGeometry x="740" y="-280" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-164" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-160" target="jYqIwrvFrOcLTldjgNFB-163">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-164" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-160" target="jYqIwrvFrOcLTldjgNFB-163" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-160" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;rcs 更新任務狀態&lt;/span&gt;&lt;/div&gt;&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-160" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;rcs 更新任務狀態&lt;/span&gt;&lt;/div&gt;&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;container=0;" parent="1" vertex="1">
           <mxGeometry x="420" y="-210" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-166" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="jYqIwrvFrOcLTldjgNFB-161" target="jYqIwrvFrOcLTldjgNFB-160">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-166" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="jYqIwrvFrOcLTldjgNFB-161" target="jYqIwrvFrOcLTldjgNFB-160" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-161" value="&lt;div&gt;webapi 更新任務 parameters&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-161" value="&lt;div&gt;webapi 更新任務 parameters&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;container=0;" parent="1" vertex="1">
           <mxGeometry x="580" y="-210" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-163" value="wcs 刪除任務&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-163" value="wcs 刪除任務&lt;div&gt;並Log&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;container=0;" parent="1" vertex="1">
           <mxGeometry x="220" y="-130" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-165" value="&lt;div&gt;已取消&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;54&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-165" value="&lt;div&gt;已取消&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;54&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="320" y="-180" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-167" value="取消完成&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;53&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-167" value="取消完成&lt;br&gt;&lt;div&gt;status_id&amp;nbsp;&lt;/div&gt;&lt;div&gt;53&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="540" y="-250" width="60" height="58.5" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-171" value="&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; 將 Kuka 系統回報的狀態資訊存入 Task 的 parameters 欄位：&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - MOVE_BEGIN: 開始移動&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - ARRIVED: 到達任務節點&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - UP_CONTAINER: 升箱完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - DOWN_CONTAINER: 放下完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - ROLLER_RECEIVE: 滾筒上料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - ROLLER_SEND: 滾筒下料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - PICKER_RECEIVE: 料箱取料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - PICKER_SEND: 料箱下料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - FORK_UP: 叉車叉取完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - FORK_DOWN: 叉車放下完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - COMPLETED: 任務完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - CANCELED: 任務取消完成&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-171" value="&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; 將 Kuka 系統回報的狀態資訊存入 Task 的 parameters 欄位：&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - MOVE_BEGIN: 開始移動&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - ARRIVED: 到達任務節點&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - UP_CONTAINER: 升箱完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - DOWN_CONTAINER: 放下完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - ROLLER_RECEIVE: 滾筒上料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - ROLLER_SEND: 滾筒下料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - PICKER_RECEIVE: 料箱取料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - PICKER_SEND: 料箱下料完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - FORK_UP: 叉車叉取完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - FORK_DOWN: 叉車放下完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - COMPLETED: 任務完成&lt;/div&gt;&lt;div style=&quot;text-align: left; text-wrap-mode: nowrap;&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - CANCELED: 任務取消完成&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
           <mxGeometry x="640" y="-560" width="360" height="220" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-172" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;執行中&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;status_id&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;MOVE_BEGIN : 31&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;ARRIVED : 32&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;UP_CONTAINER : 33&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;DOWN_CONTAINER : 34&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;COMPLETED : 4&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;CANCELED : 53&lt;/span&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-172" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;執行中&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;status_id&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;MOVE_BEGIN : 31&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;ARRIVED : 32&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;UP_CONTAINER : 33&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;DOWN_CONTAINER : 34&lt;/span&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;COMPLETED : 4&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;CANCELED : 53&lt;/span&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
           <mxGeometry x="400" y="-560" width="230" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="jYqIwrvFrOcLTldjgNFB-173" value="直接寫資料庫" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+        <mxCell id="jYqIwrvFrOcLTldjgNFB-173" value="直接寫資料庫" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="1530" y="-579.5" width="100" height="30" as="geometry" />
         </mxCell>
       </root>

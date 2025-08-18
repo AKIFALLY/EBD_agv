@@ -226,7 +226,7 @@ SELECT
     COUNT(*) as task_count,
     SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) / COUNT(*) as success_rate
 FROM task_history 
-WHERE date >= '2024-01-01'
+WHERE date >= '2025-01-01'
 GROUP BY room_id;
 ```
 

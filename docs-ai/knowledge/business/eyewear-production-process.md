@@ -348,11 +348,19 @@ For 每個 Carrier:
    ├── 8bit 通訊開啟傳送箱門
    ├── 將 Carrier 放入入口傳送箱
    └── 更新系統狀態
-   ❌ 製程不匹配：
+   ❌ OCR NG 或製程不匹配（待實作新流程）：
+   現行處理（將更改）：
    ├── 標記 Carrier 為 NG 狀態
    ├── 機械臂回到 Home 位置
    ├── 記錄異常日誌
    └── 繼續處理下一個 Carrier
+   
+   規劃新流程（尚未實作）：
+   ├── 🔴 暫停所有操作（不略過）
+   ├── 📢 發出警告通知
+   ├── 👷 等待人員現場處理
+   ├── ✅ 人員確認處理完成
+   └── ➡️ Cargo AGV 繼續執行
 ```
 
 ##### 智能品質管制
@@ -1209,6 +1217,114 @@ Loader AGV 使用智能 work_id 路由系統，格式為：`room_id + equipment_
 - 物理配置: 8格 (上排4格 + 下排4格)
 - Loader作業: 僅負責 PUT_PRE_DRYER (放入)
 - 分工設計: Unloader AGV 負責 TAKE_PRE_DRYER (取出)
+
+## 🔄 規劃中的流程更新（尚未實作）
+
+### 1. OCR NG 暫停機制
+**背景**：目前 Cargo AGV 在房間入口檢測到 OCR NG 時會略過該 carrier 繼續處理下一個，但這可能導致問題被忽略。
+
+**規劃新流程**：
+```
+OCR NG 檢測流程（待實作）
+1. Cargo AGV OCR 檢測到 NG
+2. 🔴 暫停所有操作（不略過該 carrier）
+3. 📢 發出警告通知（警報/訊息/燈號）
+4. 👷 等待人員現場處理
+   ├── 人員檢查 NG 原因
+   ├── 決定處理方式（修正產品標籤/移除 carrier/其他）
+   └── 在系統中確認處理完成
+5. ✅ 人員按下確認按鈕
+6. ➡️ Cargo AGV 恢復操作，繼續執行
+```
+
+**實作需求**：
+- Cargo AGV 需增加暫停/恢復狀態
+- 需要警告通知系統（聲光警報或訊息推送）
+- 需要人員確認介面（實體按鈕或 UI 確認）
+- 需要記錄 NG 處理歷程
+
+### 2. 人工收料區完整回收流程
+**背景**：目前人工收料區（51-55）的 rack 回收流程不完整，rack 無法真正離開系統管理。
+
+**規劃新流程**：
+```
+完整的 Rack 回收與重新加入流程（待實作）
+
+階段 1：滿 rack 到人工收料區
+1. 製程完成的滿 rack
+2. KUKA AGV 搬運到人工收料區（Location ID: 51-55）
+
+階段 2：人工處理與系統移除（需新增 AGVCUI 功能）
+3. 👷 作業員手動取出所有 carrier（實體操作）
+4. 📱 作業員使用平板操作 AGVCUI：
+   ├── 選擇該 rack（根據位置或 ID）
+   ├── 執行「移除 rack 及 carrier」功能
+   ├── 系統自動：
+   │   ├── 刪除該 rack 上所有 carrier 記錄
+   │   └── 設置 rack.location_id = None（標記為系統外）
+   └── 確認移除成功
+5. 🏭 人員將空 rack 搬到系統外倉儲空間（非系統管理區域）
+
+階段 3：Rack 按需重新進入系統
+6. 射出機作業員需要空 rack
+7. 👷 人員從倉儲空間手動搬運 rack 到射出機旁
+8. 📱 使用 OPUI 輸入 rack 編號（如 "101"）
+9. 系統處理：
+   ├── 根據 rack 名稱查找系統中的 rack 記錄
+   ├── 更新 rack.location_id 到指定停車格
+   └── rack 重新成為系統管理的活躍 rack
+10. ✅ 空 rack 可供 KUKA AGV 調度使用
+```
+
+**需要開發的功能**：
+
+#### AGVCUI 新增功能
+```python
+# 偽代碼 - AGVCUI 需要新增的 rack 移除功能
+def remove_rack_from_system(rack_id: int):
+    """
+    將 rack 及其所有 carrier 從系統移除
+    用於人工收料區的 rack 回收流程
+    """
+    # 1. 查詢並移除所有 carrier
+    carriers = query_carriers_on_rack(rack_id)
+    for carrier in carriers:
+        delete_carrier(carrier.id)
+    
+    # 2. 更新 rack 狀態為系統外
+    rack = get_rack(rack_id)
+    rack.location_id = None  # 設為 None 表示系統外
+    rack.status_id = 1       # 狀態設為空閒
+    update_rack(rack)
+    
+    # 3. 記錄操作日誌
+    log_operation(f"Rack {rack_id} removed from system at manual collection area")
+    
+    return {"success": True, "message": f"Rack {rack_id} 已從系統移除"}
+```
+
+#### OPUI 現有功能確認
+- OPUI 已有手動加入 rack 功能（`rackPage.js` 的 `handleAddRack`）
+- 可以將 location_id = None 的 rack 重新分配到停車格
+- 使用 rack 名稱（如 "101"）而非 ID 來識別
+
+### 3. 系統狀態管理更新
+**Rack 的三種存在狀態**：
+1. **系統內活躍**：`location_id = 具體位置`（如停車格、人工收料區等）
+2. **系統內待命**：`location_id = 空料架區`（31-34）
+3. **系統外儲存**：`location_id = None`（實體存在於倉儲但系統不追蹤）
+
+**狀態轉換流程**：
+```
+系統內活躍 ←→ 系統內待命 ←→ 系統外儲存
+     ↑                          ↓
+     └──────── OPUI 加入 ←──────┘
+```
+
+### 實作優先級建議
+1. **高優先級**：OCR NG 暫停機制（確保品質管控）
+2. **中優先級**：AGVCUI rack 移除功能（完善回收流程）
+3. **低優先級**：其他輔助功能優化
 
 ## 🔗 交叉引用
 - RosAGV 系統概覽: @docs-ai/context/system/rosagv-overview.md

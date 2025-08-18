@@ -79,7 +79,7 @@ python3 -m agvui.agv_ui_server
 ```python
 # agv_ui_server.py 預設配置
 HOST = "0.0.0.0"
-PORT = 8001  # 注意：與agvcui相同端口，需避免衝突
+PORT = 8003  # 已修改為8003，避免與agvcui (8001) 衝突
 CORS_ORIGINS = "*"
 ```
 
@@ -115,9 +115,12 @@ CORS_ORIGINS = "*"
 
 ### 端口配置
 ```bash
-# agvui預設使用port 8001，需與agvcui協調
-# 建議修改為不同端口避免衝突
-# 例如：agvui使用8003，agvcui使用8001
+# agvui現在使用port 8003，避免與agvcui (port 8001) 衝突
+# 端口分配：
+# - 8000: Web API Gateway
+# - 8001: AGVCUI (車隊管理系統)
+# - 8002: OPUI (操作員界面)
+# - 8003: AGVUI (AGV車載監控)
 ```
 
 ### ROS 2整合
@@ -149,16 +152,16 @@ socket.on('task_update', (data) => {
 #### 端口衝突
 ```bash
 # 檢查端口佔用
-netstat -tulpn | grep :8001
+netstat -tulpn | grep :8003
 
-# 修改服務端口
-# 編輯agv_ui_server.py中的PORT設定
+# 如需修改服務端口
+# 編輯agv_ui_server.py中的PORT設定 (目前為8003)
 ```
 
 #### Socket.IO連接失敗
 ```bash
 # 檢查Socket.IO服務
-curl http://localhost:8001/socket.io/
+curl http://localhost:8003/socket.io/
 
 # 檢查CORS設定
 # 確認cors_allowed_origins="*"設定

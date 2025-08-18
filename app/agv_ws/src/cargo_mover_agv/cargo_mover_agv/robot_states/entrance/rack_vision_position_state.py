@@ -1,4 +1,4 @@
-from agv_base.states.state import State
+#from agv_base.states.state import State
 from rclpy.node import Node
 from cargo_mover_agv.robot_context import RobotContext  # 新增的匯入
 from agv_base.robot import Robot

@@ -72,7 +72,7 @@ const dslData = {
 # 流程名稱
 # 描述: 由 Flow Designer 生成的 YAML DSL 流程
 # 版本: 1.0
-# 創建時間: 2024-01-15T10:30:00.000Z
+# 創建時間: 2025-08-15T10:30:00.000Z
 # 生成工具: Flow Designer v3.2
 
 # 變數定義
@@ -251,6 +251,6 @@ extractVariables(nodes) {
 ### 支援檔案
 - `@docs-ai/operations/development/flow-designer-phase3-1-completion.md` - Phase 3.1 完成報告
 - `@docs-ai/operations/development/flow-designer-phase3-plan.md` - 整體計劃
-- `@docs-ai/knowledge/system/simple-wcs-system.md` - Simple WCS 系統
+- `@docs-ai/knowledge/system/flow-wcs-system.md` - Simple WCS 系統
 
 Phase 3.2 YAML DSL 代碼生成引擎開發已成功完成，為 Phase 3.3 雙向同步機制實作奠定了堅實的技術基礎。

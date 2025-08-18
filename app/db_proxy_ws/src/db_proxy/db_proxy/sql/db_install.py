@@ -1,6 +1,8 @@
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 # 只需匯入 SQLModel 與 model
 from db_proxy.models import ProcessSettings, Product, Work, Task, TaskStatus, AGV, AGVContext, TrafficZone, Node, NodeType, Room, Machine, RackStatus, Rack, LocationStatus, Location, Carrier, CarrierStatus, Eqp, EqpPort, EqpSignal, RosoutLog, RuntimeLog, AuditLog, KukaNode, KukaEdge, License
+# 匯入新增的 FlowLog 模型 (flow_wcs 整合)
+from db_proxy.models.agvc_task import FlowLog
 from sqlmodel import select
 from sqlalchemy import text
 # from db_proxy_interfaces.srv import AcquireTrafficArea, ReleaseTrafficArea, AddTrafficArea  # Define custom services
@@ -23,29 +25,41 @@ def initialize_default_data(pool_agvc):
 
 def insert_data_if_not_exists_name(session, datas, model):
     """檢查是否已存在預設資料，如果不存在則插入"""
-    for data in datas:
-        data_name = data.get("name")
-        exists = session.exec(select(model).where(
-            model.name == data_name)).first()
-        if not exists:
-            session.add(model(**data))
+    # Use no_autoflush to prevent foreign key constraint issues during initialization
+    with session.no_autoflush:
+        for data in datas:
+            data_name = data.get("name")
+            exists = session.exec(select(model).where(
+                model.name == data_name)).first()
+            if not exists:
+                session.add(model(**data))
 
     session.commit()
 
 
 def insert_data_if_not_exists_name_and_not_exists_id(session, datas, model):
     """檢查是否已存在預設資料，如果不存在則插入"""
-    for data in datas:
-        data_id = data.get("id")  # 安全地取得 id，如果不存在會是 None
-        data_name = data.get("name")
-        if not data_id:
-            exists = session.exec(select(model).where(
-                model.name == data_name)).first()
-        else:
-            exists = session.exec(select(model).where(
-                model.name == data_name or model.id == data_id)).first()
-        if not exists:
-            session.add(model(**data))
+    # Use no_autoflush to prevent foreign key constraint issues during initialization
+    with session.no_autoflush:
+        for data in datas:
+            data_id = data.get("id")  # 安全地取得 id，如果不存在會是 None
+            data_name = data.get("name")
+            
+            # 分別檢查 id 和 name 是否存在
+            exists_by_id = False
+            exists_by_name = False
+            
+            if data_id is not None:
+                exists_by_id = session.exec(select(model).where(
+                    model.id == data_id)).first() is not None
+            
+            if data_name is not None:
+                exists_by_name = session.exec(select(model).where(
+                    model.name == data_name)).first() is not None
+            
+            # 只有當 id 和 name 都不存在時才插入
+            if not exists_by_id and not exists_by_name:
+                session.add(model(**data))
 
     session.commit()
 
@@ -131,7 +145,8 @@ def reset_all_sequences(session):
         'agv_context',
         'audit_log',
         'kuka_node',
-        'kuka_edge'
+        'kuka_edge',
+        'flow_log'  # 新增的 flow_wcs 整合表
     ]
 
     for table_name in tables_with_id_sequences:

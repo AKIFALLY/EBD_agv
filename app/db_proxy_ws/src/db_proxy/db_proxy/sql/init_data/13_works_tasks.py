@@ -4,6 +4,7 @@
 """
 
 from db_proxy.models import Work, Task, TaskStatus
+from sqlmodel import select
 from ..db_install import insert_data_if_not_exists_name, insert_data_if_not_exists_name_and_not_exists_id
 
 
@@ -27,8 +28,18 @@ def initialize_task_status(session):
 
         {"id": 6, "name": "錯誤", "description": "錯誤"},
     ]
-    insert_data_if_not_exists_name_and_not_exists_id(
-        session, default_task_status, TaskStatus)
+    # 改進：逐個檢查並插入，避免批量插入失敗
+    for status_data in default_task_status:
+        # 檢查 id 是否存在
+        exists = session.exec(select(TaskStatus).where(
+            TaskStatus.id == status_data["id"])).first()
+        if not exists:
+            # 再檢查 name 是否存在
+            exists = session.exec(select(TaskStatus).where(
+                TaskStatus.name == status_data["name"])).first()
+            if not exists:
+                session.add(TaskStatus(**status_data))
+    session.commit()
     print("✅ 任務狀態資料初始化完成")
 
 
@@ -143,7 +154,18 @@ def initialize_works(session):
          "description": "從UnloaderAGV車上到出口傳送箱放", "parameters": {}},
     ]
 
-    insert_data_if_not_exists_name_and_not_exists_id(session, test_work, Work)
+    # 改進：逐個檢查並插入，避免批量插入失敗
+    for work_data in test_work:
+        # 檢查 id 是否存在
+        exists = session.exec(select(Work).where(
+            Work.id == work_data["id"])).first()
+        if not exists:
+            # 再檢查 name 是否存在
+            exists = session.exec(select(Work).where(
+                Work.name == work_data["name"])).first()
+            if not exists:
+                session.add(Work(**work_data))
+    session.commit()
     print("✅ 工作資料初始化完成")
 
 
@@ -197,7 +219,7 @@ def initialize_tasks(session):
              "nodes": [75, 74, 72, 75]
          }},
 
-
+        
         # 未指派mission_code及agv_id 時才可由rcs指定kuka agv來執行
         # KUKA AGV 旋轉貨架
         # {"work_id": 230101, "status_id": 1, "room_id": 2, "name": "kuka-房間1入口轉貨架", "description": "執行房間1入口轉貨架流程workflow",
@@ -210,5 +232,12 @@ def initialize_tasks(session):
             "agv_id": 123, "priority": 1, "parameters": {"model": "KUKA400i", "nodes": [75, 74, 72, 75]}},
     ]
 
-    insert_data_if_not_exists_name(session, default_tasks, Task)
+    # 改進：逐個檢查並插入，避免批量插入失敗
+    for task_data in default_tasks:
+        # Task 沒有固定的 id，用 name 檢查
+        exists = session.exec(select(Task).where(
+            Task.name == task_data["name"])).first()
+        if not exists:
+            session.add(Task(**task_data))
+    session.commit()
     print("✅ 任務資料初始化完成")

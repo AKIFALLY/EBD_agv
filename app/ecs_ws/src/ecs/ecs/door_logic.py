@@ -80,7 +80,21 @@ class DoorLogic:
                          "isOpen": False, "success": False})
                 return
 
-            bit = bool(response.values[0])
+            # Check if value exists
+            if response.value is None:
+                callback({"doorId": door_id, "state": "UNKNOWN",
+                         "isOpen": False, "success": False})
+                return
+            
+            # Convert the value to integer and check if it's non-zero
+            try:
+                value = int(response.value)
+                bit = bool(value)
+            except (ValueError, TypeError):
+                callback({"doorId": door_id, "state": "UNKNOWN",
+                         "isOpen": False, "success": False})
+                return
+            
             door_state = "OPEN" if bit else "CLOSE"
             result = {
                 "doorId": door_id,
@@ -90,8 +104,10 @@ class DoorLogic:
             }
             callback(result)
 
-        self.plc_client.async_read_continuous_byte(
-            cfg["dm_type"], cfg["dm_address"], 1, handle_response)
+        # Use async_read_data instead of async_read_continuous_byte to read directly from PLC
+        # This avoids the cached memory issue
+        self.plc_client.async_read_data(
+            cfg["dm_type"], cfg["dm_address"], handle_response)
 
     def state_door(self, door_id: int) -> Dict:
         """
@@ -103,19 +119,38 @@ class DoorLogic:
         if not cfg:
             raise ValueError(f"Unknown doorId: {door_id}")
 
-        response = self.plc_client.read_continuous_byte(
-            cfg["dm_type"], cfg["dm_address"], 1)
-        if response is None or not response.success:
-            return {"doorId": door_id, "state": "UNKNOWN", "isOpen": False, "success": False}
-
-        bit = bool(response.values[0])
-        door_state = "OPEN" if bit else "CLOSE"
-        return {
-            "doorId": door_id,
-            "state": door_state,
-            "isOpen": bit,
-            "success": response.success
-        }
+        try:
+            # Use read_data instead of read_continuous_byte to read directly from PLC
+            # This avoids the cached memory issue
+            response = self.plc_client.read_data(
+                cfg["dm_type"], cfg["dm_address"])
+            
+            if response is None or not response.success:
+                return {"doorId": door_id, "state": "UNKNOWN", "isOpen": False, "success": False}
+            
+            # Check if value exists
+            if response.value is None:
+                return {"doorId": door_id, "state": "UNKNOWN", "isOpen": False, "success": False}
+            
+            # Convert the value to integer and check if it's non-zero
+            try:
+                value = int(response.value)
+                bit = bool(value)
+            except (ValueError, TypeError):
+                return {"doorId": door_id, "state": "UNKNOWN", "isOpen": False, "success": False}
+            
+            door_state = "OPEN" if bit else "CLOSE"
+            return {
+                "doorId": door_id,
+                "state": door_state,
+                "isOpen": bit,
+                "success": response.success
+            }
+        except Exception as e:
+            # Log error if logger is available
+            if hasattr(self, '_logger_node'):
+                self._logger_node.get_logger().error(f"Error reading door {door_id}: {e}")
+            return {"doorId": door_id, "state": "ERROR", "isOpen": False, "success": False}
 
     def batch_control(self, door_ids: list, is_open: bool) -> Dict:
         """

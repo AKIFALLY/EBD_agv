@@ -11,12 +11,15 @@
 部署架構
 ├── 🚗 AGV 車載環境 (Edge Deployment)
 │   ├── 部署位置: AGV 車輛邊緣計算設備
-│   ├── 容器配置: docker-compose.yml
-│   └── 服務: AGV 控制、PLC 通訊、感測器
+│   ├── 容器配置: docker-compose.yml (單容器 rosagv)
+│   ├── 工作空間: 10個 (含4個共用基礎設施)
+│   └── 服務: AGV 控制、PLC 通訊、感測器、GPIO
 └── 🖥️ AGVC 管理環境 (Central Deployment)
     ├── 部署位置: 中央伺服器或雲端
-    ├── 容器配置: docker-compose.agvc.yml
-    └── 服務: Web API、資料庫、管理介面
+    ├── 容器配置: docker-compose.agvc.yml (4個容器)
+    ├── 容器組成: agvc_server, postgres, nginx, pgadmin
+    ├── 工作空間: 12個 (含5個共用基礎設施)
+    └── 服務: Web API、資料庫、管理介面、pgAdmin
 ```
 
 ## 🛠️ 環境準備
@@ -51,6 +54,7 @@
   Docker: 24.0+
   Docker Compose: V2
   PostgreSQL: 16 (由容器提供)
+  pgAdmin4: 最新版 (由容器提供)
 ```
 
 ### 網路規劃
@@ -208,6 +212,7 @@ sudo ufw allow 8000   # Web API
 sudo ufw allow 8001   # AGVCUI
 sudo ufw allow 8002   # OPUI
 sudo ufw allow 5432   # PostgreSQL (僅內部)
+sudo ufw allow 5050   # pgAdmin4
 ```
 
 ### 服務配置
@@ -271,6 +276,9 @@ curl http://localhost:8000/health
 # 檢查管理介面
 curl http://localhost:8001/
 curl http://localhost:8002/
+
+# 檢查 pgAdmin4
+curl http://localhost:5050/
 
 # 檢查 API 文檔
 open http://localhost:8000/docs

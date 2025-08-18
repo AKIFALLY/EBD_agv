@@ -333,7 +333,7 @@ class AgvStatus:
     def get_agv_status(self,dmmemory:PlcMemory):
         dMMemory = dmmemory
         self.AGV_ID = dMMemory.get_string(7600, 20)
-        self.POWER = dMMemory.get_int(7610, 2) * 0.01
+        self.POWER = dMMemory.get_float(7610, 4)
         self.AGV_X_SPEED = dMMemory.get_int(7612, 2)
         self.AGV_Y_SPEED = dMMemory.get_int(7614, 2)
         self.AGV_THETA_SPEED = dMMemory.get_int(7616, 2)

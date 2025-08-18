@@ -2,136 +2,193 @@
 {% block title %}AGVCUI - WCS Flow Designer{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="/static/css/flowDesignerPage.css?v=7.1.0" />
-<!-- js-yaml library for YAML parsing (本地版本) -->
-<script src="/static/js/lib/js-yaml.min.js"></script>
+<link rel="stylesheet" href="/static/css/flowDesignerPage.css?v=2.5" />
+<!-- Rete.js v2 CDN Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/rete@2.0.6/rete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rete-area-plugin@2.1.3/rete-area-plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rete-connection-plugin@2.0.5/rete-connection-plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rete-render-utils@2.0.5/rete-render-utils.min.js"></script>
+<!-- js-yaml library for YAML parsing -->
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 {% endblock %}
 
 {% block content %}
 <div class="flow-designer-container">
-    <!-- 側邊欄 - 節點選板 (可收合版本) -->
-    <div class="flow-sidebar">
-        <div class="flow-sidebar-header">
-            <h2 class="subtitle">
-                <span class="icon"><i class="mdi mdi-palette"></i></span>
-                節點選板
-            </h2>
-        </div>
-        <div class="flow-node-palette">
-            <!-- 條件節點區域 (可折疊) -->
-            <div class="palette-section" data-category="condition">
-                <div class="palette-section-header is-collapsible">
-                    <div class="palette-section-title">
-                        <span class="icon"><i class="mdi mdi-chevron-down"></i></span>
-                        <span class="text">條件節點</span>
-                        <span class="badge">0</span>
+    <!-- 工具列 -->
+    <div class="flow-toolbar">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title is-5">
+                        <span class="icon">
+                            <i class="mdi mdi-sitemap"></i>
+                        </span>
+                        WCS Flow Designer
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <div class="buttons">
+                        <button class="button is-info" id="btn-new-flow">
+                            <span class="icon">
+                                <i class="mdi mdi-file-plus"></i>
+                            </span>
+                            <span>新建流程</span>
+                        </button>
+                        <button class="button is-primary" id="btn-load-flow">
+                            <span class="icon">
+                                <i class="mdi mdi-folder-open"></i>
+                            </span>
+                            <span>載入流程</span>
+                        </button>
+                        <button class="button is-success" id="btn-save-flow">
+                            <span class="icon">
+                                <i class="mdi mdi-content-save"></i>
+                            </span>
+                            <span>保存流程</span>
+                        </button>
+                        <button class="button is-warning" id="btn-export-flow">
+                            <span class="icon">
+                                <i class="mdi mdi-export"></i>
+                            </span>
+                            <span>匯出</span>
+                        </button>
                     </div>
                 </div>
-                <div class="palette-section-content">
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要內容區域 -->
+    <div class="flow-main-content">
+        <!-- 側邊欄 - 節點選板 -->
+        <div class="flow-sidebar">
+            <div class="flow-sidebar-header">
+                <h2 class="subtitle is-6 has-text-white">節點選板</h2>
+            </div>
+            <div class="flow-node-palette">
+                <!-- 條件節點區域 -->
+                <div class="palette-section">
+                    <div class="palette-section-title">
+                        <span class="icon">
+                            <i class="mdi mdi-help-circle"></i>
+                        </span>
+                        條件節點
+                    </div>
                     <div class="palette-nodes" id="condition-nodes">
                         <!-- 條件節點將通過 JavaScript 動態生成 -->
                     </div>
                 </div>
-            </div>
 
-            <!-- 動作節點區域 (可折疊) -->
-            <div class="palette-section" data-category="action">
-                <div class="palette-section-header is-collapsible">
+                <!-- 動作節點區域 -->
+                <div class="palette-section">
                     <div class="palette-section-title">
-                        <span class="icon"><i class="mdi mdi-chevron-down"></i></span>
-                        <span class="text">動作節點</span>
-                        <span class="badge">0</span>
+                        <span class="icon">
+                            <i class="mdi mdi-cog"></i>
+                        </span>
+                        動作節點
                     </div>
-                </div>
-                <div class="palette-section-content">
                     <div class="palette-nodes" id="action-nodes">
                         <!-- 動作節點將通過 JavaScript 動態生成 -->
                     </div>
                 </div>
-            </div>
 
-            <!-- 邏輯節點區域 (可折疊) -->
-            <div class="palette-section" data-category="logic">
-                <div class="palette-section-header is-collapsible">
+                <!-- 邏輯節點區域 -->
+                <div class="palette-section">
                     <div class="palette-section-title">
-                        <span class="icon"><i class="mdi mdi-chevron-down"></i></span>
-                        <span class="text">邏輯節點</span>
-                        <span class="badge">0</span>
+                        <span class="icon">
+                            <i class="mdi mdi-vector-triangle"></i>
+                        </span>
+                        邏輯節點
                     </div>
-                </div>
-                <div class="palette-section-content">
                     <div class="palette-nodes" id="logic-nodes">
                         <!-- 邏輯節點將通過 JavaScript 動態生成 -->
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- 腳本節點區域 (可折疊) -->
-            <div class="palette-section" data-category="script">
-                <div class="palette-section-header is-collapsible">
-                    <div class="palette-section-title">
-                        <span class="icon"><i class="mdi mdi-chevron-down"></i></span>
-                        <span class="text">腳本節點</span>
-                        <span class="badge">0</span>
+        <!-- 編輯器區域 -->
+        <div class="flow-editor-container">
+            <div id="rete-editor" class="flow-editor"></div>
+        </div>
+
+        <!-- 屬性面板 -->
+        <div class="flow-properties-panel" id="properties-panel">
+            <div class="flow-properties-header">
+                <h3 class="subtitle is-6">節點屬性</h3>
+                <button class="delete" id="close-properties"></button>
+            </div>
+            <div class="flow-properties-content" id="properties-content">
+                <div class="field">
+                    <label class="label">節點名稱</label>
+                    <div class="control">
+                        <input class="input" type="text" id="node-name" placeholder="請輸入節點名稱">
                     </div>
                 </div>
-                <div class="palette-section-content">
-                    <div class="palette-nodes" id="script-nodes">
-                        <!-- 腳本節點將通過 JavaScript 動態生成 -->
+                <div class="field">
+                    <label class="label">描述</label>
+                    <div class="control">
+                        <textarea class="textarea" id="node-description" placeholder="請輸入節點描述"></textarea>
+                    </div>
+                </div>
+                
+                <!-- 條件節點參數 -->
+                <div id="condition-parameters" style="display: none;">
+                    <div class="field">
+                        <label class="label">條件函數</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="condition-function">
+                                    <option value="">選擇條件函數...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="condition-dynamic-params">
+                        <!-- 動態參數將在這裡生成 -->
+                    </div>
+                </div>
+
+                <!-- 動作節點參數 -->
+                <div id="action-parameters" style="display: none;">
+                    <div class="field">
+                        <label class="label">動作函數</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="action-function">
+                                    <option value="">選擇動作函數...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="action-dynamic-params">
+                        <!-- 動態參數將在這裡生成 -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 編輯器區域 -->
-    <div class="flow-editor-container">
-        <div id="rete-editor" class="flow-editor">
-            <!-- Canvas Rendering Layer -->
-            <canvas id="flow-canvas" class="flow-canvas-layer"></canvas>
-        </div>
-        
-        <!-- 浮動保存按鈕 -->
-        <div class="floating-save-button">
-            <button class="button is-success" id="btn-save-flow" title="保存流程 (Ctrl+S)">
-                <span class="icon is-large">
-                    <i class="mdi mdi-content-save"></i>
-                </span>
-            </button>
-        </div>
-    </div>
-
-    <!-- 屬性面板 -->
-    <div class="flow-properties-panel" id="properties-panel">
-        <div class="flow-properties-header">
-            <h3 class="subtitle is-6">節點屬性</h3>
-            <button class="delete" id="close-properties"></button>
-        </div>
-        <div class="flow-properties-content" id="properties-content">
-            <div class="notification is-light">
-                選擇一個節點以查看屬性
+    <!-- 狀態列 -->
+    <div class="flow-status-bar">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <span class="tag is-info">就緒</span>
+                </div>
+                <div class="level-item">
+                    <span class="has-text-grey-light">節點: <span id="node-count">0</span></span>
+                </div>
+                <div class="level-item">
+                    <span class="has-text-grey-light">連接: <span id="connection-count">0</span></span>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- 狀態列 -->
-<div class="flow-status-bar">
-    <div class="level">
-        <div class="level-left">
-            <div class="level-item">
-                <span class="tag is-info">就緒</span>
-            </div>
-            <div class="level-item">
-                <span class="has-text-grey">節點: <span id="node-count">0</span></span>
-            </div>
-            <div class="level-item">
-                <span class="has-text-grey">連接: <span id="connection-count">0</span></span>
-            </div>
-        </div>
-        <div class="level-right">
-            <div class="level-item">
-                <span class="has-text-grey">當前流程: <span id="current-flow-name">未命名</span></span>
+            <div class="level-right">
+                <div class="level-item">
+                    <span class="has-text-grey-light">當前流程: <span id="current-flow-name">未命名</span></span>
+                </div>
             </div>
         </div>
     </div>
@@ -158,6 +215,16 @@
                     <textarea class="textarea" id="flow-description-input" placeholder="請輸入流程描述"></textarea>
                 </div>
             </div>
+            <div class="field">
+                <label class="label">現有流程</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="existing-flows">
+                            <option value="">選擇現有流程...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </section>
         <footer class="modal-card-foot">
             <button class="button is-success" id="confirm-flow-action">確認</button>
@@ -166,63 +233,8 @@
     </div>
 </div>
 
-<!-- YAML DSL 文件上傳隱藏輸入 -->
-<input type="file" id="file-input" accept=".yaml,.yml" style="display: none;">
+<!-- 文件上傳隱藏輸入 -->
+<input type="file" id="file-input" accept=".json" style="display: none;">
 
-<!-- Flow Designer -->
-<script src="/static/js/flowDesigner.js?v=7.1.0"></script>
-
-<script>
-// 從後端傳遞的初始流程數據
-window.INITIAL_FLOW_DATA = {
-    name: {{ flow_name|tojson if flow_name else 'null' }},
-    data: {{ flow_data|tojson if flow_data else 'null' }}
-};
-
-// 確保 Flow Designer 在頁面載入完成後初始化
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 初始化 Flow Designer...');
-    
-    // 檢查是否有初始流程要載入
-    if (window.INITIAL_FLOW_DATA.name) {
-        console.log(`📂 準備載入初始流程: ${window.INITIAL_FLOW_DATA.name}`);
-    }
-    
-    // 檢查 FlowDesigner 類別是否可用
-    if (typeof FlowDesigner !== 'undefined') {
-        console.log('✅ FlowDesigner 類別可用，開始初始化...');
-        
-        // 創建實例並初始化
-        window.flowDesigner = new FlowDesigner();
-        
-        // 初始化 Flow Designer
-        window.flowDesigner.initialize().then(() => {
-            console.log('✅ Flow Designer 初始化完成');
-            
-            // 如果有初始流程數據，載入它
-            if (window.INITIAL_FLOW_DATA.name && window.INITIAL_FLOW_DATA.data) {
-                console.log(`📥 載入初始流程: ${window.INITIAL_FLOW_DATA.name}`);
-                try {
-                    const flowData = JSON.parse(window.INITIAL_FLOW_DATA.data);
-                    window.flowDesigner.loadFlowFromData(window.INITIAL_FLOW_DATA.name, flowData);
-                } catch (parseError) {
-                    console.error('❌ 解析流程資料失敗:', parseError);
-                    console.log('原始資料:', window.INITIAL_FLOW_DATA.data);
-                }
-            }
-        }).catch(error => {
-            console.error('❌ Flow Designer 初始化失敗:', error);
-            
-            // 顯示錯誤通知
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'notification is-danger';
-            errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
-            errorDiv.textContent = `Flow Designer 初始化失敗: ${error.message}`;
-            document.body.appendChild(errorDiv);
-        });
-    } else {
-        console.error('❌ FlowDesigner 類別未載入');
-    }
-});
-</script>
+<script type="module" src="/static/js/flowDesignerPage.js?v=2.6"></script>
 {% endblock %}

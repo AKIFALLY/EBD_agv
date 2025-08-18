@@ -10,8 +10,15 @@
 
 ## 🔧 標準指令格式
 
+**⚠️ 前提條件**：Docker Compose 檔案位於 `~/RosAGV/` 目錄
+- AGV 容器: `~/RosAGV/docker-compose.yml`
+- AGVC 容器: `~/RosAGV/docker-compose.agvc.yml`
+
 ### AGV 車載容器 (rosagv)
 ```bash
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
+
 # ✅ 正確格式：先載入環境再執行指令
 docker compose -f docker-compose.yml exec rosagv bash -c "source /app/setup.bash && [你的指令]"
 
@@ -27,6 +34,9 @@ docker compose -f docker-compose.yml exec rosagv bash -c "python3 -c 'import rcl
 
 ### AGVC 管理容器 (agvc_server)
 ```bash
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
+
 # ✅ 正確格式：先載入環境再執行指令
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "source /app/setup.bash && [你的指令]"
 
@@ -44,6 +54,9 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "python3 -m d
 
 ### 建置相關
 ```bash
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
+
 # AGV 環境建置
 docker compose -f docker-compose.yml exec rosagv bash -c "source /app/setup.bash && colcon build --packages-select [package_name]"
 

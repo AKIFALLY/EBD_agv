@@ -56,7 +56,7 @@ class CompleteState(State):
                 # 即使失敗也標記為完成，避免無限重試
                 self.hokuyo_write_completed = True
 
-    def _handle_delayed_reset(self):
+    def _handle_delayed_reset(self,context: RobotContext):
         """處理 5 秒延遲後的 Hokuyo 參數重置"""
         if self.reset_timer_started and not self.reset_completed:
             current_time = time.time()
@@ -83,6 +83,15 @@ class CompleteState(State):
                     # 標記延遲重置完成
                     self.reset_completed = True
                     self.node.get_logger().info("✅ 所有 Hokuyo 參數延遲重置完成")
+                    self.node.robot_finished = True  # 假設這是完成狀態的標誌
+                    try:
+                        from cargo_mover_agv.robot_states.idle_state import IdleState
+                        context.set_state(IdleState(self.node)) 
+                        #self.node.task = None  # 清除任務
+                    except Exception as e:
+                        self.node.get_logger().error(f"❌狀態轉換失敗 (Complete → Idle): {str(e)}")
+                        # 即使狀態轉換失敗，也要清除任務避免卡住
+                        #self.node.task = None
 
                 except Exception as e:
                     self.node.get_logger().error(f"❌ Hokuyo 延遲重置失敗: {e}")
@@ -96,7 +105,7 @@ class CompleteState(State):
         self._reset_hokuyo_parameters()
 
         # 處理延遲重置邏輯
-        self._handle_delayed_reset()
+        self._handle_delayed_reset(context)
 
         # 清理共同的狀態變數
         context.rack_photo_up_or_down_buffer = None

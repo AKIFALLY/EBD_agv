@@ -63,7 +63,14 @@ RosAGV 採用創新的雙環境設計，將系統分為兩個獨立但協同的�
 
 ### 一鍵啟動
 
+**⚠️ 前提條件**：Docker Compose 檔案位於 `~/RosAGV/` 目錄
+- AGV 容器: `~/RosAGV/docker-compose.yml`
+- AGVC 容器: `~/RosAGV/docker-compose.agvc.yml`
+
 ```bash
+# 進入工作目錄
+cd ~/RosAGV
+
 # 🚗 AGV 車載系統（通常部署在 AGV 車輛上）
 docker compose -f docker-compose.yml up -d
 
@@ -93,6 +100,9 @@ r containers-status  # 檢查所有容器狀態
 **⚠️ 重要**: 所有 ROS 2 開發必須在 Docker 容器內進行，宿主機無 ROS 2 環境。
 
 ```bash
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
+
 # 進入開發容器
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
 
@@ -112,7 +122,7 @@ app/
 ├── db_proxy_ws/               # 資料庫代理服務
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-├── ai_wcs_ws/                 # AI 倉庫控制系統
+├── flow_wcs_ws/               # Flow 倉庫控制系統 (唯一的 WCS 實作)
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
 └── keyence_plc_ws/            # Keyence PLC 通訊
 ```

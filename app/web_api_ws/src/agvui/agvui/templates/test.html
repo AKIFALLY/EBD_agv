@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}AGVUI 測試選擇頁{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">AGVUI 測試模式</h1>
+        <h2 class="subtitle">選擇要測試的 AGV</h2>
+        
+        <div class="columns is-multiline">
+            {% for agv in test_agvs %}
+            <div class="column is-4">
+                <div class="card agv-card" style="cursor: pointer; transition: all 0.3s;" 
+                     onclick="window.location.href='/?agv_id={{ agv.id }}'"
+                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 20px rgba(0,0,0,0.2)'"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                    <div class="card-content">
+                        <p class="title is-4">{{ agv.id }}</p>
+                        <p class="subtitle is-6">{{ agv.type }}</p>
+                    </div>
+                    <footer class="card-footer">
+                        <a href="/?agv_id={{ agv.id }}" class="card-footer-item">
+                            <span class="icon"><i class="mdi mdi-monitor"></i></span>
+                            <span>監控此 AGV</span>
+                        </a>
+                    </footer>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="box mt-5">
+            <h3 class="title is-5">測試說明</h3>
+            <div class="content">
+                <ul>
+                    <li>點擊任一 AGV 卡片進入測試模式</li>
+                    <li>測試模式會在頁面頂部顯示黃色標記</li>
+                    <li>只會顯示所選 AGV 的狀態資料</li>
+                    <li>需要先有對應的狀態資料 (/tmp/agv_status.json)</li>
+                    <li>使用 <code>scripts/test-agvui.sh</code> 建立模擬資料</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <a href="/" class="button is-primary">
+                <span class="icon"><i class="mdi mdi-home"></i></span>
+                <span>回到主頁 (顯示所有)</span>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 可以在這裡添加測試頁面特定的 JavaScript
+</script>
+{% endblock %}

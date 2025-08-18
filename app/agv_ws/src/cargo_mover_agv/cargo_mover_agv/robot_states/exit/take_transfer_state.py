@@ -16,15 +16,20 @@ class TakeTransferState(BaseRobotState):
         self.agvc_client = AGVCDatabaseClient(self.node)
         self.update_carrier_success = False
         self.sent = False
-        # hokuyo_input_updated 已移除，因為需要持續更新    def enter(self):
+        # hokuyo_input_updated 已移除，因為需要持續更新
+
+    def enter(self):
         self.node.get_logger().info("Robot Exit 目前狀態: TakeTransfer")
         self.update_carrier_success = False
         self.sent = False
-        # hokuyo_input_updated 已移除，因為需要持續更新    def leave(self):
+        # hokuyo_input_updated 已移除，因為需要持續更新
+
+    def leave(self):
         self.node.get_logger().info("Robot Exit 離開 TakeTransfer 狀態")
         self.update_carrier_success = False
         self.sent = False
         # hokuyo_input_updated 已移除，因為需要持續更新
+
     def handle(self, context: RobotContext):
         self.node.get_logger().info("Robot Exit TakeTransfer 狀態")
 

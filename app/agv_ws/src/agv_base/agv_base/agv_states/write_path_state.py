@@ -118,8 +118,12 @@ class WritePathState(State):
                             self.dataValue[i*20] = self.cantomove_tag  # Tag No_Index=0
 
                         # 如果是最後一個點，則使用站點ID，否則使用act[0]
-                        if y:
-                            self.dataValue[i*20+2] = tag.get('Station')+20  # Station_Index=2
+                        if y:  # 最後一個點
+                            if self.node.agv_status.MAGIC == 21:
+                                self.dataValue[i*20+2] = 21  # MAGIC=21 特殊處理：最後一個點直接給21
+                                self.node.get_logger().info(f"✅ MAGIC=21 特殊模式：最後一個點設定 dataValue[{i*20+2}] = 21")
+                            else:
+                                self.dataValue[i*20+2] = tag.get('Station')+20  # 正常情況：Station_Index=2
                             break  # 跳出迴圈
                         else:
                             if len(self.act) >= 1:
@@ -162,11 +166,15 @@ class WritePathState(State):
             string_values_2 = string_values[1000:2000]  # 後 1000 筆
 
             # 更新tasks table的狀態
-
-            self.node.task.status_id = 3  # 更新狀態為執行中
-            self.node.task.agv_id = self.node.AGV_id  # 更新AGV ID
-            self.agvdbclient.async_update_task(
-                self.node.task, self.task_update_callback)  # 更新任務狀態為執行中
+            # MAGIC=21 特殊處理：不更改 task status 為 3
+            if self.node.agv_status.MAGIC != 21:
+                self.node.task.status_id = 3  # 更新狀態為執行中
+                self.node.task.agv_id = self.node.AGV_id  # 更新AGV ID
+                self.agvdbclient.async_update_task(
+                    self.node.task, self.task_update_callback)  # 更新任務狀態為執行中
+                self.node.get_logger().info("✅ 更新任務狀態為執行中 (status_id=3)")
+            else:
+                self.node.get_logger().info("🎯 MAGIC=21 特殊模式：跳過任務狀態更新，維持原始狀態")
 
             # 將路徑資料寫入PLC
             self.plc_client.async_write_continuous_data(

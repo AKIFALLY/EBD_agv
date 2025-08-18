@@ -194,3 +194,18 @@ AGV_PID_FILE="/tmp/agv.pid"
 #else
 #    echo "❌ agv launch 啟動失敗"
 #fi
+
+# =====================================
+# 🖥️ AGVUI 服務自動啟動配置
+# =====================================
+AUTO_START_AGVUI=true  # 設定為 true 啟用自動啟動，false 停用
+
+# 載入 setup.bash 以取得管理函數
+source /app/setup.bash
+
+if [ "$AUTO_START_AGVUI" = "true" ]; then
+    echo "🖥️ 使用 manage_agvui 啟動車載監控界面..."
+    manage_agvui start
+else
+    echo "⏸️ AGVUI 自動啟動已停用 (AUTO_START_AGVUI=false)"
+fi

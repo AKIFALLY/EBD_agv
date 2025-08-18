@@ -5,6 +5,7 @@
 
 from db_proxy.models import ProcessSettings
 from sqlmodel import select
+from sqlalchemy import text
 
 
 def initialize_process_settings(session):
@@ -17,6 +18,7 @@ def initialize_process_settings(session):
     ]
     
     for proc in default_processes:
+        # Check if process setting with this soaking_times already exists
         exists = session.exec(select(ProcessSettings).where(
             ProcessSettings.soaking_times == proc["soaking_times"])).first()
         if not exists:

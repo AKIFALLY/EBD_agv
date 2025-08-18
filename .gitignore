@@ -43,3 +43,8 @@ node_modules/
 
 # 忽略 Agents 工作目錄
 agents/
+
+# 忽略 Python 虛擬環境
+.venv/
+venv/
+env/

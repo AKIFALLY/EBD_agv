@@ -78,8 +78,6 @@ test_all() {
         "/app/db_proxy_ws"
         "/app/ecs_ws"
         "/app/rcs_ws"
-        "/app/ai_wcs_ws"
-        "/app/simple_wcs_ws"
         "/app/web_api_ws"
         "/app/kuka_fleet_ws"
         "/app/launch_ws"
@@ -173,6 +171,7 @@ build_agv() {
         "keyence_plc_ws"
         "plc_proxy_ws"  
         "path_algorithm"
+        "db_proxy_ws"
     )
 
     local agv_app_workspaces=(
@@ -256,8 +255,7 @@ build_agvc() {
     local agvc_app_workspaces=(
         "ecs_ws"
         "rcs_ws"
-        "ai_wcs_ws"
-        "simple_wcs_ws"
+        "flow_wcs_ws"  # Flow WCS workspace (唯一的 WCS 實作)
         "web_api_ws"
         "kuka_fleet_ws"
         "launch_ws"
@@ -353,7 +351,7 @@ build_all_workspaces() {
         "path_algorithm"
         
         # 核心服務工作空間
-        "db_proxy_ws"          # 資料庫服務，被 simple_wcs_ws 等依賴
+        "db_proxy_ws"          # 資料庫服務，被 flow_wcs_ws 等依賴
         
         # AGV 相關工作空間
         "agv_ws"               # 核心 AGV 控制
@@ -364,8 +362,6 @@ build_all_workspaces() {
         # AGVC 應用工作空間 (依賴 db_proxy_ws)
         "ecs_ws"               # 設備控制系統
         "rcs_ws"               # 機器人控制系統
-        "ai_wcs_ws"            # AI 倉庫控制系統
-        "simple_wcs_ws"        # Simple WCS (依賴 db_proxy_ws)
         "web_api_ws"           # Web API 服務
         "kuka_fleet_ws"        # KUKA Fleet 整合
         
@@ -707,6 +703,7 @@ agv_source() {
         "/app/keyence_plc_ws/install"
         "/app/plc_proxy_ws/install"  
         "/app/path_algorithm/install"
+        "/app/db_proxy_ws/install"
     )
 
     local agv_app_workspaces=(
@@ -771,11 +768,11 @@ agvc_source() {
     local agvc_app_workspaces=(
         "/app/ecs_ws/install"
         "/app/rcs_ws/install"
-        "/app/ai_wcs_ws/install"
-        "/app/simple_wcs_ws/install"
+        "/app/flow_wcs_ws/install"  # Flow WCS workspace (唯一的 WCS 實作)
         "/app/web_api_ws/install"
         "/app/kuka_fleet_ws/install"
         "/app/launch_ws/install"
+        "/app/wcs_ws/install"
     )
 
     # 載入 AGVC 基礎工作空間
@@ -858,6 +855,8 @@ show_help() {
     echo "  manage_ssh <action>    - SSH 服務管理 (start|stop|restart|status)"
     echo "  manage_zenoh <action>  - Zenoh Router 管理 (start|stop|restart|status)"
     echo "  manage_web_api_launch <action> - Web API Launch 管理 (start|stop|restart|status)"
+    echo "  manage_agvui <action>  - AGVUI 車載監控管理 (start|stop|restart|status|logs)"
+    echo "  manage_flow_wcs <action> - Flow WCS 節點管理 (start|stop|restart|status|logs)"
     if is_agvc_environment; then
         echo "  start_db/stop_db       - 啟動/停止資料庫服務 (僅 AGVC 環境)"
         echo "  start_ecs              - 啟動 ECS 設備控制系統 (僅 AGVC 環境)"
@@ -938,34 +937,93 @@ manage_zenoh() {
 
     case "$1" in
         start)
-            if [ -f "$ZENOH_PID_FILE" ] && pgrep -F "$ZENOH_PID_FILE" > /dev/null; then
-                echo "✅ Zenoh Router 已經在運行中 (PID: $(cat $ZENOH_PID_FILE))"
+            # 檢查 PID 檔案是否存在且進程仍在運行
+            if [ -f "$ZENOH_PID_FILE" ]; then
+                # 檢查檔案中記錄的所有進程是否還在運行
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$ZENOH_PID_FILE"
+                
+                if [ "$all_running" = true ]; then
+                    echo "✅ Zenoh Router 已經在運行中"
+                    echo "   PID: $(cat $ZENOH_PID_FILE | tr '\n' ' ')"
+                    return 0
+                else
+                    # 清理過時的 PID 檔案
+                    rm -f "$ZENOH_PID_FILE"
+                fi
+            fi
+            
+            # 啟動新的 Zenoh Router
+            echo "🚀 啟動 Zenoh Router..."
+            nohup ros2 run rmw_zenoh_cpp rmw_zenohd > "$ZENOH_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+            
+            # 記錄父進程
+            echo $PARENT_PID > "$ZENOH_PID_FILE"
+            
+            # 等待子進程啟動並記錄
+            sleep 3
+            
+            # 找出所有子進程並記錄
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$ZENOH_PID_FILE"
+                done
+            fi
+            
+            # 確認啟動成功
+            if kill -0 $PARENT_PID 2>/dev/null; then
+                echo "✅ Zenoh Router 已啟動"
+                echo "   記錄的 PID: $(cat $ZENOH_PID_FILE | tr '\n' ' ')"
             else
-                echo "🚀 啟動 Zenoh Router..."
-                nohup ros2 run rmw_zenoh_cpp rmw_zenohd > "$ZENOH_LOG_FILE" 2>&1 &
-                echo $! > "$ZENOH_PID_FILE"
-                echo "✅ Zenoh Router 已啟動 (PID: $(cat $ZENOH_PID_FILE))"
+                echo "❌ Zenoh Router 啟動失敗"
+                rm -f "$ZENOH_PID_FILE"
+                return 1
             fi
             ;;
 
         stop)
             if [ -f "$ZENOH_PID_FILE" ]; then
-                ZENOH_PID=$(cat "$ZENOH_PID_FILE")
-                echo "⏳ 停止 Zenoh Router (PID: $ZENOH_PID)..."
-                kill "$ZENOH_PID"
+                echo "⏳ 停止 Zenoh Router..."
+                
+                # 讀取並殺掉所有記錄的進程（先殺子進程，再殺父進程）
+                local PIDS=$(tac "$ZENOH_PID_FILE")  # 反向讀取（先子後父）
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   停止進程 PID: $pid"
+                        kill $pid 2>/dev/null
+                    fi
+                done
+                
+                # 等待進程結束
                 sleep 2
+                
+                # 強制終止仍在運行的進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   強制終止 PID: $pid"
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
+                
                 rm -f "$ZENOH_PID_FILE"
                 echo "✅ Zenoh Router 已停止"
             else
                 # 確保停止所有與 Zenoh Router 相關的進程
-                echo "🚨 Zenoh Router 進程未找到，檢查端口佔用..."
+                echo "⚠️ PID 檔案不存在，嘗試清理所有 rmw_zenohd 進程..."
                 if pgrep -f "rmw_zenohd" > /dev/null; then
-                    echo "⏳ 停止 Zenoh Router 進程..."
+                    echo "   找到 rmw_zenohd 進程，正在停止..."
                     pkill -f "rmw_zenohd"
                     sleep 2
                     echo "✅ Zenoh Router 進程已停止"
                 else
-                    echo "❌ Zenoh Router 未運行"
+                    echo "ℹ️ Zenoh Router 未運行"
                 fi
             fi
 
@@ -989,8 +1047,28 @@ manage_zenoh() {
             ;;
 
         status)
-            if [ -f "$ZENOH_PID_FILE" ] && pgrep -F "$ZENOH_PID_FILE" > /dev/null; then
-                echo "✅ Zenoh Router 正在運行 (PID: $(cat $ZENOH_PID_FILE))"
+            if [ -f "$ZENOH_PID_FILE" ]; then
+                # 檢查所有記錄的進程
+                local all_running=true
+                local running_pids=""
+                while read pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        running_pids="$running_pids $pid"
+                    else
+                        all_running=false
+                    fi
+                done < "$ZENOH_PID_FILE"
+                
+                if [ -n "$running_pids" ]; then
+                    echo "✅ Zenoh Router 正在運行"
+                    echo "   運行中的 PID:$running_pids"
+                    if [ "$all_running" = false ]; then
+                        echo "   ⚠️ 部分進程已停止"
+                    fi
+                else
+                    echo "❌ Zenoh Router 未運行（進程已停止）"
+                    rm -f "$ZENOH_PID_FILE"
+                fi
             else
                 echo "❌ Zenoh Router 未運行"
             fi
@@ -1010,22 +1088,61 @@ manage_web_api_launch() {
 
     case "$1" in
         start)
-            # 檢查是否已經在運行，避免重複啟動
-            if [ -f "$WEB_API_PID_FILE" ] && pgrep -F "$WEB_API_PID_FILE" > /dev/null; then
-                echo "✅ Web API Launch 已經在運行中 (PID: $(cat $WEB_API_PID_FILE))"
-                return 0
+            # 檢查 PID 檔案是否存在且進程仍在運行
+            if [ -f "$WEB_API_PID_FILE" ]; then
+                # 檢查檔案中記錄的所有進程是否還在運行
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$WEB_API_PID_FILE"
+                
+                if [ "$all_running" = true ]; then
+                    echo "✅ Web API Launch 已經在運行中"
+                    echo "   PID: $(cat $WEB_API_PID_FILE | tr '\n' ' ')"
+                    return 0
+                else
+                    # 清理過時的 PID 檔案
+                    rm -f "$WEB_API_PID_FILE"
+                fi
             fi
 
             echo "🚀 啟動 Web API Launch 服務群組..."
             nohup ros2 launch web_api_launch launch.py > "$WEB_API_LOG_FILE" 2>&1 &
-            echo $! > "$WEB_API_PID_FILE"
+            local PARENT_PID=$!
+            
+            # 記錄父進程
+            echo $PARENT_PID > "$WEB_API_PID_FILE"
+            
+            # 等待子進程啟動
+            sleep 5
+            
+            # 找出所有子進程並記錄（launch 會產生多個子進程）
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$WEB_API_PID_FILE"
+                done
+            fi
+            
+            # 也記錄實際的服務進程（agvc_ui_server, op_ui_server, api_server）
+            sleep 2
+            for service in "agvc_ui_server" "op_ui_server" "api_server"; do
+                local SERVICE_PID=$(pgrep -f "$service" | head -n1)
+                if [ -n "$SERVICE_PID" ]; then
+                    # 檢查是否已經記錄（避免重複）
+                    if ! grep -q "^$SERVICE_PID$" "$WEB_API_PID_FILE" 2>/dev/null; then
+                        echo $SERVICE_PID >> "$WEB_API_PID_FILE"
+                    fi
+                fi
+            done
 
-            # 等待服務啟動並檢查狀態
-            sleep 3
-
-            # 檢查 Web API Launch 是否正常啟動
-            if [ -f "$WEB_API_PID_FILE" ] && pgrep -F "$WEB_API_PID_FILE" > /dev/null; then
-                echo "✅ Web API Launch 已啟動 (PID: $(cat $WEB_API_PID_FILE))"
+            # 檢查是否正常啟動
+            if kill -0 $PARENT_PID 2>/dev/null; then
+                echo "✅ Web API Launch 已啟動"
+                echo "   記錄的 PID: $(cat $WEB_API_PID_FILE | tr '\n' ' ')"
                 
                 # 檢查端口是否開啟（需要更多時間讓 Web 服務完全啟動）
                 sleep 5
@@ -1059,20 +1176,28 @@ manage_web_api_launch() {
 
         stop)
             if [ -f "$WEB_API_PID_FILE" ]; then
-                WEB_API_PID=$(cat "$WEB_API_PID_FILE")
-                echo "⏳ 停止 Web API Launch (PID: $WEB_API_PID)..."
+                echo "⏳ 停止 Web API Launch 服務群組..."
                 
-                # 停止主進程，這會連帶停止所有子進程
-                kill "$WEB_API_PID" 2>/dev/null
+                # 讀取並殺掉所有記錄的進程（反向順序：先子後父）
+                local PIDS=$(tac "$WEB_API_PID_FILE")
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   停止進程 PID: $pid"
+                        kill $pid 2>/dev/null
+                    fi
+                done
+                
+                # 等待進程結束
                 sleep 3
                 
-                # 確保所有相關進程都已停止
-                pkill -f "web_api_launch" 2>/dev/null
-                pkill -f "agvc_ui_server" 2>/dev/null
-                pkill -f "op_ui_server" 2>/dev/null
-                pkill -f "api_server" 2>/dev/null
+                # 強制終止仍在運行的進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   強制終止 PID: $pid"
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
                 
-                sleep 2
                 rm -f "$WEB_API_PID_FILE"
                 echo "✅ Web API Launch 已停止"
             else
@@ -1103,58 +1228,456 @@ manage_web_api_launch() {
             ;;
 
         status)
-            if [ -f "$WEB_API_PID_FILE" ] && pgrep -F "$WEB_API_PID_FILE" > /dev/null; then
-                echo "✅ Web API Launch 正在運行 (PID: $(cat $WEB_API_PID_FILE))"
+            if [ -f "$WEB_API_PID_FILE" ]; then
+                # 檢查所有記錄的進程
+                local all_running=true
+                local running_pids=""
+                local stopped_pids=""
                 
-                # 檢查子進程狀態
-                echo "🔍 子服務狀態："
-                if pgrep -f "agvc_ui_server" > /dev/null; then
-                    echo "  ✅ AGVCUI 服務運行中"
+                while read pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        running_pids="$running_pids $pid"
+                    else
+                        all_running=false
+                        stopped_pids="$stopped_pids $pid"
+                    fi
+                done < "$WEB_API_PID_FILE"
+                
+                if [ -n "$running_pids" ]; then
+                    echo "✅ Web API Launch 正在運行"
+                    echo "   運行中的 PID:$running_pids"
+                    if [ "$all_running" = false ]; then
+                        echo "   ⚠️ 部分進程已停止:$stopped_pids"
+                    fi
+                    
+                    # 檢查各服務狀態
+                    echo "🔍 服務狀態："
+                    if pgrep -f "agvc_ui_server" > /dev/null; then
+                        echo "  ✅ AGVCUI 服務運行中 (PID: $(pgrep -f 'agvc_ui_server' | head -n1))"
+                    else
+                        echo "  ❌ AGVCUI 服務未運行"
+                    fi
+                    
+                    if pgrep -f "op_ui_server" > /dev/null; then
+                        echo "  ✅ OPUI 服務運行中 (PID: $(pgrep -f 'op_ui_server' | head -n1))"
+                    else
+                        echo "  ❌ OPUI 服務未運行"
+                    fi
+                    
+                    if pgrep -f "api_server" > /dev/null; then
+                        echo "  ✅ Web API 服務運行中 (PID: $(pgrep -f 'api_server' | head -n1))"
+                    else
+                        echo "  ❌ Web API 服務未運行"
+                    fi
+                    
+                    # 檢查端口狀態
+                    echo "🔍 端口狀態："
+                    if ss -tuln 2>/dev/null | grep -q ":8000 "; then
+                        echo "  ✅ 端口 8000 已開啟"
+                    else
+                        echo "  ❌ 端口 8000 未開啟"
+                    fi
+                    
+                    if ss -tuln 2>/dev/null | grep -q ":8001 "; then
+                        echo "  ✅ 端口 8001 已開啟"
+                    else
+                        echo "  ❌ 端口 8001 未開啟"
+                    fi
+                    
+                    if ss -tuln 2>/dev/null | grep -q ":8002 "; then
+                        echo "  ✅ 端口 8002 已開啟"
+                    else
+                        echo "  ❌ 端口 8002 未開啟"
+                    fi
+                    
+                    return 0
                 else
-                    echo "  ❌ AGVCUI 服務未運行"
+                    echo "❌ Web API Launch 未運行"
+                    return 1
                 fi
-                
-                if pgrep -f "op_ui_server" > /dev/null; then
-                    echo "  ✅ OPUI 服務運行中"
-                else
-                    echo "  ❌ OPUI 服務未運行"
-                fi
-                
-                if pgrep -f "api_server" > /dev/null; then
-                    echo "  ✅ Web API 服務運行中"
-                else
-                    echo "  ❌ Web API 服務未運行"
-                fi
-                
-                # 檢查端口狀態
-                echo "🔍 端口狀態："
-                if ss -tuln 2>/dev/null | grep -q ":8000 "; then
-                    echo "  ✅ 端口 8000 已開啟"
-                else
-                    echo "  ❌ 端口 8000 未開啟"
-                fi
-                
-                if ss -tuln 2>/dev/null | grep -q ":8001 "; then
-                    echo "  ✅ 端口 8001 已開啟"
-                else
-                    echo "  ❌ 端口 8001 未開啟"
-                fi
-                
-                if ss -tuln 2>/dev/null | grep -q ":8002 "; then
-                    echo "  ✅ 端口 8002 已開啟"
-                else
-                    echo "  ❌ 端口 8002 未開啟"
-                fi
-                
-                return 0
             else
-                echo "❌ Web API Launch 未運行"
-                return 1
+                echo "❌ Web API Launch PID 檔案不存在"
             fi
             ;;
 
         *)
             echo "用法: manage_web_api_launch {start|stop|restart|status}"
+            return 1
+            ;;
+    esac
+}
+
+# ===== AGVUI 控制函式 =====
+manage_agvui() {
+    local AGVUI_LOG_FILE="/tmp/agvui.log"
+    local AGVUI_PID_FILE="/tmp/agvui.pid"
+    
+    case "$1" in
+        start)
+            # 首先檢查 PID 檔案是否存在且進程是否在運行
+            if [ -f "$AGVUI_PID_FILE" ]; then
+                # 讀取並驗證所有 PID
+                local all_running=true
+                while IFS= read -r pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$AGVUI_PID_FILE"
+                
+                if [ "$all_running" = true ]; then
+                    echo "✅ AGVUI 已經在運行中"
+                    return 0
+                else
+                    echo "🔄 清理過時的 PID 檔案..."
+                    rm -f "$AGVUI_PID_FILE"
+                fi
+            fi
+            
+            echo "🖥️ 啟動 AGVUI 車載監控界面..."
+            cd /app/web_api_ws/src/agvui
+            
+            # 載入 ROS 2 環境和工作空間
+            source /opt/ros/$ROS_DISTRO/setup.bash
+            source /opt/ws_rmw_zenoh/install/setup.bash
+            if [ -f "/app/agv_ws/install/setup.bash" ]; then
+                source /app/agv_ws/install/setup.bash
+            fi
+            
+            # 設定 Python 路徑
+            export PYTHONPATH="/app/web_api_ws/src:$PYTHONPATH"
+            
+            # 啟動服務並記錄父進程 PID
+            nohup python3 agvui/agv_ui_server.py > "$AGVUI_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+            echo $PARENT_PID > "$AGVUI_PID_FILE"
+            
+            # 等待一下讓子進程產生
+            sleep 1
+            
+            # 記錄所有子進程 PID
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID 2>/dev/null)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$AGVUI_PID_FILE"
+                done
+            fi
+            
+            # 等待服務啟動
+            sleep 3
+            
+            # 檢查是否啟動成功
+            if pgrep -f "agvui" > /dev/null 2>&1; then
+                echo "✅ AGVUI 服務已啟動 (PID: $(cat $AGVUI_PID_FILE))"
+                
+                # 檢查端口
+                if ss -tuln 2>/dev/null | grep -q ":8003 "; then
+                    echo "✅ AGVUI 端口 8003 已開啟"
+                    echo "📍 監控界面: http://$(hostname -I | awk '{print $1}'):8003"
+                    
+                    # 如果是 AGV 環境，顯示本機 AGV ID
+                    if [ -f "/app/.agv_identity" ]; then
+                        local agv_id=$(grep "AGV_ID=" /app/.agv_identity | cut -d'=' -f2)
+                        if [ -n "$agv_id" ]; then
+                            echo "📍 本機 AGV ID: $agv_id"
+                        fi
+                    fi
+                else
+                    echo "⚠️ AGVUI 端口 8003 未開啟，服務可能仍在啟動中"
+                fi
+                return 0
+            else
+                echo "❌ AGVUI 啟動失敗"
+                echo "📝 檢查日誌: tail -f $AGVUI_LOG_FILE"
+                return 1
+            fi
+            ;;
+            
+        stop)
+            if [ -f "$AGVUI_PID_FILE" ]; then
+                echo "🛑 停止 AGVUI 服務..."
+                
+                # 讀取所有 PID 並反向處理（先停子進程，後停父進程）
+                local PIDS=$(tac "$AGVUI_PID_FILE" 2>/dev/null)
+                
+                # 嘗試優雅停止所有進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "  停止 PID: $pid"
+                        kill $pid 2>/dev/null || true
+                    fi
+                done
+                
+                sleep 2
+                
+                # 檢查並強制終止任何剩餘進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "  強制停止 PID: $pid"
+                        kill -9 $pid 2>/dev/null || true
+                    fi
+                done
+                
+                rm -f "$AGVUI_PID_FILE"
+                echo "✅ AGVUI 服務已停止"
+            else
+                echo "⚠️ AGVUI PID 檔案不存在"
+            fi
+            ;;
+            
+        restart)
+            echo "🔄 重新啟動 AGVUI..."
+            manage_agvui stop
+            sleep 2
+            manage_agvui start
+            ;;
+            
+        status)
+            if [ -f "$AGVUI_PID_FILE" ]; then
+                # 檢查所有記錄的 PID 是否仍在運行
+                local all_pids=""
+                local any_running=false
+                while IFS= read -r pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        all_pids="$all_pids $pid"
+                        any_running=true
+                    fi
+                done < "$AGVUI_PID_FILE"
+                
+                if [ "$any_running" = true ]; then
+                    echo "✅ AGVUI 正在運行 (PIDs:$all_pids)"
+                    
+                    # 檢查端口
+                    if ss -tuln 2>/dev/null | grep -q ":8003 "; then
+                        echo "✅ 端口 8003 已開啟"
+                        echo "📍 監控界面: http://$(hostname -I | awk '{print $1}'):8003"
+                    else
+                        echo "⚠️ 端口 8003 未開啟"
+                    fi
+                    
+                    # 顯示最近的日誌
+                    if [ -f "$AGVUI_LOG_FILE" ]; then
+                        echo ""
+                        echo "📋 最近日誌:"
+                        tail -5 "$AGVUI_LOG_FILE"
+                    fi
+                else
+                    echo "❌ AGVUI 未運行"
+                    if [ -f "$AGVUI_LOG_FILE" ]; then
+                        echo ""
+                        echo "📋 最後日誌:"
+                        tail -5 "$AGVUI_LOG_FILE"
+                    fi
+                fi
+            else
+                echo "❌ AGVUI 未運行"
+            fi
+            ;;
+            
+        logs)
+            if [ -f "$AGVUI_LOG_FILE" ]; then
+                echo "📋 AGVUI 日誌:"
+                tail -f "$AGVUI_LOG_FILE"
+            else
+                echo "❌ 日誌檔案不存在: $AGVUI_LOG_FILE"
+            fi
+            ;;
+            
+        *)
+            echo "用法: manage_agvui {start|stop|restart|status|logs}"
+            return 1
+            ;;
+    esac
+}
+
+# ===== Flow WCS 控制函式 =====
+manage_flow_wcs() {
+    local FLOW_WCS_LOG_FILE="/tmp/flow_wcs.log"
+    local FLOW_WCS_PID_FILE="/tmp/flow_wcs.pid"
+
+    case "$1" in
+        start)
+            # 檢查 PID 檔案是否存在且進程仍在運行
+            if [ -f "$FLOW_WCS_PID_FILE" ]; then
+                # 檢查檔案中記錄的所有進程是否還在運行
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$FLOW_WCS_PID_FILE"
+                
+                if [ "$all_running" = true ]; then
+                    echo "✅ Flow WCS 已經在運行中"
+                    echo "   PID: $(cat $FLOW_WCS_PID_FILE | tr '\n' ' ')"
+                    return 0
+                else
+                    # 清理過時的 PID 檔案
+                    rm -f "$FLOW_WCS_PID_FILE"
+                fi
+            fi
+            
+            echo "🚀 啟動 Flow WCS 節點..."
+            
+            # 確保工作空間已載入
+            if [ -z "$ROS_WORKSPACE" ]; then
+                echo "⚠️ 未載入 ROS 2 工作空間，嘗試載入 AGVC 工作空間..."
+                agvc_source
+            fi
+            
+            # 啟動 Flow WCS 節點
+            nohup ros2 run flow_wcs flow_wcs_node > "$FLOW_WCS_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+            
+            # 記錄父進程
+            echo $PARENT_PID > "$FLOW_WCS_PID_FILE"
+            
+            # 等待子進程啟動
+            sleep 3
+            
+            # 找出所有子進程並記錄
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$FLOW_WCS_PID_FILE"
+                done
+            fi
+            
+            # 確認啟動成功
+            if kill -0 $PARENT_PID 2>/dev/null; then
+                echo "✅ Flow WCS 節點已啟動"
+                echo "   記錄的 PID: $(cat $FLOW_WCS_PID_FILE | tr '\n' ' ')"
+                echo "📄 日誌檔案: $FLOW_WCS_LOG_FILE"
+                
+                # 顯示初始日誌
+                echo "📋 初始日誌："
+                tail -n 20 "$FLOW_WCS_LOG_FILE"
+            else
+                echo "❌ Flow WCS 節點啟動失敗"
+                rm -f "$FLOW_WCS_PID_FILE"
+                echo "查看日誌: cat $FLOW_WCS_LOG_FILE"
+                return 1
+            fi
+            ;;
+
+        stop)
+            if [ -f "$FLOW_WCS_PID_FILE" ]; then
+                echo "🛑 停止 Flow WCS 節點..."
+                
+                # 讀取並殺掉所有記錄的進程（反向順序：先子後父）
+                local PIDS=$(tac "$FLOW_WCS_PID_FILE")
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   停止進程 PID: $pid"
+                        kill -TERM $pid 2>/dev/null
+                    fi
+                done
+                
+                # 等待進程結束
+                sleep 3
+                
+                # 強制終止仍在運行的進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   強制終止 PID: $pid"
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
+                    
+                echo "✅ Flow WCS 節點已停止"
+                rm -f "$FLOW_WCS_PID_FILE"
+            fi
+            
+            # 檢查並清理所有 flow_wcs_node 進程（包括孤立進程）
+            local orphan_pids=$(pgrep -f "flow_wcs_node")
+            if [ -n "$orphan_pids" ]; then
+                echo "⚠️ 發現 Flow WCS 進程，正在清理..."
+                for pid in $orphan_pids; do
+                    echo "  停止進程 PID: $pid"
+                    kill -TERM $pid 2>/dev/null
+                    sleep 1
+                    # 如果還在運行，強制停止
+                    if kill -0 $pid 2>/dev/null; then
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
+                echo "✅ 已清理所有 Flow WCS 進程"
+            else
+                echo "ℹ️ 未發現運行中的 Flow WCS 進程"
+            fi
+            
+            # 清理殭屍進程（如果有的話）
+            local zombie_pids=$(ps aux | grep "[f]low_wcs_node.*<defunct>" | awk '{print $2}')
+            if [ -n "$zombie_pids" ]; then
+                echo "⚠️ 發現殭屍進程，嘗試清理..."
+                # 殭屍進程需要其父進程來清理，我們嘗試找到並通知父進程
+                for zpid in $zombie_pids; do
+                    local ppid=$(ps -o ppid= -p $zpid 2>/dev/null | tr -d ' ')
+                    if [ -n "$ppid" ] && [ "$ppid" != "1" ]; then
+                        echo "  通知父進程 $ppid 清理殭屍進程 $zpid"
+                        kill -CHLD $ppid 2>/dev/null || true
+                    fi
+                done
+                # 如果殭屍進程的父進程是 init (PID 1)，它們會自動被清理
+                echo "ℹ️ 殭屍進程將在系統清理週期中被移除"
+            fi
+            
+            # 清理 PID 檔案
+            rm -f "$FLOW_WCS_PID_FILE"
+            ;;
+
+        restart)
+            echo "🔄 重新啟動 Flow WCS..."
+            manage_flow_wcs stop
+            sleep 2
+            manage_flow_wcs start
+            ;;
+
+        status)
+            # 使用進程名稱檢查，而非 PID 檔案
+            if pgrep -f "flow_wcs_node" > /dev/null 2>&1; then
+                PIDS=$(pgrep -f "flow_wcs_node")
+                echo "✅ Flow WCS 正在運行 (PIDs: $PIDS)"
+                
+                # 檢查 ROS 2 節點狀態
+                echo "🔍 ROS 2 節點狀態："
+                if ros2 node list | grep -q "flow_wcs_node"; then
+                    echo "  ✅ flow_wcs_node 節點在線"
+                    
+                    # 顯示節點資訊
+                    echo "📊 節點資訊："
+                    ros2 node info /flow_wcs_node 2>/dev/null | head -n 10
+                else
+                    echo "  ⚠️ flow_wcs_node 節點未在 ROS 2 中註冊"
+                fi
+                
+                # 顯示最新日誌
+                if [ -f "$FLOW_WCS_LOG_FILE" ]; then
+                    echo ""
+                    echo "📋 最新日誌 (最後 10 行)："
+                    tail -n 10 "$FLOW_WCS_LOG_FILE"
+                fi
+                
+                return 0
+            else
+                echo "❌ Flow WCS 未運行"
+                return 1
+            fi
+            ;;
+
+        logs)
+            if [ -f "$FLOW_WCS_LOG_FILE" ]; then
+                echo "📋 Flow WCS 日誌："
+                tail -f "$FLOW_WCS_LOG_FILE"
+            else
+                echo "❌ 日誌檔案不存在: $FLOW_WCS_LOG_FILE"
+                return 1
+            fi
+            ;;
+
+        *)
+            echo "用法: manage_flow_wcs {start|stop|restart|status|logs}"
             return 1
             ;;
     esac
@@ -1510,7 +2033,7 @@ check_agvc_status() {
 
     # 檢查 AGVC 專用工作空間
     echo "=== AGVC 工作空間狀態 ==="
-    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "ai_wcs_ws" "simple_wcs_ws" "web_api_ws" "kuka_fleet_ws")
+    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "flow_wcs_ws" "web_api_ws" "kuka_fleet_ws")
     for ws in "${agvc_workspaces[@]}"; do
         if [ -d "/app/$ws/install" ]; then
             echo "✅ $ws 已建置"
@@ -1518,6 +2041,647 @@ check_agvc_status() {
             echo "❌ $ws 未建置"
         fi
     done
+}
+
+# ===== 統一節點管理系統 =====
+
+# 管理 ECS 核心節點
+manage_ecs_core() {
+    local action="${1:-status}"
+    
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        return 1
+    fi
+    
+    case "$action" in
+        start)
+            echo "🚀 啟動 ECS 核心節點..."
+            
+            # 檢查 PID 檔案和進程狀態
+            if [ -f "/tmp/ecs.pid" ]; then
+                local all_running=true
+                while IFS= read -r pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "/tmp/ecs.pid"
+                
+                if [ "$all_running" = true ]; then
+                    echo "ℹ️ ECS 核心節點已在運行中"
+                    return 0
+                else
+                    rm -f "/tmp/ecs.pid"
+                fi
+            fi
+            
+            # 啟動並記錄父進程
+            nohup ros2 run ecs ecs_core --ros-args -p db_url_agvc:="postgresql+psycopg2://agvc:password@postgres/agvc" > /tmp/ecs.log 2>&1 &
+            local PARENT_PID=$!
+            echo $PARENT_PID > /tmp/ecs.pid
+            
+            sleep 2
+            
+            # 記錄所有子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID 2>/dev/null)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> /tmp/ecs.pid
+                done
+            fi
+            
+            if kill -0 $PARENT_PID 2>/dev/null; then
+                echo "✅ ECS 核心節點已啟動 (PID: $PARENT_PID)"
+            else
+                echo "❌ ECS 核心節點啟動失敗"
+                rm -f /tmp/ecs.pid
+                return 1
+            fi
+            ;;
+            
+        stop)
+            echo "🛑 停止 ECS 核心節點..."
+            if [ -f "/tmp/ecs.pid" ]; then
+                # 反向讀取 PID（先停子進程）
+                local PIDS=$(tac "/tmp/ecs.pid" 2>/dev/null)
+                
+                # 嘗試優雅停止
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        kill -TERM $pid 2>/dev/null
+                    fi
+                done
+                
+                sleep 2
+                
+                # 強制停止剩餘進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
+                
+                rm -f "/tmp/ecs.pid"
+                echo "✅ ECS 核心節點已停止"
+            else
+                echo "ℹ️ ECS 核心節點未運行"
+            fi
+            ;;
+            
+        restart)
+            manage_ecs_core stop
+            sleep 1
+            manage_ecs_core start
+            ;;
+            
+        status)
+            if [ -f "/tmp/ecs.pid" ]; then
+                local all_pids=""
+                local any_running=false
+                while IFS= read -r pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        all_pids="$all_pids $pid"
+                        any_running=true
+                    fi
+                done < "/tmp/ecs.pid"
+                
+                if [ "$any_running" = true ]; then
+                    echo "✅ ECS 核心節點運行中 (PIDs:$all_pids)"
+                else
+                    echo "❌ ECS 核心節點未運行"
+                fi
+            else
+                echo "❌ ECS 核心節點未運行"
+            fi
+            ;;
+            
+        *)
+            echo "用法: manage_ecs_core {start|stop|restart|status}"
+            return 1
+            ;;
+    esac
+}
+
+# 管理資料庫代理節點
+manage_db_proxy() {
+    local action="${1:-status}"
+    
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        return 1
+    fi
+    
+    case "$action" in
+        start)
+            echo "🚀 啟動資料庫代理節點..."
+            
+            # 檢查 PID 檔案和進程狀態
+            if [ -f "/tmp/db_proxy.pid" ]; then
+                local all_running=true
+                while IFS= read -r pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "/tmp/db_proxy.pid"
+                
+                if [ "$all_running" = true ]; then
+                    echo "ℹ️ 資料庫代理節點已在運行中"
+                    return 0
+                else
+                    rm -f "/tmp/db_proxy.pid"
+                fi
+            fi
+            
+            # 啟動並記錄父進程
+            nohup ros2 run db_proxy agvc_database_node > /tmp/db_proxy.log 2>&1 &
+            local PARENT_PID=$!
+            echo $PARENT_PID > /tmp/db_proxy.pid
+            
+            sleep 2
+            
+            # 記錄所有子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID 2>/dev/null)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> /tmp/db_proxy.pid
+                done
+            fi
+            
+            if kill -0 $PARENT_PID 2>/dev/null; then
+                echo "✅ 資料庫代理節點已啟動"
+            else
+                echo "❌ 資料庫代理節點啟動失敗"
+                rm -f /tmp/db_proxy.pid
+                return 1
+            fi
+            ;;
+            
+        stop)
+            echo "🛑 停止資料庫代理節點..."
+            if [ -f "/tmp/db_proxy.pid" ]; then
+                # 反向讀取 PID（先停子進程）
+                local PIDS=$(tac "/tmp/db_proxy.pid" 2>/dev/null)
+                
+                # 嘗試優雅停止
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        kill -TERM $pid 2>/dev/null
+                    fi
+                done
+                
+                sleep 2
+                
+                # 強制停止剩餘進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
+                
+                rm -f "/tmp/db_proxy.pid"
+                echo "✅ 資料庫代理節點已停止"
+            else
+                echo "ℹ️ 資料庫代理節點未運行"
+            fi
+            ;;
+            
+        restart)
+            manage_db_proxy stop
+            sleep 1
+            manage_db_proxy start
+            ;;
+            
+        status)
+            if [ -f "/tmp/db_proxy.pid" ]; then
+                local all_pids=""
+                local any_running=false
+                while IFS= read -r pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        all_pids="$all_pids $pid"
+                        any_running=true
+                    fi
+                done < "/tmp/db_proxy.pid"
+                
+                if [ "$any_running" = true ]; then
+                    echo "✅ 資料庫代理節點運行中 (PIDs:$all_pids)"
+                else
+                    echo "❌ 資料庫代理節點未運行"
+                fi
+            else
+                echo "❌ 資料庫代理節點未運行"
+            fi
+            ;;
+            
+        *)
+            echo "用法: manage_db_proxy {start|stop|restart|status}"
+            return 1
+            ;;
+    esac
+}
+
+# 管理 RCS 節點
+manage_rcs_core() {
+    local action="${1:-status}"
+    
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        return 1
+    fi
+    
+    case "$action" in
+        start)
+            echo "🚀 啟動 RCS 節點 (使用 ROS 2 Launch)..."
+            # 檢查是否有活動的 rcs_core 進程（排除殭屍進程）
+            local active=$(pgrep -f "ros2.*rcs_core\|rcs_launch.py" | wc -l)
+            if [ "$active" -gt 0 ]; then
+                echo "ℹ️ RCS 節點已在運行中"
+                return 0
+            fi
+            
+            # 使用 ROS 2 Launch 啟動，更好地管理進程生命週期
+            nohup ros2 launch rcs rcs_launch.py > /tmp/rcs_launch.log 2>&1 &
+            local pid=$!
+            echo $pid > /tmp/rcs_core.pid
+            sleep 3
+            
+            # 檢查是否有活動的 rcs_core 進程（排除殭屍進程）
+            local active=$(pgrep -f "ros2.*rcs_core\|rcs_launch.py" | wc -l)
+            if [ "$active" -gt 0 ]; then
+                echo "✅ RCS 節點已啟動"
+            else
+                echo "❌ RCS 節點啟動失敗"
+                return 1
+            fi
+            ;;
+            
+        stop)
+            echo "🛑 停止 RCS 節點..."
+            
+            # 停止 launch 進程
+            if [ -f "/tmp/rcs_core.pid" ]; then
+                local launch_pid=$(cat "/tmp/rcs_core.pid")
+                if kill -0 $launch_pid 2>/dev/null; then
+                    echo "  停止 ROS 2 Launch 進程 (PID: $launch_pid)..."
+                    kill -TERM $launch_pid 2>/dev/null
+                    sleep 2
+                    if kill -0 $launch_pid 2>/dev/null; then
+                        kill -9 $launch_pid 2>/dev/null
+                    fi
+                fi
+                rm -f "/tmp/rcs_core.pid"
+            fi
+            
+            # 舊的 PID 檔案相容性
+            if [ -f "/tmp/rcs.pid" ]; then
+                rm -f "/tmp/rcs.pid"
+            fi
+            
+            # 清理所有相關進程
+            echo "  清理 ROS 2 Launch 和 rcs_core 進程..."
+            pkill -f "ros2 launch rcs" 2>/dev/null
+            pkill -f "rcs_launch.py" 2>/dev/null
+            pkill -f "rcs_core" 2>/dev/null
+            
+            # 等待進程完全退出
+            sleep 1
+            
+            # 檢查是否還有殘留進程（排除殭屍進程）
+            local remaining=$(pgrep -f "ros2.*rcs_core\|rcs_launch.py" | wc -l)
+            if [ "$remaining" -gt 0 ]; then
+                echo "⚠️  檢測到殘留進程，強制終止..."
+                pkill -9 -f "rcs_core" 2>/dev/null
+                sleep 1
+            fi
+            
+            # 清理殭屍進程（通過終止其父進程）
+            local zombie=$(pgrep -af "rcs_core" | grep "defunct" | awk '{print $1}')
+            if [ -n "$zombie" ]; then
+                echo "  清理殭屍進程..."
+                # 嘗試發送 SIGCHLD 給 init 進程，讓它回收殭屍進程
+                # 注意：殭屍進程通常會被系統自動清理，這裡只是加速這個過程
+                kill -SIGCHLD 1 2>/dev/null || true
+            fi
+            
+            echo "✅ RCS 節點已停止"
+            ;;
+            
+        restart)
+            manage_rcs_core stop
+            sleep 1
+            manage_rcs_core start
+            ;;
+            
+        status)
+            # 檢查是否有活動的 rcs_core 進程（排除殭屍進程）
+            local active=$(pgrep -f "ros2.*rcs_core\|rcs_launch.py" | wc -l)
+            if [ "$active" -gt 0 ]; then
+                echo "✅ RCS 節點運行中"
+                # 顯示活動進程
+                pgrep -f "ros2.*rcs_core\|rcs_launch.py"
+            else
+                echo "❌ RCS 節點未運行"
+                # 檢查是否有殭屍進程
+                local zombie=$(pgrep -af "rcs_core" | grep "defunct" | wc -l)
+                if [ "$zombie" -gt 0 ]; then
+                    echo "  ⚠️ 發現殭屍進程，建議重啟容器或清理"
+                fi
+            fi
+            ;;
+            
+        *)
+            echo "用法: manage_rcs_core {start|stop|restart|status}"
+            return 1
+            ;;
+    esac
+}
+
+# 管理 KUKA Fleet 節點
+manage_kuka_fleet() {
+    local action="${1:-status}"
+    
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        return 1
+    fi
+    
+    case "$action" in
+        start)
+            echo "🚀 啟動 KUKA Fleet 節點..."
+            
+            # 檢查 PID 檔案和進程狀態
+            if [ -f "/tmp/kuka_fleet.pid" ]; then
+                local all_running=true
+                while IFS= read -r pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "/tmp/kuka_fleet.pid"
+                
+                if [ "$all_running" = true ]; then
+                    echo "ℹ️ KUKA Fleet 節點已在運行中"
+                    return 0
+                else
+                    rm -f "/tmp/kuka_fleet.pid"
+                fi
+            fi
+            
+            # 啟動並記錄父進程
+            nohup ros2 run kuka_fleet_adapter kuka_fleet_adapter > /tmp/kuka_fleet.log 2>&1 &
+            local PARENT_PID=$!
+            echo $PARENT_PID > /tmp/kuka_fleet.pid
+            
+            sleep 2
+            
+            # 記錄所有子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID 2>/dev/null)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> /tmp/kuka_fleet.pid
+                done
+            fi
+            
+            if kill -0 $PARENT_PID 2>/dev/null; then
+                echo "✅ KUKA Fleet 節點已啟動 (PID: $PARENT_PID)"
+            else
+                echo "❌ KUKA Fleet 節點啟動失敗"
+                rm -f /tmp/kuka_fleet.pid
+                return 1
+            fi
+            ;;
+            
+        stop)
+            echo "🛑 停止 KUKA Fleet 節點..."
+            if [ -f "/tmp/kuka_fleet.pid" ]; then
+                # 反向讀取 PID（先停子進程）
+                local PIDS=$(tac "/tmp/kuka_fleet.pid" 2>/dev/null)
+                
+                # 嘗試優雅停止
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        kill -TERM $pid 2>/dev/null
+                    fi
+                done
+                
+                sleep 2
+                
+                # 強制停止剩餘進程
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
+                
+                rm -f "/tmp/kuka_fleet.pid"
+                echo "✅ KUKA Fleet 節點已停止"
+            else
+                echo "ℹ️ KUKA Fleet 節點未運行"
+            fi
+            ;;
+            
+        restart)
+            manage_kuka_fleet stop
+            sleep 1
+            manage_kuka_fleet start
+            ;;
+            
+        status)
+            if [ -f "/tmp/kuka_fleet.pid" ]; then
+                local all_pids=""
+                local any_running=false
+                while IFS= read -r pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        all_pids="$all_pids $pid"
+                        any_running=true
+                    fi
+                done < "/tmp/kuka_fleet.pid"
+                
+                if [ "$any_running" = true ]; then
+                    echo "✅ KUKA Fleet 節點運行中 (PIDs:$all_pids)"
+                else
+                    echo "❌ KUKA Fleet 節點未運行"
+                fi
+            else
+                echo "❌ KUKA Fleet 節點未運行"
+            fi
+            ;;
+            
+        *)
+            echo "用法: manage_kuka_fleet {start|stop|restart|status}"
+            return 1
+            ;;
+    esac
+}
+
+# 統一管理所有節點
+manage_all_nodes() {
+    local action="${1:-status}"
+    
+    echo "🎮 統一節點管理系統"
+    echo "===================="
+    
+    case "$action" in
+        status)
+            echo "📊 節點狀態檢查:"
+            echo ""
+            echo "=== 系統服務 ==="
+            manage_ssh status
+            manage_zenoh status
+            echo ""
+            echo "=== Web 服務 ==="
+            manage_web_api_launch status
+            echo ""
+            echo "=== 核心服務 ==="
+            manage_flow_wcs status
+            manage_ecs_core status
+            manage_db_proxy status
+            manage_rcs_core status
+            echo ""
+            echo "=== 整合服務 ==="
+            manage_kuka_fleet status
+            ;;
+            
+        start)
+            echo "🚀 啟動所有節點..."
+            echo ""
+            echo "1. 啟動系統服務..."
+            manage_ssh start
+            manage_zenoh start
+            sleep 2
+            
+            echo ""
+            echo "2. 啟動核心服務..."
+            manage_db_proxy start
+            manage_ecs_core start
+            manage_rcs_core start
+            manage_flow_wcs start
+            sleep 2
+            
+            echo ""
+            echo "3. 啟動整合服務..."
+            manage_kuka_fleet start
+            
+            echo ""
+            echo "4. 啟動 Web 服務..."
+            manage_web_api_launch start
+            
+            echo ""
+            echo "✅ 所有節點啟動完成"
+            ;;
+            
+        stop)
+            echo "🛑 停止所有節點..."
+            echo ""
+            echo "1. 停止 Web 服務..."
+            manage_web_api_launch stop
+            
+            echo ""
+            echo "2. 停止整合服務..."
+            manage_kuka_fleet stop
+            
+            echo ""
+            echo "3. 停止核心服務..."
+            manage_flow_wcs stop
+            manage_rcs_core stop
+            manage_ecs_core stop
+            manage_db_proxy stop
+            
+            echo ""
+            echo "✅ 所有節點已停止"
+            ;;
+            
+        restart)
+            manage_all_nodes stop
+            echo ""
+            sleep 2
+            manage_all_nodes start
+            ;;
+            
+        *)
+            echo "用法: manage_all_nodes {start|stop|restart|status}"
+            echo ""
+            echo "可管理的節點:"
+            echo "  - SSH 服務 (manage_ssh)"
+            echo "  - Zenoh Router (manage_zenoh)"
+            echo "  - Web API Launch (manage_web_api_launch)"
+            echo "  - Flow WCS (manage_flow_wcs)"
+            echo "  - ECS Core (manage_ecs_core)"
+            echo "  - DB Proxy (manage_db_proxy)"
+            echo "  - RCS (manage_rcs_core)"
+            echo "  - KUKA Fleet (manage_kuka_fleet)"
+            return 1
+            ;;
+    esac
+}
+
+# 管理 AGV Launch (透過 SSH 連接到遠端 AGV)
+manage_agv_launch() {
+    local agv_name="${1:-}"
+    local action="${2:-status}"
+    
+    if [ -z "$agv_name" ]; then
+        echo "用法: manage_agv_launch <agv_name> {start|stop|restart|status}"
+        echo "可用的 AGV: cargo02, loader02, unloader02"
+        return 1
+    fi
+    
+    # 從硬編碼的配置獲取 AGV 資訊
+    local agv_ip=""
+    local agv_type=""
+    
+    case "$agv_name" in
+        cargo02)
+            agv_ip="192.168.10.11"
+            agv_type="cargo_mover_agv"
+            ;;
+        loader02)
+            agv_ip="192.168.10.12"
+            agv_type="loader_agv"
+            ;;
+        unloader02)
+            agv_ip="192.168.10.13"
+            agv_type="unloader_agv"
+            ;;
+        *)
+            echo "❌ 未知的 AGV: $agv_name"
+            return 1
+            ;;
+    esac
+    
+    echo "🚗 管理 AGV: $agv_name ($agv_ip)"
+    
+    # 使用 SSH 連接並執行命令
+    local ssh_cmd="sshpass -p '36274806' ssh -p 2222 -o StrictHostKeyChecking=no ct@$agv_ip"
+    
+    case "$action" in
+        status)
+            echo "📊 檢查 AGV 節點狀態..."
+            $ssh_cmd "source /app/setup.bash && ros2 node list | grep -E '(plc_service|joy_linux_node|agv_core_node)'"
+            ;;
+            
+        start)
+            echo "🚀 啟動 AGV Launch..."
+            $ssh_cmd "source /app/setup.bash && ros2 launch $agv_type launch.py &"
+            ;;
+            
+        stop)
+            echo "🛑 停止 AGV 節點..."
+            $ssh_cmd "pkill -f 'ros2 launch $agv_type'"
+            ;;
+            
+        restart)
+            manage_agv_launch $agv_name stop
+            sleep 2
+            manage_agv_launch $agv_name start
+            ;;
+            
+        *)
+            echo "用法: manage_agv_launch $agv_name {start|stop|restart|status}"
+            return 1
+            ;;
+    esac
 }
 
 # ===== 初始化完成訊息 =====
@@ -1549,6 +2713,7 @@ echo "  check_zenoh_status/zenoh   - 檢查 Zenoh 狀態"
 echo "  check_ros_env/rosenv       - 檢查 ROS 2 環境"
 echo "  manage_zenoh <cmd>         - 管理 Zenoh Router"
 echo "  manage_web_api_launch <cmd> - 管理 Web API Launch"
+echo "  manage_flow_wcs <cmd>      - 管理 Flow WCS 節點"
 echo "  manage_ssh <cmd>           - 管理 SSH 服務"
 
 if is_agvc_environment; then

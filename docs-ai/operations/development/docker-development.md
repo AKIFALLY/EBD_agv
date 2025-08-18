@@ -26,7 +26,15 @@ RosAGV 採用雙容器架構，每個容器有不同的開發環境和工具：
 ```
 
 ### 容器進入方式
+
+**⚠️ 前提條件**：Docker Compose 檔案位於 `~/RosAGV/` 目錄
+- AGV 容器: `~/RosAGV/docker-compose.yml`
+- AGVC 容器: `~/RosAGV/docker-compose.agvc.yml`
+
 ```bash
+# 進入工作目錄（若不在此目錄）
+cd ~/RosAGV
+
 # 進入 AGV 車載容器
 docker compose -f docker-compose.yml exec rosagv bash
 
@@ -288,6 +296,9 @@ netstat -i                  # 網路介面統計 (ss 無法替代此功能)
 
 #### 解決方案: bash -i 參數
 ```bash
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
+
 # ✅ 推薦方式：使用 bash -i (interactive flag)
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop"
 
@@ -308,6 +319,8 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "manage_web_a
 #### 最佳實踐模式
 ```bash
 # 標準容器指令執行模式
+# 前提：在 ~/RosAGV 目錄執行
+cd ~/RosAGV
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash && 
 agvc_source && 
@@ -338,6 +351,7 @@ bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop 
 2. **工作空間載入**: 使用 `all_source` 載入對應工作空間
 3. **增量建置**: 使用 `--packages-select` 建置特定套件
 4. **即時測試**: 開發過程中持續測試功能
+5. **容器指令**: 使用 `bash -i` 執行容器內的複雜指令序列
 5. **容器指令**: 使用 `bash -i` 執行容器內的複雜指令序列
 
 ### 依賴管理

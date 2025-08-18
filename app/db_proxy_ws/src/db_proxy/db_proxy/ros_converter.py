@@ -67,10 +67,15 @@ def msg_to_model(msg_obj, model_class: Type, field_map: Optional[Dict[str, str]]
         print(f"msg_field:{msg_field} field_type:{field_type}")
 
         if field_type == "string":
-            # 空字串轉為 None
+            # 處理空字串
             if value == "":
-                value = None
-                print(f"msg_field:{msg_field} None")
+                # 對於Task模型的name欄位，提供預設值而不是None
+                if model_class.__name__ == "Task" and msg_field == "name":
+                    value = "未命名任務"
+                    print(f"msg_field:{msg_field} 使用預設名稱: 未命名任務")
+                else:
+                    value = None
+                    print(f"msg_field:{msg_field} None")
             else:
                 # 嘗試轉換為 datetime
                 dt = str_to_datetime(value)

@@ -30,7 +30,15 @@ class CarrierQueryClient:
             return None
 
         request = CarrierQuery.Request()
-        request.rack_id = rack_id
+        # 初始化所有 uint64 欄位為 0，避免類型檢查錯誤
+        request.id = 0
+        request.room_id = 0
+        request.rack_id = int(rack_id)  # 確保是整數類型
+        request.port_id = 0
+        request.port_id_min = 0
+        request.port_id_max = 0
+        request.rack_index = 0
+        request.status_id = 0
         request.sort_order = 1  # 按 rack_index 升序排序
         self.node.get_logger().info(f"📤 發送查詢請求: rack_id={rack_id}")
         future = self.client.call_async(request)
@@ -76,8 +84,15 @@ class CarrierQueryClient:
             return None
 
         request = CarrierQuery.Request()
-        request.port_id_min = port_id_min
-        request.port_id_max = port_id_max
+        # 初始化所有 uint64 欄位為 0，避免類型檢查錯誤
+        request.id = 0
+        request.room_id = 0
+        request.rack_id = 0
+        request.port_id = 0
+        request.port_id_min = int(port_id_min)  # 確保是整數類型
+        request.port_id_max = int(port_id_max)  # 確保是整數類型
+        request.rack_index = 0
+        request.status_id = 0
         request.sort_order = 1  # 按 rack_index 升序排序
 
         self.node.get_logger().info(

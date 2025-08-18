@@ -121,13 +121,25 @@ class RackVisionPositionState(State):
                     if photo_up_or_down == Robot.PHOTO_RACK_UP:
                         self.node.get_logger().info("✅拍照位置為上層")
                         context.rack_photo_up_or_down_buffer = Robot.PHOTO_RACK_UP
+                        try:
+                            from cargo_mover_agv.robot_states.exit.take_transfer_state import TakeTransferState
+                            context.set_state(TakeTransferState(self.node))
+                            self.step = RobotContext.IDLE
+                        except Exception as e:
+                            self.node.get_logger().error(f"❌狀態轉換失敗 (上層): {str(e)}")
+                            context.rack_photo_up_or_down_buffer = None
                     elif photo_up_or_down == Robot.PHOTO_RACK_DOWN:
                         self.node.get_logger().info("✅拍照位置為下層")
                         context.rack_photo_up_or_down_buffer = Robot.PHOTO_RACK_DOWN
+                        try:
+                            from cargo_mover_agv.robot_states.exit.take_transfer_state import TakeTransferState
+                            context.set_state(TakeTransferState(self.node))
+                            self.step = RobotContext.IDLE
+                        except Exception as e:
+                            self.node.get_logger().error(f"❌狀態轉換失敗 (下層): {str(e)}")
+                            context.rack_photo_up_or_down_buffer = None
                     else:
                         self.node.get_logger().info("❌拍照位置錯誤，無法確定上層或下層")
                         context.rack_photo_up_or_down_buffer = None
 
-                    from cargo_mover_agv.robot_states.exit.take_transfer_state import TakeTransferState
-                    context.set_state(TakeTransferState(self.node))
-                    self.step = RobotContext.IDLE
+

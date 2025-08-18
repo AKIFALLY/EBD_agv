@@ -17,17 +17,17 @@ function setup() {
     socket.on("connect", () => {
         agvStore.setState({ isConnected: true })
         console.log("✅ Socket.IO 連線成功，socket.id:", socket.id);
-        notify.showErrorMessage(`✅ AGVC 已連線`, "is-success");
+        notify.showErrorMessage(`✅ AGVUI 服務已連線`, "is-success");
     });
 
     socket.on("disconnect", () => {
         agvStore.setState({ isConnected: false })
-        console.warn("❌ 與 AGVC 斷線");
-        notify.showErrorMessage("與 AGVC 連線中斷");
+        console.warn("❌ 與 AGVUI 服務斷線");
+        notify.showErrorMessage("與 AGVUI 服務連線中斷");
     });
 
     socket.io.on("reconnect_attempt", (attempt) => {
-        notify.showErrorMessage(`與 AGVC 斷線重連中（第 ${attempt} 次）`);
+        notify.showErrorMessage(`與 AGVUI 服務斷線重連中（第 ${attempt} 次）`);
     });
 
     socket.io.on("reconnect", (attempt) => {

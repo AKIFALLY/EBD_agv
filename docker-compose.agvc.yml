@@ -18,6 +18,7 @@ services:
     image: yazelin/agvc:latest
     #build: .
     container_name: agvc_server
+    init: true  # 使用 Docker 的 init 進程，自動回收殭屍進程
     restart: always
     networks:
       bridge_network:
@@ -33,6 +34,8 @@ services:
       #- ~/agvc:/app/agvc:rw # agvc 將宿主機的 C:/agvc 掛載到容器的 /agvc 目錄
       #- ~/agvc/opui/dist:/app/ui/opui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
       #- ~/agvc/agvcui/dist:/app/ui/agvcui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
+      # 掛載測試目錄到容器內
+      - ~/RosAGV/agents:/app/agents:rw # 掛載測試腳本目錄
       # 掛載重要配置檔案到容器內的 /app/host 目錄 (唯讀模式)
       - ~/RosAGV/docker-compose.agvc.yml:/app/host/docker-compose.agvc.yml:ro
       - ~/RosAGV/docker-compose.yml:/app/host/docker-compose.yml:ro
@@ -47,6 +50,7 @@ services:
       - 8000:8000 # 8000 fastapi server (web_api)
       - 8001:8001 # 8001 fastapi server (agvc.ui)
       - 8002:8002 # 8002 fastapi server (op.ui)
+      - 8003:8003 # 8003 fastapi server (agv.ui) - AGV車載監控
       - 5173:5173 # 5173 vue app tester server
     tty: true
     stdin_open: true
@@ -73,6 +77,7 @@ services:
   postgres:
     image: postgres:latest
     container_name: postgres #claude 很容易搞混(容器名稱跟容器)，所以我們直接把他們名稱改為一樣減少出錯機會
+    init: true  # 使用 Docker 的 init 進程，自動回收殭屍進程
     restart: always
     networks:
       bridge_network:

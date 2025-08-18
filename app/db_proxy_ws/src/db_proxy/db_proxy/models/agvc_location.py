@@ -65,11 +65,20 @@ class Location(SQLModel, table=True):
     __tablename__ = "location"
     id: Optional[int] = Field(default=None, primary_key=True)
     location_status_id: Optional[int] = Field(
-        default=None, foreign_key="location_status.id")
+        default=LocationStatus.UNOCCUPIED,  # 預設為未佔用
+        foreign_key="location_status.id")
     # 不設外鍵約束避免與 room 表的循環依賴
     room_id: Optional[int] = Field(default=None)
-    node_id: Optional[int] = None
+    node_id: Optional[int] = Field(default=None, foreign_key="node.id")  # 關聯到 node 表
     name: str
     description: Optional[str] = None
+    # 新增 flow_wcs 需要的欄位
+    type: Optional[str] = Field(default="enter_or_exit")  # 位置類型
+    rack_id: Optional[int] = Field(default=None, foreign_key="rack.id")  # 關聯的架台 ID
+    
+    # 關聯關係（用於 JOIN 查詢）
+    # location_status: Optional["LocationStatus"] = Relationship()
+    # node: Optional["Node"] = Relationship()
+    # rack: Optional["Rack"] = Relationship()
 
     model_config = ConfigDict(from_attributes=True)  # 告訴 Pydantic 這是 ORM 模型

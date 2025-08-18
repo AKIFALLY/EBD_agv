@@ -15,13 +15,10 @@ class IdleState(State):
         self.node = node
         # Hokuyo 寫入相關變數
         self.hokuyo_write_completed = False
-                
-        self.node.room_id = self.node.task.room_id
-        self.node.work_id = self.node.task.work_id
         
-        # 動態計算工作 ID
-        self.entrance_work = int(str(self.node.room_id) + "00" + self.ENTRANCE + self.PUT)
-        self.exit_work = int(str(self.node.room_id)+"00" + self.EXIT + self.TAKE)
+        # 工作 ID 將在 enter 方法中動態計算
+        self.entrance_work = None
+        self.exit_work = None
 
     def enter(self):
         self.node.get_logger().info("🤖robot 目前狀態: Idle")
@@ -53,9 +50,14 @@ class IdleState(State):
                 # 從 parameters 中取得 rack_id
                 rack_id = parameters_dict.get("rack_id")
                 if rack_id is not None:
-                    context.rack_id = rack_id
-                    self.node.get_logger().info(
-                        f"✅ 從 task.parameters 取得 rack_id: {context.rack_id}")
+                    try:
+                        # 確保 rack_id 是整數類型，符合 CarrierQuery 服務的 uint64 要求
+                        context.rack_id = int(rack_id)
+                        self.node.get_logger().info(
+                            f"✅ 從 task.parameters 取得 rack_id: {context.rack_id} (type: {type(context.rack_id).__name__})")
+                    except (ValueError, TypeError) as e:
+                        context.rack_id = None
+                        self.node.get_logger().error(f"❌ 無法將 rack_id 轉換為整數: {rack_id}, 錯誤: {e}")
                 else:
                     context.rack_id = None
                     self.node.get_logger().warn("⚠️ task.parameters 中沒有找到 rack_id，設為 None")
@@ -100,11 +102,19 @@ class IdleState(State):
                 self.hokuyo_write_completed = True
 
     def handle(self, context: RobotContext):
+        # 檢查 task 物件是否存在
+        if not hasattr(self.node, 'task') or self.node.task is None:
+            self.node.get_logger().info("⏳ robot Idle 狀態 - 等待任務分配")
+            return
+        
         work_id = self.node.task.work_id
         self.node.get_logger().info("robot Idle 狀態")
 
         # 執行 Hokuyo 參數初始化（同時對兩個 Hokuyo 物件進行設定）
         self._initialize_hokuyo_parameters()
+
+        # 顯示 Hokuyo 初始化狀態
+        self.node.get_logger().info(f"🔍 Hokuyo 初始化狀態: {self.hokuyo_write_completed}")
 
         # 只有在 Hokuyo 參數初始化完成後，才進行 rack_id 解析和狀態切換
         if self.hokuyo_write_completed:
@@ -120,17 +130,36 @@ class IdleState(State):
                 self.node.get_logger().warn("⚠️ rack_id 解析失敗，將使用 fallback 值 123")
 
             # 簡化的 work_id 取得方式
+            self.node.get_logger().info(f"檢查task: {self.node.task}")
             self.node.get_logger().info(f"檢查工作 ID: {work_id}")
-
+            self.node.room_id = self.node.task.room_id
+            self.node.work_id = self.node.task.work_id
+        
+            # 在 enter 時動態計算工作 ID（確保 room_id 已正確設定）
+            self.entrance_work = int(str(self.node.room_id) + "00" + self.ENTRANCE + self.PUT)
+            self.exit_work = int(str(self.node.room_id) + "00" + self.EXIT + self.TAKE)
+            self.node.get_logger().info(f"🔢 動態計算工作 ID - entrance_work: {self.entrance_work}, exit_work: {self.exit_work}")
             # 使用預計算的動態工作ID進行比較
             if work_id == self.entrance_work:
                 self.node.get_logger().info("切換到 ENTRANCE 流程")
-                from cargo_mover_agv.robot_states.entrance.transfer_vision_position_state import TransferVisionPositionState
-                context.set_state(TransferVisionPositionState(self.node))
+                try:
+                    from cargo_mover_agv.robot_states.entrance.transfer_vision_position_state import TransferVisionPositionState
+                    self.node.get_logger().info("✅ TransferVisionPositionState 導入成功")
+                    context.set_state(TransferVisionPositionState(self.node))
+                    self.node.get_logger().info("✅ 狀態切換完成")
+                    return  # 重要：狀態切換後立即返回，避免重複執行
+                except Exception as e:
+                    self.node.get_logger().error(f"❌ ENTRANCE 流程狀態切換失敗: {e}")
             elif work_id == self.exit_work:
                 self.node.get_logger().info("切換到 EXIT 流程")
-                from cargo_mover_agv.robot_states.exit.transfer_vision_position_state import TransferVisionPositionState
-                context.set_state(TransferVisionPositionState(self.node))
+                try:
+                    from cargo_mover_agv.robot_states.exit.transfer_vision_position_state import TransferVisionPositionState
+                    self.node.get_logger().info("✅ TransferVisionPositionState 導入成功")
+                    context.set_state(TransferVisionPositionState(self.node))
+                    self.node.get_logger().info("✅ 狀態切換完成")
+                    return  # 重要：狀態切換後立即返回，避免重複執行
+                except Exception as e:
+                    self.node.get_logger().error(f"❌ EXIT 流程狀態切換失敗: {e}")
             else:
                 self.node.get_logger().warn(f"未知的工作 ID: {work_id}")
         else:

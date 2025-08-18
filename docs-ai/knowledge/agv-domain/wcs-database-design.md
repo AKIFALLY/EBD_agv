@@ -120,7 +120,36 @@ class Carrier(SQLModel, table=True):
 - `rack_index`: 載具在料架上的位置
   - 1-16: A面位置
   - 17-32: B面位置
-- `status_id`: 載具狀態，用於 NG 檢測
+- `status_id`: 載具狀態，用於 NG 檢測和作業判斷
+
+### CarrierStatus 表
+```python
+class CarrierStatus(SQLModel, table=True):
+    __tablename__ = "carrier_status"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = None  # UI 顯示顏色
+```
+
+**用途**: 定義載具的各種狀態
+**狀態定義**:
+| ID | 名稱 | 說明 | 作業判斷 |
+|----|------|------|----------|
+| 1 | 空閒 | 載具空閒，可以使用 | **有待作業** (需要開始處理) |
+| 2 | 使用中 | 載具正在使用中 | **有待作業** |
+| 3 | 故障 | 載具發生故障 | **特殊處理** |
+| 4 | 待處理 | 載具等待處理 | **有待作業** |
+| 5 | 處理中 | 載具正在處理製程 | **有待作業** (還在處理中) |
+| 6 | NG | 載具處理結果不良 | **特殊處理** |
+| 7 | 維護中 | 載具正在維護 | **特殊處理** |
+| 8 | 已完成 | 載具處理完成 | **無待作業** (已經完成) |
+| 101-603 | 各站點製程狀態 | 詳細製程追蹤 | **有待作業** |
+
+**架台翻轉判斷邏輯**:
+- A面全部完成: 所有 A 面載具 `status_id = 8`
+- B面有待作業: 任何 B 面載具 `status_id != 8`
+- 翻轉條件: A面全部完成 AND B面有待作業
 
 ### Product 表
 ```python

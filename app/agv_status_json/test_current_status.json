@@ -1,0 +1,10 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-08T12:02:30.121283",
+    "test_mode": true
+  },
+  "test_data": {
+    "test": "value",
+    "number": 123
+  }
+}

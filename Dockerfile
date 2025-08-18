@@ -91,7 +91,8 @@ RUN source /opt/pyvenv_env/bin/activate && \
     pip install sqlmodel && \
     pip install jinja2 && \
     pip install python-socketio && \
-    pip install python-multipart
+    pip install python-multipart && \
+    pip install httpx
 
 # 設定 Python 虛擬環境的 PYTHONPATH
 RUN echo 'export PYTHONPATH=/opt/pyvenv_env/lib/python3.12/site-packages:$PYTHONPATH' >> ~/.bashrc

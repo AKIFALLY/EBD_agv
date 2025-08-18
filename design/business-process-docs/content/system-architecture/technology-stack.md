@@ -93,14 +93,16 @@ export RMW_IMPLEMENTATION=rmw_zenohd
 ```yaml
 # 雙環境容器配置
 AGV 車載環境:
-  - 容器: rosagv
+  - 容器: rosagv (單容器)
   - 網路: host (直接硬體存取)
-  - 服務: AGV 控制、PLC 通訊、感測器處理
+  - 工作空間: 10個 (含4個共用基礎設施)
+  - 服務: AGV 控制、PLC 通訊、感測器處理、GPIO 控制
 
 AGVC 管理環境:
-  - 容器: agvc_server, postgres, nginx
+  - 容器: agvc_server, postgres, nginx, pgadmin (4個容器)
   - 網路: bridge (192.168.100.0/24)
-  - 服務: Web API、資料庫、反向代理
+  - 工作空間: 12個 (含5個共用基礎設施)
+  - 服務: Web API、資料庫、反向代理、資料庫管理
 ```
 
 ### Ubuntu 24.04 LTS
@@ -142,13 +144,14 @@ app = FastAPI(
 ```sql
 -- 企業級資料庫特性
 CREATE DATABASE agvc;
-CREATE USER agvc_user WITH PASSWORD 'secure_password';
+CREATE USER agvc WITH PASSWORD 'password';
 
 -- 核心功能
 - ACID 事務支援
 - 複雜查詢優化
 - 並發控制
 - 資料完整性保證
+- 內建 pgAdmin4 管理工具 (Port 5050)
 ```
 
 ## 🏭 工業通訊
@@ -203,6 +206,19 @@ isort src/
 # 測試框架
 pytest tests/
 pytest --cov=src tests/
+```
+
+### 結構化資料處理
+```bash
+# JSON 處理
+jq '.key' file.json
+
+# YAML 處理  
+yq '.services.agvc_server.ports' docker-compose.agvc.yml
+
+# JSON5 處理 (Zenoh 配置)
+json5 /app/routerconfig.json5 | jq '.mode'
+json5 --validate /app/routerconfig.json5
 ```
 
 ### 監控和日誌

@@ -7,8 +7,8 @@
 
 ## 📋 AGVC 工作空間架構
 
-### 工作空間總覽 (12個)
-AGVC 管理系統包含 12 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
+### 工作空間總覽 (9個)
+AGVC 管理系統包含 9 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
 
 ```
 AGVC 管理系統工作空間
@@ -16,15 +16,12 @@ AGVC 管理系統工作空間
 ├── db_proxy_ws/               # 資料庫代理服務
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-# (wcs_ws 已整合至 ai_wcs_ws)
+├── flow_wcs_ws/               # Linear Flow v2 WCS (唯一 WCS)
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
-├── ai_wcs_ws/                 # AI 倉庫控制系統
-├── simple_wcs_ws/             # Simple WCS 決策引擎
 ├── keyence_plc_ws/            # Keyence PLC 通訊 (共用)
 ├── plc_proxy_ws/              # PLC 代理服務 (共用)
 ├── path_algorithm/            # 路徑規劃演算法 (共用)
-├── launch_ws/                 # Launch 編排服務
-└── [預留空間]                  # 未來擴展使用
+└── launch_ws/                 # Launch 編排服務
 ```
 
 ## 🌐 Web 服務工作空間
@@ -67,9 +64,84 @@ web_api_ws/src/
 - 資料驗證和序列化
 - 跨域資源共享 (CORS)
 
-## 🗄️ 資料管理工作空間
+## 🏗️ 基礎設施工作空間 (部分與 AGV 共用)
 
-### db_proxy_ws/ - 資料庫代理服務
+### shared_constants_ws/ - 共享常數定義 (與 AGV 共用)
+**職責**: 系統級常數、配置常數、通用數據結構定義
+
+#### 核心功能
+- 系統通用常數定義
+- 跨工作空間共享的數據結構
+- 配置參數標準化
+- 介面定義的基礎常數
+
+#### 跨環境共用特性
+- **AGV 和 AGVC 共用**: 確保兩個環境使用相同的常數定義
+- **載入優先級**: 最高優先級，所有其他工作空間都依賴此工作空間
+- **一致性保證**: 避免不同環境間的常數不一致問題
+
+### keyence_plc_ws/ - Keyence PLC 通訊 (與 AGV 共用)
+**職責**: 與 Keyence PLC 設備的直接通訊
+
+#### 通訊協定
+- Keyence 專有協定
+- TCP/IP 乙太網路連接
+- 即時資料交換
+- 錯誤處理和重連
+
+#### 資料交換
+- **讀取**: 感測器狀態、設備狀態
+- **寫入**: 控制指令、配置參數
+- **監控**: 連接狀態、通訊品質
+
+### plc_proxy_ws/ - PLC 代理服務 (與 AGV 共用)
+**職責**: PLC 通訊的 ROS 2 服務封裝
+
+#### 服務功能
+- ROS 2 服務介面
+- 資料格式轉換
+- 非同步通訊處理
+- 錯誤處理和重試
+
+#### 介面設計
+- 標準化的 ROS 2 訊息格式
+- 服務和動作介面
+- 主題發布和訂閱
+- 參數配置支援
+
+### path_algorithm/ - 路徑規劃演算法 (與 AGV 共用)
+**職責**: 路徑規劃、導航演算法實作
+
+#### 演算法支援
+- **A* 演算法**: 最短路徑搜尋
+- **RRT**: 快速隨機樹規劃
+- **動態視窗法**: 即時避障
+- **純追蹤**: 路徑跟隨控制
+
+#### AGVC 使用場景
+- 車隊路徑規劃協調
+- 全局路徑最佳化
+- 多 AGV 路徑衝突避免
+- 任務路線規劃
+
+### agv_ws/ - AGV 核心控制 (AGVC 監控需要)
+**職責**: AGVC 需要監控 AGV 狀態和事件，引入 AGV 核心介面
+
+#### AGVC 使用原因
+- **狀態監控**: 需要訂閱 AGV 狀態主題
+- **介面定義**: 使用 agv_interfaces 中定義的訊息和服務
+- **事件處理**: 監聽 AGV 狀態變化事件
+- **指令下發**: 向 AGV 發送控制指令
+
+#### 包含的 AGV 介面
+- AGV 狀態訊息定義
+- AGV 控制服務介面
+- AGV 事件和狀態轉換
+- 車型特定參數定義
+
+## 🗺️ 資料管理工作空間
+
+### db_proxy_ws/ - 資料庫代理服務 (AGVC 專用基礎)
 **職責**: 資料庫操作封裝、ORM 管理、資料一致性
 
 #### 套件結構
@@ -150,71 +222,32 @@ rcs_ws/src/
 - **KUKA 車隊整合**: 完整的 KUKA Fleet 管理和配置
 - **交通管制**: 交通區域控制和衝突避免
 
-### ⚠️ wcs_ws/ - 已整合至 ai_wcs_ws
-**說明**: 原本的 wcs_ws 倉庫控制系統功能已完全整合至 ai_wcs_ws 中，現在由 AI WCS 統一決策引擎提供更強大的智能倉庫控制功能。
-
-**遷移說明**: 
-- 原 WCS 功能現已由 `ai_wcs_ws` 的統一決策引擎實現
-- 七大業務流程統一調度管理
-- Work ID 分類管理系統 (220001, 230001, 100001, 100002等)
-- 詳細功能請參考 `app/ai_wcs_ws/CLAUDE.md`
-
-## 🤖 AI 和整合工作空間
-
-### ai_wcs_ws/ - AI 倉庫控制系統
-**職責**: AI 決策引擎、智能最佳化、預測分析
+### flow_wcs_ws/ - Linear Flow v2 WCS 系統
+**職責**: 唯一的 WCS 實作，基於 Linear Flow v2 格式的倉庫控制系統
 
 #### 套件結構
 ```
-ai_wcs_ws/src/
-├── ai_wcs/                   # AI 控制核心
-│   ├── decision_engine.py    # 決策引擎
-│   ├── optimization.py       # 最佳化演算法
-│   ├── prediction.py         # 預測分析
-│   └── learning.py           # 機器學習
-└── ai_interfaces/            # AI 介面定義
-    ├── msg/                  # AI 訊息
-    └── srv/                  # AI 服務
-```
-
-#### AI 功能
-- 任務分配最佳化
-- 路徑規劃最佳化
-- 負載預測和平衡
-- 異常檢測和預警
-- 效能分析和改進建議
-
-### simple_wcs_ws/ - Simple WCS 決策引擎
-**職責**: 極簡化配置驅動的 WCS 決策引擎，專注於業務流程自動化
-
-#### 套件結構
-```
-simple_wcs_ws/src/
-├── simple_wcs/               # Simple WCS 核心
-│   ├── wcs_engine.py         # 主要決策引擎 (ROS 2 節點)
-│   ├── flow_parser.py        # YAML 業務流程解析器
-│   ├── database_client.py    # SQLModel 資料庫客戶端
-│   └── __init__.py
-├── launch/                   # Launch 檔案
-│   └── simple_wcs_launch.py
-└── config/                   # 配置檔案
-    ├── flows.md              # 業務流程說明
-    └── locations.yaml        # 位置配置
+flow_wcs_ws/src/
+├── flow_wcs/                   # Flow WCS 核心
+│   ├── flow_executor.py       # 流程執行引擎
+│   ├── flow_monitor.py        # 流程監控服務
+│   ├── flow_validator.py      # 流程驗證器
+│   ├── database.py            # 直接資料庫存取
+│   ├── decorators.py          # 裝飾器函數註冊
+│   └── functions/              # 內建函數庫
+└── launch/                     # Launch 檔案
+    └── flow_wcs_launch.py
 ```
 
 #### 核心特色
-- **配置驅動**: 純 YAML 配置的業務邏輯
-- **多檔案架構**: 每個業務流程獨立 YAML 檔案
-- **ROS 2 + Zenoh**: 原生 ROS 2 節點，支援跨容器通訊
-- **AI Agent 友好**: 支援 `yq` 工具自動化配置管理
-- **SQLModel 整合**: 直接使用現有 db_proxy 系統
+- **Linear Flow v2**: 線性流程執行模式，取代節點圖架構
+- **變數解析**: 支援 `${variable}` 變數引用語法
+- **條件執行**: `skip_if` 和 `skip_if_not` 條件控制
+- **迴圈支援**: `foreach` 迴圈處理
+- **平行分支**: `parallel` 平行執行
+- **43個內建函數**: 完整的 query, check, task, action, control 函數庫
 
-#### 決策流程
-- 每10秒執行決策循環
-- 載入 `/app/config/wcs/flows/` 中所有業務流程
-- 按優先級順序評估觸發條件
-- 生成任務決策並透過 ROS 2 發布
-- 支援 Rack 旋轉檢查等核心業務流程
+## 🤖 整合工作空間
 
 ### kuka_fleet_ws/ - KUKA Fleet 整合
 **職責**: 與 KUKA Fleet 系統的整合和通訊
@@ -241,16 +274,34 @@ simple_wcs_ws/src/
 all_source             # 或別名: sa
 
 # 強制載入 AGVC 工作空間
-agvc_source           # 載入所有 AGVC 工作空間
+agvc_source           # 載入所有 AGVC 工作空間 (包含共用基礎設施和 flow_wcs_ws)
 
 # 檢查載入狀態
 echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
 ```
 
+### 工作空間載入順序
+
+#### 基礎設施工作空間 (優先載入)
+1. **shared_constants_ws**: 最高優先級，定義系統通用常數
+2. **keyence_plc_ws**: PLC 通訊基礎
+3. **plc_proxy_ws**: PLC 服務封裝
+4. **path_algorithm**: 路徑規劃算法
+5. **agv_ws**: AGV 介面定義 (AGVC 監控需要)
+6. **db_proxy_ws**: 資料庫代理服務 (AGVC 核心基礎)
+
+#### AGVC 應用工作空間 (依序載入)
+7. **ecs_ws**: 設備控制系統
+8. **rcs_ws**: 機器人控制系統
+9. **flow_wcs_ws**: Linear Flow v2 WCS (唯一 WCS 實作)
+10. **web_api_ws**: Web API 和使用者介面
+11. **kuka_fleet_ws**: KUKA Fleet 外部整合
+12. **launch_ws**: AGVC 啟動編排服務
+
 ### 建置管理
 ```bash
 # 建置所有 AGVC 工作空間
-build_all             # 智能建置腳本
+build_all             # 智能建置腳本 (包含共用基礎設施)
 
 # 建置特定工作空間
 colcon build --packages-select web_api
@@ -272,6 +323,32 @@ start_ecs             # 啟動設備控制系統
 start_rcs             # 啟動機器人控制系統
 start_wcs             # 啟動倉庫控制系統
 ```
+
+## 📋 工作空間總結
+
+### 與 AGV 共用的基礎設施工作空間 (4個)
+- **shared_constants_ws**: 系統級常數定義 (跨環境共用)
+- **keyence_plc_ws**: PLC 通訊基礎 (AGV 和 AGVC 都需要)
+- **plc_proxy_ws**: PLC 服務封裝 (統一的 ROS 2 介面)
+- **path_algorithm**: 路徑規劃算法 (AGV 執行，AGVC 協調)
+
+### AGVC 特殊基礎工作空間 (2個)
+- **agv_ws**: AGV 介面定義 (AGVC 監控 AGV 狀態需要)
+- **db_proxy_ws**: 資料庫代理服務 (AGVC 核心資料基礎)
+
+### AGVC 專用應用工作空間 (6個)
+- **ecs_ws**: 設備控制系統
+- **rcs_ws**: 機器人控制系統 (車隊協調)
+- **flow_wcs_ws**: Linear Flow v2 WCS (唯一 WCS 實作)
+- **web_api_ws**: Web API 和使用者介面
+- **kuka_fleet_ws**: KUKA Fleet 外部整合
+- **launch_ws**: AGVC 啟動編排
+
+### 雙環境工作空間設計原則
+- **基礎共用**: 4個基礎設施工作空間在兩個環境中保持一致
+- **職責分離**: AGV 專注車載控制，AGVC 專注車隊管理
+- **介面統一**: 透過共用工作空間確保介面一致性
+- **資料隔離**: AGVC 擁有專用的資料管理基礎設施
 
 ## 🔧 開發指導
 

@@ -190,16 +190,32 @@ agv_ws/src/
 all_source             # 或別名: sa
 
 # 強制載入 AGV 工作空間
-agv_source            # 載入所有 AGV 工作空間
+agv_source            # 載入所有 AGV 工作空間 (包含共用基礎設施)
 
 # 檢查載入狀態
 echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
 ```
 
+### 工作空間載入順序
+
+#### 基礎設施工作空間 (優先載入)
+1. **shared_constants_ws**: 最高優先級，定義系統通用常數
+2. **keyence_plc_ws**: PLC 通訊基礎
+3. **plc_proxy_ws**: PLC 服務封裝
+4. **path_algorithm**: 路徑規劃算法
+
+#### AGV 應用工作空間 (依序載入)
+5. **agv_cmd_service_ws**: 手動指令服務
+6. **joystick_ws**: 搖桿控制
+7. **agv_ws**: 核心 AGV 控制
+8. **sensorpart_ws**: 感測器處理
+9. **uno_gpio_ws**: GPIO 控制
+10. **launch_ws**: 啟動編排服務
+
 ### 建置管理
 ```bash
 # 建置所有 AGV 工作空間
-build_all             # 智能建置腳本
+build_all             # 智能建置腳本 (包含共用基礎設施)
 
 # 建置特定工作空間
 colcon build --packages-select agv_base
@@ -218,6 +234,28 @@ ros2 launch loader_agv launch.py
 ros2 run agv_cmd_service cmd_service_node
 ros2 run joystick_ws joystick_node
 ```
+
+## 📋 工作空間總結
+
+### 與 AGVC 共用的基礎設施工作空間 (4個)
+- **shared_constants_ws**: 系統級常數定義 (跨環境共用)
+- **keyence_plc_ws**: PLC 通訊基礎 (AGV 和 AGVC 都需要)
+- **plc_proxy_ws**: PLC 服務封裝 (統一的 ROS 2 介面)
+- **path_algorithm**: 路徑規劃算法 (AGV 執行，AGVC 協調)
+
+### AGV 專用應用工作空間 (6個)
+- **agv_cmd_service_ws**: 手動指令服務
+- **joystick_ws**: 搖桿控制整合
+- **agv_ws**: 核心 AGV 控制 (狀態機、車型實作)
+- **sensorpart_ws**: 感測器資料處理
+- **uno_gpio_ws**: GPIO 控制服務
+- **launch_ws**: AGV 啟動編排
+
+### 共用工作空間設計理念
+- **一致性**: 確保 AGV 和 AGVC 使用相同的基礎服務
+- **維護性**: 基礎設施變更只需在一處進行
+- **效率性**: 避免重複開發相同功能
+- **可靠性**: 經過雙環境驗證的穩定基礎
 
 ## 🔧 開發指導
 

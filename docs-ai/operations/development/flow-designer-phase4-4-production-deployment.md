@@ -51,7 +51,7 @@ v2.0.0 - Flow Designer + YAML DSL 完整系統
 ```yaml
 version_history:
   v2.0.0:
-    release_date: "2024-01-15"
+    release_date: "2025-08-11"
     description: "Flow Designer + YAML DSL 完整系統發布"
     features:
       - "視覺化流程設計器"
@@ -62,7 +62,7 @@ version_history:
     breaking_changes: []
     
   v2.0.1:
-    release_date: "2024-01-20"
+    release_date: "2025-08-11"
     description: "效能優化和錯誤修復"
     features:
       - "批量渲染效能提升 50%"
@@ -74,7 +74,7 @@ version_history:
     breaking_changes: []
 
   v2.1.0:
-    release_date: "2024-02-01"
+    release_date: "2025-08-11"
     description: "進階功能和整合增強"
     features:
       - "Canvas/WebGL 渲染引擎"
@@ -708,5 +708,5 @@ echo "🎉 Flow Designer 生產部署完成！"
 ---
 
 **📝 文檔版本**: v1.0  
-**📅 更新日期**: 2024-01-15  
+**📅 更新日期**: 2025-08-11  
 **👥 目標用戶**: DevOps 工程師、系統管理員、生產環境運維人員
