@@ -160,29 +160,7 @@ def initialize_locations(session):
             "name": "SystemEmptyRackArea_3", "description": "系統空車區"},
             {"id": 34, "location_status_id": 1, "room_id": 1, "node_id": 34,
             "name": "SystemEmptyRackArea_4", "description": "系統空車區"},
-
-            # 人工收料區 - Flow WCS 系統使用 (支持中文名稱查詢)
-            {"id": 31001, "location_status_id": 2, "room_id": 1, "node_id": 31001,
-            "name": "人工收料區_01", "description": "人工收料區位置1"},
-            {"id": 31002, "location_status_id": 2, "room_id": 1, "node_id": 31002,
-            "name": "人工收料區_02", "description": "人工收料區位置2"},
-            {"id": 31003, "location_status_id": 2, "room_id": 1, "node_id": 31003,
-            "name": "人工收料區_03", "description": "人工收料區位置3"},
-            {"id": 31004, "location_status_id": 2, "room_id": 1, "node_id": 31004,
-            "name": "人工收料區_04", "description": "人工收料區位置4"},
-            {"id": 31005, "location_status_id": 2, "room_id": 1, "node_id": 31005,
-            "name": "人工收料區_05", "description": "人工收料區位置5"},
-            {"id": 31006, "location_status_id": 2, "room_id": 1, "node_id": 31006,
-            "name": "人工收料區_06", "description": "人工收料區位置6"},
-            {"id": 31007, "location_status_id": 2, "room_id": 1, "node_id": 31007,
-            "name": "人工收料區_07", "description": "人工收料區位置7"},
-            {"id": 31008, "location_status_id": 2, "room_id": 1, "node_id": 31008,
-            "name": "人工收料區_08", "description": "人工收料區位置8"},
-            {"id": 31009, "location_status_id": 2, "room_id": 1, "node_id": 31009,
-            "name": "人工收料區_09", "description": "人工收料區位置9"},
-            {"id": 31010, "location_status_id": 2, "room_id": 1, "node_id": 31010,
-            "name": "人工收料區_10", "description": "人工收料區位置10"},
-
+            
             # 原有的手動回收區 (保持向後相容)
             {"id": 51, "location_status_id": 1, "room_id": 1, "node_id": 51,
             "name": "ManualReceiveArea_1", "description": "手動回收區"},

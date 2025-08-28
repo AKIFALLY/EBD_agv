@@ -129,6 +129,12 @@ class OpUiServer:
                         status_code=403,
                         detail=auth_result["message"]
                     )
+                
+                # 檢查設備類型是否正確
+                license_data = auth_result["license_data"]
+                if license_data.device_type != "injection_machine":
+                    # 重定向到根路由，讓根路由處理正確的導向
+                    return RedirectResponse(url=f"/?deviceId={device_id}")
 
                 return self.templates.TemplateResponse("home.html", {
                     "request": request,
@@ -154,6 +160,12 @@ class OpUiServer:
                         status_code=403,
                         detail=auth_result["message"]
                     )
+                
+                # 檢查設備類型是否正確
+                license_data = auth_result["license_data"]
+                if license_data.device_type != "injection_machine":
+                    # 重定向到根路由，讓根路由處理正確的導向
+                    return RedirectResponse(url=f"/?deviceId={device_id}")
 
                 return self.templates.TemplateResponse("setting.html", {
                     "request": request,
@@ -179,6 +191,12 @@ class OpUiServer:
                         status_code=403,
                         detail=auth_result["message"]
                     )
+                
+                # 檢查設備類型是否正確
+                license_data = auth_result["license_data"]
+                if license_data.device_type != "injection_machine":
+                    # 重定向到根路由，讓根路由處理正確的導向
+                    return RedirectResponse(url=f"/?deviceId={device_id}")
 
                 return self.templates.TemplateResponse("rack.html", {
                     "request": request,
@@ -207,6 +225,11 @@ class OpUiServer:
                     )
                 
                 license_data = auth_result["license_data"]
+                
+                # 檢查設備類型是否正確
+                if license_data.device_type != "hmi_terminal":
+                    # 重定向到根路由，讓根路由處理正確的導向
+                    return RedirectResponse(url=f"/?deviceId={device_id}")
                 
                 # 2. 從 permissions 欄位取得配置
                 permissions = license_data.permissions or {}

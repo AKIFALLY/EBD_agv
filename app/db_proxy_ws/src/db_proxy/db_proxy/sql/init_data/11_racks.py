@@ -21,20 +21,7 @@ def initialize_racks(session):
         {"id": 4, "name": "004", "location_id": 97, "agv_id": None,
             "is_carry": 0, "product_id": 1, "status_id": 1, "direction": 180},
         {"id": 5, "name": "005", "location_id": None, "agv_id": 123,
-            "is_carry": 1, "product_id": 1, "status_id": 1, "direction": 180},
-        
-        # Flow WCS 測試用 racks
-        # Flow 1: full_rack_to_manual_area - 滿載 rack 在傳送箱出口（使用中）
-        {"id": 101, "name": "SWC001", "location_id": 20003, "agv_id": None,
-            "is_carry": 0, "product_id": 1, "status_id": 2, "direction": 0, "is_docked": 1},
-        
-        # Flow 2: rack_rotation_inlet - A面完成、B面有工作的 rack 在房間入口（使用中）
-        {"id": 102, "name": "SWC002", "location_id": 10001, "agv_id": None,
-            "is_carry": 0, "product_id": 1, "status_id": 2, "direction": 0, "is_docked": 1},
-        
-        # Flow 3: rack_rotation_exit - B面完成、A面有工作的 rack 在房間出口（使用中）
-        {"id": 103, "name": "SWC003", "location_id": 10002, "agv_id": None,
-            "is_carry": 0, "product_id": 1, "status_id": 2, "direction": 180, "is_docked": 1}
+            "is_carry": 1, "product_id": 1, "status_id": 1, "direction": 180}
     ]
     
     insert_data_if_not_exists_name(session, default_rack, Rack)
