@@ -8,6 +8,9 @@ import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import asyncio
+import traceback
+import sys
 
 # Try to import httpx, but don't fail if it's not available
 try:
@@ -21,6 +24,15 @@ from fastapi import APIRouter, Request, HTTPException, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+
+# Import FlowExecutor for actual execution
+sys.path.append('/app/flow_wcs_ws/src/flow_wcs')
+try:
+    from flow_wcs.flow_executor import FlowExecutor
+    FLOW_EXECUTOR_AVAILABLE = True
+except ImportError:
+    FLOW_EXECUTOR_AVAILABLE = False
+    print("Warning: FlowExecutor not available, actual execution disabled")
 
 # Create router
 router = APIRouter(prefix="/linear-flow", tags=["linear_flow"])
@@ -484,7 +496,7 @@ async def get_available_functions(request: Request, source: str = "flow_wcs"):
         print("⚠️ No cache available, falling back to static functions")
     
     # Static fallback with defaults (Layer 3)
-    # Auto-generated at: 2025-08-18T09:48:17.198190
+    # Auto-generated at: 2025-08-21T06:54:41.141075
     functions = {
         "query": [
             {
@@ -514,6 +526,13 @@ async def get_available_functions(request: Request, source: str = "flow_wcs"):
                 "params": ["status", "type"],
                 "returns": "array",
                 "defaults": {"status": "idle", "type": "cargo"}
+            },
+            {
+                "name": "query.rooms",
+                "description": "查詢房間資訊",
+                "params": ["room_id", "production_status"],
+                "returns": "array",
+                "defaults": {"room_id": None, "production_status": None}
             },
         ],
         "check": [
@@ -675,6 +694,20 @@ async def get_available_functions(request: Request, source: str = "flow_wcs"):
                 "returns": "boolean",
                 "defaults": {"data": {}, "path": "/tmp/flow_data.json"}
             },
+            {
+                "name": "action.send_alarm",
+                "description": "發送警報",
+                "params": ["message", "severity"],
+                "returns": "boolean",
+                "defaults": {"message": "System alert", "severity": "medium"}
+            },
+            {
+                "name": "action.trigger_event",
+                "description": "觸發事件",
+                "params": ["event_type", "agv_id", "data"],
+                "returns": "boolean",
+                "defaults": {"event_type": "custom_event", "agv_id": None, "data": {}}
+            },
         ],
         "control": [
             {
@@ -720,8 +753,8 @@ async def get_available_functions(request: Request, source: str = "flow_wcs"):
                 "defaults": {"variable": "counter", "operation": "set", "value": 0}
             },
             {
-                "name": "control.switch_advanced",
-                "description": "進階條件分支控制",
+                "name": "control.switch",
+                "description": "條件分支控制",
                 "params": ["value", "cases"],
                 "returns": "any",
                 "defaults": {"value": 0, "cases": []}
@@ -938,3 +971,180 @@ async def import_flow(request: Request):
         return {"success": False, "error": f"Invalid YAML: {str(e)}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+@router.post("/api/flows/execute")
+async def execute_flow_test(request: Request):
+    """API: Execute flow using FlowExecutor for testing"""
+    try:
+        if not FLOW_EXECUTOR_AVAILABLE:
+            return {
+                "success": False,
+                "error": "FlowExecutor not available. Please ensure flow_wcs is properly installed."
+            }
+        
+        # Get request data
+        data = await request.json()
+        flow_data = data.get('flow_data')
+        dry_run = data.get('dry_run', True)
+        
+        if not flow_data:
+            raise HTTPException(status_code=400, detail="Missing flow_data")
+        
+        # Extract flow_id from flow_data if available
+        flow_id = flow_data.get('flow_id', 'test_flow')
+        
+        # Validate flow data
+        if not flow_data.get('workflow'):
+            raise HTTPException(status_code=404, detail="Flow not found")
+        
+        # Prepare execution context
+        # In test mode with dry_run, use work_id 0 to avoid foreign key constraint issues
+        # Extract work_id from nested flow structure if present
+        work_id = 0  # Default for test mode
+        if 'flow' in flow_data and 'work_id' in flow_data['flow']:
+            # If dry_run is enabled, use 0 to avoid database constraint issues
+            work_id = 0 if dry_run else int(flow_data['flow'].get('work_id', 0))
+        elif 'work_id' in flow_data:
+            work_id = 0 if dry_run else int(flow_data.get('work_id', 0))
+        
+        execution_context = {
+            'test_mode': True,
+            'dry_run': dry_run,
+            'variables': {
+                # Initialize system variables
+                '_errors': [],
+                '_flow_id': flow_id,
+                '_flow_name': flow_data.get('flow_name', flow_id),
+                '_work_id': work_id,
+                '_timestamp': datetime.now().isoformat(),
+                '_execution_time': 0
+            },
+            'flow_id': flow_id,
+            'flow_name': flow_data.get('flow_name', flow_id),
+            'work_id': work_id,  # Use 0 in dry_run mode to avoid FK constraints
+            'execution_id': f"test_{flow_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            'execution_log': [],
+            'logs': [],
+            'errors': [],
+            'status': 'pending',
+            'current_section': None,
+            'current_step': None,
+            'start_time': datetime.now()
+        }
+        
+        # Create FlowExecutor instance
+        executor = FlowExecutor(
+            flow_data=flow_data,
+            context=execution_context,
+            ros_node=None  # No ROS node in test mode
+        )
+        
+        # Execute flow with tracking
+        result = await executor.execute_in_test_mode(dry_run=dry_run)
+        
+        # Format logs for frontend display
+        formatted_logs = []
+        for item in result.get('trace', []):
+            formatted_logs.append({
+                'timestamp': item.get('timestamp', ''),
+                'message': f"[{item.get('step_id', '')}] {item.get('function', '')} - {item.get('status', '')}",
+                'level': 'error' if item.get('status') == 'failed' else 'info'
+            })
+        
+        # Add any errors as log entries
+        for error in result.get('errors', []):
+            formatted_logs.append({
+                'timestamp': '',
+                'message': f"錯誤: {error}",
+                'level': 'error'
+            })
+        
+        return {
+            "success": True,
+            "result": result,
+            "execution_id": execution_context['execution_id'],
+            "logs": formatted_logs,
+            "trace": result.get('trace', []),
+            "variables": result.get('final_variables', {}),
+            "errors": result.get('errors', []),
+            "detailed_logs": result.get('detailed_logs', []),
+            "raw_logs": result.get('logs', [])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
+async def execute_flow_with_tracking(executor):
+    """Execute flow with detailed tracking for test mode"""
+    try:
+        # Initialize tracking
+        start_time = datetime.now()
+        execution_steps = []
+        
+        # Override executor methods to track execution
+        original_execute_step = executor.execute_step
+        
+        async def tracked_execute_step(step):
+            step_start = datetime.now()
+            step_info = {
+                'step_id': step.get('id', 'unnamed'),
+                'exec': step.get('exec', 'unknown'),
+                'params': step.get('params', {}),
+                'start_time': step_start.isoformat()
+            }
+            
+            try:
+                # Execute original step
+                result = await original_execute_step(step)
+                
+                step_info['status'] = 'success'
+                step_info['result'] = str(result) if result is not None else None
+                step_info['duration'] = (datetime.now() - step_start).total_seconds()
+                
+            except Exception as e:
+                step_info['status'] = 'error'
+                step_info['error'] = str(e)
+                step_info['duration'] = (datetime.now() - step_start).total_seconds()
+                raise
+            
+            finally:
+                execution_steps.append(step_info)
+                # Log to context
+                if hasattr(executor, 'context') and 'execution_log' in executor.context:
+                    executor.context['execution_log'].append(step_info)
+            
+            return result
+        
+        # Replace method
+        executor.execute_step = tracked_execute_step
+        
+        # Execute the flow
+        result = await executor.execute()
+        
+        # Calculate total execution time
+        total_duration = (datetime.now() - start_time).total_seconds()
+        
+        return {
+            'status': result.get('status', 'unknown'),
+            'duration': total_duration,
+            'steps_executed': len(execution_steps),
+            'steps': execution_steps,
+            'variables': executor.context.get('variables', {}),
+            'errors': result.get('errors', [])
+        }
+        
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': str(e),
+            'steps_executed': len(execution_steps),
+            'steps': execution_steps
+        }

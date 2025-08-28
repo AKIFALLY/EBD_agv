@@ -193,8 +193,5 @@ def create_rack_rotation_task(location, rack, work):
 **Solution**: Include room_id in both task creation params and metadata
 
 ## 🔗 Cross References
-- Linear Flow Advanced Features: @docs-ai/knowledge/system/linear-flow-advanced-features.md
-- Flow WCS System: @docs-ai/knowledge/system/flow-wcs-system.md
 - KUKA Fleet API: @docs-ai/knowledge/protocols/kuka-fleet-api.md
 - WCS Database Design: @docs-ai/knowledge/agv-domain/wcs-database-design.md
-- Troubleshooting Cases: @docs-ai/operations/development/linear-flow-troubleshooting-cases.md

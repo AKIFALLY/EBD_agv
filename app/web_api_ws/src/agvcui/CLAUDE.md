@@ -60,7 +60,17 @@ routers/
 ├── works.py            # 工作管理API
 ├── audit_logs.py       # 審計日誌API
 ├── rosout_logs.py      # ROS日誌API
-└── runtime_logs.py     # 運行時日誌API
+├── runtime_logs.py     # 運行時日誌API
+├── tafl_editor.py      # TAFL Editor API (路由: /tafl/editor)
+└── linear_flow_designer.py  # Linear Flow Designer (即將被 TAFL Editor 取代)
+```
+
+### 🚨 重要路由說明
+**TAFL Editor 路由**: `/tafl/editor` (⚠️ 不是 `/tafl-editor`)
+- 完整路徑由前綴 `/tafl` + 端點 `/editor` 組成
+- JavaScript API 呼叫: `/tafl/verbs`, `/tafl/flows`, `/tafl/validate` 等
+- **註：Linear Flow Designer 即將廢棄，由 TAFL Editor 完全取代**
+
 ```
 
 ### 前端資源

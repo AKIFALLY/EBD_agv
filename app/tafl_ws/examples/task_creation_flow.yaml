@@ -1,0 +1,77 @@
+# Task Creation Flow Example
+# This example shows how to query locations and create tasks
+
+metadata:
+  id: task_creation_001
+  name: Task Creation Flow
+  version: 1.0
+  description: Query locations and create tasks for available racks
+
+variables:
+  room_id: 1
+  work_id: 220001
+  created_tasks: []
+
+flow:
+  # Query available locations
+  - query:
+      target: locations
+      where:
+        room_id: "${room_id}"
+        status: available
+      store_as: available_locations
+  
+  # Check if we have locations
+  - check:
+      condition: "${available_locations.length} > 0"
+      store_as: has_locations
+  
+  - if:
+      condition: "${has_locations}"
+      then:
+        # Process each location
+        - for:
+            each: location
+            in: "${available_locations}"
+            do:
+              # Check if location has racks
+              - check:
+                  condition: "${location.racks.length} > 0"
+                  store_as: has_racks
+              
+              - if:
+                  condition: "${has_racks}"
+                  then:
+                    # Create task for this location
+                    - create:
+                        target: task
+                        params:
+                          work_id: "${work_id}"
+                          location_id: "${location.id}"
+                          priority: 1
+                          status: pending
+                        store_as: new_task
+                    
+                    # Notify about task creation
+                    - notify:
+                        channel: system
+                        message: "Created task ${new_task.id} for location ${location.id}"
+                    
+                    # Update location status
+                    - update:
+                        target: location
+                        where:
+                          id: "${location.id}"
+                        set:
+                          status: occupied
+                          task_id: "${new_task.id}"
+      else:
+        - notify:
+            channel: warning
+            message: "No available locations found in room ${room_id}"
+            level: warning
+  
+  # Final summary
+  - notify:
+      channel: system
+      message: "Task creation flow completed"

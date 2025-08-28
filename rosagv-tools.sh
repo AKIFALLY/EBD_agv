@@ -57,6 +57,11 @@ show_main_menu() {
     echo -e "  ${GREEN}dev-test${NC}           # 快速測試"
     echo -e "  ${GREEN}dev-check${NC}          # 代碼檢查"
     echo ""
+    echo -e "${YELLOW}📝 TAFL 語言工具:${NC}"
+    echo -e "  ${GREEN}tafl-validate [file]${NC} # 驗證 TAFL 檔案格式"
+    echo -e "  ${GREEN}tafl-validate all${NC}    # 驗證所有 TAFL 檔案"
+    echo -e "  ${GREEN}tafl-validate list${NC}   # 列出所有 TAFL 檔案"
+    echo ""
     echo -e "${YELLOW}❓ 幫助說明:${NC}"
     echo -e "  ${GREEN}tools-help${NC}         # 工具詳細說明"
     echo -e "  ${GREEN}menu${NC}               # 顯示此選單"
@@ -216,6 +221,18 @@ run_hardware_config() {
     bash -c "cd '$SCRIPT_DIR' && scripts/config-tools/hardware-mapping.sh"
 }
 
+# TAFL 驗證工具
+run_tafl_validate() {
+    local script="$SCRIPT_DIR/scripts/tafl-tools/tafl-validate.sh"
+    if [ -f "$script" ]; then
+        bash "$script" "$@"
+    else
+        echo -e "${RED}❌ 找不到 TAFL 驗證工具腳本${NC}"
+        echo -e "${YELLOW}檔案應該在: $script${NC}"
+        exit 1
+    fi
+}
+
 run_sync_fallback() {
     echo -e "${BLUE}🔄 同步 Linear Flow 靜態備援...${NC}"
     bash -c "cd '$SCRIPT_DIR' && scripts/sync-static-fallback.sh sync"
@@ -356,6 +373,12 @@ case "${1:-menu}" in
         ;;
     "sync-fallback")
         run_sync_fallback
+        ;;
+        
+    # TAFL 工具
+    "tafl-validate")
+        shift  # 移除 'tafl-validate' 參數
+        run_tafl_validate "$@"
         ;;
         
     # 節點管理

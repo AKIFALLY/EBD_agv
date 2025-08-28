@@ -1,0 +1,44 @@
+# Simple TAFL Flow Example
+# This example demonstrates basic TAFL operations
+
+metadata:
+  id: simple_flow_001
+  name: Simple Flow Example
+  version: 1.0
+  description: Demonstrates basic TAFL syntax and operations
+
+variables:
+  counter: 0
+  message: ""
+  items: [1, 2, 3, 4, 5]
+
+flow:
+  # Set variables
+  - set: counter = 10
+  - set: message = Hello TAFL
+  
+  # Conditional execution
+  - if:
+      condition: "${counter} > 5"
+      then:
+        - set:
+            status: "Counter is large"
+      else:
+        - set:
+            status: "Counter is small"
+  
+  # Loop through items
+  - for:
+      each: item
+      in: "${items}"
+      do:
+        - set:
+            processed: "${item} * 2"
+        - notify:
+            channel: debug
+            message: "Processed item ${item}: result ${processed}"
+  
+  # Final notification
+  - notify:
+      channel: system
+      message: "Flow completed with counter=${counter}"

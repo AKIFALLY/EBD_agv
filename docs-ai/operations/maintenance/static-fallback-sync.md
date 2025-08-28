@@ -134,6 +134,5 @@ grep ERROR /tmp/sync_static_fallback.log
 3. **快照備份**: 定期備份整個配置目錄
 
 ## 🔗 相關文檔
-- Linear Flow Designer 測試模式: @docs-ai/knowledge/system/linear-flow-designer-test-cache-system.md
 - 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
 - 統一工具: @docs-ai/operations/tools/unified-tools.md

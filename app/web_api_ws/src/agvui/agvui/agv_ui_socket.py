@@ -33,6 +33,12 @@ class AgvUiSocket:
         # print(f"通知 AGV 狀態更新:", agv_status_data)
         payload = jsonable_encoder({"agv_status": agv_status_data})
         await self.sio.emit("agv_status_update", payload)
+    
+    async def notify_plc_status(self, plc_status_data):
+        """廣播 PLC 完整狀態資料 (330+ 屬性)"""
+        # print(f"通知 PLC 狀態更新: {plc_status_data.get('agv_id')} - {len(plc_status_data)} 屬性")
+        payload = jsonable_encoder({"plc_status": plc_status_data})
+        await self.sio.emit("plc_status_update", payload)
 
     async def notify_message(self, sid, message):
         payload = jsonable_encoder({"message": message})

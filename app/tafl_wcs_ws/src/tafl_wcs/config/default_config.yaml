@@ -1,0 +1,41 @@
+# TAFL WCS Default Configuration
+tafl_wcs:
+  # Directory containing TAFL flow files
+  flows_dir: "/app/config/tafl/flows"
+  
+  # Interval for scanning flow files (seconds)
+  scan_interval: 10.0
+  
+  # Database connection
+  database:
+    url: "postgresql://agvc:password@192.168.100.254:5432/agvc"
+    pool_size: 5
+    max_overflow: 5
+    pool_timeout: 30
+    pool_recycle: 180
+  
+  # Execution settings
+  execution:
+    # Auto-execute enabled flows
+    auto_execute: true
+    
+    # Execution interval for auto-execution (seconds)
+    execution_interval: 60.0
+    
+    # Maximum parallel flows
+    max_parallel_flows: 5
+    
+    # Execution timeout per flow (seconds)
+    timeout: 300
+  
+  # Logging settings
+  logging:
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # ROS 2 topics
+  topics:
+    status: "/tafl_wcs/status"
+    events: "/tafl_wcs/events"
+    trigger: "/tafl_wcs/trigger"
+    command: "/tafl_wcs/command"

@@ -1,0 +1,365 @@
+#!/usr/bin/env python3
+"""
+TAFL WCS Manager - Manages TAFL flow loading, caching, and execution
+"""
+
+import os
+import yaml
+import asyncio
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+from datetime import datetime
+import hashlib
+from concurrent.futures import ThreadPoolExecutor
+
+from .tafl_executor_wrapper import TAFLExecutorWrapper
+
+
+class TAFLWCSManager:
+    """Manager for TAFL WCS flows"""
+    
+    def __init__(self, flows_dir: str = None, database_url: str = None, logger=None):
+        """Initialize TAFL WCS Manager
+        
+        Args:
+            flows_dir: Directory containing TAFL flow files
+            database_url: Database connection string
+            logger: Logger instance
+        """
+        self.logger = logger
+        self.flows_dir = Path(flows_dir or '/app/config/tafl/flows')
+        self.database_url = database_url
+        
+        # Flow cache
+        self.loaded_flows = {}
+        self.flow_checksums = {}
+        self.active_executions = {}
+        
+        # Executor
+        self.executor_wrapper = TAFLExecutorWrapper(database_url, logger)
+        
+        # Thread pool for parallel execution
+        self.thread_pool = ThreadPoolExecutor(max_workers=5)
+        
+        # Ensure flows directory exists
+        self.flows_dir.mkdir(parents=True, exist_ok=True)
+        if self.logger:
+            self.logger.info(f"TAFL WCS Manager initialized with flows_dir: {self.flows_dir}")
+    
+    def scan_flows(self) -> List[str]:
+        """Scan flows directory and load TAFL files
+        
+        Returns:
+            List of loaded flow IDs
+        """
+        if not self.flows_dir.exists():
+            if self.logger:
+                self.logger.warning(f"Flows directory not found: {self.flows_dir}")
+            return []
+        
+        loaded_flow_ids = []
+        yaml_files = list(self.flows_dir.glob("*.yaml")) + list(self.flows_dir.glob("*.yml"))
+        
+        if self.logger:
+            self.logger.info(f"Found {len(yaml_files)} YAML files in {self.flows_dir}")
+        
+        for flow_file in yaml_files:
+            try:
+                # Read file content
+                content = flow_file.read_text(encoding='utf-8')
+                
+                # Calculate checksum
+                checksum = hashlib.md5(content.encode()).hexdigest()
+                
+                # Parse YAML to get metadata
+                flow_data = yaml.safe_load(content)
+                
+                if self._validate_tafl_structure(flow_data):
+                    flow_id = flow_data.get('metadata', {}).get('id', flow_file.stem)
+                    
+                    # Check if flow needs reloading
+                    if flow_id not in self.flow_checksums or self.flow_checksums[flow_id] != checksum:
+                        self.loaded_flows[flow_id] = {
+                            'id': flow_id,
+                            'name': flow_data.get('metadata', {}).get('name', flow_id),
+                            'description': flow_data.get('metadata', {}).get('description', ''),
+                            'enabled': flow_data.get('metadata', {}).get('enabled', True),
+                            'content': content,
+                            'data': flow_data,
+                            'file': str(flow_file),
+                            'checksum': checksum,
+                            'loaded_at': datetime.now().isoformat()
+                        }
+                        self.flow_checksums[flow_id] = checksum
+                        loaded_flow_ids.append(flow_id)
+                        
+                        if self.logger:
+                            self.logger.info(f"Loaded TAFL flow: {flow_id}")
+                else:
+                    if self.logger:
+                        self.logger.warning(f"Invalid TAFL structure in {flow_file}")
+                        
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Failed to load flow {flow_file}: {e}")
+        
+        return loaded_flow_ids
+    
+    def _validate_tafl_structure(self, flow_data: Dict) -> bool:
+        """Validate TAFL flow structure
+        
+        Args:
+            flow_data: Parsed YAML data
+        
+        Returns:
+            True if valid TAFL structure
+        """
+        # Check for TAFL v1.0/v1.1 structure
+        if not isinstance(flow_data, dict):
+            return False
+        
+        # Must have metadata
+        if 'metadata' not in flow_data:
+            return False
+        
+        # Must have flow section
+        if 'flow' not in flow_data:
+            return False
+        
+        # Metadata must have id
+        metadata = flow_data.get('metadata', {})
+        if not metadata.get('id'):
+            return False
+        
+        return True
+    
+    async def execute_flow(self, flow_id: str) -> Dict[str, Any]:
+        """Execute a TAFL flow by ID
+        
+        Args:
+            flow_id: Flow identifier
+        
+        Returns:
+            Execution result
+        """
+        if flow_id not in self.loaded_flows:
+            return {
+                'status': 'failed',
+                'error': f"Flow '{flow_id}' not found",
+                'flow_id': flow_id
+            }
+        
+        if flow_id in self.active_executions:
+            return {
+                'status': 'skipped',
+                'reason': 'Flow is already executing',
+                'flow_id': flow_id
+            }
+        
+        flow = self.loaded_flows[flow_id]
+        
+        # Check if flow is enabled
+        if not flow.get('enabled', True):
+            return {
+                'status': 'skipped',
+                'reason': 'Flow is disabled',
+                'flow_id': flow_id
+            }
+        
+        # Mark as active
+        self.active_executions[flow_id] = {
+            'started_at': datetime.now().isoformat(),
+            'status': 'running'
+        }
+        
+        try:
+            # Execute flow
+            if self.logger:
+                self.logger.info(f"Starting execution of flow: {flow_id}")
+            
+            result = await self.executor_wrapper.execute_flow(
+                flow['content'],
+                flow_id
+            )
+            
+            # Update active executions
+            self.active_executions[flow_id].update({
+                'completed_at': datetime.now().isoformat(),
+                'status': result.get('status', 'unknown'),
+                'result': result
+            })
+            
+            return result
+            
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Flow execution failed for {flow_id}: {e}")
+            
+            self.active_executions[flow_id].update({
+                'completed_at': datetime.now().isoformat(),
+                'status': 'failed',
+                'error': str(e)
+            })
+            
+            return {
+                'status': 'failed',
+                'error': str(e),
+                'flow_id': flow_id
+            }
+        finally:
+            # Remove from active after a delay
+            await asyncio.sleep(5)
+            if flow_id in self.active_executions:
+                del self.active_executions[flow_id]
+    
+    async def execute_all_enabled_flows(self) -> List[Dict[str, Any]]:
+        """Execute all enabled flows
+        
+        Returns:
+            List of execution results
+        """
+        results = []
+        
+        for flow_id, flow in self.loaded_flows.items():
+            if flow.get('enabled', True):
+                result = await self.execute_flow(flow_id)
+                results.append(result)
+        
+        return results
+    
+    def get_flow_status(self, flow_id: str) -> Dict[str, Any]:
+        """Get flow status
+        
+        Args:
+            flow_id: Flow identifier
+        
+        Returns:
+            Flow status information
+        """
+        if flow_id not in self.loaded_flows:
+            return {
+                'status': 'not_found',
+                'flow_id': flow_id
+            }
+        
+        flow = self.loaded_flows[flow_id]
+        status = {
+            'flow_id': flow_id,
+            'name': flow['name'],
+            'enabled': flow.get('enabled', True),
+            'loaded_at': flow['loaded_at'],
+            'file': flow['file']
+        }
+        
+        # Add execution status if active
+        if flow_id in self.active_executions:
+            status['execution'] = self.active_executions[flow_id]
+        else:
+            status['execution'] = {'status': 'idle'}
+        
+        # Add execution stats if available
+        stats = self.executor_wrapper.execution_stats.get(flow_id)
+        if stats:
+            status['last_execution'] = stats
+        
+        return status
+    
+    def get_all_flows(self) -> Dict[str, Dict[str, Any]]:
+        """Get all loaded flows
+        
+        Returns:
+            Dictionary of flow_id to flow info
+        """
+        flows = {}
+        for flow_id, flow in self.loaded_flows.items():
+            flows[flow_id] = {
+                'id': flow_id,
+                'name': flow['name'],
+                'description': flow['description'],
+                'enabled': flow.get('enabled', True),
+                'file': flow['file'],
+                'loaded_at': flow['loaded_at']
+            }
+        return flows
+    
+    def enable_flow(self, flow_id: str) -> bool:
+        """Enable a flow
+        
+        Args:
+            flow_id: Flow identifier
+        
+        Returns:
+            Success status
+        """
+        if flow_id in self.loaded_flows:
+            self.loaded_flows[flow_id]['enabled'] = True
+            return True
+        return False
+    
+    def disable_flow(self, flow_id: str) -> bool:
+        """Disable a flow
+        
+        Args:
+            flow_id: Flow identifier
+        
+        Returns:
+            Success status
+        """
+        if flow_id in self.loaded_flows:
+            self.loaded_flows[flow_id]['enabled'] = False
+            return True
+        return False
+    
+    def reload_flow(self, flow_id: str) -> bool:
+        """Reload a specific flow from disk
+        
+        Args:
+            flow_id: Flow identifier
+        
+        Returns:
+            Success status
+        """
+        if flow_id in self.loaded_flows:
+            flow_file = Path(self.loaded_flows[flow_id]['file'])
+            if flow_file.exists():
+                try:
+                    content = flow_file.read_text(encoding='utf-8')
+                    checksum = hashlib.md5(content.encode()).hexdigest()
+                    flow_data = yaml.safe_load(content)
+                    
+                    self.loaded_flows[flow_id].update({
+                        'content': content,
+                        'data': flow_data,
+                        'checksum': checksum,
+                        'loaded_at': datetime.now().isoformat()
+                    })
+                    self.flow_checksums[flow_id] = checksum
+                    
+                    if self.logger:
+                        self.logger.info(f"Reloaded flow: {flow_id}")
+                    return True
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(f"Failed to reload flow {flow_id}: {e}")
+        return False
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get manager statistics
+        
+        Returns:
+            Statistics dictionary
+        """
+        return {
+            'total_flows': len(self.loaded_flows),
+            'enabled_flows': sum(1 for f in self.loaded_flows.values() if f.get('enabled', True)),
+            'active_executions': len(self.active_executions),
+            'flows_directory': str(self.flows_dir),
+            'executor_stats': self.executor_wrapper.get_stats()
+        }
+    
+    def shutdown(self):
+        """Shutdown manager and clean up resources"""
+        self.thread_pool.shutdown(wait=True)
+        self.executor_wrapper.shutdown()
+        if self.logger:
+            self.logger.info("TAFL WCS Manager shutdown complete")

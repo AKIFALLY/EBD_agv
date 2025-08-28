@@ -1,6 +1,41 @@
 {% extends "base.html" %}
 {% block title %}AGVUI 測試選擇頁{% endblock %}
 
+{% block head %}
+<style>
+    /* AGV 測試卡片樣式 */
+    .card.agv-test-card {
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        border: 1px solid #dbdbdb;
+    }
+    
+    .card.agv-test-card:hover {
+        transform: translateY(-5px) !important;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+        border-color: #3273dc;
+    }
+    
+    .card.agv-test-card .card-content {
+        padding: 1.5rem;
+    }
+    
+    .card.agv-test-card .title {
+        margin-bottom: 0.5rem;
+        color: #363636;
+    }
+    
+    .card.agv-test-card:hover .title {
+        color: #3273dc;
+    }
+    
+    .card.agv-test-card .subtitle {
+        color: #4a4a4a;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="section">
     <div class="container">
@@ -10,10 +45,7 @@
         <div class="columns is-multiline">
             {% for agv in test_agvs %}
             <div class="column is-4">
-                <div class="card agv-card" style="cursor: pointer; transition: all 0.3s;" 
-                     onclick="window.location.href='/?agv_id={{ agv.id }}'"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 20px rgba(0,0,0,0.2)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                <div class="card agv-test-card" onclick="window.location.href='/?agv_id={{ agv.id }}'">
                     <div class="card-content">
                         <p class="title is-4">{{ agv.id }}</p>
                         <p class="subtitle is-6">{{ agv.type }}</p>
@@ -43,6 +75,10 @@
         </div>
         
         <div class="buttons">
+            <a href="/multi" class="button is-warning">
+                <span class="icon"><i class="mdi mdi-view-dashboard"></i></span>
+                <span>多車監控模式</span>
+            </a>
             <a href="/" class="button is-primary">
                 <span class="icon"><i class="mdi mdi-home"></i></span>
                 <span>回到主頁 (顯示所有)</span>

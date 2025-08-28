@@ -55,6 +55,9 @@ class DatabaseManager:
                 except:
                     rooms = None
         
+        # 保存原始的 has_rack 參數，避免被後面的循環變數覆蓋
+        has_rack_filter = has_rack
+        
         with self.get_session() as session:
             # 簡化查詢，只查詢 Location 表，避免複雜的 JOIN
             query = session.query(Location)
@@ -131,8 +134,13 @@ class DatabaseManager:
                 })
             
             # Apply has_rack filter if specified
-            if has_rack is not None:
-                locations_list = [loc for loc in locations_list if loc['has_rack'] == has_rack]
+            print(f"DEBUG: Before filter: {len(locations_list)} locations")
+            if has_rack_filter is not None:
+                print(f"DEBUG: Applying has_rack filter: has_rack={has_rack_filter}")
+                locations_list = [loc for loc in locations_list if loc['has_rack'] == has_rack_filter]
+                print(f"DEBUG: After filter: {len(locations_list)} locations")
+                for loc in locations_list:
+                    print(f"DEBUG:   Location {loc['id']}: has_rack={loc['has_rack']}")
             
             return locations_list
     

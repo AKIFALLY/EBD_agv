@@ -255,7 +255,9 @@ build_agvc() {
     local agvc_app_workspaces=(
         "ecs_ws"
         "rcs_ws"
-        "flow_wcs_ws"  # Flow WCS workspace (唯一的 WCS 實作)
+        "flow_wcs_ws"  # 現行 WCS 實作 (將逐步由 TAFL 取代)
+        "tafl_ws"      # TAFL parser and executor (新一代 WCS 基礎)
+        "tafl_wcs_ws"  # TAFL WCS integration (未來的 WCS 實作)
         "web_api_ws"
         "kuka_fleet_ws"
         "launch_ws"
@@ -351,7 +353,7 @@ build_all_workspaces() {
         "path_algorithm"
         
         # 核心服務工作空間
-        "db_proxy_ws"          # 資料庫服務，被 flow_wcs_ws 等依賴
+        "db_proxy_ws"          # 資料庫服務，被 flow_wcs_ws/tafl_wcs_ws 等依賴
         
         # AGV 相關工作空間
         "agv_ws"               # 核心 AGV 控制
@@ -362,6 +364,9 @@ build_all_workspaces() {
         # AGVC 應用工作空間 (依賴 db_proxy_ws)
         "ecs_ws"               # 設備控制系統
         "rcs_ws"               # 機器人控制系統
+        "flow_wcs_ws"          # 現行 WCS 實作 (將逐步由 TAFL 取代)
+        "tafl_ws"              # TAFL parser and executor (新一代 WCS 基礎)
+        "tafl_wcs_ws"          # TAFL WCS integration (未來的 WCS 實作)
         "web_api_ws"           # Web API 服務
         "kuka_fleet_ws"        # KUKA Fleet 整合
         
@@ -768,7 +773,9 @@ agvc_source() {
     local agvc_app_workspaces=(
         "/app/ecs_ws/install"
         "/app/rcs_ws/install"
-        "/app/flow_wcs_ws/install"  # Flow WCS workspace (唯一的 WCS 實作)
+        "/app/flow_wcs_ws/install"  # 現行 WCS 實作 (將逐步由 TAFL 取代)
+        "/app/tafl_ws/install"       # TAFL parser and executor (新一代 WCS 基礎)
+        "/app/tafl_wcs_ws/install"   # TAFL WCS integration (未來的 WCS 實作)
         "/app/web_api_ws/install"
         "/app/kuka_fleet_ws/install"
         "/app/launch_ws/install"
@@ -2033,7 +2040,7 @@ check_agvc_status() {
 
     # 檢查 AGVC 專用工作空間
     echo "=== AGVC 工作空間狀態 ==="
-    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "flow_wcs_ws" "web_api_ws" "kuka_fleet_ws")
+    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "flow_wcs_ws" "tafl_ws" "tafl_wcs_ws" "web_api_ws" "kuka_fleet_ws")
     for ws in "${agvc_workspaces[@]}"; do
         if [ -d "/app/$ws/install" ]; then
             echo "✅ $ws 已建置"

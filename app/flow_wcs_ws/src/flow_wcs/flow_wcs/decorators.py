@@ -163,6 +163,32 @@ def get_function_metadata(function_name: str) -> Optional[Dict]:
     return None
 
 
+def apply_function_defaults(function_name: str, params: Dict) -> Dict:
+    """
+    將函數的預設值應用到參數中
+    
+    Args:
+        function_name: 完整函數名稱 (如 "query.locations")
+        params: 原始參數字典
+        
+    Returns:
+        包含預設值的完整參數字典
+    """
+    # 獲取函數元數據
+    metadata = get_function_metadata(function_name)
+    if not metadata:
+        return params
+    
+    # 取得預設值
+    defaults = metadata.get('defaults', {})
+    
+    # 建立新的參數字典，先放預設值，再用實際參數覆蓋
+    result_params = defaults.copy()
+    result_params.update(params)
+    
+    return result_params
+
+
 def list_registered_functions() -> List[str]:
     """
     列出所有已註冊的函數名稱

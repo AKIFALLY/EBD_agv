@@ -2883,6 +2883,119 @@ function buildFlowData() {
 }
 
 /**
+ * Display detailed execution logs with expandable details
+ */
+function displayDetailedLogs(logs, logDiv) {
+    logs.forEach((log, index) => {
+        const logClass = log.level === 'error' ? 'log-error' : 
+                        log.level === 'warning' ? 'log-warning' : 
+                        log.level === 'success' ? 'log-success' : 'log-info';
+        
+        // Create log entry container
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry ${logClass}`;
+        logEntry.style.marginBottom = '5px';
+        
+        // Main log message
+        const messageDiv = document.createElement('div');
+        messageDiv.style.display = 'flex';
+        messageDiv.style.alignItems = 'center';
+        messageDiv.innerHTML = `
+            <span style="color: #888; font-size: 0.8em; margin-right: 10px;">${log.timestamp ? log.timestamp.split('T')[1].substring(0, 8) : ''}</span>
+            <span style="color: #666; margin-right: 10px;">[${log.step || '-'}]</span>
+            <span>${log.message}</span>
+        `;
+        logEntry.appendChild(messageDiv);
+        
+        // If there are details, add expandable section
+        if (log.details && Object.keys(log.details).length > 0) {
+            const detailsId = `log-details-${index}`;
+            
+            // Add expand/collapse button
+            const expandBtn = document.createElement('button');
+            expandBtn.className = 'button is-small is-text';
+            expandBtn.style.marginLeft = '10px';
+            expandBtn.innerHTML = '📋 詳細';
+            expandBtn.onclick = () => {
+                const detailsDiv = document.getElementById(detailsId);
+                if (detailsDiv.style.display === 'none') {
+                    detailsDiv.style.display = 'block';
+                    expandBtn.innerHTML = '📂 收起';
+                } else {
+                    detailsDiv.style.display = 'none';
+                    expandBtn.innerHTML = '📋 詳細';
+                }
+            };
+            messageDiv.appendChild(expandBtn);
+            
+            // Add details section
+            const detailsDiv = document.createElement('div');
+            detailsDiv.id = detailsId;
+            detailsDiv.style.display = 'none';
+            detailsDiv.style.marginLeft = '40px';
+            detailsDiv.style.marginTop = '5px';
+            detailsDiv.style.padding = '10px';
+            detailsDiv.style.backgroundColor = '#f5f5f5';
+            detailsDiv.style.borderLeft = '3px solid #3498db';
+            detailsDiv.style.fontSize = '0.9em';
+            
+            // Format details based on content
+            if (log.details.condition_expression) {
+                // Condition evaluation details
+                detailsDiv.innerHTML = `
+                    <div><strong>條件表達式:</strong> <code>${log.details.condition_expression}</code></div>
+                    <div><strong>評估結果:</strong> <span class="tag ${log.details.evaluation_result ? 'is-success' : 'is-danger'}">${log.details.evaluation_result ? 'TRUE' : 'FALSE'}</span></div>
+                `;
+                
+                if (log.details.variables_used && Object.keys(log.details.variables_used).length > 0) {
+                    detailsDiv.innerHTML += '<div><strong>使用的變數:</strong></div>';
+                    const varsTable = document.createElement('table');
+                    varsTable.className = 'table is-narrow';
+                    varsTable.style.marginTop = '5px';
+                    varsTable.innerHTML = '<tbody>';
+                    
+                    Object.entries(log.details.variables_used).forEach(([key, value]) => {
+                        varsTable.innerHTML += `
+                            <tr>
+                                <td><code>${key}</code></td>
+                                <td>=</td>
+                                <td><code>${JSON.stringify(value)}</code></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    varsTable.innerHTML += '</tbody>';
+                    detailsDiv.appendChild(varsTable);
+                }
+            } else if (log.details.function) {
+                // Function execution details
+                detailsDiv.innerHTML = `
+                    <div><strong>函數:</strong> <code>${log.details.function}</code></div>
+                    <div><strong>步驟 ID:</strong> ${log.details.step_id}</div>
+                `;
+                
+                if (log.details.input_params) {
+                    detailsDiv.innerHTML += `<div><strong>輸入參數:</strong></div>`;
+                    detailsDiv.innerHTML += `<pre style="margin-top: 5px;">${JSON.stringify(log.details.input_params, null, 2)}</pre>`;
+                }
+                
+                if (log.details.result_value !== undefined) {
+                    detailsDiv.innerHTML += `<div><strong>返回結果:</strong></div>`;
+                    detailsDiv.innerHTML += `<pre style="margin-top: 5px;">${JSON.stringify(log.details.result_value, null, 2)}</pre>`;
+                }
+            } else {
+                // Generic details display
+                detailsDiv.innerHTML = `<pre>${JSON.stringify(log.details, null, 2)}</pre>`;
+            }
+            
+            logEntry.appendChild(detailsDiv);
+        }
+        
+        logDiv.appendChild(logEntry);
+    });
+}
+
+/**
  * Test flow execution - opens test modal
  */
 function testFlow() {
@@ -3231,7 +3344,7 @@ async function simulateFunctionExecution(funcName, params, variables) {
     const testMode = document.getElementById('test-mode')?.value || 'simulation';
     
     // Mode 1: Validation Mode - Check if function exists
-    if (testMode === 'validation' || testMode === 'api') {
+    if (testMode === 'validation' || testMode === 'api' || testMode === 'executor') {
         // Use function index for O(1) lookup (unified approach)
         const funcDef = window.functionIndex ? window.functionIndex[funcName] : null;
         
@@ -3295,7 +3408,69 @@ async function simulateFunctionExecution(funcName, params, variables) {
         }
     }
     
-    // Mode 2: API Test Mode - Call real test API using flow_wcs execute endpoint
+    // Mode 2: Executor Mode - Use FlowExecutor for complete execution
+    if (testMode === 'executor') {
+        try {
+            // Build complete flow data for current step only
+            const flowData = {
+                flow_id: 'test_flow',
+                work_id: 220001,  // Test work ID
+                workflow: [{
+                    section: 'test_section',
+                    steps: [{
+                        id: 'test_step',
+                        exec: funcName,
+                        params: params
+                    }]
+                }]
+            };
+            
+            // Call the new FlowExecutor API endpoint
+            const response = await fetch('/api/flows/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    flow_data: flowData,
+                    dry_run: true  // Use dry-run mode for testing
+                })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                return { 
+                    success: false, 
+                    error: `FlowExecutor 錯誤 (${response.status}): ${errorText}` 
+                };
+            }
+            
+            const result = await response.json();
+            
+            // Extract step result
+            if (result.success && result.steps && result.steps.length > 0) {
+                const stepResult = result.steps[0];
+                return {
+                    success: stepResult.status === 'completed',
+                    value: stepResult.result,
+                    error: stepResult.error,
+                    variables: result.variables  // Include variable changes
+                };
+            } else {
+                return {
+                    success: false,
+                    error: result.error || 'FlowExecutor 執行失敗'
+                };
+            }
+        } catch (error) {
+            return { 
+                success: false, 
+                error: `FlowExecutor 連接失敗: ${error.message}` 
+            };
+        }
+    }
+    
+    // Mode 3: API Test Mode - Call real test API using flow_wcs execute endpoint
     if (testMode === 'api') {
         try {
             // Resolve variables in params before sending to API
@@ -3596,21 +3771,28 @@ function closeTestModal() {
 function updateTestModeDescription() {
     const modeSelect = document.getElementById('test-mode');
     const descriptionEl = document.getElementById('test-mode-description');
+    const dryRunField = document.getElementById('dry-run-field');
     
     if (!modeSelect || !descriptionEl) return;
     
     const descriptions = {
         'simulation': '使用預定義的模擬值執行流程，不進行實際函數調用（使用配置檔案函數定義）',
         'validation': '驗證函數是否存在於函數庫中，並檢查必要參數是否提供（使用配置檔案函數定義）',
-        'api': '調用真實的測試 API 端點，執行實際的函數測試（使用 flow_wcs 即時函數定義）'
+        'api': '調用真實的測試 API 端點，執行實際的函數測試（使用 flow_wcs 即時函數定義）',
+        'executor': '使用 FlowExecutor 引擎完整執行流程，包含所有函數的實際執行和變數追蹤（生產環境執行）'
     };
+    
+    // Show/hide dry-run option based on mode
+    if (dryRunField) {
+        dryRunField.style.display = (modeSelect.value === 'executor') ? 'block' : 'none';
+    }
     
     // Reload function library based on selected mode
     const mode = modeSelect.value;
     let functionSource = 'config';  // Default to config
     
-    if (mode === 'api') {
-        functionSource = 'flow_wcs';  // API mode uses real flow_wcs
+    if (mode === 'api' || mode === 'executor') {
+        functionSource = 'flow_wcs';  // API and executor modes use real flow_wcs
     }
     
     // Reload functions with appropriate source
@@ -3702,6 +3884,136 @@ function initializeTestExecution(flowData) {
 }
 
 /**
+ * Execute flow with FlowExecutor (complete execution)
+ */
+async function executeFlowWithExecutor(flowData) {
+    const logDiv = document.getElementById('test-log');
+    const variablesDiv = document.getElementById('test-variables-tbody');
+    
+    if (logDiv) {
+        logDiv.innerHTML += '<div class="log-info">🚀 使用 FlowExecutor 執行完整流程...</div>';
+    }
+    
+    try {
+        // Call the FlowExecutor API endpoint for complete flow execution
+        const response = await fetch('/linear-flow/api/flows/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                flow_data: flowData,
+                dry_run: document.getElementById('dry-run-checkbox')?.checked ?? true
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            if (logDiv) {
+                logDiv.innerHTML += `<div class="log-error">❌ FlowExecutor 錯誤 (${response.status}): ${errorText}</div>`;
+            }
+            window.testState.running = false;
+            updateTestButtons();
+            return;
+        }
+        
+        const result = await response.json();
+        
+        // Display execution results
+        if (result.success) {
+            if (logDiv) {
+                logDiv.innerHTML += '<div class="log-success">✅ 流程執行成功</div>';
+                
+                // Display detailed logs if available
+                if (result.detailed_logs && result.detailed_logs.length > 0) {
+                    logDiv.innerHTML += '<div class="log-section">📋 詳細執行日誌:</div>';
+                    displayDetailedLogs(result.detailed_logs, logDiv);
+                } else if (result.raw_logs && result.raw_logs.length > 0) {
+                    logDiv.innerHTML += '<div class="log-section">📋 執行日誌:</div>';
+                    displayDetailedLogs(result.raw_logs, logDiv);
+                } else if (result.logs && result.logs.length > 0) {
+                    logDiv.innerHTML += '<div class="log-section">執行日誌:</div>';
+                    result.logs.forEach(log => {
+                        const logClass = log.level === 'error' ? 'log-error' : 
+                                       log.level === 'warning' ? 'log-warning' : 
+                                       log.level === 'success' ? 'log-success' : 'log-info';
+                        logDiv.innerHTML += `<div class="${logClass}">${log.timestamp || ''} ${log.message}</div>`;
+                    });
+                }
+                
+                // Display steps execution details
+                if (result.steps && result.steps.length > 0) {
+                    logDiv.innerHTML += '<div class="log-section">步驟執行詳情:</div>';
+                    result.steps.forEach(step => {
+                        const stepClass = step.status === 'completed' ? 'log-success' :
+                                        step.status === 'failed' ? 'log-error' :
+                                        step.status === 'skipped' ? 'log-warning' : 'log-info';
+                        logDiv.innerHTML += `<div class="${stepClass}">步驟 ${step.id}: ${step.status}`;
+                        if (step.result) {
+                            logDiv.innerHTML += ` - 結果: ${JSON.stringify(step.result)}`;
+                        }
+                        if (step.error) {
+                            logDiv.innerHTML += ` - 錯誤: ${step.error}`;
+                        }
+                        if (step.variables_before || step.variables_after) {
+                            logDiv.innerHTML += ' <span style="color: #666;">[變數已更新]</span>';
+                        }
+                        logDiv.innerHTML += '</div>';
+                    });
+                }
+            }
+            
+            // Update variables display
+            if (variablesDiv && result.variables) {
+                variablesDiv.innerHTML = '';
+                Object.entries(result.variables).forEach(([name, value]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${name}</td>
+                        <td>${typeof value}</td>
+                        <td>${JSON.stringify(value)}</td>
+                        <td>FlowExecutor</td>
+                    `;
+                    variablesDiv.appendChild(row);
+                });
+            }
+            
+            // Generate test report
+            window.testState.log = result.logs || [];
+            window.testState.executionTime = result.execution_time || 0;
+            window.testState.errors = result.errors || [];
+            generateTestReport();
+            
+        } else {
+            if (logDiv) {
+                logDiv.innerHTML += `<div class="log-error">❌ 流程執行失敗: ${result.error || '未知錯誤'}</div>`;
+                if (result.traceback) {
+                    logDiv.innerHTML += `<div class="log-error" style="font-family: monospace; font-size: 0.9em; white-space: pre-wrap;">${result.traceback}</div>`;
+                }
+            }
+        }
+        
+    } catch (error) {
+        if (logDiv) {
+            logDiv.innerHTML += `<div class="log-error">❌ 連接錯誤: ${error.message}</div>`;
+        }
+    } finally {
+        window.testState.running = false;
+        updateTestButtons();
+    }
+}
+
+/**
+ * Update test buttons state
+ */
+function updateTestButtons() {
+    const runBtn = document.getElementById('run-test-button');
+    const stopBtn = document.getElementById('stop-test-button');
+    if (runBtn) runBtn.style.display = 'inline-flex';
+    if (stopBtn) stopBtn.style.display = 'none';
+}
+
+/**
  * Execute flow test asynchronously
  */
 async function executeFlowTestAsync(flowData) {
@@ -3711,6 +4023,12 @@ async function executeFlowTestAsync(flowData) {
     // Log test mode
     if (logDiv) {
         logDiv.innerHTML += `<div style="color: #5bc0de;">測試模式: ${testMode}</div>`;
+    }
+    
+    // If executor mode, execute the entire flow at once
+    if (testMode === 'executor') {
+        await executeFlowWithExecutor(flowData);
+        return;
     }
     
     // Execute workflow sections

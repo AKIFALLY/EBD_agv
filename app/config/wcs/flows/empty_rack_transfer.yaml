@@ -1,0 +1,299 @@
+meta:
+  system: linear_flow_v2
+  version: "2.0.0"
+  author: "Flow WCS System"
+  created_at: "2025-08-19"
+  description: "空料架搬運流程 - 將房間出口的空料架搬運到空料架區"
+
+flow:
+  id: "empty_rack_transfer"
+  name: "空料架搬運"
+  work_id: "220007"  # 空料架搬運專用 work_id
+  enabled: true
+  priority: 40  # 低優先級
+
+workflow:
+  - section: "查詢房間出口空料架"
+    description: "查詢所有房間出口位置的空料架"
+    steps:
+      - id: "query_outlet_locations"
+        exec: "query.locations"
+        params:
+          type: "room_outlet"
+          rooms: [1, 2, 3, 4, 5]  # 所有房間
+          has_rack: true  # 有架台的位置
+        store: "outlet_locations_with_rack"
+        description: "查詢房間出口有架台的位置"
+
+      - id: "check_has_outlet_racks"
+        exec: "check.empty"
+        params:
+          data: "${outlet_locations_with_rack}"
+        store: "no_outlet_racks"
+        description: "檢查是否有出口架台"
+
+      - id: "stop_if_no_outlet_racks"
+        exec: "control.stop_flow"
+        params:
+          reason: "房間出口沒有架台"
+        skip_if: "!${no_outlet_racks}"
+        description: "如果沒有架台則停止流程"
+
+      - id: "log_outlet_status"
+        exec: "action.log_message"
+        params:
+          message: "📦 檢查 ${outlet_locations_with_rack.length} 個房間出口位置的架台狀態"
+          level: "info"
+          tags: ["empty_rack", "outlet_check"]
+        skip_if: "${no_outlet_racks}"
+        description: "記錄出口狀態"
+
+  - section: "查詢空料架區空位"
+    description: "查詢空料架區 (41-45) 的可用空位"
+    steps:
+      - id: "query_empty_rack_area"
+        exec: "query.locations"
+        params:
+          type: "empty_rack_area"
+          rooms: [41, 42, 43, 44, 45]  # 空料架區位置
+          has_rack: false  # 查詢沒有架台的位置（空位）
+        store: "available_empty_area_locations"
+        skip_if: "${no_outlet_racks}"
+        description: "查詢空料架區空位"
+
+      - id: "check_has_empty_area_space"
+        exec: "check.empty"
+        params:
+          data: "${available_empty_area_locations}"
+        store: "no_empty_area_space"
+        skip_if: "${no_outlet_racks}"
+        description: "檢查是否有空位"
+
+      - id: "stop_if_no_space"
+        exec: "control.stop_flow"
+        params:
+          reason: "空料架區已滿，沒有空位"
+        skip_if: "!${no_empty_area_space} || ${no_outlet_racks}"
+        description: "如果沒有空位則停止流程"
+
+      - id: "log_empty_area_availability"
+        exec: "action.log_message"
+        params:
+          message: "🏭 空料架區有 ${available_empty_area_locations.length} 個空位可用"
+          level: "info"
+          tags: ["empty_rack_area", "space_available"]
+        skip_if: "${no_empty_area_space} || ${no_outlet_racks}"
+        description: "記錄空料架區空位"
+
+  - section: "檢查每個出口的空料架"
+    description: "遍歷每個出口位置，檢查是否有空料架需要搬運"
+    steps:
+      - id: "foreach_outlet_locations"
+        exec: "foreach"
+        params:
+          items: "${outlet_locations_with_rack}"
+          var: "location"
+          steps:
+            - id: "query_racks_at_outlet"
+              exec: "query.racks"
+              params:
+                location_id: "${location.id}"
+                status: "available"
+              store: "racks_at_location"
+              description: "查詢該位置的架台"
+
+            - id: "check_has_racks"
+              exec: "check.empty"
+              params:
+                data: "${racks_at_location}"
+              store: "no_racks"
+              description: "檢查是否有架台"
+
+            - id: "check_rack_empty"
+              exec: "check.rack_status"
+              params:
+                rack_id: "${racks_at_location[0].id}"
+                side: "both"  # 檢查兩面
+                check_type: "empty"  # 檢查是否為空
+              store: "rack_is_empty"
+              skip_if: "${no_racks}"
+              description: "檢查架台是否為空"
+
+            - id: "log_empty_rack_found"
+              exec: "action.log_message"
+              params:
+                message: "📤 發現空料架 - 位置: ${location.name} (房間 ${location.room_id}), 架台: ${racks_at_location[0].rack_id}"
+                level: "info"
+                tags: ["empty_rack_found", "room_${location.room_id}"]
+              skip_if: "${no_racks} || !${rack_is_empty}"
+              description: "記錄發現空料架"
+
+            - id: "check_remaining_space"
+              exec: "check.empty"
+              params:
+                data: "${available_empty_area_locations}"
+              store: "no_more_space"
+              skip_if: "${no_racks} || !${rack_is_empty}"
+              description: "檢查是否還有空位"
+
+            - id: "log_no_space"
+              exec: "action.log_message"
+              params:
+                message: "⚠️ 空料架區已滿，無法搬運更多空料架"
+                level: "warning"
+                tags: ["empty_area_full", "space_limit"]
+              skip_if: "${no_racks} || !${rack_is_empty} || !${no_more_space}"
+              description: "記錄空位不足"
+
+            - id: "get_target_location"
+              exec: "control.update_variable"
+              params:
+                variable: "target_location_id"
+                operation: "set"
+                value: "${available_empty_area_locations[0].id}"
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_more_space}"
+              description: "獲取目標空料架區位置"
+
+            - id: "check_existing_empty_task"
+              exec: "check.task_exists"
+              params:
+                type: "EMPTY_RACK_TRANSFER"
+                rack_id: "${racks_at_location[0].id}"
+                status: ["pending", "in_progress"]
+              store: "empty_task_exists"
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_more_space}"
+              description: "檢查是否已存在搬運任務"
+
+            - id: "create_empty_rack_task"
+              exec: "task.create_task"
+              params:
+                type: "EMPTY_RACK_TRANSFER"
+                work_id: "220007"  # 空料架搬運 work_id
+                source_location_id: "${location.id}"
+                target_location_id: "${target_location_id}"
+                rack_id: "${racks_at_location[0].id}"
+                room_id: "${location.room_id}"
+                priority: "low"  # 低優先級
+                metadata:
+                  rack_name: "${racks_at_location[0].rack_id}"
+                  source_location: "${location.name}"
+                  target_location: "${available_empty_area_locations[0].name}"
+                  room_id: "${location.room_id}"
+                  transport_reason: "空料架回收"
+                  model: "Cargo"  # Cargo AGV 負責搬運
+                  # 路徑規劃：從出口到空料架區
+                  nodes: ["${location.node_id}", "${available_empty_area_locations[0].node_id}"]
+              store: "empty_task_id"
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_more_space} || ${empty_task_exists}"
+              description: "創建空料架搬運任務"
+
+            - id: "log_task_created"
+              exec: "action.log_message"
+              params:
+                message: "✅ 創建空料架搬運任務 - 架台: ${racks_at_location[0].rack_id}, 從 ${location.name} 到 ${available_empty_area_locations[0].name}, 任務ID: ${empty_task_id}"
+                level: "info"
+                tags: ["task_created", "empty_rack_transfer"]
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_more_space} || ${empty_task_exists}"
+              description: "記錄任務創建"
+
+            - id: "update_available_locations"
+              exec: "control.update_variable"
+              params:
+                variable: "available_empty_area_locations"
+                operation: "remove_first"  # 移除已使用的位置
+                value: 1
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_more_space} || ${empty_task_exists}"
+              description: "更新可用位置列表"
+
+        skip_if: "${no_outlet_racks} || ${no_empty_area_space}"
+        description: "遍歷所有出口位置檢查空料架"
+
+  - section: "監控空料架區狀態"
+    description: "監控空料架區的使用情況並觸發清理"
+    steps:
+      - id: "query_empty_area_racks"
+        exec: "query.racks"
+        params:
+          location_id: [41, 42, 43, 44, 45]  # 空料架區所有位置
+          status: "available"
+        store: "empty_area_racks"
+        description: "查詢空料架區的架台數量"
+
+      - id: "count_empty_area_racks"
+        exec: "control.count_items"
+        params:
+          variable: "${empty_area_racks}"
+        store: "empty_area_rack_count"
+        description: "計算空料架區架台數量"
+
+      - id: "calculate_empty_area_usage"
+        exec: "control.update_variable"
+        params:
+          variable: "empty_area_usage_rate"
+          operation: "set"
+          value: "${empty_area_rack_count * 100 / 5}"  # 計算使用率百分比
+        store: "empty_area_usage_rate"
+        description: "計算使用率"
+
+      - id: "log_empty_area_status"
+        exec: "action.log_message"
+        params:
+          message: "📊 空料架區狀態 - 使用率: ${empty_area_usage_rate}% (${empty_area_rack_count}/5)"
+          level: "info"
+          tags: ["empty_area_status", "monitoring"]
+        description: "記錄空料架區狀態"
+
+      - id: "check_high_usage"
+        exec: "control.switch"
+        params:
+          value: "${empty_area_rack_count}"
+          cases:
+            "4": true
+            "5": true
+          default: false
+        store: "high_usage"
+        description: "檢查是否高使用率"
+
+      - id: "trigger_cleanup_notification"
+        exec: "action.send_notification"
+        params:
+          message: "⚠️ 空料架區接近滿載: ${empty_area_usage_rate}% (${empty_area_rack_count}/5)，請安排清理或移出部分空料架"
+          level: "warning"
+          priority: "medium"
+        skip_if: "!${high_usage}"
+        description: "觸發清理通知"
+
+  - section: "總結"
+    description: "流程執行總結"
+    steps:
+      - id: "count_processed_outlets"
+        exec: "control.count_items"
+        params:
+          variable: "${outlet_locations_with_rack}"
+        store: "total_outlets"
+        description: "計算處理的出口數量"
+
+      - id: "log_completion"
+        exec: "action.log_message"
+        params:
+          message: "🏁 空料架搬運流程完成 - 檢查了 ${total_outlets} 個出口位置，空料架區使用率: ${empty_area_usage_rate}%"
+          level: "info"
+          tags: ["completion", "empty_rack_transfer", "summary"]
+        description: "記錄完成訊息"
+
+settings:
+  log_level: "INFO"
+  enable_checkpoint: true
+  parallel_execution: false
+  timeout: 360  # 6分鐘超時
+  retry_on_failure: true
+  max_retries: 3
+  # 執行頻率控制 - 每10分鐘執行一次（低優先級任務）
+  execution_interval: 600  # seconds
+  last_execution: null
+  # 空料架搬運特定設定
+  empty_rack_settings:
+    max_concurrent_tasks: 2  # 最多同時2個搬運任務
+    priority_level: 40  # 優先級水平
+    empty_area_capacity: 5  # 空料架區容量
+    high_usage_threshold: 4  # 高使用率警告閾值

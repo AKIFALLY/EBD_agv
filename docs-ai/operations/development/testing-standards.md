@@ -333,6 +333,8 @@ markers =
 - **現有模組**: 建議逐步採用
 
 ## 🔗 交叉引用
+- ROS 2 工作空間測試結構: @docs-ai/operations/development/ros2-workspace-test-structure.md
+- 測試檔案管理: @docs-ai/operations/development/test-file-management.md
 - AI WCS 測試實作: `app/ai_wcs_ws/CLAUDE.md`
 - ROS 2 開發: @docs-ai/operations/development/ros2-development.md
 - 容器開發: @docs-ai/operations/development/docker-development.md

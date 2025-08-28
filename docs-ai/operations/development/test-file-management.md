@@ -166,6 +166,7 @@ AI Agent: Claude
 ```
 
 ## 🔗 交叉引用
+- ROS 2 工作空間測試結構: @docs-ai/operations/development/ros2-workspace-test-structure.md
 - 測試標準: @docs-ai/operations/development/testing-standards.md
 - 測試程序: @docs-ai/operations/development/testing-procedures.md
 - 開發原則: @docs-ai/operations/development/core-principles.md

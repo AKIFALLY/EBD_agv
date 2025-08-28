@@ -1,0 +1,309 @@
+meta:
+  system: linear_flow_v2
+  version: "2.0.0"
+  author: "Flow WCS System"
+  created_at: "2025-08-19"
+  description: "系統準備區到房間流程 - 將系統準備區的架台搬運到需要的房間入口"
+
+flow:
+  id: "system_to_room_transfer"
+  name: "系統準備區到房間"
+  work_id: "220006"  # 系統準備區搬運專用 work_id
+  enabled: true
+  priority: 60  # 中等優先級
+
+workflow:
+  - section: "查詢系統準備區架台"
+    description: "查詢系統準備區 (61-65) 的可用架台"
+    steps:
+      - id: "query_system_prepare_locations"
+        exec: "query.locations"
+        params:
+          type: "system_prepare_area"
+          rooms: [61, 62, 63, 64, 65]  # 系統準備區位置
+          has_rack: true  # 查詢有架台的位置
+        store: "system_locations_with_rack"
+        description: "查詢系統準備區有架台的位置"
+
+      - id: "check_has_system_racks"
+        exec: "check.empty"
+        params:
+          data: "${system_locations_with_rack}"
+        store: "no_system_racks"
+        description: "檢查是否有架台在系統準備區"
+
+      - id: "stop_if_no_system_racks"
+        exec: "control.stop_flow"
+        params:
+          reason: "系統準備區沒有架台可搬運"
+        skip_if: "!${no_system_racks}"
+        description: "如果沒有架台則停止流程"
+
+      - id: "log_system_area_status"
+        exec: "action.log_message"
+        params:
+          message: "📦 系統準備區有 ${system_locations_with_rack.length} 個架台待分配"
+          level: "info"
+          tags: ["system_prepare_area", "rack_count"]
+        skip_if: "${no_system_racks}"
+        description: "記錄系統準備區架台數量"
+
+  - section: "查詢房間入口需求"
+    description: "查詢各房間入口是否需要架台"
+    steps:
+      - id: "query_room_inlet_locations"
+        exec: "query.locations"
+        params:
+          type: "room_inlet"
+          rooms: [1, 2, 3, 4, 5]  # 所有房間
+          has_rack: false  # 查詢沒有架台的位置（空位）
+        store: "empty_inlet_locations"
+        skip_if: "${no_system_racks}"
+        description: "查詢房間入口空位"
+
+      - id: "check_has_empty_inlets"
+        exec: "check.empty"
+        params:
+          data: "${empty_inlet_locations}"
+        store: "no_empty_inlets"
+        skip_if: "${no_system_racks}"
+        description: "檢查是否有空的入口位置"
+
+      - id: "stop_if_no_empty_inlets"
+        exec: "control.stop_flow"
+        params:
+          reason: "所有房間入口都已有架台，不需要補充"
+        skip_if: "!${no_empty_inlets} || ${no_system_racks}"
+        description: "如果沒有空位則停止流程"
+
+      - id: "log_inlet_demand"
+        exec: "action.log_message"
+        params:
+          message: "🚪 發現 ${empty_inlet_locations.length} 個房間入口需要架台"
+          level: "info"
+          tags: ["room_inlet", "demand"]
+        skip_if: "${no_empty_inlets} || ${no_system_racks}"
+        description: "記錄入口需求"
+
+  - section: "匹配架台與房間需求"
+    description: "根據優先級將系統準備區的架台分配到需要的房間"
+    steps:
+      - id: "foreach_empty_inlets"
+        exec: "foreach"
+        params:
+          items: "${empty_inlet_locations}"
+          var: "inlet"
+          steps:
+            - id: "check_room_priority"
+              exec: "query.rooms"
+              params:
+                room_id: "${inlet.room_id}"
+              store: "room_info"
+              description: "查詢房間資訊"
+
+            - id: "check_room_active"
+              exec: "check.empty"
+              params:
+                data: "${room_info}"
+              store: "no_room_info"
+              description: "檢查房間資訊是否存在"
+
+            - id: "calculate_room_urgency"
+              exec: "control.switch"
+              params:
+                value: "${room_info[0].production_status || 'normal'}"
+                cases:
+                  "urgent": 100     # 緊急生產
+                  "high": 80        # 高優先級
+                  "normal": 50      # 正常
+                  "low": 30         # 低優先級
+                default: 50
+              store: "room_urgency"
+              skip_if: "${no_room_info}"
+              description: "計算房間緊急程度"
+
+            - id: "check_available_system_racks"
+              exec: "check.empty"
+              params:
+                data: "${system_locations_with_rack}"
+              store: "no_more_racks"
+              skip_if: "${no_room_info}"
+              description: "檢查是否還有可用架台"
+
+            - id: "stop_if_no_racks"
+              exec: "control.stop_flow"
+              params:
+                reason: "系統準備區架台已全部分配完畢"
+              skip_if: "!${no_more_racks} || ${no_room_info}"
+              description: "如果沒有架台則停止"
+
+            - id: "get_system_rack"
+              exec: "query.racks"
+              params:
+                location_id: "${system_locations_with_rack[0].id}"
+                status: "available"
+              store: "available_rack"
+              skip_if: "${no_more_racks} || ${no_room_info}"
+              description: "獲取系統準備區的架台"
+
+            - id: "check_rack_exists"
+              exec: "check.empty"
+              params:
+                data: "${available_rack}"
+              store: "no_rack"
+              skip_if: "${no_more_racks} || ${no_room_info}"
+              description: "檢查架台是否存在"
+
+            - id: "log_allocation"
+              exec: "action.log_message"
+              params:
+                message: "🎯 分配架台 ${available_rack[0].rack_id} 從系統準備區到房間 ${inlet.room_id} 入口"
+                level: "info"
+                tags: ["rack_allocation", "room_${inlet.room_id}"]
+              skip_if: "${no_more_racks} || ${no_room_info} || ${no_rack}"
+              description: "記錄架台分配"
+
+            - id: "check_existing_transfer_task"
+              exec: "check.task_exists"
+              params:
+                type: "SYSTEM_TO_ROOM_TRANSFER"
+                rack_id: "${available_rack[0].id}"
+                status: ["pending", "in_progress"]
+              store: "transfer_task_exists"
+              skip_if: "${no_more_racks} || ${no_room_info} || ${no_rack}"
+              description: "檢查是否已存在搬運任務"
+
+            - id: "create_transfer_task"
+              exec: "task.create_task"
+              params:
+                type: "SYSTEM_TO_ROOM_TRANSFER"
+                work_id: "220006"  # 系統準備區搬運 work_id
+                source_location_id: "${system_locations_with_rack[0].id}"
+                target_location_id: "${inlet.id}"
+                rack_id: "${available_rack[0].id}"
+                room_id: "${inlet.room_id}"
+                priority: "${room_urgency}"  # 根據房間緊急程度設定優先級
+                metadata:
+                  rack_name: "${available_rack[0].rack_id}"
+                  source_location: "${system_locations_with_rack[0].name}"
+                  target_location: "${inlet.name}"
+                  room_id: "${inlet.room_id}"
+                  room_status: "${room_info[0].production_status || 'normal'}"
+                  transport_reason: "補充房間入口架台"
+                  model: "Cargo"  # Cargo AGV 負責搬運
+                  # 路徑規劃：從系統準備區到房間入口
+                  nodes: ["${system_locations_with_rack[0].node_id}", "${inlet.node_id}"]
+              store: "transfer_task_id"
+              skip_if: "${no_more_racks} || ${no_room_info} || ${no_rack} || ${transfer_task_exists}"
+              description: "創建搬運任務"
+
+            - id: "log_task_created"
+              exec: "action.log_message"
+              params:
+                message: "✅ 創建搬運任務 - 架台: ${available_rack[0].rack_id}, 到房間 ${inlet.room_id} 入口, 任務ID: ${transfer_task_id}"
+                level: "info"
+                tags: ["task_created", "system_transfer", "room_${inlet.room_id}"]
+              skip_if: "${no_more_racks} || ${no_room_info} || ${no_rack} || ${transfer_task_exists}"
+              description: "記錄任務創建"
+
+            - id: "update_available_racks"
+              exec: "control.update_variable"
+              params:
+                variable: "system_locations_with_rack"
+                operation: "remove_first"  # 移除已分配的架台位置
+                value: 1
+              skip_if: "${no_more_racks} || ${no_room_info} || ${no_rack} || ${transfer_task_exists}"
+              description: "更新可用架台列表"
+
+        skip_if: "${no_empty_inlets} || ${no_system_racks}"
+        description: "遍歷所有需要架台的入口"
+
+  - section: "監控系統準備區狀態"
+    description: "監控系統準備區的使用情況"
+    steps:
+      - id: "query_all_system_racks"
+        exec: "query.racks"
+        params:
+          location_id: [61, 62, 63, 64, 65]  # 所有系統準備區
+          status: "available"
+        store: "all_system_racks"
+        description: "查詢所有系統準備區架台"
+
+      - id: "count_system_racks"
+        exec: "control.count_items"
+        params:
+          variable: "${all_system_racks}"
+        store: "system_rack_count"
+        description: "計算系統準備區架台總數"
+
+      - id: "calculate_utilization"
+        exec: "control.update_variable"
+        params:
+          variable: "utilization_rate"
+          operation: "set"
+          value: "${system_rack_count * 100 / 5}"  # 計算使用率
+        store: "utilization_rate"
+        description: "計算使用率"
+
+      - id: "log_system_status"
+        exec: "action.log_message"
+        params:
+          message: "📊 系統準備區狀態 - 架台數: ${system_rack_count}/5 (${utilization_rate}%)"
+          level: "info"
+          tags: ["system_area_status", "monitoring"]
+        description: "記錄系統準備區狀態"
+
+      - id: "check_low_inventory"
+        exec: "control.switch"
+        params:
+          value: "${system_rack_count}"
+          cases:
+            "0": true
+            "1": true
+          default: false
+        store: "low_inventory"
+        description: "檢查庫存是否過低"
+
+      - id: "send_low_inventory_alert"
+        exec: "action.send_notification"
+        params:
+          message: "⚠️ 系統準備區架台庫存低: ${system_rack_count}/5，請及時補充"
+          level: "warning"
+          priority: "medium"
+        skip_if: "!${low_inventory}"
+        description: "發送低庫存警告"
+
+  - section: "總結"
+    description: "流程執行總結"
+    steps:
+      - id: "count_processed_inlets"
+        exec: "control.count_items"
+        params:
+          variable: "${empty_inlet_locations}"
+        store: "total_inlets"
+        description: "計算處理的入口數量"
+
+      - id: "log_completion"
+        exec: "action.log_message"
+        params:
+          message: "🏁 系統準備區到房間流程完成 - 檢查了 ${total_inlets} 個入口需求，系統準備區剩餘: ${system_rack_count} 個架台"
+          level: "info"
+          tags: ["completion", "system_transfer", "summary"]
+        description: "記錄完成訊息"
+
+settings:
+  log_level: "INFO"
+  enable_checkpoint: true
+  parallel_execution: false
+  timeout: 300  # 5分鐘超時
+  retry_on_failure: true
+  max_retries: 3
+  # 執行頻率控制 - 每5分鐘執行一次
+  execution_interval: 300  # seconds
+  last_execution: null
+  # 系統準備區特定設定
+  system_area_settings:
+    max_concurrent_tasks: 3  # 最多同時3個搬運任務
+    priority_base: 60  # 基礎優先級
+    system_area_capacity: 5  # 系統準備區容量
+    low_inventory_threshold: 2  # 低庫存警告閾值

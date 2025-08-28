@@ -363,11 +363,25 @@
                                 <option value="simulation">模擬執行 (預設)</option>
                                 <option value="validation">驗證模式 (檢查函數和參數)</option>
                                 <option value="api">API 測試模式 (實際調用測試 API)</option>
+                                <option value="executor">實際執行模式 (FlowExecutor 完整執行)</option>
                             </select>
                         </div>
                     </div>
                     <p class="help" id="test-mode-description">
                         使用預定義的模擬值執行流程，不進行實際函數調用
+                    </p>
+                </div>
+                
+                <!-- Dry Run Option (for executor mode) -->
+                <div class="field" id="dry-run-field" style="display: none;">
+                    <div class="control">
+                        <label class="checkbox">
+                            <input type="checkbox" id="dry-run-checkbox" checked>
+                            <strong>Dry Run 模式</strong> - 執行所有函數但不寫入資料庫（安全測試）
+                        </label>
+                    </div>
+                    <p class="help">
+                        取消勾選將執行實際的資料庫操作，請謹慎使用
                     </p>
                 </div>
 

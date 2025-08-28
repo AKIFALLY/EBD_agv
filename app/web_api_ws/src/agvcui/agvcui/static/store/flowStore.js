@@ -4,9 +4,13 @@
  */
 
 import { createStore } from './miniStore.js';
+import { ExpressionParser } from './expressionParser.js';
 
 class FlowStore {
     constructor() {
+        // 表達式解析器
+        this.expressionParser = new ExpressionParser();
+        
         // 預設流程結構
         const defaultFlow = {
             flow: {
@@ -384,6 +388,18 @@ class FlowStore {
                         stepIndex
                     });
                 }
+                
+                // 識別 control.update_variable 創建的變數
+                if (step.exec === 'control.update_variable' && step.params && step.params.variable) {
+                    variables.set(step.params.variable, {
+                        type: 'variable',
+                        source: `${sectionName} > ${step.id || 'Step ' + (stepIndex + 1)}`,
+                        exec: step.exec,
+                        operation: step.params.operation || 'set',
+                        sectionIndex,
+                        stepIndex
+                    });
+                }
             }
             
             // 提取參考的變數
@@ -406,18 +422,10 @@ class FlowStore {
     }
     
     /**
-     * 提取變數參考
+     * 提取變數參考（使用智能表達式解析器）
      */
     extractVariableReferences(step) {
         const refs = new Set();
-        
-        // Helper function to extract base variable name without array indices
-        const extractBaseVarName = (varRef) => {
-            // Remove array indices and property accessors
-            // single_room_location[0] -> single_room_location
-            // obj.prop -> obj
-            return varRef.split('[')[0].split('.')[0];
-        };
         
         // 從參數提取（但排除 foreach 的特殊參數）
         if (step.params) {
@@ -425,14 +433,8 @@ class FlowStore {
             if (step.exec === 'foreach' || step.exec === 'control.foreach') {
                 // 只處理 items 參數中的變數引用
                 if (step.params.items && typeof step.params.items === 'string') {
-                    const matches = step.params.items.match(/\$\{([^}]+)\}/g);
-                    if (matches) {
-                        matches.forEach(match => {
-                            const fullRef = match.slice(2, -1);
-                            const baseRef = extractBaseVarName(fullRef);
-                            refs.add(baseRef);
-                        });
-                    }
+                    const itemVars = this.expressionParser.extractVariables(step.params.items);
+                    itemVars.forEach(v => refs.add(v));
                 }
                 // 不處理 var 和 steps，它們是結構性參數
             } else {
@@ -441,9 +443,11 @@ class FlowStore {
                 const matches = paramString.match(/\$\{([^}]+)\}/g);
                 if (matches) {
                     matches.forEach(match => {
-                        const fullRef = match.slice(2, -1);
-                        const baseRef = extractBaseVarName(fullRef);
-                        refs.add(baseRef);
+                        // 提取 ${} 內的表達式
+                        const innerExpr = match.slice(2, -1);
+                        // 使用智能解析器提取變數
+                        const exprVars = this.expressionParser.parseExpression(innerExpr);
+                        exprVars.forEach(v => refs.add(v));
                     });
                 }
             }
@@ -451,37 +455,19 @@ class FlowStore {
         
         // 從條件提取 (skip_if 和 skip_if_not)
         if (step.skip_if) {
-            const matches = step.skip_if.match(/\$\{([^}]+)\}/g);
-            if (matches) {
-                matches.forEach(match => {
-                    const fullRef = match.slice(2, -1);
-                    const baseRef = extractBaseVarName(fullRef);
-                    refs.add(baseRef);
-                });
-            }
+            const skipVars = this.expressionParser.extractVariables(step.skip_if);
+            skipVars.forEach(v => refs.add(v));
         }
         
         if (step.skip_if_not) {
-            const matches = step.skip_if_not.match(/\$\{([^}]+)\}/g);
-            if (matches) {
-                matches.forEach(match => {
-                    const fullRef = match.slice(2, -1);
-                    const baseRef = extractBaseVarName(fullRef);
-                    refs.add(baseRef);
-                });
-            }
+            const skipNotVars = this.expressionParser.extractVariables(step.skip_if_not);
+            skipNotVars.forEach(v => refs.add(v));
         }
         
         // 從 items 提取（如果直接在步驟層級）
         if (step.items && typeof step.items === 'string') {
-            const matches = step.items.match(/\$\{([^}]+)\}/g);
-            if (matches) {
-                matches.forEach(match => {
-                    const fullRef = match.slice(2, -1);
-                    const baseRef = extractBaseVarName(fullRef);
-                    refs.add(baseRef);
-                });
-            }
+            const itemVars = this.expressionParser.extractVariables(step.items);
+            itemVars.forEach(v => refs.add(v));
         }
         
         return refs;

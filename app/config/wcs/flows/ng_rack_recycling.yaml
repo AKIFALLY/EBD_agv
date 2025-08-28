@@ -1,0 +1,240 @@
+meta:
+  system: linear_flow_v2
+  version: "2.0.0"
+  author: "Flow WCS System"
+  created_at: "2025-08-19"
+  description: "NG 料架回收流程 - 將 NG 架台從房間入口搬運到 NG 處理區"
+
+flow:
+  id: "ng_rack_recycling"
+  name: "NG 料架回收流程"
+  work_id: "220003"  # NG 處理專用 work_id
+  enabled: true
+  priority: 90  # 高優先級
+
+workflow:
+  - section: "查詢房間入口 NG 架台"
+    description: "查詢所有房間入口位置的 NG 架台"
+    steps:
+      - id: "query_inlet_locations"
+        exec: "query.locations"
+        params:
+          type: "room_inlet"
+          rooms: [1, 2, 3, 4, 5]
+        store: "inlet_locations"
+        description: "查詢所有房間入口位置"
+
+      - id: "check_has_locations"
+        exec: "check.empty"
+        params:
+          data: "${inlet_locations}"
+        store: "no_locations"
+        description: "檢查是否有入口位置"
+
+      - id: "stop_if_no_locations"
+        exec: "control.stop_flow"
+        params:
+          reason: "沒有找到房間入口位置"
+        skip_if: "!${no_locations}"
+        description: "如果沒有入口位置則停止流程"
+
+  - section: "檢查每個入口的 NG 架台"
+    description: "遍歷每個入口位置，檢查是否有 NG 狀態的架台"
+    steps:
+      - id: "foreach_inlet_locations"
+        exec: "foreach"
+        params:
+          items: "${inlet_locations}"
+          var: "location"
+          steps:
+            - id: "query_ng_racks_at_location"
+              exec: "query.racks"
+              params:
+                location_id: "${location.id}"
+                status: "ng"  # 查詢 NG 狀態的架台
+              store: "ng_racks_at_location"
+              description: "查詢該位置的 NG 架台"
+
+            - id: "check_has_ng_racks"
+              exec: "check.empty"
+              params:
+                data: "${ng_racks_at_location}"
+              store: "no_ng_racks"
+              description: "檢查是否有 NG 架台"
+
+            - id: "log_ng_rack_found"
+              exec: "action.log_message"
+              params:
+                message: "⚠️ 發現 NG 架台 - 位置: ${location.name} (ID: ${location.id}), 架台: ${ng_racks_at_location[0].rack_id}"
+                level: "warning"
+                tags: ["ng_rack", "inlet", "room_${location.room_id}"]
+              skip_if: "${no_ng_racks}"
+              description: "記錄發現 NG 架台"
+
+            - id: "query_ng_area_availability"
+              exec: "query.locations"
+              params:
+                type: "ng_area"
+                ids: [71, 72]  # NG 處理區位置 ID
+                available: true  # 查詢空閒位置
+              store: "available_ng_areas"
+              skip_if: "${no_ng_racks}"
+              description: "查詢 NG 處理區可用位置"
+
+            - id: "check_ng_area_available"
+              exec: "check.empty"
+              params:
+                data: "${available_ng_areas}"
+              store: "no_ng_area_available"
+              skip_if: "${no_ng_racks}"
+              description: "檢查 NG 處理區是否有空位"
+
+            - id: "log_no_ng_area"
+              exec: "action.log_message"
+              params:
+                message: "❌ NG 處理區已滿，無法搬運 NG 架台"
+                level: "error"
+                tags: ["ng_area_full", "ng_rack"]
+              skip_if: "${no_ng_racks} || !${no_ng_area_available}"
+              description: "記錄 NG 處理區已滿"
+
+            - id: "check_existing_ng_task"
+              exec: "check.task_exists"
+              params:
+                type: "NG_RACK_RECYCLING"
+                rack_id: "${ng_racks_at_location[0].id}"
+                status: ["pending", "in_progress"]
+              store: "ng_task_exists"
+              skip_if: "${no_ng_racks} || ${no_ng_area_available}"
+              description: "檢查是否已存在未完成的 NG 回收任務"
+
+            - id: "create_ng_recycling_task"
+              exec: "task.create_task"
+              params:
+                type: "NG_RACK_RECYCLING"
+                work_id: "220003"  # NG 處理專用 work_id
+                source_location_id: "${location.id}"
+                target_location_id: "${available_ng_areas[0].id}"
+                rack_id: "${ng_racks_at_location[0].id}"
+                room_id: "${location.room_id}"
+                priority: "critical"  # 最高優先級
+                metadata:
+                  rack_name: "${ng_racks_at_location[0].rack_id}"
+                  source_location: "${location.name}"
+                  target_location: "${available_ng_areas[0].name}"
+                  room_id: "${location.room_id}"
+                  ng_reason: "${ng_racks_at_location[0].ng_reason || 'OCR NG 檢測失敗'}"
+                  model: "Cargo"  # Cargo AGV 負責搬運
+                  # 路徑規劃：從入口到 NG 處理區
+                  nodes: ["${location.node_id}", "${available_ng_areas[0].node_id}"]
+              store: "ng_task_id"
+              skip_if: "${no_ng_racks} || ${no_ng_area_available} || ${ng_task_exists}"
+              description: "創建 NG 架台回收任務"
+
+            # 註解：更新架台狀態功能需要實作 action.update_rack 函數
+            # - id: "update_rack_status"
+            #   exec: "action.update_rack"
+            #   params:
+            #     rack_id: "${ng_racks_at_location[0].id}"
+            #     status: "recycling"  # 更新為回收中狀態
+            #   skip_if: "${no_ng_racks} || ${no_ng_area_available} || ${ng_task_exists}"
+            #   description: "更新架台狀態為回收中"
+
+            - id: "log_ng_task_created"
+              exec: "action.log_message"
+              params:
+                message: "🔄 創建 NG 回收任務 - 架台: ${ng_racks_at_location[0].rack_id}, 從 ${location.name} 到 ${available_ng_areas[0].name}, 任務ID: ${ng_task_id}"
+                level: "info"
+                tags: ["task_created", "ng_recycling", "critical"]
+              skip_if: "${no_ng_racks} || ${no_ng_area_available} || ${ng_task_exists}"
+              description: "記錄 NG 任務創建"
+
+            - id: "send_ng_notification"
+              exec: "action.send_notification"
+              params:
+                type: "ng_rack_detected"
+                title: "NG 架台需要處理"
+                message: "架台 ${ng_racks_at_location[0].rack_id} 在 ${location.name} 檢測為 NG，已創建回收任務"
+                severity: "high"
+                recipients: ["wcs_operator", "quality_control"]
+              skip_if: "${no_ng_racks} || ${no_ng_area_available} || ${ng_task_exists}"
+              description: "發送 NG 通知給相關人員"
+
+  - section: "檢查 NG 處理區狀態"
+    description: "檢查 NG 處理區的處理進度"
+    steps:
+      - id: "query_ng_area_racks"
+        exec: "query.racks"
+        params:
+          location_id: [71, 72]  # NG 處理區
+          status: "ng"
+        store: "ng_area_racks"
+        description: "查詢 NG 處理區的架台數量"
+
+      - id: "count_ng_racks"
+        exec: "control.count_items"
+        params:
+          variable: "${ng_area_racks}"
+        store: "ng_rack_count"
+        description: "計算 NG 架台數量"
+
+      - id: "log_ng_area_status"
+        exec: "action.log_message"
+        params:
+          message: "📊 NG 處理區狀態 - 當前 NG 架台數量: ${ng_rack_count}/2 (容量: 2)"
+          level: "info"
+          tags: ["ng_area_status", "monitoring"]
+        description: "記錄 NG 處理區狀態"
+
+      # 使用 control.switch 來檢查是否達到上限
+      - id: "check_ng_area_critical"
+        exec: "control.switch"
+        params:
+          value: "${ng_rack_count}"
+          cases:
+            "2": true
+          default: false
+        store: "ng_area_critical"
+        description: "檢查 NG 處理區是否達到容量上限"
+
+      - id: "send_critical_alert"
+        exec: "action.send_alarm"
+        params:
+          message: "⚠️ NG 處理區已滿: 已達容量上限 (${ng_rack_count}/2)，請盡快處理 NG 架台"
+          severity: "critical"
+        skip_if: "!${ng_area_critical}"
+        description: "發送 NG 處理區已滿警報"
+
+  - section: "總結"
+    description: "流程執行總結"
+    steps:
+      - id: "count_processed_locations"
+        exec: "control.count_items"
+        params:
+          variable: "${inlet_locations}"
+        store: "total_locations"
+        description: "計算處理的位置數量"
+
+      - id: "log_completion"
+        exec: "action.log_message"
+        params:
+          message: "✅ NG 料架回收流程完成 - 檢查了 ${total_locations} 個入口位置，NG 處理區使用率: ${ng_rack_count}/2"
+          level: "info"
+          tags: ["completion", "ng_recycling", "summary"]
+        description: "記錄完成訊息"
+
+settings:
+  log_level: "INFO"
+  enable_checkpoint: true
+  parallel_execution: false
+  timeout: 180  # 3分鐘超時
+  retry_on_failure: true
+  max_retries: 3
+  # 執行頻率控制 - 每2分鐘執行一次（NG 處理優先級高）
+  execution_interval: 120  # seconds
+  last_execution: null
+  # NG 特定設定
+  ng_handling:
+    auto_pause_agv: true  # 檢測到 NG 時自動暫停 AGV
+    notification_enabled: true  # 啟用通知
+    critical_threshold: 2  # NG 處理區容量上限

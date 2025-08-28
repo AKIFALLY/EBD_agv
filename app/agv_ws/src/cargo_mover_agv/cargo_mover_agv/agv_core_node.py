@@ -66,7 +66,7 @@ class AgvCoreNode(AgvNodebase):
         self.get_logger().info("🔍 開始初始化 JSON 狀態記錄器...")
         try:
             import os
-            output_dir = "/app/agv_status_json"
+            output_dir = "/tmp"  # 統一輸出到 /tmp 目錄
             self.get_logger().info(f"🔍 檢查輸出目錄: {output_dir}")
             
             # 檢查目錄是否存在
@@ -252,8 +252,9 @@ class AgvCoreNode(AgvNodebase):
             return
             
         try:
-            # 使用固定通用文件名，每次覆蓋，使用完整前端狀態
-            filename = "current_status.json"
+            # 使用包含 AGV ID 的檔案名稱，統一格式
+            agv_id = self.agv_id if hasattr(self, 'agv_id') and self.agv_id else "cargo01"
+            filename = f"agv_status_{agv_id}.json"
             
             filepath = self.json_recorder.save_complete_frontend_status_to_file(self, filename)
             

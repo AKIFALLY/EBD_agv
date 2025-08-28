@@ -13,6 +13,9 @@
     <!-- Socket.IO 前端 library -->
     <script src="/static/js/lib/socket.io.min.js"></script>
     <script type="module" src="/static/index.js"></script>
+    
+    <!-- 自定義樣式區塊 -->
+    {% block head %}{% endblock %}
 
 </head>
 
@@ -34,6 +37,9 @@
         <button class="delete" type="button" onclick="this.parentElement.style.display='none'"></button>
         <span id="notify-message-content"></span>
     </div>
+
+    <!-- 自定義腳本區塊 -->
+    {% block scripts %}{% endblock %}
 
 </body>
 

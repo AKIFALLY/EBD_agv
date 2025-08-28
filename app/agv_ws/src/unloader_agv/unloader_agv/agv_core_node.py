@@ -23,6 +23,7 @@ from agv_base.base_context import BaseContext
 from unloader_agv.unloader_context import UnloaderContext
 from unloader_agv.robot_context import RobotContext
 import unloader_agv.robot_states.idle_state
+from unloader_agv.status_json_recorder import UnloaderAgvStatusJsonRecorder
 # AGVs 和 TaskMsg 現在由 AgvNodebase 提供
 
 
@@ -56,6 +57,38 @@ class AgvCoreNode(AgvNodebase):
 
         self.robot_context.after_handle += self.robot_after_handle  # 手臂狀態機
         self.robot_context.on_state_changed += self.state_changed  # 狀態切換訊息
+        
+        # 初始化 JSON 狀態記錄器
+        self.get_logger().info("🔍 開始初始化 Unloader AGV JSON 狀態記錄器...")
+        try:
+            import os
+            output_dir = "/tmp"  # 統一輸出到 /tmp 目錄
+            self.get_logger().info(f"🔍 檢查輸出目錄: {output_dir}")
+            
+            # 檢查目錄是否存在
+            if os.path.exists(output_dir):
+                self.get_logger().info(f"✅ 輸出目錄存在: {output_dir}")
+            else:
+                self.get_logger().warn(f"⚠️ 輸出目錄不存在，將嘗試創建: {output_dir}")
+                
+            self.json_recorder = UnloaderAgvStatusJsonRecorder(output_dir=output_dir)
+            self.get_logger().info("✅ Unloader AGV JSON 狀態記錄器物件已創建")
+            
+            # 設置定時覆蓋保存 (每1秒更新一次)
+            self.get_logger().info("🔍 創建定時器...")
+            self.json_save_timer = self.create_timer(1.0, self._update_json_status_file)
+            self.get_logger().info("✅ Unloader AGV JSON 狀態文件定時更新已啟動 (1秒間隔)")
+            
+            # 立即執行一次測試
+            self.get_logger().info("🔍 執行首次 JSON 狀態更新測試...")
+            self._update_json_status_file()
+            
+        except Exception as e:
+            self.get_logger().error(f"❌ Unloader AGV JSON 狀態記錄器初始化失敗: {e}")
+            import traceback
+            self.get_logger().error(f"❌ 錯誤詳細堆疊: {traceback.format_exc()}")
+            self.json_recorder = None
+            self.json_save_timer = None
 
     def state_changed(self, old_state, new_state):
         self.common_state_changed(old_state, new_state)
@@ -88,6 +121,37 @@ class AgvCoreNode(AgvNodebase):
             # self.get_logger().info("[Robot]-Idle")
             # self.robot_context.handle()
             pass
+    
+    def _update_json_status_file(self):
+        """定時更新 JSON 狀態文件"""
+        if self.json_recorder is None:
+            self.get_logger().error("❌ JSON 記錄器為 None，無法更新狀態文件")
+            return
+            
+        try:
+            # 使用包含 AGV ID 的檔案名稱，統一格式
+            agv_id = self.agv_id if hasattr(self, 'agv_id') and self.agv_id else "unloader01"
+            filename = f"agv_status_{agv_id}.json"
+            
+            filepath = self.json_recorder.save_complete_status_to_file(self, filename)
+            
+            # 驗證文件是否真的被創建 (每10次才打印一次，避免日誌過多)
+            import os
+            if not hasattr(self, '_json_update_count'):
+                self._json_update_count = 0
+            self._json_update_count += 1
+            
+            if os.path.exists(filepath):
+                file_size = os.path.getsize(filepath)
+                if self._json_update_count % 10 == 1:  # 第1次，第11次，第21次...打印
+                    self.get_logger().info(f"📝 Unloader AGV JSON 狀態文件更新正常 (第{self._json_update_count}次): {filepath}, 大小: {file_size} bytes")
+            else:
+                self.get_logger().error(f"❌ 文件未被創建: {filepath}")
+            
+        except Exception as e:
+            self.get_logger().error(f"❌ 定時更新 Unloader AGV JSON 狀態文件失敗: {e}")
+            import traceback
+            self.get_logger().error(f"❌ 錯誤詳細堆疊: {traceback.format_exc()}")
 
     # agvs_callback 現在由 AgvNodebase 提供
 

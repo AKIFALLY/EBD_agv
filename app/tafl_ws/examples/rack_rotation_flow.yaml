@@ -1,0 +1,97 @@
+# Rack Rotation Flow Example
+# This example demonstrates the rack rotation logic for KUKA AGV
+
+metadata:
+  id: rack_rotation_001
+  name: Rack Rotation Flow
+  version: 1.0
+  description: Manage rack rotation for side A/B processing
+
+variables:
+  location_id: 10001
+  rotation_point: 10002  # location_id + 1 for turning
+
+flow:
+  # Query racks that need rotation
+  - query:
+      target: racks
+      where:
+        location_id: "${location_id}"
+        side_a_completed: true
+        side_b_completed: false
+      store_as: racks_to_rotate
+  
+  # Check if we have racks to rotate
+  - check:
+      condition: "${racks_to_rotate.length} > 0"
+      store_as: need_rotation
+  
+  - if:
+      condition: "${need_rotation}"
+      then:
+        # Process each rack
+        - for:
+            each: rack
+            in: "${racks_to_rotate}"
+            do:
+              # Create rotation task
+              - create:
+                  target: task
+                  params:
+                    work_id: 220001  # KUKA rack rotation work
+                    rack_id: "${rack.id}"
+                    task_type: rack_rotation
+                    metadata:
+                      nodes: ["${location_id}", "${rotation_point}", "${location_id}"]
+                      rotation_direction: clockwise
+                      side_to_process: B
+                  store_as: rotation_task
+              
+              # Update rack status
+              - update:
+                  target: rack
+                  where:
+                    id: "${rack.id}"
+                  set:
+                    status: rotating
+                    current_task: "${rotation_task.id}"
+              
+              # Notify about rotation
+              - notify:
+                  channel: kuka_fleet
+                  message: "Rack ${rack.id} rotation task ${rotation_task.id} created"
+        
+        # Summary notification
+        - notify:
+            channel: system
+            message: "Created ${racks_to_rotate.length} rotation tasks"
+      else:
+        - notify:
+            channel: info
+            message: "No racks need rotation at location ${location_id}"
+  
+  # Check for completed racks
+  - query:
+      target: racks
+      where:
+        location_id: "${location_id}"
+        side_a_completed: true
+        side_b_completed: true
+      store_as: completed_racks
+  
+  - for:
+      each: rack
+      in: "${completed_racks}"
+      do:
+        # Mark rack as ready for pickup
+        - update:
+            target: rack
+            where:
+              id: "${rack.id}"
+            set:
+              status: ready_for_pickup
+              completed_at: "${now()}"
+        
+        - notify:
+            channel: system
+            message: "Rack ${rack.id} completed both sides, ready for pickup"

@@ -1,5 +1,5 @@
 meta:
-  updated_at: '2025-08-18T05:06:23.621337'
+  updated_at: '2025-08-20T01:35:35.819590'
   version: 2.0.0
   source: flow_wcs_api
 functions:
@@ -49,6 +49,15 @@ functions:
     defaults:
       status: idle
       type: cargo
+  - name: query.rooms
+    description: 查詢房間資訊
+    params:
+    - room_id
+    - production_status
+    returns: array
+    defaults:
+      room_id: null
+      production_status: null
   check:
   - name: check.empty
     description: 檢查資料是否為空
@@ -272,6 +281,26 @@ functions:
     defaults:
       data: {}
       path: /tmp/flow_data.json
+  - name: action.send_alarm
+    description: 發送警報
+    params:
+    - message
+    - severity
+    returns: boolean
+    defaults:
+      message: System alert
+      severity: medium
+  - name: action.trigger_event
+    description: 觸發事件
+    params:
+    - event_type
+    - agv_id
+    - data
+    returns: boolean
+    defaults:
+      event_type: custom_event
+      agv_id: null
+      data: {}
   control:
   - name: control.wait_time
     description: 等待指定時間
@@ -331,8 +360,8 @@ functions:
       variable: counter
       operation: set
       value: 0
-  - name: control.switch_advanced
-    description: 進階條件分支控制
+  - name: control.switch
+    description: 條件分支控制
     params:
     - value
     - cases

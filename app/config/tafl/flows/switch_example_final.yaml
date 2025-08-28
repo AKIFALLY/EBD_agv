@@ -1,0 +1,201 @@
+metadata:
+  id: switch_example_final
+  name: Switch 標準範例
+  version: 1.1
+  description: 使用 TAFL v1.1 標準格式的 switch 範例
+
+variables:
+  task_priority: 8
+  agv_battery: 75
+  task_type: "urgent"
+  system_status: "normal"
+
+flow:
+  # 範例 1: 根據優先級處理任務
+  - switch:
+      expression: ${task_priority}
+      cases:
+        - when: "> 8"
+          do:
+            - notify:
+                level: alarm
+                message: "緊急任務！優先級: ${task_priority}"
+            - create:
+                target: urgent_dispatch
+                with:
+                  priority: critical
+        
+        - when: "5..8"
+          do:
+            - notify:
+                level: info
+                message: "一般任務，優先級: ${task_priority}"
+            - create:
+                target: normal_dispatch
+                with:
+                  priority: normal
+        
+        - when: "< 5"
+          do:
+            - notify:
+                level: debug
+                message: "低優先級任務: ${task_priority}"
+        
+        - when: "default"
+          do:
+            - notify:
+                level: warning
+                message: "未知的優先級: ${task_priority}"
+            - stop:
+                reason: "Invalid priority"
+
+  # 範例 2: 根據 AGV 電量決定行動
+  - switch:
+      expression: ${agv_battery}
+      cases:
+        - when: "> 80"
+          do:
+            - set: agv_action = "full_operation"
+            - notify:
+                level: info
+                message: "AGV 電量充足 (${agv_battery}%)，可執行所有任務"
+        
+        - when: "50..80"
+          do:
+            - set: agv_action = "normal_operation"
+            - notify:
+                level: info
+                message: "AGV 電量正常 (${agv_battery}%)，執行一般任務"
+        
+        - when: "20..50"
+          do:
+            - set: agv_action = "limited_operation"
+            - notify:
+                level: warning
+                message: "AGV 電量偏低 (${agv_battery}%)，只執行緊急任務"
+            - update:
+                target: agv
+                set:
+                  mode: "energy_saving"
+        
+        - when: "default"
+          do:
+            - set: agv_action = "return_to_charge"
+            - notify:
+                level: alarm
+                message: "AGV 電量過低 (${agv_battery}%)，必須充電！"
+            - create:
+                target: charging_task
+                with:
+                  priority: 10
+
+  # 範例 3: 根據任務類型執行不同流程
+  - switch:
+      expression: ${task_type}
+      cases:
+        - when: "urgent"
+          do:
+            - notify:
+                level: alarm
+                message: "處理緊急任務"
+            - for:
+                items: ${available_agvs}
+                as: agv
+                do:
+                  - if:
+                      condition: ${agv.battery > 60}
+                    then:
+                      - create:
+                          target: dispatch
+                          with:
+                            agv_id: ${agv.id}
+                            task_type: urgent
+                      - stop:
+                          reason: "Urgent task dispatched"
+        
+        - when: "maintenance"
+          do:
+            - notify:
+                level: info
+                message: "執行維護任務"
+            - update:
+                target: agv
+                set:
+                  status: "maintenance"
+                  maintenance_start: ${now()}
+        
+        - when: "transport"
+          do:
+            - notify:
+                level: info
+                message: "執行運輸任務"
+            - if:
+                condition: ${rack_available}
+              then:
+                - create:
+                    target: transport_task
+                    with:
+                      type: "rack_transport"
+              else:
+                - notify:
+                    level: warning
+                    message: "無可用架台"
+        
+        - when: "default"
+          do:
+            - notify:
+                level: error
+                message: "未知的任務類型: ${task_type}"
+
+  # 範例 4: 巢狀使用 - switch 內包含 if 和 for
+  - switch:
+      expression: ${system_status}
+      cases:
+        - when: "normal"
+          do:
+            # 在 normal 狀態下，檢查所有 AGV
+            - for:
+                items: ${all_agvs}
+                as: agv
+                do:
+                  # 對每個 AGV 再做 switch 判斷
+                  - switch:
+                      expression: ${agv.status}
+                      cases:
+                        - when: "idle"
+                          do:
+                            - if:
+                                condition: ${agv.battery < 30}
+                              then:
+                                - update:
+                                    target: agv
+                                    where:
+                                      id: ${agv.id}
+                                    set:
+                                      status: "charging_needed"
+                              else:
+                                - update:
+                                    target: agv
+                                    where:
+                                      id: ${agv.id}
+                                    set:
+                                      status: "ready"
+                        
+                        - when: "error"
+                          do:
+                            - notify:
+                                level: alarm
+                                message: "AGV ${agv.id} 發生錯誤"
+                            - create:
+                                target: maintenance_request
+                                with:
+                                  agv_id: ${agv.id}
+                                  error_type: ${agv.error_type}
+        
+        - when: "emergency"
+          do:
+            - notify:
+                level: alarm
+                message: "系統進入緊急模式"
+            - stop:
+                reason: "Emergency shutdown"

@@ -343,4 +343,3 @@ class WorkIDParameterManager:
 - WCS 系統設計: @docs-ai/knowledge/agv-domain/wcs-system-design.md
 - 資料庫設計: @docs-ai/knowledge/agv-domain/wcs-database-design.md
 - AI WCS 實作: @app/ai_wcs_ws/CLAUDE.md
-- 任務管理: @docs-ai/operations/development/task-management.md

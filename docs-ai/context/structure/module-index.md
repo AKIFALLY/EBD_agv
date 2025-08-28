@@ -34,9 +34,6 @@
 - **設備控制**: `app/ecs_ws/CLAUDE.md` - 門控系統和設備管理
 - **🎯 Flow WCS (唯一系統)**: `app/flow_wcs_ws/CLAUDE.md` - **Linear Flow v2 WCS 唯一實作**
   - **WCS 統一架構**: @docs-ai/knowledge/agv-domain/wcs-system-design.md - Flow WCS + Linear Flow Designer 完整架構
-  - **系統設計**: @docs-ai/knowledge/system/flow-wcs-system.md - Linear Flow v2 系統架構和技術詳解
-  - **函數系統**: @docs-ai/knowledge/system/flow-wcs-function-system.md - 裝飾器註冊和函數庫架構
-  - **開發指導**: @docs-ai/operations/development/flow-wcs-development.md - 生產系統開發指導
   - **Linear Flow Designer**: 在 `app/web_api_ws/src/agvcui/` 中的視覺化流程設計器，產生 Linear Flow v2 檔案
   - **資料庫設計**: @docs-ai/knowledge/agv-domain/wcs-database-design.md - WCS 資料表架構
   - **Work ID 系統**: @docs-ai/knowledge/agv-domain/wcs-workid-system.md - 任務分類管理
@@ -71,8 +68,6 @@
 - **PLC 通訊故障** → `keyence_plc_ws/CLAUDE.md` + `plc_proxy_ws/CLAUDE.md` + @docs-ai/knowledge/protocols/keyence-plc-protocol.md
 - **🎯 WCS 相關問題** → `flow_wcs_ws/CLAUDE.md` (**唯一的 WCS 系統**)
   - **WCS 架構理解** → @docs-ai/knowledge/agv-domain/wcs-system-design.md
-  - **Flow WCS 配置問題** → @docs-ai/knowledge/system/flow-wcs-system.md
-  - **函數庫和裝飾器** → @docs-ai/knowledge/system/flow-wcs-function-system.md
   - **架台旋轉邏輯** → @docs-ai/knowledge/system/rack-rotation-logic.md
   - **Linear Flow Designer 問題** → `app/web_api_ws/src/agvcui/CLAUDE.md` (視覺化流程設計，產生 Linear Flow v2 檔案)
 - **KUKA Fleet 整合** → `kuka_fleet_ws/CLAUDE.md` + @docs-ai/knowledge/protocols/kuka-fleet-api.md + @docs-ai/knowledge/protocols/kuka-fleet-callback.md

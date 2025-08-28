@@ -1,0 +1,332 @@
+meta:
+  system: linear_flow_v2
+  version: "2.0.0"
+  author: "Flow WCS System"
+  created_at: "2025-08-19"
+  description: "人工回收空料架流程 - 人工收料區處理完成後的空料架搬運到空料架區"
+
+flow:
+  id: "manual_empty_rack_recycling"
+  name: "人工回收空料架"
+  work_id: "220008"  # 人工回收空料架專用 work_id
+  enabled: true
+  priority: 40  # 低優先級
+
+workflow:
+  - section: "查詢人工收料區空料架"
+    description: "查詢人工收料區 (51-55) 處理完成後的空料架"
+    steps:
+      - id: "query_manual_area_locations"
+        exec: "query.locations"
+        params:
+          type: "manual_receive_area"
+          rooms: [51, 52, 53, 54, 55]  # 人工收料區位置
+          has_rack: true  # 查詢有架台的位置
+        store: "manual_locations_with_rack"
+        description: "查詢人工收料區有架台的位置"
+
+      - id: "check_has_manual_racks"
+        exec: "check.empty"
+        params:
+          data: "${manual_locations_with_rack}"
+        store: "no_manual_racks"
+        description: "檢查是否有架台在人工收料區"
+
+      - id: "stop_if_no_manual_racks"
+        exec: "control.stop_flow"
+        params:
+          reason: "人工收料區沒有架台"
+        skip_if: "!${no_manual_racks}"
+        description: "如果沒有架台則停止流程"
+
+      - id: "log_manual_area_check"
+        exec: "action.log_message"
+        params:
+          message: "🔍 檢查人工收料區 ${manual_locations_with_rack.length} 個位置的架台狀態"
+          level: "info"
+          tags: ["manual_area", "empty_rack_check"]
+        skip_if: "${no_manual_racks}"
+        description: "記錄檢查狀態"
+
+  - section: "查詢空料架區可用空位"
+    description: "查詢空料架區是否有空位接收空料架"
+    steps:
+      - id: "query_empty_rack_area"
+        exec: "query.locations"
+        params:
+          type: "empty_rack_area"
+          rooms: [41, 42, 43, 44, 45]  # 空料架區位置
+          has_rack: false  # 查詢沒有架台的位置（空位）
+        store: "available_empty_area_locations"
+        skip_if: "${no_manual_racks}"
+        description: "查詢空料架區空位"
+
+      - id: "check_has_empty_area_space"
+        exec: "check.empty"
+        params:
+          data: "${available_empty_area_locations}"
+        store: "no_empty_area_space"
+        skip_if: "${no_manual_racks}"
+        description: "檢查是否有空位"
+
+      - id: "log_empty_area_status"
+        exec: "action.log_message"
+        params:
+          message: "${no_empty_area_space ? '⚠️ 空料架區已滿' : '✅ 空料架區有 ' + available_empty_area_locations.length + ' 個空位'}"
+          level: "${no_empty_area_space ? 'warning' : 'info'}"
+          tags: ["empty_rack_area", "capacity"]
+        skip_if: "${no_manual_racks}"
+        description: "記錄空料架區狀態"
+
+  - section: "檢查每個人工收料區的空料架"
+    description: "遍歷人工收料區，找出需要回收的空料架"
+    steps:
+      - id: "foreach_manual_locations"
+        exec: "foreach"
+        params:
+          items: "${manual_locations_with_rack}"
+          var: "location"
+          steps:
+            - id: "query_racks_at_manual"
+              exec: "query.racks"
+              params:
+                location_id: "${location.id}"
+                status: "available"
+              store: "racks_at_location"
+              description: "查詢該位置的架台"
+
+            - id: "check_has_racks"
+              exec: "check.empty"
+              params:
+                data: "${racks_at_location}"
+              store: "no_racks"
+              description: "檢查是否有架台"
+
+            - id: "check_rack_empty_and_processed"
+              exec: "check.rack_status"
+              params:
+                rack_id: "${racks_at_location[0].id}"
+                side: "both"  # 檢查兩面
+                check_type: "empty"  # 檢查是否為空
+              store: "rack_is_empty"
+              skip_if: "${no_racks}"
+              description: "檢查架台是否為空（處理完成）"
+
+            - id: "log_empty_rack_found"
+              exec: "action.log_message"
+              params:
+                message: "📤 發現人工處理完成的空料架 - 位置: ${location.name}, 架台: ${racks_at_location[0].rack_id}"
+                level: "info"
+                tags: ["empty_rack_found", "manual_area"]
+              skip_if: "${no_racks} || !${rack_is_empty}"
+              description: "記錄發現空料架"
+
+            # 決定空料架去向
+            - id: "determine_destination"
+              exec: "control.switch"
+              params:
+                value: "${no_empty_area_space}"
+                cases:
+                  "true": "boxout"  # 空料架區滿了，送到出口
+                  "false": "empty_area"  # 送到空料架區
+                default: "empty_area"
+              store: "destination_type"
+              skip_if: "${no_racks} || !${rack_is_empty}"
+              description: "決定空料架去向"
+
+            - id: "query_destination"
+              exec: "query.locations"
+              params:
+                type: "${destination_type == 'boxout' ? 'boxout_transfer' : 'empty_rack_area'}"
+                available: true
+                limit: 1
+              store: "destination_locations"
+              skip_if: "${no_racks} || !${rack_is_empty}"
+              description: "查詢目標位置"
+
+            - id: "check_destination_available"
+              exec: "check.empty"
+              params:
+                data: "${destination_locations}"
+              store: "no_destination"
+              skip_if: "${no_racks} || !${rack_is_empty}"
+              description: "檢查目標位置是否可用"
+
+            - id: "log_no_destination"
+              exec: "action.log_message"
+              params:
+                message: "❌ 沒有可用的目標位置 (${destination_type})，暫時保留空料架在人工收料區"
+                level: "warning"
+                tags: ["no_destination", "manual_recycling"]
+              skip_if: "${no_racks} || !${rack_is_empty} || !${no_destination}"
+              description: "記錄沒有目標位置"
+
+            - id: "check_existing_recycling_task"
+              exec: "check.task_exists"
+              params:
+                type: "MANUAL_EMPTY_RACK_RECYCLING"
+                rack_id: "${racks_at_location[0].id}"
+                status: ["pending", "in_progress"]
+              store: "recycling_task_exists"
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_destination}"
+              description: "檢查是否已存在回收任務"
+
+            - id: "create_recycling_task"
+              exec: "task.create_task"
+              params:
+                type: "MANUAL_EMPTY_RACK_RECYCLING"
+                work_id: "220008"  # 人工回收空料架 work_id
+                source_location_id: "${location.id}"
+                target_location_id: "${destination_locations[0].id}"
+                rack_id: "${racks_at_location[0].id}"
+                room_id: "${destination_locations[0].room_id || 0}"
+                priority: "low"  # 低優先級
+                metadata:
+                  rack_name: "${racks_at_location[0].rack_id}"
+                  source_location: "${location.name}"
+                  target_location: "${destination_locations[0].name}"
+                  destination_type: "${destination_type}"
+                  transport_reason: "人工處理完成空料架回收"
+                  model: "Cargo"  # Cargo AGV 負責搬運
+                  # 路徑規劃：從人工收料區到目標位置
+                  nodes: ["${location.node_id}", "${destination_locations[0].node_id}"]
+              store: "recycling_task_id"
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_destination} || ${recycling_task_exists}"
+              description: "創建空料架回收任務"
+
+            - id: "log_task_created"
+              exec: "action.log_message"
+              params:
+                message: "✅ 創建空料架回收任務 - 架台: ${racks_at_location[0].rack_id}, 從 ${location.name} 到 ${destination_locations[0].name}, 任務ID: ${recycling_task_id}"
+                level: "info"
+                tags: ["task_created", "manual_recycling", "${destination_type}"]
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_destination} || ${recycling_task_exists}"
+              description: "記錄任務創建"
+
+            - id: "update_destination_availability"
+              exec: "control.update_variable"
+              params:
+                variable: "${destination_type == 'empty_area' ? 'available_empty_area_locations' : 'destination_locations'}"
+                operation: "remove_first"
+                value: 1
+              skip_if: "${no_racks} || !${rack_is_empty} || ${no_destination} || ${recycling_task_exists}"
+              description: "更新目標位置可用性"
+
+        skip_if: "${no_manual_racks}"
+        description: "遍歷人工收料區檢查空料架"
+
+  - section: "監控回收效率"
+    description: "監控人工收料區空料架回收效率"
+    steps:
+      - id: "query_all_manual_empty_racks"
+        exec: "query.racks"
+        params:
+          location_id: [51, 52, 53, 54, 55]  # 人工收料區
+          status: "available"
+        store: "all_manual_racks"
+        description: "查詢所有人工收料區架台"
+
+      - id: "count_total_racks"
+        exec: "control.count_items"
+        params:
+          variable: "${all_manual_racks}"
+        store: "total_manual_racks"
+        description: "計算總架台數"
+
+      - id: "query_empty_manual_racks"
+        exec: "foreach"
+        params:
+          items: "${all_manual_racks}"
+          var: "rack"
+          steps:
+            - id: "check_if_empty"
+              exec: "check.rack_status"
+              params:
+                rack_id: "${rack.id}"
+                side: "both"
+                check_type: "empty"
+              store: "is_empty_${rack.id}"
+              description: "檢查是否為空"
+        store: "empty_check_results"
+        description: "檢查哪些是空料架"
+
+      # 簡化的空料架計數（假設約30%為空）
+      - id: "estimate_empty_count"
+        exec: "control.update_variable"
+        params:
+          variable: "empty_rack_count"
+          operation: "set"
+          value: "${Math.floor(total_manual_racks * 0.3)}"  # 估算30%為空
+        store: "empty_rack_count"
+        description: "估算空料架數量"
+
+      - id: "calculate_recycling_efficiency"
+        exec: "control.update_variable"
+        params:
+          variable: "recycling_efficiency"
+          operation: "set"
+          value: "${total_manual_racks > 0 ? (100 - empty_rack_count * 100 / total_manual_racks) : 100}"
+        store: "recycling_efficiency"
+        description: "計算回收效率"
+
+      - id: "log_recycling_stats"
+        exec: "action.log_message"
+        params:
+          message: "📊 人工收料區回收統計 - 總架台: ${total_manual_racks}, 估計空料架: ${empty_rack_count}, 回收效率: ${recycling_efficiency}%"
+          level: "info"
+          tags: ["recycling_stats", "manual_area"]
+        description: "記錄回收統計"
+
+      - id: "check_low_efficiency"
+        exec: "control.switch"
+        params:
+          value: "${recycling_efficiency < 70}"
+          cases:
+            "true": true
+          default: false
+        store: "low_efficiency"
+        description: "檢查回收效率是否過低"
+
+      - id: "send_efficiency_alert"
+        exec: "action.send_notification"
+        params:
+          message: "⚠️ 人工收料區空料架堆積，回收效率: ${recycling_efficiency}%，請加快回收速度"
+          level: "warning"
+          priority: "low"
+        skip_if: "!${low_efficiency}"
+        description: "發送效率警告"
+
+  - section: "總結"
+    description: "流程執行總結"
+    steps:
+      - id: "count_processed_locations"
+        exec: "control.count_items"
+        params:
+          variable: "${manual_locations_with_rack}"
+        store: "total_locations"
+        description: "計算處理的位置數量"
+
+      - id: "log_completion"
+        exec: "action.log_message"
+        params:
+          message: "🏁 人工回收空料架流程完成 - 檢查了 ${total_locations} 個位置，回收效率: ${recycling_efficiency}%"
+          level: "info"
+          tags: ["completion", "manual_recycling", "summary"]
+        description: "記錄完成訊息"
+
+settings:
+  log_level: "INFO"
+  enable_checkpoint: true
+  parallel_execution: false
+  timeout: 360  # 6分鐘超時
+  retry_on_failure: true
+  max_retries: 3
+  # 執行頻率控制 - 每8分鐘執行一次
+  execution_interval: 480  # seconds
+  last_execution: null
+  # 人工回收特定設定
+  manual_recycling_settings:
+    max_concurrent_tasks: 2  # 最多同時2個回收任務
+    priority_level: 40  # 優先級水平
+    efficiency_threshold: 70  # 效率警告閾值
+    overflow_to_boxout: true  # 空料架區滿時送到出口

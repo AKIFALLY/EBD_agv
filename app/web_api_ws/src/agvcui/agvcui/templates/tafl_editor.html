@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}TAFL Editor - Task Automation Flow Language{% endblock %}
+
+{% block extra_head %}
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CodeMirror for YAML editing -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/lint.min.css">
+    <!-- TAFL Editor CSS -->
+    <link rel="stylesheet" href="/static/css/tafl-editor.css?v=1756315632">
+    <link rel="stylesheet" href="/static/css/tafl-panels.css?v=1.0">
+{% endblock %}
+
+{% block content %}
+<div class="tafl-editor-container">
+    <!-- Top Toolbar -->
+    <div class="tafl-toolbar">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title is-4">TAFL Editor</h1>
+                </div>
+                <div class="level-item">
+                    <div class="dropdown is-hoverable">
+                        <div class="dropdown-trigger">
+                            <button class="button" aria-haspopup="true" aria-controls="flows-dropdown">
+                                <span class="icon">
+                                    <i class="fas fa-stream"></i>
+                                </span>
+                                <span>Flows</span>
+                                <span class="icon is-small">
+                                    <i class="fas fa-angle-down" aria-hidden="true"></i>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="flows-dropdown" role="menu">
+                            <div class="dropdown-content" id="flows-dropdown-content">
+                                <div class="has-text-centered" style="padding: 1rem;">
+                                    <span class="icon">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
+                                    <span>Loading flows...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="level-item">
+                    <div class="field is-grouped">
+                        <p class="control">
+                            <button class="button is-primary" id="new-flow-btn" data-tooltip="Create a new TAFL flow">
+                                <span class="icon">
+                                    <i class="fas fa-plus-circle"></i>
+                                </span>
+                                <span>New Flow</span>
+                            </button>
+                        </p>
+                        <p class="control">
+                            <button class="button" id="save-flow-btn" disabled data-tooltip="Save the current flow">
+                                <span class="icon">
+                                    <i class="fas fa-save"></i>
+                                </span>
+                                <span>Save</span>
+                            </button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="level-right">
+                <div class="level-item">
+                    <div class="field is-grouped">
+                        <p class="control">
+                            <button class="button is-success" id="validate-btn" data-tooltip="Validate the flow syntax">
+                                <span class="icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                                <span>Validate</span>
+                            </button>
+                        </p>
+                        <p class="control">
+                            <button class="button is-info" id="execute-btn" data-tooltip="Test run the flow">
+                                <span class="icon">
+                                    <i class="fas fa-play"></i>
+                                </span>
+                                <span>Test Run</span>
+                            </button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Editor Content -->
+    <div class="columns is-gapless p-0">
+        <!-- Left Sidebar: Three Panels -->
+        <div class="column is-one-fifth tafl-sidebar">
+            <!-- Metadata Panel -->
+            <div class="panel mb-4">
+                <p class="panel-heading">
+                    <span class="icon">
+                        <i class="fas fa-info-circle"></i>
+                    </span>
+                    <span>Metadata</span>
+                </p>
+                
+                <div class="panel-block">
+                    <div class="field is-fullwidth">
+                        <label class="label is-small">Flow ID</label>
+                        <input class="input is-small" type="text" id="flow-id" placeholder="example_001">
+                    </div>
+                </div>
+                
+                <div class="panel-block">
+                    <div class="field is-fullwidth">
+                        <label class="label is-small">Flow Name</label>
+                        <input class="input is-small" type="text" id="flow-name" placeholder="Enter flow name">
+                    </div>
+                </div>
+                
+                <div class="panel-block">
+                    <div class="field is-fullwidth">
+                        <label class="label is-small">Version</label>
+                        <input class="input is-small" type="text" id="flow-version" placeholder="1.0" value="1.0">
+                    </div>
+                </div>
+                
+                <div class="panel-block">
+                    <div class="field is-fullwidth">
+                        <label class="label is-small">Description</label>
+                        <textarea class="textarea is-small" id="flow-description" placeholder="Flow description" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TAFL Verbs Panel -->
+            <div class="panel">
+                <p class="panel-heading">
+                    <span class="icon">
+                        <i class="fas fa-toolbox"></i>
+                    </span>
+                    <span>TAFL Verbs</span>
+                </p>
+                
+                <p class="panel-tabs">
+                    <a class="is-active" data-tab="data">Data</a>
+                    <a data-tab="control">Control</a>
+                    <a data-tab="action">Action</a>
+                </p>
+                
+                <!-- Data Verbs -->
+                <div id="data-verbs" class="verb-category">
+                    {% for verb_id, verb in tafl_verbs.items() %}
+                    {% if verb_id in ['query', 'check', 'set'] %}
+                    <div class="panel-block verb-item" data-verb="{{ verb_id }}">
+                        <span class="panel-icon has-text-{{ verb.color.replace('is-', '') }}">
+                            <i class="{{ verb.icon }}"></i>
+                        </span>
+                        <div class="verb-info">
+                            <div class="verb-name">{{ verb.name }}</div>
+                            <div class="verb-desc">{{ verb.description }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Control Verbs -->
+                <div id="control-verbs" class="verb-category" style="display: none;">
+                    {% for verb_id, verb in tafl_verbs.items() %}
+                    {% if verb_id in ['if', 'for', 'switch'] %}
+                    <div class="panel-block verb-item" data-verb="{{ verb_id }}">
+                        <span class="panel-icon has-text-{{ verb.color.replace('is-', '') }}">
+                            <i class="{{ verb.icon }}"></i>
+                        </span>
+                        <div class="verb-info">
+                            <div class="verb-name">{{ verb.name }}</div>
+                            <div class="verb-desc">{{ verb.description }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Action Verbs -->
+                <div id="action-verbs" class="verb-category" style="display: none;">
+                    {% for verb_id, verb in tafl_verbs.items() %}
+                    {% if verb_id in ['create', 'update', 'stop', 'notify'] %}
+                    <div class="panel-block verb-item" data-verb="{{ verb_id }}">
+                        <span class="panel-icon has-text-{{ verb.color.replace('is-', '') }}">
+                            <i class="{{ verb.icon }}"></i>
+                        </span>
+                        <div class="verb-info">
+                            <div class="verb-name">{{ verb.name }}</div>
+                            <div class="verb-desc">{{ verb.description }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Flow Canvas with Display Modes -->
+        <div class="column tafl-canvas-container">
+            <!-- Display Mode Switcher -->
+            <div class="tafl-content-modes">
+                <button class="mode-button is-active" data-mode="cards">
+                    <span class="icon is-small">
+                        <i class="fas fa-th-large"></i>
+                    </span>
+                    <span>Cards</span>
+                </button>
+                <button class="mode-button" data-mode="yaml">
+                    <span class="icon is-small">
+                        <i class="fas fa-code"></i>
+                    </span>
+                    <span>YAML</span>
+                </button>
+                <button class="mode-button" data-mode="both">
+                    <span class="icon is-small">
+                        <i class="fas fa-columns"></i>
+                    </span>
+                    <span>Both</span>
+                </button>
+                <!-- Toggle Properties Panel -->
+                <button class="mode-button toggle-properties" id="toggle-properties-btn" data-tooltip="Toggle Properties Panel">
+                    <span class="icon is-small">
+                        <i class="fas fa-angle-double-right"></i>
+                    </span>
+                </button>
+            </div>
+            
+            <!-- Content Wrapper -->
+            <div class="tafl-content-wrapper mode-cards">
+                <!-- Cards View -->
+                <div class="tafl-canvas" id="flow-canvas">
+                    <div class="canvas-drop-zone" id="canvas-drop-zone">
+                        <div class="drop-zone-content">
+                            <span class="icon is-large has-text-grey-light">
+                                <i class="fas fa-grip-vertical fa-3x"></i>
+                            </span>
+                            <p class="has-text-grey">Drag TAFL verbs here to build your flow</p>
+                            <p class="has-text-grey-light is-size-7">Or click on a verb from the toolbox</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- YAML View -->
+                <div class="yaml-panel">
+                    <div class="yaml-controls">
+                        <button class="button is-small is-primary" id="apply-yaml-btn">
+                            <span class="icon">
+                                <i class="fas fa-check"></i>
+                            </span>
+                            <span>Apply Changes</span>
+                        </button>
+                        <button class="button is-small" id="refresh-yaml-btn">
+                            <span class="icon">
+                                <i class="fas fa-sync"></i>
+                            </span>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                    <div class="field" style="height: calc(100% - 40px);">
+                        <div class="control" style="height: 100%;">
+                            <textarea id="yaml-editor-main" placeholder="Generated YAML will appear here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar: Properties & Code -->
+        <div class="column is-one-quarter tafl-properties">
+            <div class="tabs is-boxed">
+                <ul>
+                    <li class="is-active" data-tab="properties">
+                        <a data-tooltip="Properties">
+                            <span class="icon">
+                                <i class="fas fa-cog"></i>
+                            </span>
+                            <span>Properties</span>
+                        </a>
+                    </li>
+                    <li data-tab="settings">
+                        <a data-tooltip="Settings">
+                            <span class="icon">
+                                <i class="fas fa-sliders-h"></i>
+                            </span>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li data-tab="preload">
+                        <a data-tooltip="Preload">
+                            <span class="icon">
+                                <i class="fas fa-database"></i>
+                            </span>
+                            <span>Preload</span>
+                        </a>
+                    </li>
+                    <li data-tab="rules">
+                        <a data-tooltip="Rules">
+                            <span class="icon">
+                                <i class="fas fa-gavel"></i>
+                            </span>
+                            <span>Rules</span>
+                        </a>
+                    </li>
+                    <li data-tab="variables">
+                        <a data-tooltip="Variables">
+                            <span class="icon">
+                                <i class="fas fa-code"></i>
+                            </span>
+                            <span>Variables</span>
+                        </a>
+                    </li>
+                    <li data-tab="validation">
+                        <a data-tooltip="Validation">
+                            <span class="icon">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
+                            <span>Validation</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Properties Panel -->
+            <div id="properties-panel" class="properties-content">
+                <div class="no-selection">
+                    <div class="has-text-centered">
+                        <span class="icon is-large has-text-grey-light">
+                            <i class="fas fa-mouse-pointer fa-3x"></i>
+                        </span>
+                        <p class="has-text-grey">Select a card to edit properties</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Panel (TAFL v1.1) -->
+            <div id="settings-panel" class="properties-content" style="display: none;">
+                <div class="property-editor">
+                    <h4 class="title is-5 mb-4">Execution Settings</h4>
+                    <div class="field">
+                        <label class="label is-small">Timeout (seconds)</label>
+                        <div class="control">
+                            <input class="input is-small" type="number" id="settings-timeout" value="3600" min="1">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label is-small">Max Retries</label>
+                        <div class="control">
+                            <input class="input is-small" type="number" id="settings-max-retries" value="3" min="0">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="checkbox">
+                            <input type="checkbox" id="settings-retry-on-failure">
+                            Retry on Failure
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preload Panel (TAFL v1.1) -->
+            <div id="preload-panel" class="properties-content" style="display: none;">
+                <div class="property-editor">
+                    <h4 class="title is-5 mb-4">Data Preloading</h4>
+                    <p class="is-size-7 has-text-grey mb-3">Preload data at the beginning of flow execution for better performance.</p>
+                    
+                    <button class="button is-small is-primary mb-3" id="add-preload-btn">
+                        <span class="icon">
+                            <i class="fas fa-plus"></i>
+                        </span>
+                        <span>Add Preload</span>
+                    </button>
+                    
+                    <div class="preload-list" id="preload-list">
+                        <!-- Preloaded data items will be shown here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rules Panel (TAFL v1.1) -->
+            <div id="rules-panel" class="properties-content" style="display: none;">
+                <div class="property-editor">
+                    <h4 class="title is-5 mb-4">Business Rules</h4>
+                    <p class="is-size-7 has-text-grey mb-3">Define global rules and constraints for the flow.</p>
+                    
+                    <button class="button is-small is-primary mb-3" id="add-rule-btn">
+                        <span class="icon">
+                            <i class="fas fa-plus"></i>
+                        </span>
+                        <span>Add Rule</span>
+                    </button>
+                    
+                    <div class="rules-list" id="rules-list">
+                        <!-- Rules will be shown here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Variables Panel -->
+            <div id="variables-panel" class="properties-content" style="display: none;">
+                <div class="property-editor">
+                    <h4 class="title is-5 mb-4">Flow Variables</h4>
+                    <p class="is-size-7 has-text-grey mb-3">Define variables to store and manipulate data in the flow.</p>
+                    
+                    <button class="button is-small is-primary mb-3" id="add-variable-btn">
+                        <span class="icon">
+                            <i class="fas fa-plus"></i>
+                        </span>
+                        <span>Add Variable</span>
+                    </button>
+                    
+                    <div id="variables-list" class="variables-list">
+                        <!-- Variables will be added here by TAFLPanels -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Validation Panel -->
+            <div id="validation-panel" class="properties-content" style="display: none;">
+                <div class="validation-results" id="validation-results">
+                    <div class="has-text-centered">
+                        <span class="icon is-large has-text-grey-light">
+                            <i class="far fa-check-circle fa-3x"></i>
+                        </span>
+                        <p class="has-text-grey">Click 'Validate' to check your flow</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Save Flow Modal -->
+<div class="modal" id="save-flow-modal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Save TAFL Flow</p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Flow ID</label>
+                <div class="control">
+                    <input class="input" type="text" id="save-flow-id" placeholder="unique-flow-id">
+                </div>
+                <p class="help">Unique identifier for the flow (no spaces or special characters)</p>
+            </div>
+            <div class="field">
+                <label class="label">Flow Name</label>
+                <div class="control">
+                    <input class="input" type="text" id="save-flow-name" placeholder="Flow Display Name">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Description</label>
+                <div class="control">
+                    <textarea class="textarea" id="save-flow-description" placeholder="Describe what this flow does..."></textarea>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-primary" id="confirm-save-btn">Save Flow</button>
+            <button class="button">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+<!-- js-yaml for YAML parsing and generation -->
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/indent-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/lint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/json-lint.min.js"></script>
+<!-- All modules are now imported directly in tafl-editor.js -->
+<script type="module" src="/static/js/tafl-editor.js?t=1756314400"></script>
+{% endblock %}

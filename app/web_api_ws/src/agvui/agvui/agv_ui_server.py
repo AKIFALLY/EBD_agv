@@ -131,6 +131,85 @@ class AgvUiServer:
                 "request": request,
                 "test_agvs": test_agvs
             })
+        
+        @self.app.get("/multi", response_class=HTMLResponse)
+        async def multi_monitor(request: Request):
+            """多車監控頁面 - 同時監控所有 AGV"""
+            return self.templates.TemplateResponse("multi.html", {
+                "request": request,
+                "container_type": self.container_type
+            })
+        
+        @self.app.get("/api/agv-status/{agv_id}")
+        async def get_agv_status(agv_id: str):
+            """取得特定 AGV 的狀態資料"""
+            try:
+                # 從 /tmp/ 讀取對應的狀態檔案
+                status_file = f'/tmp/agv_status_{agv_id}.json'
+                if os.path.exists(status_file):
+                    with open(status_file, 'r', encoding='utf-8') as f:
+                        status_data = json.load(f)
+                    
+                    # 確保 AGV ID 正確
+                    status_data['agv_id'] = agv_id
+                    return status_data
+                else:
+                    # 檔案不存在，回傳空資料
+                    return {"error": f"Status file not found for {agv_id}", "agv_id": agv_id}
+                    
+            except json.JSONDecodeError as e:
+                return {"error": f"JSON parse error: {str(e)}", "agv_id": agv_id}
+            except Exception as e:
+                return {"error": str(e), "agv_id": agv_id}
+        
+        @self.app.get("/api/agv-plc/{agv_id}")
+        async def get_agv_plc_status(agv_id: str):
+            """取得特定 AGV 的完整 PLC 資料 (330+ 屬性)"""
+            try:
+                # 嘗試讀取 PLC 測試資料
+                plc_file = f'/tmp/agv_plc_{agv_id}.json'
+                if os.path.exists(plc_file):
+                    with open(plc_file, 'r', encoding='utf-8') as f:
+                        plc_data = json.load(f)
+                    
+                    # 確保 AGV ID 正確
+                    plc_data['agv_id'] = agv_id
+                    plc_data['AGV_ID'] = agv_id
+                    
+                    # 同時透過 Socket.IO 發送
+                    await self.agv_ui_socket.notify_agv_status(plc_data)
+                    
+                    return plc_data
+                else:
+                    # 如果沒有 PLC 檔案，嘗試讀取普通狀態檔案
+                    return await get_agv_status(agv_id)
+                    
+            except json.JSONDecodeError as e:
+                return {"error": f"JSON parse error: {str(e)}", "agv_id": agv_id}
+            except Exception as e:
+                return {"error": str(e), "agv_id": agv_id}
+        
+        @self.app.get("/api/all-agv-status")
+        async def get_all_agv_status():
+            """取得所有 AGV 的狀態資料"""
+            agv_list = ["loader01", "loader02", "cargo01", "cargo02", "unloader01", "unloader02"]
+            all_status = {}
+            
+            for agv_id in agv_list:
+                try:
+                    status_file = f'/tmp/agv_status_{agv_id}.json'
+                    if os.path.exists(status_file):
+                        with open(status_file, 'r', encoding='utf-8') as f:
+                            status_data = json.load(f)
+                        status_data['agv_id'] = agv_id
+                        all_status[agv_id] = status_data
+                    else:
+                        all_status[agv_id] = None
+                except Exception as e:
+                    print(f"Error reading status for {agv_id}: {e}")
+                    all_status[agv_id] = None
+            
+            return all_status
 
     async def read_status_file_task(self):
         """定時讀取 AGV 狀態檔案並透過 Socket.IO 廣播
@@ -197,15 +276,52 @@ class AgvUiServer:
                 print(f"❌ 讀取狀態檔案錯誤: {e}")
                 await asyncio.sleep(1.0)
     
+    async def read_plc_file_task(self):
+        """定時讀取 PLC 狀態檔案並透過 Socket.IO 廣播
+        
+        這是專門處理 PLC 完整資料 (330+ 屬性) 的任務
+        """
+        agv_list = ["loader01", "loader02", "cargo01", "cargo02", "unloader01", "unloader02"]
+        
+        while True:
+            try:
+                # 讀取 PLC 檔案
+                for agv_id in agv_list:
+                    plc_file = f'/tmp/agv_plc_{agv_id}.json'
+                    if os.path.exists(plc_file):
+                        with open(plc_file, 'r', encoding='utf-8') as f:
+                            plc_data = json.load(f)
+                        
+                        # 確保 AGV ID 正確
+                        plc_data['agv_id'] = agv_id
+                        plc_data['AGV_ID'] = agv_id
+                        
+                        # 透過 Socket.IO 廣播 PLC 資料 (使用不同的事件名稱)
+                        await self.agv_ui_socket.notify_plc_status(plc_data)
+                
+                # 每 2 秒讀取一次 (PLC 資料更新頻率較低)
+                await asyncio.sleep(2.0)
+                
+            except json.JSONDecodeError as e:
+                print(f"⚠️ PLC JSON 解析錯誤: {e}")
+                await asyncio.sleep(2.0)
+            except Exception as e:
+                print(f"❌ 讀取 PLC 檔案錯誤: {e}")
+                await asyncio.sleep(2.0)
+
     async def start(self):
         self.loop = asyncio.get_running_loop()
         # 啟動 ROS node（background thread）
         ros_node = AgvUiRos(self.loop, self.agv_ui_socket)
         ros_node.start()
         
-        # 啟動狀態檔案讀取任務
+        # 啟動狀態檔案讀取任務 (JSON 狀態)
         asyncio.create_task(self.read_status_file_task())
         print("✅ 已啟動 AGV 狀態檔案監控任務")
+        
+        # 啟動 PLC 檔案讀取任務 (PLC 完整資料)
+        asyncio.create_task(self.read_plc_file_task())
+        print("✅ 已啟動 PLC 狀態檔案監控任務")
 
         # 啟動 uvicorn server
         config = uvicorn.Config(self.sio_app, host=self.host, port=self.port, loop="asyncio")

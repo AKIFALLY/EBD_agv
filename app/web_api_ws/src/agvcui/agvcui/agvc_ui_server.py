@@ -11,7 +11,7 @@ from agvcui.agvc_ui_socket import AgvcUiSocket
 from agvcui.routers import map, tasks, works, devices, signals
 from agvcui.routers import rosout_logs, runtime_logs, audit_logs
 from agvcui.routers import clients, racks, products, carriers, agvs, auth, users
-from agvcui.routers import linear_flow_designer, nodes
+from agvcui.routers import linear_flow_designer, nodes, tafl_editor
 from agvcui.middleware import AuthMiddleware
 from contextlib import asynccontextmanager
 
@@ -59,7 +59,9 @@ class AgvcUiServer:
         # 設定靜態與模板目錄
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.templates = Jinja2Templates(
-            directory=os.path.join(base_dir, "templates"))
+            directory=os.path.join(base_dir, "templates"),
+            auto_reload=True  # Enable template auto-reload in development
+        )
 
         # 添加自定義過濾器
         import json
@@ -151,6 +153,9 @@ class AgvcUiServer:
         self.app.include_router(users.get_router(self.templates))
         self.app.include_router(linear_flow_designer.get_router(self.templates))
         self.app.include_router(nodes.get_router(self.templates))
+        
+        # Add TAFL Editor router
+        self.app.include_router(tafl_editor.get_router(self.templates))
 
     def run(self):
         uvicorn.run(self.sio_app, host=self.host, port=self.port)

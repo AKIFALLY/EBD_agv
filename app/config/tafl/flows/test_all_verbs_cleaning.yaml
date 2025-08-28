@@ -1,0 +1,58 @@
+flow:
+- check:
+    condition: ${count} > 5
+    else:
+    - stop:
+        reason: Check failed
+    target: system
+    then:
+    - notify:
+        level: info
+        message: Check passed
+- switch:
+    cases:
+    - do:
+      - set: auto_mode = true
+      when: auto
+    default:
+    - notify:
+        level: warning
+        message: Unknown mode
+    expression: ${mode}
+- if:
+    condition: ${complex_condition}
+    then:
+    - switch:
+        cases:
+        - do:
+          - for:
+              do:
+              - if:
+                  condition: ${item.active}
+                  then:
+                  - update:
+                      set:
+                        processed: true
+                      target: item
+                      where:
+                        id: ${item.id}
+              each: item
+              in: ${items}
+          when: special
+        default:
+        - notify:
+            level: debug
+            message: Default case in nested switch
+        expression: ${sub_mode}
+metadata:
+  created_at: '2025-08-28T06:40:23.428957'
+  description: 測試所有動詞的 card ID 清理
+  id: test_all_verbs_cleaning
+  name: Test All Verbs Card ID Cleaning
+  updated_at: '2025-08-28T06:40:23.428951'
+  version: '1.1'
+preload: {}
+rules: {}
+settings: {}
+variables:
+  test_var: value

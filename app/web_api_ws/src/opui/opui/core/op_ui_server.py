@@ -3,7 +3,7 @@ import socketio
 import uvicorn
 
 from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
@@ -71,6 +71,49 @@ class OpUiServer:
 
     def register_routes(self):
         """註冊 HTTP 路由和 API 端點"""
+        
+        @self.app.get("/", response_class=HTMLResponse)
+        async def root_dispatcher(request: Request):
+            """主路由分發器 - 根據 device_type 導向不同介面"""
+            try:
+                # 1. 取得 deviceId
+                device_id = request.query_params.get("deviceId")
+                if not device_id:
+                    return self.templates.TemplateResponse("error.html", {
+                        "request": request,
+                        "message": "缺少 deviceId 參數"
+                    })
+                
+                # 2. 驗證並取得設備資訊
+                auth_result = await check_device_authorization(device_id)
+                if not auth_result["success"]:
+                    return self.templates.TemplateResponse("unauthorized.html", {
+                        "request": request,
+                        "message": auth_result["message"]
+                    })
+                
+                license_data = auth_result["license_data"]
+                device_type = license_data.device_type
+                
+                # 3. 根據 device_type 導向不同介面
+                if device_type == "injection_machine":
+                    # 導向原本的 OPUI 介面
+                    return RedirectResponse(url=f"/home?deviceId={device_id}")
+                    
+                elif device_type == "hmi_terminal":
+                    # 導向 HMI 介面
+                    return RedirectResponse(url=f"/hmi?deviceId={device_id}")
+                    
+                else:
+                    # 未知類型
+                    return self.templates.TemplateResponse("error.html", {
+                        "request": request,
+                        "message": f"不支援的設備類型: {device_type}"
+                    })
+                    
+            except Exception as e:
+                print(f"Error in root dispatcher: {e}")
+                return HTMLResponse(content="系統錯誤", status_code=500)
         
         @self.app.get("/home", response_class=HTMLResponse)
         async def home(request: Request):
@@ -146,6 +189,100 @@ class OpUiServer:
             except Exception as e:
                 print(f"Error in rack route: {e}")
                 return HTMLResponse(content="Error in rack route", status_code=500)
+        
+        @self.app.get("/hmi", response_class=HTMLResponse)
+        async def hmi(request: Request):
+            """HMI 介面 - 根據 deviceId 顯示不同的 Location"""
+            try:
+                # 1. 驗證設備
+                device_id = request.query_params.get("deviceId")
+                if not device_id:
+                    raise HTTPException(status_code=400, detail="缺少 deviceId 參數")
+                
+                auth_result = await check_device_authorization(device_id)
+                if not auth_result["success"]:
+                    raise HTTPException(
+                        status_code=403,
+                        detail=auth_result["message"]
+                    )
+                
+                license_data = auth_result["license_data"]
+                
+                # 2. 從 permissions 欄位取得配置
+                permissions = license_data.permissions or {}
+                locations_to_monitor = permissions.get("locations", [])
+                button_layout = permissions.get("layout", "1x2")
+                
+                # 3. 查詢每個 Location 的資料
+                from opui.database.operations import connection_pool
+                from db_proxy.crud.location_crud import location_crud
+                from db_proxy.crud.rack_crud import rack_crud
+                from db_proxy.crud.carrier_crud import carrier_crud
+                from sqlmodel import select
+                from db_proxy.models import Location, Rack, Carrier, Product
+                
+                locations_data = []
+                with connection_pool.get_session() as session:
+                    for loc_name in locations_to_monitor:
+                        # 查詢 Location
+                        location = session.exec(
+                            select(Location).where(Location.name == loc_name)
+                        ).first()
+                        
+                        if location:
+                            rack = None
+                            carriers = []
+                            product = None
+                            
+                            # 如果有 rack_id，查詢 Rack 資訊
+                            if location.rack_id:
+                                rack = session.exec(
+                                    select(Rack).where(Rack.id == location.rack_id)
+                                ).first()
+                                
+                                # 查詢該 Rack 上的 Carriers
+                                if rack:
+                                    carriers = session.exec(
+                                        select(Carrier).where(Carrier.rack_id == rack.id)
+                                    ).all()
+                                    
+                                    # 查詢 Rack 關聯的產品資訊
+                                    if rack.product_id:
+                                        product = session.exec(
+                                            select(Product).where(Product.id == rack.product_id)
+                                        ).first()
+                            
+                            locations_data.append({
+                                "location": location,
+                                "rack": rack,
+                                "carriers": carriers,
+                                "product": product
+                            })
+                        else:
+                            # Location 不存在，加入空資料
+                            locations_data.append({
+                                "location": {"name": loc_name, "id": None},
+                                "rack": None,
+                                "carriers": [],
+                                "product": None
+                            })
+                
+                # 4. 渲染 HMI 模板
+                return self.templates.TemplateResponse("hmi.html", {
+                    "request": request,
+                    "device_id": device_id,
+                    "device_description": license_data.description,
+                    "locations": locations_data,
+                    "layout": button_layout
+                })
+                
+            except HTTPException:
+                raise
+            except Exception as e:
+                print(f"Error in HMI route: {e}")
+                import traceback
+                traceback.print_exc()
+                return HTMLResponse(content="Error in HMI route", status_code=500)
 
         # 整合 API 路由器
         self.app.include_router(process_settings.router)
@@ -155,6 +292,10 @@ class OpUiServer:
         # 新增 AGV 和任務相關 API
         from opui.api import agv
         self.app.include_router(agv.router, prefix="/api", tags=["agv", "tasks"])
+        
+        # 新增 HMI 相關 API
+        from opui.api import hmi
+        self.app.include_router(hmi.router)
 
     def run(self):
         """啟動伺服器"""

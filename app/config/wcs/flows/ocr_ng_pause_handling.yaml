@@ -1,0 +1,306 @@
+meta:
+  system: linear_flow_v2
+  version: "2.0.0"
+  author: "Flow WCS System"
+  created_at: "2025-08-19"
+  description: "OCR NG 暫停處理流程 - 處理 OCR 檢測失敗導致的 AGV 暫停狀態"
+
+flow:
+  id: "ocr_ng_pause_handling"
+  name: "OCR NG 暫停處理"
+  work_id: "220005"  # OCR NG 處理專用 work_id
+  enabled: true
+  priority: 95  # 極高優先級（OCR NG 需要立即處理）
+
+workflow:
+  - section: "檢查暫停的 AGV"
+    description: "查詢因 OCR NG 而暫停的 AGV"
+    steps:
+      - id: "query_paused_agvs"
+        exec: "query.agvs"
+        params:
+          status: "paused"  # 暫停狀態
+          pause_reason: "ocr_ng"  # OCR NG 原因
+        store: "paused_agvs"
+        description: "查詢因 OCR NG 暫停的 AGV"
+
+      - id: "check_has_paused_agvs"
+        exec: "check.empty"
+        params:
+          data: "${paused_agvs}"
+        store: "no_paused_agvs"
+        description: "檢查是否有暫停的 AGV"
+
+      - id: "stop_if_no_paused_agvs"
+        exec: "control.stop_flow"
+        params:
+          reason: "沒有因 OCR NG 暫停的 AGV"
+        skip_if: "!${no_paused_agvs}"
+        description: "如果沒有暫停的 AGV 則停止流程"
+
+      - id: "log_paused_agvs"
+        exec: "action.log_message"
+        params:
+          message: "⚠️ 發現 ${paused_agvs.length} 台 AGV 因 OCR NG 暫停"
+          level: "warning"
+          tags: ["ocr_ng", "agv_paused", "critical"]
+        skip_if: "${no_paused_agvs}"
+        description: "記錄暫停的 AGV 數量"
+
+  - section: "處理每台暫停的 AGV"
+    description: "遍歷每台暫停的 AGV，進行相應處理"
+    steps:
+      - id: "foreach_paused_agvs"
+        exec: "foreach"
+        params:
+          items: "${paused_agvs}"
+          var: "agv"
+          steps:
+            - id: "get_agv_location"
+              exec: "query.locations"
+              params:
+                agv_id: "${agv.id}"
+                current: true  # 當前位置
+              store: "agv_location"
+              description: "獲取 AGV 當前位置"
+
+            - id: "check_location_exists"
+              exec: "check.empty"
+              params:
+                data: "${agv_location}"
+              store: "no_location"
+              description: "檢查位置是否存在"
+
+            - id: "query_rack_at_agv"
+              exec: "query.racks"
+              params:
+                location_id: "${agv_location[0].id}"
+                status: "ng"  # NG 狀態的架台
+              store: "ng_rack"
+              skip_if: "${no_location}"
+              description: "查詢 AGV 位置的 NG 架台"
+
+            - id: "check_has_ng_rack"
+              exec: "check.empty"
+              params:
+                data: "${ng_rack}"
+              store: "no_ng_rack"
+              skip_if: "${no_location}"
+              description: "檢查是否有 NG 架台"
+
+            - id: "log_ocr_ng_details"
+              exec: "action.log_message"
+              params:
+                message: "🔍 OCR NG 詳情 - AGV: ${agv.name}, 位置: ${agv_location[0].name}, 架台: ${ng_rack[0].rack_id || 'N/A'}"
+                level: "info"
+                tags: ["ocr_ng_details", "agv_${agv.id}"]
+              skip_if: "${no_location}"
+              description: "記錄 OCR NG 詳細資訊"
+
+            - id: "send_critical_notification"
+              exec: "action.send_alarm"
+              params:
+                message: "🚨 OCR NG 緊急通知 - AGV ${agv.name} 在 ${agv_location[0].name} 暫停，需要人工介入"
+                severity: "critical"
+              skip_if: "${no_location}"
+              description: "發送緊急通知"
+
+            - id: "check_manual_override"
+              exec: "check.task_exists"
+              params:
+                type: "MANUAL_OVERRIDE"
+                agv_id: "${agv.id}"
+                status: ["pending", "in_progress"]
+              store: "manual_override_exists"
+              skip_if: "${no_location}"
+              description: "檢查是否已有人工介入任務"
+
+            - id: "create_manual_intervention_task"
+              exec: "task.create_task"
+              params:
+                type: "MANUAL_INTERVENTION"
+                work_id: "220005"  # OCR NG 處理 work_id
+                agv_id: "${agv.id}"
+                location_id: "${agv_location[0].id}"
+                rack_id: "${ng_rack[0].id || null}"
+                priority: "critical"  # 最高優先級
+                metadata:
+                  agv_name: "${agv.name}"
+                  location_name: "${agv_location[0].name}"
+                  rack_id: "${ng_rack[0].rack_id || 'N/A'}"
+                  pause_time: "${agv.pause_time}"
+                  ocr_failure_reason: "${agv.ocr_failure_reason || 'OCR 檢測失敗'}"
+                  required_action: "manual_ocr_verification"
+                  estimated_time: 300  # 預估處理時間 5 分鐘
+              store: "intervention_task_id"
+              skip_if: "${no_location} || ${manual_override_exists}"
+              description: "創建人工介入任務"
+
+            - id: "log_task_created"
+              exec: "action.log_message"
+              params:
+                message: "📋 創建人工介入任務 - AGV: ${agv.name}, 任務ID: ${intervention_task_id}"
+                level: "info"
+                tags: ["task_created", "manual_intervention", "ocr_ng"]
+              skip_if: "${no_location} || ${manual_override_exists}"
+              description: "記錄任務創建"
+
+            - id: "update_agv_status"
+              exec: "action.trigger_event"
+              params:
+                event_type: "agv_manual_intervention_requested"
+                agv_id: "${agv.id}"
+                data:
+                  task_id: "${intervention_task_id}"
+                  location: "${agv_location[0].name}"
+                  reason: "ocr_ng"
+              skip_if: "${no_location} || ${manual_override_exists}"
+              description: "觸發人工介入事件"
+
+        skip_if: "${no_paused_agvs}"
+        description: "遍歷所有暫停的 AGV"
+
+  - section: "監控 OCR NG 統計"
+    description: "統計和監控 OCR NG 發生頻率"
+    steps:
+      - id: "query_recent_ocr_ng_tasks"
+        exec: "query.tasks"
+        params:
+          type: "MANUAL_INTERVENTION"
+          metadata_filter:
+            required_action: "manual_ocr_verification"
+          created_after: "-1h"  # 過去一小時
+        store: "recent_ocr_ng_tasks"
+        description: "查詢最近一小時的 OCR NG 任務"
+
+      - id: "count_recent_ocr_ng"
+        exec: "control.count_items"
+        params:
+          variable: "${recent_ocr_ng_tasks}"
+        store: "recent_ocr_ng_count"
+        description: "計算最近 OCR NG 數量"
+
+      - id: "log_ocr_ng_stats"
+        exec: "action.log_message"
+        params:
+          message: "📊 OCR NG 統計 - 過去一小時: ${recent_ocr_ng_count} 次，當前暫停: ${paused_agvs.length} 台"
+          level: "info"
+          tags: ["ocr_ng_stats", "monitoring"]
+        description: "記錄 OCR NG 統計"
+
+      - id: "check_high_frequency"
+        exec: "control.switch"
+        params:
+          value: "${recent_ocr_ng_count}"
+          cases:
+            "5": true   # 5次以上
+            "6": true
+            "7": true
+            "8": true
+            "9": true
+            "10": true
+          default: "${recent_ocr_ng_count > 10}"
+        store: "high_ocr_ng_frequency"
+        description: "檢查 OCR NG 頻率是否過高"
+
+      - id: "send_frequency_alert"
+        exec: "action.send_notification"
+        params:
+          message: "⚠️ OCR NG 頻率異常高 - 過去一小時發生 ${recent_ocr_ng_count} 次，請檢查 OCR 系統"
+          level: "critical"
+          priority: "high"
+          recipients: ["system_admin", "quality_control"]
+        skip_if: "!${high_ocr_ng_frequency}"
+        description: "發送高頻率警報"
+
+  - section: "自動恢復嘗試"
+    description: "嘗試自動恢復部分可恢復的 OCR NG 情況"
+    steps:
+      - id: "query_recoverable_agvs"
+        exec: "query.agvs"
+        params:
+          status: "paused"
+          pause_reason: "ocr_ng"
+          pause_duration: ">300"  # 暫停超過 5 分鐘
+        store: "recoverable_agvs"
+        description: "查詢可能可以恢復的 AGV"
+
+      - id: "check_has_recoverable"
+        exec: "check.empty"
+        params:
+          data: "${recoverable_agvs}"
+        store: "no_recoverable"
+        description: "檢查是否有可恢復的 AGV"
+
+      - id: "foreach_recoverable_agvs"
+        exec: "foreach"
+        params:
+          items: "${recoverable_agvs}"
+          var: "agv"
+          steps:
+            - id: "check_manual_resolved"
+              exec: "check.task_exists"
+              params:
+                type: "MANUAL_INTERVENTION"
+                agv_id: "${agv.id}"
+                status: "completed"
+              store: "manual_resolved"
+              description: "檢查人工介入是否已完成"
+
+            - id: "attempt_auto_recovery"
+              exec: "action.trigger_event"
+              params:
+                event_type: "agv_recovery_attempt"
+                agv_id: "${agv.id}"
+                data:
+                  recovery_type: "ocr_ng_timeout"
+                  action: "resume_with_bypass"
+              skip_if: "!${manual_resolved}"
+              description: "嘗試自動恢復"
+
+            - id: "log_recovery_attempt"
+              exec: "action.log_message"
+              params:
+                message: "🔄 嘗試恢復 AGV ${agv.name} - 人工介入已完成"
+                level: "info"
+                tags: ["recovery_attempt", "ocr_ng", "agv_${agv.id}"]
+              skip_if: "!${manual_resolved}"
+              description: "記錄恢復嘗試"
+
+        skip_if: "${no_recoverable}"
+        description: "嘗試恢復可恢復的 AGV"
+
+  - section: "總結"
+    description: "流程執行總結"
+    steps:
+      - id: "count_total_processed"
+        exec: "control.count_items"
+        params:
+          variable: "${paused_agvs}"
+        store: "total_processed"
+        description: "計算處理的 AGV 總數"
+
+      - id: "log_completion"
+        exec: "action.log_message"
+        params:
+          message: "🏁 OCR NG 暫停處理流程完成 - 處理了 ${total_processed} 台暫停的 AGV，OCR NG 頻率: ${recent_ocr_ng_count}/小時"
+          level: "info"
+          tags: ["completion", "ocr_ng_handling", "summary"]
+        description: "記錄完成訊息"
+
+settings:
+  log_level: "INFO"
+  enable_checkpoint: true
+  parallel_execution: false
+  timeout: 120  # 2分鐘超時（緊急處理）
+  retry_on_failure: true
+  max_retries: 3
+  # 執行頻率控制 - 每分鐘執行一次（高頻檢查）
+  execution_interval: 60  # seconds
+  last_execution: null
+  # OCR NG 特定設定
+  ocr_ng_settings:
+    auto_recovery_timeout: 300  # 5分鐘後嘗試自動恢復
+    high_frequency_threshold: 5  # 每小時超過5次視為高頻
+    notification_cooldown: 600  # 通知冷卻時間10分鐘
+    critical_response_time: 60  # 緊急響應時間1分鐘

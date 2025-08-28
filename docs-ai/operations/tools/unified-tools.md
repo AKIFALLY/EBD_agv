@@ -43,6 +43,7 @@ r zenoh-check              # Zenoh 連接檢查
 r zenoh-config             # Zenoh Router 配置管理
 r hardware-config          # 硬體映射配置管理
 r quick-diag               # 快速綜合診斷
+r tafl-validate [file]     # TAFL 檔案格式驗證
 ```
 
 ### 容器內專業工具集
@@ -287,6 +288,75 @@ for endpoint in "192.168.100.100:7447" "192.168.10.3:7447"; do
 done
 ```
 
+## 🔧 TAFL 語言工具
+
+### TAFL 格式驗證
+```bash
+# TAFL (Task Automation Flow Language) 驗證工具
+r tafl-validate [file]      # 驗證單個 TAFL 檔案
+r tafl-validate all         # 驗證所有 TAFL 檔案 
+r tafl-validate list        # 列出所有 TAFL 檔案
+r tafl-validate help        # 顯示使用說明
+
+# 使用範例
+r tafl-validate my_flow.yaml
+r tafl-validate migrated_flows/rack_rotation_room_outlet_tafl.yaml
+```
+
+**TAFL 檔案位置** (優先順序):
+1. **正式配置**: `/home/ct/RosAGV/app/config/tafl/` ⭐ 優先查找
+2. **開發/測試**: `/home/ct/RosAGV/app/tafl_ws/migrated_flows/` 🔧 次要查找
+
+工具會自動在這兩個位置尋找 TAFL 檔案，優先使用 config/tafl 中的正式配置。
+
+**驗證內容**:
+
+**錯誤檢查** (會導致驗證失敗):
+- ✅ YAML 語法正確性
+- ✅ TAFL 語法解析 (動詞識別)
+- ✅ Metadata 完整性 (id, name 必填)
+- ✅ 核心必要參數:
+  - `query`: 必須有 `target`
+  - `check`: 必須有 `condition`  
+  - `create`: 必須有 `target`
+  - `update`: 必須有 `target` 和 `id`
+  - `for`: 必須有 `each`, `in`, `do`
+
+**警告檢查** (不會導致失敗):
+- ⚠️ 未使用的變數
+- ⚠️ 未定義的變數引用
+- ⚠️ 空的 then/else 分支
+- ⚠️ 空的迴圈體
+- ⚠️ 缺少建議參數
+
+### Python 中使用 TAFL 驗證
+```python
+#!/usr/bin/env python3
+import sys
+import os
+sys.path.insert(0, '/home/ct/RosAGV/app/tafl_ws/src/tafl')
+
+from tafl.parser import TAFLParser
+from tafl.validator import TAFLValidator
+
+# 初始化
+parser = TAFLParser()
+validator = TAFLValidator()
+
+# 驗證 TAFL 檔案
+with open('your_flow.tafl.yaml', 'r') as f:
+    content = f.read()
+
+try:
+    ast = parser.parse_string(content)
+    if validator.validate(ast):
+        print('✅ TAFL 格式正確')
+    else:
+        print('❌ 驗證失敗:', validator.get_errors())
+except Exception as e:
+    print('❌ 解析錯誤:', e)
+```
+
 ## 📊 智能導航提示
 根據問題類型自動定位相關模組：
 
@@ -303,6 +373,7 @@ done
 | **網路診斷** | `scripts/network-tools/` | **網路診斷工具集** |
 | **日誌分析** | `scripts/log-tools/` | **日誌分析工具集** |
 | **開發工作流** | `scripts/dev-tools/` | **開發工作流工具集** |
+| **TAFL 語言** | `scripts/tafl-tools/` | `r tafl-validate` |
 
 ## 💡 使用策略
 - **統一入口優先**: 使用 `r` 命令處理日常操作
@@ -335,6 +406,9 @@ scripts/flow-tools/auto-sync-functions.sh
 
 # Flow Functions 綜合管理
 scripts/flow-tools/flow-functions-manager.sh [action]
+
+# 檢查函數快取狀態（診斷工具）
+scripts/flow-tools/check-function-cache.sh
 ```
 **管理功能**：
 - `status` - 顯示系統狀態和函數統計
@@ -350,6 +424,13 @@ scripts/flow-tools/install-git-hook.sh
 
 # 測試自動化工具
 scripts/flow-tools/test-automation.sh
+
+# Git Hook 智能同步管理
+# 詳見: @docs-ai/operations/development/flow-functions-git-hook-management.md
+cat /tmp/.flow_functions_last_sync              # 查看同步記錄
+rm /tmp/.flow_functions_last_sync               # 強制下次同步
+mv .git/hooks/pre-commit .git/hooks/pre-commit.disabled  # 禁用 Hook
+mv .git/hooks/pre-commit.disabled .git/hooks/pre-commit  # 啟用 Hook
 ```
 
 **使用範例**：

@@ -1,0 +1,25 @@
+flow:
+- id: existing_id_1
+  query:
+    target: tasks
+    where: status = 'pending'
+- check:
+    condition: tasks.length > 0
+- create:
+    target: task
+    with:
+      name: New Task
+  id: existing_id_2
+metadata:
+  created_at: '2025-08-22T15:58:10.713550'
+  description: Testing backend ID handling
+  id: test_id_generation
+  name: Test ID Generation Flow
+  updated_at: '2025-08-22T07:58:10.714739'
+  version: '1.1'
+preload: {}
+rules: {}
+settings:
+  timeout: 3600
+variables:
+  test_var: value

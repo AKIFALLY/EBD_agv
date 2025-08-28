@@ -1,0 +1,65 @@
+# TAFL Test Flow - Rack Rotation
+metadata:
+  id: test_rack_rotation
+  name: Test Rack Rotation Flow
+  version: 1.0.0
+  description: Test flow for rack rotation using TAFL
+  enabled: true
+
+variables:
+  location_id: 10001
+  rotation_point: 10002
+
+preload:
+  - query:
+      target: locations
+      where:
+        type: enter_or_exit
+        has_rack: true
+      store_as: locations_with_racks
+  
+  - query:
+      target: racks
+      where:
+        side_a_completed: true
+        side_b_completed: false
+      store_as: racks_to_rotate
+
+flow:
+  - check:
+      condition: "${racks_to_rotate.length} > 0"
+      store_as: need_rotation
+  
+  - if:
+      condition: "${need_rotation}"
+      then:
+        - for:
+            each: rack
+            in: "${racks_to_rotate}"
+            do:
+              - create:
+                  target: task
+                  params:
+                    work_id: 220001
+                    rack_id: "${rack.id}"
+                    type: RACK_ROTATION
+                    metadata:
+                      nodes: ["${location_id}", "${rotation_point}", "${location_id}"]
+                      rotation_direction: clockwise
+                      side_to_process: B
+                  store_as: rotation_task
+              
+              - update:
+                  target: rack
+                  where:
+                    id: "${rack.id}"
+                  set:
+                    status: rotating
+              
+              - notify:
+                  channel: kuka_fleet
+                  message: "Rack ${rack.id} rotation task created"
+      else:
+        - notify:
+            channel: info
+            message: "No racks need rotation"

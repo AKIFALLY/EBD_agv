@@ -1,20 +1,17 @@
 # Flow WCS Workspace CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/knowledge/system/flow-wcs-system.md
-@docs-ai/knowledge/system/flow-wcs-function-system.md
-@docs-ai/knowledge/system/linear-flow-advanced-features.md
 @docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md
-@docs-ai/operations/development/flow-wcs-development.md
-@docs-ai/operations/development/linear-flow-troubleshooting-cases.md
 @docs-ai/knowledge/agv-domain/wcs-system-design.md
 @docs-ai/knowledge/agv-domain/wcs-database-design.md
 @docs-ai/knowledge/agv-domain/wcs-workid-system.md
 
 ## 🎯 Module Overview
-**Flow WCS** is the unified warehouse control system for RosAGV, implementing Linear Flow v2 architecture. It is the production system replacing all previous experimental WCS implementations.
+**Flow WCS** is the unified warehouse control system for RosAGV, implementing Linear Flow v2 architecture with TAFL v1.0 support. It is the production system replacing all previous experimental WCS implementations.
 
 ## 🔧 Core Features
+- **Dual Format Support**: Both Linear Flow v2 and TAFL v1.0 execution
+- **TAFL Integration**: Direct execution of TAFL flows through HybridFlowExecutor
 - **Linear Flow v2**: Declarative YAML-based flow execution
 - **43 Built-in Functions**: Comprehensive function library for WCS operations
 - **Direct Database Access**: PostgreSQL integration without db_proxy dependency
@@ -23,6 +20,8 @@
 - **Parameter Merging**: Work parameters inheritance with task-specific overrides
 
 ## 🚀 Recent Enhancements
+- **TAFL v1.0 Integration**: Full support for TAFL language execution
+- **Hybrid Executor**: Automatic format detection (TAFL vs Linear Flow v2)
 - **Expression Resolution**: Support for `${variable + 1}` mathematical operations
 - **Logical Operators**: Full support for `||`, `&&`, `!` in conditions
 - **Variable Scoping**: Context stack implementation for nested foreach isolation
@@ -34,10 +33,13 @@
 flow_wcs_ws/
 ├── src/flow_wcs/
 │   ├── flow_executor.py      # Core execution engine with enhanced capabilities
+│   ├── tafl_integration.py   # TAFL v1.0 integration and HybridFlowExecutor
 │   ├── database.py           # Direct PostgreSQL access with parameter merging
 │   ├── decorators.py         # Function registration system
 │   ├── flow_monitor.py       # Flow execution monitoring
 │   └── flow_validator.py     # YAML flow validation
+├── test_tafl_integration.py  # TAFL integration test suite
+├── test_tafl_simple.py       # Simple TAFL execution tests
 ├── test_rack_rotation_*.py   # Rack rotation test suites
 └── deploy.sh                  # Deployment script
 ```

@@ -191,8 +191,6 @@ def mission_state_callback(data: MissionStateCallbackData):
 - **系統優化**：基於歷史資料優化流程
 
 ## 🔗 相關文檔
-- Flow WCS 系統架構：@docs-ai/knowledge/system/flow-wcs-system.md
 - KUKA Fleet API：@docs-ai/knowledge/protocols/kuka-fleet-api.md
 - KUKA Fleet 回調：@docs-ai/knowledge/protocols/kuka-fleet-callback.md
-- Linear Flow 進階功能：@docs-ai/knowledge/system/linear-flow-advanced-features.md
 - WCS 資料庫設計：@docs-ai/knowledge/agv-domain/wcs-database-design.md

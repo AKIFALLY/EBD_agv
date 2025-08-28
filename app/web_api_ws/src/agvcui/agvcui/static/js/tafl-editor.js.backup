@@ -1,0 +1,2748 @@
+/**
+ * TAFL Editor - Professional Drag & Drop Visual Editor
+ * Task Automation Flow Language Visual Editor v3.0
+ * Complete rewrite with professional drag & drop experience
+ * Now using miniStore for state management
+ */
+
+// Import store
+import { taflFlowStore } from './tafl-editor/tafl-editor-store.js';
+
+class TAFLEditor {
+    constructor() {
+        // Store manages the flow state now
+        this.selectedCard = null;
+        this.draggedElement = null;
+        this.dragData = null;
+        this.yamlEditor = null;
+        this.lastInsertionIndex = undefined;  // Track last drop position to prevent flashing
+        
+        // Temporary verbDefinitions reference for compatibility
+        this.verbDefinitions = {};
+        
+        // Subscribe to store events
+        this.setupStoreSubscriptions();
+        
+        this.initializeEditor();
+    }
+    
+    setupStoreSubscriptions() {
+        // Flow changes
+        taflFlowStore.on('flow:changed', () => {
+            this.updateUI();
+            this.updateYAMLView();
+        });
+        
+        // Card selection
+        taflFlowStore.on('card:selected', (cardId) => {
+            this.updateSelectionUI(cardId);
+        });
+        
+        // Card additions
+        taflFlowStore.on('card:added', (data) => {
+            this.refreshCanvas();
+            const cardEl = document.querySelector(`[data-card-id="${data.card.id}"]`);
+            if (cardEl) this.selectCard(cardEl);
+        });
+        
+        // Card updates
+        taflFlowStore.on('card:updated', (data) => {
+            this.updateCardUI(data.cardId);
+        });
+        
+        // Card deletions
+        taflFlowStore.on('card:deleted', () => {
+            this.refreshCanvas();
+        });
+        
+        // Card moves
+        taflFlowStore.on('card:moved', () => {
+            this.refreshCanvas();
+        });
+        
+        // Variables changes
+        taflFlowStore.on('variables:changed', (variables) => {
+            this.renderVariables();
+        });
+        
+        // Dirty state changes
+        taflFlowStore.on('dirty:changed', (isDirty) => {
+            this.updateSaveButton(isDirty);
+        });
+        
+        // Flow loaded
+        taflFlowStore.on('flow:loaded', () => {
+            this.refreshCanvas();
+            this.updateUI();
+        });
+        
+        // Verbs loaded
+        taflFlowStore.on('verbs:loaded', (verbs) => {
+            this.verbDefinitions = verbs;
+        });
+    }
+    
+    async initializeEditor() {
+        await this.loadVerbDefinitions();
+        this.setupEventListeners();
+        this.initializeCodeMirror();
+        this.setupDragAndDrop();
+        this.updateUI();
+        this.initializeVariables();
+    }
+    
+    async loadVerbDefinitions() {
+        try {
+            const response = await fetch('/tafl/verbs');
+            const data = await response.json();
+            this.verbDefinitions = data.verbs;
+            taflFlowStore.setVerbDefinitions(data.verbs);
+        } catch (error) {
+            console.error('Error loading verb definitions:', error);
+            this.showNotification('Error loading TAFL verbs', 'is-danger');
+        }
+    }
+    
+    /**
+     * Helper method to extract verb from card data in TAFL v1.1 format
+     * In TAFL v1.1, the verb is the key, not a property
+     */
+    getCardVerb(cardData) {
+        if (!cardData) return null;
+        
+        // Exclude known non-verb keys
+        const nonVerbKeys = ['id', 'comment', 'skip_if', 'store_as', 'as'];
+        
+        // Find the verb key (should be one of the TAFL verbs)
+        for (const key of Object.keys(cardData)) {
+            if (!nonVerbKeys.includes(key) && this.verbDefinitions && this.verbDefinitions[key]) {
+                return key;
+            }
+        }
+        
+        // Fallback: find any key that's not in the exclusion list
+        for (const key of Object.keys(cardData)) {
+            if (!nonVerbKeys.includes(key)) {
+                return key;
+            }
+        }
+        
+        return null;
+    }
+    
+    setupEventListeners() {
+        // Toolbar buttons
+        document.getElementById('new-flow-btn').addEventListener('click', () => this.newFlow());
+        document.getElementById('open-flow-btn').addEventListener('click', () => this.openFlowModal());
+        document.getElementById('save-flow-btn').addEventListener('click', () => this.saveFlowModal());
+        document.getElementById('validate-btn').addEventListener('click', () => this.validateFlow());
+        document.getElementById('execute-btn').addEventListener('click', () => this.executeFlow());
+        
+        // Panel tabs
+        document.querySelectorAll('.panel-tabs a').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.switchVerbCategory(tab.dataset.tab);
+            });
+        });
+        
+        // Property panel tabs
+        document.querySelectorAll('.tabs li').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.switchPropertiesTab(tab.dataset.tab);
+            });
+        });
+        
+        // Verb items (toolbox) - click only for now
+        document.querySelectorAll('.verb-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const verb = item.dataset.verb;
+                this.addCard(verb);
+            });
+        });
+        
+        // Metadata inputs
+        document.getElementById('flow-id').addEventListener('input', (e) => {
+            taflFlowStore.updateMetadata({ id: e.target.value });
+            this.markDirty();
+        });
+        
+        document.getElementById('flow-name').addEventListener('input', (e) => {
+            taflFlowStore.updateMetadata({ name: e.target.value });
+            this.markDirty();
+        });
+        
+        document.getElementById('flow-version').addEventListener('input', (e) => {
+            taflFlowStore.updateMetadata({ version: e.target.value });
+            this.markDirty();
+        });
+        
+        document.getElementById('flow-description').addEventListener('input', (e) => {
+            taflFlowStore.updateMetadata({ description: e.target.value });
+            this.markDirty();
+        });
+        
+        // TAFL v1.1: Settings panel event listeners
+        const settingsTimeout = document.getElementById('settings-timeout');
+        if (settingsTimeout) {
+            settingsTimeout.addEventListener('input', (e) => {
+                const flow = taflFlowStore.getFlow();
+                taflFlowStore.updateFlow({
+                    ...flow,
+                    settings: { ...flow.settings, timeout: parseInt(e.target.value) || 3600 }
+                });
+                this.markDirty();
+            });
+        }
+        
+        const settingsMaxRetries = document.getElementById('settings-max-retries');
+        if (settingsMaxRetries) {
+            settingsMaxRetries.addEventListener('input', (e) => {
+                const flow = taflFlowStore.getFlow();
+                taflFlowStore.updateFlow({
+                    ...flow,
+                    settings: { ...flow.settings, max_retries: parseInt(e.target.value) || 3 }
+                });
+                this.markDirty();
+            });
+        }
+        
+        const settingsRetryOnFailure = document.getElementById('settings-retry-on-failure');
+        if (settingsRetryOnFailure) {
+            settingsRetryOnFailure.addEventListener('change', (e) => {
+                const flow = taflFlowStore.getFlow();
+                taflFlowStore.updateFlow({
+                    ...flow,
+                    settings: { ...flow.settings, retry_on_failure: e.target.checked }
+                });
+                this.markDirty();
+            });
+        }
+        
+        // TAFL v1.1: Preload panel event listeners
+        const addPreloadBtn = document.getElementById('add-preload-btn');
+        if (addPreloadBtn) {
+            addPreloadBtn.addEventListener('click', () => this.addPreload());
+        }
+        
+        // TAFL v1.1: Rules panel event listeners
+        const addRuleBtn = document.getElementById('add-rule-btn');
+        if (addRuleBtn) {
+            addRuleBtn.addEventListener('click', () => this.addRule());
+        }
+        
+        // Variable management
+        document.getElementById('add-variable-btn').addEventListener('click', () => this.addVariable());
+        
+        // Modal controls
+        this.setupModalControls();
+        
+        // Canvas click (deselect)
+        document.getElementById('flow-canvas').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tafl-canvas') || e.target.classList.contains('canvas-drop-zone')) {
+                this.deselectCard();
+            }
+        });
+        
+        // YAML editor controls
+        document.getElementById('apply-yaml-btn').addEventListener('click', () => this.applyYAMLChanges());
+        document.getElementById('refresh-yaml-btn').addEventListener('click', () => this.refreshYAML());
+    }
+    
+    /**
+     * PROFESSIONAL DRAG & DROP SYSTEM
+     * Complete rewrite based on successful patterns from linear flow designer
+     */
+    setupDragAndDrop() {
+        const canvas = document.getElementById('flow-canvas');
+        
+        if (!canvas) {
+            console.error('Canvas element not found!');
+            return;
+        }
+        
+        // Set up toolbox drag sources
+        this.setupToolboxDragSources();
+        
+        // Set up canvas as drop target
+        this.setupCanvasDropTarget(canvas);
+        
+        // Initialize drop zones
+        this.createInitialDropZone();
+        
+        // Make sure existing cards are draggable
+        this.refreshCardDragHandlers();
+        
+        console.log('✅ Drag and drop initialized');
+    }
+    
+    setupToolboxDragSources() {
+        // Make verb items draggable
+        document.querySelectorAll('.verb-item').forEach(item => {
+            item.draggable = true;
+            
+            // Visual feedback that item is draggable
+            item.style.cursor = 'move';
+            item.title = 'Drag to add to flow';
+            
+            item.addEventListener('dragstart', (e) => {
+                e.stopPropagation();
+                
+                const verb = item.dataset.verb;
+                // Always set dragData as primary data storage
+                this.dragData = {
+                    type: 'verb',
+                    verb: verb,
+                    source: 'toolbox'
+                };
+                
+                // Try to set data for drop detection (may fail in some browsers)
+                try {
+                    e.dataTransfer.setData('application/json', JSON.stringify(this.dragData));
+                    e.dataTransfer.setData('text/plain', verb); // Fallback
+                } catch (err) {
+                    console.warn('Could not set dataTransfer data:', err);
+                }
+                e.dataTransfer.effectAllowed = 'copy';
+                
+                // Visual feedback
+                item.classList.add('is-dragging');
+                this.showAllDropZones();
+                
+                console.log('🎯 Started dragging verb:', verb);
+            });
+            
+            item.addEventListener('dragend', (e) => {
+                item.classList.remove('is-dragging');
+                this.hideAllDropZones();
+                // Don't clear dragData immediately, let drop handler use it first
+                setTimeout(() => {
+                    this.dragData = null;
+                }, 100);
+                
+                console.log('🎯 Ended dragging');
+            });
+        });
+    }
+    
+    setupCanvasDropTarget(canvas) {
+        // Canvas-level drag events
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            
+            // Always update drop indicators during dragover
+            this.updateDropIndicators(e);
+            
+            const dragData = this.getDragData(e) || this.dragData;
+            if (dragData) {
+                e.dataTransfer.dropEffect = dragData.source === 'toolbox' ? 'copy' : 'move';
+            }
+        });
+        
+        canvas.addEventListener('dragleave', (e) => {
+            // Only hide if truly leaving canvas
+            if (!canvas.contains(e.relatedTarget)) {
+                this.hideDropIndicators();
+            }
+        });
+        
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            this.handleCanvasDrop(e);
+        });
+    }
+    
+    getDragData(e) {
+        // During drag, we can't always read dataTransfer, so use stored dragData
+        if (this.dragData) {
+            return this.dragData;
+        }
+        
+        try {
+            const jsonData = e.dataTransfer.getData('application/json');
+            if (jsonData) {
+                return JSON.parse(jsonData);
+            }
+        } catch (err) {
+            // Fallback to plain text
+            const verb = e.dataTransfer.getData('text/plain');
+            if (verb) {
+                return { type: 'verb', verb: verb, source: 'toolbox' };
+            }
+        }
+        return null;
+    }
+    
+    handleCanvasDrop(e) {
+        const dragData = this.getDragData(e);
+        if (!dragData) {
+            return;
+        }
+        
+        console.log('🎯 Drop on canvas:', dragData);
+        
+        this.hideAllDropZones();
+        this.hideDropIndicators();
+        
+        if (dragData.type === 'verb' && dragData.source === 'toolbox') {
+            // Adding new card from toolbox
+            const dropPosition = this.calculateDropPosition(e);
+            this.addCardAtPosition(dragData.verb, dropPosition);
+        } else if (dragData.type === 'card') {
+            // Moving existing card
+            const dropPosition = this.calculateDropPosition(e);
+            this.moveCardToPosition(dragData.cardId, dropPosition);
+        }
+    }
+    
+    calculateDropPosition(e) {
+        const canvas = document.getElementById('flow-canvas');
+        const cards = Array.from(canvas.querySelectorAll('.tafl-card:not(.dragging)'));
+        
+        if (cards.length === 0) {
+            return { index: 0, nested: null };
+        }
+        
+        const mouseY = e.clientY;
+        let targetIndex = cards.length;
+        
+        // Find insertion position
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            const rect = card.getBoundingClientRect();
+            const cardMiddle = rect.top + rect.height / 2;
+            
+            if (mouseY < cardMiddle) {
+                targetIndex = i;
+                break;
+            }
+        }
+        
+        // Check for nested drop zones
+        const nestedArea = this.getNestedDropTarget(e.target);
+        if (nestedArea) {
+            const parentCard = nestedArea.closest('.tafl-card');
+            const parentCardId = parentCard?.dataset.cardId;
+            const branchType = this.getBranchType(nestedArea);
+            
+            if (parentCardId && branchType) {
+                return {
+                    nested: {
+                        parentCardId: parentCardId,
+                        branchType: branchType
+                    }
+                };
+            }
+        }
+        
+        return { index: targetIndex, nested: null };
+    }
+    
+    showAllDropZones() {
+        const canvas = document.getElementById('flow-canvas');
+        const dropZones = canvas.querySelectorAll('.drop-zone');
+        
+        dropZones.forEach(zone => {
+            zone.classList.add('visible');
+        });
+        
+        // Show main drop zone if no cards
+        const flow = taflFlowStore.getFlow();
+        if (flow.flow.length === 0) {
+            const mainDropZone = document.getElementById('canvas-drop-zone');
+            mainDropZone.classList.add('drag-active');
+        }
+        
+        // Show nested drop zones
+        canvas.querySelectorAll('.nested-drop-zone').forEach(zone => {
+            zone.classList.add('visible');
+        });
+    }
+    
+    hideAllDropZones() {
+        const canvas = document.getElementById('flow-canvas');
+        
+        canvas.querySelectorAll('.drop-zone, .nested-drop-zone').forEach(zone => {
+            zone.classList.remove('visible', 'drag-over');
+        });
+        
+        const mainDropZone = document.getElementById('canvas-drop-zone');
+        mainDropZone.classList.remove('drag-active', 'drag-over');
+    }
+    
+    // Generate unique ID for cards without IDs
+    generateId() {
+        return `card_${this.cardCounter++}`;
+    }
+    
+    updateDropIndicators(e) {
+        const canvas = document.getElementById('flow-canvas');
+        const cards = Array.from(canvas.querySelectorAll('.tafl-card:not(.dragging)'));
+        
+        // If no cards, show drop zone in canvas
+        if (cards.length === 0) {
+            const dropZone = document.getElementById('canvas-drop-zone');
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+            // Clear any existing insertion lines
+            this.hideDropIndicators();
+            return;
+        }
+        
+        const mouseY = e.clientY;
+        let insertionIndex = -1;
+        
+        // Find where to show insertion line
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            const rect = card.getBoundingClientRect();
+            const cardMiddle = rect.top + rect.height / 2;
+            
+            if (mouseY < cardMiddle) {
+                insertionIndex = i;
+                break;
+            }
+        }
+        
+        // Check if position has changed
+        if (this.lastInsertionIndex === insertionIndex) {
+            // Position hasn't changed, don't update
+            return;
+        }
+        
+        this.lastInsertionIndex = insertionIndex;
+        
+        // Clear existing indicators only when position changes
+        this.hideDropIndicators();
+        
+        // Create and show insertion line
+        const insertionLine = this.createInsertionLine();
+        
+        if (insertionIndex === -1) {
+            // Insert at end
+            const lastCard = cards[cards.length - 1];
+            lastCard.insertAdjacentElement('afterend', insertionLine);
+        } else if (insertionIndex === 0) {
+            // Insert at beginning
+            const firstCard = cards[0];
+            firstCard.insertAdjacentElement('beforebegin', insertionLine);
+        } else {
+            // Insert between cards
+            const targetCard = cards[insertionIndex];
+            targetCard.insertAdjacentElement('beforebegin', insertionLine);
+        }
+        
+        // Add active class immediately (no setTimeout needed)
+        insertionLine.classList.add('active');
+    }
+    
+    createInsertionLine() {
+        const line = document.createElement('div');
+        line.className = 'insertion-line';
+        line.innerHTML = `
+            <div class="insertion-line-inner">
+                <div class="insertion-dot"></div>
+                <div class="insertion-text">Drop here</div>
+                <div class="insertion-dot"></div>
+            </div>
+        `;
+        return line;
+    }
+    
+    hideDropIndicators() {
+        document.querySelectorAll('.insertion-line').forEach(line => {
+            line.remove();
+        });
+        // Also remove any drop-indicator class elements (legacy)
+        document.querySelectorAll('.drop-indicator').forEach(line => {
+            line.remove();
+        });
+        // Reset the last insertion index
+        this.lastInsertionIndex = undefined;
+    }
+    
+    refreshCardDragHandlers() {
+        // Re-setup drag handlers for all cards in the canvas
+        const canvas = document.getElementById('flow-canvas');
+        const cards = canvas.querySelectorAll('.tafl-card:not(.nested)');
+        
+        cards.forEach(cardEl => {
+            // Get the card data from the element
+            const cardId = cardEl.dataset.cardId;
+            const cardData = this.findCardById(cardId);
+            
+            if (cardData) {
+                // Remove old event listeners by cloning the node
+                const newCardEl = cardEl.cloneNode(true);
+                cardEl.parentNode.replaceChild(newCardEl, cardEl);
+                
+                // Re-setup the drag and drop
+                this.setupCardDragAndDrop(newCardEl, cardData);
+                this.setupCardInteractions(newCardEl, cardData);
+            }
+        });
+    }
+    
+    createInitialDropZone() {
+        const canvas = document.getElementById('flow-canvas');
+        const dropZone = document.getElementById('canvas-drop-zone');
+        
+        if (!dropZone) {
+            console.error('Canvas drop zone not found');
+            return;
+        }
+        
+        // Set up main drop zone events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('drag-over');
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            if (!dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove('drag-over');
+            }
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dragData = this.getDragData(e);
+            if (dragData && dragData.type === 'verb') {
+                this.addCard(dragData.verb);
+            }
+            
+            dropZone.classList.remove('drag-over');
+        });
+    }
+    
+    /**
+     * CARD MANAGEMENT WITH DRAG & DROP SUPPORT
+     */
+    addCard(verb) {
+        this.addCardAtPosition(verb, { index: this.currentFlow.flow.length, nested: null });
+    }
+    
+    addCardAtPosition(verb, position) {
+        if (!this.verbDefinitions[verb]) {
+            console.error('Unknown verb:', verb);
+            return;
+        }
+        
+        const cardId = this.generateId();
+        
+        // Create TAFL v1.1 compliant card data (verb as key, not property)
+        const cardData = {
+            id: cardId,
+            [verb]: this.getDefaultParams(verb)[verb]
+        };
+        
+        // Insert at specific position
+        if (position.nested) {
+            // Add to nested structure
+            this.addToNestedStructure(position.nested.parentCardId, position.nested.branchType, cardData);
+        } else {
+            // Insert at specific index
+            const flow = taflFlowStore.getFlow();
+            const newFlow = [...flow.flow];
+            newFlow.splice(position.index, 0, cardData);
+            taflFlowStore.updateFlow({ ...flow, flow: newFlow });
+        }
+        
+        // Refresh the canvas to show all cards in correct order
+        this.refreshCanvas();
+        
+        // Select and animate the new card
+        const newCardElement = document.querySelector(`[data-card-id="${cardId}"]`);
+        if (newCardElement) {
+            newCardElement.classList.add('just-added');
+            setTimeout(() => {
+                newCardElement.classList.remove('just-added');
+                newCardElement.classList.add('pulse-once');
+            }, 100);
+            setTimeout(() => newCardElement.classList.remove('pulse-once'), 600);
+            
+            this.selectCard(newCardElement);
+        }
+        
+        this.markDirty();
+        this.updateUI();
+        
+        // Ensure new cards are draggable
+        setTimeout(() => {
+            this.refreshCardDragHandlers();
+        }, 100);
+        
+        console.log('✅ Added card:', verb, 'at position:', position);
+    }
+    
+    moveCardToPosition(cardId, position) {
+        const cardData = this.findCardById(cardId);
+        if (!cardData) return;
+        
+        // Remove from current location
+        this.removeCardFromFlow(cardId);
+        
+        // Add to new position
+        if (position.nested) {
+            this.addToNestedStructure(position.nested.parentCardId, position.nested.branchType, cardData);
+        } else {
+            const flow = taflFlowStore.getFlow();
+            const newFlow = [...flow.flow];
+            newFlow.splice(position.index, 0, cardData);
+            taflFlowStore.updateFlow({ ...flow, flow: newFlow });
+        }
+        
+        // Refresh and highlight
+        this.refreshCanvas();
+        
+        const movedCard = document.querySelector(`[data-card-id="${cardId}"]`);
+        if (movedCard) {
+            movedCard.classList.add('just-moved');
+            setTimeout(() => movedCard.classList.remove('just-moved'), 500);
+            this.selectCard(movedCard);
+        }
+        
+        this.markDirty();
+        this.showNotification('Card moved successfully', 'is-success');
+        
+        console.log('✅ Moved card:', cardId, 'to position:', position);
+    }
+    
+    createCardElement(step) {
+        // TAFL v1.1 Fix: Extract verb from step object (verb is the key, not a property)
+        const verb = step ? Object.keys(step).find(key => 
+            this.verbDefinitions && this.verbDefinitions[key]
+        ) : null;
+        
+        if (!verb) {
+            console.warn('No valid verb found in step:', step);
+            // Return empty placeholder card
+            const emptyCard = document.createElement('div');
+            emptyCard.className = 'tafl-card empty-card';
+            emptyCard.innerHTML = '<div class="notification is-warning">Invalid step</div>';
+            return emptyCard;
+        }
+        
+        const verbDef = this.verbDefinitions[verb];
+        
+        // Always create a fresh element with no previous event listeners
+        const cardEl = document.createElement('div');
+        cardEl.className = 'tafl-card';
+        cardEl.dataset.cardId = step.id || this.generateId();
+        cardEl.dataset.verb = verb;
+        cardEl.draggable = true;
+        
+        cardEl.innerHTML = `
+            <div class="tafl-card-header">
+                <div class="card-drag-handle" title="Drag to reorder">
+                    <i class="fas fa-grip-vertical"></i>
+                </div>
+                <span class="tag verb-badge is-${verb}">${verbDef.name}</span>
+                <h3 class="card-title">${this.getCardTitle(step)}</h3>
+                <div class="card-controls">
+                    <button class="button is-small card-duplicate-btn" title="Duplicate">
+                        <span class="icon is-small">
+                            <i class="fas fa-copy"></i>
+                        </span>
+                    </button>
+                    <button class="button is-small card-delete-btn" title="Delete">
+                        <span class="icon is-small">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+            <div class="tafl-card-body">
+                ${this.renderCardParams(step)}
+            </div>
+            ${this.renderNestedCards(step)}
+        `;
+        
+        // Set up card drag and drop
+        this.setupCardDragAndDrop(cardEl, step);
+        
+        // Set up card interactions
+        this.setupCardInteractions(cardEl, step);
+        
+        return cardEl;
+    }
+    
+    setupCardDragAndDrop(cardEl, cardData) {
+        // Always set up drag handlers for freshly created elements
+        const dragHandle = cardEl.querySelector('.card-drag-handle');
+        
+        // Card drag events
+        cardEl.addEventListener('dragstart', (e) => {
+            // Check if drag started from a nested card
+            const nestedCard = e.target.closest('.nested.tafl-card');
+            if (nestedCard && nestedCard !== cardEl) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Prevent drag from interactive elements
+            const isInteractive = e.target.tagName === 'INPUT' || 
+                                e.target.tagName === 'TEXTAREA' || 
+                                e.target.tagName === 'SELECT' ||
+                                e.target.tagName === 'BUTTON' ||
+                                e.target.closest('button');
+            
+            if (isInteractive) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Stop propagation to prevent parent cards from also being dragged
+            e.stopPropagation();
+            
+            // Get card ID from element if cardData is not provided
+            const cardId = cardData?.id || cardEl.dataset.cardId;
+            if (!cardId) {
+                console.error('No card ID found for drag');
+                e.preventDefault();
+                return;
+            }
+            
+            // Set drag data BEFORE any DOM changes
+            this.dragData = {
+                type: 'card',
+                cardId: cardId,
+                source: 'canvas'
+            };
+            this.draggedElement = cardEl;
+            
+            // Set data transfer
+            e.dataTransfer.setData('text/plain', cardId);
+            e.dataTransfer.setData('application/json', JSON.stringify(this.dragData));
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setDragImage(cardEl, e.offsetX, e.offsetY);
+            
+            // Apply visual changes AFTER setting drag data
+            requestAnimationFrame(() => {
+                cardEl.classList.add('dragging');
+                cardEl.style.opacity = '0.5';
+                
+                if (dragHandle) {
+                    dragHandle.classList.add('dragging');
+                }
+                
+                this.showAllDropZones();
+            });
+            
+            console.log('🎯 Started dragging card:', this.dragData.cardId);
+        });
+        
+        cardEl.addEventListener('dragend', (e) => {
+            // Stop propagation
+            e.stopPropagation();
+            
+            // Clean up visual state
+            cardEl.classList.remove('dragging');
+            cardEl.style.opacity = '1';
+            
+            const dragHandle = cardEl.querySelector('.card-drag-handle');
+            if (dragHandle) {
+                dragHandle.classList.remove('dragging');
+            }
+            
+            this.hideAllDropZones();
+            this.hideDropIndicators();
+            this.draggedElement = null;
+            this.dragData = null;
+            
+            console.log('🎯 Ended dragging card');
+        });
+        
+        // Prevent nested cards from being draggable
+        const nestedCards = cardEl.querySelectorAll('.nested.tafl-card');
+        nestedCards.forEach(nested => {
+            nested.draggable = false;
+        });
+    }
+    
+    setupCardInteractions(cardEl, cardData) {
+        // Get card ID from element if cardData doesn't have it
+        const cardId = cardData?.id || cardEl.dataset.cardId;
+        
+        // Click to select
+        cardEl.addEventListener('click', (e) => {
+            // Don't select if clicking on interactive elements
+            if (e.target.closest('.card-controls') || e.target.closest('input') || e.target.closest('textarea')) {
+                return;
+            }
+            
+            e.stopPropagation();
+            this.selectCard(cardEl);
+        });
+        
+        // Control buttons
+        const duplicateBtn = cardEl.querySelector('.card-duplicate-btn');
+        const deleteBtn = cardEl.querySelector('.card-delete-btn');
+        
+        if (duplicateBtn) {
+            duplicateBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.duplicateCard(cardId);
+            });
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.deleteCard(cardId);
+            });
+        }
+    }
+    
+    /**
+     * NESTED STRUCTURES SUPPORT
+     */
+    renderNestedCards(cardData) {
+        // TAFL v1.1: Extract verb from object keys (verb is the key, not a property)
+        const verb = this.getCardVerb(cardData);
+        const params = cardData[verb];
+        let html = '';
+        
+        if (typeof params === 'object') {
+            if (verb === 'if') {
+                if (params.then && Array.isArray(params.then)) {
+                    html += this.renderNestedBranch('then', params.then);
+                }
+                if (params.else && Array.isArray(params.else)) {
+                    html += this.renderNestedBranch('else', params.else);
+                }
+            } else if (verb === 'for' && params.do && Array.isArray(params.do)) {
+                html += this.renderNestedBranch('do', params.do);
+            } else if (verb === 'switch') {
+                if (params.cases && Array.isArray(params.cases)) {
+                    params.cases.forEach((caseItem, index) => {
+                        html += this.renderNestedBranch(`case-${index}`, caseItem.do || []);
+                    });
+                }
+                if (params.default && Array.isArray(params.default)) {
+                    html += this.renderNestedBranch('default', params.default);
+                }
+            }
+        }
+        
+        return html;
+    }
+    
+    renderNestedBranch(branchType, cards) {
+        if (!Array.isArray(cards)) return '';
+        
+        const branchClass = branchType.replace(/[^a-zA-Z0-9]/g, '-');
+        
+        let html = `
+            <div class="nested-cards ${branchClass}-cards" data-branch="${branchType}">
+                <div class="branch-label">${branchType}</div>
+                <div class="nested-drop-zone" data-branch="${branchType}">
+                    <div class="nested-drop-content">
+                        <i class="mdi mdi-plus"></i>
+                        Drop here to add to ${branchType}
+                    </div>
+                </div>
+        `;
+        
+        cards.forEach(nestedCard => {
+            html += this.renderNestedCard(nestedCard);
+        });
+        
+        html += `</div>`;
+        
+        return html;
+    }
+    
+    renderNestedCard(cardData) {
+        // For nested cards, render a simplified version
+        const verb = Object.keys(cardData).find(key => key !== 'id' && this.verbDefinitions[key]);
+        if (!verb) return '';
+        
+        const verbDef = this.verbDefinitions[verb];
+        
+        // Ensure card has an ID
+        if (!cardData.id) {
+            cardData.id = this.generateId();
+        }
+        
+        return `
+            <div class="tafl-card nested" data-card-id="${cardData.id}" data-verb="${verb}">
+                <div class="tafl-card-header">
+                    <div class="card-drag-handle" title="Drag to reorder">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    <span class="tag verb-badge is-${verb}">${verbDef.name}</span>
+                    <h3 class="card-title">${this.getCardTitle({verb, [verb]: cardData[verb]})}</h3>
+                    <div class="card-controls">
+                        <button class="button is-small card-duplicate-btn" title="Duplicate">
+                            <span class="icon is-small">
+                                <i class="fas fa-copy"></i>
+                            </span>
+                        </button>
+                        <button class="button is-small card-delete-btn" title="Delete">
+                            <span class="icon is-small">
+                                <i class="fas fa-trash"></i>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                <div class="tafl-card-body">
+                    ${this.renderCardParams({verb, [verb]: cardData[verb]})}
+                </div>
+            </div>
+        `;
+    }
+    
+    getNestedDropTarget(element) {
+        return element.closest('.nested-drop-zone');
+    }
+    
+    getBranchType(nestedArea) {
+        return nestedArea?.dataset?.branch || null;
+    }
+    
+    addToNestedStructure(parentCardId, branchType, cardData) {
+        const parentCard = this.findCardById(parentCardId);
+        if (!parentCard) return;
+        
+        const verb = this.getCardVerb(parentCard);
+        const params = parentCard[verb];
+        
+        if (typeof params !== 'object') return;
+        
+        // Ensure the card has an ID
+        if (!cardData.id) {
+            cardData.id = this.generateId();
+        }
+        
+        // Initialize the nested structure if it doesn't exist
+        if (!params[branchType]) {
+            params[branchType] = [];
+        }
+        
+        // Add the card to the nested structure
+        params[branchType].push(cardData);
+    }
+    
+    /**
+     * REST OF THE CLASS METHODS (keeping existing functionality)
+     */
+    
+    initializeVariables() {
+        // Initialize with common TAFL v1.1 variables
+        this.currentFlow.variables = {
+            counter: 0,
+            message: "",
+            room_id: 1
+        };
+        this.refreshVariablesUI();
+    }
+    
+    addVariable() {
+        const name = prompt('Variable name:');
+        if (name && !this.currentFlow.variables.hasOwnProperty(name)) {
+            const value = prompt('Initial value:', '""');
+            try {
+                this.currentFlow.variables[name] = JSON.parse(value);
+            } catch (e) {
+                this.currentFlow.variables[name] = value;
+            }
+            this.refreshVariablesUI();
+            this.markDirty();
+        }
+    }
+    
+    removeVariable(name) {
+        const variables = { ...taflFlowStore.getFlow().variables };
+        delete variables[name];
+        taflFlowStore.updateVariables(variables);
+        this.refreshVariablesUI();
+        this.markDirty();
+    }
+    
+    // TAFL v1.1: Add preload data item
+    addPreload() {
+        const key = document.getElementById('preload-key').value.trim();
+        const target = document.getElementById('preload-target').value.trim();
+        const where = document.getElementById('preload-where').value.trim();
+        
+        if (!key || !target) {
+            this.showNotification('Preload key and target are required', 'is-warning');
+            return;
+        }
+        
+        if (!this.currentFlow.preload) {
+            this.currentFlow.preload = {};
+        }
+        
+        // Add preload query
+        this.currentFlow.preload[key] = {
+            query: {
+                target: target,
+                where: where ? this.parseWhereCondition(where) : {}
+            }
+        };
+        
+        this.refreshPreloadUI();
+        this.markDirty();
+        
+        // Clear inputs
+        document.getElementById('preload-key').value = '';
+        document.getElementById('preload-target').value = '';
+        document.getElementById('preload-where').value = '';
+    }
+    
+    // TAFL v1.1: Add business rule
+    addRule() {
+        const name = document.getElementById('rule-name').value.trim();
+        const value = document.getElementById('rule-value').value.trim();
+        
+        if (!name || !value) {
+            this.showNotification('Rule name and value are required', 'is-warning');
+            return;
+        }
+        
+        if (!this.currentFlow.rules) {
+            this.currentFlow.rules = {};
+        }
+        
+        // Try to parse value as number or boolean
+        let parsedValue = value;
+        if (!isNaN(value)) {
+            parsedValue = Number(value);
+        } else if (value === 'true' || value === 'false') {
+            parsedValue = value === 'true';
+        }
+        
+        this.currentFlow.rules[name] = parsedValue;
+        this.refreshRulesUI();
+        this.markDirty();
+        
+        // Clear inputs
+        document.getElementById('rule-name').value = '';
+        document.getElementById('rule-value').value = '';
+    }
+    
+    // Helper method to parse where condition string
+    parseWhereCondition(whereStr) {
+        const conditions = {};
+        const parts = whereStr.split(',');
+        parts.forEach(part => {
+            const [key, value] = part.split(':').map(s => s.trim());
+            if (key && value) {
+                conditions[key] = value;
+            }
+        });
+        return conditions;
+    }
+    
+    // TAFL v1.1: Refresh preload UI
+    refreshPreloadUI() {
+        const preloadList = document.getElementById('preload-list');
+        if (!preloadList) return;
+        
+        preloadList.innerHTML = '';
+        
+        if (this.currentFlow.preload && Object.keys(this.currentFlow.preload).length > 0) {
+            Object.entries(this.currentFlow.preload).forEach(([key, config]) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'box has-background-light';
+                itemEl.innerHTML = `
+                    <div class="level">
+                        <div class="level-left">
+                            <div class="level-item">
+                                <div>
+                                    <p class="heading">Key</p>
+                                    <p class="title is-7">${key}</p>
+                                </div>
+                            </div>
+                            <div class="level-item">
+                                <div>
+                                    <p class="heading">Target</p>
+                                    <p class="title is-7">${config.query?.target || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-right">
+                            <button class="delete" onclick="taflEditor.removePreload('${key}')"></button>
+                        </div>
+                    </div>
+                `;
+                preloadList.appendChild(itemEl);
+            });
+        }
+    }
+    
+    // TAFL v1.1: Refresh rules UI
+    refreshRulesUI() {
+        const rulesList = document.getElementById('rules-list');
+        if (!rulesList) return;
+        
+        rulesList.innerHTML = '';
+        
+        if (this.currentFlow.rules && Object.keys(this.currentFlow.rules).length > 0) {
+            Object.entries(this.currentFlow.rules).forEach(([name, value]) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'box has-background-light';
+                itemEl.innerHTML = `
+                    <div class="level">
+                        <div class="level-left">
+                            <div class="level-item">
+                                <div>
+                                    <p class="heading">Rule</p>
+                                    <p class="title is-7">${name}</p>
+                                </div>
+                            </div>
+                            <div class="level-item">
+                                <div>
+                                    <p class="heading">Value</p>
+                                    <p class="title is-7">${value}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-right">
+                            <button class="delete" onclick="taflEditor.removeRule('${name}')"></button>
+                        </div>
+                    </div>
+                `;
+                rulesList.appendChild(itemEl);
+            });
+        }
+    }
+    
+    // TAFL v1.1: Remove preload item
+    removePreload(key) {
+        if (this.currentFlow.preload && this.currentFlow.preload[key]) {
+            delete this.currentFlow.preload[key];
+            this.refreshPreloadUI();
+            this.markDirty();
+        }
+    }
+
+    // Refresh settings UI
+    refreshSettingsUI() {
+        const timeout = document.getElementById('settings-timeout');
+        const maxRetries = document.getElementById('settings-max-retries');
+        const retryOnFailure = document.getElementById('settings-retry-on-failure');
+        
+        if (timeout) timeout.value = this.currentFlow.settings.timeout || 3600;
+        if (maxRetries) maxRetries.value = this.currentFlow.settings.max_retries || 3;
+        if (retryOnFailure) retryOnFailure.checked = this.currentFlow.settings.retry_on_failure || false;
+    }
+
+    // Enhanced expression parser for TAFL v1.1
+    parseExpression(expr) {
+        if (!expr || typeof expr !== 'string') return expr;
+        
+        // Support for variable references: ${variable}
+        // Support for preload data: ${preload.key}
+        // Support for rules: ${rules.ruleName}
+        // Support for math operations: ${value + 1}
+        // Support for nested properties: ${object.property.subproperty}
+        
+        return expr.replace(/\$\{([^}]+)\}/g, (match, path) => {
+            // Check if it's a math expression
+            if (/[+\-*/]/.test(path)) {
+                // For now, return as is - actual evaluation would happen at runtime
+                return match;
+            }
+            
+            // Parse the path
+            const parts = path.split('.');
+            const scope = parts[0];
+            
+            // Check different scopes (5-Level variable scope)
+            if (scope === 'preload' && parts.length > 1) {
+                return this.currentFlow.preload[parts[1]] || match;
+            } else if (scope === 'rules' && parts.length > 1) {
+                const rule = this.currentFlow.rules[parts[1]];
+                return rule ? rule.action : match;
+            } else if (this.currentFlow.variables[scope] !== undefined) {
+                return this.currentFlow.variables[scope];
+            }
+            
+            return match;
+        });
+    }
+    
+    // TAFL v1.1: Remove rule
+    removeRule(name) {
+        if (this.currentFlow.rules && this.currentFlow.rules[name]) {
+            delete this.currentFlow.rules[name];
+            this.refreshRulesUI();
+            this.markDirty();
+        }
+    }
+    
+    refreshVariablesUI() {
+        const variablesList = document.getElementById('variables-list');
+        variablesList.innerHTML = '';
+        
+        Object.entries(this.currentFlow.variables).forEach(([name, value]) => {
+            const variableEl = document.createElement('div');
+            variableEl.className = 'field has-addons';
+            variableEl.innerHTML = `
+                <div class="control">
+                    <input class="input is-small" type="text" value="${name}" readonly>
+                </div>
+                <div class="control is-expanded">
+                    <input class="input is-small variable-value" type="text" 
+                           data-var="${name}" value="${JSON.stringify(value)}" 
+                           placeholder="Variable value">
+                </div>
+                <div class="control">
+                    <button class="button is-small is-danger remove-var-btn" data-var="${name}" title="Remove">
+                        <span class="icon is-small">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                    </button>
+                </div>
+            `;
+            variablesList.appendChild(variableEl);
+            
+            // Add event listeners
+            const valueInput = variableEl.querySelector('.variable-value');
+            const removeBtn = variableEl.querySelector('.remove-var-btn');
+            
+            valueInput.addEventListener('change', () => {
+                try {
+                    this.currentFlow.variables[name] = JSON.parse(valueInput.value);
+                } catch (e) {
+                    this.currentFlow.variables[name] = valueInput.value;
+                }
+                this.markDirty();
+            });
+            
+            removeBtn.addEventListener('click', () => {
+                if (confirm(`Remove variable '${name}'?`)) {
+                    this.removeVariable(name);
+                }
+            });
+        });
+    }
+    
+    setupModalControls() {
+        // Close modals
+        document.querySelectorAll('.modal .delete, .modal-background').forEach(closeBtn => {
+            closeBtn.addEventListener('click', () => {
+                closeBtn.closest('.modal').classList.remove('is-active');
+            });
+        });
+        
+        // Save flow modal
+        document.getElementById('confirm-save-btn').addEventListener('click', () => this.saveFlow());
+    }
+    
+    initializeCodeMirror() {
+        const yamlTextarea = document.getElementById('yaml-editor');
+        this.yamlEditor = CodeMirror.fromTextArea(yamlTextarea, {
+            mode: 'yaml',
+            theme: 'default',
+            lineNumbers: true,
+            lineWrapping: true,
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
+        });
+        
+        this.yamlEditor.on('change', () => {
+            this.markDirty();
+        });
+    }
+    
+    getDefaultParams(verb) {
+        // TAFL v1.1 compliant default parameters with enhanced features
+        const defaults = {
+            query: {
+                target: 'table_name',
+                where: '',
+                order: '',
+                limit: '',
+                as: 'result'  // Changed from store_as to as for v1.1
+            },
+            check: {
+                condition: 'true',
+                where: '',
+                as: 'check_result'  // Changed from store_as to as for v1.1
+            },
+            create: {
+                target: 'resource',
+                with: {},  // Changed from params to with for v1.1
+                as: 'created_item'  // Changed from store_as to as for v1.1
+            },
+            update: {
+                target: 'resource',
+                where: '',
+                set: {},
+                as: ''  // Added as parameter for v1.1
+            },
+            if: {
+                condition: '${condition}',
+                then: [],
+                else: []
+            },
+            for: {
+                each: 'item',
+                in: '${items}',
+                as: 'current',  // Added as parameter for v1.1
+                filter: '',  // New in v1.1: filter condition
+                do: []
+            },
+            switch: {
+                expression: '${value}',
+                cases: [],
+                default: []
+            },
+            set: {
+                // Enhanced set with multi-variable support (v1.1)
+                variable: 'var_name',
+                value: '',
+                expression: '',  // New in v1.1: expression evaluation
+                multi: {}  // New in v1.1: multiple variable assignments
+            },
+            stop: {
+                reason: 'Flow completed',
+                code: 0  // Added code parameter for v1.1
+            },
+            notify: {
+                type: 'info',  // Changed from channel to type for v1.1
+                message: 'Notification message',
+                recipients: [],  // New in v1.1
+                level: 'normal'  // New in v1.1
+            }
+        };
+        
+        return { [verb]: defaults[verb] || {} };
+    }
+    
+    getCardTitle(cardData) {
+        // TAFL v1.1: Extract verb from object keys (verb is the key, not a property)
+        const verb = this.getCardVerb(cardData);
+        const params = cardData[verb];
+        
+        switch (verb) {
+            case 'query':
+                return `Query ${params.target || 'data'}`;
+            case 'check':
+                return `Check ${params.condition || 'condition'}`;
+            case 'create':
+                return `Create ${params.target || 'resource'}`;
+            case 'update':
+                return `Update ${params.target || 'resource'}`;
+            case 'if':
+                return `If ${params.condition || 'condition'}`;
+            case 'for':
+                return `For each ${params.each || 'item'}`;
+            case 'switch':
+                return `Switch ${params.expression || 'value'}`;
+            case 'set':
+                return `Set ${typeof params === 'string' ? params.split('=')[0].trim() : 'variable'}`;
+            case 'stop':
+                return `Stop: ${typeof params === 'string' ? params : 'reason'}`;
+            case 'notify':
+                return `Notify: ${params.message || 'message'}`;
+            default:
+                return verb.charAt(0).toUpperCase() + verb.slice(1);
+        }
+    }
+    
+    renderCardParams(cardData) {
+        // TAFL v1.1: Extract verb from object keys (verb is the key, not a property)
+        const verb = this.getCardVerb(cardData);
+        const params = cardData[verb];
+        let html = '';
+        
+        if (typeof params === 'string') {
+            // Simple string parameter (like set, stop)
+            html += `
+                <div class="card-param">
+                    <div class="param-value">${this.formatParamValue(params)}</div>
+                </div>
+            `;
+        } else if (typeof params === 'object') {
+            for (const [key, value] of Object.entries(params)) {
+                if (key === 'then' || key === 'else' || key === 'do' || key === 'cases' || key === 'default') {
+                    continue; // These are rendered as nested cards
+                }
+                
+                html += `
+                    <div class="card-param">
+                        <label class="param-label">${key}:</label>
+                        <div class="param-value editable" data-param="${key}">
+                            ${this.formatParamValue(value)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        return html;
+    }
+    
+    formatParamValue(value) {
+        if (typeof value === 'object') {
+            return JSON.stringify(value, null, 2);
+        }
+        return String(value);
+    }
+    
+    selectCard(cardElement) {
+        // Remove previous selection
+        document.querySelectorAll('.tafl-card.selected').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Select new card
+        cardElement.classList.add('selected');
+        this.selectedCard = cardElement;
+        
+        // Update properties panel
+        this.updatePropertiesPanel();
+    }
+    
+    deselectCard() {
+        document.querySelectorAll('.tafl-card.selected').forEach(card => {
+            card.classList.remove('selected');
+        });
+        this.selectedCard = null;
+        this.updatePropertiesPanel();
+    }
+    
+    updatePropertiesPanel() {
+        const propertiesPanel = document.getElementById('properties-panel');
+        
+        if (!this.selectedCard) {
+            propertiesPanel.innerHTML = `
+                <div class="no-selection">
+                    <div class="has-text-centered">
+                        <span class="icon is-large has-text-grey-light">
+                            <i class="fas fa-mouse-pointer fa-3x"></i>
+                        </span>
+                        <p class="has-text-grey">Select a card to edit properties</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        const cardId = this.selectedCard.dataset.cardId;
+        const cardData = this.findCardById(cardId);
+        
+        if (!cardData) {
+            console.error('Card data not found for ID:', cardId);
+            propertiesPanel.innerHTML = `
+                <div class="no-selection">
+                    <div class="has-text-centered">
+                        <span class="icon is-large has-text-danger">
+                            <i class="fas fa-exclamation-triangle fa-3x"></i>
+                        </span>
+                        <p class="has-text-danger">Card data not found</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        const verb = this.getCardVerb(cardData);
+        const verbDef = this.verbDefinitions[verb];
+        
+        if (!verbDef) {
+            console.error('Verb definition not found for:', verb);
+            return;
+        }
+        
+        propertiesPanel.innerHTML = `
+            <div class="property-editor">
+                <h4 class="title is-5">
+                    <span class="icon">
+                        <i class="${verbDef.icon}"></i>
+                    </span>
+                    ${verbDef.name} Properties
+                </h4>
+                
+                <div class="property-fields">
+                    ${this.renderPropertyEditor(cardData)}
+                </div>
+                
+                <hr>
+                
+                <div class="field">
+                    <label class="label">Card ID</label>
+                    <div class="control">
+                        <input class="input is-small" type="text" value="${cardData.id || ''}" readonly>
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <label class="label">Comment</label>
+                    <div class="control">
+                        <textarea class="textarea is-small property-input" 
+                                  data-card-id="${cardId}" 
+                                  data-param="comment" 
+                                  rows="2"
+                                  placeholder="Add a comment...">${cardData.comment || ''}</textarea>
+                    </div>
+                    <p class="help">Optional comment for documentation</p>
+                </div>
+                
+                <div class="field is-grouped">
+                    <p class="control">
+                        <button class="button is-small is-primary" id="apply-properties">
+                            <span class="icon">
+                                <i class="fas fa-check"></i>
+                            </span>
+                            <span>Apply All</span>
+                        </button>
+                    </p>
+                    <p class="control">
+                        <button class="button is-small is-danger" id="delete-card">
+                            <span class="icon">
+                                <i class="fas fa-trash"></i>
+                            </span>
+                            <span>Delete Card</span>
+                        </button>
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Add event listeners for property editing
+        this.setupPropertyEditing(cardData);
+    }
+    
+    renderPropertyEditor(cardData) {
+        const verb = this.getCardVerb(cardData);
+        const params = cardData[verb];
+        const cardId = cardData.id;
+        let html = '';
+        
+        if (!params) {
+            return '<p class="has-text-grey">No parameters</p>';
+        }
+        
+        if (typeof params === 'string') {
+            // Simple string parameter (set, stop)
+            html += `
+                <div class="field">
+                    <label class="label">Value</label>
+                    <div class="control">
+                        <textarea class="textarea is-small property-input" 
+                                  data-card-id="${cardId}" 
+                                  data-param="_root" 
+                                  rows="2">${this.escapeHtml(params)}</textarea>
+                    </div>
+                </div>
+            `;
+        } else if (typeof params === 'object') {
+            // Render common parameters first
+            const commonParams = ['target', 'condition', 'each', 'in', 'value', 'filter', 'limit', 'id'];
+            const renderedParams = new Set();
+            
+            // Render common params in order
+            for (const key of commonParams) {
+                if (key in params) {
+                    html += this.renderPropertyField(cardId, key, params[key]);
+                    renderedParams.add(key);
+                }
+            }
+            
+            // Render remaining params
+            for (const [key, value] of Object.entries(params)) {
+                if (!renderedParams.has(key) && 
+                    key !== 'then' && key !== 'else' && 
+                    key !== 'do' && key !== 'cases' && key !== 'default') {
+                    html += this.renderPropertyField(cardId, key, value);
+                }
+            }
+        }
+        
+        return html || '<p class="has-text-grey">No editable parameters</p>';
+    }
+    
+    renderPropertyField(cardId, key, value) {
+        let inputHTML = '';
+        
+        if (typeof value === 'string') {
+            if (value.length > 50 || value.includes('\n')) {
+                inputHTML = `
+                    <textarea class="textarea is-small property-input" 
+                              data-card-id="${cardId}" 
+                              data-param="${key}" 
+                              rows="3">${this.escapeHtml(value)}</textarea>
+                `;
+            } else {
+                inputHTML = `
+                    <input class="input is-small property-input" 
+                           type="text" 
+                           data-card-id="${cardId}" 
+                           data-param="${key}" 
+                           value="${this.escapeHtml(value)}">
+                `;
+            }
+        } else if (typeof value === 'number') {
+            inputHTML = `
+                <input class="input is-small property-input" 
+                       type="number" 
+                       data-card-id="${cardId}" 
+                       data-param="${key}" 
+                       value="${value}">
+            `;
+        } else if (typeof value === 'boolean') {
+            inputHTML = `
+                <label class="checkbox">
+                    <input type="checkbox" 
+                           class="property-input" 
+                           data-card-id="${cardId}" 
+                           data-param="${key}" 
+                           ${value ? 'checked' : ''}>
+                    <span class="ml-2">${value ? 'Yes' : 'No'}</span>
+                </label>
+            `;
+        } else if (value === null || value === undefined) {
+            inputHTML = `
+                <input class="input is-small property-input" 
+                       type="text" 
+                       data-card-id="${cardId}" 
+                       data-param="${key}" 
+                       value="" 
+                       placeholder="Not set">
+            `;
+        } else if (Array.isArray(value) || typeof value === 'object') {
+            // For arrays and objects, show as JSON
+            inputHTML = `
+                <textarea class="textarea is-small property-input" 
+                          data-card-id="${cardId}" 
+                          data-param="${key}" 
+                          rows="4">${JSON.stringify(value, null, 2)}</textarea>
+            `;
+        }
+        
+        return `
+            <div class="field">
+                <label class="label">${this.formatParamName(key)}</label>
+                <div class="control">
+                    ${inputHTML}
+                </div>
+                ${this.getParamHelp(key)}
+            </div>
+        `;
+    }
+    
+    formatParamName(name) {
+        // Convert snake_case to Title Case
+        return name.replace(/_/g, ' ')
+                  .replace(/\b\w/g, char => char.toUpperCase());
+    }
+    
+    getParamHelp(param) {
+        const helpTexts = {
+            'target': 'The target resource or entity',
+            'condition': 'The condition to evaluate',
+            'filter': 'Filter criteria for the query',
+            'limit': 'Maximum number of results',
+            'each': 'The item variable name in the loop',
+            'in': 'The collection to iterate over',
+            'value': 'The value to set or use',
+            'id': 'The identifier of the resource',
+            'data': 'The data payload'
+        };
+        
+        if (helpTexts[param]) {
+            return `<p class="help">${helpTexts[param]}</p>`;
+        }
+        return '';
+    }
+    
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    setupPropertyEditing(cardData) {
+        // Apply properties button
+        const applyBtn = document.getElementById('apply-properties');
+        applyBtn?.addEventListener('click', () => {
+            this.applyAllPropertyChanges();
+        });
+        
+        // Delete card button
+        const deleteBtn = document.getElementById('delete-card');
+        deleteBtn?.addEventListener('click', () => {
+            this.deleteCard(cardData.id);
+        });
+        
+        // Real-time property updates
+        document.querySelectorAll('.property-input').forEach(input => {
+            // Remove any existing listeners
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+            
+            // Add debounced change listener
+            let timeout;
+            const updateValue = () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    this.updatePropertyValue(newInput);
+                }, 300);
+            };
+            
+            if (newInput.type === 'checkbox') {
+                newInput.addEventListener('change', updateValue);
+            } else {
+                newInput.addEventListener('input', updateValue);
+            }
+        });
+    }
+    
+    updatePropertyValue(input) {
+        const cardId = input.dataset.cardId;
+        const param = input.dataset.param;
+        const cardData = this.findCardById(cardId);
+        
+        if (!cardData) {
+            console.error('Card not found:', cardId);
+            return;
+        }
+        
+        let value = input.type === 'checkbox' ? input.checked : input.value;
+        
+        // Try to parse as JSON if it looks like JSON
+        if (typeof value === 'string' && (value.startsWith('[') || value.startsWith('{'))) {
+            try {
+                value = JSON.parse(value);
+            } catch (e) {
+                // Keep as string if not valid JSON
+            }
+        } else if (typeof value === 'string' && value.match(/^\d+$/)) {
+            // Keep numeric strings as strings unless they're IDs
+            if (param !== 'id' && param !== 'target') {
+                value = parseInt(value);
+            }
+        } else if (typeof value === 'string' && value.match(/^\d+\.\d+$/)) {
+            // Convert decimal strings to floats
+            value = parseFloat(value);
+        }
+        
+        const verb = this.getCardVerb(cardData);
+        
+        if (param === '_root') {
+            // For simple string parameters
+            cardData[verb] = value;
+        } else if (param === 'comment') {
+            // Update comment field
+            if (value) {
+                cardData.comment = value;
+            } else {
+                delete cardData.comment;
+            }
+        } else {
+            // For object parameters
+            if (typeof cardData[verb] === 'object') {
+                if (value === '' || value === null) {
+                    delete cardData[verb][param];
+                } else {
+                    cardData[verb][param] = value;
+                }
+            }
+        }
+        
+        // Update card display immediately
+        this.refreshCard(cardId);
+        this.markDirty();
+        
+        // Show visual feedback
+        input.classList.add('is-success');
+        setTimeout(() => {
+            input.classList.remove('is-success');
+        }, 500);
+    }
+    
+    applyAllPropertyChanges() {
+        // Apply all pending changes
+        document.querySelectorAll('.property-input').forEach(input => {
+            this.updatePropertyValue(input);
+        });
+        
+        this.showNotification('Properties updated', 'is-success');
+        this.updateUI();
+    }
+    
+    applyPropertyChanges(cardData) {
+        // Legacy method for compatibility
+        this.applyAllPropertyChanges();
+    }
+    
+    refreshCard(cardId) {
+        const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
+        const cardData = this.findCardById(cardId);
+        
+        if (!cardElement || !cardData) return;
+        
+        // Update title
+        const titleElement = cardElement.querySelector('.card-title');
+        if (titleElement) {
+            titleElement.textContent = this.getCardTitle(cardData);
+        }
+        
+        // Update parameters display
+        const bodyElement = cardElement.querySelector('.tafl-card-body');
+        if (bodyElement) {
+            bodyElement.innerHTML = this.renderCardParams(cardData);
+        }
+    }
+    
+    findCardById(cardId) {
+        return taflFlowStore.findCardById(cardId);
+    }
+    
+    findCardInArray(cards, cardId) {
+        for (const card of cards) {
+            if (card.id === cardId) {
+                return card;
+            }
+            
+            // Search in nested structures
+            const verb = this.getCardVerb(card);
+            const params = card[verb];
+            if (typeof params === 'object') {
+                const nested = ['then', 'else', 'do', 'cases', 'default'];
+                for (const key of nested) {
+                    if (params[key] && Array.isArray(params[key])) {
+                        const found = this.findCardInArray(params[key], cardId);
+                        if (found) return found;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    duplicateCard(cardId) {
+        const cardData = this.findCardById(cardId);
+        if (!cardData) return;
+        
+        const duplicatedData = JSON.parse(JSON.stringify(cardData));
+        duplicatedData.id = this.generateId();
+        
+        // Find insertion point (after the original card)
+        const index = this.currentFlow.flow.findIndex(card => card.id === cardId);
+        if (index >= 0) {
+            this.currentFlow.flow.splice(index + 1, 0, duplicatedData);
+        } else {
+            this.currentFlow.flow.push(duplicatedData);
+        }
+        
+        this.refreshCanvas();
+        
+        // Animate the duplicated card
+        const duplicatedElement = document.querySelector(`[data-card-id="${duplicatedData.id}"]`);
+        if (duplicatedElement) {
+            duplicatedElement.classList.add('just-added');
+            setTimeout(() => duplicatedElement.classList.remove('just-added'), 500);
+        }
+        
+        this.markDirty();
+    }
+    
+    getCardById(cardId) {
+        // Helper method to find a card by ID in the flow
+        for (const card of this.currentFlow.flow) {
+            if (card.id === cardId) {
+                return card;
+            }
+            // Check nested structures (if, for, switch branches)
+            if (card.then_branch) {
+                const found = this.findCardInBranch(card.then_branch, cardId);
+                if (found) return found;
+            }
+            if (card.else_branch) {
+                const found = this.findCardInBranch(card.else_branch, cardId);
+                if (found) return found;
+            }
+            if (card.body) {
+                const found = this.findCardInBranch(card.body, cardId);
+                if (found) return found;
+            }
+            if (card.cases) {
+                for (const caseItem of card.cases) {
+                    const found = this.findCardInBranch(caseItem.body, cardId);
+                    if (found) return found;
+                }
+            }
+        }
+        return null;
+    }
+    
+    findCardInBranch(branch, cardId) {
+        if (!branch) return null;
+        for (const card of branch) {
+            if (card.id === cardId) {
+                return card;
+            }
+        }
+        return null;
+    }
+    
+    deleteCard(cardId) {
+        if (!confirm('Are you sure you want to delete this card?')) {
+            return;
+        }
+        
+        // Remove from flow data
+        this.removeCardFromFlow(cardId);
+        
+        // Refresh canvas
+        this.refreshCanvas();
+        
+        // Show drop zone if no cards left
+        const flow = taflFlowStore.getFlow();
+        if (flow.flow.length === 0) {
+            document.getElementById('canvas-drop-zone').style.display = 'flex';
+        }
+        
+        // Deselect if this was the selected card
+        if (this.selectedCard && this.selectedCard.dataset.cardId === cardId) {
+            this.deselectCard();
+        }
+        
+        this.markDirty();
+        this.updateUI();
+        this.showNotification('Card deleted', 'is-success');
+    }
+    
+    removeCardFromFlow(cardId) {
+        taflFlowStore.deleteCard(cardId);
+    }
+    
+    removeFromNestedStructures(cards, cardId) {
+        for (const card of cards) {
+            const verb = this.getCardVerb(card);
+            const params = card[verb];
+            
+            if (typeof params === 'object') {
+                const nestedKeys = ['then', 'else', 'do', 'cases', 'default'];
+                for (const key of nestedKeys) {
+                    if (params[key] && Array.isArray(params[key])) {
+                        params[key] = params[key].filter(nestedCard => nestedCard.id !== cardId);
+                        this.removeFromNestedStructures(params[key], cardId);
+                    }
+                }
+            }
+        }
+    }
+    
+    removeNestedCard(cardId) {
+        // Remove from main flow and nested structures
+        this.removeCardFromFlow(cardId);
+        return true;
+    }
+    
+    refreshCanvas() {
+        const canvas = document.getElementById('flow-canvas');
+        const dropZone = document.getElementById('canvas-drop-zone');
+        
+        // Clear existing cards
+        canvas.querySelectorAll('.tafl-card').forEach(card => card.remove());
+        
+        // Show/hide drop zone
+        const flow = taflFlowStore.getFlow();
+        if (flow.flow.length === 0) {
+            dropZone.style.display = 'flex';
+        } else {
+            dropZone.style.display = 'none';
+            
+            // Render all cards with their drag handlers
+            flow.flow.forEach(cardData => {
+                const cardElement = this.createCardElement(cardData);
+                canvas.appendChild(cardElement);
+            });
+            
+            // Set up nested card interactions
+            this.setupNestedCardInteractions();
+        }
+        
+        this.deselectCard();
+    }
+    
+    setupNestedCardInteractions() {
+        // Set up click events for nested cards
+        document.querySelectorAll('.tafl-card.nested').forEach(nestedCard => {
+            // Remove any existing click listeners to avoid duplicates
+            const newCard = nestedCard.cloneNode(true);
+            nestedCard.parentNode.replaceChild(newCard, nestedCard);
+            
+            // Add click listener that properly handles nested cards
+            newCard.addEventListener('click', (e) => {
+                // Prevent event from bubbling to parent cards
+                e.stopPropagation();
+                
+                // Don't select if clicking on interactive elements
+                if (e.target.closest('.card-controls') || 
+                    e.target.closest('input') || 
+                    e.target.closest('textarea') ||
+                    e.target.closest('button')) {
+                    return;
+                }
+                
+                // Select this nested card
+                this.selectCard(newCard);
+            });
+            
+            // Set up control buttons for nested cards
+            const duplicateBtn = newCard.querySelector('.card-duplicate-btn');
+            const deleteBtn = newCard.querySelector('.card-delete-btn');
+            
+            if (duplicateBtn) {
+                duplicateBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const cardId = newCard.dataset.cardId;
+                    // Find the card data using existing findCardById which already searches nested structures
+                    const cardData = this.findCardById(cardId);
+                    if (cardData) {
+                        // Clone the card data
+                        const newCardData = JSON.parse(JSON.stringify(cardData));
+                        newCardData.id = this.generateId();
+                        
+                        // Find parent and add the duplicate
+                        const parentCards = newCard.closest('.nested-cards');
+                        if (parentCards) {
+                            const branchType = parentCards.dataset.branch;
+                            const parentCardEl = parentCards.closest('.tafl-card:not(.nested)');
+                            if (parentCardEl) {
+                                const parentId = parentCardEl.dataset.cardId;
+                                this.addToNestedStructure(parentId, branchType, newCardData);
+                                this.refreshCanvas();
+                                this.showNotification('Card duplicated', 'is-success');
+                            }
+                        }
+                    }
+                });
+            }
+            
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const cardId = newCard.dataset.cardId;
+                    // Remove from nested structure
+                    const removed = this.removeNestedCard(cardId);
+                    if (removed) {
+                        this.refreshCanvas();
+                        this.showNotification('Card deleted', 'is-success');
+                    }
+                });
+            }
+            
+            // Nested cards should not be draggable
+            newCard.draggable = false;
+        });
+        
+        // Set up nested drop zones
+        document.querySelectorAll('.nested-drop-zone').forEach(dropZone => {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', (e) => {
+                if (!dropZone.contains(e.relatedTarget)) {
+                    dropZone.classList.remove('drag-over');
+                }
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('drag-over');
+                
+                const dragData = this.getDragData(e);
+                if (!dragData) return;
+                
+                const parentCard = dropZone.closest('.tafl-card');
+                const parentCardId = parentCard?.dataset.cardId;
+                const branchType = dropZone.dataset.branch;
+                
+                if (parentCardId && branchType) {
+                    if (dragData.type === 'verb') {
+                        // Add new card to nested structure
+                        const cardId = this.generateId();
+                        // TAFL v1.1: verb as key, not property
+                        const cardData = {
+                            id: cardId,
+                            [dragData.verb]: this.getDefaultParams(dragData.verb)[dragData.verb]
+                        };
+                        
+                        this.addToNestedStructure(parentCardId, branchType, cardData);
+                        this.refreshCanvas();
+                        
+                        // Select new card
+                        const newElement = document.querySelector(`[data-card-id="${cardId}"]`);
+                        if (newElement) {
+                            newElement.classList.add('just-added');
+                            setTimeout(() => newElement.classList.remove('just-added'), 500);
+                            this.selectCard(newElement);
+                        }
+                        
+                        this.markDirty();
+                        this.showNotification(`Added ${dragData.verb} to ${branchType} branch`, 'is-success');
+                    } else if (dragData.type === 'card') {
+                        // Move existing card to nested structure
+                        const cardData = this.findCardById(dragData.cardId);
+                        if (cardData) {
+                            this.removeCardFromFlow(dragData.cardId);
+                            this.addToNestedStructure(parentCardId, branchType, cardData);
+                            this.refreshCanvas();
+                            
+                            const movedElement = document.querySelector(`[data-card-id="${dragData.cardId}"]`);
+                            if (movedElement) {
+                                movedElement.classList.add('just-moved');
+                                setTimeout(() => movedElement.classList.remove('just-moved'), 500);
+                                this.selectCard(movedElement);
+                            }
+                            
+                            this.markDirty();
+                            this.showNotification(`Moved card to ${branchType} branch`, 'is-success');
+                        }
+                    }
+                }
+            });
+        });
+    }
+    
+    switchVerbCategory(category) {
+        // Update active tab
+        document.querySelectorAll('.panel-tabs a').forEach(tab => {
+            tab.classList.toggle('is-active', tab.dataset.tab === category);
+        });
+        
+        // Show/hide verb categories
+        document.querySelectorAll('.verb-category').forEach(cat => {
+            cat.style.display = 'none';
+        });
+        
+        const targetCategory = document.getElementById(`${category}-verbs`);
+        if (targetCategory) {
+            targetCategory.style.display = 'block';
+        }
+    }
+    
+    switchPropertiesTab(tab) {
+        // Update active tab
+        document.querySelectorAll('.tabs li').forEach(tabEl => {
+            tabEl.classList.toggle('is-active', tabEl.dataset.tab === tab);
+        });
+        
+        // Show/hide panels
+        document.querySelectorAll('.properties-content').forEach(panel => {
+            panel.style.display = 'none';
+        });
+        
+        const targetPanel = document.getElementById(`${tab}-panel`);
+        if (targetPanel) {
+            targetPanel.style.display = 'block';
+        }
+        
+        // Refresh YAML if switching to YAML tab
+        if (tab === 'yaml') {
+            this.refreshYAML();
+        }
+    }
+    
+    newFlow() {
+        if (this.isDirty) {
+            if (!confirm('You have unsaved changes. Create a new flow anyway?')) {
+                return;
+            }
+        }
+        
+        // TAFL v1.1 - Initialize with 6-segment structure
+        this.currentFlow = {
+            metadata: {
+                id: null,
+                name: 'Untitled Flow',
+                version: '1.1',
+                description: ''
+            },
+            settings: {
+                timeout: 3600,
+                max_retries: 3,
+                retry_on_failure: false
+            },
+            preload: {},
+            rules: {},
+            variables: {},
+            flow: []
+        };
+        
+        this.initializeVariables();
+        this.refreshCanvas();
+        this.updateUI();
+        this.isDirty = false;
+    }
+    
+    async openFlowModal() {
+        const modal = document.getElementById('flow-list-modal');
+        const flowList = document.getElementById('flow-list');
+        
+        modal.classList.add('is-active');
+        
+        try {
+            const response = await fetch('/tafl/flows');
+            const data = await response.json();
+            
+            if (data.flows.length === 0) {
+                flowList.innerHTML = `
+                    <div class="has-text-centered">
+                        <p class="has-text-grey">No TAFL flows found.</p>
+                        <button class="button is-primary mt-3" onclick="document.getElementById('flow-list-modal').classList.remove('is-active')">
+                            Create New Flow
+                        </button>
+                    </div>
+                `;
+            } else {
+                flowList.innerHTML = data.flows.map(flow => `
+                    <div class="flow-item" data-flow-id="${flow.id}">
+                        <div class="flow-name">${flow.name}</div>
+                        <div class="flow-description">${flow.description || 'No description'}</div>
+                        <div class="flow-meta">
+                            <span>Version: ${flow.version}</span>
+                            <span>ID: ${flow.id}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add click handlers
+                flowList.querySelectorAll('.flow-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        this.openFlow(item.dataset.flowId);
+                        modal.classList.remove('is-active');
+                    });
+                });
+            }
+        } catch (error) {
+            flowList.innerHTML = `
+                <div class="notification is-danger">
+                    Error loading flows: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
+    async openFlow(flowId) {
+        try {
+            const response = await fetch(`/tafl/flows/${flowId}`);
+            const data = await response.json();
+            
+            this.currentFlow = data.flow;
+            this.refreshCanvas();
+            this.refreshVariablesUI();
+            this.refreshPreloadUI();
+            this.refreshRulesUI();
+            this.updateUI();
+            this.isDirty = false;
+            
+            this.showNotification(`Opened flow: ${this.currentFlow.metadata.name}`, 'is-success');
+        } catch (error) {
+            this.showNotification(`Error opening flow: ${error.message}`, 'is-danger');
+        }
+    }
+    
+    // Public method for loading flows from dropdown
+    async loadFlow(flowDataOrId) {
+        // Handle both flow data object and flow ID string
+        if (typeof flowDataOrId === 'string') {
+            // It's a flow ID, fetch the flow
+            await this.openFlow(flowDataOrId);
+        } else if (typeof flowDataOrId === 'object' && flowDataOrId !== null) {
+            // It's already flow data
+            if (flowDataOrId.flow) {
+                // The response has a wrapper
+                this.currentFlow = flowDataOrId.flow;
+            } else {
+                // Direct flow data
+                this.currentFlow = flowDataOrId;
+            }
+            
+            // Ensure all steps have IDs for internal tracking
+            const flow = taflFlowStore.getFlow();
+            if (flow.flow && Array.isArray(flow.flow)) {
+                flow.flow.forEach(step => {
+                    if (!step.id) {
+                        step.id = this.generateId();
+                    }
+                });
+            }
+            
+            this.refreshCanvas();
+            this.refreshVariablesUI();
+            this.refreshPreloadUI();
+            this.refreshRulesUI();
+            this.updateUI();
+            this.isDirty = false;
+            
+            const flowName = this.currentFlow.metadata?.name || this.currentFlow.name || 'Flow';
+            this.showNotification(`Loaded flow: ${flowName}`, 'is-success');
+        } else {
+            console.error('Invalid flow data or ID provided');
+        }
+    }
+    
+    saveFlowModal() {
+        const modal = document.getElementById('save-flow-modal');
+        
+        // Pre-fill with current values
+        document.getElementById('save-flow-id').value = this.currentFlow.metadata.id || '';
+        document.getElementById('save-flow-name').value = this.currentFlow.metadata.name || '';
+        document.getElementById('save-flow-description').value = this.currentFlow.metadata.description || '';
+        
+        modal.classList.add('is-active');
+    }
+    
+    async saveFlow() {
+        const flowId = document.getElementById('save-flow-id').value.trim();
+        const flowName = document.getElementById('save-flow-name').value.trim();
+        const flowDescription = document.getElementById('save-flow-description').value.trim();
+        
+        if (!flowId) {
+            this.showNotification('Flow ID is required', 'is-danger');
+            return;
+        }
+        
+        if (!flowName) {
+            this.showNotification('Flow name is required', 'is-danger');
+            return;
+        }
+        
+        // Update current flow metadata
+        this.currentFlow.metadata.id = flowId;
+        this.currentFlow.metadata.name = flowName;
+        this.currentFlow.metadata.description = flowDescription;
+        
+        try {
+            const response = await fetch('/tafl/flows', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.currentFlow)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.showNotification('Flow saved successfully', 'is-success');
+                this.isDirty = false;
+                this.updateUI();
+                document.getElementById('save-flow-modal').classList.remove('is-active');
+            } else {
+                this.showNotification(`Error saving flow: ${result.detail}`, 'is-danger');
+            }
+        } catch (error) {
+            this.showNotification(`Error saving flow: ${error.message}`, 'is-danger');
+        }
+    }
+    
+    async validateFlow() {
+        try {
+            const response = await fetch('/tafl/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    metadata: taflFlowStore.getFlow().metadata,
+                    variables: taflFlowStore.getFlow().variables,
+                    flow: taflFlowStore.getFlow().flow
+                })
+            });
+            
+            const result = await response.json();
+            
+            this.displayValidationResults(result);
+            this.switchPropertiesTab('validation');
+        } catch (error) {
+            this.showNotification(`Validation error: ${error.message}`, 'is-danger');
+        }
+    }
+    
+    displayValidationResults(result) {
+        const resultsContainer = document.getElementById('validation-results');
+        
+        if (result.valid && result.errors.length === 0 && result.warnings.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="validation-item success">
+                    <span class="icon validation-icon has-text-success">
+                        <i class="mdi mdi-check-circle"></i>
+                    </span>
+                    <div class="validation-message">
+                        <strong>TAFL Flow is valid!</strong><br>
+                        No errors or warnings found.
+                    </div>
+                </div>
+            `;
+        } else {
+            let html = '';
+            
+            result.errors.forEach(error => {
+                html += `
+                    <div class="validation-item error">
+                        <span class="icon validation-icon has-text-danger">
+                            <i class="mdi mdi-alert-circle"></i>
+                        </span>
+                        <div class="validation-message">
+                            <strong>Error:</strong> ${error}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            result.warnings.forEach(warning => {
+                html += `
+                    <div class="validation-item warning">
+                        <span class="icon validation-icon has-text-warning">
+                            <i class="mdi mdi-alert"></i>
+                        </span>
+                        <div class="validation-message">
+                            <strong>Warning:</strong> ${warning}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsContainer.innerHTML = html;
+        }
+    }
+    
+    async executeFlow() {
+        try {
+            const response = await fetch('/tafl/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    metadata: this.currentFlow.metadata,
+                    variables: this.currentFlow.variables,
+                    flow: this.currentFlow.flow
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification('TAFL flow executed successfully (test mode)', 'is-success');
+                console.log('Execution log:', result.execution_log);
+            } else {
+                this.showNotification(`Execution failed: ${result.message}`, 'is-danger');
+            }
+        } catch (error) {
+            this.showNotification(`Execution error: ${error.message}`, 'is-danger');
+        }
+    }
+    
+    refreshYAML() {
+        if (!this.yamlEditor) return;
+        
+        this.yamlEditor.setValue(this.generateYAML());
+    }
+    
+    generateYAML() {
+        // Generate TAFL v1.0 compliant YAML
+        const flowData = {
+            metadata: this.currentFlow.metadata,
+            variables: this.currentFlow.variables,
+            flow: this.currentFlow.flow.map(card => {
+                // Remove the internal id and return the verb structure
+                const verb = this.getCardVerb(card);
+                const result = {};
+                result[verb] = card[verb];
+                return result;
+            })
+        };
+        
+        // Convert to YAML-like string
+        return this.objectToYAML(flowData);
+    }
+    
+    objectToYAML(obj, indent = 0) {
+        const spaces = '  '.repeat(indent);
+        let yaml = '';
+        
+        for (const [key, value] of Object.entries(obj)) {
+            if (Array.isArray(value)) {
+                yaml += `${spaces}${key}:\n`;
+                value.forEach(item => {
+                    yaml += `${spaces}  - `;
+                    if (typeof item === 'object') {
+                        if (Object.keys(item).length === 1) {
+                            // Single key object (like verb: params)
+                            const [verbKey, verbParams] = Object.entries(item)[0];
+                            yaml += `${verbKey}:`;
+                            if (typeof verbParams === 'string') {
+                                yaml += ` ${verbParams}\n`;
+                            } else {
+                                yaml += '\n' + this.objectToYAML(verbParams, indent + 2);
+                            }
+                        } else {
+                            yaml += '\n' + this.objectToYAML(item, indent + 2);
+                        }
+                    } else {
+                        yaml += `${item}\n`;
+                    }
+                });
+            } else if (typeof value === 'object' && value !== null) {
+                yaml += `${spaces}${key}:\n`;
+                yaml += this.objectToYAML(value, indent + 1);
+            } else {
+                const quotedValue = typeof value === 'string' && (value.includes(' ') || value.includes('${')) ? `"${value}"` : value;
+                yaml += `${spaces}${key}: ${quotedValue}\n`;
+            }
+        }
+        
+        return yaml;
+    }
+    
+    applyYAMLChanges() {
+        try {
+            // This would require a YAML parser
+            // For now, show a message
+            this.showNotification('YAML parsing not yet implemented - use the visual editor', 'is-info');
+        } catch (error) {
+            this.showNotification(`YAML parse error: ${error.message}`, 'is-danger');
+        }
+    }
+    
+    markDirty() {
+        taflFlowStore.setDirty(true);
+        this.updateUI();
+    }
+    
+    updateUI() {
+        // Update metadata inputs
+        document.getElementById('flow-id').value = this.currentFlow.metadata.id || '';
+        document.getElementById('flow-name').value = this.currentFlow.metadata.name || '';
+        document.getElementById('flow-version').value = this.currentFlow.metadata.version || '1.0';
+        document.getElementById('flow-description').value = this.currentFlow.metadata.description || '';
+        
+        // Update save button state
+        const saveBtn = document.getElementById('save-flow-btn');
+        saveBtn.disabled = !this.isDirty || this.currentFlow.flow.length === 0;
+        
+        // Update title
+        document.title = `TAFL Editor - ${this.currentFlow.metadata.name}${this.isDirty ? ' *' : ''}`;
+    }
+    
+    showNotification(message, type = 'is-info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.minWidth = '300px';
+        
+        notification.innerHTML = `
+            <button class="delete"></button>
+            ${message}
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+        
+        // Manual close
+        notification.querySelector('.delete').addEventListener('click', () => {
+            notification.remove();
+        });
+    }
+}
+
+// Initialize TAFL Editor when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    window.taflEditor = new TAFLEditor();
+    
+    // Load flows dropdown
+    loadFlowsDropdown();
+});
+
+// Load flows into dropdown
+async function loadFlowsDropdown() {
+    const dropdownContent = document.getElementById('flows-dropdown-content');
+    if (!dropdownContent) return;
+    
+    try {
+        const response = await fetch('/tafl/flows');
+        const data = await response.json();
+        const flows = data.flows || [];  // Extract flows array from response object
+        
+        if (flows.length === 0) {
+            dropdownContent.innerHTML = `
+                <div class="navbar-item has-text-grey">
+                    No flows available
+                </div>
+            `;
+            return;
+        }
+        
+        dropdownContent.innerHTML = flows.map(flow => `
+            <a class="navbar-item" onclick="loadFlow('${flow.id}')">
+                <div>
+                    <strong>${flow.name || flow.id}</strong>
+                    ${flow.description ? `<br><small class="has-text-grey">${flow.description}</small>` : ''}
+                </div>
+            </a>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Failed to load flows:', error);
+        dropdownContent.innerHTML = `
+            <div class="navbar-item has-text-danger">
+                Failed to load flows
+            </div>
+        `;
+    }
+}
+
+// Load a specific flow
+async function loadFlow(flowId) {
+    try {
+        const response = await fetch(`/tafl/flows/${flowId}`);
+        const flowData = await response.json();
+        
+        if (window.taflEditor) {
+            window.taflEditor.loadFlow(flowData);
+            
+            // Show success notification
+            const flowName = flowData.flow?.metadata?.name || flowData.flow?.name || flowId;
+            const notification = document.createElement('div');
+            notification.className = 'notification is-success';
+            notification.style.position = 'fixed';
+            notification.style.top = '70px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '1000';
+            notification.innerHTML = `
+                <button class="delete" onclick="this.parentElement.remove()"></button>
+                Flow "${flowName}" loaded successfully
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => notification.remove(), 3000);
+        }
+    } catch (error) {
+        console.error('Failed to load flow:', error);
+        alert('Failed to load flow: ' + error.message);
+    }
+}

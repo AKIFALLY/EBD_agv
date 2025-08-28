@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+{% block title %}多車監控系統{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">多車監控系統</h1>
+        <h2 class="subtitle">同時監控所有 AGV 狀態</h2>
+        
+        <!-- AGV 分頁選擇 -->
+        <div class="tabs is-boxed is-medium">
+            <ul id="agv-tabs">
+                <!-- Loader AGVs -->
+                <li class="agv-tab" data-agv="loader01">
+                    <a href="javascript:void(0);" style="cursor: pointer;">
+                        <span class="icon is-small"><i class="mdi mdi-forklift"></i></span>
+                        <span>Loader 01</span>
+                        <span class="tag is-rounded ml-2" id="status-loader01">離線</span>
+                    </a>
+                </li>
+                <li class="agv-tab" data-agv="loader02">
+                    <a href="javascript:void(0);" style="cursor: pointer;">
+                        <span class="icon is-small"><i class="mdi mdi-forklift"></i></span>
+                        <span>Loader 02</span>
+                        <span class="tag is-rounded ml-2" id="status-loader02">離線</span>
+                    </a>
+                </li>
+                
+                <!-- Cargo AGVs -->
+                <li class="agv-tab" data-agv="cargo01">
+                    <a href="javascript:void(0);" style="cursor: pointer;">
+                        <span class="icon is-small"><i class="mdi mdi-truck"></i></span>
+                        <span>Cargo 01</span>
+                        <span class="tag is-rounded ml-2" id="status-cargo01">離線</span>
+                    </a>
+                </li>
+                <li class="agv-tab" data-agv="cargo02">
+                    <a href="javascript:void(0);" style="cursor: pointer;">
+                        <span class="icon is-small"><i class="mdi mdi-truck"></i></span>
+                        <span>Cargo 02</span>
+                        <span class="tag is-rounded ml-2" id="status-cargo02">離線</span>
+                    </a>
+                </li>
+                
+                <!-- Unloader AGVs -->
+                <li class="agv-tab" data-agv="unloader01">
+                    <a href="javascript:void(0);" style="cursor: pointer;">
+                        <span class="icon is-small"><i class="mdi mdi-crane"></i></span>
+                        <span>Unloader 01</span>
+                        <span class="tag is-rounded ml-2" id="status-unloader01">離線</span>
+                    </a>
+                </li>
+                <li class="agv-tab" data-agv="unloader02">
+                    <a href="javascript:void(0);" style="cursor: pointer;">
+                        <span class="icon is-small"><i class="mdi mdi-crane"></i></span>
+                        <span>Unloader 02</span>
+                        <span class="tag is-rounded ml-2" id="status-unloader02">離線</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- 當前選中的 AGV 資訊 -->
+        <div class="box" id="current-agv-info">
+            <nav class="level">
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">當前 AGV</p>
+                        <p class="title" id="current-agv-id">未選擇</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">車型</p>
+                        <p class="title" id="current-agv-type">-</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">狀態</p>
+                        <p class="title" id="current-agv-state">-</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">位置</p>
+                        <p class="title" id="current-agv-position">-</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">電量</p>
+                        <p class="title" id="current-agv-power">-</p>
+                    </div>
+                </div>
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">最後更新</p>
+                        <p class="title" id="current-agv-update">-</p>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- AGV 詳細狀態顯示區域 -->
+        <div class="columns">
+            <!-- 左側：核心狀態 -->
+            <div class="column is-4">
+                <div class="box">
+                    <h4 class="title is-5">核心狀態</h4>
+                    <div id="core-status">
+                        <table class="table is-fullwidth is-striped">
+                            <tbody id="core-status-body">
+                                <tr><td colspan="2" class="has-text-centered has-text-grey">等待選擇 AGV...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Context 狀態 -->
+                <div class="box">
+                    <h4 class="title is-5">Context 狀態</h4>
+                    <div id="context-status">
+                        <table class="table is-fullwidth is-striped">
+                            <tbody id="context-status-body">
+                                <tr><td colspan="2" class="has-text-centered has-text-grey">等待選擇 AGV...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右側：車型特定狀態 -->
+            <div class="column is-8">
+                <div class="box">
+                    <h4 class="title is-5">車型特定狀態</h4>
+                    <div id="type-specific-status">
+                        <!-- 動態顯示基於車型的特定狀態 -->
+                        <div class="notification has-text-centered has-text-grey">
+                            請選擇一台 AGV 查看詳細狀態
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部控制按鈕 -->
+        <div class="field is-grouped">
+            <div class="control">
+                <button class="button is-primary" id="refresh-all">
+                    <span class="icon"><i class="mdi mdi-refresh"></i></span>
+                    <span>重新整理所有</span>
+                </button>
+            </div>
+            <div class="control">
+                <a href="/test" class="button is-info">
+                    <span class="icon"><i class="mdi mdi-test-tube"></i></span>
+                    <span>測試模式</span>
+                </a>
+            </div>
+            <div class="control">
+                <a href="/" class="button">
+                    <span class="icon"><i class="mdi mdi-home"></i></span>
+                    <span>回主頁</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 多車監控系統 JavaScript
+console.log('===== 多車監控系統載入中 =====');
+
+(function() {
+    'use strict';
+    
+    console.log('Script 開始執行');
+    
+    // AGV 資料儲存
+    const agvDataStore = {};
+    const agvList = ['loader01', 'loader02', 'cargo01', 'cargo02', 'unloader01', 'unloader02'];
+    let currentAgvId = null;
+    
+    // 立即測試 API
+    console.log('測試 API 連接...');
+    fetch('/api/agv-status/loader01')
+        .then(response => {
+            console.log('API 測試回應:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('API 測試資料:', data);
+        })
+        .catch(error => {
+            console.error('API 測試錯誤:', error);
+        });
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('多車監控系統初始化...');
+        initTabs();
+        
+        // 立即取得一次狀態
+        console.log('開始取得 AGV 狀態...');
+        fetchAllAgvStatus().then(() => {
+            console.log('初始狀態載入完成');
+            // 預設選擇第一個 AGV
+            selectAgv('loader01');
+        });
+        
+        // 開始輪詢
+        startPolling();
+    });
+    
+    // 初始化分頁
+    function initTabs() {
+        const tabs = document.querySelectorAll('.agv-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const agvId = this.dataset.agv;
+                selectAgv(agvId);
+            });
+        });
+    }
+    
+    // 選擇 AGV
+    function selectAgv(agvId) {
+        // 更新分頁狀態
+        document.querySelectorAll('.agv-tab').forEach(tab => {
+            tab.classList.remove('is-active');
+        });
+        document.querySelector(`.agv-tab[data-agv="${agvId}"]`).classList.add('is-active');
+        
+        currentAgvId = agvId;
+        updateDisplay(agvId);
+    }
+    
+    // 更新顯示
+    function updateDisplay(agvId) {
+        const data = agvDataStore[agvId];
+        
+        // 更新基本資訊
+        document.getElementById('current-agv-id').textContent = agvId;
+        
+        if (data) {
+            // 判斷車型
+            let agvType = '-';
+            if (agvId.startsWith('loader')) agvType = 'Loader';
+            else if (agvId.startsWith('cargo')) agvType = 'Cargo Mover';
+            else if (agvId.startsWith('unloader')) agvType = 'Unloader';
+            
+            document.getElementById('current-agv-type').textContent = agvType;
+            
+            // 更新狀態資訊
+            if (data.contexts) {
+                const baseState = data.contexts.base_context?.current_state || '-';
+                document.getElementById('current-agv-state').textContent = baseState;
+            }
+            
+            // 更新位置
+            if (data.agv_status) {
+                const x = data.agv_status.X_DIST || 0;
+                const y = data.agv_status.Y_DIST || 0;
+                document.getElementById('current-agv-position').textContent = `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+                
+                const power = data.agv_status.POWER || 0;
+                document.getElementById('current-agv-power').textContent = `${power}%`;
+            }
+            
+            // 更新時間
+            if (data.metadata?.timestamp) {
+                const time = new Date(data.metadata.timestamp);
+                document.getElementById('current-agv-update').textContent = time.toLocaleTimeString();
+            }
+            
+            // 更新詳細狀態
+            updateCoreStatus(data);
+            updateContextStatus(data);
+            updateTypeSpecificStatus(agvId, data);
+        } else {
+            document.getElementById('current-agv-type').textContent = '-';
+            document.getElementById('current-agv-state').textContent = '離線';
+            document.getElementById('current-agv-position').textContent = '-';
+            document.getElementById('current-agv-power').textContent = '-';
+            document.getElementById('current-agv-update').textContent = '-';
+        }
+    }
+    
+    // 更新核心狀態
+    function updateCoreStatus(data) {
+        const tbody = document.getElementById('core-status-body');
+        tbody.innerHTML = '';
+        
+        if (data && data.agv_status) {
+            const coreFields = ['AGV_Auto', 'AGV_MANUAL', 'AGV_IDLE', 'AGV_ALARM', 'AGV_MOVING'];
+            coreFields.forEach(field => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = field;
+                const value = data.agv_status[field];
+                const cell = row.insertCell(1);
+                cell.textContent = value ? '✓' : '✗';
+                cell.className = value ? 'has-text-success' : 'has-text-grey';
+            });
+        }
+    }
+    
+    // 更新 Context 狀態
+    function updateContextStatus(data) {
+        const tbody = document.getElementById('context-status-body');
+        tbody.innerHTML = '';
+        
+        if (data && data.contexts) {
+            Object.keys(data.contexts).forEach(contextName => {
+                const context = data.contexts[contextName];
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = contextName;
+                row.insertCell(1).textContent = context.current_state || '-';
+            });
+        }
+    }
+    
+    // 更新車型特定狀態
+    function updateTypeSpecificStatus(agvId, data) {
+        const container = document.getElementById('type-specific-status');
+        
+        if (!data || !data.type_specific) {
+            container.innerHTML = '<div class="notification has-text-centered has-text-grey">無車型特定資料</div>';
+            return;
+        }
+        
+        let html = '';
+        
+        if (agvId.startsWith('loader')) {
+            // Loader 特定狀態
+            html = `
+                <h5 class="subtitle is-6">Loader AGV 狀態</h5>
+                <div class="columns">
+                    <div class="column">
+                        <h6 class="has-text-weight-bold">AGV 端口狀態</h6>
+                        <table class="table is-narrow">
+                            <tbody>
+                                ${Object.entries(data.type_specific.agv_ports || {}).map(([port, status]) => 
+                                    `<tr><td>${port}</td><td class="${status ? 'has-text-success' : 'has-text-grey'}">${status ? '占用' : '空閒'}</td></tr>`
+                                ).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="column">
+                        <h6 class="has-text-weight-bold">工位狀態</h6>
+                        ${data.type_specific.work_id ? `<p>當前工作: ${data.type_specific.work_id}</p>` : '<p>無當前工作</p>'}
+                        ${data.type_specific.task_progress ? 
+                            `<p>設備: ${data.type_specific.task_progress.equipment || '-'}</p>
+                             <p>動作: ${data.type_specific.task_progress.action || '-'}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        } else if (agvId.startsWith('cargo')) {
+            // Cargo 特定狀態
+            html = `
+                <h5 class="subtitle is-6">Cargo Mover AGV 狀態</h5>
+                <div class="columns">
+                    <div class="column">
+                        <h6 class="has-text-weight-bold">Hokuyo 設備狀態</h6>
+                        <p>Hokuyo 1: ${data.type_specific.hokuyo_status?.hokuyo_1 || '未知'}</p>
+                        <p>Hokuyo 2: ${data.type_specific.hokuyo_status?.hokuyo_2 || '未知'}</p>
+                    </div>
+                    <div class="column">
+                        <h6 class="has-text-weight-bold">架台狀態</h6>
+                        <p>架台旋轉: ${data.type_specific.rack_rotation ? '是' : '否'}</p>
+                        <p>完成狀態: ${data.type_specific.completed ? '是' : '否'}</p>
+                    </div>
+                </div>
+            `;
+        } else if (agvId.startsWith('unloader')) {
+            // Unloader 特定狀態
+            html = `
+                <h5 class="subtitle is-6">Unloader AGV 狀態</h5>
+                <div class="columns">
+                    <div class="column">
+                        <h6 class="has-text-weight-bold">批量處理狀態</h6>
+                        <p>批量大小: ${data.type_specific.batch_processing?.batch_size || 2} 格</p>
+                        <p>當前批次: ${data.type_specific.batch_processing?.current_batch || 0}</p>
+                        <p>總批次: ${data.type_specific.batch_processing?.total_batches || 0}</p>
+                    </div>
+                    <div class="column">
+                        <h6 class="has-text-weight-bold">車載料架狀態</h6>
+                        ${Object.entries(data.type_specific.agv_carrier_status || {}).map(([pos, status]) => 
+                            `<p>${pos}: ${status ? '有載具' : '空'}</p>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html || '<div class="notification has-text-centered has-text-grey">無車型特定資料</div>';
+    }
+    
+    // 開始輪詢
+    function startPolling() {
+        // 每秒讀取所有 AGV 狀態
+        setInterval(fetchAllAgvStatus, 1000);
+        
+        // 立即執行一次
+        fetchAllAgvStatus();
+    }
+    
+    // 取得所有 AGV 狀態
+    async function fetchAllAgvStatus() {
+        console.log('開始取得所有 AGV 狀態...');
+        for (const agvId of agvList) {
+            try {
+                console.log(`正在取得 ${agvId} 狀態...`);
+                const response = await fetch(`/api/agv-status/${agvId}`);
+                console.log(`${agvId} 回應狀態:`, response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`${agvId} 資料:`, data);
+                    
+                    // 檢查是否有有效資料（不是錯誤回應）
+                    if (data && !data.error && data.metadata) {
+                        console.log(`${agvId} 線上`);
+                        agvDataStore[agvId] = data;
+                        updateAgvTabStatus(agvId, true);
+                        
+                        // 如果是當前選中的 AGV，更新顯示
+                        if (agvId === currentAgvId) {
+                            updateDisplay(agvId);
+                        }
+                    } else {
+                        console.log(`${agvId} 無有效資料`);
+                        agvDataStore[agvId] = null;
+                        updateAgvTabStatus(agvId, false);
+                    }
+                } else {
+                    console.log(`Failed to fetch ${agvId}: ${response.status}`);
+                    agvDataStore[agvId] = null;
+                    updateAgvTabStatus(agvId, false);
+                }
+            } catch (error) {
+                console.error(`Error fetching ${agvId} status:`, error);
+                agvDataStore[agvId] = null;
+                updateAgvTabStatus(agvId, false);
+            }
+        }
+        console.log('所有 AGV 狀態取得完成');
+    }
+    
+    // 更新分頁狀態標籤
+    function updateAgvTabStatus(agvId, isOnline) {
+        const statusTag = document.getElementById(`status-${agvId}`);
+        if (statusTag) {
+            if (isOnline) {
+                statusTag.textContent = '線上';
+                statusTag.className = 'tag is-rounded ml-2 is-success';
+            } else {
+                statusTag.textContent = '離線';
+                statusTag.className = 'tag is-rounded ml-2 is-danger';
+            }
+        }
+    }
+    
+    // 重新整理按鈕
+    document.getElementById('refresh-all').addEventListener('click', function() {
+        fetchAllAgvStatus();
+    });
+    
+})();
+</script>
+{% endblock %}

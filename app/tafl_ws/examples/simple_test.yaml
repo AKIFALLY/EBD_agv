@@ -1,0 +1,90 @@
+# Simple TAFL Test Flow
+# 簡單的 TAFL 測試流程
+
+metadata:
+  id: test_basic_flow
+  name: "Basic TAFL Test Flow"
+  version: "1.0"
+  author: "TAFL Test"
+  description: "Testing basic TAFL functionality including for loops"
+
+settings:
+  timeout: 300
+  log_level: INFO
+
+variables:
+  counter: 0
+  test_name: "TAFL Test"
+  test_list: [1, 2, 3, 4, 5]
+
+flow:
+  # Test 1: Basic variable setting
+  - set:
+      counter: 10
+  
+  # Test 2: Conditional logic
+  - if:
+      condition: "${counter} > 5"
+      then:
+        - set:
+            result: "Counter is large"
+        - notify:
+            channel: log
+            message: "Counter value is ${counter}"
+      else:
+        - set:
+            result: "Counter is small"
+  
+  # Test 3: Simple for loop
+  - for:
+      each: num
+      in: "${test_list}"
+      do:
+        - set:
+            loop_value: "${num}"
+        - notify:
+            channel: log
+            message: "Processing number ${num}"
+  
+  # Test 4: Nested for loops to test variable scoping
+  - set:
+      locations:
+        - id: 1
+          name: "Loc A"
+          items: [101, 102]
+        - id: 2
+          name: "Loc B"
+          items: [201, 202, 203]
+  
+  - for:
+      each: location
+      in: "${locations}"
+      do:
+        - notify:
+            channel: log
+            message: "Processing location ${location.name}"
+        
+        - for:
+            each: item
+            in: "${location.items}"
+            do:
+              - notify:
+                  channel: log
+                  message: "Location ${location.id}, Item ${item}"
+  
+  # Test 5: Switch statement
+  - switch:
+      on: "${counter}"
+      cases:
+        5:
+          - notify:
+              channel: log
+              message: "Counter is 5"
+        10:
+          - notify:
+              channel: log
+              message: "Counter is 10"
+      default:
+        - notify:
+            channel: log
+            message: "Counter is ${counter}"

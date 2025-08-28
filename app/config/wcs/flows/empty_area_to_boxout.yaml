@@ -1,0 +1,317 @@
+meta:
+  system: linear_flow_v2
+  version: "2.0.0"
+  author: "Flow WCS System"
+  created_at: "2025-08-19"
+  description: "空料架區到出口流程 - 將空料架區的架台搬運到出口傳送箱"
+
+flow:
+  id: "empty_area_to_boxout"
+  name: "空料架區到出口"
+  work_id: "220009"  # 空料架區到出口專用 work_id
+  enabled: true
+  priority: 30  # 最低優先級
+
+workflow:
+  - section: "查詢出口傳送箱需求"
+    description: "查詢出口傳送箱是否需要空料架"
+    steps:
+      - id: "query_boxout_locations"
+        exec: "query.locations"
+        params:
+          type: "boxout_transfer"
+          rooms: [81, 82]  # 出口傳送箱位置
+          has_rack: false  # 查詢沒有架台的位置（空位）
+        store: "empty_boxout_locations"
+        description: "查詢出口傳送箱空位"
+
+      - id: "check_has_boxout_demand"
+        exec: "check.empty"
+        params:
+          data: "${empty_boxout_locations}"
+        store: "no_boxout_demand"
+        description: "檢查是否有出口需求"
+
+      - id: "stop_if_no_demand"
+        exec: "control.stop_flow"
+        params:
+          reason: "出口傳送箱都已有架台，不需要補充"
+        skip_if: "!${no_boxout_demand}"
+        description: "如果沒有需求則停止流程"
+
+      - id: "log_boxout_demand"
+        exec: "action.log_message"
+        params:
+          message: "📦 出口傳送箱有 ${empty_boxout_locations.length} 個位置需要架台"
+          level: "info"
+          tags: ["boxout_demand", "empty_rack"]
+        skip_if: "${no_boxout_demand}"
+        description: "記錄出口需求"
+
+  - section: "查詢空料架區可用架台"
+    description: "查詢空料架區 (41-45) 的可用架台"
+    steps:
+      - id: "query_empty_rack_area"
+        exec: "query.locations"
+        params:
+          type: "empty_rack_area"
+          rooms: [41, 42, 43, 44, 45]  # 空料架區位置
+          has_rack: true  # 查詢有架台的位置
+        store: "empty_area_with_racks"
+        skip_if: "${no_boxout_demand}"
+        description: "查詢空料架區有架台的位置"
+
+      - id: "check_has_empty_racks"
+        exec: "check.empty"
+        params:
+          data: "${empty_area_with_racks}"
+        store: "no_empty_racks"
+        skip_if: "${no_boxout_demand}"
+        description: "檢查是否有空料架"
+
+      - id: "stop_if_no_empty_racks"
+        exec: "control.stop_flow"
+        params:
+          reason: "空料架區沒有架台可供應"
+        skip_if: "!${no_empty_racks} || ${no_boxout_demand}"
+        description: "如果沒有空料架則停止流程"
+
+      - id: "log_empty_rack_availability"
+        exec: "action.log_message"
+        params:
+          message: "🏭 空料架區有 ${empty_area_with_racks.length} 個架台可供應"
+          level: "info"
+          tags: ["empty_rack_area", "available_racks"]
+        skip_if: "${no_empty_racks} || ${no_boxout_demand}"
+        description: "記錄空料架可用性"
+
+  - section: "匹配空料架與出口需求"
+    description: "將空料架區的架台分配到需要的出口"
+    steps:
+      - id: "foreach_boxout_locations"
+        exec: "foreach"
+        params:
+          items: "${empty_boxout_locations}"
+          var: "boxout"
+          steps:
+            - id: "check_priority_level"
+              exec: "control.switch"
+              params:
+                value: "${boxout.priority || 'normal'}"
+                cases:
+                  "urgent": 50    # 緊急需求
+                  "high": 40      # 高優先級
+                  "normal": 30    # 正常
+                  "low": 20       # 低優先級
+                default: 30
+              store: "boxout_priority"
+              description: "確定出口優先級"
+
+            - id: "check_available_empty_racks"
+              exec: "check.empty"
+              params:
+                data: "${empty_area_with_racks}"
+              store: "no_more_empty_racks"
+              description: "檢查是否還有可用空料架"
+
+            - id: "stop_if_no_more_racks"
+              exec: "control.stop_flow"
+              params:
+                reason: "空料架區架台已全部分配完畢"
+              skip_if: "!${no_more_empty_racks}"
+              description: "如果沒有架台則停止"
+
+            - id: "get_empty_rack"
+              exec: "query.racks"
+              params:
+                location_id: "${empty_area_with_racks[0].id}"
+                status: "available"
+              store: "available_empty_rack"
+              skip_if: "${no_more_empty_racks}"
+              description: "獲取空料架區的架台"
+
+            - id: "check_rack_exists"
+              exec: "check.empty"
+              params:
+                data: "${available_empty_rack}"
+              store: "no_rack"
+              skip_if: "${no_more_empty_racks}"
+              description: "檢查架台是否存在"
+
+            - id: "verify_rack_empty"
+              exec: "check.rack_status"
+              params:
+                rack_id: "${available_empty_rack[0].id}"
+                side: "both"
+                check_type: "empty"
+              store: "rack_verified_empty"
+              skip_if: "${no_more_empty_racks} || ${no_rack}"
+              description: "驗證架台確實為空"
+
+            - id: "log_allocation"
+              exec: "action.log_message"
+              params:
+                message: "🎯 分配空料架 ${available_empty_rack[0].rack_id} 從空料架區到出口 ${boxout.name}"
+                level: "info"
+                tags: ["rack_allocation", "boxout_${boxout.id}"]
+              skip_if: "${no_more_empty_racks} || ${no_rack} || !${rack_verified_empty}"
+              description: "記錄架台分配"
+
+            - id: "check_existing_boxout_task"
+              exec: "check.task_exists"
+              params:
+                type: "EMPTY_TO_BOXOUT_TRANSFER"
+                rack_id: "${available_empty_rack[0].id}"
+                status: ["pending", "in_progress"]
+              store: "boxout_task_exists"
+              skip_if: "${no_more_empty_racks} || ${no_rack} || !${rack_verified_empty}"
+              description: "檢查是否已存在搬運任務"
+
+            - id: "create_boxout_task"
+              exec: "task.create_task"
+              params:
+                type: "EMPTY_TO_BOXOUT_TRANSFER"
+                work_id: "220009"  # 空料架區到出口 work_id
+                source_location_id: "${empty_area_with_racks[0].id}"
+                target_location_id: "${boxout.id}"
+                rack_id: "${available_empty_rack[0].id}"
+                room_id: "${boxout.room_id || 0}"
+                priority: "${boxout_priority}"  # 根據出口優先級設定
+                metadata:
+                  rack_name: "${available_empty_rack[0].rack_id}"
+                  source_location: "${empty_area_with_racks[0].name}"
+                  target_location: "${boxout.name}"
+                  boxout_priority: "${boxout.priority || 'normal'}"
+                  transport_reason: "供應出口傳送箱"
+                  model: "Cargo"  # Cargo AGV 負責搬運
+                  # 路徑規劃：從空料架區到出口
+                  nodes: ["${empty_area_with_racks[0].node_id}", "${boxout.node_id}"]
+              store: "boxout_task_id"
+              skip_if: "${no_more_empty_racks} || ${no_rack} || !${rack_verified_empty} || ${boxout_task_exists}"
+              description: "創建出口搬運任務"
+
+            - id: "log_task_created"
+              exec: "action.log_message"
+              params:
+                message: "✅ 創建出口搬運任務 - 架台: ${available_empty_rack[0].rack_id}, 到出口 ${boxout.name}, 任務ID: ${boxout_task_id}"
+                level: "info"
+                tags: ["task_created", "boxout_transfer"]
+              skip_if: "${no_more_empty_racks} || ${no_rack} || !${rack_verified_empty} || ${boxout_task_exists}"
+              description: "記錄任務創建"
+
+            - id: "update_available_racks"
+              exec: "control.update_variable"
+              params:
+                variable: "empty_area_with_racks"
+                operation: "remove_first"
+                value: 1
+              skip_if: "${no_more_empty_racks} || ${no_rack} || !${rack_verified_empty} || ${boxout_task_exists}"
+              description: "更新可用架台列表"
+
+        skip_if: "${no_boxout_demand} || ${no_empty_racks}"
+        description: "遍歷所有需要架台的出口"
+
+  - section: "監控系統平衡"
+    description: "監控空料架區與出口的供需平衡"
+    steps:
+      - id: "query_empty_area_inventory"
+        exec: "query.racks"
+        params:
+          location_id: [41, 42, 43, 44, 45]  # 空料架區
+          status: "available"
+        store: "empty_area_inventory"
+        description: "查詢空料架區庫存"
+
+      - id: "count_inventory"
+        exec: "control.count_items"
+        params:
+          variable: "${empty_area_inventory}"
+        store: "inventory_count"
+        description: "計算庫存數量"
+
+      - id: "query_boxout_racks"
+        exec: "query.racks"
+        params:
+          location_id: [81, 82]  # 出口傳送箱
+          status: "available"
+        store: "boxout_racks"
+        description: "查詢出口架台數量"
+
+      - id: "count_boxout_racks"
+        exec: "control.count_items"
+        params:
+          variable: "${boxout_racks}"
+        store: "boxout_rack_count"
+        description: "計算出口架台數量"
+
+      - id: "calculate_supply_rate"
+        exec: "control.update_variable"
+        params:
+          variable: "supply_rate"
+          operation: "set"
+          value: "${boxout_rack_count * 100 / 2}"  # 出口供應率
+        store: "supply_rate"
+        description: "計算供應率"
+
+      - id: "log_system_balance"
+        exec: "action.log_message"
+        params:
+          message: "📊 系統平衡 - 空料架區庫存: ${inventory_count}/5, 出口供應率: ${supply_rate}%"
+          level: "info"
+          tags: ["system_balance", "monitoring"]
+        description: "記錄系統平衡狀態"
+
+      - id: "check_imbalance"
+        exec: "control.switch"
+        params:
+          value: "${inventory_count}"
+          cases:
+            "0": true  # 庫存耗盡
+          default: false
+        store: "inventory_depleted"
+        description: "檢查庫存是否耗盡"
+
+      - id: "send_depletion_alert"
+        exec: "action.send_notification"
+        params:
+          message: "⚠️ 空料架區庫存耗盡，無法繼續供應出口"
+          level: "warning"
+          priority: "low"
+        skip_if: "!${inventory_depleted}"
+        description: "發送庫存耗盡警告"
+
+  - section: "總結"
+    description: "流程執行總結"
+    steps:
+      - id: "count_processed_boxouts"
+        exec: "control.count_items"
+        params:
+          variable: "${empty_boxout_locations}"
+        store: "total_boxouts"
+        description: "計算處理的出口數量"
+
+      - id: "log_completion"
+        exec: "action.log_message"
+        params:
+          message: "🏁 空料架區到出口流程完成 - 處理了 ${total_boxouts} 個出口需求，空料架區剩餘: ${inventory_count}/5"
+          level: "info"
+          tags: ["completion", "boxout_transfer", "summary"]
+        description: "記錄完成訊息"
+
+settings:
+  log_level: "INFO"
+  enable_checkpoint: true
+  parallel_execution: false
+  timeout: 420  # 7分鐘超時
+  retry_on_failure: true
+  max_retries: 3
+  # 執行頻率控制 - 每15分鐘執行一次（最低優先級）
+  execution_interval: 900  # seconds
+  last_execution: null
+  # 出口供應特定設定
+  boxout_supply_settings:
+    max_concurrent_tasks: 2  # 最多同時2個搬運任務
+    priority_level: 30  # 最低優先級
+    empty_area_capacity: 5  # 空料架區容量
+    boxout_capacity: 2  # 出口傳送箱容量
+    depletion_alert: true  # 啟用庫存耗盡警告
