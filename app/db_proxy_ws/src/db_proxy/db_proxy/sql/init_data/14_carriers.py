@@ -13,6 +13,35 @@ def initialize_carriers(session):
 
     # 測試用的 Carrier 資料，PK 為 id（自動產生），FK 包含 room_id、rack_id、port_id，其他欄位如 rack_index 與 status 可選擇性設定
     default_test_carrier = [
+        # Rack 1 (id: 1) - 添加一些測試載具
+        {"room_id": 1, "rack_id": 1, "rack_index": 1, "port_id": 1001, "status_id": 2},
+        {"room_id": 1, "rack_id": 1, "rack_index": 2, "port_id": 1002, "status_id": 2},
+        {"room_id": 1, "rack_id": 1, "rack_index": 3, "port_id": 1003, "status_id": 5},
+        {"room_id": 1, "rack_id": 1, "rack_index": 17, "port_id": 1017, "status_id": 2},
+        
+        # Rack 2 (id: 2) - 添加一些測試載具
+        {"room_id": 1, "rack_id": 2, "rack_index": 1, "port_id": 1004, "status_id": 5},
+        {"room_id": 1, "rack_id": 2, "rack_index": 2, "port_id": 1005, "status_id": 5},
+        {"room_id": 1, "rack_id": 2, "rack_index": 17, "port_id": 1018, "status_id": 2},
+        
+        # Rack 3 (id: 3) - 添加一些測試載具
+        {"room_id": 1, "rack_id": 3, "rack_index": 1, "port_id": 1006, "status_id": 2},
+        {"room_id": 1, "rack_id": 3, "rack_index": 18, "port_id": 1019, "status_id": 5},
+        
+        # Rack 4 (id: 4) - 添加一些測試載具
+        {"room_id": 2, "rack_id": 4, "rack_index": 1, "port_id": 2001, "status_id": 2},
+        {"room_id": 2, "rack_id": 4, "rack_index": 2, "port_id": 2002, "status_id": 2},
+        {"room_id": 2, "rack_id": 4, "rack_index": 3, "port_id": 2003, "status_id": 5},
+        {"room_id": 2, "rack_id": 4, "rack_index": 17, "port_id": 2017, "status_id": 2},
+        {"room_id": 2, "rack_id": 4, "rack_index": 18, "port_id": 2018, "status_id": 5},
+        
+        # Rack 5 (id: 5) - 添加一些測試載具
+        {"room_id": 2, "rack_id": 5, "rack_index": 1, "port_id": 2004, "status_id": 5},
+        {"room_id": 2, "rack_id": 5, "rack_index": 2, "port_id": 2005, "status_id": 5},
+        {"room_id": 2, "rack_id": 5, "rack_index": 17, "port_id": 2019, "status_id": 5},
+        {"room_id": 2, "rack_id": 5, "rack_index": 18, "port_id": 2020, "status_id": 2},
+        
+        # 原有的測試資料 (rack_id: 123)
         {"room_id": 2, "rack_id": 123, "rack_index": 17, "port_id": 2021, "status_id": 5},
         {"room_id": 2, "rack_id": 123, "rack_index": 18, "port_id": 2022, "status_id": 5},
         {"room_id": 2, "rack_id": 123, "rack_index": 19, "port_id": 2023, "status_id": 5},

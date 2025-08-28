@@ -24,15 +24,15 @@ def initialize_license(session):
                 "can_create_tasks": True
             }
         },
-        # HMI 終端 1 - 倉儲區區域（2個 Location）
+        # HMI 終端 1 - ManualReceiveArea 測試區域（5個 Location）
         {
             "device_id": "476e01ab82a53f9e",
             "active": 1,
             "device_type": "hmi_terminal",
-            "description": "倉儲區 HMI",
+            "description": "ManualReceiveArea HMI",
             "permissions": {
-                "locations": ["LOC001", "LOC002"],
-                "layout": "1x2",
+                "locations": ["ManualReceiveArea01", "ManualReceiveArea02", "ManualReceiveArea03", "ManualReceiveArea04", "ManualReceiveArea05"],
+                "layout": "2x3",
                 "can_remove_rack": True
             }
         },
