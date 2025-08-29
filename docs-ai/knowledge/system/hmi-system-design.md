@@ -18,7 +18,7 @@ HMI 系統是 RosAGV OPUI 模組的擴展功能，提供彈性化的人機介面
 
 | device_type | 說明 | 路由目標 |
 |------------|------|---------|
-| injection_machine | 射出機操作面板 | /home (原 OPUI 介面) |
+| op_station | 操作員工作站 | /home (原 OPUI 介面) |
 | hmi_terminal | HMI 終端設備 | /hmi (HMI 介面) |
 
 #### 第二層：DeviceId 配置
@@ -41,7 +41,7 @@ class License(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     device_id: str = Field(index=True, unique=True)
     active: int = Field(default=1)
-    device_type: str = Field(default="injection_machine")  # 設備類型
+    device_type: str = Field(default="op_station")  # 設備類型
     description: Optional[str] = None  # 描述
     permissions: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # 權限設定
 ```
@@ -90,9 +90,9 @@ class Carrier(SQLModel, table=True):
 
 #### 預設資料範例
 ```sql
--- 射出機操作員
+-- 操作員工作站
 INSERT INTO license (device_id, active, device_type, description, permissions) VALUES
-('ca08777c72096c51', 1, 'injection_machine', '射出機 #1 操作面板', 
+('ca08777c72096c51', 1, 'op_station', '操作員工作站 #1', 
  '{"can_call_agv": true, "can_view_tasks": true}'::jsonb);
 
 -- HMI 終端 1 (2個 Location)
@@ -203,7 +203,7 @@ graph TD
     A[用戶訪問 /?deviceId=xxx] --> B{驗證 deviceId}
     B -->|無效| C[顯示未授權頁面]
     B -->|有效| D{檢查 device_type}
-    D -->|injection_machine| E[重定向到 /home]
+    D -->|op_station| E[重定向到 /home]
     D -->|hmi_terminal| F[重定向到 /hmi]
     F --> G[讀取 permissions 配置]
     G --> H[查詢 Location 資料]

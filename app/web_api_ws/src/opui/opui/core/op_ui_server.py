@@ -96,7 +96,7 @@ class OpUiServer:
                 device_type = license_data.device_type
                 
                 # 3. 根據 device_type 導向不同介面
-                if device_type == "injection_machine":
+                if device_type == "op_station":
                     # 導向原本的 OPUI 介面
                     return RedirectResponse(url=f"/home?deviceId={device_id}")
                     
@@ -132,7 +132,7 @@ class OpUiServer:
                 
                 # 檢查設備類型是否正確
                 license_data = auth_result["license_data"]
-                if license_data.device_type != "injection_machine":
+                if license_data.device_type != "op_station":
                     # 重定向到根路由，讓根路由處理正確的導向
                     return RedirectResponse(url=f"/?deviceId={device_id}")
 
@@ -163,7 +163,7 @@ class OpUiServer:
                 
                 # 檢查設備類型是否正確
                 license_data = auth_result["license_data"]
-                if license_data.device_type != "injection_machine":
+                if license_data.device_type != "op_station":
                     # 重定向到根路由，讓根路由處理正確的導向
                     return RedirectResponse(url=f"/?deviceId={device_id}")
 
@@ -194,7 +194,7 @@ class OpUiServer:
                 
                 # 檢查設備類型是否正確
                 license_data = auth_result["license_data"]
-                if license_data.device_type != "injection_machine":
+                if license_data.device_type != "op_station":
                     # 重定向到根路由，讓根路由處理正確的導向
                     return RedirectResponse(url=f"/?deviceId={device_id}")
 

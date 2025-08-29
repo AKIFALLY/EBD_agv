@@ -8,7 +8,7 @@ class License(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     device_id: str = Field(index=True, unique=True)
     active: int = Field(default=1)
-    device_type: str = Field(default="injection_machine")  # 設備類型
+    device_type: str = Field(default="op_station")  # 設備類型
     description: Optional[str] = None  # 描述
     permissions: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # 權限設定
 

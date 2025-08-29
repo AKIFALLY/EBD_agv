@@ -12,12 +12,12 @@ def initialize_license(session):
     print("🔐 初始化 License 資料...")
 
     default_licenses = [
-        # 射出機操作員（原有 OPUI 功能）
+        # 操作員工作站（原有 OPUI 功能）
         {
             "device_id": "ca08777c72096c51",
             "active": 1,
-            "device_type": "injection_machine",
-            "description": "射出機 #1 操作面板",
+            "device_type": "op_station",
+            "description": "操作員工作站 #1",
             "permissions": {
                 "can_call_agv": True,
                 "can_view_tasks": True,
@@ -60,4 +60,4 @@ def initialize_license(session):
             session.add(License(**data))
 
     session.commit()
-    print("✅ License 資料初始化完成（包含 injection_machine 和 hmi_terminal 類型）")
+    print("✅ License 資料初始化完成（包含 op_station 和 hmi_terminal 類型）")
