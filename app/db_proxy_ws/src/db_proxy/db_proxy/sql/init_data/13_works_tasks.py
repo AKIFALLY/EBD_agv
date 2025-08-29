@@ -48,7 +48,6 @@ def initialize_works(session):
     print("⚙️ 初始化工作資料...")
 
     # 測試預設 Works
-    # 測試預設 Works
     test_work = [
         # opui-操作員呼叫空車和派滿車的工作 平板按下後觸發 ,WCS產生kuka需要的任務後監控任務完成後刪除任務
         {"id": 100001, "name": "opui-call-empty",
@@ -164,7 +163,11 @@ def initialize_works(session):
             exists = session.exec(select(Work).where(
                 Work.name == work_data["name"])).first()
             if not exists:
-                session.add(Work(**work_data))
+                work = Work(**work_data)
+                session.add(work)
+                # 立即 flush 以確保 ID 分配
+                session.flush()
+    # 最終 commit 所有工作
     session.commit()
     print("✅ 工作資料初始化完成")
 
@@ -172,6 +175,13 @@ def initialize_works(session):
 def initialize_tasks(session):
     """初始化任務資料"""
     print("📝 初始化任務資料...")
+    
+    # 先確認必要的 work 存在
+    work_100001 = session.exec(select(Work).where(Work.id == 100001)).first()
+    work_100002 = session.exec(select(Work).where(Work.id == 100002)).first()
+    
+    if not work_100001 or not work_100002:
+        print("⚠️ 警告: work_id 100001 或 100002 不存在，跳過相關任務初始化")
 
     # 測試預設 Tasks - 使用實際存在的 work_id
     default_tasks = [
@@ -233,11 +243,24 @@ def initialize_tasks(session):
     ]
 
     # 改進：逐個檢查並插入，避免批量插入失敗
-    for task_data in default_tasks:
-        # Task 沒有固定的 id，用 name 檢查
-        exists = session.exec(select(Task).where(
-            Task.name == task_data["name"])).first()
-        if not exists:
-            session.add(Task(**task_data))
+    # 使用 no_autoflush 避免過早的 flush
+    with session.no_autoflush:
+        for task_data in default_tasks:
+            # 檢查對應的 work_id 是否存在
+            work_exists = session.exec(select(Work).where(
+                Work.id == task_data.get("work_id"))).first()
+            
+            if not work_exists:
+                print(f"⚠️ 跳過任務 '{task_data.get('name')}': work_id {task_data.get('work_id')} 不存在")
+                continue
+                
+            # Task 沒有固定的 id，用 name 檢查
+            exists = session.exec(select(Task).where(
+                Task.name == task_data["name"])).first()
+            if not exists:
+                task = Task(**task_data)
+                session.add(task)
+                session.flush()  # 確保任務被插入
+    
     session.commit()
     print("✅ 任務資料初始化完成")
