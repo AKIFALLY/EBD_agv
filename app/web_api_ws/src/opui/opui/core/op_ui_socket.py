@@ -33,6 +33,8 @@ class OpUiSocket:
         self.sio.on('test_complete_task')(self.test_complete_task)  # 測試用：手動完成任務
         self.sio.on('get_task_status')(self.get_task_status)  # 新增：查詢任務狀態
         self.sio.on('get_active_tasks')(self.get_active_tasks)  # 新增：查詢活躍任務
+        # HMI 相關事件
+        self.sio.on('request_hmi_data')(self.request_hmi_data)  # HMI 請求資料
 
     async def connect(self, sid, environ):
         """處理客戶端連線 - 優化版：不在連線時發送所有資料"""
@@ -1330,3 +1332,123 @@ class OpUiSocket:
         except Exception as e:
             print(f"❌ 查詢活躍任務失敗: {e}")
             return {"success": False, "message": f"查詢失敗: {str(e)}"}
+    
+    async def request_hmi_data(self, sid, data):
+        """HMI 請求資料 - 發送 HMI 顯示所需的位置和料架資料"""
+        try:
+            device_id = data.get('device_id')
+            if not device_id:
+                print("❌ HMI 請求缺少 device_id")
+                await self.sio.emit('hmi_data_update', {
+                    'success': False,
+                    'message': 'Missing device_id'
+                }, to=sid)
+                return
+            
+            print(f"📡 HMI 請求資料: device_id={device_id}")
+            
+            # 從資料庫獲取 HMI 資料
+            from opui.database.operations import connection_pool
+            from sqlmodel import select
+            import json
+            
+            with connection_pool.get_session() as session:
+                # 1. 查詢 license 獲取權限配置
+                from db_proxy.models import License
+                license_data = session.exec(
+                    select(License).where(License.device_id == device_id)
+                ).first()
+                
+                if not license_data:
+                    print(f"❌ 找不到 device_id {device_id} 的授權資料")
+                    await self.sio.emit('hmi_data_update', {
+                        'success': False,
+                        'message': 'Device not authorized'
+                    }, to=sid)
+                    return
+                
+                if license_data.device_type != "hmi_terminal":
+                    print(f"❌ Device {device_id} 不是 HMI 終端")
+                    await self.sio.emit('hmi_data_update', {
+                        'success': False,
+                        'message': 'Not an HMI terminal'
+                    }, to=sid)
+                    return
+                
+                # 2. 解析權限配置
+                permissions = license_data.permissions or {}
+                location_names = permissions.get("locations", [])
+                layout = permissions.get("layout", "2x2")
+                
+                # 3. 查詢位置資料
+                from db_proxy.models import Location, Rack, Product, Carrier
+                locations_data = []
+                
+                for location_name in location_names:
+                    location = session.exec(
+                        select(Location).where(Location.name == location_name)
+                    ).first()
+                    
+                    if location:
+                        location_info = {
+                            "location": {
+                                "id": location.id,
+                                "name": location.name
+                            },
+                            "rack": None,
+                            "product": None,
+                            "carriers": []
+                        }
+                        
+                        # 查詢該位置的料架
+                        rack = session.exec(
+                            select(Rack).where(Rack.location_id == location.id)
+                        ).first()
+                        
+                        if rack:
+                            location_info["rack"] = {
+                                "id": rack.id,
+                                "name": rack.name
+                            }
+                            
+                            # 查詢產品資訊
+                            if rack.product_id:
+                                product = session.exec(
+                                    select(Product).where(Product.id == rack.product_id)
+                                ).first()
+                                if product:
+                                    location_info["product"] = {
+                                        "id": product.id,
+                                        "name": product.name,
+                                        "size": product.size
+                                    }
+                            
+                            # 查詢載具數量
+                            carriers = session.exec(
+                                select(Carrier).where(Carrier.rack_id == rack.id)
+                            ).all()
+                            location_info["carriers"] = [
+                                {"id": c.id, "index": c.rack_index} for c in carriers
+                            ]
+                        
+                        locations_data.append(location_info)
+                
+                # 4. 發送資料給 HMI
+                response_data = {
+                    'success': True,
+                    'device_id': device_id,
+                    'layout': layout,
+                    'locations': locations_data
+                }
+                
+                print(f"✅ 發送 HMI 資料: {len(locations_data)} 個位置")
+                await self.sio.emit('hmi_data_update', response_data, to=sid)
+                
+        except Exception as e:
+            print(f"❌ HMI 資料請求處理失敗: {e}")
+            import traceback
+            traceback.print_exc()
+            await self.sio.emit('hmi_data_update', {
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }, to=sid)

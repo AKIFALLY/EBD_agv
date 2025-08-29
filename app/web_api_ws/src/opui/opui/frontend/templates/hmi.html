@@ -8,458 +8,14 @@
     <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
     <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
     <link rel="stylesheet" href="/static/css/opui-bulma-extend.css" />
-    <link rel="stylesheet" href="/static/css/hmi.css">
-    <style>
-        /* HMI 平板優化覆蓋 Bulma 預設值 */
-        html, body {
-            height: 100vh;
-            overflow: hidden;
-            background: #0a0a0a;
-        }
-        
-        .main-container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: #0a0a0a;
-        }
-        
-        .content-area {
-            flex: 1;
-            overflow: hidden;
-            padding: 1rem;
-            background: #0a0a0a;
-        }
-        
-        /* Info Row Layout - 整齊的左右對齊 */
-        .info-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 15px 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .info-label {
-            flex: 0 0 100px;
-            text-align: right;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 1.2rem;
-            font-weight: 500;
-            margin-right: 20px;
-        }
-        
-        .info-value {
-            flex: 0 0 150px;
-            text-align: left;
-            font-size: 1.4rem;
-            font-weight: bold;
-        }
-        
-        /* Text Styles for Dark Theme - Larger for Tablet */
-        .location-title {
-            color: #ffffff;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 2rem;  /* 加大標題 */
-            margin-bottom: 1.5rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        
-        /* 值的顏色樣式 - 統一字體大小 */
-        .value-rack {
-            color: #00d2d3;
-            font-size: 1.5rem;
-            text-shadow: 0 0 15px rgba(0, 210, 211, 0.5);
-        }
-        
-        .value-product {
-            color: #5f27cd;
-            font-size: 1.5rem;
-            text-shadow: 0 0 15px rgba(95, 39, 205, 0.5);
-        }
-        
-        .value-size {
-            color: #ff4757;
-            font-size: 1.5rem;
-            text-shadow: 0 0 15px rgba(255, 71, 87, 0.5);
-        }
-        
-        .value-carrier {
-            color: #48dbfb;
-            font-size: 1.5rem;
-            text-shadow: 0 0 20px rgba(72, 219, 251, 0.6);
-        }
-        
-        .carrier-icon {
-            color: #48dbfb;
-            margin-right: 10px;
-        }
-        
-        
-        /* Success Button with Breathing Animation */
-        .button-large {
-            min-height: 150px;
-            font-size: 1.8rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #00d68f 0%, #00b074 100%);
-            border: 2px solid rgba(0, 214, 143, 0.3);
-            border-radius: 12px;
-            color: white;
-            box-shadow: 0 4px 20px rgba(0, 214, 143, 0.4);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            margin-top: auto;
-            position: relative;
-            overflow: hidden;
-            /* 呼吸動畫 */
-            animation: breathing 3s ease-in-out infinite;
-        }
-        
-        /* 呼吸燈動畫 - 簡化為2個關鍵幀，更流暢 */
-        @keyframes breathing {
-            0%, 100% {
-                box-shadow: 0 2px 15px rgba(0, 214, 143, 0.3),
-                           inset 0 0 20px rgba(255, 255, 255, 0.1);
-                border-color: rgba(0, 214, 143, 0.3);
-            }
-            50% {
-                box-shadow: 0 6px 35px rgba(0, 214, 143, 0.8),
-                           inset 0 0 40px rgba(255, 255, 255, 0.3);
-                border-color: rgba(0, 214, 143, 0.6);
-            }
-        }
-        
-        /* 按鈕內部光波動畫 */
-        .button-large::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            animation: innerGlow 3s ease-in-out infinite;
-        }
-        
-        @keyframes innerGlow {
-            0%, 100% {
-                opacity: 0.1;
-            }
-            50% {
-                opacity: 0.4;
-            }
-        }
-        
-        /* 點擊效果 */
-        .button-large:active {
-            transform: scale(0.98);
-            animation: none;
-        }
-        
-        /* 動態排版 */
-        .layout-1x2 {
-            grid-template-columns: 1fr 1fr;
-        }
-        
-        .layout-2x2 {
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-        }
-        
-        .layout-1x3 {
-            grid-template-columns: 1fr 1fr 1fr;
-        }
-        
-        .layout-1x4 {
-            grid-template-columns: repeat(4, 1fr);
-        }
-        
-        .layout-2x3 {
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-        }
-        
-        .locations-grid {
-            display: grid;
-            gap: 0.5rem;
-            height: 100%;
-        }
-        
-        /* Modern Gradient Card Design */
-        .location-box {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
-            border: 1px solid transparent;
-            border-radius: 16px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Gradient Border Effect - Thicker for visibility */
-        .location-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 3px;  /* 加厚邊框 */
-            border-radius: 16px;
-            background: linear-gradient(135deg, #ff4757, #5f27cd, #00d2d3, #48dbfb);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0.4;  /* 固定的邊框透明度 */
-        }
-        
-        /* Touch Animation Class */
-        .location-box.touched::before {
-            animation: touchGlow 0.6s ease-out;
-        }
-        
-        @keyframes touchGlow {
-            0% {
-                opacity: 0.4;
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0.4;
-            }
-        }
-        
-        /* Glow Effect Animation */
-        .location-box.touched::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: expandGlow 0.6s ease-out;
-            pointer-events: none;
-        }
-        
-        @keyframes expandGlow {
-            0% {
-                opacity: 0;
-                transform: scale(0.5);
-            }
-            50% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(1.2);
-            }
-        }
-        
-        .location-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1;
-            padding: 10px;  /* 加內邊距避免按鈕貼邊 */
-        }
-        
-        .empty-location {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .empty-location p {
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 2rem;
-            font-weight: 300;
-        }
-        
-        .button-disabled {
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.3);
-            min-height: 150px;
-            font-size: 1.8rem;
-            cursor: not-allowed;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            margin-top: auto;
-        }
-        
-        
-        /* 防止觸控選取 */
-        .no-select {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* 導航欄中央標題 */
-        .navbar-center {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        
-        /* 連線狀態圖示樣式 */
-        .mdi-wifi.is-connected {
-            color: #48c774 !important; /* 綠色 - 已連線 */
-        }
-        
-        .mdi-wifi.is-disconnected {
-            color: #f14668 !important; /* 紅色 - 已斷線 */
-        }
-        
-        /* Dark Theme Modal Styles */
-        .dark-modal-content {
-            background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
-            border: 3px solid transparent;
-            border-radius: 16px;
-            position: relative;
-            overflow: hidden;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Modal 漸變邊框 */
-        .dark-modal-content::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 3px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #ff4757, #5f27cd, #00d2d3, #48dbfb);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0.6;
-            z-index: -1;
-        }
-        
-        .dark-modal-header {
-            padding: 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-        }
-        
-        .dark-modal-title {
-            color: #ffffff;
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 0;
-            text-align: center;
-        }
-        
-        .dark-modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            cursor: pointer;
-            padding: 5px;
-            transition: color 0.3s ease;
-        }
-        
-        .dark-modal-close:hover {
-            color: rgba(255, 255, 255, 0.9);
-        }
-        
-        .dark-modal-body {
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        .dark-modal-text {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.5rem;
-            line-height: 1.8;
-        }
-        
-        .highlight-text {
-            color: #48dbfb;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(72, 219, 251, 0.5);
-        }
-        
-        .dark-modal-footer {
-            padding: 30px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        
-        /* Modal 按鈕樣式 */
-        .modal-button-confirm {
-            background: linear-gradient(135deg, #00d68f 0%, #00b074 100%);
-            border: 2px solid rgba(0, 214, 143, 0.3);
-            border-radius: 8px;
-            color: white;
-            padding: 15px 40px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 214, 143, 0.3);
-        }
-        
-        .modal-button-confirm:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(0, 214, 143, 0.5);
-        }
-        
-        .modal-button-cancel {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: rgba(255, 255, 255, 0.8);
-            padding: 15px 40px;
-            font-size: 1.3rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .modal-button-cancel:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-            color: rgba(255, 255, 255, 0.9);
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/hmi.css?v=2.1">
+    <!-- Socket.IO for real-time connection -->
+    <script src="/static/js/lib/socket.io.min.js?v=1.0"></script>
 </head>
 <body>
     <div class="main-container">
         <!-- 導航欄 -->
-        <nav class="navbar is-black has-shadow" role="navigation">
+        <nav class="navbar is-black" role="navigation">
             <div class="navbar-brand">
                 <a class="navbar-item" href="/?deviceId={{ device_id }}">
                     <img src="/static/favicon.png" alt="OPUI" style="width: 24px; height: 24px; margin-right: 8px;">
@@ -489,51 +45,57 @@
         <div class="content-area">
             <div class="locations-grid layout-{{ layout }}">
                 {% for location_data in locations %}
-                <div class="location-box no-select">
+                <div class="location-box no-select {% if not location_data.rack %}no-rack{% endif %}">
                     <div class="location-content">
                         <h2 class="location-title has-text-centered">
                             {{ location_data.location.name }}
                         </h2>
                         
                         {% if location_data.rack %}
-                        <!-- Rack 資訊 -->
-                        <div class="info-row">
-                            <span class="info-label">Rack</span>
-                            <span class="info-value value-rack">{{ location_data.rack.name }}</span>
-                        </div>
-                        
-                        {% if location_data.product %}
-                        <!-- 產品資訊 -->
-                        <div class="info-row">
-                            <span class="info-label">Product</span>
-                            <span class="info-value value-product">{{ location_data.product.name }}</span>
-                        </div>
-                        
-                        <div class="info-row">
-                            <span class="info-label">Size</span>
-                            <span class="info-value value-size">{{ location_data.product.size }}</span>
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Carrier 資訊 -->
-                        <div class="info-row">
-                            <span class="info-label">Carrier</span>
-                            <span class="info-value value-carrier">
-                                {{ location_data.carriers|length }}
-                            </span>
+                        <!-- Info Grid Container - 2x2 佈局 -->
+                        <div class="info-rows-container">
+                            <!-- 左上: Rack -->
+                            <div class="info-item">
+                                <span class="info-label">Rack</span>
+                                <span class="info-value value-rack">{{ location_data.rack.name }}</span>
+                            </div>
+                            
+                            <!-- 右上: Carrier -->
+                            <div class="info-item">
+                                <span class="info-label">Carrier</span>
+                                <span class="info-value value-carrier">{{ location_data.carriers|length }}</span>
+                            </div>
+                            
+                            {% if location_data.product %}
+                            <!-- 左下: Product -->
+                            <div class="info-item">
+                                <span class="info-label">Product</span>
+                                <span class="info-value value-product">{{ location_data.product.name }}</span>
+                            </div>
+                            
+                            <!-- 右下: Size -->
+                            <div class="info-item">
+                                <span class="info-label">Size</span>
+                                <span class="info-value value-size">{{ location_data.product.size }}</span>
+                            </div>
+                            {% else %}
+                            <!-- 如果沒有產品，顯示空欄位 -->
+                            <div class="info-item"></div>
+                            <div class="info-item"></div>
+                            {% endif %}
                         </div>
                         
                         <button class="button-large" 
                                 onclick="confirmRemoveRack({{ location_data.location.id }}, '{{ location_data.location.name }}', '{{ location_data.rack.name }}')">
-                            <i class="mdi mdi-check-bold mdi-48px" style="position: relative; z-index: 1;"></i>
-                            <span style="margin-left: 10px; font-size: 1.8rem; position: relative; z-index: 1;">確認移出 Rack</span>
+                            <i class="mdi mdi-export mdi-48px" style="position: relative; z-index: 1;"></i>
+                            <span style="margin-left: 10px; font-size: 1.8rem; position: relative; z-index: 1;">Remove</span>
                         </button>
                         {% else %}
                         <div class="empty-location">
-                            <p>無 Rack</p>
+                            <p>No Rack</p>
                         </div>
                         <button class="button-disabled" disabled>
-                            <span style="font-size: 1.8rem;">空位</span>
+                            <span style="font-size: 1.8rem;">Empty</span>
                         </button>
                         {% endif %}
                     </div>
@@ -545,8 +107,8 @@
     
     <!-- Dark Theme Modal 確認對話框 -->
     <div id="confirmModal" class="modal">
-        <div class="modal-background" style="background: rgba(0, 0, 0, 0.8);" onclick="closeModal()"></div>
-        <div class="modal-card" style="background: transparent;">
+        <div class="modal-background" onclick="closeModal()"></div>
+        <div class="modal-card">
             <div class="dark-modal-content">
                 <header class="dark-modal-header">
                     <h2 class="dark-modal-title">確認移出 Rack</h2>
@@ -579,9 +141,234 @@
         let currentLocationId = null;
         let currentLocationName = '';
         let currentRackName = '';
+        let socket = null;
+        let isConnected = false;
+        
+        // 獲取正確的 Socket.IO 連線 URL
+        function getSocketUrl() {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+            const currentPort = window.location.port;
+            
+            console.log(`🔍 當前位置: ${protocol}://${hostname}:${currentPort}`);
+            
+            // 如果當前頁面的 hostname 是 op.ui，則連接到對應的後端
+            if (hostname === 'op.ui') {
+                const socketUrl = `${protocol}://op.ui:8002`;
+                console.log(`🎯 op.ui 環境，Socket URL: ${socketUrl}`);
+                return socketUrl;
+            }
+            
+            // 如果是 localhost 或其他情況，使用當前域名
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                const socketUrl = `${protocol}://${hostname}:8002`;
+                console.log(`🏠 本地環境，Socket URL: ${socketUrl}`);
+                return socketUrl;
+            }
+            
+            // 如果當前頁面已經在 8002 埠，使用相同的 host 和 port
+            if (currentPort === '8002') {
+                const socketUrl = `${protocol}://${hostname}:8002`;
+                console.log(`✅ 已在 8002 埠，Socket URL: ${socketUrl}`);
+                return socketUrl;
+            }
+            
+            // 預設情況：嘗試連接到 8002 埠
+            const defaultUrl = `${protocol}://${hostname}:8002`;
+            console.log(`🔧 預設情況，Socket URL: ${defaultUrl}`);
+            return defaultUrl;
+        }
+        
+        // 初始化 Socket.IO 連線
+        function initSocketConnection() {
+            const socketUrl = getSocketUrl();
+            console.log('Connecting to Socket.IO at:', socketUrl);
+            
+            socket = io(socketUrl, {
+                transports: ['websocket', 'polling'],  // 優先使用 websocket
+                upgrade: true,
+                rememberUpgrade: true,
+                timeout: 10000,
+                forceNew: false,
+                autoConnect: true,
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000
+            });
+            
+            // 連線事件
+            socket.on('connect', function() {
+                console.log('Socket.IO connected');
+                isConnected = true;
+                updateConnectionStatus(true);
+                // 請求最新資料
+                requestLatestData();
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('Socket.IO disconnected');
+                isConnected = false;
+                updateConnectionStatus(false);
+            });
+            
+            socket.on('error', function(error) {
+                console.error('Socket.IO error:', error);
+                isConnected = false;
+                updateConnectionStatus(false);
+            });
+            
+            // 接收資料更新
+            socket.on('hmi_data_update', function(data) {
+                console.log('Received HMI data update:', data);
+                updateHMIDisplay(data);
+            });
+            
+            // 接收位置狀態更新
+            socket.on('location_update', function(data) {
+                console.log('Received location update:', data);
+                updateLocationDisplay(data);
+            });
+        }
+        
+        // 請求最新資料
+        function requestLatestData() {
+            if (socket && isConnected) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const deviceId = urlParams.get('deviceId');
+                socket.emit('request_hmi_data', { device_id: deviceId });
+            }
+        }
+        
+        // 更新 HMI 顯示（局部更新，不重載頁面）
+        function updateHMIDisplay(data) {
+            if (!data || !data.locations) return;
+            
+            // 更新每個位置的顯示
+            data.locations.forEach(function(locationData, index) {
+                updateSingleLocation(index, locationData);
+            });
+        }
+        
+        // 更新單個位置顯示 - 只更新值，不重建整個結構
+        function updateSingleLocation(index, locationData) {
+            const locationBoxes = document.querySelectorAll('.location-box');
+            if (index >= locationBoxes.length) return;
+            
+            const box = locationBoxes[index];
+            
+            // 更新位置標題
+            const locationTitle = box.querySelector('.location-title');
+            if (locationTitle) {
+                locationTitle.textContent = locationData.location.name;
+            }
+            
+            // 檢查是否需要重建結構（有無 Rack 狀態改變）
+            const hasRackNow = !!locationData.rack;
+            const hadRackBefore = !!box.querySelector('.info-rows-container');
+            
+            if (hasRackNow !== hadRackBefore) {
+                // 狀態改變，需要重建結構
+                const content = box.querySelector('.location-content');
+                if (!content) return;
+                
+                // Update box class based on rack status
+                if (hasRackNow) {
+                    box.classList.remove('no-rack');
+                } else {
+                    box.classList.add('no-rack');
+                }
+                
+                let newHTML = `<h2 class="location-title has-text-centered">${locationData.location.name}</h2>`;
+                
+                if (locationData.rack) {
+                    newHTML += `<div class="info-rows-container">
+                        <div class="info-item">
+                            <span class="info-label">Rack</span>
+                            <span class="info-value value-rack">${locationData.rack.name}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Carrier</span>
+                            <span class="info-value value-carrier">${locationData.carriers.length}</span>
+                        </div>`;
+                    
+                    if (locationData.product) {
+                        newHTML += `
+                            <div class="info-item">
+                                <span class="info-label">Product</span>
+                                <span class="info-value value-product">${locationData.product.name}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Size</span>
+                                <span class="info-value value-size">${locationData.product.size}</span>
+                            </div>`;
+                    } else {
+                        newHTML += `
+                            <div class="info-item"></div>
+                            <div class="info-item"></div>`;
+                    }
+                    
+                    newHTML += `</div>
+                    <button class="button-large" onclick="confirmRemoveRack(${locationData.location.id}, '${locationData.location.name}', '${locationData.rack.name}')">
+                        <i class="mdi mdi-export mdi-48px" style="position: relative; z-index: 1;"></i>
+                        <span style="margin-left: 10px; font-size: 1.8rem; position: relative; z-index: 1;">Remove</span>
+                    </button>`;
+                } else {
+                    newHTML += `
+                        <div class="empty-location">
+                            <p>No Rack</p>
+                        </div>
+                        <button class="button-disabled" disabled>
+                            <span style="font-size: 1.8rem;">Empty</span>
+                        </button>`;
+                }
+                
+                content.innerHTML = newHTML;
+            } else if (hasRackNow) {
+                // 只更新值，不重建結構
+                const rackValue = box.querySelector('.value-rack');
+                if (rackValue && locationData.rack) {
+                    rackValue.textContent = locationData.rack.name;
+                }
+                
+                const carrierValue = box.querySelector('.value-carrier');
+                if (carrierValue) {
+                    carrierValue.textContent = locationData.carriers.length;
+                }
+                
+                if (locationData.product) {
+                    const productValue = box.querySelector('.value-product');
+                    if (productValue) {
+                        productValue.textContent = locationData.product.name;
+                    }
+                    
+                    const sizeValue = box.querySelector('.value-size');
+                    if (sizeValue) {
+                        sizeValue.textContent = locationData.product.size;
+                    }
+                }
+                
+                // 更新按鈕的 onclick 事件（如果 rack 名稱改變）
+                const button = box.querySelector('.button-large');
+                if (button && locationData.rack) {
+                    button.setAttribute('onclick', 
+                        `confirmRemoveRack(${locationData.location.id}, '${locationData.location.name}', '${locationData.rack.name}')`);
+                }
+            }
+        }
+        
+        // 更新單個位置狀態
+        function updateLocationDisplay(data) {
+            if (!data || !data.location_id) return;
+            
+            // 找到對應的位置並更新
+            requestLatestData(); // 簡單起見，請求全部資料更新
+        }
         
         // 處理 location-box 點擊動畫
         document.addEventListener('DOMContentLoaded', function() {
+            // 初始化 Socket.IO 連線
+            initSocketConnection();
             const locationBoxes = document.querySelectorAll('.location-box');
             
             locationBoxes.forEach(box => {
@@ -625,9 +412,9 @@
             }
         }
         
-        // 檢查網路連線狀態
+        // 檢查 Socket.IO 連線狀態
         function checkConnection() {
-            updateConnectionStatus(navigator.onLine);
+            updateConnectionStatus(isConnected);
         }
         
         // 初始化時間顯示
@@ -637,9 +424,14 @@
         // 初始化連線狀態
         checkConnection();
         
-        // 監聽連線狀態變化
-        window.addEventListener('online', () => updateConnectionStatus(true));
-        window.addEventListener('offline', () => updateConnectionStatus(false));
+        // 定期檢查連線狀態（每5秒）
+        setInterval(function() {
+            checkConnection();
+            // 如果已連線，請求最新資料
+            if (isConnected) {
+                requestLatestData();
+            }
+        }, 5000);
         
         // 顯示確認對話框
         function confirmRemoveRack(locationId, locationName, rackName) {
@@ -684,8 +476,16 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    // 直接重新載入頁面以更新狀態，不顯示 alert
-                    window.location.reload();
+                    // 不要重新載入頁面，改用 Socket.IO 請求更新資料
+                    console.log('Rack removed successfully, requesting data update via Socket.IO');
+                    
+                    // 立即更新該位置的顯示為無 Rack 狀態
+                    updateLocationToEmpty(currentLocationId, currentLocationName);
+                    
+                    // 透過 Socket.IO 請求最新資料
+                    if (socket && isConnected) {
+                        socket.emit('request_hmi_data', { device_id: deviceId });
+                    }
                 } else {
                     // 只在失敗時顯示提示
                     alert(`操作失敗：${result.message}`);
@@ -698,6 +498,38 @@
             }
         }
         
+        // 立即更新位置為空狀態（不等待 Socket.IO）
+        function updateLocationToEmpty(locationId, locationName) {
+            const locationBoxes = document.querySelectorAll('.location-box');
+            
+            // 找到對應的 location box
+            for (let box of locationBoxes) {
+                const button = box.querySelector('.button-large');
+                if (button && button.getAttribute('onclick').includes(`${locationId}`)) {
+                    // Add no-rack class to the box
+                    box.classList.add('no-rack');
+                    
+                    const content = box.querySelector('.location-content');
+                    if (content) {
+                        // 保留標題
+                        const title = content.querySelector('.location-title');
+                        const titleText = title ? title.textContent : locationName;
+                        
+                        // 重建為無 Rack 狀態
+                        content.innerHTML = `
+                            <h2 class="location-title has-text-centered">${titleText}</h2>
+                            <div class="empty-location">
+                                <p>No Rack</p>
+                            </div>
+                            <button class="button-disabled" disabled>
+                                <span style="font-size: 1.8rem;">Empty</span>
+                            </button>`;
+                    }
+                    break;
+                }
+            }
+        }
+        
         // 點擊 modal 外部關閉
         window.onclick = function(event) {
             const modal = document.getElementById('confirmModal');
@@ -706,10 +538,7 @@
             }
         }
         
-        // 定期刷新頁面（每30秒）
-        setTimeout(function() {
-            window.location.reload();
-        }, 30000);
+        // 移除定期刷新頁面，改用 Socket.IO 即時更新
     </script>
 </body>
 </html>

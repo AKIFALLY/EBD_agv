@@ -1,80 +1,144 @@
-{% extends "base.html" %}
-
-{% block title %}設備未授權 - OPUI{% endblock %}
-
-{% block content %}
-<section class="section">
-    <div class="container">
-        <div class="columns is-centered">
-            <div class="column is-half">
-                <div class="box">
-                    <div class="has-text-centered mb-4">
-                        <span class="icon is-large has-text-danger">
-                            <i class="mdi mdi-shield-alert mdi-96px"></i>
-                        </span>
-                    </div>
-                    
-                    <h1 class="title is-4 has-text-centered">設備未授權</h1>
-                    
-                    <div class="notification is-danger is-light">
-                        <p class="has-text-centered is-size-5">
-                            {% if error_message %}
-                                {{ error_message }}
-                            {% else %}
-                                您的設備沒有存取此系統的權限
-                            {% endif %}
-                        </p>
-                    </div>
-                    
-                    {% if device_id %}
-                    <div class="notification is-light">
-                        <p class="has-text-centered">
-                            <strong>設備 ID:</strong> {{ device_id }}
-                        </p>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="content">
-                        <p class="has-text-grey has-text-centered">
-                            設備未在系統中註冊或已被停用。<br>
-                            請聯繫系統管理員以取得授權。
-                        </p>
-                    </div>
-                    
-                    <div class="field is-grouped is-grouped-centered">
-                        <div class="control">
-                            <button class="button is-primary" onclick="window.history.back()">
-                                <span class="icon">
-                                    <i class="mdi mdi-arrow-left"></i>
-                                </span>
-                                <span>返回</span>
-                            </button>
-                        </div>
-                        <div class="control">
-                            <button class="button is-light" onclick="window.location.href='/'">
-                                <span class="icon">
-                                    <i class="mdi mdi-home"></i>
-                                </span>
-                                <span>首頁</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <hr>
-                    
-                    <div class="content is-small has-text-grey">
-                        <p class="has-text-centered">
-                            <strong>檢查事項：</strong>
-                        </p>
-                        <ul>
-                            <li>deviceId 必須為 16 位英數字串</li>
-                            <li>設備必須在 License 表中註冊</li>
-                            <li>設備狀態必須為啟用（active = 1）</li>
-                        </ul>
-                    </div>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unauthorized - OPUI System</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
+    <link rel="stylesheet" href="/static/css/error.css" />
+    <style>
+        /* Specific styles for unauthorized page */
+        .unauthorized-icon {
+            color: #ff6b6b;
+            font-size: 96px;
+            animation: shake 2s infinite;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .device-id-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .device-id-box strong {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .device-id-value {
+            color: #ff6b6b;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+        
+        .checklist {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .checklist-title {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .checklist ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .checklist li {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .checklist li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <section class="section" style="padding-top: 5rem;">
+        <div class="container" style="max-width: 600px; margin: 0 auto;">
+            <div class="error-box">
+                <div class="icon-container">
+                    <i class="mdi mdi-shield-alert unauthorized-icon"></i>
+                </div>
+                
+                <h1 class="error-title">Device Unauthorized</h1>
+                
+                <div class="error-message" style="background: rgba(255, 107, 107, 0.1); border-color: rgba(255, 107, 107, 0.3);">
+                    <p>
+                        {% if message %}
+                            {{ message }}
+                        {% else %}
+                            Your device does not have permission to access this system
+                        {% endif %}
+                    </p>
+                </div>
+                
+                {% if device_id %}
+                <div class="device-id-box">
+                    <strong>Device ID</strong>
+                    <div class="device-id-value">{{ device_id }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="error-description">
+                    Device is not registered in the system or has been disabled.
+                    Please contact the system administrator for authorization.
+                </div>
+                
+                <div class="button-group">
+                    <button class="button-modern" onclick="window.history.back()">
+                        <i class="mdi mdi-arrow-left"></i>
+                        <span>Back</span>
+                    </button>
+                    <button class="button-modern button-secondary" onclick="window.location.href='/'">
+                        <i class="mdi mdi-home"></i>
+                        <span>Home</span>
+                    </button>
+                </div>
+                
+                <div class="checklist">
+                    <div class="checklist-title">Verification Checklist</div>
+                    <ul>
+                        <li>Device ID must be 16 alphanumeric characters</li>
+                        <li>Device must be registered in License table</li>
+                        <li>Device status must be active (active = 1)</li>
+                        <li>License must have valid expiration date</li>
+                    </ul>
                 </div>
             </div>
         </div>
-    </div>
-</section>
-{% endblock %}
+    </section>
+</body>
+</html>

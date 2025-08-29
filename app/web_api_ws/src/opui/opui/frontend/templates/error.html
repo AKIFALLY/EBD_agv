@@ -3,78 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>錯誤 - OPUI</title>
+    <title>Error - OPUI System</title>
     <link rel="icon" type="image/png" href="/static/favicon.png">
-    <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
     <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
-    <link rel="stylesheet" href="/static/css/opui-bulma-extend.css" />
+    <link rel="stylesheet" href="/static/css/error.css" />
 </head>
 <body>
-    <nav class="navbar is-black has-shadow" role="navigation">
-        <div class="navbar-brand">
-            <a class="navbar-item" href="/">
-                <img src="/static/favicon.png" alt="OPUI" style="width: 24px; height: 24px; margin-right: 8px;">
-                <span class="has-text-dark">OPUI 系統</span>
-            </a>
-        </div>
-    </nav>
-    
-    <section class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-half">
-                    <div class="box">
-                        <div class="has-text-centered mb-4">
-                            <span class="icon is-large has-text-warning">
-                                <i class="mdi mdi-alert-circle mdi-96px"></i>
-                            </span>
-                        </div>
-                        
-                        <h1 class="title is-4 has-text-centered">系統錯誤</h1>
-                        
-                        <div class="notification is-warning is-light">
-                            <p class="has-text-centered is-size-5">
-                                {% if message %}
-                                    {{ message }}
-                                {% else %}
-                                    發生未預期的錯誤
-                                {% endif %}
-                            </p>
-                        </div>
-                        
-                        <div class="content">
-                            <p class="has-text-grey has-text-centered">
-                                {% if "deviceId" in message %}
-                                    缺少設備識別碼參數，無法確認設備身份。
-                                {% elif "授權" in message or "權限" in message %}
-                                    無法取得系統授權，設備可能未註冊或已停用。
-                                {% elif "不支援" in message %}
-                                    此設備類型不受系統支援。
-                                {% else %}
-                                    請檢查系統設定或聯繫管理員。
-                                {% endif %}
-                            </p>
-                        </div>
-                        
-                        <div class="field is-grouped is-grouped-centered">
-                            <div class="control">
-                                <button class="button is-primary" onclick="window.history.back()">
-                                    <span class="icon">
-                                        <i class="mdi mdi-arrow-left"></i>
-                                    </span>
-                                    <span>返回</span>
-                                </button>
-                            </div>
-                            <div class="control">
-                                <button class="button is-light" onclick="window.location.href='/'">
-                                    <span class="icon">
-                                        <i class="mdi mdi-home"></i>
-                                    </span>
-                                    <span>首頁</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+    <section class="section" style="padding-top: 5rem;">
+        <div class="container" style="max-width: 600px; margin: 0 auto;">
+            <div class="error-box">
+                <div class="icon-container">
+                    <i class="mdi mdi-alert-circle error-icon"></i>
+                </div>
+                
+                <h1 class="error-title">System Error</h1>
+                
+                <div class="error-message">
+                    <p>
+                        {% if message %}
+                            {{ message }}
+                        {% else %}
+                            An unexpected error has occurred
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="error-description">
+                    {% if "deviceId" in message %}
+                        Missing device identifier parameter. Unable to verify device identity.
+                    {% elif "授權" in message or "權限" in message or "authorization" in message.lower() %}
+                        Unable to obtain system authorization. Device may not be registered or has been disabled.
+                    {% elif "不支援" in message or "not supported" in message.lower() %}
+                        This device type is not supported by the system.
+                    {% else %}
+                        Please check system settings or contact the administrator.
+                    {% endif %}
+                </div>
+                
+                <div class="button-group">
+                    <button class="button-modern" onclick="window.history.back()">
+                        <i class="mdi mdi-arrow-left"></i>
+                        <span>Back</span>
+                    </button>
+                    <button class="button-modern button-secondary" onclick="window.location.href='/'">
+                        <i class="mdi mdi-home"></i>
+                        <span>Home</span>
+                    </button>
                 </div>
             </div>
         </div>

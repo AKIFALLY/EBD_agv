@@ -54,8 +54,12 @@ async def remove_rack(request: RemoveRackRequest):
                     detail=f"Location {request.location_id} 不存在"
                 )
             
-            # 2. 檢查是否有 Rack
-            if not location.rack_id:
+            # 2. 查詢是否有 Rack 在這個 Location
+            rack = session.exec(
+                select(Rack).where(Rack.location_id == request.location_id)
+            ).first()
+            
+            if not rack:
                 return RemoveRackResponse(
                     success=False,
                     message=f"Location {location.name} 沒有 Rack",
@@ -63,32 +67,13 @@ async def remove_rack(request: RemoveRackRequest):
                     timestamp=datetime.now(timezone.utc)
                 )
             
-            # 3. 查詢 Rack
-            rack = session.exec(
-                select(Rack).where(Rack.id == location.rack_id)
-            ).first()
-            
-            if not rack:
-                # Rack ID 存在但 Rack 記錄不存在，清理不一致的資料
-                location.rack_id = None
-                location.location_status_id = LocationStatus.UNOCCUPIED
-                session.commit()
-                
-                return RemoveRackResponse(
-                    success=True,
-                    message=f"已清理 Location {location.name} 的無效 Rack 引用",
-                    location_name=location.name,
-                    timestamp=datetime.now(timezone.utc)
-                )
-            
-            # 4. 移出 Rack
+            # 3. 移出 Rack
             rack_name = rack.name
             
-            # 更新 Rack
+            # 更新 Rack - 清除 location_id
             rack.location_id = None
             
-            # 更新 Location
-            location.rack_id = None
+            # 更新 Location 狀態
             location.location_status_id = LocationStatus.UNOCCUPIED
             
             # 5. 記錄操作日誌（可選，如果有日誌表的話）
@@ -141,12 +126,10 @@ async def get_location_status(location_id: int):
                     detail=f"Location {location_id} 不存在"
                 )
             
-            # 查詢 Rack 資訊
-            rack = None
-            if location.rack_id:
-                rack = session.exec(
-                    select(Rack).where(Rack.id == location.rack_id)
-                ).first()
+            # 查詢 Rack 資訊 - 使用 Rack.location_id
+            rack = session.exec(
+                select(Rack).where(Rack.location_id == location.id)
+            ).first()
             
             return {
                 "location_id": location.id,

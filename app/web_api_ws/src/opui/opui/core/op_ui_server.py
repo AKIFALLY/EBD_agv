@@ -113,7 +113,10 @@ class OpUiServer:
                     
             except Exception as e:
                 print(f"Error in root dispatcher: {e}")
-                return HTMLResponse(content="系統錯誤", status_code=500)
+                return self.templates.TemplateResponse("error.html", {
+                    "request": request,
+                    "message": "System error occurred"
+                })
         
         @self.app.get("/home", response_class=HTMLResponse)
         async def home(request: Request):
@@ -144,7 +147,10 @@ class OpUiServer:
                 raise
             except Exception as e:
                 print(f"Error in home route: {e}")
-                return HTMLResponse(content="Error in home route", status_code=500)
+                return self.templates.TemplateResponse("error.html", {
+                    "request": request,
+                    "message": "Error loading home page"
+                })
 
         @self.app.get("/setting", response_class=HTMLResponse)
         async def setting(request: Request):
@@ -175,7 +181,10 @@ class OpUiServer:
                 raise
             except Exception as e:
                 print(f"Error in setting route: {e}")
-                return HTMLResponse(content="Error in settings route", status_code=500)
+                return self.templates.TemplateResponse("error.html", {
+                    "request": request,
+                    "message": "Error loading settings page"
+                })
 
         @self.app.get("/rack", response_class=HTMLResponse)
         async def rack(request: Request):
@@ -206,7 +215,10 @@ class OpUiServer:
                 raise
             except Exception as e:
                 print(f"Error in rack route: {e}")
-                return HTMLResponse(content="Error in rack route", status_code=500)
+                return self.templates.TemplateResponse("error.html", {
+                    "request": request,
+                    "message": "Error loading rack page"
+                })
         
         @self.app.get("/hmi", response_class=HTMLResponse)
         async def hmi(request: Request):
@@ -257,23 +269,22 @@ class OpUiServer:
                             carriers = []
                             product = None
                             
-                            # 如果有 rack_id，查詢 Rack 資訊
-                            if location.rack_id:
-                                rack = session.exec(
-                                    select(Rack).where(Rack.id == location.rack_id)
-                                ).first()
+                            # 查詢該位置是否有 Rack
+                            rack = session.exec(
+                                select(Rack).where(Rack.location_id == location.id)
+                            ).first()
+                            
+                            # 查詢該 Rack 上的 Carriers
+                            if rack:
+                                carriers = session.exec(
+                                    select(Carrier).where(Carrier.rack_id == rack.id)
+                                ).all()
                                 
-                                # 查詢該 Rack 上的 Carriers
-                                if rack:
-                                    carriers = session.exec(
-                                        select(Carrier).where(Carrier.rack_id == rack.id)
-                                    ).all()
-                                    
-                                    # 查詢 Rack 關聯的產品資訊
-                                    if rack.product_id:
-                                        product = session.exec(
-                                            select(Product).where(Product.id == rack.product_id)
-                                        ).first()
+                                # 查詢 Rack 關聯的產品資訊
+                                if rack.product_id:
+                                    product = session.exec(
+                                        select(Product).where(Product.id == rack.product_id)
+                                    ).first()
                             
                             locations_data.append({
                                 "location": location,
@@ -305,7 +316,10 @@ class OpUiServer:
                 print(f"Error in HMI route: {e}")
                 import traceback
                 traceback.print_exc()
-                return HTMLResponse(content="Error in HMI route", status_code=500)
+                return self.templates.TemplateResponse("error.html", {
+                    "request": request,
+                    "message": "Error loading HMI interface"
+                })
 
         # 整合 API 路由器
         self.app.include_router(process_settings.router)
