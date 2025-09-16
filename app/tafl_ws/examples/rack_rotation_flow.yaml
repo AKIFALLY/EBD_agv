@@ -4,7 +4,8 @@
 metadata:
   id: rack_rotation_001
   name: Rack Rotation Flow
-  version: 1.0
+  version: 1.1.2
+  enabled: true  # v1.1.2: Controls whether flow is auto-executed
   description: Manage rack rotation for side A/B processing
 
 variables:
@@ -37,7 +38,7 @@ flow:
               # Create rotation task
               - create:
                   target: task
-                  params:
+                  with:
                     work_id: 220001  # KUKA rack rotation work
                     rack_id: "${rack.id}"
                     task_type: rack_rotation

@@ -1,0 +1,195 @@
+metadata:
+  id: test_notify_verb
+  name: Test Notify Verb
+  version: "1.1.2"
+  description: Test notify verb functionality with all notification levels
+  created_at: '2025-01-15T09:47:00'
+  updated_at: '2025-01-15T09:47:00'
+
+variables:
+  system_name: "TAFL Test System"
+  test_value: 42
+  warning_threshold: 80
+  error_threshold: 95
+  current_level: 85
+
+flow:
+  # Test 1: Basic notify with all levels
+  - set:
+      test_section: "Test 1: All notification levels"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - notify:
+      message: "This is a DEBUG message from ${system_name}"
+      level: debug
+  
+  - notify:
+      message: "This is an INFO message with value: ${test_value}"
+      level: info
+  
+  - notify:
+      message: "This is a WARNING: Current level ${current_level} exceeds warning threshold ${warning_threshold}"
+      level: warning
+  
+  - notify:
+      message: "This is an ERROR: System requires immediate attention"
+      level: error
+  
+  - notify:
+      message: "This is a CRITICAL alert: System failure imminent"
+      level: critical
+  
+  # Test 2: Notify with variable interpolation
+  - set:
+      test_section: "Test 2: Variable interpolation in messages"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      task_count: 5
+  
+  - set:
+      completed_count: 3
+  
+  - notify:
+      message: "Progress: ${completed_count}/${task_count} tasks completed (${completed_count * 100 / task_count}%)"
+      level: info
+  
+  # Test 3: Notify with complex expressions
+  - set:
+      test_section: "Test 3: Complex expressions in messages"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      items: [1, 2, 3, 4, 5]
+  
+  - notify:
+      message: "Array has ${len(items)} items, sum is ${sum(items)}, max is ${max(items)}"
+      level: info
+  
+  # Test 4: Conditional notification levels
+  - set:
+      test_section: "Test 4: Conditional notification levels"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - if:
+      condition: "${current_level < warning_threshold}"
+      then:
+        - notify:
+            message: "✅ System operating normally at ${current_level}%"
+            level: info
+      else:
+        - if:
+            condition: "${current_level < error_threshold}"
+            then:
+              - notify:
+                  message: "⚠️ System at warning level: ${current_level}%"
+                  level: warning
+            else:
+              - notify:
+                  message: "🚨 System at critical level: ${current_level}%"
+                  level: error
+  
+  # Test 5: Notify with multiline messages
+  - set:
+      test_section: "Test 5: Multiline messages"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      report_title: "System Status Report"
+  
+  - set:
+      report_details: "Time: 2025-01-15 09:47:00\nStatus: Active\nTasks: ${task_count}\nLevel: ${current_level}%"
+  
+  - notify:
+      message: "${report_title}\n${report_details}"
+      level: info
+  
+  # Test 6: Notify in loops
+  - set:
+      test_section: "Test 6: Notify in loops"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - for:
+      as: i
+      in: [1, 2, 3]
+      do:
+        - notify:
+            message: "Loop iteration ${i} of 3"
+            level: debug
+  
+  # Test 7: Notify with empty or null messages
+  - set:
+      test_section: "Test 7: Edge cases"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      empty_string: ""
+  
+  - notify:
+      message: "${empty_string}"
+      level: debug
+  
+  - notify:
+      message: "Message with just spaces:     "
+      level: debug
+  
+  # Test 8: Notify with special characters
+  - set:
+      test_section: "Test 8: Special characters"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - notify:
+      message: "Special chars: !@#$%^&*()_+-=[]{}|;':\",./<>?"
+      level: info
+  
+  - notify:
+      message: "Unicode: 中文測試 🚀 ✅ ⚠️ 🔥"
+      level: info
+  
+  # Test 9: Alarm level (if supported)
+  - set:
+      test_section: "Test 9: Alarm level"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - check:
+      condition: "${current_level >= error_threshold}"
+      as: "should_alarm"
+  
+  - if:
+      condition: "${should_alarm}"
+      then:
+        - notify:
+            message: "🚨 ALARM: System exceeded critical threshold!"
+            level: alarm
+  
+  # Final summary
+  - notify:
+      message: "Notify verb test completed successfully - all levels tested"
+      level: info

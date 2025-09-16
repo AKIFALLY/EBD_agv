@@ -1,0 +1,1 @@
+from . import tafl_editor_direct

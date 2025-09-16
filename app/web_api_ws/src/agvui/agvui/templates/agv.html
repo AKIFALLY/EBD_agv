@@ -173,6 +173,11 @@
 let socket = null;
 let plcDataStore = {}; // 儲存完整的 PLC 資料
 
+// AGV 資料儲存和狀態管理 (定義在最前面，避免未定義錯誤)
+let agvDataStore = {};
+let currentAgvId = null;
+const agvList = ['loader01', 'loader02', 'cargo01', 'cargo02', 'unloader01', 'unloader02'];
+
 // 初始化 Socket.IO 連接
 function initSocketIO() {
     socket = io('/', {
@@ -192,16 +197,32 @@ function initSocketIO() {
     
     // 監聽 JSON 狀態更新 (4 分類)
     socket.on('agv_status_update', function(data) {
-        console.log('收到 AGV JSON 狀態更新 (4 分類):', data);
+        console.log('收到 AGV JSON 狀態更新:', data);
         if (data && data.agv_status) {
-            const agvData = data.agv_status;
-            const agvId = agvData.AGV_ID || agvData.agv_id;
+            const fullData = data.agv_status;  // 這是完整的資料，包含 metadata, agv_status, contexts 等
+            const agvId = fullData.AGV_ID || fullData.agv_id || (fullData.metadata && fullData.metadata.agv_id);
+            
             if (agvId) {
-                // 更新 JSON 資料儲存
-                agvDataStore[agvId] = agvData;
-                // 如果是當前選中的 AGV，更新 JSON 顯示
+                // 更新資料儲存
+                agvDataStore[agvId] = fullData;
+                
+                // 如果是當前選中的 AGV，更新顯示
                 if (currentAgvId === agvId) {
-                    updateDisplay(agvId);
+                    // 使用 requestAnimationFrame 避免過度更新
+                    if (!window.updatePending) {
+                        window.updatePending = true;
+                        requestAnimationFrame(() => {
+                            // 檢查是多車模式還是單車模式
+                            if (typeof updateDisplay === 'function') {
+                                // 多車模式
+                                updateDisplay(agvId);
+                            } else {
+                                // 單車模式 - 傳入完整資料
+                                updateSingleAgvDisplay(fullData);
+                            }
+                            window.updatePending = false;
+                        });
+                    }
                 }
             }
         }
@@ -445,20 +466,256 @@ function formatPLCValue(cell, value, key) {
     }
 }
 
+// 全域函數定義 - 供所有模式使用
+
+// 更新狀態摘要
+function updateStatusSummary(data, agvId) {
+    const summaryDiv = document.getElementById('status-summary');
+    if (!summaryDiv || !data) return;
+    
+    const metadata = data.metadata || {};
+    const agvStatus = data.agv_status || {};
+    const contexts = data.contexts || {};
+    
+    summaryDiv.innerHTML = `
+        <div class="columns is-multicolumn">
+            <div class="column">
+                <div class="field">
+                    <label class="label">AGV ID</label>
+                    <div class="control">
+                        <input class="input" type="text" value="${metadata.agv_id || agvId}" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">型號</label>
+                    <div class="control">
+                        <input class="input" type="text" value="${metadata.agv_type || 'Unknown'}" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">模式</label>
+                    <div class="control">
+                        <input class="input ${agvStatus.AGV_Auto ? 'is-success' : 'is-warning'}" 
+                               type="text" value="${agvStatus.AGV_Auto ? '自動' : '手動'}" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">狀態</label>
+                    <div class="control">
+                        <input class="input ${agvStatus.AGV_ALARM ? 'is-danger' : (agvStatus.AGV_IDLE ? 'is-info' : 'is-success')}" 
+                               type="text" value="${agvStatus.AGV_ALARM ? '警報' : (agvStatus.AGV_IDLE ? '閒置' : '運行中')}" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">電量</label>
+                    <div class="control">
+                        <input class="input ${agvStatus.POWER < 30 ? 'is-danger' : (agvStatus.POWER < 50 ? 'is-warning' : 'is-success')}" 
+                               type="text" value="${agvStatus.POWER || 0}%" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 更新分類顯示
+function updateCategoriesDisplay(data, container) {
+    console.log('updateCategoriesDisplay 被呼叫, container:', container, 'data:', data);
+    if (!container) {
+        console.error('容器不存在！');
+        return;
+    }
+    if (!data) {
+        console.error('資料不存在！');
+        return;
+    }
+    
+    // 檢查是否需要完全重建（第一次載入或結構改變）
+    const needsRebuild = !container.querySelector('.columns');
+    
+    // 整理資料到不同分類
+    const categories = {
+        '基本資訊': {},
+        '狀態資訊': {},
+        '位置資訊': {},
+        'IO資料': {},
+        '門控狀態': {},
+        '警報狀態': {},
+        '特定類型資料': {}
+    };
+    
+    // 分類 metadata
+    if (data.metadata) {
+        Object.entries(data.metadata).forEach(([key, value]) => {
+            categories['基本資訊'][key] = value;
+        });
+    }
+    
+    // 分類 agv_status
+    if (data.agv_status) {
+        Object.entries(data.agv_status).forEach(([key, value]) => {
+            if (key.includes('DIST') || key.includes('X_') || key.includes('Y_')) {
+                categories['位置資訊'][key] = value;
+            } else {
+                categories['狀態資訊'][key] = value;
+            }
+        });
+    }
+    
+    // 分類 io_data
+    if (data.io_data) {
+        console.log('發現 IO 資料:', data.io_data);
+        Object.entries(data.io_data).forEach(([key, value]) => {
+            categories['IO資料'][key] = value;
+        });
+    } else {
+        console.log('沒有 IO 資料在:', data);
+    }
+    
+    // 分類 door_status
+    if (data.door_status) {
+        Object.entries(data.door_status).forEach(([key, value]) => {
+            categories['門控狀態'][key] = value;
+        });
+    }
+    
+    // 分類 alarms
+    if (data.alarms) {
+        Object.entries(data.alarms).forEach(([key, value]) => {
+            categories['警報狀態'][key] = value;
+        });
+    }
+    
+    // 分類 type_specific
+    if (data.type_specific) {
+        Object.entries(data.type_specific).forEach(([key, value]) => {
+            categories['特定類型資料'][key] = JSON.stringify(value);
+        });
+    }
+    
+    // 清空容器並建立顯示
+    console.log('準備更新分類顯示，分類數據:', categories);
+    container.innerHTML = '';
+    const columnsDiv = document.createElement('div');
+    columnsDiv.className = 'columns is-multicolumn is-variable is-2';
+    
+    let hasContent = false;
+    Object.entries(categories).forEach(([category, items]) => {
+        if (Object.keys(items).length === 0) return;
+        hasContent = true;
+        console.log(`創建分類卡片: ${category}, 項目數: ${Object.keys(items).length}`);
+        
+        const columnDiv = document.createElement('div');
+        columnDiv.className = category === 'IO資料' ? 'column is-12' : 'column is-4';
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const cardHeader = document.createElement('header');
+        cardHeader.className = 'card-header';
+        cardHeader.innerHTML = `
+            <p class="card-header-title">
+                ${category}
+                <span class="tag is-light ml-2">${Object.keys(items).length}</span>
+            </p>
+        `;
+        
+        const cardContent = document.createElement('div');
+        cardContent.className = 'card-content';
+        cardContent.style.maxHeight = '400px';
+        cardContent.style.overflowY = 'auto';
+        
+        // 特殊處理 IO 資料
+        if (category === 'IO資料') {
+            const ioGrid = document.createElement('div');
+            ioGrid.style.display = 'grid';
+            ioGrid.style.gridTemplateColumns = 'repeat(10, 1fr)';
+            ioGrid.style.gap = '4px';
+            
+            Object.entries(items).forEach(([key, value]) => {
+                const indicator = document.createElement('div');
+                indicator.className = `io-indicator ${value ? 'active' : ''}`;
+                indicator.title = `${key}: ${value}`;
+                indicator.textContent = key.replace('DI_', 'I').replace('DO_', 'O').replace('INPUT_', 'IN').replace('OUTPUT_', 'OUT');
+                ioGrid.appendChild(indicator);
+            });
+            
+            cardContent.appendChild(ioGrid);
+        } else {
+            const table = document.createElement('table');
+            table.className = 'table is-narrow is-fullwidth';
+            
+            Object.entries(items).forEach(([key, value]) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${key}</strong></td>
+                    <td>${typeof value === 'boolean' ? 
+                        `<span class="tag ${value ? 'is-success' : 'is-light'}">${value ? '✓' : '✗'}</span>` : 
+                        value}</td>
+                `;
+                table.appendChild(tr);
+            });
+            
+            cardContent.appendChild(table);
+        }
+        
+        card.appendChild(cardHeader);
+        card.appendChild(cardContent);
+        columnDiv.appendChild(card);
+        columnsDiv.appendChild(columnDiv);
+    });
+    
+    if (hasContent) {
+        console.log('添加內容到容器');
+        container.appendChild(columnsDiv);
+    } else {
+        console.log('沒有內容可顯示');
+        container.innerHTML = '<div class="notification is-info">沒有資料可顯示</div>';
+    }
+}
+
+// 更新單一 AGV 顯示
+function updateSingleAgvDisplay(data) {
+    console.log('updateSingleAgvDisplay 收到資料:', data);
+    const categoriesContainer = document.getElementById('status-categories');
+    const summaryDiv = document.getElementById('status-summary');
+    
+    // 顯示摘要
+    if (summaryDiv) {
+        summaryDiv.style.display = 'block';
+        updateStatusSummary(data, currentAgvId || 'loader02');
+    }
+    
+    // 顯示詳細資料
+    if (categoriesContainer) {
+        updateCategoriesDisplay(data, categoriesContainer);
+    }
+    
+    // 如果有 PLC 資料，也更新 PLC 顯示
+    if (plcDataStore[currentAgvId]) {
+        updatePLCDisplay(plcDataStore[currentAgvId]);
+    }
+}
+
 // 判斷是否為多車監控模式
 const containerType = document.getElementById('container-type').value;
 const localAgvId = document.getElementById('local-agv-id').value;
 const isMultiMode = containerType === 'agvc' && !localAgvId;
-let currentAgvId = null;
+// currentAgvId 已在檔案開頭定義
 
 if (isMultiMode) {
     // 多車監控模式 - 使用新的 API
     console.log('啟動多車監控模式');
     
-    // AGV 資料儲存
-    const agvDataStore = {};
-    const agvList = ['loader01', 'loader02', 'cargo01', 'cargo02', 'unloader01', 'unloader02'];
-    let currentAgvId = null;
+    // 變數已在檔案開頭定義，這裡不需要重複定義
     
     // 初始化分頁
     function initTabs() {
@@ -518,7 +775,8 @@ if (isMultiMode) {
         }
     }
     
-    // 更新摘要資訊
+    // updateStatusSummary 已在全域定義（第 472 行）
+    /*
     function updateStatusSummary(data, agvId) {
         const summaryDiv = document.getElementById('status-summary');
         if (!summaryDiv) return;
@@ -562,8 +820,10 @@ if (isMultiMode) {
             </nav>
         `;
     }
+    */
     
-    // 更新分類顯示
+    // updateCategoriesDisplay 已在全域定義（第 530 行）
+    /*
     function updateCategoriesDisplay(data, container) {
         container.innerHTML = '';
         
@@ -742,27 +1002,7 @@ if (isMultiMode) {
         }
     }
     
-    // 更新單一 AGV 顯示
-    function updateSingleAgvDisplay(data) {
-        const categoriesContainer = document.getElementById('status-categories');
-        const summaryDiv = document.getElementById('status-summary');
-        
-        // 顯示摘要
-        if (summaryDiv) {
-            summaryDiv.style.display = 'block';
-            updateStatusSummary(data, agvId);
-        }
-        
-        // 顯示詳細資料
-        if (categoriesContainer) {
-            updateCategoriesDisplay(data, categoriesContainer);
-        }
-        
-        // 如果有 PLC 資料，也更新 PLC 顯示
-        if (plcDataStore[agvId]) {
-            updatePLCDisplay(plcDataStore[agvId]);
-        }
-    }
+    // updateSingleAgvDisplay 已移至全域定義
     
     // 顯示無資料訊息
     function showNoDataMessage() {
@@ -775,7 +1015,8 @@ if (isMultiMode) {
         }
     }
     
-    // 更新摘要資訊（與多車模式共用）
+    // updateStatusSummary 已在全域定義（第 472 行）
+    /*
     function updateStatusSummary(data, agvId) {
         const summaryDiv = document.getElementById('status-summary');
         if (!summaryDiv) return;
@@ -819,8 +1060,10 @@ if (isMultiMode) {
             </nav>
         `;
     }
+    */
     
-    // 更新分類顯示（與多車模式共用）
+    // updateCategoriesDisplay 已在全域定義（第 530 行）
+    /*
     function updateCategoriesDisplay(data, container) {
         container.innerHTML = '';
         
@@ -906,19 +1149,21 @@ if (isMultiMode) {
             tbody.appendChild(row);
         }
     }
+    */
     
     // 初始化單車模式
     document.addEventListener('DOMContentLoaded', function() {
         console.log(`初始化單車監控模式 - AGV: ${agvId}`);
         
-        // 初始化 Socket.IO 連接 (用於接收完整 PLC 資料)
+        // 初始化 Socket.IO 連接 (用於接收即時更新)
         initSocketIO();
         currentAgvId = agvId; // 設定當前 AGV ID
         
+        // 初始載入一次資料
         fetchSingleAgvStatus();
         
-        // 每秒更新
-        setInterval(fetchSingleAgvStatus, 1000);
+        // 不再使用 setInterval，改為依賴 Socket.IO 的即時更新
+        // Socket.IO 會每秒自動推送更新，不需要重複拉取
         
         // 重新整理按鈕
         document.getElementById('refresh-button').addEventListener('click', function() {

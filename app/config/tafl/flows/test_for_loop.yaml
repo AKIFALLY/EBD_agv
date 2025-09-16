@@ -1,0 +1,90 @@
+# TAFL v1.1.2 For Loop Test
+# 測試 for 迴圈功能
+
+metadata:
+  enabled: true   # 啟用測試流程
+  id: test_for_loop
+  name: "Test For Loop"
+  version: "1.1.2"
+  description: "Test for loop with as/in/do structure"
+
+variables:
+  # Test data
+  items:
+    - name: "Item A"
+      value: 10
+    - name: "Item B"
+      value: 20
+    - name: "Item C"
+      value: 30
+    - name: "Item D"
+      value: 15
+  
+  # Results
+  total_value: 0
+  processed_count: 0
+  high_value_items: ""
+  current_item_name: ""
+
+flow:
+  # Test 1: Simple iteration
+  - notify:
+      level: info
+      message: "Starting for loop test with ${items} items"
+  
+  - for:
+      in: ${items}
+      as: item
+      do:
+        # Increment processed count
+        - set:
+            processed_count: ${processed_count} + 1
+        
+        # Add item value to total
+        - set:
+            total_value: ${total_value} + ${item.value}
+        
+        # Store current item name
+        - set:
+            current_item_name: ${item.name}
+        
+        # Notify for each item
+        - notify:
+            level: info
+            message: "Processing item: ${item.name} with value: ${item.value}"
+  
+  # Test 2: For loop with filter condition
+  - notify:
+      level: info
+      message: "Now testing for loop with filter (value >= 20)"
+  
+  - for:
+      in: ${items}
+      as: item
+      filter: ${item.value} >= 20
+      do:
+        # Build list of high value items
+        - if:
+            condition: ${high_value_items} == ""
+            then:
+              - set:
+                  high_value_items: ${item.name}
+            else:
+              - set:
+                  high_value_items: ${high_value_items}, ${item.name}
+        
+        - notify:
+            level: info
+            message: "High value item: ${item.name} = ${item.value}"
+  
+  # Final results
+  - notify:
+      level: info
+      message: "Loop completed: processed=${processed_count}, total=${total_value}"
+  
+  - notify:
+      level: info
+      message: "High value items (>=20): ${high_value_items}"
+  
+  - set:
+      summary: "Processed ${processed_count} items with total value ${total_value}"

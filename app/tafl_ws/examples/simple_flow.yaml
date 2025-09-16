@@ -4,7 +4,8 @@
 metadata:
   id: simple_flow_001
   name: Simple Flow Example
-  version: 1.0
+  version: 1.1.2
+  enabled: true  # v1.1.2: Controls whether flow is auto-executed
   description: Demonstrates basic TAFL syntax and operations
 
 variables:
@@ -13,9 +14,11 @@ variables:
   items: [1, 2, 3, 4, 5]
 
 flow:
-  # Set variables
-  - set: counter = 10
-  - set: message = Hello TAFL
+  # Set variables (v1.1.2 standard format)
+  - set:
+      counter: 10
+  - set:
+      message: "Hello TAFL"
   
   # Conditional execution
   - if:

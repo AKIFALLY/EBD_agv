@@ -23,34 +23,28 @@ class TAFLEditorModals {
      * Show new flow modal/action
      */
     newFlow() {
-        // Reset flow to default state
-        const defaultFlow = {
-            metadata: {
-                id: '',
-                name: 'Untitled Flow',
-                version: '1.1',
-                description: ''
-            },
-            settings: {
-                timeout: 3600,
-                max_retries: 3,
-                retry_on_failure: false
-            },
-            preload: {},
-            rules: {},
-            variables: {},
-            flow: []
-        };
+        console.log('🆕 newFlow() called');
         
-        taflFlowStore.loadFlow(defaultFlow);
-        taflFlowStore.setDirty(false);
+        // Debug: Check state before clear
+        const beforeFlow = taflFlowStore.getFlow();
+        console.log('🆕 Flow before clear:', beforeFlow?.flow?.length, 'cards');
         
-        // Clear localStorage
+        // Use clearFlow() which now properly clears localStorage
+        console.log('🆕 Calling clearFlow()');
+        taflFlowStore.clearFlow();
+        
+        // Debug: Check state after clear
+        const afterFlow = taflFlowStore.getFlow();
+        console.log('🆕 Flow after clear:', afterFlow?.flow?.length, 'cards');
+        console.log('🆕 Flow after clear details:', afterFlow);
+        
+        // Clear other localStorage items
         localStorage.removeItem('lastEditedFlowId');
         
         // Notify user
         taflNotifications.info('New flow created');
         
+        console.log('🆕 newFlow() complete');
         // Trigger UI refresh through store events
         return true;
     }

@@ -1,9 +1,7 @@
 #!/bin/bash
+# 生成多個 AGV 的狀態資料檔案，包含完整的 io_data, door_status, alarms 結構
 
-# 測試多車監控系統
-# 用於建立模擬的 AGV 狀態檔案以測試多車監控界面
-
-echo "🚀 建立測試用 AGV 狀態檔案..."
+echo "📝 產生測試用 AGV 狀態資料..."
 
 # Loader 01 狀態
 cat > /tmp/agv_status_loader01.json << 'EOF'
@@ -26,32 +24,85 @@ cat > /tmp/agv_status_loader01.json << 'EOF'
   },
   "contexts": {
     "base_context": {
-      "current_state": "NAVIGATING"
+      "current_state": "AUTO"
     },
     "agv_context": {
-      "current_state": "TAKE_TRANSFER"
+      "current_state": "EXECUTING"
     },
     "robot_context": {
-      "current_state": "ACTING"
+      "current_state": "IDLE"
     }
   },
   "type_specific": {
     "agv_ports": {
       "port1": true,
       "port2": false,
-      "port3": false,
+      "port3": true,
       "port4": false
     },
-    "work_id": 31,
-    "task_progress": {
-      "equipment": "Transfer",
-      "action": "Take"
-    }
+    "work_id": "WRK-2025-001",
+    "task_progress": 45.5
+  },
+  "io_data": {
+    "IN_1": true,
+    "IN_2": false,
+    "IN_3": true,
+    "IN_4": false,
+    "IN_5": true,
+    "IN_6": false,
+    "IN_7": true,
+    "IN_8": false,
+    "AGV_INPUT_1_1": true,
+    "AGV_INPUT_1_2": false,
+    "AGV_INPUT_1_3": true,
+    "AGV_INPUT_1_4": false,
+    "AGV_INPUT_1_5": true,
+    "AGV_INPUT_1_6": false,
+    "AGV_INPUT_1_7": true,
+    "AGV_INPUT_1_8": false,
+    "AGV_OUTPUT_1_1": false,
+    "AGV_OUTPUT_1_2": true,
+    "AGV_OUTPUT_1_3": false,
+    "AGV_OUTPUT_1_4": true,
+    "AGV_OUTPUT_1_5": false,
+    "AGV_OUTPUT_1_6": true,
+    "AGV_OUTPUT_1_7": false,
+    "AGV_OUTPUT_1_8": true
+  },
+  "door_status": {
+    "DOOR_OPEN_1": 0,
+    "DOOR_CLOSE_1": 1,
+    "DOOR_OPEN_2": 0,
+    "DOOR_CLOSE_2": 1,
+    "DOOR_OPEN_3": 0,
+    "DOOR_CLOSE_3": 1,
+    "DOOR_OPEN_4": 0,
+    "DOOR_CLOSE_4": 1,
+    "DOOR_OPEN_5": 0,
+    "DOOR_CLOSE_5": 1,
+    "DOOR_OPEN_6": 0,
+    "DOOR_CLOSE_6": 1,
+    "DOOR_OPEN_7": 0,
+    "DOOR_CLOSE_7": 1,
+    "DOOR_OPEN_8": 0,
+    "DOOR_CLOSE_8": 1
+  },
+  "alarms": {
+    "ALARM_STATUS_1": false,
+    "ALARM_STATUS_2": false,
+    "ALARM_STATUS_3": false,
+    "ALARM_STATUS_4": true,
+    "ALARM_STATUS_5": false,
+    "ALARM_STATUS_6": false,
+    "ALARM_STATUS_7": false,
+    "ALARM_STATUS_8": false,
+    "ALARM_STATUS_9": false,
+    "ALARM_STATUS_10": false
   }
 }
 EOF
 
-# Loader 02 狀態
+# Loader 02 狀態  
 cat > /tmp/agv_status_loader02.json << 'EOF'
 {
   "metadata": {
@@ -90,6 +141,62 @@ cat > /tmp/agv_status_loader02.json << 'EOF'
     },
     "work_id": null,
     "task_progress": null
+  },
+  "io_data": {
+    "IN_1": false,
+    "IN_2": false,
+    "IN_3": false,
+    "IN_4": false,
+    "IN_5": false,
+    "IN_6": false,
+    "IN_7": false,
+    "IN_8": false,
+    "AGV_INPUT_1_1": false,
+    "AGV_INPUT_1_2": false,
+    "AGV_INPUT_1_3": false,
+    "AGV_INPUT_1_4": false,
+    "AGV_INPUT_1_5": false,
+    "AGV_INPUT_1_6": false,
+    "AGV_INPUT_1_7": false,
+    "AGV_INPUT_1_8": false,
+    "AGV_OUTPUT_1_1": false,
+    "AGV_OUTPUT_1_2": false,
+    "AGV_OUTPUT_1_3": false,
+    "AGV_OUTPUT_1_4": false,
+    "AGV_OUTPUT_1_5": false,
+    "AGV_OUTPUT_1_6": false,
+    "AGV_OUTPUT_1_7": false,
+    "AGV_OUTPUT_1_8": false
+  },
+  "door_status": {
+    "DOOR_OPEN_1": 0,
+    "DOOR_CLOSE_1": 1,
+    "DOOR_OPEN_2": 0,
+    "DOOR_CLOSE_2": 1,
+    "DOOR_OPEN_3": 0,
+    "DOOR_CLOSE_3": 1,
+    "DOOR_OPEN_4": 0,
+    "DOOR_CLOSE_4": 1,
+    "DOOR_OPEN_5": 0,
+    "DOOR_CLOSE_5": 1,
+    "DOOR_OPEN_6": 0,
+    "DOOR_CLOSE_6": 1,
+    "DOOR_OPEN_7": 0,
+    "DOOR_CLOSE_7": 1,
+    "DOOR_OPEN_8": 0,
+    "DOOR_CLOSE_8": 1
+  },
+  "alarms": {
+    "ALARM_STATUS_1": false,
+    "ALARM_STATUS_2": false,
+    "ALARM_STATUS_3": false,
+    "ALARM_STATUS_4": false,
+    "ALARM_STATUS_5": false,
+    "ALARM_STATUS_6": false,
+    "ALARM_STATUS_7": false,
+    "ALARM_STATUS_8": false,
+    "ALARM_STATUS_9": false,
+    "ALARM_STATUS_10": false
   }
 }
 EOF
@@ -129,14 +236,70 @@ cat > /tmp/agv_status_cargo01.json << 'EOF'
       "hokuyo_1": "connected",
       "hokuyo_2": "connected"
     },
-    "rack_rotation": false,
+    "rack_rotation": {
+      "angle": 45.0,
+      "is_rotating": false
+    },
     "completed": false
+  },
+  "io_data": {
+    "IN_1": true,
+    "IN_2": true,
+    "IN_3": false,
+    "IN_4": true,
+    "IN_5": false,
+    "IN_6": true,
+    "IN_7": false,
+    "IN_8": true,
+    "AGV_INPUT_1_1": true,
+    "AGV_INPUT_1_2": true,
+    "AGV_INPUT_1_3": false,
+    "AGV_INPUT_1_4": true,
+    "AGV_INPUT_1_5": false,
+    "AGV_INPUT_1_6": true,
+    "AGV_INPUT_1_7": false,
+    "AGV_INPUT_1_8": true,
+    "AGV_OUTPUT_1_1": true,
+    "AGV_OUTPUT_1_2": true,
+    "AGV_OUTPUT_1_3": true,
+    "AGV_OUTPUT_1_4": false,
+    "AGV_OUTPUT_1_5": true,
+    "AGV_OUTPUT_1_6": false,
+    "AGV_OUTPUT_1_7": true,
+    "AGV_OUTPUT_1_8": false
+  },
+  "door_status": {
+    "DOOR_OPEN_1": 1,
+    "DOOR_CLOSE_1": 0,
+    "DOOR_OPEN_2": 0,
+    "DOOR_CLOSE_2": 1,
+    "DOOR_OPEN_3": 0,
+    "DOOR_CLOSE_3": 1,
+    "DOOR_OPEN_4": 0,
+    "DOOR_CLOSE_4": 1,
+    "DOOR_OPEN_5": 0,
+    "DOOR_CLOSE_5": 1,
+    "DOOR_OPEN_6": 0,
+    "DOOR_CLOSE_6": 1,
+    "DOOR_OPEN_7": 0,
+    "DOOR_CLOSE_7": 1,
+    "DOOR_OPEN_8": 0,
+    "DOOR_CLOSE_8": 1
+  },
+  "alarms": {
+    "ALARM_STATUS_1": false,
+    "ALARM_STATUS_2": false,
+    "ALARM_STATUS_3": false,
+    "ALARM_STATUS_4": false,
+    "ALARM_STATUS_5": false,
+    "ALARM_STATUS_6": false,
+    "ALARM_STATUS_7": false,
+    "ALARM_STATUS_8": false,
+    "ALARM_STATUS_9": false,
+    "ALARM_STATUS_10": false
   }
 }
 EOF
-
-# Cargo 02 狀態 (離線)
-# 不建立檔案以模擬離線狀態
 
 # Unloader 01 狀態
 cat > /tmp/agv_status_unloader01.json << 'EOF'
@@ -183,11 +346,67 @@ cat > /tmp/agv_status_unloader01.json << 'EOF'
       "oven_upper": [false, false, false, false],
       "oven_lower": [false, false, false, false]
     }
+  },
+  "io_data": {
+    "IN_1": true,
+    "IN_2": false,
+    "IN_3": true,
+    "IN_4": true,
+    "IN_5": false,
+    "IN_6": false,
+    "IN_7": true,
+    "IN_8": false,
+    "AGV_INPUT_1_1": true,
+    "AGV_INPUT_1_2": false,
+    "AGV_INPUT_1_3": true,
+    "AGV_INPUT_1_4": true,
+    "AGV_INPUT_1_5": false,
+    "AGV_INPUT_1_6": false,
+    "AGV_INPUT_1_7": true,
+    "AGV_INPUT_1_8": false,
+    "AGV_OUTPUT_1_1": true,
+    "AGV_OUTPUT_1_2": false,
+    "AGV_OUTPUT_1_3": true,
+    "AGV_OUTPUT_1_4": false,
+    "AGV_OUTPUT_1_5": true,
+    "AGV_OUTPUT_1_6": false,
+    "AGV_OUTPUT_1_7": true,
+    "AGV_OUTPUT_1_8": false
+  },
+  "door_status": {
+    "DOOR_OPEN_1": 0,
+    "DOOR_CLOSE_1": 1,
+    "DOOR_OPEN_2": 0,
+    "DOOR_CLOSE_2": 1,
+    "DOOR_OPEN_3": 1,
+    "DOOR_CLOSE_3": 0,
+    "DOOR_OPEN_4": 0,
+    "DOOR_CLOSE_4": 1,
+    "DOOR_OPEN_5": 0,
+    "DOOR_CLOSE_5": 1,
+    "DOOR_OPEN_6": 0,
+    "DOOR_CLOSE_6": 1,
+    "DOOR_OPEN_7": 0,
+    "DOOR_CLOSE_7": 1,
+    "DOOR_OPEN_8": 0,
+    "DOOR_CLOSE_8": 1
+  },
+  "alarms": {
+    "ALARM_STATUS_1": false,
+    "ALARM_STATUS_2": false,
+    "ALARM_STATUS_3": false,
+    "ALARM_STATUS_4": false,
+    "ALARM_STATUS_5": false,
+    "ALARM_STATUS_6": false,
+    "ALARM_STATUS_7": false,
+    "ALARM_STATUS_8": false,
+    "ALARM_STATUS_9": false,
+    "ALARM_STATUS_10": false
   }
 }
 EOF
 
-# Unloader 02 狀態 (告警)
+# Unloader 02 狀態 (有警報)
 cat > /tmp/agv_status_unloader02.json << 'EOF'
 {
   "metadata": {
@@ -232,29 +451,90 @@ cat > /tmp/agv_status_unloader02.json << 'EOF'
       "oven_upper": [false, false, false, false],
       "oven_lower": [false, false, false, false]
     }
+  },
+  "io_data": {
+    "IN_1": false,
+    "IN_2": false,
+    "IN_3": false,
+    "IN_4": false,
+    "IN_5": false,
+    "IN_6": false,
+    "IN_7": false,
+    "IN_8": false,
+    "AGV_INPUT_1_1": false,
+    "AGV_INPUT_1_2": false,
+    "AGV_INPUT_1_3": false,
+    "AGV_INPUT_1_4": false,
+    "AGV_INPUT_1_5": false,
+    "AGV_INPUT_1_6": false,
+    "AGV_INPUT_1_7": false,
+    "AGV_INPUT_1_8": false,
+    "AGV_OUTPUT_1_1": false,
+    "AGV_OUTPUT_1_2": false,
+    "AGV_OUTPUT_1_3": false,
+    "AGV_OUTPUT_1_4": false,
+    "AGV_OUTPUT_1_5": false,
+    "AGV_OUTPUT_1_6": false,
+    "AGV_OUTPUT_1_7": false,
+    "AGV_OUTPUT_1_8": false
+  },
+  "door_status": {
+    "DOOR_OPEN_1": 0,
+    "DOOR_CLOSE_1": 0,
+    "DOOR_OPEN_2": 0,
+    "DOOR_CLOSE_2": 0,
+    "DOOR_OPEN_3": 0,
+    "DOOR_CLOSE_3": 0,
+    "DOOR_OPEN_4": 0,
+    "DOOR_CLOSE_4": 0,
+    "DOOR_OPEN_5": 0,
+    "DOOR_CLOSE_5": 0,
+    "DOOR_OPEN_6": 0,
+    "DOOR_CLOSE_6": 0,
+    "DOOR_OPEN_7": 0,
+    "DOOR_CLOSE_7": 0,
+    "DOOR_OPEN_8": 0,
+    "DOOR_CLOSE_8": 0
+  },
+  "alarms": {
+    "ALARM_STATUS_1": true,
+    "ALARM_STATUS_2": false,
+    "ALARM_STATUS_3": true,
+    "ALARM_STATUS_4": false,
+    "ALARM_STATUS_5": false,
+    "ALARM_STATUS_6": false,
+    "ALARM_STATUS_7": true,
+    "ALARM_STATUS_8": false,
+    "ALARM_STATUS_9": false,
+    "ALARM_STATUS_10": false
   }
 }
 EOF
 
-echo "✅ 已建立測試檔案："
-echo "  - /tmp/agv_status_loader01.json (運行中)"
-echo "  - /tmp/agv_status_loader02.json (閒置)"
-echo "  - /tmp/agv_status_cargo01.json (執行中)"
-echo "  - /tmp/agv_status_cargo02.json (離線 - 無檔案)"
-echo "  - /tmp/agv_status_unloader01.json (執行中)"
-echo "  - /tmp/agv_status_unloader02.json (告警)"
+echo "✅ 已產生 5 個 AGV 測試資料檔案:"
+echo "   • /tmp/agv_status_loader01.json"
+echo "   • /tmp/agv_status_loader02.json"
+echo "   • /tmp/agv_status_cargo01.json"
+echo "   • /tmp/agv_status_unloader01.json"
+echo "   • /tmp/agv_status_unloader02.json"
+
+# 驗證 JSON 格式
 echo ""
-echo "📋 測試步驟："
-echo "1. 啟動 agvui 服務："
-echo "   docker compose -f docker-compose.agvc.yml exec agvc_server bash"
-echo "   source /app/setup.bash && agvc_source"
-echo "   python3 /app/web_api_ws/src/agvui/agvui/agv_ui_server.py"
+echo "🔍 驗證 JSON 格式..."
+for file in /tmp/agv_status_*.json; do
+    if python3 -m json.tool "$file" > /dev/null 2>&1; then
+        echo "   ✅ $(basename $file) - 格式正確"
+    else
+        echo "   ❌ $(basename $file) - 格式錯誤"
+    fi
+done
+
 echo ""
-echo "2. 開啟瀏覽器訪問："
-echo "   - http://localhost:8003/test  (測試選擇頁面)"
-echo "   - http://localhost:8003/multi (多車監控頁面)"
-echo ""
-echo "3. 驗證功能："
-echo "   - 檢查各 AGV 的線上/離線狀態"
-echo "   - 切換不同 AGV 分頁查看詳細資訊"
-echo "   - 確認車型特定狀態正確顯示"
+echo "📊 資料結構包含:"
+echo "   • metadata: AGV ID、類型、時間戳、版本"
+echo "   • agv_status: 基本狀態（Auto、Manual、Idle、Alarm、Moving、位置、電量）"
+echo "   • contexts: 三層狀態機當前狀態"
+echo "   • type_specific: 車型特定資料"
+echo "   • io_data: IN_*/AGV_INPUT_*/AGV_OUTPUT_* IO 狀態"
+echo "   • door_status: DOOR_OPEN_*/DOOR_CLOSE_* 門狀態"
+echo "   • alarms: ALARM_STATUS_* 警報狀態"

@@ -1,4 +1,6 @@
-# TAFL Language Specification v1.1
+# TAFL Language Specification v1.1.2
+
+> **⚠️ Important**: TAFL v1.1.2 does not maintain backward compatibility with older formats. All flows must use the v1.1.2 syntax as described in this specification.
 
 ## Language Overview
 
@@ -256,27 +258,34 @@ The `filter` parameter allows you to filter items before processing them:
 ```
 
 #### switch
-Multi-way branching.
+Multi-way branching (v1.1.2 format: default as case).
 ```yaml
 - switch:
-    on: <expression>         # Expression to evaluate
-    cases: <dict>            # Case mappings
-      value1: <statements>
-      value2: <statements>
-    default: <statements>    # Optional: Default case
-    comment: <string>        # Optional: Statement comment
+    expression: <expression>  # Expression to evaluate (v1.1.2: use 'expression' not 'on')
+    cases:                    # Case array (v1.1.2: array format)
+      - when: <value>         # Case value or condition
+        do: <statements>      # Statements for this case
+      - when: "default"       # Default case (v1.1.2: as special case, must be last)
+        do: <statements>      # Default statements
+    comment: <string>         # Optional: Statement comment
 ```
 
 #### set
-Set variable value.
+Set variable value (v1.1.2: only object format).
 ```yaml
-# Format 1: Structured
+# Single variable (object format required in v1.1.2)
 - set:
     variable_name: <expression>
     comment: <string>        # Optional: Statement comment
 
-# Format 2: Simplified
-- set: variable_name = <expression>
+# Multiple variables
+- set:
+    var1: <expression>
+    var2: <expression>
+    var3: <expression>
+    comment: <string>        # Optional: Statement comment
+
+# Note: String format "variable = value" is no longer supported in v1.1.2
 ```
 
 #### stop
@@ -505,6 +514,14 @@ Key differences:
 5. **Better Scoping**: Proper variable scoping in loops
 
 ## Version History
+
+- **v1.1.2** (2025-09): Syntax Standardization
+  - SWITCH: `default` must be `when: "default"` within cases array
+  - SWITCH: Use `expression` key instead of `on`
+  - SET: Only object/dictionary format allowed, string format removed
+  - Improved consistency across all verbs
+  - Better alignment with YAML best practices
+  - **No backward compatibility**: Old formats (on/cases/default) are no longer supported
 
 - **v1.1** (2025-08): Enhanced with preload and rules
   - Added `preload` section for data optimization

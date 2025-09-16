@@ -1,0 +1,178 @@
+# TAFL Variables Phase Test File
+# Tests the VARIABLES phase (Phase 3) of TAFL 4-phase execution model
+# Created: 2025-09-15
+
+metadata:
+  id: test_variables_phase
+  name: "Test Variables Phase"
+  version: "1.0.0"
+  description: "Test VARIABLES phase - initial variable setup and types"
+  author: "TAFL Test Suite"
+  created_at: "2025-09-15"
+
+# ========================================
+# PHASE 3: VARIABLES - All Data Types
+# ========================================
+variables:
+  # String types
+  string_var: "Hello TAFL"
+  empty_string: ""
+  multiline_string: "Line 1\nLine 2\nLine 3"
+  
+  # Number types
+  integer_var: 42
+  negative_int: -10
+  zero_int: 0
+  float_var: 3.14159
+  negative_float: -2.5
+  
+  # Boolean types
+  bool_true: true
+  bool_false: false
+  
+  # Array types
+  number_array: [1, 2, 3, 4, 5]
+  string_array: ["apple", "banana", "cherry"]
+  mixed_array: [1, "two", 3.0, true, null]
+  empty_array: []
+  nested_array: [[1, 2], [3, 4], [5, 6]]
+  
+  # Object types
+  simple_object:
+    name: "Test Object"
+    value: 100
+  
+  nested_object:
+    level1:
+      level2:
+        level3:
+          data: "deeply nested"
+          count: 999
+  
+  complex_object:
+    id: 123
+    name: "Complex Test"
+    properties:
+      enabled: true
+      timeout: 300
+      tags: ["test", "demo", "validation"]
+    metadata:
+      created: "2025-09-15"
+      author: "TAFL"
+  
+  # Null type
+  null_var: null
+  
+  # Expression initialization
+  calculated_var: 10  # Will be modified in flow
+
+# ========================================
+# PHASE 4: FLOW - Test Variable Access
+# ========================================
+flow:
+  # Test string variables
+  - set:
+      string_test: "${string_var}"
+  
+  - set:
+      string_length: "${len(string_var)}"
+  
+  # Test number operations
+  - set:
+      math_result: "${integer_var * 2 + float_var}"
+  
+  - set:
+      division_result: "${integer_var / 4}"
+  
+  # Test boolean logic
+  - if:
+      condition: "${bool_true && !bool_false}"
+      then:
+        - set:
+            bool_logic_test: "passed"
+  
+  # Test array operations
+  - set:
+      array_length: "${len(number_array)}"
+  
+  - set:
+      first_element: "${number_array[0]}"
+  
+  - set:
+      last_element: "${string_array[-1]}"
+  
+  # Test object access
+  - set:
+      object_name: "${simple_object.name}"
+  
+  - set:
+      deep_value: "${nested_object.level1.level2.level3.data}"
+  
+  - set:
+      complex_tags: "${complex_object.properties.tags}"
+  
+  - set:
+      tag_count: "${len(complex_object.properties.tags)}"
+  
+  # Test variable modification
+  - set:
+      integer_var: 100
+  
+  - set:
+      modified_check: "${integer_var}"
+  
+  # Test null handling
+  - if:
+      condition: "${null_var == null}"
+      then:
+        - set:
+            null_check: "null detected correctly"
+  
+  # Test array iteration
+  - for:
+      as: num
+      in: "${number_array}"
+      do:
+        - set:
+            calculated_var: "${calculated_var + num}"
+  
+  # Test nested array access
+  - set:
+      nested_value: "${nested_array[1][1]}"  # Should be 4
+  
+  # Comprehensive test
+  - check:
+      condition: "${string_test == 'Hello TAFL' && math_result > 0 && array_length == 5}"
+      as: variables_test_passed
+  
+  - notify:
+      message: "📊 Variables Test Results:"
+      level: info
+  
+  - notify:
+      message: "  String: ${string_test} (length: ${string_length})"
+      level: info
+  
+  - notify:
+      message: "  Math: ${math_result}, Division: ${division_result}"
+      level: info
+  
+  - notify:
+      message: "  Array: length=${array_length}, first=${first_element}, last=${last_element}"
+      level: info
+  
+  - notify:
+      message: "  Object: ${object_name}, Deep: ${deep_value}"
+      level: info
+  
+  - notify:
+      message: "  Modified: ${modified_check}, Calculated: ${calculated_var}"
+      level: info
+  
+  - notify:
+      message: "  Nested Array Value: ${nested_value}"
+      level: info
+  
+  - notify:
+      message: "✅ Variables Phase Test Complete - All types tested: ${variables_test_passed}"
+      level: info

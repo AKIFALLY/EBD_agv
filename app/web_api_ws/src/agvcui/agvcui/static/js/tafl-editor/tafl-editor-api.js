@@ -101,21 +101,41 @@ class TAFLEditorAPI {
             });
             
             const result = await response.json();
-            return result;
+            
+            // 如果回應不成功，確保回傳包含必要的欄位
+            if (!response.ok) {
+                return {
+                    valid: false,
+                    errors: [result.detail || 'Validation request failed'],
+                    warnings: []
+                };
+            }
+            
+            // 確保結果包含必要的欄位
+            return {
+                valid: result.valid !== undefined ? result.valid : false,
+                errors: result.errors || [],
+                warnings: result.warnings || []
+            };
         } catch (error) {
             console.error('Validation error:', error);
-            throw new Error(`Validation failed: ${error.message}`);
+            // 回傳標準格式的錯誤回應
+            return {
+                valid: false,
+                errors: [`Validation failed: ${error.message}`],
+                warnings: []
+            };
         }
     }
 
     /**
-     * Execute a flow
-     * @param {Object} flowData - Flow data to execute
-     * @returns {Promise<Object>} Execution result
+     * Test run a flow in simulation mode (uses tafl_editor.py /testrun)
+     * @param {Object} flowData - Flow data to test
+     * @returns {Promise<Object>} Simulation result
      */
-    async executeFlow(flowData) {
+    async testRun(flowData) {
         try {
-            const response = await this._fetch(`${this.baseUrl}/execute`, {
+            const response = await this._fetch(`${this.baseUrl}/testrun`, {
                 method: 'POST',
                 headers: this.defaultHeaders,
                 body: JSON.stringify(flowData)
@@ -124,13 +144,76 @@ class TAFLEditorAPI {
             const result = await response.json();
             
             if (!response.ok) {
-                throw new Error(result.detail || 'Execution failed');
+                throw new Error(result.detail || 'Test run failed');
             }
             
             return result;
         } catch (error) {
-            console.error('Execution error:', error);
-            throw new Error(`Execution failed: ${error.message}`);
+            console.error('Test run error:', error);
+            throw new Error(`Test run failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Execute a flow on real system (uses tafl_editor_direct.py /execute)
+     * @param {Object} flowData - Flow data to execute
+     * @param {string} mode - Execution mode ('real' or 'simulation')
+     * @returns {Promise<Object>} Execution result
+     */
+    async executeFlow(flowData, mode = 'real') {
+        try {
+            console.log('[TAFL API] Executing flow with mode:', mode);
+            console.log('[TAFL API] Flow data:', flowData);
+            
+            const response = await this._fetch(`${this.baseUrl}/execute`, {
+                method: 'POST',
+                headers: this.defaultHeaders,
+                body: JSON.stringify({ ...flowData, mode })
+            });
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('[TAFL API] Non-JSON response:', contentType);
+                const text = await response.text();
+                console.error('[TAFL API] Response text:', text);
+                throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+            }
+            
+            let result;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                console.error('[TAFL API] JSON parse error:', parseError);
+                throw new Error('Failed to parse server response as JSON');
+            }
+            
+            if (!response.ok) {
+                console.error('[TAFL API] Server error response:', result);
+                throw new Error(result.detail || result.message || `Server error: ${response.status}`);
+            }
+            
+            console.log('[TAFL API] Execution successful:', result);
+            return result;
+        } catch (error) {
+            console.error('[TAFL API] Execution error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                error: error
+            });
+            
+            // Extract meaningful error message
+            let errorMessage = 'Execution failed';
+            if (error.message) {
+                errorMessage = error.message;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            } else if (error.toString && error.toString() !== '[object Object]') {
+                errorMessage = error.toString();
+            }
+            
+            throw new Error(errorMessage);
         }
     }
 
@@ -183,12 +266,27 @@ class TAFLEditorAPI {
      */
     async _fetch(url, options = {}) {
         try {
+            console.log('[TAFL API] Fetching:', url, options);
             const response = await fetch(url, options);
+            console.log('[TAFL API] Response status:', response.status, response.statusText);
             return response;
         } catch (error) {
             // Network error or other fetch failures
-            console.error('Fetch error:', error);
-            throw new Error(`Network error: ${error.message}`);
+            console.error('[TAFL API] Fetch error:', {
+                url: url,
+                error: error,
+                message: error.message,
+                name: error.name
+            });
+            
+            // Provide more descriptive error messages
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                throw new Error('Network error: Unable to connect to server. Please check if the service is running.');
+            } else if (error.name === 'AbortError') {
+                throw new Error('Request timeout: The server took too long to respond.');
+            } else {
+                throw new Error(`Network error: ${error.message || 'Unknown network error'}`);
+            }
         }
     }
 

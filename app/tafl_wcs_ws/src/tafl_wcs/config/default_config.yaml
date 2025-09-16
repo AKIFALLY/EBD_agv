@@ -4,7 +4,7 @@ tafl_wcs:
   flows_dir: "/app/config/tafl/flows"
   
   # Interval for scanning flow files (seconds)
-  scan_interval: 10.0
+  scan_interval: 3.0
   
   # Database connection
   database:
@@ -20,7 +20,7 @@ tafl_wcs:
     auto_execute: true
     
     # Execution interval for auto-execution (seconds)
-    execution_interval: 60.0
+    execution_interval: 5.0
     
     # Maximum parallel flows
     max_parallel_flows: 5

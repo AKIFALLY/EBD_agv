@@ -1,0 +1,161 @@
+# TAFL v1.1.2 Create Verb Test
+# 測試 create verb 的各種使用情境
+
+metadata:
+  enabled: false  # 暫時停用測試流程
+  id: test_create_verb
+  name: "Test Create Verb"
+  version: "1.1.2"
+  description: "Test create verb functionality in various scenarios"
+
+variables:
+  counter: 0
+  item_count: 3
+  item_prefix: "ITEM"
+  category: "test_category"
+  priority: 1
+
+flow:
+  # Test 1: Basic create with simple object
+  - set:
+      test_section: "Test 1: Basic create"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - create:
+      target: task
+      with:
+        work_id: 100001  # Valid work_id from database (opui-call-empty)
+        name: "Simple Test Task"
+        description: "A basic test task"
+        priority: 5
+  
+  - notify:
+      message: "Created simple task"
+      level: info
+  
+  # Test 2: Create with multiple attributes
+  - set:
+      test_section: "Test 2: Create with complex data"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - create:
+      target: rack
+      with:
+        name: "Test Rack 1"  # Required field for rack
+        location_id: 2  # Valid UNOCCUPIED location from database
+        status_id: 1    # RackStatus.EMPTY
+        is_carry: 0
+        is_docked: 0
+  
+  - notify:
+      message: "Created rack with multiple attributes"
+      level: info
+  
+  # Test 3: Create multiple items in a loop
+  - set:
+      test_section: "Test 3: Create in loop"
+  
+  - notify:
+      message: "Starting ${test_section} - Creating ${item_count} items"
+      level: info
+  
+  - for:
+      as: i
+      in: [1, 2, 3]
+      do:
+        - set:
+            item_name: "${item_prefix}_${i}"
+        
+        - create:
+            target: task
+            with:
+              work_id: 100002  # Valid work_id from database (opui-dispatch-full)
+              name: ${item_name}
+              priority: ${i}
+              metadata:
+                index: ${i}
+                description: "Item number ${i}"
+                created_at: ${now()}
+        
+        - notify:
+            message: "Created item: ${item_name}"
+            level: debug
+        
+        - set:
+            counter: ${counter + 1}
+  
+  - notify:
+      message: "Created ${counter} items in loop"
+      level: info
+  
+  # Test 4: Conditional create based on conditions
+  - set:
+      test_section: "Test 4: Conditional create"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      should_create: true
+      item_type: "special"
+  
+  - if:
+      condition: ${should_create}
+      then:
+        - create:
+            target: task
+            with:
+              work_id: 210001  # Valid work_id from database (kuka-移動)
+              name: "Conditional Item"
+              priority: 3
+              metadata:
+                type: ${item_type}
+                reason: "Created because condition was true"
+        
+        - notify:
+            message: "Created conditional item of type: ${item_type}"
+            level: info
+      else:
+        - notify:
+            message: "Skipped creation - condition was false"
+            level: info
+  
+  # Test 5: Create with dynamic values from variables
+  - set:
+      test_section: "Test 5: Dynamic create"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      dynamic_id: ${generate_id('OBJ')}
+      dynamic_priority: ${priority * 2}
+  
+  - create:
+      target: rack
+      with:
+        name: "Dynamic Rack"  # Required field for rack
+        location_id: 51  # Valid UNOCCUPIED location from database (ManualReceiveArea_1)
+        status_id: 1
+        is_carry: 1
+        is_docked: 0
+  
+  - notify:
+      message: "Created dynamic rack with ID: ${dynamic_id} and priority ${dynamic_priority}"
+      level: info
+  
+  # Final summary
+  - set:
+      total_created: ${counter + 4}
+  
+  - notify:
+      message: "Create verb test completed - Total items created: ${total_created}"
+      level: info

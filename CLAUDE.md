@@ -45,6 +45,7 @@ docker compose -f docker-compose.agvc.yml logs -f agvc_server
 2. **用現成工具，不要造** - 檢查 scripts/ 和 r 命令
 3. **批量處理，不要重複** - MultiEdit > 多次 Edit
 4. **自動化，不要手動** - Git hooks, manage_* 命令
+5. **🔥 Linus Torvalds 思維** - @docs-ai/operations/development/linus-torvalds-ai-agent-principles.md
 
 ## 🔍 問題診斷決策樹
 ```
@@ -65,6 +66,7 @@ docker compose -f docker-compose.agvc.yml logs -f agvc_server
 ## 📚 核心系統文檔（必要載入）
 @docs-ai/context/system/dual-environment.md
 @docs-ai/operations/development/core-principles.md
+@docs-ai/operations/development/linus-torvalds-ai-agent-principles.md
 @docs-ai/operations/tools/unified-tools.md
 @docs-ai/operations/development/docker-development.md
 

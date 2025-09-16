@@ -1,6 +1,34 @@
 /* TAFL Editor - Professional Card-Based Design */
 /* Based on Linear Flow Designer UI patterns */
 
+/* ===== TAFL Variable Syntax Highlighting ===== */
+/* Custom highlighting for TAFL-specific syntax in YAML editor */
+
+/* TAFL Variables: $variable, $variable.property, $array[index] */
+.CodeMirror .cm-tafl-variable {
+    color: #0066cc;  /* Professional blue */
+    font-weight: 600;
+    background-color: rgba(0, 102, 204, 0.08);  /* Subtle blue background */
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* TAFL Expressions: ${expression} */
+.CodeMirror .cm-tafl-expression {
+    color: #7c4dff;  /* Material purple */
+    font-weight: 600;
+    background-color: rgba(124, 77, 255, 0.08);  /* Subtle purple background */
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* Hover effects for better interactivity */
+.CodeMirror .cm-tafl-variable:hover,
+.CodeMirror .cm-tafl-expression:hover {
+    background-color: rgba(0, 102, 204, 0.15);
+    cursor: help;  /* Indicate these are special elements */
+}
+
 /* Main Container - Material Design with CSS Grid */
 .tafl-editor-container {
     display: flex;
@@ -80,6 +108,78 @@
 
 #flows-dropdown .dropdown-content::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+/* Flow dropdown item styling - similar to verb-item */
+#flows-dropdown-content .flow-dropdown-item {
+    display: flex !important;  /* Override Bulma's display: block for flows dropdown only */
+    align-items: flex-start;
+    padding: 0.75rem 1rem;
+}
+
+#flows-dropdown-content .flow-dropdown-item .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+#flows-dropdown-content .flow-dropdown-item .flow-info {
+    flex: 1;
+    min-width: 0;
+}
+
+#flows-dropdown-content .flow-dropdown-item .flow-name {
+    font-weight: 600;
+    color: #24292e;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#flows-dropdown-content .flow-dropdown-item .flow-desc {
+    color: #586069;
+    font-size: 0.75rem;
+    margin-top: 0.125rem;
+}
+
+/* Flow item controls container */
+#flows-dropdown-content .flow-dropdown-item .flow-item-controls {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Flow delete button - similar to card delete button */
+#flows-dropdown-content .flow-delete-btn {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease, background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    min-width: 28px;
+    min-height: 28px;
+}
+
+/* Show delete button on hover */
+#flows-dropdown-content .flow-dropdown-item:hover .flow-delete-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Delete button hover effect - soft colors */
+#flows-dropdown-content .flow-delete-btn:hover {
+    background-color: rgba(244, 67, 54, 0.08) !important;
+    color: #f44336 !important;
+    border-color: rgba(244, 67, 54, 0.2) !important;
+}
+
+/* Prevent event bubbling when clicking delete button */
+#flows-dropdown-content .flow-delete-btn {
+    position: relative;
+    z-index: 10;
 }
 
 /* Regular dropdown hover effect (for TAFL Editor flows dropdown) */
@@ -641,6 +741,7 @@
     border-radius: 3px;
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 0.875rem;
+    display: inline-block;
 }
 
 .param-value.editable {
@@ -656,6 +757,52 @@
     outline: none;
     border-color: rgba(33, 150, 243, 0.4);
     box-shadow: 0 0 0 1px rgba(33, 150, 243, 0.06);
+}
+
+/* Card Parameters Display */
+.card-params {
+    padding: 0.5rem;
+}
+
+.param-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.param-key {
+    font-weight: 600;
+    color: #586069;
+    margin-right: 0.5rem;
+    min-width: 80px;
+}
+
+.param-key::after {
+    content: '';  /* Remove colon since it's already in the HTML */
+}
+
+.param-value .number-value {
+    color: #0366d6;
+    font-weight: 600;
+}
+
+.param-value .bool-value {
+    color: #e36209;
+    font-weight: 600;
+}
+
+.param-value .null-value {
+    color: #6a737d;
+    font-style: italic;
+}
+
+.param-value .array-value {
+    color: #6f42c1;
+}
+
+.param-value .object-value {
+    color: #22863a;
 }
 
 /* Nested Cards (for control flow) */
@@ -1338,13 +1485,14 @@
 }
 
 .keyboard-shortcuts-hint kbd {
-    color: #000;
-    background: rgba(255, 255, 255, 0.2);
+    color: #333 !important;
+    background: rgba(255, 255, 255, 0.9);
     padding: 2px 6px;
     border-radius: 3px;
     font-family: monospace;
     font-size: 0.85rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    font-weight: 600;
 }
 
 /* Improved drag visual feedback */
@@ -1408,11 +1556,71 @@
     border-color: rgba(220, 53, 69, 0.3);
 }
 
-/* Fix dragging issues */
+/* Fix dragging issues - SortableJS style */
 .tafl-card.dragging {
-    /* Don't use pointer-events: none as it breaks the drag! */
+    /* 保持半透明但仍可見作為拖動影像 */
     opacity: 0.5;
     cursor: grabbing !important;
+}
+
+/* 拖動的卡片保持半透明 */
+/* .tafl-card.dragging 已經在上面定義了 opacity: 0.5 */
+
+/* Dynamic Placeholder - Modern SortableJS style */
+.tafl-card-placeholder {
+    width: 100%;
+    box-sizing: border-box;
+    border: 2px dashed #90CAF9;
+    background: linear-gradient(45deg, #f5f5f5 25%, transparent 25%),
+                linear-gradient(-45deg, #f5f5f5 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f5f5f5 75%),
+                linear-gradient(-45deg, transparent 75%, #f5f5f5 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    margin: 8px 0;
+    padding: 20px;
+    border-radius: 8px;
+    min-height: 60px;
+    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.tafl-card-placeholder::after {
+    content: 'Drop here';
+    color: #64B5F6;
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+}
+
+/* Placeholder 動畫 */
+@keyframes placeholder-pulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.tafl-card-placeholder {
+    animation: placeholder-pulse 2s ease-in-out infinite;
+}
+
+/* Placeholder 在不同容器中的寬度調整 */
+#canvas-drop-zone .tafl-card-placeholder {
+    width: 100%;
+}
+
+.nested-cards .tafl-card-placeholder {
+    width: calc(100% - 10px);
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
 /* Font Awesome Icon Fixes */

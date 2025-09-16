@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 from opui.database.operations import connection_pool
-from db_proxy.models import Location, Rack, LocationStatus
-from sqlmodel import select
+from db_proxy.models import Location, Rack, LocationStatus, Carrier
+from sqlmodel import select, delete
 
 router = APIRouter(prefix="/api/hmi", tags=["hmi"])
 
@@ -69,6 +69,21 @@ async def remove_rack(request: RemoveRackRequest):
             
             # 3. 移出 Rack
             rack_name = rack.name
+            rack_id = rack.id
+            
+            # 4. 清除相關的 Carrier 記錄
+            # 查詢所有關聯到此 Rack 的 Carrier
+            carriers_to_clear = session.exec(
+                select(Carrier).where(Carrier.rack_id == rack_id)
+            ).all()
+            
+            carrier_count = len(carriers_to_clear)
+            
+            # 刪除所有相關的 Carrier 記錄
+            if carrier_count > 0:
+                for carrier in carriers_to_clear:
+                    session.delete(carrier)
+                print(f"清除 {carrier_count} 個 Carrier 記錄 (Rack {rack_name})")
             
             # 更新 Rack - 清除 location_id
             rack.location_id = None
@@ -76,14 +91,14 @@ async def remove_rack(request: RemoveRackRequest):
             # 更新 Location 狀態
             location.location_status_id = LocationStatus.UNOCCUPIED
             
-            # 5. 記錄操作日誌（可選，如果有日誌表的話）
+            # 5. 記錄操作日誌（包含 Carrier 清除資訊）
             # TODO: 加入操作日誌記錄
             # log_entry = OperationLog(
             #     device_id=request.device_id,
             #     action="REMOVE_RACK",
             #     location_id=request.location_id,
             #     rack_id=rack.id,
-            #     note=request.operator_note,
+            #     note=f"{request.operator_note}. 已清除 {carrier_count} 個 Carrier 記錄",
             #     timestamp=datetime.now(timezone.utc)
             # )
             # session.add(log_entry)
@@ -91,9 +106,14 @@ async def remove_rack(request: RemoveRackRequest):
             # 6. 提交變更
             session.commit()
             
+            # 建立回應訊息
+            message = f"成功從 Location {location.name} 移出 Rack {rack_name}"
+            if carrier_count > 0:
+                message += f"，並清除 {carrier_count} 個相關 Carrier 記錄"
+            
             return RemoveRackResponse(
                 success=True,
-                message=f"成功從 Location {location.name} 移出 Rack {rack_name}",
+                message=message,
                 rack_name=rack_name,
                 location_name=location.name,
                 timestamp=datetime.now(timezone.utc)

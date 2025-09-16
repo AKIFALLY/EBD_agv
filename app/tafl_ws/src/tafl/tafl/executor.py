@@ -48,6 +48,7 @@ class TAFLExecutionContext:
         
         self.stack = []  # Variable scope stack for nested contexts
         self.logger = logging.getLogger('tafl.executor')
+        self.execution_log = []  # Store execution log entries
         self.stopped = False
         self.stop_reason = None
         
@@ -76,9 +77,15 @@ class TAFLExecutionContext:
         self.functions['str'] = str
         self.functions['bool'] = bool
         
-        # Date/time
-        self.functions['now'] = datetime.now
-        self.functions['today'] = datetime.today
+        # Date/time functions
+        self.functions['now'] = lambda: datetime.now().isoformat()
+        self.functions['today'] = lambda: datetime.today().isoformat()
+        self.functions['timestamp'] = lambda: datetime.now().timestamp()
+        
+        # Object/collection functions
+        self.functions['keys'] = lambda obj: list(obj.keys()) if isinstance(obj, dict) else []
+        self.functions['values'] = lambda obj: list(obj.values()) if isinstance(obj, dict) else []
+        self.functions['items'] = lambda obj: list(obj.items()) if isinstance(obj, dict) else []
     
     def push_scope(self):
         """Push a new variable scope / 推入新的變數作用域"""
@@ -126,11 +133,21 @@ class TAFLExecutionContext:
             for key in path:
                 if isinstance(value, dict):
                     value = value.get(key)
-                elif isinstance(value, list) and key.isdigit():
-                    idx = int(key)
-                    value = value[idx] if 0 <= idx < len(value) else None
+                elif isinstance(value, list):
+                    # Handle special list properties
+                    if key == 'length':
+                        value = len(value)
+                    elif key.isdigit():
+                        idx = int(key)
+                        value = value[idx] if 0 <= idx < len(value) else None
+                    else:
+                        return None
                 else:
-                    return None
+                    # Handle special properties for other types
+                    if key == 'length' and hasattr(value, '__len__'):
+                        value = len(value)
+                    else:
+                        return None
                 
                 if value is None:
                     break
@@ -180,26 +197,274 @@ class TAFLExecutor:
         self.context = None
     
     def _interpolate_string(self, text: str) -> str:
-        """Interpolate variables in string / 在字符串中插值變數"""
+        """Interpolate variables and expressions in string / 在字符串中插值變數和表達式"""
         import re
+        import asyncio
         
-        def replace_var(match):
-            var_expr = match.group(1)
+        def replace_expr(match):
+            expr_str = match.group(1)
             
-            # Handle nested property access (e.g., location.name)
-            if '.' in var_expr:
-                parts = var_expr.split('.')
-                var_name = parts[0]
-                path = parts[1:]
-                value = self.context.get_variable(var_name, path)
-            else:
-                value = self.context.get_variable(var_expr)
+            # Debug logging to track interpolation
+            self.logger.debug(f"Interpolating expression: '{expr_str}'")
             
-            return str(value) if value is not None else f'${{{var_expr}}}'
+            # Try to parse and evaluate as a full expression
+            try:
+                # Import parser locally to parse the expression
+                from .parser import TAFLParser
+                parser = TAFLParser()
+                
+                # Parse the expression string
+                expr = parser._parse_expression(f'${{{expr_str}}}')
+                
+                # Evaluate the expression (need to handle async)
+                # Since _interpolate_string is sync but _evaluate_expression is async,
+                # we need to handle this carefully
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # We're already in an async context, create a task
+                    future = asyncio.ensure_future(self._evaluate_expression(expr))
+                    # This is tricky - we're in a sync function called from async
+                    # For now, let's try the simpler approach first
+                    value = None
+                else:
+                    # Run the async function synchronously
+                    value = loop.run_until_complete(self._evaluate_expression(expr))
+                
+                # If we couldn't evaluate async, try simpler evaluation
+                if value is None:
+                    # Check for function calls like len(items)
+                    if '(' in expr_str and ')' in expr_str:
+                        # Parse function call
+                        func_match = re.match(r'(\w+)\(([^)]+)\)', expr_str)
+                        if func_match:
+                            func_name = func_match.group(1)
+                            arg_name = func_match.group(2).strip()
+                            
+                            # Get the argument value
+                            arg_value = self.context.get_variable(arg_name)
+                            
+                            # Call the function if available
+                            if func_name in self.context.functions and arg_value is not None:
+                                try:
+                                    value = self.context.functions[func_name](arg_value)
+                                    self.logger.debug(f"Function {func_name}({arg_name}) = {value}")
+                                except Exception as e:
+                                    self.logger.debug(f"Function call failed: {e}")
+                                    value = None
+                    
+                    # If not a function, try as variable
+                    if value is None:
+                        # Handle nested property access (e.g., location.name)
+                        if '.' in expr_str:
+                            parts = expr_str.split('.')
+                            var_name = parts[0]
+                            path = parts[1:]
+                            value = self.context.get_variable(var_name, path)
+                        else:
+                            value = self.context.get_variable(expr_str)
+                
+                result = str(value) if value is not None else f'${{{expr_str}}}'
+                self.logger.debug(f"Expression '{expr_str}' resolved to: '{result}'")
+                return result
+                
+            except Exception as e:
+                self.logger.debug(f"Failed to evaluate expression '{expr_str}': {e}")
+                # Fallback to simple variable lookup
+                value = self.context.get_variable(expr_str)
+                result = str(value) if value is not None else f'${{{expr_str}}}'
+                return result
         
         # Find and replace all ${...} patterns
         pattern = r'\$\{([^}]+)\}'
-        return re.sub(pattern, replace_var, text)
+        result = re.sub(pattern, replace_expr, text)
+        self.logger.debug(f"String interpolation: '{text}' -> '{result}'")
+        return result
+    
+    async def _async_interpolate_string(self, text: str) -> str:
+        """Async version of string interpolation that properly handles expressions
+        異步版本的字符串插值，正確處理表達式"""
+        import re
+        
+        async def replace_expr_async(match):
+            expr_str = match.group(1)
+            self.logger.debug(f"Interpolating expression: '{expr_str}'")
+            
+            try:
+                # Parse the expression as a full TAFL expression
+                from .parser import TAFLParser
+                parser = TAFLParser()
+                
+                # Parse arithmetic expressions (e.g., "update_count + 5")
+                # Check for operators with proper word boundaries for 'and' and 'or'
+                import re
+                has_operator = any(op in expr_str for op in ['+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>='])
+                has_and = re.search(r'\band\b', expr_str) is not None
+                has_or = re.search(r'\bor\b', expr_str) is not None
+
+                if has_operator or has_and or has_or:
+                    # It's a binary expression
+                    expr = parser._parse_binary_expression(expr_str)
+                elif expr_str.startswith('not '):
+                    # Unary expression
+                    expr = parser._parse_complex_expression(expr_str)
+                elif '(' in expr_str and ')' in expr_str:
+                    # Function call
+                    expr = parser._parse_expression(f'${{{expr_str}}}')
+                elif '.' in expr_str:
+                    # Nested property access (e.g., "new_task.id", "item.name")
+                    parts = expr_str.split('.')
+                    var_name = parts[0]
+                    path = parts[1:]
+
+                    # First get the base variable
+                    value = self.context.get_variable(var_name)
+
+                    # Then navigate the path
+                    if value is not None and path:
+                        for key in path:
+                            if isinstance(value, dict):
+                                value = value.get(key)
+                            elif hasattr(value, key):
+                                value = getattr(value, key)
+                            else:
+                                # Try to access as a dictionary-like object
+                                try:
+                                    value = value.get(key) if hasattr(value, 'get') else None
+                                except:
+                                    value = None
+
+                            if value is None:
+                                break
+
+                    result = str(value) if value is not None else f'${{{expr_str}}}'
+                    self.logger.debug(f"Variable path '{expr_str}' resolved to: '{result}'")
+                    return result
+                else:
+                    # Simple variable
+                    expr = Variable(name=expr_str, path=[])
+                
+                # Evaluate the expression
+                value = await self._evaluate_expression(expr)
+                result = str(value) if value is not None else f'${{{expr_str}}}'
+                self.logger.debug(f"Expression '{expr_str}' resolved to: '{result}'")
+                return result
+                
+            except Exception as e:
+                self.logger.debug(f"Failed to evaluate expression '{expr_str}': {e}")
+                # Fallback to simple variable lookup
+                value = self.context.get_variable(expr_str)
+                return str(value) if value is not None else f'${{{expr_str}}}'
+        
+        # Process all ${...} patterns asynchronously
+        pattern = r'\$\{([^}]+)\}'
+        matches = list(re.finditer(pattern, text))
+        
+        # Process matches from end to start to maintain positions
+        result = text
+        for match in reversed(matches):
+            replacement = await replace_expr_async(match)
+            result = result[:match.start()] + replacement + result[match.end():]
+        
+        self.logger.debug(f"Async string interpolation: '{text}' -> '{result}'")
+        return result
+    
+    def _expression_to_string(self, expr: Expression) -> str:
+        """Convert an Expression AST node to a readable string representation"""
+        if expr is None:
+            return 'null'
+        
+        if isinstance(expr, Literal):
+            # Return the literal value as string
+            if isinstance(expr.value, str):
+                # If it's an expression template, return it as-is
+                if expr.value.startswith('${') and expr.value.endswith('}'):
+                    return expr.value
+                # For string literals in expressions, return without quotes
+                # (parser already stripped them)
+                return expr.value
+            return str(expr.value)
+        
+        if isinstance(expr, Variable):
+            # Return variable in ${...} format
+            if expr.path:
+                path_str = '.'.join(expr.path)
+                return f'${{{expr.name}.{path_str}}}'
+            return f'${{{expr.name}}}'
+        
+        if isinstance(expr, BinaryOp):
+            # Return binary operation
+            left = self._expression_to_string(expr.left)
+            right = self._expression_to_string(expr.right)
+            return f'{left} {expr.operator} {right}'
+        
+        if isinstance(expr, UnaryOp):
+            # Return unary operation
+            operand = self._expression_to_string(expr.operand)
+            return f'{expr.operator} {operand}'
+        
+        if isinstance(expr, FunctionCall):
+            # Return function call
+            args = ', '.join(self._expression_to_string(arg) for arg in expr.arguments)
+            return f'{expr.name}({args})'
+        
+        if isinstance(expr, ArrayExpression):
+            # Return array
+            elements = ', '.join(self._expression_to_string(e) for e in expr.elements)
+            return f'[{elements}]'
+        
+        if isinstance(expr, DictExpression):
+            # Return dictionary
+            pairs = ', '.join(f'{k}: {self._expression_to_string(v)}' for k, v in expr.pairs)
+            return f'{{{pairs}}}'
+        
+        # Fallback to string representation
+        return str(expr)
+    
+    def _safe_math_eval(self, expression: str) -> float:
+        """Safely evaluate mathematical expressions / 安全地評估數學表達式"""
+        import re
+        import operator
+        
+        # Remove whitespace
+        expression = expression.replace(' ', '')
+        
+        # Check if expression only contains numbers, operators and parentheses
+        if not re.match(r'^[0-9+\-*/.()]+$', expression):
+            raise ValueError(f"Invalid mathematical expression: {expression}")
+        
+        # Simple operator mapping for safety
+        ops = {
+            '+': operator.add,
+            '-': operator.sub,
+            '*': operator.mul,
+            '/': operator.truediv
+        }
+        
+        # For simple expressions like "10+20", use a basic parser
+        # This is safer than eval() as it only handles basic arithmetic
+        try:
+            # Handle simple binary operations first
+            for op_char, op_func in ops.items():
+                if op_char in expression and expression.count(op_char) == 1:
+                    parts = expression.split(op_char)
+                    if len(parts) == 2:
+                        left = float(parts[0])
+                        right = float(parts[1])
+                        return op_func(left, right)
+            
+            # If not a simple binary operation, fall back to eval with restricted globals
+            # This is still somewhat risky, but restricted to mathematical operations
+            allowed_names = {
+                "__builtins__": {},
+                "abs": abs,
+                "max": max,
+                "min": min,
+                "round": round
+            }
+            return eval(expression, allowed_names, {})
+            
+        except Exception as e:
+            raise ValueError(f"Mathematical evaluation failed: {e}")
     
     async def execute(self, program: TAFLProgram, 
                       initial_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -247,40 +512,47 @@ class TAFLExecutor:
             self.logger.error(f"Flow execution failed: {e}")
             raise TAFLRuntimeError(f"Execution failed: {e}")
         
-        return self.context.variables
+        return {
+            'variables': self.context.variables,
+            'execution_log': self.context.execution_log,
+            'stopped': self.context.stopped,
+            'stop_reason': self.context.stop_reason
+        }
     
     async def _execute_preload_phase(self, preload_statements: List[PreloadStatement]):
         """Execute preload phase - cache data for performance"""
         self.logger.info("Phase 1: Executing preload phase")
         
         for stmt in preload_statements:
-            self.logger.debug(f"Preloading: {stmt.target} -> {stmt.store_as}")
+            self.logger.debug(f"Preloading: {stmt.target} -> {stmt.as_}")
             
             # Execute preload query
             result = await self._execute_preload_query(stmt)
             
             # Store in preload scope
-            if stmt.store_as:
-                self.context.preload_scope[stmt.store_as] = result
+            if stmt.as_:
+                self.context.preload_scope[stmt.as_] = result
                 # Also store in legacy variables for compatibility
-                self.context.variables[stmt.store_as] = result
+                self.context.variables[stmt.as_] = result
     
     async def _execute_rules_phase(self, rules: Dict[str, RuleDefinition]):
         """Execute rules phase - process and cache business rules"""
         self.logger.info("Phase 2: Processing rules phase")
         
-        # Store rules in rules scope
+        # Store rules in rules scope (keep full RuleDefinition objects)
         self.context.rules_scope = rules
         
-        # Create rules object for easy access
+        # Create rules object for easy access - always store just the value
+        # This ensures consistent behavior when accessing rules.rule_name
         rules_object = {}
         for rule_name, rule in rules.items():
             if rule.condition is None:
-                # Configuration value rule
+                # Configuration value rule - store just the value
                 rules_object[rule_name] = rule.value
             else:
-                # Condition rule - store the rule itself for later evaluation
-                rules_object[rule_name] = rule
+                # Condition rule - evaluate it and store the result
+                # Note: conditions will be re-evaluated when accessed via rules.rule_name
+                rules_object[rule_name] = rule  # Keep the rule for conditional evaluation
         
         # Store rules object in preload scope for ${rules.xxx} access
         self.context.preload_scope['rules'] = rules_object
@@ -326,7 +598,13 @@ class TAFLExecutor:
             
             # Execute query
             result = await self._call_async_function(func_name, params)
-            return result
+            
+            # Extract data array if result is a metadata dict (same as _execute_query)
+            if isinstance(result, dict) and 'data' in result:
+                # Return just the data array for iteration
+                return result['data']
+            else:
+                return result
         else:
             raise TAFLRuntimeError(f"Preload query function not found for: {stmt.target}")
     
@@ -335,28 +613,93 @@ class TAFLExecutor:
         if stmt.comment:
             self.logger.debug(f"Executing: {stmt.comment}")
         
-        if isinstance(stmt, QueryStatement):
-            return await self._execute_query(stmt)
-        elif isinstance(stmt, CheckStatement):
-            return await self._execute_check(stmt)
-        elif isinstance(stmt, CreateStatement):
-            return await self._execute_create(stmt)
-        elif isinstance(stmt, UpdateStatement):
-            return await self._execute_update(stmt)
-        elif isinstance(stmt, IfStatement):
-            return await self._execute_if(stmt)
-        elif isinstance(stmt, ForStatement):
-            return await self._execute_for(stmt)
-        elif isinstance(stmt, SwitchStatement):
-            return await self._execute_switch(stmt)
-        elif isinstance(stmt, SetStatement):
-            return await self._execute_set(stmt)
-        elif isinstance(stmt, StopStatement):
-            return await self._execute_stop(stmt)
-        elif isinstance(stmt, NotifyStatement):
-            return await self._execute_notify(stmt)
-        else:
-            raise TAFLRuntimeError(f"Unknown statement type: {type(stmt)}")
+        # Determine statement type for logging
+        stmt_type = type(stmt).__name__.replace('Statement', '').lower()
+        
+        # Start execution logging
+        log_entry = {
+            'step': len(self.context.execution_log) + 1,
+            'verb': stmt_type,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        try:
+            result = None
+            if isinstance(stmt, QueryStatement):
+                result = await self._execute_query(stmt)
+                # Evaluate filters for cleaner logging
+                evaluated_filters = {}
+                if stmt.filters:
+                    for key, expr in stmt.filters.items():
+                        evaluated_filters[key] = await self._evaluate_expression(expr)
+                log_entry['action'] = {'target': stmt.target, 'where': evaluated_filters if evaluated_filters else None}
+            elif isinstance(stmt, CheckStatement):
+                result = await self._execute_check(stmt)
+                # Use _expression_to_string to show original expression
+                condition_str = self._expression_to_string(stmt.condition) if stmt.condition else "None"
+                # Remove outer ${} wrapper for cleaner display if present
+                if condition_str.startswith('${') and condition_str.endswith('}'):
+                    condition_str = condition_str[2:-1]
+                log_entry['action'] = {'condition': condition_str, 'as': stmt.as_}
+            elif isinstance(stmt, CreateStatement):
+                result = await self._execute_create(stmt)
+                # Evaluate parameters for cleaner logging
+                evaluated_params = {}
+                if stmt.with_:
+                    for key, expr in stmt.with_.items():
+                        evaluated_params[key] = await self._evaluate_expression(expr)
+                log_entry['action'] = {'target': stmt.target, 'with': evaluated_params if evaluated_params else None}
+            elif isinstance(stmt, UpdateStatement):
+                result = await self._execute_update(stmt)
+                # Evaluate parameters for cleaner logging
+                evaluated_params = {}
+                if stmt.set:
+                    for key, expr in stmt.set.items():
+                        evaluated_params[key] = await self._evaluate_expression(expr)
+                # Evaluate where conditions for cleaner logging
+                evaluated_where = {}
+                if stmt.where:
+                    for key, expr in stmt.where.items():
+                        evaluated_where[key] = await self._evaluate_expression(expr)
+                log_entry['action'] = {'target': stmt.target, 'where': evaluated_where, 'set': evaluated_params if evaluated_params else None}
+            elif isinstance(stmt, IfStatement):
+                result = await self._execute_if(stmt)
+                # Show original condition expression for cleaner logging
+                log_entry['action'] = {'condition': self._expression_to_string(stmt.condition)}
+            elif isinstance(stmt, ForStatement):
+                result = await self._execute_for(stmt)
+                log_entry['action'] = {'as': stmt.as_, 'in': self._expression_to_string(stmt.in_)}
+            elif isinstance(stmt, SwitchStatement):
+                result = await self._execute_switch(stmt)
+                # Show original expression for cleaner logging
+                log_entry['action'] = {'expression': self._expression_to_string(stmt.expression)}
+            elif isinstance(stmt, SetStatement):
+                result = await self._execute_set(stmt)
+                # Include both variable name and value for clarity
+                value = await self._evaluate_expression(stmt.value)
+                log_entry['action'] = {'variable': stmt.variable, 'value': value}
+            elif isinstance(stmt, StopStatement):
+                result = await self._execute_stop(stmt)
+                log_entry['action'] = {'reason': stmt.reason}
+            elif isinstance(stmt, NotifyStatement):
+                result = await self._execute_notify(stmt)
+                # Evaluate message for logging
+                message_value = await self._evaluate_expression(stmt.message) if stmt.message else ""
+                log_entry['action'] = {'level': stmt.level, 'message': str(message_value)}
+            else:
+                raise TAFLRuntimeError(f"Unknown statement type: {type(stmt)}")
+            
+            log_entry['result'] = result
+            log_entry['status'] = 'success'
+        except Exception as e:
+            log_entry['status'] = 'error'
+            log_entry['error'] = str(e)
+            raise
+        finally:
+            # Add log entry to execution log
+            self.context.execution_log.append(log_entry)
+        
+        return result
     
     async def _execute_query(self, stmt: QueryStatement) -> Any:
         """Execute query statement / 執行查詢語句"""
@@ -375,26 +718,67 @@ class TAFLExecutor:
                 for key, expr in stmt.filters.items():
                     params[key] = await self._evaluate_expression(expr)
             
+            # Add limit parameter if specified
+            if stmt.limit:
+                limit_value = await self._evaluate_expression(stmt.limit)
+                params['limit'] = limit_value
+            
             # Execute query
             result = await self._call_async_function(func_name, params)
             
             # Store result if needed
-            if stmt.store_as:
-                self.context.set_variable(stmt.store_as, result)
+            if stmt.as_:
+                # Always store the data array for consistency with FOR loop expectations
+                # Extract data array if result is a metadata dict
+                if isinstance(result, dict) and 'data' in result:
+                    self.context.set_variable(stmt.as_, result['data'])
+                else:
+                    self.context.set_variable(stmt.as_, result)
             
-            return result
+            # Return data array for backward compatibility (e.g., for loops)
+            # Extract data array if result is a metadata dict
+            if isinstance(result, dict) and 'data' in result:
+                # Return just the data array for iteration
+                return result['data']
+            else:
+                return result
         else:
             raise TAFLRuntimeError(f"Query function not found for: {stmt.target}")
     
-    async def _execute_check(self, stmt: CheckStatement) -> bool:
+    async def _execute_check(self, stmt: CheckStatement) -> Dict[str, Any]:
         """Execute check statement / 執行檢查語句"""
-        result = await self._evaluate_expression(stmt.condition)
-        
-        if stmt.store_as:
-            self.context.set_variable(stmt.store_as, result)
-        
-        self.logger.debug(f"Check result: {result}")
-        return result
+        try:
+            # 確保 condition 不是 None
+            if stmt.condition is None:
+                self.logger.warning("Check statement has no condition, defaulting to False")
+                result = False
+            else:
+                result = await self._evaluate_expression(stmt.condition)
+                # 確保結果是布林值
+                if result is None:
+                    self.logger.warning(f"Check condition evaluated to None, defaulting to False")
+                    result = False
+                elif not isinstance(result, bool):
+                    # 轉換為布林值
+                    result = bool(result)
+            
+            if stmt.as_:
+                self.context.set_variable(stmt.as_, result, scope='flow')
+                self.logger.debug(f"Set {stmt.as_} = {result}")
+            
+            self.logger.debug(f"Check result: {result}")
+            
+            # Return structured result to avoid N/A display
+            return {
+                'checked': result,
+                'as': stmt.as_ if stmt.as_ else None,
+                'result': result
+            }
+        except Exception as e:
+            self.logger.error(f"Error executing check: {e}")
+            if stmt.as_:
+                self.context.set_variable(stmt.as_, False, scope='flow')
+            return {'checked': False, 'error': str(e)}
     
     async def _execute_create(self, stmt: CreateStatement) -> Any:
         """Execute create statement / 執行創建語句"""
@@ -406,17 +790,21 @@ class TAFLExecutor:
             func_name = "create"
         
         if func_name in self.context.functions:
-            # Evaluate parameters
+            # Evaluate with parameters (符合規格書: with)
             params = {'target': stmt.target}
-            for key, expr in stmt.parameters.items():
+            for key, expr in stmt.with_.items():
                 params[key] = await self._evaluate_expression(expr)
             
             # Execute creation
             result = await self._call_async_function(func_name, params)
             
             # Store result if needed
-            if stmt.store_as:
-                self.context.set_variable(stmt.store_as, result)
+            if stmt.as_:
+                # If we're in a loop, store in loop scope for immediate access
+                if self.context.loop_scope:
+                    self.context.set_variable(stmt.as_, result, scope='loop')
+                else:
+                    self.context.set_variable(stmt.as_, result)
             
             return result
         else:
@@ -426,13 +814,15 @@ class TAFLExecutor:
         """Execute update statement / 執行更新語句"""
         self.logger.debug(f"Update: {stmt.target}")
         
-        # Get ID
-        id_value = await self._evaluate_expression(stmt.id_expr)
+        # Evaluate where conditions (符合規格書: where)
+        where_conditions = {}
+        for key, expr in stmt.where.items():
+            where_conditions[key] = await self._evaluate_expression(expr)
         
-        # Evaluate changes
-        changes = {}
-        for key, expr in stmt.changes.items():
-            changes[key] = await self._evaluate_expression(expr)
+        # Evaluate set changes (符合規格書: set)
+        set_changes = {}
+        for key, expr in stmt.set.items():
+            set_changes[key] = await self._evaluate_expression(expr)
         
         # Map to update function
         func_name = f"update_{stmt.target}"
@@ -442,8 +832,8 @@ class TAFLExecutor:
         if func_name in self.context.functions:
             params = {
                 'target': stmt.target,
-                'id': id_value,
-                'changes': changes
+                'where': where_conditions,
+                'set': set_changes
             }
             return await self._call_async_function(func_name, params)
         else:
@@ -453,16 +843,26 @@ class TAFLExecutor:
         """Execute if statement / 執行條件語句"""
         condition = await self._evaluate_expression(stmt.condition)
         
+        branch_taken = None
         if condition:
+            branch_taken = 'then'
             for s in stmt.then_branch:
                 await self._execute_statement(s)
         elif stmt.else_branch:
+            branch_taken = 'else'
             for s in stmt.else_branch:
                 await self._execute_statement(s)
+        
+        # Return execution info for logging
+        return {
+            'condition_result': condition,
+            'branch_taken': branch_taken
+        }
     
     async def _execute_for(self, stmt: ForStatement) -> Any:
         """Execute for loop / 執行循環語句"""
-        iterable = await self._evaluate_expression(stmt.iterable)
+        # Evaluate 'in' expression (符合規格書: in)
+        iterable = await self._evaluate_expression(stmt.in_)
         
         if not isinstance(iterable, (list, tuple, set)):
             raise TAFLRuntimeError(f"Cannot iterate over {type(iterable)}")
@@ -470,61 +870,189 @@ class TAFLExecutor:
         # Save loop scope to restore later
         saved_loop_scope = self.context.loop_scope.copy()
         
+        items_processed = 0
+        items_filtered = 0
+        
         try:
             for item in iterable:
-                # Set loop variable in loop scope
-                self.context.loop_scope[stmt.variable] = item
+                # Set loop variable 'as' in loop scope (符合規格書: as)
+                self.context.loop_scope[stmt.as_] = item
                 
                 # Apply filter condition if specified (new in v1.1)
                 if stmt.filter:
                     filter_result = await self._evaluate_expression(stmt.filter)
                     if not filter_result:
+                        items_filtered += 1
                         continue  # Skip this item
                 
-                # Execute loop body
-                for s in stmt.body:
+                # Execute 'do' body (符合規格書: do)
+                for s in stmt.do:
                     if self.context.stopped:
                         break
                     await self._execute_statement(s)
+                
+                items_processed += 1
                 
                 if self.context.stopped:
                     break
         finally:
             # Restore loop scope
             self.context.loop_scope = saved_loop_scope
+        
+        # Return execution info for logging
+        return {
+            'total_items': len(iterable) if hasattr(iterable, '__len__') else 'unknown',
+            'items_processed': items_processed,
+            'items_filtered': items_filtered
+        }
     
     async def _execute_switch(self, stmt: SwitchStatement) -> Any:
-        """Execute switch statement / 執行分支語句"""
+        """Execute switch statement / 執行分支語句
+        
+        TAFL v1.1.2: Default case uses when:"default" in cases array
+        Supports both case conditions and exact matching
+        """
         value = await self._evaluate_expression(stmt.expression)
         
         executed = False
-        for case in stmt.cases:
-            case_value = await self._evaluate_expression(case.value)
-            # Debug logging
-            self.logger.debug(f"Comparing switch value {value} (type: {type(value)}) with case {case_value} (type: {type(case_value)})")
-            
-            # Type-aware comparison
-            if type(value) == type(case_value) and value == case_value:
-                for s in case.body:
-                    await self._execute_statement(s)
-                executed = True
-                break
-            # Try converting to same type for comparison
-            elif str(value) == str(case_value):
-                for s in case.body:
-                    await self._execute_statement(s)
-                executed = True
-                break
+        default_case = None
+        matched_case = None  # Track which case was matched
         
-        if not executed and stmt.default:
-            for s in stmt.default:
+        for case in stmt.cases:
+            # Evaluate 'when' condition (符合規格書: when)
+            case_value = await self._evaluate_expression(case.when)
+            
+            # Check if this is the default case (v1.1.2)
+            if isinstance(case_value, str) and case_value == 'default':
+                # Save default case for later execution if needed
+                default_case = case
+                continue
+            
+            # Check if case_value is a condition string (like "> 8", "5..8", etc.)
+            if isinstance(case_value, str) and self._is_case_condition(case_value):
+                # Evaluate condition against the switch value
+                if await self._evaluate_case_condition(value, case_value):
+                    # Execute 'do' body (符合規格書: do)
+                    for s in case.do:
+                        await self._execute_statement(s)
+                    executed = True
+                    matched_case = case_value  # Record the matched condition
+                    break
+            else:
+                # Traditional exact matching
+                # Debug logging
+                self.logger.debug(f"Comparing switch value {value} (type: {type(value)}) with case {case_value} (type: {type(case_value)})")
+                
+                # Type-aware comparison
+                if type(value) == type(case_value) and value == case_value:
+                    # Execute 'do' body (符合規格書: do)
+                    for s in case.do:
+                        await self._execute_statement(s)
+                    executed = True
+                    matched_case = case_value  # Record the matched value
+                    break
+                # Try converting to same type for comparison
+                elif str(value) == str(case_value):
+                    # Execute 'do' body (符合規格書: do)
+                    for s in case.do:
+                        await self._execute_statement(s)
+                    executed = True
+                    matched_case = case_value  # Record the matched value
+                    break
+        
+        # Execute default case if no other case matched (v1.1.2)
+        if not executed and default_case:
+            for s in default_case.do:
                 await self._execute_statement(s)
+            matched_case = "default"  # Record that default was executed
+        
+        # Return information about the execution
+        return {
+            'switched_on': value,
+            'matched_case': matched_case if matched_case is not None else "no match"
+        }
+    
+    def _is_case_condition(self, value: str) -> bool:
+        """Check if a string is a case condition pattern"""
+        if not isinstance(value, str):
+            return False
+        
+        # Common condition patterns
+        patterns = [
+            r'^[<>]=?\s*\d+',  # Comparisons: > 8, <= 10
+            r'^\d+\.\.\d+',     # Ranges: 5..8
+            r'^default$',        # Default keyword (though this should be handled separately)
+        ]
+        
+        import re
+        for pattern in patterns:
+            if re.match(pattern, value.strip()):
+                return True
+        return False
+    
+    async def _evaluate_case_condition(self, switch_value: Any, condition: str) -> bool:
+        """Evaluate a case condition against the switch value
+        
+        Supports:
+        - Comparisons: > 8, < 5, >= 10, <= 3
+        - Ranges: 5..8 (inclusive)
+        - Default: always matches (but should be handled separately)
+        """
+        condition = condition.strip()
+        
+        # Handle default (though this should be in stmt.default now)
+        if condition == 'default':
+            return True
+        
+        # Convert switch_value to number if possible
+        try:
+            if isinstance(switch_value, (int, float)):
+                num_value = switch_value
+            else:
+                num_value = float(switch_value)
+        except (ValueError, TypeError):
+            # If can't convert to number, can't evaluate numeric conditions
+            return False
+        
+        # Handle range (e.g., "5..8")
+        if '..' in condition:
+            try:
+                parts = condition.split('..')
+                min_val = float(parts[0])
+                max_val = float(parts[1])
+                return min_val <= num_value <= max_val
+            except (ValueError, IndexError):
+                return False
+        
+        # Handle comparisons
+        import re
+        comparison_match = re.match(r'^([<>]=?)\s*(.+)$', condition)
+        if comparison_match:
+            operator = comparison_match.group(1)
+            try:
+                compare_value = float(comparison_match.group(2))
+            except ValueError:
+                return False
+            
+            if operator == '>':
+                return num_value > compare_value
+            elif operator == '<':
+                return num_value < compare_value
+            elif operator == '>=':
+                return num_value >= compare_value
+            elif operator == '<=':
+                return num_value <= compare_value
+        
+        # If no pattern matches, return False
+        return False
     
     async def _execute_set(self, stmt: SetStatement) -> Any:
         """Execute set statement / 執行設置語句"""
         value = await self._evaluate_expression(stmt.value)
         self.context.set_variable(stmt.variable, value, scope='flow')
         self.logger.debug(f"Set {stmt.variable} = {value}")
+        # Return the value that was set for execution log
+        return value
     
     async def _execute_stop(self, stmt: StopStatement) -> Any:
         """Execute stop statement / 執行停止語句"""
@@ -539,22 +1067,31 @@ class TAFLExecutor:
     
     async def _execute_notify(self, stmt: NotifyStatement) -> Any:
         """Execute notify statement / 執行通知語句"""
+        # Now handled by _evaluate_expression using async interpolation
         message = await self._evaluate_expression(stmt.message)
         
-        # Log the notification
+        # Debug logging to understand interpolation
+        self.logger.debug(f"Notify original message: {stmt.message}")
+        self.logger.debug(f"Notify interpolated message: {message}")
+        
+        # Level is primary field per spec (符合規格書: level 為主要欄位)
         level = stmt.level or 'info'
-        log_func = getattr(self.logger, level, self.logger.info)
-        log_func(f"[{stmt.channel}] {message}")
+        log_func = getattr(self.logger, level.lower(), self.logger.info)
+        log_func(f"[{level}] {message}")
         
         # Call notification function if available
-        func_name = f"notify_{stmt.channel}"
+        func_name = f"notify_{level}"
         if func_name in self.context.functions:
             params = {
                 'message': message,
                 'level': level
             }
-            if stmt.metadata:
-                for key, expr in stmt.metadata.items():
+            # Add optional recipients
+            if stmt.recipients:
+                params['recipients'] = stmt.recipients
+            # Add optional details (符合規格書: details)
+            if stmt.details:
+                for key, expr in stmt.details.items():
                     params[key] = await self._evaluate_expression(expr)
             
             return await self._call_async_function(func_name, params)
@@ -562,29 +1099,60 @@ class TAFLExecutor:
         # Try generic notify function
         elif 'notify' in self.context.functions:
             params = {
-                'channel': stmt.channel,
-                'message': message,
-                'level': level
+                'level': level,
+                'message': message
             }
-            if stmt.metadata:
-                for key, expr in stmt.metadata.items():
+            # Add optional recipients
+            if stmt.recipients:
+                params['recipients'] = stmt.recipients
+            # Add optional details (符合規格書: details)
+            if stmt.details:
+                for key, expr in stmt.details.items():
                     params[key] = await self._evaluate_expression(expr)
             
             return await self._call_async_function('notify', params)
+        
+        # If no notify function is available, just return the message info
+        return {'notified': str(message), 'level': level}
     
     async def _evaluate_expression(self, expr: Expression) -> Any:
         """Evaluate an expression / 求值表達式"""
         if isinstance(expr, Literal):
             # Handle string interpolation for string literals
             if expr.type == 'string' and isinstance(expr.value, str):
-                interpolated = self._interpolate_string(expr.value)
+                # Use async interpolation for proper expression evaluation
+                interpolated = await self._async_interpolate_string(expr.value)
+                
+                # Try to parse as list or dict literal
+                if interpolated.strip().startswith('[') and interpolated.strip().endswith(']'):
+                    try:
+                        import ast
+                        result = ast.literal_eval(interpolated)
+                        if isinstance(result, (list, tuple)):
+                            return list(result)
+                    except (ValueError, SyntaxError):
+                        pass
+                elif interpolated.strip().startswith('{') and interpolated.strip().endswith('}'):
+                    try:
+                        import ast
+                        result = ast.literal_eval(interpolated)
+                        if isinstance(result, dict):
+                            return result
+                    except (ValueError, SyntaxError):
+                        pass
+                
                 # Try to evaluate as mathematical expression
                 try:
                     # Check if it looks like a math expression
                     if any(op in interpolated for op in ['+', '-', '*', '/']):
-                        # Safely evaluate mathematical expression
-                        return eval(interpolated)
-                except:
+                        # Debug logging for math expressions
+                        self.logger.debug(f"Attempting to evaluate math expression: '{interpolated}'")
+                        # Safely evaluate mathematical expression using restricted eval
+                        result = self._safe_math_eval(interpolated)
+                        self.logger.debug(f"Math evaluation result: {result}")
+                        return result
+                except Exception as e:
+                    self.logger.debug(f"Math evaluation failed: {e}")
                     pass
                 return interpolated
             return expr.value
@@ -621,25 +1189,15 @@ class TAFLExecutor:
             right = await self._evaluate_expression(expr.right)
             
             if expr.operator == '+':
-                return left + right
+                return self._perform_addition(left, right)
             elif expr.operator == '-':
-                return left - right
+                return self._perform_subtraction(left, right)
             elif expr.operator == '*':
-                return left * right
+                return self._perform_multiplication(left, right)
             elif expr.operator == '/':
-                return left / right if right != 0 else None
-            elif expr.operator == '==':
-                return left == right
-            elif expr.operator == '!=':
-                return left != right
-            elif expr.operator == '<':
-                return left < right
-            elif expr.operator == '>':
-                return left > right
-            elif expr.operator == '<=':
-                return left <= right
-            elif expr.operator == '>=':
-                return left >= right
+                return self._perform_division(left, right)
+            elif expr.operator in ['==', '!=', '<', '>', '<=', '>=']:
+                return self._perform_comparison(left, right, expr.operator)
             elif expr.operator == 'and':
                 return left and right
             elif expr.operator == 'or':
@@ -675,6 +1233,38 @@ class TAFLExecutor:
                 result[key] = await self._evaluate_expression(value_expr)
             return result
         
+        elif isinstance(expr, IndexAccess):
+            # Evaluate the object being indexed
+            obj = await self._evaluate_expression(expr.object)
+            # Evaluate the index expression
+            index = await self._evaluate_expression(expr.index)
+            
+            # Handle different object types
+            if isinstance(obj, (list, tuple)):
+                # Array indexing
+                if not isinstance(index, int):
+                    raise TAFLRuntimeError(f"Array index must be an integer, got {type(index)}")
+                try:
+                    return obj[index]
+                except IndexError:
+                    raise TAFLRuntimeError(f"Array index {index} out of range (array length: {len(obj)})")
+            elif isinstance(obj, dict):
+                # Dictionary indexing
+                try:
+                    return obj[index]
+                except KeyError:
+                    raise TAFLRuntimeError(f"Dictionary key '{index}' not found")
+            elif isinstance(obj, str):
+                # String indexing
+                if not isinstance(index, int):
+                    raise TAFLRuntimeError(f"String index must be an integer, got {type(index)}")
+                try:
+                    return obj[index]
+                except IndexError:
+                    raise TAFLRuntimeError(f"String index {index} out of range (string length: {len(obj)})")
+            else:
+                raise TAFLRuntimeError(f"Cannot index into {type(obj)} with [{index}]")
+        
         else:
             raise TAFLRuntimeError(f"Unknown expression type: {type(expr)}")
     
@@ -690,3 +1280,148 @@ class TAFLExecutor:
             return await func(**params)
         else:
             return func(**params)
+    
+    def _try_convert_to_number(self, value: Any) -> Union[float, int, None]:
+        """Try to convert a value to a number, return None if not possible"""
+        if isinstance(value, (int, float)):
+            return value
+        elif isinstance(value, bool):
+            # Convert boolean to int (True -> 1, False -> 0)
+            return int(value)
+        elif isinstance(value, str):
+            try:
+                # Check for boolean strings
+                if value.lower() in ['true', 'yes']:
+                    return 1
+                elif value.lower() in ['false', 'no']:
+                    return 0
+                # Try int first
+                if '.' not in value:
+                    return int(value)
+                else:
+                    return float(value)
+            except ValueError:
+                return None
+        return None
+    
+    def _perform_addition(self, left: Any, right: Any) -> Any:
+        """Perform addition with type coercion"""
+        # Try direct addition first (works for same types)
+        try:
+            return left + right
+        except TypeError:
+            # Try converting to numbers
+            left_num = self._try_convert_to_number(left)
+            right_num = self._try_convert_to_number(right)
+            if left_num is not None and right_num is not None:
+                return left_num + right_num
+            
+            # If one is string, convert both to strings for concatenation
+            if isinstance(left, str) or isinstance(right, str):
+                return str(left) + str(right)
+            
+            # If conversion fails, raise original error
+            raise TAFLRuntimeError(f"Cannot perform addition: {type(left)} + {type(right)}")
+    
+    def _perform_subtraction(self, left: Any, right: Any) -> Any:
+        """Perform subtraction with type coercion"""
+        try:
+            return left - right
+        except TypeError:
+            # Try converting to numbers
+            left_num = self._try_convert_to_number(left)
+            right_num = self._try_convert_to_number(right)
+            if left_num is not None and right_num is not None:
+                return left_num - right_num
+            
+            raise TAFLRuntimeError(f"Cannot perform subtraction: {type(left)} - {type(right)}")
+    
+    def _perform_multiplication(self, left: Any, right: Any) -> Any:
+        """Perform multiplication with type coercion"""
+        try:
+            return left * right
+        except TypeError:
+            # Try converting to numbers
+            left_num = self._try_convert_to_number(left)
+            right_num = self._try_convert_to_number(right)
+            if left_num is not None and right_num is not None:
+                return left_num * right_num
+            
+            raise TAFLRuntimeError(f"Cannot perform multiplication: {type(left)} * {type(right)}")
+    
+    def _perform_division(self, left: Any, right: Any) -> Any:
+        """Perform division with type coercion"""
+        try:
+            if right == 0:
+                return None  # Division by zero
+            return left / right
+        except TypeError:
+            # Try converting to numbers
+            left_num = self._try_convert_to_number(left)
+            right_num = self._try_convert_to_number(right)
+            if left_num is not None and right_num is not None:
+                if right_num == 0:
+                    return None  # Division by zero
+                return left_num / right_num
+            
+            raise TAFLRuntimeError(f"Cannot perform division: {type(left)} / {type(right)}")
+
+    def _perform_comparison(self, left: Any, right: Any, operator: str) -> bool:
+        """Perform comparison with type coercion"""
+        # Handle None values
+        if left is None or right is None:
+            if operator == '==':
+                return left == right
+            elif operator == '!=':
+                return left != right
+            else:
+                # For other comparisons, None is treated as less than any value
+                if left is None and right is None:
+                    return False
+                elif left is None:
+                    return operator in ['<', '<=', '!=']
+                else:
+                    return operator in ['>', '>=', '!=']
+
+        # Try to convert both to numbers for numeric comparison
+        left_num = self._try_convert_to_number(left)
+        right_num = self._try_convert_to_number(right)
+
+        if left_num is not None and right_num is not None:
+            # Both can be converted to numbers - do numeric comparison
+            if operator == '>':
+                return left_num > right_num
+            elif operator == '<':
+                return left_num < right_num
+            elif operator == '>=':
+                return left_num >= right_num
+            elif operator == '<=':
+                return left_num <= right_num
+            elif operator == '==':
+                return left_num == right_num
+            elif operator == '!=':
+                return left_num != right_num
+            else:
+                raise TAFLRuntimeError(f"Unknown comparison operator: {operator}")
+
+        # If numeric conversion failed for either value, do string comparison
+        # Convert both to strings for consistent comparison
+        left_str = str(left)
+        right_str = str(right)
+
+        if operator == '>':
+            return left_str > right_str
+        elif operator == '<':
+            return left_str < right_str
+        elif operator == '>=':
+            return left_str >= right_str
+        elif operator == '<=':
+            return left_str <= right_str
+        elif operator == '==':
+            # For equality, also check if original values are equal
+            # This handles cases like bool == bool correctly
+            return left == right or left_str == right_str
+        elif operator == '!=':
+            return left != right and left_str != right_str
+        else:
+            raise TAFLRuntimeError(f"Unknown comparison operator: {operator}")

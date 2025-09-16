@@ -1,0 +1,219 @@
+# TAFL v1.1.2 Update Verb Test
+# 測試 update verb 的各種使用情境
+
+metadata:
+  enabled: false  # 暫時停用測試流程
+  id: test_update_verb
+  name: "Test Update Verb"
+  version: "1.1.2"
+  description: "Test update verb functionality in various scenarios"
+
+variables:
+  task_id: 1  # Valid task ID from database
+  rack_id: 1  # Valid rack ID from database
+  update_count: 0
+  current_status: "pending"
+  target_status: "processing"
+
+flow:
+  # Test 1: Basic update of single object
+  - set:
+      test_section: "Test 1: Basic update"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - update:
+      target: task
+      where:
+        id: ${task_id}
+      set:
+        status_id: 3  # EXECUTING status
+        priority: 7    # Update priority
+        updated_at: ${now()}
+  
+  - notify:
+      message: "Updated task ${task_id} status to in_progress"
+      level: info
+  
+  # Test 2: Update multiple fields
+  - set:
+      test_section: "Test 2: Update multiple fields"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - update:
+      target: rack
+      where:
+        id: ${rack_id}
+      set:
+        status_id: 2  # Change status
+        is_carry: 1   # Set carry flag
+        is_docked: 0  # Not docked
+        direction: 90 # Change direction
+  
+  - notify:
+      message: "Updated rack ${rack_id} with multiple fields"
+      level: info
+  
+  # Test 3: Batch update in loop
+  - set:
+      test_section: "Test 3: Batch update in loop"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      item_ids: [1, 2, 3]  # Valid task IDs from database
+      new_status_id: 4     # COMPLETED status
+  
+  - for:
+      as: item_id
+      in: ${item_ids}
+      do:
+        - update:
+            target: task
+            where:
+              id: ${item_id}
+            set:
+              status_id: ${new_status_id}
+              priority: 10
+              updated_at: ${now()}
+        
+        - notify:
+            message: "Updated task ${item_id} to status_id ${new_status_id}"
+            level: debug
+        
+        - set:
+            update_count: ${update_count + 1}
+  
+  - notify:
+      message: "Batch updated ${update_count} items"
+      level: info
+  
+  # Test 4: Conditional update based on current state
+  - set:
+      test_section: "Test 4: Conditional update"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - if:
+      condition: ${current_status == "pending"}
+      then:
+        - update:
+            target: task
+            where:
+              id: 9  # Valid task ID from database
+            set:
+              status_id: 2  # READY_TO_EXECUTE
+              priority: 8
+              updated_at: ${now()}
+        
+        - notify:
+            message: "Updated workflow from ${current_status} to ${target_status}"
+            level: info
+        
+        - set:
+            current_status: ${target_status}
+      else:
+        - notify:
+            message: "Skipped update - status is not pending"
+            level: info
+  
+  # Test 5: Update with calculated values
+  - set:
+      test_section: "Test 5: Update with calculations"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      current_direction: 0
+      rotation: 90
+  
+  - set:
+      new_direction: ${current_direction + rotation}
+  
+  - update:
+      target: rack
+      where:
+        id: 2  # Valid rack ID from database
+      set:
+        direction: ${new_direction}
+        is_carry: 1
+  
+  - notify:
+      message: "Updated rack direction from ${current_direction} to ${new_direction}"
+      level: info
+  
+  # Test 6: State machine update simulation
+  - set:
+      test_section: "Test 6: State machine update"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      order_state: "created"
+  
+  - switch:
+      expression: ${order_state}
+      cases:
+        - when: "created"
+          do:
+            - update:
+                target: task
+                where:
+                  id: 10  # Valid task ID from database
+                set:
+                  status_id: 1  # PENDING
+                  updated_at: ${now()}
+            - set:
+                order_state: "confirmed"
+        
+        - when: "confirmed"
+          do:
+            - update:
+                target: task
+                where:
+                  id: 10  # Same task (valid ID)
+                set:
+                  status_id: 3  # EXECUTING
+                  updated_at: ${now()}
+            - set:
+                order_state: "processing"
+        
+        - when: "processing"
+          do:
+            - update:
+                target: task
+                where:
+                  id: 10  # Same task (valid ID)
+                set:
+                  status_id: 4  # COMPLETED
+                  updated_at: ${now()}
+            - set:
+                order_state: "completed"
+        
+        - when: "default"
+          do:
+            - notify:
+                message: "Unknown state: ${order_state}"
+                level: warning
+  
+  - notify:
+      message: "Order state updated to: ${order_state}"
+      level: info
+  
+  # Final summary
+  - notify:
+      message: "Update verb test completed - Total updates: ${update_count + 5}"
+      level: info

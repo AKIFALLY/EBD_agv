@@ -1,12 +1,13 @@
 # TAFL Editor 規格書 (Specification Document)
 
 ## 📋 文件資訊
-- **版本**: v3.0
-- **更新日期**: 2025-01-22
+- **版本**: v3.1
+- **更新日期**: 2025-09-03
 - **實作位置**: `/home/ct/RosAGV/app/web_api_ws/src/agvcui/agvcui/static/js/tafl-editor.js`
 - **套件歸屬**: agvcui (車隊管理界面系統)
 - **服務端口**: 8001 (AGVCUI 管理界面)
 - **檔案大小**: 2606 行 (單體架構，計劃模組化)
+- **執行模式**: Real Mode (PostgreSQL) / Simulation Mode
 
 ## 🎯 系統概述
 
@@ -26,6 +27,8 @@
 - **編輯器**: CodeMirror (YAML 模式)
 - **儲存系統**: agvcui miniStore (計劃整合)
 - **後端 API**: FastAPI `/tafl/` 端點群組
+- **執行引擎**: tafl_editor_direct.py (增強版)
+- **資料庫橋接**: TAFLDatabaseBridge (PostgreSQL)
 
 ## 📐 功能規格
 
@@ -244,7 +247,27 @@ PUT    /tafl/flows/{flow_id} # 更新流程
 DELETE /tafl/flows/{flow_id} # 刪除流程
 POST   /tafl/validate        # 驗證流程
 POST   /tafl/execute         # 執行流程
+POST   /tafl/convert-to-yaml # JSON 轉 YAML
+POST   /tafl/import-yaml     # YAML 匯入
 ```
+
+### API 實作狀態 (2025-09-02 驗證)
+| API 端點 | 實際功能 | 實作狀態 | 備註 |
+|---------|---------|----------|------|
+| `/tafl/verbs` | 返回動詞定義 | ✅ 完整實作 | 10個核心動詞 |
+| `/tafl/flows` | 列出所有流程 | ✅ 完整實作 | 從 `/app/config/tafl/flows/` 讀取 |
+| `/tafl/flows/{id}` | 獲取特定流程 | ✅ 完整實作 | 支援 v1.1 格式 |
+| `/tafl/flows` (POST) | 保存流程 | ✅ 完整實作 | 自動清理 card IDs |
+| `/tafl/flows/{id}` (DELETE) | 刪除流程 | ✅ 完整實作 | 刪除 YAML 檔案 |
+| `/tafl/validate` | 驗證流程 | ✅ 完整實作 | 支援 v1.1 六段式驗證 |
+| `/tafl/execute` | 執行流程 | ⚠️ 模擬執行 | 僅 dry run，未實際執行 |
+| `/tafl/convert-to-yaml` | 格式轉換 | ✅ 完整實作 | JSON → YAML |
+| `/tafl/import-yaml` | 格式匯入 | ✅ 完整實作 | YAML → JSON |
+
+**重要說明**：
+- 流程儲存位置：`/app/config/tafl/flows/` (容器內路徑)
+- 執行功能：目前僅模擬執行，實際執行需整合 TAFL_WCS 或其他執行引擎
+- ID 清理：`clean_card_ids()` 函數會自動移除編輯器生成的暫時 IDs
 
 ### 資料格式
 ```typescript

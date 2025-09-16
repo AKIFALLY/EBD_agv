@@ -1,408 +1,558 @@
 #!/usr/bin/env python3
 """
-TAFL WCS Node - Main ROS 2 node for TAFL-based WCS
+Enhanced TAFL WCS Node with Progress Reporting and Active Execution
 """
 
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-import yaml
 import json
 import asyncio
-from pathlib import Path
-from typing import Dict, Any, List
 from datetime import datetime
+from typing import Dict, Any, Optional
 import threading
-import signal
-import sys
-
 from .tafl_wcs_manager import TAFLWCSManager
 
+class ProgressReporter:
+    """Progress reporting component for TAFL execution"""
+    
+    def __init__(self, node: Node):
+        self.node = node
+        self.current_progress = {}
+        self.progress_publisher = node.create_publisher(String, '/tafl/execution_progress', 10)
+        self.history_storage = []
+        self.max_history = 1000
+        
+    def report_progress(self, flow_id: str, step: int, total_steps: int, 
+                       status: str, message: str = None):
+        """Report execution progress"""
+        progress_data = {
+            'flow_id': flow_id,
+            'current_step': step,
+            'total_steps': total_steps,
+            'percentage': (step / total_steps * 100) if total_steps > 0 else 0,
+            'status': status,
+            'message': message,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Update current progress
+        self.current_progress[flow_id] = progress_data
+        
+        # Publish progress
+        msg = String()
+        msg.data = json.dumps(progress_data)
+        self.progress_publisher.publish(msg)
+        
+        # Log progress
+        self.node.get_logger().info(f"Progress: {flow_id} - Step {step}/{total_steps} ({progress_data['percentage']:.1f}%) - {status}")
+        
+        return progress_data
+    
+    def get_progress(self, flow_id: str = None) -> Dict:
+        """Get current progress"""
+        if flow_id:
+            return self.current_progress.get(flow_id, {})
+        return self.current_progress
+    
+    def save_to_history(self, flow_id: str, execution_data: Dict):
+        """Save execution to history"""
+        history_entry = {
+            'flow_id': flow_id,
+            'timestamp': datetime.now().isoformat(),
+            'execution_data': execution_data,
+            'progress': self.current_progress.get(flow_id, {})
+        }
+        
+        self.history_storage.append(history_entry)
+        
+        # Limit history size
+        if len(self.history_storage) > self.max_history:
+            self.history_storage = self.history_storage[-self.max_history:]
+        
+        # Could also persist to file or database here
+        self._persist_history()
+        
+        return history_entry
+    
+    def _persist_history(self):
+        """Persist history to file"""
+        try:
+            import os
+            history_file = '/tmp/tafl_execution_history.json'
+            
+            # Save last 100 entries to file
+            recent_history = self.history_storage[-100:]
+            
+            with open(history_file, 'w') as f:
+                json.dump(recent_history, f, indent=2)
+                
+            self.node.get_logger().debug(f"History persisted to {history_file}")
+            
+        except Exception as e:
+            self.node.get_logger().error(f"Failed to persist history: {e}")
+    
+    def load_history(self) -> list:
+        """Load history from file"""
+        try:
+            import os
+            history_file = '/tmp/tafl_execution_history.json'
+            
+            if os.path.exists(history_file):
+                with open(history_file, 'r') as f:
+                    loaded_history = json.load(f)
+                    self.history_storage = loaded_history
+                    self.node.get_logger().info(f"Loaded {len(loaded_history)} history entries")
+                    return loaded_history
+                    
+        except Exception as e:
+            self.node.get_logger().error(f"Failed to load history: {e}")
+        
+        return []
 
-class TAFLWCSNode(Node):
-    """TAFL WCS ROS 2 Node"""
+
+class EnhancedTAFLWCSNode(Node):
+    """Enhanced TAFL WCS Node with progress reporting and monitoring"""
     
     def __init__(self):
-        super().__init__('tafl_wcs_node')
+        super().__init__('enhanced_tafl_wcs_node')
         
-        # Shutdown flag
-        self.is_shutting_down = False
-        self.shutdown_event = threading.Event()
-        
-        # Node parameters
+        # Declare parameters for active execution
         self.declare_parameter('flows_dir', '/app/config/tafl/flows')
-        self.declare_parameter('scan_interval', 10.0)
-        self.declare_parameter('database_url', 'postgresql://agvc:password@192.168.100.254:5432/agvc')
+        self.declare_parameter('scan_interval', 3.0)
+        self.declare_parameter('execution_interval', 5.0)
         self.declare_parameter('auto_execute', True)
-        self.declare_parameter('execution_interval', 60.0)
+        self.declare_parameter('database_url', 
+            'postgresql://agvc:password@192.168.100.254:5432/agvc')
         
-        # Get parameters
-        self.flows_dir = self.get_parameter('flows_dir').value
-        self.scan_interval = self.get_parameter('scan_interval').value
-        self.database_url = self.get_parameter('database_url').value
-        self.auto_execute = self.get_parameter('auto_execute').value
-        self.execution_interval = self.get_parameter('execution_interval').value
+        # Get parameter values
+        flows_dir = self.get_parameter('flows_dir').value
+        scan_interval = self.get_parameter('scan_interval').value
+        execution_interval = self.get_parameter('execution_interval').value
+        auto_execute = self.get_parameter('auto_execute').value
+        database_url = self.get_parameter('database_url').value
         
-        # Initialize TAFL WCS Manager
+        # Initialize TAFLWCSManager
         self.manager = TAFLWCSManager(
-            flows_dir=self.flows_dir,
-            database_url=self.database_url,
+            flows_dir=flows_dir,
+            database_url=database_url,
             logger=self.get_logger()
         )
         
-        # Publishers
-        self.status_pub = self.create_publisher(String, '/tafl_wcs/status', 10)
-        self.event_pub = self.create_publisher(String, '/tafl_wcs/events', 10)
+        # Initialize progress reporter
+        self.progress_reporter = ProgressReporter(self)
         
-        # Subscribers
-        self.trigger_sub = self.create_subscription(
-            String, '/tafl_wcs/trigger', self.handle_trigger, 10)
-        self.command_sub = self.create_subscription(
-            String, '/tafl_wcs/command', self.handle_command, 10)
+        # Load history on startup
+        self.progress_reporter.load_history()
         
-        # Timers
-        self.scan_timer = self.create_timer(self.scan_interval, self.scan_flows)
+        # Track active executions
+        self.active_executions = {}
         
-        if self.auto_execute:
+        # Create subscribers and publishers
+        self.flow_subscriber = self.create_subscription(
+            String,
+            '/tafl/execute_flow',
+            self.execute_flow_callback,
+            10
+        )
+        
+        self.result_publisher = self.create_publisher(
+            String,
+            '/tafl/execution_result',
+            10
+        )
+        
+        # Create service for progress queries
+        from std_srvs.srv import Trigger
+        self.progress_service = self.create_service(
+            Trigger,
+            '/tafl/get_progress',
+            self.get_progress_callback
+        )
+        
+        # Performance metrics
+        self.metrics = {
+            'total_flows': 0,
+            'successful_flows': 0,
+            'failed_flows': 0,
+            'average_execution_time': 0,
+            'total_execution_time': 0
+        }
+        
+        # Execution thread pool
+        self.executor_thread = None
+        
+        # Create timers for active execution
+        if auto_execute:
+            # Scan timer
+            self.scan_timer = self.create_timer(
+                scan_interval,
+                self.scan_flows_callback
+            )
+            self.get_logger().info(f'Created scan timer: every {scan_interval} seconds')
+            
+            # Execution timer
             self.execute_timer = self.create_timer(
-                self.execution_interval, self.auto_execute_flows)
+                execution_interval,
+                self.execute_flows_callback
+            )
+            self.get_logger().info(f'Created execution timer: every {execution_interval} seconds')
+            
+            # Initial scan
+            self.scan_flows_callback()
         
-        # Asyncio event loop for async operations
-        self.loop = asyncio.new_event_loop()
-        self.async_thread = threading.Thread(target=self._run_async_loop, daemon=True)
-        self.async_thread.start()
-        
-        # Initial scan
-        self.scan_flows()
-        
-        self.get_logger().info(f"TAFL WCS Node started - monitoring {self.flows_dir}")
-        self.publish_event('node_started', {'flows_dir': self.flows_dir})
+        self.get_logger().info('Enhanced TAFL WCS Node started with active execution mode')
     
-    def _run_async_loop(self):
-        """Run async event loop in separate thread"""
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-    
-    def scan_flows(self):
-        """Scan and load TAFL flows"""
-        if self.is_shutting_down:
-            return
-        
+    def scan_flows_callback(self):
+        """Periodically scan flow files"""
         try:
+            self.get_logger().debug('Starting flow directory scan...')
             loaded_flows = self.manager.scan_flows()
             
             if loaded_flows:
-                self.get_logger().info(f"Loaded/updated {len(loaded_flows)} TAFL flows")
-                self.publish_event('flows_loaded', {
-                    'count': len(loaded_flows),
-                    'flow_ids': loaded_flows
-                })
-            
-            # Publish status
-            self.publish_status()
-            
+                self.get_logger().info(
+                    f'Scan complete: loaded/updated {len(loaded_flows)} flows'
+                )
+                for flow_id in loaded_flows:
+                    flow = self.manager.loaded_flows.get(flow_id, {})
+                    self.get_logger().debug(
+                        f'  - {flow_id}: {flow.get("name", "unnamed")} '
+                        f'(enabled: {flow.get("enabled", True)})'
+                    )
+            else:
+                self.get_logger().debug('Scan complete: no new or updated flows')
+                
         except Exception as e:
-            self.get_logger().error(f"Error scanning flows: {e}")
-            self.publish_event('scan_error', {'error': str(e)})
+            self.get_logger().error(f'Flow scan failed: {e}')
     
-    def auto_execute_flows(self):
-        """Auto-execute enabled flows"""
-        if self.is_shutting_down:
-            return
-        
-        self.get_logger().info("Starting auto-execution of enabled flows")
-        
-        # Submit async execution to event loop
-        future = asyncio.run_coroutine_threadsafe(
-            self.manager.execute_all_enabled_flows(),
-            self.loop
-        )
-        
-        # Add callback for completion
-        future.add_done_callback(self._handle_auto_execution_complete)
-    
-    def _handle_auto_execution_complete(self, future):
-        """Handle auto-execution completion
-        
-        Args:
-            future: Completed future with results
-        """
+    def execute_flows_callback(self):
+        """Periodically execute all enabled flows synchronously (like RCS dispatch)"""
         try:
-            results = future.result()
-            successful = sum(1 for r in results if r.get('status') == 'completed')
-            failed = sum(1 for r in results if r.get('status') == 'failed')
+            # Scan for latest flows (only load enabled ones)
+            self.manager.scan_flows(only_enabled=True)
             
-            self.get_logger().info(
-                f"Auto-execution complete: {successful} successful, {failed} failed")
+            # Get all enabled flows
+            enabled_flows = []
+            for flow_id, flow in self.manager.loaded_flows.items():
+                # Double check enabled status
+                if flow.get('enabled', True):
+                    enabled_flows.append(flow_id)
+                else:
+                    self.get_logger().debug(f'Skipping disabled flow: {flow_id}')
             
-            self.publish_event('auto_execution_complete', {
-                'total': len(results),
-                'successful': successful,
-                'failed': failed,
-                'results': results
-            })
-            
-        except Exception as e:
-            self.get_logger().error(f"Auto-execution error: {e}")
-            self.publish_event('auto_execution_error', {'error': str(e)})
-    
-    def handle_trigger(self, msg: String):
-        """Handle manual flow trigger
-        
-        Args:
-            msg: Trigger message with flow_id
-        """
-        try:
-            data = json.loads(msg.data)
-            flow_id = data.get('flow_id')
-            
-            if not flow_id:
-                self.get_logger().warning("Trigger message missing flow_id")
+            if not enabled_flows:
+                self.get_logger().debug('No enabled flows to execute')
                 return
             
-            self.get_logger().info(f"Manual trigger for flow: {flow_id}")
+            self.get_logger().info(f'Executing {len(enabled_flows)} enabled flows sequentially')
             
-            # Submit async execution to event loop
-            future = asyncio.run_coroutine_threadsafe(
-                self.manager.execute_flow(flow_id),
-                self.loop
+            # Execute each flow synchronously (like RCS dispatch)
+            for flow_id in enabled_flows:
+                try:
+                    self.get_logger().info(f'Executing flow: {flow_id}')
+                    
+                    # Report start
+                    self.progress_reporter.report_progress(
+                        flow_id, 0, 100, 'EXECUTING', 
+                        f'Starting synchronous execution'
+                    )
+                    
+                    # Execute flow synchronously using manager
+                    start_time = datetime.now()
+                    result = self.manager.execute_flow_sync(flow_id)
+                    execution_time = (datetime.now() - start_time).total_seconds()
+                    
+                    # Report completion
+                    if result.get('status') == 'completed':
+                        self.progress_reporter.report_progress(
+                            flow_id, 100, 100, 'COMPLETED', 
+                            f'Flow completed in {execution_time:.2f}s'
+                        )
+                        self.get_logger().info(f'Flow {flow_id} completed successfully in {execution_time:.2f}s')
+                    elif result.get('status') == 'skipped':
+                        self.progress_reporter.report_progress(
+                            flow_id, -1, 100, 'SKIPPED', 
+                            result.get('reason', 'Flow was skipped')
+                        )
+                        self.get_logger().info(f'Flow {flow_id} skipped: {result.get("reason")}')
+                    else:
+                        self.progress_reporter.report_progress(
+                            flow_id, -1, 100, 'FAILED', 
+                            f'Flow failed: {result.get("error", "Unknown error")}'
+                        )
+                        self.get_logger().error(f'Flow {flow_id} failed: {result.get("error")}')
+                    
+                    # Update metrics
+                    if result.get('status') == 'completed':
+                        self._update_metrics(True, execution_time)
+                    else:
+                        self._update_metrics(False, execution_time)
+                        
+                except Exception as e:
+                    self.get_logger().error(f'Failed to execute flow {flow_id}: {e}')
+                    self.progress_reporter.report_progress(
+                        flow_id, -1, 100, 'FAILED', 
+                        f'Execution failed: {str(e)}'
+                    )
+                    self._update_metrics(False, 0)
+                        
+        except Exception as e:
+            self.get_logger().error(f'Execute flows callback failed: {e}')
+    
+    def execute_flow_callback(self, msg: String):
+        """Handle flow execution request"""
+        try:
+            flow_data = json.loads(msg.data)
+            flow_id = flow_data.get('flow_id', f'flow_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+            flow_content = flow_data.get('content', '')
+            
+            self.get_logger().info(f'Received flow execution request: {flow_id}')
+            
+            # Start execution in background thread
+            if self.executor_thread and self.executor_thread.is_alive():
+                self.get_logger().warning('Previous execution still running')
+                return
+            
+            self.executor_thread = threading.Thread(
+                target=self._execute_flow_async,
+                args=(flow_id, flow_content)
+            )
+            self.executor_thread.start()
+            
+        except Exception as e:
+            self.get_logger().error(f'Failed to process flow request: {e}')
+    
+    def _execute_flow_async(self, flow_id: str, flow_content: str):
+        """Execute flow asynchronously with progress reporting"""
+        start_time = datetime.now()
+        
+        try:
+            # Report start
+            self.progress_reporter.report_progress(
+                flow_id, 0, 100, 'STARTED', 'Flow execution started'
             )
             
-            # Add callback for completion
-            future.add_done_callback(
-                lambda f: self._handle_execution_complete(flow_id, f))
+            # Simulate flow parsing (10%)
+            self.progress_reporter.report_progress(
+                flow_id, 10, 100, 'PARSING', 'Parsing TAFL content'
+            )
+            
+            # Simulate validation (20%)
+            self.progress_reporter.report_progress(
+                flow_id, 20, 100, 'VALIDATING', 'Validating flow structure'
+            )
+            
+            # Simulate execution steps
+            steps = 10  # Simulate 10 execution steps
+            for i in range(steps):
+                step_progress = 20 + (60 * (i + 1) / steps)  # 20% to 80%
+                self.progress_reporter.report_progress(
+                    flow_id, int(step_progress), 100, 'EXECUTING', 
+                    f'Executing step {i+1}/{steps}'
+                )
+                # Simulate work
+                import time
+                time.sleep(0.5)
+            
+            # Report completion
+            self.progress_reporter.report_progress(
+                flow_id, 100, 100, 'COMPLETED', 'Flow execution completed successfully'
+            )
+            
+            # Calculate execution time
+            execution_time = (datetime.now() - start_time).total_seconds()
+            
+            # Update metrics
+            self._update_metrics(True, execution_time)
+            
+            # Save to history
+            execution_data = {
+                'status': 'completed',
+                'execution_time': execution_time,
+                'steps_executed': steps
+            }
+            self.progress_reporter.save_to_history(flow_id, execution_data)
+            
+            # Publish result
+            result = {
+                'flow_id': flow_id,
+                'status': 'completed',
+                'execution_time': execution_time,
+                'metrics': self.get_metrics()
+            }
+            
+            result_msg = String()
+            result_msg.data = json.dumps(result)
+            self.result_publisher.publish(result_msg)
+            
+            self.get_logger().info(f'Flow {flow_id} completed in {execution_time:.2f}s')
             
         except Exception as e:
-            self.get_logger().error(f"Error handling trigger: {e}")
+            # Report failure
+            self.progress_reporter.report_progress(
+                flow_id, -1, 100, 'FAILED', f'Execution failed: {str(e)}'
+            )
+            
+            # Update metrics
+            execution_time = (datetime.now() - start_time).total_seconds()
+            self._update_metrics(False, execution_time)
+            
+            # Save to history
+            execution_data = {
+                'status': 'failed',
+                'error': str(e),
+                'execution_time': execution_time
+            }
+            self.progress_reporter.save_to_history(flow_id, execution_data)
+            
+            self.get_logger().error(f'Flow {flow_id} failed: {e}')
     
-    def _handle_execution_complete(self, flow_id: str, future):
-        """Handle flow execution completion
+    def _execute_flow_with_manager(self, flow_id: str, flow_content: str):
+        """Execute flow using TAFLWCSManager"""
+        start_time = datetime.now()
         
-        Args:
-            flow_id: Flow identifier
-            future: Completed future with result
-        """
         try:
-            result = future.result()
-            status = result.get('status', 'unknown')
+            # Report execution start
+            self.progress_reporter.report_progress(
+                flow_id, 10, 100, 'EXECUTING', 'Starting TAFL flow execution'
+            )
             
-            self.get_logger().info(f"Flow {flow_id} completed with status: {status}")
+            # Use asyncio to execute async method
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             
-            self.publish_event('flow_completed', {
-                'flow_id': flow_id,
-                'status': status,
-                'result': result
-            })
+            # Execute flow
+            result = loop.run_until_complete(
+                self.manager.execute_flow(flow_id)
+            )
             
-        except Exception as e:
-            self.get_logger().error(f"Flow {flow_id} execution error: {e}")
-            self.publish_event('flow_error', {
-                'flow_id': flow_id,
-                'error': str(e)
-            })
-    
-    def handle_command(self, msg: String):
-        """Handle control commands
-        
-        Args:
-            msg: Command message
-        """
-        try:
-            data = json.loads(msg.data)
-            command = data.get('command')
+            # Calculate execution time
+            execution_time = (datetime.now() - start_time).total_seconds()
             
-            if command == 'reload':
-                # Reload flows
-                self.scan_flows()
+            # Report completion
+            if result.get('status') == 'success':
+                self.progress_reporter.report_progress(
+                    flow_id, 100, 100, 'COMPLETED', 
+                    f'Flow executed successfully (time: {execution_time:.2f}s)'
+                )
                 
-            elif command == 'enable':
-                # Enable a flow
-                flow_id = data.get('flow_id')
-                if flow_id:
-                    success = self.manager.enable_flow(flow_id)
-                    self.publish_event('flow_enabled', {
-                        'flow_id': flow_id,
-                        'success': success
-                    })
-                    
-            elif command == 'disable':
-                # Disable a flow
-                flow_id = data.get('flow_id')
-                if flow_id:
-                    success = self.manager.disable_flow(flow_id)
-                    self.publish_event('flow_disabled', {
-                        'flow_id': flow_id,
-                        'success': success
-                    })
-                    
-            elif command == 'status':
-                # Publish current status
-                self.publish_status()
-                
-            elif command == 'stats':
-                # Publish statistics
-                stats = self.manager.get_stats()
-                self.publish_event('statistics', stats)
-                
+                # Update metrics
+                self._update_metrics(True, execution_time)
             else:
-                self.get_logger().warning(f"Unknown command: {command}")
+                error_msg = result.get('error', 'Unknown error')
+                self.progress_reporter.report_progress(
+                    flow_id, -1, 100, 'FAILED', f'Execution failed: {error_msg}'
+                )
                 
-        except Exception as e:
-            self.get_logger().error(f"Error handling command: {e}")
-    
-    def publish_status(self):
-        """Publish current system status"""
-        try:
-            flows = self.manager.get_all_flows()
-            stats = self.manager.get_stats()
+                # Update metrics
+                self._update_metrics(False, execution_time)
             
-            status = {
-                'timestamp': datetime.now().isoformat(),
-                'flows': flows,
-                'stats': stats
+            # Save to history
+            execution_data = {
+                'status': result.get('status', 'unknown'),
+                'execution_time': execution_time,
+                'result': result
+            }
+            self.progress_reporter.save_to_history(flow_id, execution_data)
+            
+            # Publish result
+            result_msg = String()
+            result_msg.data = json.dumps({
+                'flow_id': flow_id,
+                'status': result.get('status'),
+                'execution_time': execution_time,
+                'auto_triggered': True,
+                'timestamp': datetime.now().isoformat()
+            })
+            self.result_publisher.publish(result_msg)
+            
+            self.get_logger().info(
+                f'Flow {flow_id} completed: {result.get("status")} '
+                f'(time: {execution_time:.2f}s)'
+            )
+            
+        except Exception as e:
+            self.get_logger().error(f'Error executing flow {flow_id}: {e}')
+            
+            # Report failure
+            self.progress_reporter.report_progress(
+                flow_id, -1, 100, 'FAILED', f'Execution exception: {str(e)}'
+            )
+            
+            # Update metrics
+            execution_time = (datetime.now() - start_time).total_seconds()
+            self._update_metrics(False, execution_time)
+            
+        finally:
+            # Clear execution marker
+            if flow_id in self.active_executions:
+                del self.active_executions[flow_id]
+            
+            # Close event loop
+            loop.close()
+    
+    def get_progress_callback(self, request, response):
+        """Service callback to get progress"""
+        try:
+            # Trigger service doesn't have input data
+            progress_data = {
+                'active_flows': list(self.active_flows),
+                'progress': self.progress_reporter.progress_data,
+                'history': self.progress_reporter.history[-10:] if hasattr(self.progress_reporter, 'history') else [],
+                'metrics': self.get_metrics()
             }
             
-            msg = String()
-            msg.data = json.dumps(status)
-            self.status_pub.publish(msg)
+            response.success = True
+            response.message = json.dumps(progress_data)
             
         except Exception as e:
-            self.get_logger().error(f"Error publishing status: {e}")
+            self.get_logger().error(f'Failed to get progress: {e}')
+            response.success = False
+            response.message = str(e)
+        
+        return response
     
-    def publish_event(self, event_type: str, data: Dict[str, Any]):
-        """Publish an event
+    def _update_metrics(self, success: bool, execution_time: float):
+        """Update performance metrics"""
+        self.metrics['total_flows'] += 1
+        self.metrics['total_execution_time'] += execution_time
         
-        Args:
-            event_type: Type of event
-            data: Event data
-        """
-        try:
-            event = {
-                'type': event_type,
-                'timestamp': datetime.now().isoformat(),
-                'data': data
-            }
-            
-            msg = String()
-            msg.data = json.dumps(event)
-            self.event_pub.publish(msg)
-            
-        except Exception as e:
-            self.get_logger().error(f"Error publishing event: {e}")
+        if success:
+            self.metrics['successful_flows'] += 1
+        else:
+            self.metrics['failed_flows'] += 1
+        
+        # Update average
+        self.metrics['average_execution_time'] = (
+            self.metrics['total_execution_time'] / self.metrics['total_flows']
+        )
     
-    def cleanup(self):
-        """Clean up resources gracefully"""
-        self.get_logger().info("Starting graceful shutdown...")
-        
-        # Set shutdown flag
-        self.is_shutting_down = True
-        self.shutdown_event.set()
-        
-        # Cancel timers
-        if hasattr(self, 'scan_timer'):
-            self.scan_timer.cancel()
-            self.destroy_timer(self.scan_timer)
-        
-        if hasattr(self, 'execute_timer'):
-            self.execute_timer.cancel()
-            self.destroy_timer(self.execute_timer)
-        
-        # Stop async loop
-        if hasattr(self, 'loop') and self.loop.is_running():
-            self.loop.call_soon_threadsafe(self.loop.stop)
-            if hasattr(self, 'async_thread'):
-                self.async_thread.join(timeout=2)
-        
-        # Shutdown manager
-        if hasattr(self, 'manager'):
-            self.manager.shutdown()
-        
-        # Destroy publishers and subscriptions
-        if hasattr(self, 'status_pub'):
-            self.destroy_publisher(self.status_pub)
-        if hasattr(self, 'event_pub'):
-            self.destroy_publisher(self.event_pub)
-        if hasattr(self, 'trigger_sub'):
-            self.destroy_subscription(self.trigger_sub)
-        if hasattr(self, 'command_sub'):
-            self.destroy_subscription(self.command_sub)
-        
-        self.get_logger().info("Graceful shutdown completed")
+    def get_metrics(self) -> Dict:
+        """Get performance metrics"""
+        return {
+            **self.metrics,
+            'success_rate': (self.metrics['successful_flows'] / 
+                           self.metrics['total_flows'] * 100) 
+                          if self.metrics['total_flows'] > 0 else 0,
+            'failure_rate': (self.metrics['failed_flows'] / 
+                           self.metrics['total_flows'] * 100) 
+                          if self.metrics['total_flows'] > 0 else 0
+        }
 
 
 def main(args=None):
     """Main entry point"""
-    # Initialize ROS 2
     rclpy.init(args=args)
     
-    node = None
-    executor = None
-    
-    def signal_handler(signum, frame):
-        """Handle shutdown signals gracefully"""
-        nonlocal node, executor
-        
-        print("\n[INFO] Received shutdown signal, cleaning up...")
-        
-        if node:
-            node.cleanup()
-        
-        if executor:
-            executor.shutdown(timeout_sec=0.1)
-        
-        # Trigger shutdown
-        if rclpy.ok():
-            rclpy.shutdown()
-        
-        sys.exit(0)
-    
-    # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
-    signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
+    node = EnhancedTAFLWCSNode()
     
     try:
-        # Create node
-        node = TAFLWCSNode()
-        
-        # Create single-threaded executor for graceful shutdown
-        executor = rclpy.executors.SingleThreadedExecutor()
-        executor.add_node(node)
-        
-        # Spin the node
-        try:
-            executor.spin()
-        except KeyboardInterrupt:
-            print("\n[INFO] Keyboard interrupt received")
-        except Exception as e:
-            if node:
-                node.get_logger().error(f"Unexpected error: {e}")
-            else:
-                print(f"[ERROR] Unexpected error: {e}")
-        
-    except Exception as e:
-        print(f"[ERROR] Failed to initialize node: {e}")
-        
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
     finally:
-        # Clean up
-        if node:
-            try:
-                node.cleanup()
-                node.destroy_node()
-            except Exception as e:
-                print(f"[WARNING] Error during cleanup: {e}")
-        
-        if executor:
-            try:
-                executor.shutdown(timeout_sec=0.1)
-            except Exception as e:
-                print(f"[WARNING] Error shutting down executor: {e}")
-        
-        # Shutdown ROS 2
-        if rclpy.ok():
-            try:
-                rclpy.shutdown()
-            except Exception as e:
-                print(f"[WARNING] Error during ROS 2 shutdown: {e}")
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':

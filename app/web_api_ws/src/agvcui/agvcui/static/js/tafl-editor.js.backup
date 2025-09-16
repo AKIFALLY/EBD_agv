@@ -6,31 +6,110 @@
  */
 
 // Import store
-import { taflFlowStore } from './tafl-editor/tafl-editor-store.js';
+import { taflFlowStore } from './tafl-editor/tafl-editor-store.js?v=20250104202000';
+// Import notifications module
+import taflEditorNotifications, { TAFLEditorNotifications } from './tafl-editor/tafl-editor-notifications.js?v=20250104202000';
+// Import API module
+import taflAPI from './tafl-editor/tafl-editor-api.js?v=20250104202000';
+// Import modals module
+import taflModals, { TAFLEditorModals } from './tafl-editor/tafl-editor-modals.js?v=20250104202000';
+// Import panels module
+import { taflPanels } from './tafl-editor/tafl-panels.js?v=20250104202000';
+// Import enhancements module
+import TAFLEditorEnhancements, { injectEnhancementsStyles } from './tafl-editor/tafl-editor-enhancements.js?v=20250104202000';
+// Import YAML module
+import { TAFLEditorYAML } from './tafl-editor/tafl-editor-yaml.js?v=20250104202000';
+import taflEditorValidator, { TAFLEditorValidator } from './tafl-editor/tafl-editor-validator.js?v=20250104202000';
+// Import Cards module
+import taflEditorCards, { TAFLEditorCards } from './tafl-editor/tafl-editor-cards.js?v=20250104202000';
+// Import Utils module
+import taflEditorUtils, { TAFLEditorUtils } from './tafl-editor/tafl-editor-utils.js?v=20250104202000';
+// Import Flow module
+import taflEditorFlow, { TAFLEditorFlow } from './tafl-editor/tafl-editor-flow.js?v=20250104202000';
+// Import Variables module
+import taflEditorVariables, { TAFLEditorVariables } from './tafl-editor/tafl-editor-variables.js?v=20250104202000';
+import taflEditorPreload, { TAFLEditorPreload } from './tafl-editor/tafl-editor-preload.js?v=20250104202000';
+// Import Rules module
+import taflEditorRules, { TAFLEditorRules } from './tafl-editor/tafl-editor-rules.js?v=20250104202000';
+// Import Events module  
+import taflEditorEvents, { TAFLEditorEvents } from './tafl-editor/tafl-editor-events.js?v=20250104202000';
+// Import Properties modules
+import taflEditorProperties, { TAFLEditorProperties } from './tafl-editor/tafl-editor-properties.js?v=20250105';
+import taflPanelsProperties, { TAFLPanelsProperties } from './tafl-editor/tafl-panels-properties.js?v=20250105';
+// Using built-in drag system
 
 class TAFLEditor {
     constructor() {
         // Store manages the flow state now
-        this.selectedCard = null;
+        // Removed: this.selectedCard - now managed by Store
         this.draggedElement = null;
         this.dragData = null;
-        this.yamlEditor = null;
+        this.yamlModule = null; // YAML module instance
+        this.validatorModule = null; // Validator module instance
         this.lastInsertionIndex = undefined;  // Track last drop position to prevent flashing
+        this.cardOriginalPositions = new Map();  // 追蹤卡片的原始位置
+        
+        // Initialize simplified drag system
+        // Using built-in drag system
         
         // Temporary verbDefinitions reference for compatibility
         this.verbDefinitions = {};
+        
+        // Initialize panels module
+        this.panels = taflPanels;
+        
+        // Initialize enhancements module
+        this.enhancements = new TAFLEditorEnhancements(this);
+        
+        // Initialize notifications module
+        this.notificationsModule = new TAFLEditorNotifications(this);
+        taflEditorNotifications.editor = this; // Set editor reference for singleton
+        
+        // Initialize utils module
+        this.utilsModule = new TAFLEditorUtils();
+        taflEditorUtils.verbDefinitions = this.verbDefinitions; // Share verb definitions
+        
+        // Initialize flow module
+        this.flowModule = new TAFLEditorFlow(this);
+        taflEditorFlow.editor = this; // Set editor reference for singleton
+        
+        // Initialize variables module
+        this.variablesModule = new TAFLEditorVariables(this);
+        taflEditorVariables.editor = this; // Set editor reference for singleton
+        
+        // Initialize rules module
+        this.rulesModule = new TAFLEditorRules(this);
+        taflEditorRules.editor = this; // Set editor reference for singleton
+        
+        // Initialize properties modules
+        this.propertiesModule = new TAFLEditorProperties();
+        taflEditorProperties.editor = this; // Set editor reference for singleton
+        
+        // Properties panel UI will be initialized after DOM is ready
+        // Delay initialization to ensure DOM elements exist
+        
+        // Inject enhancements styles
+        injectEnhancementsStyles();
         
         // Subscribe to store events
         this.setupStoreSubscriptions();
         
         this.initializeEditor();
+        
+        console.log('✅ TAFL Editor Enhancements initialized - Press ? for keyboard shortcuts');
     }
     
     setupStoreSubscriptions() {
         // Flow changes
         taflFlowStore.on('flow:changed', () => {
+            // 如果沒有其他更具體的事件處理，也需要更新畫布
+            this.updateCanvas({
+                fullRefresh: true,
+                skipDuringDrag: false,
+                source: 'flow:changed'
+            });
             this.updateUI();
-            this.updateYAMLView();
+            this.yamlModule.refreshYAML();
         });
         
         // Card selection
@@ -40,9 +119,19 @@ class TAFLEditor {
         
         // Card additions
         taflFlowStore.on('card:added', (data) => {
-            this.refreshCanvas();
+            console.log('🎨 card:added event handler called with:', data);
+            this.updateCanvas({ 
+                fullRefresh: true, 
+                skipDuringDrag: false,  // 添加卡片時不要跳過更新！
+                source: 'card:added' 
+            });
             const cardEl = document.querySelector(`[data-card-id="${data.card.id}"]`);
-            if (cardEl) this.selectCard(cardEl);
+            if (cardEl) {
+                console.log('🎨 Selecting new card:', data.card.id);
+                this.selectCard(cardEl);
+            } else {
+                console.log('🎨 New card element not found yet:', data.card.id);
+            }
         });
         
         // Card updates
@@ -51,18 +140,30 @@ class TAFLEditor {
         });
         
         // Card deletions
-        taflFlowStore.on('card:deleted', () => {
-            this.refreshCanvas();
+        taflFlowStore.on('card:deleted', (cardId) => {
+            console.log('🎬 Event handler: card:deleted for', cardId);
+            this.updateCanvas({ 
+                fullRefresh: true, 
+                source: 'card:deleted' 
+            });
+            // Force YAML refresh on delete
+            this.yamlModule.refreshYAML();
+            this.updateUI();
         });
         
         // Card moves
-        taflFlowStore.on('card:moved', () => {
-            this.refreshCanvas();
+        taflFlowStore.on('card:moved', (data) => {
+            // 檢查是否需要完整更新（從嵌套移到外層或反之）
+            const needsFullRefresh = this.checkIfStructureChanged(data);
+            this.updateCanvas({ 
+                fullRefresh: needsFullRefresh,  // 結構改變時需要完整更新
+                source: 'card:moved' 
+            });
         });
         
         // Variables changes
         taflFlowStore.on('variables:changed', (variables) => {
-            this.renderVariables();
+            this.variablesModule.renderVariables();
         });
         
         // Dirty state changes
@@ -71,35 +172,141 @@ class TAFLEditor {
         });
         
         // Flow loaded
-        taflFlowStore.on('flow:loaded', () => {
-            this.refreshCanvas();
+        taflFlowStore.on('flow:loaded', (flowData) => {
+            console.log('🔄 flow:loaded event received in tafl-editor.js');
+            console.log('🔄 Event data flow.flow:', flowData?.flow, 'Length:', flowData?.flow?.length);
+            console.log('🔄 Store flow.flow:', taflFlowStore.getFlow()?.flow, 'Length:', taflFlowStore.getFlow()?.flow?.length);
+            this.updateCanvas({ 
+                fullRefresh: true, 
+                preserveScroll: false,  // 新載入不保留捲動
+                source: 'flow:loaded' 
+            });
             this.updateUI();
+            // Refresh YAML to sync with loaded flow - add delay to ensure flow is fully loaded
+            setTimeout(() => {
+                this.yamlModule.refreshYAML();
+                console.log('🔄 YAML refreshed after flow load');
+            }, 200);
+            console.log('🔄 flow:loaded handler complete');
+        });
+        
+        // Flow cleared (for New Flow action)
+        taflFlowStore.on('flow:cleared', () => {
+            console.log('🧹 flow:cleared event received');
+            this.updateCanvas({ 
+                fullRefresh: true, 
+                preserveScroll: false,
+                source: 'flow:cleared' 
+            });
+            this.updateUI();
+            this.yamlModule.refreshYAML();
         });
         
         // Verbs loaded
         taflFlowStore.on('verbs:loaded', (verbs) => {
             this.verbDefinitions = verbs;
         });
+        
+        // Subscribe to specific flow updates
+        taflFlowStore.on('metadata:changed', () => {
+            // SimpleTAFLPanels handles metadata UI updates
+            // this.refreshMetadataUI();
+        });
+        
+        // Re-render UI when flow changes
+        taflFlowStore.on('flow:changed', () => {
+            // SimpleTAFLPanels handles all UI updates via store events
+            // this.refreshPreloadUI();
+            // this.refreshRulesUI();
+            // this.refreshSettingsUI();
+        });
     }
     
     async initializeEditor() {
+        // Register global variables first (must be before module initialization)
+        this.registerGlobalVariables();
+        
+        // Log the initial state to see what's in the store
+        console.log('🔍 Initial store state on editor init:', taflFlowStore.getFlow());
+        
         await this.loadVerbDefinitions();
-        this.setupEventListeners();
-        this.initializeCodeMirror();
+        this.initializeCards(); // Initialize cards module first
+        this.initializeYAML();   // Initialize YAML and preload modules
+        this.initializeValidator();
+        this.initializeVariables();
+        
+        // Now initialize events after all modules are created
+        this.initializeEvents();
+        
+        this.setupGlobalEventDelegation();  // 新增：全域事件委派
+        this.initializeDisplayModes();  // Initialize display mode switcher
         this.setupDragAndDrop();
         this.updateUI();
-        this.initializeVariables();
+        
+        // Log state after initialization
+        console.log('🔍 Store state after editor init:', taflFlowStore.getFlow());
+    }
+    
+    /**
+     * Register global variables for modules that need them
+     */
+    registerGlobalVariables() {
+        window.taflFlowStore = taflFlowStore;
+        window.taflModals = taflModals;
+        window.taflAPI = taflAPI;
+        window.taflPanels = this.panels;
+        window.taflEditor = this;
+        window.TAFLEditor = TAFLEditor;
+    }
+    
+    initializeYAML() {
+        // Create YAML module instance with reference to this editor
+        this.yamlModule = new TAFLEditorYAML(this);
+        // Initialize YAML editor
+        this.yamlModule.initYAMLEditor('yaml-editor-main');
+        // Initial YAML refresh
+        this.yamlModule.refreshYAML();
+        
+        // Initialize preload module
+        this.preloadModule = new TAFLEditorPreload(this);
+        taflEditorPreload.editor = this; // Set editor reference for singleton
+    }
+
+    initializeValidator() {
+        // Create validator module instance
+        this.validatorModule = taflEditorValidator;
+        // Initialize validator with editor reference
+        this.validatorModule.init(this);
+    }
+    
+    initializeCards() {
+        // Create cards module instance
+        this.cardsModule = taflEditorCards;
+        // Initialize cards module with editor reference and verb definitions
+        this.cardsModule.init(this, this.verbDefinitions);
+    }
+    
+    initializeEvents() {
+        // Initialize events module after all other modules are created
+        this.eventsModule = new TAFLEditorEvents(this);
+        taflEditorEvents.editor = this;
+        // Now initialize event listeners with all modules available
+        this.eventsModule.initEventListeners();
     }
     
     async loadVerbDefinitions() {
         try {
-            const response = await fetch('/tafl/verbs');
-            const data = await response.json();
-            this.verbDefinitions = data.verbs;
-            taflFlowStore.setVerbDefinitions(data.verbs);
+            const verbs = await taflAPI.loadVerbs();
+            this.verbDefinitions = verbs;
+            taflFlowStore.setVerbDefinitions(verbs);
+            
+            // Share verb definitions with properties module
+            if (this.propertiesModule) {
+                this.propertiesModule.verbDefinitions = verbs;
+            }
         } catch (error) {
             console.error('Error loading verb definitions:', error);
-            this.showNotification('Error loading TAFL verbs', 'is-danger');
+            this.showNotification(error.message, 'is-danger');
         }
     }
     
@@ -130,124 +337,464 @@ class TAFLEditor {
         return null;
     }
     
-    setupEventListeners() {
-        // Toolbar buttons
-        document.getElementById('new-flow-btn').addEventListener('click', () => this.newFlow());
-        document.getElementById('open-flow-btn').addEventListener('click', () => this.openFlowModal());
-        document.getElementById('save-flow-btn').addEventListener('click', () => this.saveFlowModal());
-        document.getElementById('validate-btn').addEventListener('click', () => this.validateFlow());
-        document.getElementById('execute-btn').addEventListener('click', () => this.executeFlow());
+    /**
+     * GLOBAL EVENT DELEGATION SYSTEM
+     * 統一處理所有層級的卡片事件，解決巢狀卡片無法操作的問題
+     */
+    setupGlobalEventDelegation() {
+        const canvas = document.getElementById('flow-canvas');
+        if (!canvas) return;
         
-        // Panel tabs
-        document.querySelectorAll('.panel-tabs a').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.switchVerbCategory(tab.dataset.tab);
-            });
-        });
-        
-        // Property panel tabs
-        document.querySelectorAll('.tabs li').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.switchPropertiesTab(tab.dataset.tab);
-            });
-        });
-        
-        // Verb items (toolbox) - click only for now
-        document.querySelectorAll('.verb-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const verb = item.dataset.verb;
-                this.addCard(verb);
-            });
-        });
-        
-        // Metadata inputs
-        document.getElementById('flow-id').addEventListener('input', (e) => {
-            taflFlowStore.updateMetadata({ id: e.target.value });
-            this.markDirty();
-        });
-        
-        document.getElementById('flow-name').addEventListener('input', (e) => {
-            taflFlowStore.updateMetadata({ name: e.target.value });
-            this.markDirty();
-        });
-        
-        document.getElementById('flow-version').addEventListener('input', (e) => {
-            taflFlowStore.updateMetadata({ version: e.target.value });
-            this.markDirty();
-        });
-        
-        document.getElementById('flow-description').addEventListener('input', (e) => {
-            taflFlowStore.updateMetadata({ description: e.target.value });
-            this.markDirty();
-        });
-        
-        // TAFL v1.1: Settings panel event listeners
-        const settingsTimeout = document.getElementById('settings-timeout');
-        if (settingsTimeout) {
-            settingsTimeout.addEventListener('input', (e) => {
-                const flow = taflFlowStore.getFlow();
-                taflFlowStore.updateFlow({
-                    ...flow,
-                    settings: { ...flow.settings, timeout: parseInt(e.target.value) || 3600 }
-                });
-                this.markDirty();
-            });
-        }
-        
-        const settingsMaxRetries = document.getElementById('settings-max-retries');
-        if (settingsMaxRetries) {
-            settingsMaxRetries.addEventListener('input', (e) => {
-                const flow = taflFlowStore.getFlow();
-                taflFlowStore.updateFlow({
-                    ...flow,
-                    settings: { ...flow.settings, max_retries: parseInt(e.target.value) || 3 }
-                });
-                this.markDirty();
-            });
-        }
-        
-        const settingsRetryOnFailure = document.getElementById('settings-retry-on-failure');
-        if (settingsRetryOnFailure) {
-            settingsRetryOnFailure.addEventListener('change', (e) => {
-                const flow = taflFlowStore.getFlow();
-                taflFlowStore.updateFlow({
-                    ...flow,
-                    settings: { ...flow.settings, retry_on_failure: e.target.checked }
-                });
-                this.markDirty();
-            });
-        }
-        
-        // TAFL v1.1: Preload panel event listeners
-        const addPreloadBtn = document.getElementById('add-preload-btn');
-        if (addPreloadBtn) {
-            addPreloadBtn.addEventListener('click', () => this.addPreload());
-        }
-        
-        // TAFL v1.1: Rules panel event listeners
-        const addRuleBtn = document.getElementById('add-rule-btn');
-        if (addRuleBtn) {
-            addRuleBtn.addEventListener('click', () => this.addRule());
-        }
-        
-        // Variable management
-        document.getElementById('add-variable-btn').addEventListener('click', () => this.addVariable());
-        
-        // Modal controls
-        this.setupModalControls();
-        
-        // Canvas click (deselect)
-        document.getElementById('flow-canvas').addEventListener('click', (e) => {
-            if (e.target.classList.contains('tafl-canvas') || e.target.classList.contains('canvas-drop-zone')) {
-                this.deselectCard();
+        // 1. 統一點擊處理（所有層級）
+        canvas.addEventListener('click', (e) => {
+            // 如果正在拖動，忽略點擊事件
+            if (this.draggedElement || document.body.classList.contains('dragging')) {
+                console.log('Ignoring click during drag');
+                return;
             }
+            
+            const card = e.target.closest('.tafl-card');
+            
+            if (!card) {
+                // 點擊空白處取消選擇
+                if (e.target.id === 'flow-canvas' || e.target.classList.contains('canvas-drop-zone')) {
+                    this.deselectCard();
+                }
+                return;
+            }
+            
+            // 檢查是否點擊控制按鈕
+            if (e.target.closest('.card-controls')) {
+                e.stopPropagation();
+                const btn = e.target.closest('button');
+                if (btn?.classList.contains('card-duplicate-btn')) {
+                    this.duplicateCard(card.dataset.cardId);
+                } else if (btn?.classList.contains('card-delete-btn')) {
+                    // Call async deleteCard - no need to await since confirm is synchronous
+                    this.deleteCard(card.dataset.cardId);
+                }
+                return;
+            }
+            
+            // 選擇卡片
+            e.stopPropagation();
+            this.selectCard(card);
         });
         
-        // YAML editor controls
-        document.getElementById('apply-yaml-btn').addEventListener('click', () => this.applyYAMLChanges());
-        document.getElementById('refresh-yaml-btn').addEventListener('click', () => this.refreshYAML());
+        // 2. 統一拖動開始
+        canvas.addEventListener('dragstart', (e) => {
+            const card = e.target.closest('.tafl-card');
+            console.log('🔵 Dragstart event fired');
+            console.log('  - target:', e.target);
+            console.log('  - target tagName:', e.target.tagName);
+            console.log('  - target classes:', e.target.className);
+            console.log('  - card found:', card);
+            console.log('  - isTrusted:', e.isTrusted);
+            console.log('  - bubbles:', e.bubbles);
+            console.log('  - cancelable:', e.cancelable);
+            console.log('  - dataTransfer:', e.dataTransfer);
+            console.log('  - currentTarget:', e.currentTarget);
+            console.log('  - eventPhase:', e.eventPhase);
+            console.log('  - defaultPrevented:', e.defaultPrevented);
+            
+            // 檢查是否有其他事件監聽器
+            if (typeof getEventListeners !== 'undefined') {
+                const listeners = getEventListeners(e.target);
+                console.log('  - Event listeners on target:', listeners);
+            }
+            
+            if (!card) {
+                console.log('❌ No card found for dragstart');
+                return;
+            }
+            
+            if (!card.draggable) {
+                console.log('❌ Card is not draggable:', card);
+                console.log('  - card.draggable attribute:', card.getAttribute('draggable'));
+                return;
+            }
+            
+            console.log('📍 Card info:');
+            console.log('  - cardId:', card.dataset.cardId);
+            console.log('  - parent:', card.parentElement);
+            console.log('  - parent tagName:', card.parentElement?.tagName);
+            console.log('  - parent classes:', card.parentElement?.className);
+            console.log('  - classList:', card.classList.toString());
+            
+            // 檢查是否有 CSS 阻止拖動
+            const computedStyle = window.getComputedStyle(card);
+            console.log('  - computed userSelect:', computedStyle.userSelect);
+            console.log('  - computed pointerEvents:', computedStyle.pointerEvents);
+            console.log('  - computed cursor:', computedStyle.cursor);
+            console.log('  - computed touchAction:', computedStyle.touchAction);
+            console.log('  - computed webkitUserDrag:', computedStyle.webkitUserDrag);
+            
+            // 檢查父元素樣式
+            const parentStyle = card.parentElement ? window.getComputedStyle(card.parentElement) : null;
+            if (parentStyle) {
+                console.log('  - parent userSelect:', parentStyle.userSelect);
+                console.log('  - parent pointerEvents:', parentStyle.pointerEvents);
+            }
+            
+            // 檢查是否有其他東西阻止拖動
+            const isDefaultPrevented = e.defaultPrevented;
+            console.log('  - defaultPrevented before our handling:', isDefaultPrevented);
+            
+            // 不要 stopPropagation - 讓事件正常冒泡
+            // e.stopPropagation();
+            
+            // 立即設置拖動數據，確保 dragover 可以訪問
+            this.draggedElement = card;
+            
+            // 記錄原始位置（是否在嵌套中）
+            const cardId = card.dataset.cardId;
+            const isNested = card.closest('.nested-cards') !== null;
+            this.cardOriginalPositions.set(cardId, { isNested });
+            console.log(`📌 Recording original position for card ${cardId}: nested=${isNested}`);
+            
+            this.dragData = {
+                type: 'card',
+                cardId: cardId
+            };
+            
+            console.log('📦 Setting dataTransfer:');
+            console.log('  - effectAllowed: move');
+            console.log('  - dropEffect: move');
+            
+            // 設置 dataTransfer
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.dropEffect = 'move';
+            
+            // 設定拖動時的視覺效果 - 直接使用原始元素
+            // 避免創建複製元素可能導致的問題
+            if (e.dataTransfer.setDragImage) {
+                console.log('  - Setting drag image');
+                console.log('  - offsetX:', e.offsetX);
+                console.log('  - offsetY:', e.offsetY);
+                e.dataTransfer.setDragImage(card, e.offsetX, e.offsetY);
+            }
+            
+            try {
+                e.dataTransfer.setData('text/plain', JSON.stringify(this.dragData));
+                console.log('  - Data set successfully');
+            } catch (err) {
+                console.error('❌ Error setting drag data:', err);
+            }
+            
+            card.classList.add('dragging');
+            document.body.classList.add('dragging'); // 設置全域拖動狀態
+            
+            // 不需要額外的 placeholder，讓原卡片保持 opacity: 0.5 即可
+            
+            // 檢查卡片是否仍然可拖動
+            setTimeout(() => {
+                if (!card.draggable) {
+                    console.log('⚠️ Card became undraggable after dragstart!');
+                }
+                if (!document.body.contains(card)) {
+                    console.log('⚠️ Card was removed from DOM after dragstart!');
+                }
+                const stillDragging = card.classList.contains('dragging');
+                console.log('  - Card still has dragging class after 10ms:', stillDragging);
+            }, 10);
+            
+            console.log('✅ Drag start completed');
+            console.log('  - draggedElement set:', !!this.draggedElement);
+            console.log('  - dragData set:', this.dragData);
+            console.log('  - Event propagation stopping?', e.cancelBubble);
+            
+            // 添加監聽器來追踪何時觸發 dragend
+            let dragEventCount = 0;
+            const dragHandler = (e) => {
+                dragEventCount++;
+                if (dragEventCount === 1 || dragEventCount % 50 === 0) {
+                    console.log(`🟡 Drag event #${dragEventCount} (during drag)`);
+                    console.log('  - clientX:', e.clientX);
+                    console.log('  - clientY:', e.clientY);
+                }
+            };
+            window.addEventListener('drag', dragHandler);
+            this.onDrag = dragHandler;
+            
+            // 監聽各種可能導致 drag 結束的事件
+            const mouseUpHandler = (e) => {
+                console.log('🟠 MouseUp event during drag!');
+                console.log('  - target:', e.target);
+                console.log('  - button:', e.button);
+            };
+            window.addEventListener('mouseup', mouseUpHandler, { once: true });
+            
+            // 監聽 ESC 鍵
+            const keyHandler = (e) => {
+                if (e.key === 'Escape') {
+                    console.log('🟠 ESC key pressed during drag!');
+                }
+            };
+            window.addEventListener('keydown', keyHandler);
+            
+            // 監聽 document 上的 dragend 事件，以防在 canvas 外結束
+            document.addEventListener('dragend', this.onDocDragEnd = (e) => {
+                console.log('🔴 Document dragend event fired');
+                console.log('  - target:', e.target);
+                console.log('  - outside canvas?', !canvas.contains(e.target));
+                
+                // 清理事件監聽器
+                window.removeEventListener('mouseup', mouseUpHandler);
+                window.removeEventListener('keydown', keyHandler);
+            }, { once: true });
+        }, false);
+        
+        // 3. 統一拖動結束
+        canvas.addEventListener('dragend', (e) => {
+            console.log('🔴 Canvas dragend event fired');
+            console.log('  - dropEffect:', e.dataTransfer.dropEffect);
+            console.log('  - effectAllowed:', e.dataTransfer.effectAllowed);
+            console.log('  - isTrusted:', e.isTrusted);
+            console.log('  - target:', e.target);
+            console.log('  - target tagName:', e.target.tagName);
+            console.log('  - target classes:', e.target.className);
+            console.log('  - currentTarget:', e.currentTarget);
+            console.log('  - eventPhase:', e.eventPhase);
+            console.log('  - clientX:', e.clientX);
+            console.log('  - clientY:', e.clientY);
+            console.log('  - screenX:', e.screenX);
+            console.log('  - screenY:', e.screenY);
+            
+            // 移除 drag 事件監聽器
+            if (this.onDrag) {
+                window.removeEventListener('drag', this.onDrag);
+                console.log('  - Removed drag event listener');
+            }
+            
+            // 移除 document dragend 監聽器
+            if (this.onDocDragEnd) {
+                document.removeEventListener('dragend', this.onDocDragEnd);
+                console.log('  - Removed document dragend listener');
+            }
+            
+            // 檢查拖動是否真的成功
+            console.log('  - Was drag successful?', e.dataTransfer.dropEffect !== 'none');
+            
+            const card = e.target.closest('.tafl-card');
+            if (!card) {
+                console.log('❌ No card found for dragend');
+                return;
+            }
+            
+            console.log('📍 Dragend card info:');
+            console.log('  - cardId:', card.dataset.cardId);
+            console.log('  - was dragging:', card.classList.contains('dragging'));
+            console.log('  - had draggedElement:', this.draggedElement === card);
+            
+            card.classList.remove('dragging');
+            document.body.classList.remove('dragging'); // 移除全域拖動狀態
+            
+            // 清理所有 placeholder 和指示器
+            this.hideDropIndicators();
+            document.querySelectorAll('.tafl-card-placeholder').forEach(p => p.remove());
+            
+            // 立即清理拖曳狀態 - 不需要延遲！
+            this.draggedElement = null;
+            this.dragData = null;
+            console.log('  - Cleared drag data immediately');
+            
+            console.log('✅ Dragend completed');
+        }, false);
+        
+        // 4. 統一拖動經過
+        let dragoverCount = 0;
+        canvas.addEventListener('dragover', (e) => {
+            dragoverCount++;
+            if (dragoverCount === 1 || dragoverCount % 10 === 0) {
+                console.log(`🟢 Dragover event #${dragoverCount}`);
+                console.log('  - has dragData:', !!this.dragData);
+                console.log('  - target:', e.target.tagName, e.target.className);
+            }
+            
+            // 始終阻止默認行為，允許 drop
+            e.preventDefault();
+            
+            // 根據拖動類型設置正確的 dropEffect
+            if (this.dragData) {
+                e.dataTransfer.dropEffect = this.dragData.type === 'verb' ? 'copy' : 'move';
+            } else {
+                e.dataTransfer.dropEffect = 'move';
+            }
+            
+            // 如果沒有拖動數據，不更新視覺效果
+            if (!this.dragData) {
+                console.log('⚠️ Dragover without dragData');
+                return;
+            }
+            
+            // 處理巢狀 drop zone 的 hover 效果
+            const nestedDropZone = e.target.closest('.nested-drop-zone');
+            if (nestedDropZone) {
+                nestedDropZone.classList.add('drag-over');
+            }
+            
+            this.updateUnifiedDropIndicator(e);
+        }, false);
+        
+        // 4.5. 統一拖動離開
+        canvas.addEventListener('dragleave', (e) => {
+            // 處理巢狀 drop zone 的 hover 移除
+            const nestedDropZone = e.target.closest('.nested-drop-zone');
+            if (nestedDropZone && !nestedDropZone.contains(e.relatedTarget)) {
+                nestedDropZone.classList.remove('drag-over');
+            }
+        }, false);
+        
+        // 5. 統一放置處理
+        canvas.addEventListener('drop', (e) => {
+            console.log('📍 Drop event triggered, dragData:', this.dragData);
+            
+            // 確保有拖動數據
+            // 注意：從 Verbs 拖動時，draggedElement 是 null，但 dragData 存在
+            if (!this.dragData) {
+                console.log('Drop event but no drag data');
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('📍 Drop event at:', e.clientX, e.clientY, 'dragData type:', this.dragData.type);
+            
+            // 優先使用 placeholder 的位置
+            const placeholder = document.querySelector('.tafl-card-placeholder');
+            let position;
+            
+            if (placeholder) {
+                // 如果有 placeholder，使用它的位置
+                const parent = placeholder.parentElement;
+                const children = Array.from(parent.children).filter(child => 
+                    !child.classList.contains('tafl-card-placeholder')
+                );
+                
+                // 計算實際的插入索引（排除 placeholder 本身）
+                let index = 0;
+                for (let i = 0; i < parent.children.length; i++) {
+                    if (parent.children[i] === placeholder) {
+                        break;
+                    }
+                    if (!parent.children[i].classList.contains('tafl-card-placeholder')) {
+                        index++;
+                    }
+                }
+                
+                // 判斷是否在巢狀結構中
+                const nestedContainer = placeholder.closest('.nested-cards');
+                if (nestedContainer) {
+                    const parentCard = nestedContainer.closest('.tafl-card');
+                    const branchType = nestedContainer.dataset.branch;
+                    position = {
+                        nested: {
+                            parentCardId: parentCard.dataset.cardId,
+                            branchType: branchType
+                        },
+                        index: index
+                    };
+                } else {
+                    position = {
+                        nested: null,
+                        index: index
+                    };
+                }
+                console.log('✅ Using placeholder position:', position);
+                
+                // 移除 placeholder
+                placeholder.remove();
+            } else {
+                // 沒有 placeholder 時的備用邏輯
+                const dropZone = e.target.closest('.drop-zone, .nested-drop-zone, .canvas-drop-zone');
+                if (dropZone) {
+                    position = this.getDropZonePosition(dropZone, e);
+                    console.log('Drop zone detected:', dropZone, 'position:', position);
+                } else {
+                    position = this.calculateUnifiedDropPosition(e);
+                    console.log('Calculated position (no placeholder):', position);
+                }
+            }
+            
+            // 先清除拖曳狀態，確保 card:added 事件不會被跳過
+            document.body.classList.remove('dragging');
+            this.draggedElement = null;
+            
+            if (position) {
+                console.log('💧 Handling drop at position:', position);
+                this.handleUnifiedDrop(position);
+            } else {
+                console.log('⚠️ Could not determine drop position');
+            }
+            
+            // 清理所有 placeholder
+            document.querySelectorAll('.tafl-card-placeholder').forEach(p => p.remove());
+            this.hideDropIndicators();
+            this.hideAllDropZones();
+            
+            // 立即清空 dragData 避免重複處理
+            this.dragData = null;
+            this.draggedElement = null;
+        }, false);
+    }
+    
+    /**
+     * 獲取 drop zone 的位置信息
+     */
+    getDropZonePosition(dropZone, event) {
+        // 檢查是否是嵌套 drop zone (使用正確的 class)
+        const branch = dropZone.closest('.nested-cards');
+        if (branch) {
+            const branchName = branch.dataset.branch;
+            const parentCard = branch.closest('.tafl-card');
+            if (parentCard) {
+                const parentId = parentCard.dataset.cardId;
+                
+                // 找到該 branch 內的現有卡片數量來決定 index
+                const existingCards = branch.querySelectorAll('.tafl-card');
+                const index = existingCards.length;
+                
+                return {
+                    nested: {
+                        parentCardId: parentId,  // 統一使用 parentCardId
+                        branchType: branchName    // 統一使用 branchType
+                    },
+                    index: index
+                };
+            }
+        }
+        
+        // 主畫布 drop zone - 使用統一的計算邏輯
+        const canvasDropZone = document.getElementById('canvas-drop-zone');
+        const cards = Array.from(canvasDropZone.querySelectorAll(':scope > .tafl-card'));
+        
+        // 如果有 event，使用統一的位置計算方法
+        if (event) {
+            const result = this.calculateIndexFromPosition(event, cards);
+            
+            // 處理死區情況
+            if (result && typeof result === 'object' && result.isDeadZone) {
+                console.log('[getDropZonePosition] Dead zone detected');
+                return {
+                    nested: null,
+                    index: result.index,
+                    isDeadZone: true
+                };
+            }
+            
+            console.log('[getDropZonePosition] Calculated index:', result);
+            return {
+                nested: null,
+                index: result
+            };
+        }
+        
+        // 沒有 event 時，預設放在最後
+        return {
+            nested: null,
+            index: cards.length
+        };
     }
     
     /**
@@ -288,6 +835,7 @@ class TAFLEditor {
             
             item.addEventListener('dragstart', (e) => {
                 e.stopPropagation();
+                document.body.classList.add('dragging');
                 
                 const verb = item.dataset.verb;
                 // Always set dragData as primary data storage
@@ -315,7 +863,13 @@ class TAFLEditor {
             
             item.addEventListener('dragend', (e) => {
                 item.classList.remove('is-dragging');
+                document.body.classList.remove('dragging');
                 this.hideAllDropZones();
+                
+                // 清理所有 placeholder
+                document.querySelectorAll('.tafl-card-placeholder').forEach(p => p.remove());
+                this.hideDropIndicators();
+                
                 // Don't clear dragData immediately, let drop handler use it first
                 setTimeout(() => {
                     this.dragData = null;
@@ -332,7 +886,7 @@ class TAFLEditor {
             e.preventDefault();
             
             // Always update drop indicators during dragover
-            this.updateDropIndicators(e);
+            this.updateUnifiedDropIndicator(e);
             
             const dragData = this.getDragData(e) || this.dragData;
             if (dragData) {
@@ -347,12 +901,7 @@ class TAFLEditor {
             }
         });
         
-        canvas.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            this.handleCanvasDrop(e);
-        });
+        // 移除重複的 drop 監聽器，已經在 setupUnifiedDragDrop 中處理
     }
     
     getDragData(e) {
@@ -377,6 +926,11 @@ class TAFLEditor {
     }
     
     handleCanvasDrop(e) {
+        // 檢查是否已經被 drop zone 處理過
+        if (e.defaultPrevented) {
+            return;
+        }
+        
         const dragData = this.getDragData(e);
         if (!dragData) {
             return;
@@ -389,27 +943,38 @@ class TAFLEditor {
         
         if (dragData.type === 'verb' && dragData.source === 'toolbox') {
             // Adding new card from toolbox
-            const dropPosition = this.calculateDropPosition(e);
+            const dropPosition = this.calculateUnifiedDropPosition(e);
             this.addCardAtPosition(dragData.verb, dropPosition);
         } else if (dragData.type === 'card') {
             // Moving existing card
-            const dropPosition = this.calculateDropPosition(e);
+            const dropPosition = this.calculateUnifiedDropPosition(e);
             this.moveCardToPosition(dragData.cardId, dropPosition);
         }
     }
     
     calculateDropPosition(e) {
-        const canvas = document.getElementById('flow-canvas');
-        const cards = Array.from(canvas.querySelectorAll('.tafl-card:not(.dragging)'));
+        const dropZone = document.getElementById('canvas-drop-zone');
+        if (!dropZone) {
+            // 如果 drop zone 不存在，返回默認位置
+            return { index: 0, nested: null };
+        }
         
-        if (cards.length === 0) {
+        // Get all cards including the dragging one to calculate correct original index
+        const allCards = Array.from(dropZone.querySelectorAll('.tafl-card'));
+        const draggingCard = dropZone.querySelector('.tafl-card.dragging');
+        const draggingCardIndex = draggingCard ? allCards.indexOf(draggingCard) : -1;
+        
+        // Get cards excluding the dragging one for position calculation
+        const cards = Array.from(dropZone.querySelectorAll('.tafl-card:not(.dragging)'));
+        
+        if (cards.length === 0 && !draggingCard) {
             return { index: 0, nested: null };
         }
         
         const mouseY = e.clientY;
         let targetIndex = cards.length;
         
-        // Find insertion position
+        // Find insertion position based on non-dragging cards
         for (let i = 0; i < cards.length; i++) {
             const card = cards[i];
             const rect = card.getBoundingClientRect();
@@ -419,6 +984,17 @@ class TAFLEditor {
                 targetIndex = i;
                 break;
             }
+        }
+        
+        // Adjust index if dragging a card from before the target position
+        // This is necessary because the dragging card will be removed first
+        // and then inserted, which changes the indices
+        if (draggingCard && draggingCardIndex !== -1 && draggingCardIndex < targetIndex) {
+            // The target index should account for the fact that the dragging card
+            // will be removed, which shifts all subsequent indices down by 1
+            // But since we already excluded the dragging card from 'cards',
+            // the targetIndex is already correct for the final position
+            // No adjustment needed here
         }
         
         // Check for nested drop zones
@@ -438,7 +1014,248 @@ class TAFLEditor {
             }
         }
         
+        console.log('📍 Drop position calculated:', {
+            targetIndex,
+            draggingCardIndex,
+            totalCards: allCards.length,
+            mouseY
+        });
+        
         return { index: targetIndex, nested: null };
+    }
+    
+    /**
+     * UNIFIED DROP POSITION CALCULATION
+     * 統一計算所有層級的放置位置
+     */
+    calculateUnifiedDropPosition(e) {
+        // 1. 檢查是否在空的巢狀放置區
+        const emptyNested = e.target.closest('.nested-drop-zone.empty-zone');
+        if (emptyNested) {
+            const parentCard = emptyNested.closest('.tafl-card');
+            const branch = emptyNested.dataset.branch;
+            
+            if (parentCard && branch) {
+                return {
+                    nested: {
+                        parentCardId: parentCard.dataset.cardId,
+                        branchType: branch
+                    },
+                    index: 0
+                };
+            }
+        }
+        
+        // 2. 檢查是否在巢狀卡片之間
+        const nestedCards = e.target.closest('.nested-cards');
+        if (nestedCards) {
+            const parentCard = nestedCards.closest('.tafl-card');
+            const branch = nestedCards.dataset.branch;
+            
+            if (parentCard && branch) {
+                const cards = Array.from(nestedCards.querySelectorAll(':scope > .tafl-card'));
+                const index = this.calculateIndexFromPosition(e, cards);
+                
+                return {
+                    nested: {
+                        parentCardId: parentCard.dataset.cardId,
+                        branchType: branch
+                    },
+                    index: index
+                };
+            }
+        }
+        
+        // 3. 主流程位置
+        const dropZone = document.getElementById('canvas-drop-zone');
+        if (!dropZone) {
+            // 如果 drop zone 不存在，返回默認位置
+            return {
+                nested: null,
+                index: 0
+            };
+        }
+        const mainCards = Array.from(dropZone.querySelectorAll(':scope > .tafl-card'));
+        const result = this.calculateIndexFromPosition(e, mainCards);
+        
+        // 處理死區情況
+        if (result && typeof result === 'object' && result.isDeadZone) {
+            return {
+                nested: null,
+                index: result.index,
+                isDeadZone: true
+            };
+        }
+        
+        return {
+            nested: null,
+            index: result
+        };
+    }
+    
+    /**
+     * 創建 Placeholder 元素
+     */
+    createPlaceholder() {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'tafl-card-placeholder';
+        placeholder.dataset.placeholder = 'true';
+        
+        // 如果有拖動元素，匹配其高度
+        if (this.draggedElement) {
+            const height = this.draggedElement.offsetHeight;
+            placeholder.style.minHeight = `${height}px`;
+        }
+        
+        return placeholder;
+    }
+    
+    /**
+     * 輔助方法：根據滑鼠位置計算插入索引（30% 規則）
+     */
+    calculateIndexFromPosition(e, cards) {
+        const mouseY = e.clientY;
+        
+        console.log('📏 calculateIndexFromPosition (30% threshold):');
+        console.log('  - mouseY:', mouseY);
+        console.log('  - cards count:', cards.length);
+        
+        // 如果沒有卡片，返回 0
+        if (cards.length === 0) {
+            console.log('  - No cards, returning 0');
+            return 0;
+        }
+        
+        // 獲取正在拖動的卡片 ID
+        const draggingCardId = this.dragData?.cardId || this.draggedElement?.dataset?.cardId;
+        
+        // 使用 30% 規則進行更靈敏的檢測
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            
+            // 跳過 placeholder 和正在拖動的卡片
+            if (card.dataset.placeholder === 'true') continue;
+            if (draggingCardId && card.dataset.cardId === draggingCardId) continue;
+            
+            const rect = card.getBoundingClientRect();
+            const threshold = rect.top + rect.height * 0.3; // 30% 閾值
+            
+            console.log(`  - Card ${i}: top=${rect.top}, height=${rect.height}, threshold=${threshold}`);
+            
+            if (mouseY < threshold) {
+                console.log(`  - Mouse is above 30% of card ${i}, target index = ${i}`);
+                return i;
+            }
+        }
+        
+        // 如果沒有在任何卡片 30% 之前，則放在最後
+        console.log('  - Mouse is below all cards, target index = end');
+        return cards.length;
+    }
+    
+    /**
+     * UNIFIED DROP HANDLER
+     * 統一處理所有放置操作（新增和移動）
+     */
+    handleUnifiedDrop(position) {
+        // 保存 dragData 因為可能會被清空
+        const dragDataCopy = { ...this.dragData };
+        
+        if (!dragDataCopy || !dragDataCopy.type) {
+            console.warn('No drag data available for drop');
+            return;
+        }
+        
+        if (dragDataCopy.type === 'verb') {
+            // 新增卡片
+            this.addCardAtPosition(dragDataCopy.verb, position);
+        } else if (dragDataCopy.type === 'card') {
+            // 移動現有卡片（使用 Store 的統一邏輯）
+            console.log('🚀 Moving card:', dragDataCopy.cardId, 'to position:', position);
+            
+            // 在移動前清理拖曳狀態，確保更新不會被跳過
+            this.draggedElement = null;
+            this.dragData = null;
+            document.body.classList.remove('dragging');
+            
+            taflFlowStore.moveCard(dragDataCopy.cardId, position);
+            // 不再手動調用 refreshCanvas，由 card:moved 事件處理
+            
+            // 重新選擇移動的卡片
+            setTimeout(() => {
+                const movedCard = document.querySelector(`[data-card-id="${dragDataCopy.cardId}"]`);
+                if (movedCard) {
+                    movedCard.classList.add('just-moved');
+                    setTimeout(() => movedCard.classList.remove('just-moved'), 500);
+                    this.selectCard(movedCard);
+                }
+            }, 100);
+            
+            this.markDirty();
+            this.showNotification('Card moved successfully', 'is-success');
+        }
+    }
+    
+    /**
+     * 更新 Placeholder 位置
+     */
+    updatePlaceholder(e) {
+        // 移除現有的 placeholder (但保留 original-position-placeholder)
+        const existingPlaceholder = document.querySelector('.tafl-card-placeholder:not(.original-position-placeholder)');
+        if (existingPlaceholder) {
+            existingPlaceholder.remove();
+        }
+        
+        // 計算新位置
+        const position = this.calculateUnifiedDropPosition(e);
+        if (!position) return;
+        
+        // 創建新的 placeholder
+        const placeholder = this.createPlaceholder();
+        
+        // 根據位置類型插入 placeholder
+        if (position.nested) {
+            // 巢狀結構中
+            const parentCard = document.querySelector(`[data-card-id="${position.nested.parentCardId}"]`);
+            const nestedContainer = parentCard?.querySelector(`.nested-cards[data-branch="${position.nested.branchType}"]`);
+            
+            if (nestedContainer) {
+                const nestedCards = Array.from(nestedContainer.querySelectorAll(':scope > .tafl-card'));
+                if (position.index >= nestedCards.length) {
+                    nestedContainer.appendChild(placeholder);
+                } else {
+                    nestedCards[position.index].insertAdjacentElement('beforebegin', placeholder);
+                }
+            }
+        } else {
+            // 主流程中
+            const dropZone = document.getElementById('canvas-drop-zone');
+            if (!dropZone) return;
+            
+            const mainCards = Array.from(dropZone.querySelectorAll(':scope > .tafl-card:not(.tafl-card-placeholder)'));
+            if (position.index >= mainCards.length) {
+                dropZone.appendChild(placeholder);
+            } else if (position.index === 0 && mainCards.length > 0) {
+                mainCards[0].insertAdjacentElement('beforebegin', placeholder);
+            } else if (position.index > 0 && position.index < mainCards.length) {
+                mainCards[position.index].insertAdjacentElement('beforebegin', placeholder);
+            } else {
+                dropZone.appendChild(placeholder);
+            }
+        }
+        
+        // 記錄位置
+        this.lastPlaceholderPosition = position;
+    }
+    
+    /**
+     * UNIFIED DROP INDICATOR UPDATE (已棄用，改用 updatePlaceholder)
+     * 保留此函數以維持相容性，但改為調用 updatePlaceholder
+     */
+    updateUnifiedDropIndicator(e) {
+        // 使用原來的 insertion-line 系統（水平引導線）
+        this.updateDropIndicators(e);
+        return;
     }
     
     showAllDropZones() {
@@ -470,21 +1287,28 @@ class TAFLEditor {
         });
         
         const mainDropZone = document.getElementById('canvas-drop-zone');
-        mainDropZone.classList.remove('drag-active', 'drag-over');
+        if (mainDropZone) {
+            mainDropZone.classList.remove('drag-active', 'drag-over');
+        }
     }
     
     // Generate unique ID for cards without IDs
     generateId() {
-        return `card_${this.cardCounter++}`;
+        // Delegate to utils module
+        return this.utilsModule.generateId();
     }
     
     updateDropIndicators(e) {
-        const canvas = document.getElementById('flow-canvas');
-        const cards = Array.from(canvas.querySelectorAll('.tafl-card:not(.dragging)'));
+        const dropZone = document.getElementById('canvas-drop-zone');
+        if (!dropZone) {
+            // 如果 drop zone 不存在，直接返回
+            return;
+        }
+        const cards = Array.from(dropZone.querySelectorAll('.tafl-card:not(.dragging)'));
         
         // If no cards, show drop zone in canvas
         if (cards.length === 0) {
-            const dropZone = document.getElementById('canvas-drop-zone');
+            // dropZone 已經在上面宣告了
             if (dropZone) {
                 dropZone.classList.add('drag-over');
             }
@@ -554,35 +1378,43 @@ class TAFLEditor {
     }
     
     hideDropIndicators() {
+        // 移除舊的 insertion-line
         document.querySelectorAll('.insertion-line').forEach(line => {
             line.remove();
         });
-        // Also remove any drop-indicator class elements (legacy)
+        // 移除舊的 drop-indicator
         document.querySelectorAll('.drop-indicator').forEach(line => {
             line.remove();
         });
+        // 移除新的 placeholder (但在拖動期間保留 original-position-placeholder)
+        const isDragging = document.body.classList.contains('dragging');
+        if (isDragging) {
+            // 拖動期間只移除非原始位置的 placeholder
+            document.querySelectorAll('.tafl-card-placeholder:not(.original-position-placeholder)').forEach(p => {
+                p.remove();
+            });
+        } else {
+            // 拖動結束後移除所有 placeholder
+            document.querySelectorAll('.tafl-card-placeholder').forEach(p => {
+                p.remove();
+            });
+        }
         // Reset the last insertion index
         this.lastInsertionIndex = undefined;
+        this.lastIndicatorPosition = undefined;
     }
     
     refreshCardDragHandlers() {
-        // Re-setup drag handlers for all cards in the canvas
+        // All cards are already draggable through their draggable="true" attribute
+        // Global event delegation handles all drag events - no need for individual setup
+        // Just ensure all cards have the draggable attribute set
         const canvas = document.getElementById('flow-canvas');
-        const cards = canvas.querySelectorAll('.tafl-card:not(.nested)');
+        const allCards = canvas.querySelectorAll('.tafl-card'); // Include ALL cards, not just non-nested
         
-        cards.forEach(cardEl => {
-            // Get the card data from the element
-            const cardId = cardEl.dataset.cardId;
-            const cardData = this.findCardById(cardId);
-            
-            if (cardData) {
-                // Remove old event listeners by cloning the node
-                const newCardEl = cardEl.cloneNode(true);
-                cardEl.parentNode.replaceChild(newCardEl, cardEl);
-                
-                // Re-setup the drag and drop
-                this.setupCardDragAndDrop(newCardEl, cardData);
-                this.setupCardInteractions(newCardEl, cardData);
+        allCards.forEach(cardEl => {
+            // Ensure draggable is set (should already be set by createCardElementSimple)
+            if (!cardEl.draggable) {
+                cardEl.draggable = true;
             }
         });
     }
@@ -609,121 +1441,64 @@ class TAFLEditor {
             }
         });
         
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const dragData = this.getDragData(e);
-            if (dragData && dragData.type === 'verb') {
-                this.addCard(dragData.verb);
-            }
-            
-            dropZone.classList.remove('drag-over');
-        });
+        // Drop handler already exists in setupUnifiedDragDrop, no need for duplicate
     }
     
     /**
      * CARD MANAGEMENT WITH DRAG & DROP SUPPORT
      */
     addCard(verb) {
-        this.addCardAtPosition(verb, { index: this.currentFlow.flow.length, nested: null });
+        // Delegate to cards module
+        this.cardsModule.addCard(verb);
     }
     
     addCardAtPosition(verb, position) {
-        if (!this.verbDefinitions[verb]) {
-            console.error('Unknown verb:', verb);
-            return;
-        }
-        
-        const cardId = this.generateId();
-        
-        // Create TAFL v1.1 compliant card data (verb as key, not property)
-        const cardData = {
-            id: cardId,
-            [verb]: this.getDefaultParams(verb)[verb]
-        };
-        
-        // Insert at specific position
-        if (position.nested) {
-            // Add to nested structure
-            this.addToNestedStructure(position.nested.parentCardId, position.nested.branchType, cardData);
-        } else {
-            // Insert at specific index
-            const flow = taflFlowStore.getFlow();
-            const newFlow = [...flow.flow];
-            newFlow.splice(position.index, 0, cardData);
-            taflFlowStore.updateFlow({ ...flow, flow: newFlow });
-        }
-        
-        // Refresh the canvas to show all cards in correct order
-        this.refreshCanvas();
-        
-        // Select and animate the new card
-        const newCardElement = document.querySelector(`[data-card-id="${cardId}"]`);
-        if (newCardElement) {
-            newCardElement.classList.add('just-added');
-            setTimeout(() => {
-                newCardElement.classList.remove('just-added');
-                newCardElement.classList.add('pulse-once');
-            }, 100);
-            setTimeout(() => newCardElement.classList.remove('pulse-once'), 600);
-            
-            this.selectCard(newCardElement);
-        }
-        
-        this.markDirty();
-        this.updateUI();
-        
-        // Ensure new cards are draggable
-        setTimeout(() => {
-            this.refreshCardDragHandlers();
-        }, 100);
-        
-        console.log('✅ Added card:', verb, 'at position:', position);
+        // Delegate to cards module
+        this.cardsModule.addCardAtPosition(verb, position);
     }
     
     moveCardToPosition(cardId, position) {
-        const cardData = this.findCardById(cardId);
-        if (!cardData) return;
+        // 簡化版：直接使用 Store 的統一邏輯
+        console.log('🚀 Moving card:', cardId, 'to position:', position);
         
-        // Remove from current location
-        this.removeCardFromFlow(cardId);
+        // 檢查是否從嵌套移動
+        const cardEl = document.querySelector(`[data-card-id="${cardId}"]`);
+        const wasNested = cardEl && cardEl.closest('.nested-cards') !== null;
+        console.log(`  Was nested: ${wasNested}, Target nested: ${!!position.nested}`);
         
-        // Add to new position
-        if (position.nested) {
-            this.addToNestedStructure(position.nested.parentCardId, position.nested.branchType, cardData);
-        } else {
-            const flow = taflFlowStore.getFlow();
-            const newFlow = [...flow.flow];
-            newFlow.splice(position.index, 0, cardData);
-            taflFlowStore.updateFlow({ ...flow, flow: newFlow });
-        }
+        // 在移動前清理拖曳狀態，確保更新不會被跳過
+        this.draggedElement = null;
+        this.dragData = null;
+        document.body.classList.remove('dragging');
         
-        // Refresh and highlight
-        this.refreshCanvas();
+        taflFlowStore.moveCard(cardId, position);
+        // 不再手動調用 refreshCanvas，由 card:moved 事件處理
         
-        const movedCard = document.querySelector(`[data-card-id="${cardId}"]`);
-        if (movedCard) {
-            movedCard.classList.add('just-moved');
-            setTimeout(() => movedCard.classList.remove('just-moved'), 500);
-            this.selectCard(movedCard);
-        }
+        // 視覺回饋
+        setTimeout(() => {
+            const movedCard = document.querySelector(`[data-card-id="${cardId}"]`);
+            if (movedCard) {
+                movedCard.classList.add('just-moved');
+                setTimeout(() => movedCard.classList.remove('just-moved'), 500);
+                this.selectCard(movedCard);
+            }
+        }, 100);
         
         this.markDirty();
         this.showNotification('Card moved successfully', 'is-success');
-        
-        console.log('✅ Moved card:', cardId, 'to position:', position);
     }
     
-    createCardElement(step) {
-        // TAFL v1.1 Fix: Extract verb from step object (verb is the key, not a property)
+    /**
+     * 簡化版卡片創建（不綁定個別事件，使用事件委派）
+     */
+    createCardElementSimple(step) {
+        // TAFL v1.1 Fix: Extract verb from step object
         const verb = step ? Object.keys(step).find(key => 
             this.verbDefinitions && this.verbDefinitions[key]
         ) : null;
         
         if (!verb) {
             console.warn('No valid verb found in step:', step);
-            // Return empty placeholder card
             const emptyCard = document.createElement('div');
             emptyCard.className = 'tafl-card empty-card';
             emptyCard.innerHTML = '<div class="notification is-warning">Invalid step</div>';
@@ -732,12 +1507,12 @@ class TAFLEditor {
         
         const verbDef = this.verbDefinitions[verb];
         
-        // Always create a fresh element with no previous event listeners
+        // 創建卡片元素（設置 draggable 屬性）
         const cardEl = document.createElement('div');
         cardEl.className = 'tafl-card';
         cardEl.dataset.cardId = step.id || this.generateId();
         cardEl.dataset.verb = verb;
-        cardEl.draggable = true;
+        cardEl.draggable = true; // 確保所有卡片都可拖動
         
         cardEl.innerHTML = `
             <div class="tafl-card-header">
@@ -762,143 +1537,158 @@ class TAFLEditor {
             <div class="tafl-card-body">
                 ${this.renderCardParams(step)}
             </div>
-            ${this.renderNestedCards(step)}
+            ${this.renderNestedCardsSimple(step)}
         `;
         
-        // Set up card drag and drop
-        this.setupCardDragAndDrop(cardEl, step);
-        
-        // Set up card interactions
-        this.setupCardInteractions(cardEl, step);
+        // 設置 comment tooltip（如果有）
+        if (step.comment) {
+            cardEl.title = step.comment;
+        }
         
         return cardEl;
     }
     
-    setupCardDragAndDrop(cardEl, cardData) {
-        // Always set up drag handlers for freshly created elements
-        const dragHandle = cardEl.querySelector('.card-drag-handle');
+    /**
+     * 簡化版巢狀卡片渲染（遞迴渲染所有層級）
+     */
+    renderNestedCardsSimple(cardData) {
+        const verb = this.getCardVerb(cardData);
+        const params = cardData[verb];
+        let html = '';
         
-        // Card drag events
-        cardEl.addEventListener('dragstart', (e) => {
-            // Check if drag started from a nested card
-            const nestedCard = e.target.closest('.nested.tafl-card');
-            if (nestedCard && nestedCard !== cardEl) {
-                e.preventDefault();
-                return;
-            }
-            
-            // Prevent drag from interactive elements
-            const isInteractive = e.target.tagName === 'INPUT' || 
-                                e.target.tagName === 'TEXTAREA' || 
-                                e.target.tagName === 'SELECT' ||
-                                e.target.tagName === 'BUTTON' ||
-                                e.target.closest('button');
-            
-            if (isInteractive) {
-                e.preventDefault();
-                return;
-            }
-            
-            // Stop propagation to prevent parent cards from also being dragged
-            e.stopPropagation();
-            
-            // Get card ID from element if cardData is not provided
-            const cardId = cardData?.id || cardEl.dataset.cardId;
-            if (!cardId) {
-                console.error('No card ID found for drag');
-                e.preventDefault();
-                return;
-            }
-            
-            // Set drag data BEFORE any DOM changes
-            this.dragData = {
-                type: 'card',
-                cardId: cardId,
-                source: 'canvas'
-            };
-            this.draggedElement = cardEl;
-            
-            // Set data transfer
-            e.dataTransfer.setData('text/plain', cardId);
-            e.dataTransfer.setData('application/json', JSON.stringify(this.dragData));
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setDragImage(cardEl, e.offsetX, e.offsetY);
-            
-            // Apply visual changes AFTER setting drag data
-            requestAnimationFrame(() => {
-                cardEl.classList.add('dragging');
-                cardEl.style.opacity = '0.5';
-                
-                if (dragHandle) {
-                    dragHandle.classList.add('dragging');
+        if (typeof params === 'object') {
+            if (verb === 'if') {
+                if (params.then && Array.isArray(params.then)) {
+                    html += this.renderNestedBranchSimple('then', params.then);
                 }
-                
-                this.showAllDropZones();
-            });
-            
-            console.log('🎯 Started dragging card:', this.dragData.cardId);
-        });
-        
-        cardEl.addEventListener('dragend', (e) => {
-            // Stop propagation
-            e.stopPropagation();
-            
-            // Clean up visual state
-            cardEl.classList.remove('dragging');
-            cardEl.style.opacity = '1';
-            
-            const dragHandle = cardEl.querySelector('.card-drag-handle');
-            if (dragHandle) {
-                dragHandle.classList.remove('dragging');
+                if (params.else && Array.isArray(params.else)) {
+                    html += this.renderNestedBranchSimple('else', params.else);
+                }
+            } else if (verb === 'for' && params.do && Array.isArray(params.do)) {
+                html += this.renderNestedBranchSimple('do', params.do);
+            } else if (verb === 'switch') {
+                if (params.cases && Array.isArray(params.cases)) {
+                    params.cases.forEach((caseItem, index) => {
+                        html += this.renderNestedBranchSimple(`case-${index}`, caseItem.do || []);
+                    });
+                }
+                if (params.default && Array.isArray(params.default)) {
+                    html += this.renderNestedBranchSimple('default', params.default);
+                }
             }
-            
-            this.hideAllDropZones();
-            this.hideDropIndicators();
-            this.draggedElement = null;
-            this.dragData = null;
-            
-            console.log('🎯 Ended dragging card');
-        });
+        }
         
-        // Prevent nested cards from being draggable
-        const nestedCards = cardEl.querySelectorAll('.nested.tafl-card');
-        nestedCards.forEach(nested => {
-            nested.draggable = false;
-        });
+        return html;
     }
     
-    setupCardInteractions(cardEl, cardData) {
-        // Get card ID from element if cardData doesn't have it
-        const cardId = cardData?.id || cardEl.dataset.cardId;
+    /**
+     * 簡化版巢狀分支渲染
+     */
+    renderNestedBranchSimple(branchType, cards) {
+        if (!Array.isArray(cards)) return '';
         
-        // Click to select
-        cardEl.addEventListener('click', (e) => {
-            // Don't select if clicking on interactive elements
-            if (e.target.closest('.card-controls') || e.target.closest('input') || e.target.closest('textarea')) {
+        const branchClass = branchType.replace(/[^a-zA-Z0-9]/g, '-');
+        
+        let html = `
+            <div class="nested-cards ${branchClass}-cards" data-branch="${branchType}">
+                <div class="branch-label">${branchType}</div>
+        `;
+        
+        if (cards.length === 0) {
+            // 空的巢狀放置區
+            html += `
+                <div class="nested-drop-zone empty-zone" data-branch="${branchType}">
+                    <div class="nested-drop-content">
+                        <i class="mdi mdi-plus"></i>
+                        <span>Add cards here</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            // 遞迴渲染巢狀卡片
+            cards.forEach(nestedCard => {
+                const nestedElement = this.createCardElementSimple(nestedCard);
+                html += nestedElement.outerHTML;
+            });
+        }
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    // Removed unused createCardElement function - using createCardElementSimple instead
+    
+    setupCommentTooltip(cardEl, cardData) {
+        // Check if card has a comment
+        if (!cardData.comment) return;
+        
+        // Create tooltip element
+        let tooltip = null;
+        
+        const showTooltip = (e) => {
+            // Don't show tooltip when interacting with inputs
+            if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('button')) {
                 return;
             }
             
-            e.stopPropagation();
-            this.selectCard(cardEl);
-        });
-        
-        // Control buttons
-        const duplicateBtn = cardEl.querySelector('.card-duplicate-btn');
-        const deleteBtn = cardEl.querySelector('.card-delete-btn');
-        
-        if (duplicateBtn) {
-            duplicateBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.duplicateCard(cardId);
+            // Create tooltip if not exists
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.className = 'tafl-comment-tooltip';
+                tooltip.innerHTML = `
+                    <div class="tooltip-arrow"></div>
+                    <div class="tooltip-content">
+                        <strong>Comment:</strong><br>
+                        ${this.escapeHtml(cardData.comment)}
+                    </div>
+                `;
+                tooltip.style.cssText = `
+                    position: absolute;
+                    background: #363636;
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    max-width: 300px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    z-index: 10000;
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                `;
+                document.body.appendChild(tooltip);
+            }
+            
+            // Position tooltip above the card
+            const rect = cardEl.getBoundingClientRect();
+            tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+            tooltip.style.top = (rect.top - 10) + 'px';
+            tooltip.style.transform = 'translate(-50%, -100%)';
+            
+            // Show tooltip with animation
+            requestAnimationFrame(() => {
+                tooltip.style.opacity = '1';
             });
-        }
+        };
         
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deleteCard(cardId);
-            });
-        }
+        const hideTooltip = () => {
+            if (tooltip) {
+                tooltip.style.opacity = '0';
+                setTimeout(() => {
+                    if (tooltip && tooltip.parentNode) {
+                        tooltip.parentNode.removeChild(tooltip);
+                        tooltip = null;
+                    }
+                }, 200);
+            }
+        };
+        
+        // Add hover event listeners
+        cardEl.addEventListener('mouseenter', showTooltip);
+        cardEl.addEventListener('mouseleave', hideTooltip);
+        
+        // Clean up on card removal
+        cardEl.addEventListener('remove', hideTooltip);
     }
     
     /**
@@ -943,17 +1733,28 @@ class TAFLEditor {
         let html = `
             <div class="nested-cards ${branchClass}-cards" data-branch="${branchType}">
                 <div class="branch-label">${branchType}</div>
-                <div class="nested-drop-zone" data-branch="${branchType}">
-                    <div class="nested-drop-content">
-                        <i class="mdi mdi-plus"></i>
-                        Drop here to add to ${branchType}
-                    </div>
-                </div>
         `;
         
-        cards.forEach(nestedCard => {
-            html += this.renderNestedCard(nestedCard);
-        });
+        // Only show drop zone if empty or during drag
+        if (cards.length === 0) {
+            html += `
+                <div class="nested-drop-zone empty-zone" data-branch="${branchType}">
+                    <div class="nested-drop-content">
+                        <i class="mdi mdi-plus"></i>
+                        <span>Add cards here</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Add horizontal drop indicator (initially hidden)
+            html += `<div class="drop-indicator horizontal" data-branch="${branchType}" data-position="0"></div>`;
+            
+            cards.forEach((nestedCard, index) => {
+                html += this.renderNestedCard(nestedCard);
+                // Add drop indicator after each card
+                html += `<div class="drop-indicator horizontal" data-branch="${branchType}" data-position="${index + 1}"></div>`;
+            });
+        }
         
         html += `</div>`;
         
@@ -971,6 +1772,12 @@ class TAFLEditor {
         if (!cardData.id) {
             cardData.id = this.generateId();
         }
+        
+        // Create the full card data structure for rendering
+        const fullCardData = {
+            [verb]: cardData[verb],
+            id: cardData.id
+        };
         
         return `
             <div class="tafl-card nested" data-card-id="${cardData.id}" data-verb="${verb}">
@@ -994,8 +1801,9 @@ class TAFLEditor {
                     </div>
                 </div>
                 <div class="tafl-card-body">
-                    ${this.renderCardParams({verb, [verb]: cardData[verb]})}
+                    ${this.renderCardParams(fullCardData)}
                 </div>
+                ${this.renderNestedCards(fullCardData)}
             </div>
         `;
     }
@@ -1009,515 +1817,186 @@ class TAFLEditor {
     }
     
     addToNestedStructure(parentCardId, branchType, cardData) {
-        const parentCard = this.findCardById(parentCardId);
-        if (!parentCard) return;
-        
-        const verb = this.getCardVerb(parentCard);
-        const params = parentCard[verb];
-        
-        if (typeof params !== 'object') return;
-        
         // Ensure the card has an ID
         if (!cardData.id) {
             cardData.id = this.generateId();
         }
         
-        // Initialize the nested structure if it doesn't exist
-        if (!params[branchType]) {
-            params[branchType] = [];
+        // Get the current flow
+        const flow = taflFlowStore.getFlow();
+        
+        // Create position object
+        const position = {
+            nested: {
+                parentCardId: parentCardId,
+                branchType: branchType
+            }
+        };
+        
+        // Use the store's method to insert into nested structure
+        const updatedFlow = taflFlowStore.insertCardInNested(flow.flow, cardData, position);
+        
+        if (!updatedFlow) {
+            console.error('Failed to add card to nested structure');
+            return;
         }
         
-        // Add the card to the nested structure
-        params[branchType].push(cardData);
+        // Update the flow in the store
+        taflFlowStore.updateFlow({ ...flow, flow: updatedFlow });
+        
+        console.log('✅ Added card to nested structure:', parentCardId, branchType, cardData);
+    }
+    
+    addToNestedStructureAtPosition(parentCardId, branchType, cardData, position) {
+        // Ensure the card has an ID
+        if (!cardData.id) {
+            cardData.id = this.generateId();
+        }
+        
+        // Get the current flow
+        const flow = taflFlowStore.getFlow();
+        
+        // Create position object
+        const positionObj = {
+            nested: {
+                parentCardId: parentCardId,
+                branchType: branchType
+            },
+            index: position
+        };
+        
+        // Use the store's method to insert into nested structure
+        const updatedFlow = taflFlowStore.insertCardInNested(flow.flow, cardData, positionObj);
+        
+        if (!updatedFlow) {
+            console.error('Failed to add card to nested structure at position');
+            return;
+        }
+        
+        // Update the flow in the store
+        taflFlowStore.updateFlow({ ...flow, flow: updatedFlow });
+        
+        console.log('✅ Added card to nested structure at position:', parentCardId, branchType, position, cardData);
     }
     
     /**
      * REST OF THE CLASS METHODS (keeping existing functionality)
      */
     
+    // Delegate to variables module
     initializeVariables() {
-        // Initialize with common TAFL v1.1 variables
-        this.currentFlow.variables = {
-            counter: 0,
-            message: "",
-            room_id: 1
-        };
-        this.refreshVariablesUI();
+        return this.variablesModule.initializeVariables();
     }
     
-    addVariable() {
-        const name = prompt('Variable name:');
-        if (name && !this.currentFlow.variables.hasOwnProperty(name)) {
-            const value = prompt('Initial value:', '""');
-            try {
-                this.currentFlow.variables[name] = JSON.parse(value);
-            } catch (e) {
-                this.currentFlow.variables[name] = value;
-            }
-            this.refreshVariablesUI();
-            this.markDirty();
-        }
+    // ============================================
+    // Legacy Panel Functions (Deprecated)
+    // All panel innerHTML updates now handled by SimpleTAFLPanels
+    // These modal functions kept for backward compatibility
+    // ============================================
+    
+    updateSaveButton(isDirty) {
+        // Delegate to notifications module
+        this.notificationsModule.updateSaveButton(isDirty);
     }
     
-    removeVariable(name) {
-        const variables = { ...taflFlowStore.getFlow().variables };
-        delete variables[name];
-        taflFlowStore.updateVariables(variables);
-        this.refreshVariablesUI();
-        this.markDirty();
-    }
+    // Removed: refreshVariablesUI - handled by SimpleTAFLPanels
     
-    // TAFL v1.1: Add preload data item
-    addPreload() {
-        const key = document.getElementById('preload-key').value.trim();
-        const target = document.getElementById('preload-target').value.trim();
-        const where = document.getElementById('preload-where').value.trim();
-        
-        if (!key || !target) {
-            this.showNotification('Preload key and target are required', 'is-warning');
-            return;
-        }
-        
-        if (!this.currentFlow.preload) {
-            this.currentFlow.preload = {};
-        }
-        
-        // Add preload query
-        this.currentFlow.preload[key] = {
-            query: {
-                target: target,
-                where: where ? this.parseWhereCondition(where) : {}
-            }
-        };
-        
-        this.refreshPreloadUI();
-        this.markDirty();
-        
-        // Clear inputs
-        document.getElementById('preload-key').value = '';
-        document.getElementById('preload-target').value = '';
-        document.getElementById('preload-where').value = '';
-    }
+    // setupModalControls() moved to tafl-editor-modals.js
     
-    // TAFL v1.1: Add business rule
-    addRule() {
-        const name = document.getElementById('rule-name').value.trim();
-        const value = document.getElementById('rule-value').value.trim();
-        
-        if (!name || !value) {
-            this.showNotification('Rule name and value are required', 'is-warning');
-            return;
-        }
-        
-        if (!this.currentFlow.rules) {
-            this.currentFlow.rules = {};
-        }
-        
-        // Try to parse value as number or boolean
-        let parsedValue = value;
-        if (!isNaN(value)) {
-            parsedValue = Number(value);
-        } else if (value === 'true' || value === 'false') {
-            parsedValue = value === 'true';
-        }
-        
-        this.currentFlow.rules[name] = parsedValue;
-        this.refreshRulesUI();
-        this.markDirty();
-        
-        // Clear inputs
-        document.getElementById('rule-name').value = '';
-        document.getElementById('rule-value').value = '';
-    }
     
-    // Helper method to parse where condition string
-    parseWhereCondition(whereStr) {
-        const conditions = {};
-        const parts = whereStr.split(',');
-        parts.forEach(part => {
-            const [key, value] = part.split(':').map(s => s.trim());
-            if (key && value) {
-                conditions[key] = value;
-            }
-        });
-        return conditions;
-    }
-    
-    // TAFL v1.1: Refresh preload UI
-    refreshPreloadUI() {
-        const preloadList = document.getElementById('preload-list');
-        if (!preloadList) return;
+    initializeDisplayModes() {
+        const modeButtons = document.querySelectorAll('.mode-button');
+        const contentWrapper = document.querySelector('.tafl-content-wrapper');
+        const toggleBtn = document.getElementById('toggle-properties-btn');
+        const editorContainer = document.querySelector('.columns.is-gapless');
         
-        preloadList.innerHTML = '';
-        
-        if (this.currentFlow.preload && Object.keys(this.currentFlow.preload).length > 0) {
-            Object.entries(this.currentFlow.preload).forEach(([key, config]) => {
-                const itemEl = document.createElement('div');
-                itemEl.className = 'box has-background-light';
-                itemEl.innerHTML = `
-                    <div class="level">
-                        <div class="level-left">
-                            <div class="level-item">
-                                <div>
-                                    <p class="heading">Key</p>
-                                    <p class="title is-7">${key}</p>
-                                </div>
-                            </div>
-                            <div class="level-item">
-                                <div>
-                                    <p class="heading">Target</p>
-                                    <p class="title is-7">${config.query?.target || 'N/A'}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="level-right">
-                            <button class="delete" onclick="taflEditor.removePreload('${key}')"></button>
-                        </div>
-                    </div>
-                `;
-                preloadList.appendChild(itemEl);
-            });
-        }
-    }
-    
-    // TAFL v1.1: Refresh rules UI
-    refreshRulesUI() {
-        const rulesList = document.getElementById('rules-list');
-        if (!rulesList) return;
-        
-        rulesList.innerHTML = '';
-        
-        if (this.currentFlow.rules && Object.keys(this.currentFlow.rules).length > 0) {
-            Object.entries(this.currentFlow.rules).forEach(([name, value]) => {
-                const itemEl = document.createElement('div');
-                itemEl.className = 'box has-background-light';
-                itemEl.innerHTML = `
-                    <div class="level">
-                        <div class="level-left">
-                            <div class="level-item">
-                                <div>
-                                    <p class="heading">Rule</p>
-                                    <p class="title is-7">${name}</p>
-                                </div>
-                            </div>
-                            <div class="level-item">
-                                <div>
-                                    <p class="heading">Value</p>
-                                    <p class="title is-7">${value}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="level-right">
-                            <button class="delete" onclick="taflEditor.removeRule('${name}')"></button>
-                        </div>
-                    </div>
-                `;
-                rulesList.appendChild(itemEl);
-            });
-        }
-    }
-    
-    // TAFL v1.1: Remove preload item
-    removePreload(key) {
-        if (this.currentFlow.preload && this.currentFlow.preload[key]) {
-            delete this.currentFlow.preload[key];
-            this.refreshPreloadUI();
-            this.markDirty();
-        }
-    }
-
-    // Refresh settings UI
-    refreshSettingsUI() {
-        const timeout = document.getElementById('settings-timeout');
-        const maxRetries = document.getElementById('settings-max-retries');
-        const retryOnFailure = document.getElementById('settings-retry-on-failure');
-        
-        if (timeout) timeout.value = this.currentFlow.settings.timeout || 3600;
-        if (maxRetries) maxRetries.value = this.currentFlow.settings.max_retries || 3;
-        if (retryOnFailure) retryOnFailure.checked = this.currentFlow.settings.retry_on_failure || false;
-    }
-
-    // Enhanced expression parser for TAFL v1.1
-    parseExpression(expr) {
-        if (!expr || typeof expr !== 'string') return expr;
-        
-        // Support for variable references: ${variable}
-        // Support for preload data: ${preload.key}
-        // Support for rules: ${rules.ruleName}
-        // Support for math operations: ${value + 1}
-        // Support for nested properties: ${object.property.subproperty}
-        
-        return expr.replace(/\$\{([^}]+)\}/g, (match, path) => {
-            // Check if it's a math expression
-            if (/[+\-*/]/.test(path)) {
-                // For now, return as is - actual evaluation would happen at runtime
-                return match;
-            }
-            
-            // Parse the path
-            const parts = path.split('.');
-            const scope = parts[0];
-            
-            // Check different scopes (5-Level variable scope)
-            if (scope === 'preload' && parts.length > 1) {
-                return this.currentFlow.preload[parts[1]] || match;
-            } else if (scope === 'rules' && parts.length > 1) {
-                const rule = this.currentFlow.rules[parts[1]];
-                return rule ? rule.action : match;
-            } else if (this.currentFlow.variables[scope] !== undefined) {
-                return this.currentFlow.variables[scope];
-            }
-            
-            return match;
-        });
-    }
-    
-    // TAFL v1.1: Remove rule
-    removeRule(name) {
-        if (this.currentFlow.rules && this.currentFlow.rules[name]) {
-            delete this.currentFlow.rules[name];
-            this.refreshRulesUI();
-            this.markDirty();
-        }
-    }
-    
-    refreshVariablesUI() {
-        const variablesList = document.getElementById('variables-list');
-        variablesList.innerHTML = '';
-        
-        Object.entries(this.currentFlow.variables).forEach(([name, value]) => {
-            const variableEl = document.createElement('div');
-            variableEl.className = 'field has-addons';
-            variableEl.innerHTML = `
-                <div class="control">
-                    <input class="input is-small" type="text" value="${name}" readonly>
-                </div>
-                <div class="control is-expanded">
-                    <input class="input is-small variable-value" type="text" 
-                           data-var="${name}" value="${JSON.stringify(value)}" 
-                           placeholder="Variable value">
-                </div>
-                <div class="control">
-                    <button class="button is-small is-danger remove-var-btn" data-var="${name}" title="Remove">
-                        <span class="icon is-small">
-                            <i class="fas fa-trash"></i>
-                        </span>
-                    </button>
-                </div>
-            `;
-            variablesList.appendChild(variableEl);
-            
-            // Add event listeners
-            const valueInput = variableEl.querySelector('.variable-value');
-            const removeBtn = variableEl.querySelector('.remove-var-btn');
-            
-            valueInput.addEventListener('change', () => {
-                try {
-                    this.currentFlow.variables[name] = JSON.parse(valueInput.value);
-                } catch (e) {
-                    this.currentFlow.variables[name] = valueInput.value;
+        modeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Toggle properties panel - just toggle a class on the parent container
+                if (button.classList.contains('toggle-properties')) {
+                    editorContainer.classList.toggle('properties-collapsed');
+                    
+                    // Refresh CodeMirror if needed
+                    const currentMode = document.querySelector('.mode-button.is-active[data-mode]');
+                    if (currentMode && (currentMode.dataset.mode === 'yaml' || currentMode.dataset.mode === 'both') && this.yamlModule && this.yamlModule.yamlEditor) {
+                        setTimeout(() => this.yamlModule.yamlEditor.refresh(), 100);
+                    }
+                    return;
                 }
-                this.markDirty();
-            });
-            
-            removeBtn.addEventListener('click', () => {
-                if (confirm(`Remove variable '${name}'?`)) {
-                    this.removeVariable(name);
+                
+                // Normal mode buttons
+                if (button.dataset.mode) {
+                    modeButtons.forEach(btn => {
+                        if (btn.dataset.mode) btn.classList.remove('is-active');
+                    });
+                    button.classList.add('is-active');
+                    
+                    const mode = button.dataset.mode;
+                    contentWrapper.className = `tafl-content-wrapper mode-${mode}`;
+                    
+                    if ((mode === 'yaml' || mode === 'both') && this.yamlModule) {
+                        setTimeout(() => {
+                            // Always refresh YAML content when switching to YAML view
+                            this.yamlModule.refreshYAML();
+                            // Refresh CodeMirror editor if it exists
+                            if (this.yamlModule.yamlEditor) {
+                                this.yamlModule.yamlEditor.refresh();
+                            }
+                            console.log('📝 YAML view refreshed on mode switch');
+                        }, 100);
+                    }
                 }
             });
-        });
-    }
-    
-    setupModalControls() {
-        // Close modals
-        document.querySelectorAll('.modal .delete, .modal-background').forEach(closeBtn => {
-            closeBtn.addEventListener('click', () => {
-                closeBtn.closest('.modal').classList.remove('is-active');
-            });
-        });
-        
-        // Save flow modal
-        document.getElementById('confirm-save-btn').addEventListener('click', () => this.saveFlow());
-    }
-    
-    initializeCodeMirror() {
-        const yamlTextarea = document.getElementById('yaml-editor');
-        this.yamlEditor = CodeMirror.fromTextArea(yamlTextarea, {
-            mode: 'yaml',
-            theme: 'default',
-            lineNumbers: true,
-            lineWrapping: true,
-            foldGutter: true,
-            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
-        });
-        
-        this.yamlEditor.on('change', () => {
-            this.markDirty();
         });
     }
     
     getDefaultParams(verb) {
-        // TAFL v1.1 compliant default parameters with enhanced features
-        const defaults = {
-            query: {
-                target: 'table_name',
-                where: '',
-                order: '',
-                limit: '',
-                as: 'result'  // Changed from store_as to as for v1.1
-            },
-            check: {
-                condition: 'true',
-                where: '',
-                as: 'check_result'  // Changed from store_as to as for v1.1
-            },
-            create: {
-                target: 'resource',
-                with: {},  // Changed from params to with for v1.1
-                as: 'created_item'  // Changed from store_as to as for v1.1
-            },
-            update: {
-                target: 'resource',
-                where: '',
-                set: {},
-                as: ''  // Added as parameter for v1.1
-            },
-            if: {
-                condition: '${condition}',
-                then: [],
-                else: []
-            },
-            for: {
-                each: 'item',
-                in: '${items}',
-                as: 'current',  // Added as parameter for v1.1
-                filter: '',  // New in v1.1: filter condition
-                do: []
-            },
-            switch: {
-                expression: '${value}',
-                cases: [],
-                default: []
-            },
-            set: {
-                // Enhanced set with multi-variable support (v1.1)
-                variable: 'var_name',
-                value: '',
-                expression: '',  // New in v1.1: expression evaluation
-                multi: {}  // New in v1.1: multiple variable assignments
-            },
-            stop: {
-                reason: 'Flow completed',
-                code: 0  // Added code parameter for v1.1
-            },
-            notify: {
-                type: 'info',  // Changed from channel to type for v1.1
-                message: 'Notification message',
-                recipients: [],  // New in v1.1
-                level: 'normal'  // New in v1.1
-            }
-        };
-        
-        return { [verb]: defaults[verb] || {} };
+        // Update utils module with current verb definitions
+        this.utilsModule.verbDefinitions = this.verbDefinitions;
+        // Delegate to utils module
+        return this.utilsModule.getDefaultParams(verb);
     }
     
+    
     getCardTitle(cardData) {
-        // TAFL v1.1: Extract verb from object keys (verb is the key, not a property)
-        const verb = this.getCardVerb(cardData);
-        const params = cardData[verb];
-        
-        switch (verb) {
-            case 'query':
-                return `Query ${params.target || 'data'}`;
-            case 'check':
-                return `Check ${params.condition || 'condition'}`;
-            case 'create':
-                return `Create ${params.target || 'resource'}`;
-            case 'update':
-                return `Update ${params.target || 'resource'}`;
-            case 'if':
-                return `If ${params.condition || 'condition'}`;
-            case 'for':
-                return `For each ${params.each || 'item'}`;
-            case 'switch':
-                return `Switch ${params.expression || 'value'}`;
-            case 'set':
-                return `Set ${typeof params === 'string' ? params.split('=')[0].trim() : 'variable'}`;
-            case 'stop':
-                return `Stop: ${typeof params === 'string' ? params : 'reason'}`;
-            case 'notify':
-                return `Notify: ${params.message || 'message'}`;
-            default:
-                return verb.charAt(0).toUpperCase() + verb.slice(1);
-        }
+        // Delegate to utils module (since cards module is not initialized yet)
+        return this.utilsModule.getCardTitle(cardData);
     }
     
     renderCardParams(cardData) {
-        // TAFL v1.1: Extract verb from object keys (verb is the key, not a property)
-        const verb = this.getCardVerb(cardData);
-        const params = cardData[verb];
-        let html = '';
-        
-        if (typeof params === 'string') {
-            // Simple string parameter (like set, stop)
-            html += `
-                <div class="card-param">
-                    <div class="param-value">${this.formatParamValue(params)}</div>
-                </div>
-            `;
-        } else if (typeof params === 'object') {
-            for (const [key, value] of Object.entries(params)) {
-                if (key === 'then' || key === 'else' || key === 'do' || key === 'cases' || key === 'default') {
-                    continue; // These are rendered as nested cards
-                }
-                
-                html += `
-                    <div class="card-param">
-                        <label class="param-label">${key}:</label>
-                        <div class="param-value editable" data-param="${key}">
-                            ${this.formatParamValue(value)}
-                        </div>
-                    </div>
-                `;
-            }
-        }
-        
-        return html;
+        // Delegate to cards module
+        return this.cardsModule.renderCardParams(cardData);
     }
     
     formatParamValue(value) {
-        if (typeof value === 'object') {
-            return JSON.stringify(value, null, 2);
-        }
-        return String(value);
+        // Delegate to utils module
+        return this.utilsModule.formatParamValue(value);
     }
     
     selectCard(cardElement) {
-        // Remove previous selection
-        document.querySelectorAll('.tafl-card.selected').forEach(card => {
-            card.classList.remove('selected');
-        });
-        
-        // Select new card
-        cardElement.classList.add('selected');
-        this.selectedCard = cardElement;
-        
-        // Update properties panel
-        this.updatePropertiesPanel();
+        // Delegate to cards module
+        this.cardsModule.selectCard(cardElement);
+        // Removed: this.selectedCard - now managed by Store
     }
     
     deselectCard() {
-        document.querySelectorAll('.tafl-card.selected').forEach(card => {
-            card.classList.remove('selected');
-        });
-        this.selectedCard = null;
-        this.updatePropertiesPanel();
+        // Delegate to Store
+        taflFlowStore.deselectCard();
+        // UI update handled by Store events
     }
     
-    updatePropertiesPanel() {
-        const propertiesPanel = document.getElementById('properties-panel');
-        
-        if (!this.selectedCard) {
+    // Properties panel methods removed - handled by tafl-editor-properties.js and tafl-panels-properties.js modules
+    // The following methods have been migrated to dedicated modules:
+    // - updatePropertiesPanel() → tafl-panels-properties.js
+    // - renderPropertyEditor() → tafl-editor-properties.js
+    // - renderSwitchCasesEditor() → tafl-editor-properties.js
+    // - renderPropertyField() → tafl-editor-properties.js
+    // - setupPropertyEditing() → tafl-panels-properties.js
+    // - updatePropertyValue() → tafl-editor-properties.js
+    // - applyPropertyChanges() → tafl-editor-properties.js
             propertiesPanel.innerHTML = `
                 <div class="no-selection">
                     <div class="has-text-centered">
@@ -1559,12 +2038,11 @@ class TAFLEditor {
         
         propertiesPanel.innerHTML = `
             <div class="property-editor">
-                <h4 class="title is-5">
-                    <span class="icon">
-                        <i class="${verbDef.icon}"></i>
-                    </span>
-                    ${verbDef.name} Properties
-                </h4>
+                <h4 class="title is-5">Properties</h4>
+                
+                <div class="field">
+                    <label class="label">Type: ${verbDef.name}</label>
+                </div>
                 
                 <div class="property-fields">
                     ${this.renderPropertyEditor(cardData)}
@@ -1622,6 +2100,11 @@ class TAFLEditor {
         const cardId = cardData.id;
         let html = '';
         
+        // Special handling for switch card
+        if (verb === 'switch') {
+            return this.renderSwitchCasesEditor(cardData);
+        }
+        
         if (!params) {
             return '<p class="has-text-grey">No parameters</p>';
         }
@@ -1663,6 +2146,128 @@ class TAFLEditor {
         }
         
         return html || '<p class="has-text-grey">No editable parameters</p>';
+    }
+    
+    renderSwitchCasesEditor(cardData) {
+        const switchParams = cardData.switch;
+        const cardId = cardData.id;
+        const cases = switchParams.cases || [];
+        const hasDefaultCase = cases.some(c => c.when === "default");
+        
+        let html = `
+            <!-- Expression field -->
+            <div class="field">
+                <label class="label">Expression</label>
+                <div class="control">
+                    <input class="input is-small property-input" 
+                           type="text" 
+                           data-card-id="${cardId}" 
+                           data-param="expression"
+                           value="${this.escapeHtml(switchParams.expression || '')}"
+                           placeholder="e.g., \${task_priority}">
+                </div>
+                <p class="help">The variable or expression to evaluate</p>
+            </div>
+            
+            <!-- Cases management -->
+            <div class="field">
+                <label class="label">Cases</label>
+                
+                <!-- Add Case button at the top -->
+                <div class="mb-2">
+                    <button class="button is-small is-info" id="add-case-btn" data-card-id="${cardId}">
+                        <span class="icon"><i class="fas fa-plus"></i></span>
+                        <span>Add Case</span>
+                    </button>
+                    ${!hasDefaultCase ? `
+                        <button class="button is-small is-warning ml-2" id="add-default-btn" data-card-id="${cardId}">
+                            <span class="icon"><i class="fas fa-plus"></i></span>
+                            <span>Add Default</span>
+                        </button>
+                    ` : ''}
+                </div>
+                
+                <!-- Cases list -->
+                <div class="cases-list" id="switch-cases-list">
+        `;
+        
+        if (cases.length === 0) {
+            html += '<p class="has-text-grey is-italic">No cases defined. Click "Add Case" to create one.</p>';
+        } else {
+            // Render each case's when condition editor
+            cases.forEach((caseItem, index) => {
+                const isDefault = caseItem.when === "default";
+                const isFirst = index === 0;
+                const isLast = index === cases.length - 1;
+                const isBeforeDefault = !isLast && cases[index + 1]?.when === "default";
+                
+                html += `
+                    <div class="case-item box mb-2" data-case-index="${index}" style="padding: 0.5rem;">
+                        <div class="field has-addons mb-0">
+                            <!-- Move controls -->
+                            <p class="control">
+                                <button class="button is-small ${isFirst || isDefault ? 'is-static' : ''}" 
+                                        data-card-id="${cardId}"
+                                        data-case-index="${index}"
+                                        ${isFirst || isDefault ? 'disabled' : ''}
+                                        onclick="window.taflEditor.moveSwitchCase('${cardId}', ${index}, 'up')"
+                                        title="Move up">
+                                    <span class="icon is-small"><i class="fas fa-arrow-up"></i></span>
+                                </button>
+                            </p>
+                            <p class="control">
+                                <button class="button is-small ${isLast || isBeforeDefault ? 'is-static' : ''}" 
+                                        data-card-id="${cardId}"
+                                        data-case-index="${index}"
+                                        ${isLast || isBeforeDefault ? 'disabled' : ''}
+                                        onclick="window.taflEditor.moveSwitchCase('${cardId}', ${index}, 'down')"
+                                        title="Move down">
+                                    <span class="icon is-small"><i class="fas fa-arrow-down"></i></span>
+                                </button>
+                            </p>
+                            
+                            <!-- Case label -->
+                            <p class="control">
+                                <span class="button is-static is-small">
+                                    ${isDefault ? 
+                                        '<span class="has-text-warning-dark"><strong>Default</strong></span>' : 
+                                        'When'}
+                                </span>
+                            </p>
+                            
+                            <!-- Case input -->
+                            <p class="control is-expanded">
+                                ${isDefault ? 
+                                    '<input class="input is-small" value="(always matches)" readonly disabled style="background: #fffbeb;">' :
+                                    `<input class="input is-small case-when-input" 
+                                           data-card-id="${cardId}"
+                                           data-case-index="${index}"
+                                           value="${this.escapeHtml(caseItem.when || '')}"
+                                           placeholder='e.g., "> 8" or "5..8" or "urgent"'>`
+                                }
+                            </p>
+                            
+                            <!-- Remove button -->
+                            <p class="control">
+                                <button class="button is-small is-danger is-light remove-case-btn" 
+                                        data-card-id="${cardId}"
+                                        data-case-index="${index}"
+                                        title="Remove this case">
+                                    <span class="icon"><i class="fas fa-trash"></i></span>
+                                </button>
+                            </p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        return html;
     }
     
     renderPropertyField(cardId, key, value) {
@@ -1735,38 +2340,23 @@ class TAFLEditor {
     }
     
     formatParamName(name) {
-        // Convert snake_case to Title Case
-        return name.replace(/_/g, ' ')
-                  .replace(/\b\w/g, char => char.toUpperCase());
+        // Delegate to utils module
+        return this.utilsModule.formatParamName(name);
     }
     
     getParamHelp(param) {
-        const helpTexts = {
-            'target': 'The target resource or entity',
-            'condition': 'The condition to evaluate',
-            'filter': 'Filter criteria for the query',
-            'limit': 'Maximum number of results',
-            'each': 'The item variable name in the loop',
-            'in': 'The collection to iterate over',
-            'value': 'The value to set or use',
-            'id': 'The identifier of the resource',
-            'data': 'The data payload'
-        };
-        
-        if (helpTexts[param]) {
-            return `<p class="help">${helpTexts[param]}</p>`;
-        }
-        return '';
+        // Delegate to utils module
+        return this.utilsModule.getParamHelp(param);
     }
     
     escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        // Delegate to utils module
+        return this.utilsModule.escapeHtml(text);
     }
     
     setupPropertyEditing(cardData) {
+        const verb = this.getCardVerb(cardData);
+        
         // Apply properties button
         const applyBtn = document.getElementById('apply-properties');
         applyBtn?.addEventListener('click', () => {
@@ -1778,6 +2368,55 @@ class TAFLEditor {
         deleteBtn?.addEventListener('click', () => {
             this.deleteCard(cardData.id);
         });
+        
+        // Special handling for switch card
+        if (verb === 'switch') {
+            // Add case button
+            document.getElementById('add-case-btn')?.addEventListener('click', () => {
+                this.addSwitchCase(cardData.id);
+            });
+            
+            // Add default button
+            document.getElementById('add-default-btn')?.addEventListener('click', () => {
+                this.toggleDefault(cardData.id, true);
+            });
+            
+            // Remove default button
+            document.getElementById('remove-default-btn')?.addEventListener('click', () => {
+                this.toggleDefault(cardData.id, false);
+            });
+            
+            // Remove case buttons
+            document.querySelectorAll('.remove-case-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const caseIndex = parseInt(e.currentTarget.dataset.caseIndex);
+                    this.removeSwitchCase(cardData.id, caseIndex);
+                });
+            });
+            
+            // When condition editing
+            document.querySelectorAll('.case-when-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const caseIndex = parseInt(e.target.dataset.caseIndex);
+                    this.updateCaseWhen(cardData.id, caseIndex, e.target.value);
+                });
+            });
+            
+            // Move case buttons
+            document.querySelectorAll('.move-case-up:not([disabled])').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const caseIndex = parseInt(e.currentTarget.dataset.caseIndex);
+                    this.moveSwitchCase(cardData.id, caseIndex, 'up');
+                });
+            });
+            
+            document.querySelectorAll('.move-case-down:not([disabled])').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const caseIndex = parseInt(e.currentTarget.dataset.caseIndex);
+                    this.moveSwitchCase(cardData.id, caseIndex, 'down');
+                });
+            });
+        }
         
         // Real-time property updates
         document.querySelectorAll('.property-input').forEach(input => {
@@ -1926,35 +2565,13 @@ class TAFLEditor {
     }
     
     duplicateCard(cardId) {
-        const cardData = this.findCardById(cardId);
-        if (!cardData) return;
-        
-        const duplicatedData = JSON.parse(JSON.stringify(cardData));
-        duplicatedData.id = this.generateId();
-        
-        // Find insertion point (after the original card)
-        const index = this.currentFlow.flow.findIndex(card => card.id === cardId);
-        if (index >= 0) {
-            this.currentFlow.flow.splice(index + 1, 0, duplicatedData);
-        } else {
-            this.currentFlow.flow.push(duplicatedData);
-        }
-        
-        this.refreshCanvas();
-        
-        // Animate the duplicated card
-        const duplicatedElement = document.querySelector(`[data-card-id="${duplicatedData.id}"]`);
-        if (duplicatedElement) {
-            duplicatedElement.classList.add('just-added');
-            setTimeout(() => duplicatedElement.classList.remove('just-added'), 500);
-        }
-        
-        this.markDirty();
+        // Delegate to cards module
+        this.cardsModule.duplicateCard(cardId);
     }
     
     getCardById(cardId) {
         // Helper method to find a card by ID in the flow
-        for (const card of this.currentFlow.flow) {
+        for (const card of taflFlowStore.getFlow().flow) {
             if (card.id === cardId) {
                 return card;
             }
@@ -1991,22 +2608,43 @@ class TAFLEditor {
         return null;
     }
     
-    deleteCard(cardId) {
-        if (!confirm('Are you sure you want to delete this card?')) {
+    async deleteCard(cardId) {
+        console.log('🗑️ TAFLEditor.deleteCard() called for:', cardId);
+        
+        if (!await taflModals.confirmDelete('card')) {
             return;
         }
         
-        // Remove from flow data
-        this.removeCardFromFlow(cardId);
+        // Store the flow state before deletion for debugging
+        const flowBefore = taflFlowStore.getFlow();
+        console.log('🗑️ Flow before delete:', flowBefore.flow.length, 'cards');
         
-        // Refresh canvas
-        this.refreshCanvas();
+        // Delegate to cards module which will update store and emit event
+        this.cardsModule.deleteCard(cardId);
         
-        // Show drop zone if no cards left
-        const flow = taflFlowStore.getFlow();
-        if (flow.flow.length === 0) {
-            document.getElementById('canvas-drop-zone').style.display = 'flex';
-        }
+        // Force immediate refresh after delete
+        // The event handler will also trigger, but this ensures immediate update
+        setTimeout(() => {
+            const flowAfter = taflFlowStore.getFlow();
+            console.log('🗑️ Flow after delete:', flowAfter.flow.length, 'cards');
+            
+            // Force full canvas refresh
+            this.refreshCanvasCore();
+            
+            // Show drop zone if no cards left
+            if (flowAfter.flow.length === 0) {
+                const dropZone = document.getElementById('canvas-drop-zone');
+                if (dropZone) {
+                    dropZone.style.display = 'flex';
+                }
+            }
+            
+            // Update YAML view
+            this.yamlModule.refreshYAML();
+            
+            // Update UI elements
+            this.updateUI();
+        }, 100);
         
         // Deselect if this was the selected card
         if (this.selectedCard && this.selectedCard.dataset.cardId === cardId) {
@@ -2014,7 +2652,6 @@ class TAFLEditor {
         }
         
         this.markDirty();
-        this.updateUI();
         this.showNotification('Card deleted', 'is-success');
     }
     
@@ -2045,36 +2682,355 @@ class TAFLEditor {
         return true;
     }
     
-    refreshCanvas() {
-        const canvas = document.getElementById('flow-canvas');
-        const dropZone = document.getElementById('canvas-drop-zone');
+    // ============================================
+    // Switch Cases Management Functions
+    // ============================================
+    
+    addSwitchCase(cardId) {
+        const cardData = this.findCardById(cardId);
+        if (!cardData || !cardData.switch) return;
         
-        // Clear existing cards
-        canvas.querySelectorAll('.tafl-card').forEach(card => card.remove());
-        
-        // Show/hide drop zone
-        const flow = taflFlowStore.getFlow();
-        if (flow.flow.length === 0) {
-            dropZone.style.display = 'flex';
-        } else {
-            dropZone.style.display = 'none';
-            
-            // Render all cards with their drag handlers
-            flow.flow.forEach(cardData => {
-                const cardElement = this.createCardElement(cardData);
-                canvas.appendChild(cardElement);
-            });
-            
-            // Set up nested card interactions
-            this.setupNestedCardInteractions();
+        if (!cardData.switch.cases) {
+            cardData.switch.cases = [];
         }
         
-        this.deselectCard();
+        // Find if there's a default case at the end
+        const defaultIndex = cardData.switch.cases.findIndex(c => c.when === "default");
+        
+        // Create new case
+        const newCase = {
+            when: "",
+            do: []
+        };
+        
+        // If there's a default case, insert before it; otherwise append
+        if (defaultIndex !== -1) {
+            cardData.switch.cases.splice(defaultIndex, 0, newCase);
+        } else {
+            cardData.switch.cases.push(newCase);
+        }
+        
+        // Refresh the properties panel to show the new case
+        this.updatePropertiesPanel();
+        
+        // Refresh the card to show the new case drop zone
+        this.refreshCard(cardId);
+        
+        console.log('Added new case to switch:', cardData);
     }
     
+    removeSwitchCase(cardId, caseIndex) {
+        const cardData = this.findCardById(cardId);
+        if (!cardData || !cardData.switch || !cardData.switch.cases) return;
+        
+        // Remove the case at the specified index
+        cardData.switch.cases.splice(caseIndex, 1);
+        
+        // Refresh the properties panel
+        this.updatePropertiesPanel();
+        
+        // Refresh the card to update the display
+        this.refreshCard(cardId);
+        
+        console.log(`Removed case ${caseIndex} from switch:`, cardData);
+    }
+    
+    updateCaseWhen(cardId, caseIndex, newWhen) {
+        const cardData = this.findCardById(cardId);
+        if (!cardData || !cardData.switch || !cardData.switch.cases) return;
+        
+        if (cardData.switch.cases[caseIndex]) {
+            cardData.switch.cases[caseIndex].when = newWhen;
+            
+            // Only update the card display, not the properties panel
+            this.refreshCard(cardId);
+            
+            console.log(`Updated case ${caseIndex} when to "${newWhen}":`, cardData);
+        }
+    }
+    
+    toggleDefault(cardId, add = true) {
+        const cardData = this.findCardById(cardId);
+        if (!cardData || !cardData.switch) return;
+        
+        if (add) {
+            // Add default as a special case at the end
+            if (!cardData.switch.cases) {
+                cardData.switch.cases = [];
+            }
+            // Check if default already exists
+            const hasDefault = cardData.switch.cases.some(c => c.when === "default");
+            if (!hasDefault) {
+                cardData.switch.cases.push({
+                    when: "default",
+                    do: []
+                });
+            }
+        } else {
+            // Remove default case
+            if (cardData.switch.cases) {
+                cardData.switch.cases = cardData.switch.cases.filter(c => c.when !== "default");
+            }
+        }
+        
+        // Refresh the properties panel
+        this.updatePropertiesPanel();
+        
+        // Refresh the card to show/hide the default drop zone
+        this.refreshCard(cardId);
+        
+        console.log(`${add ? 'Added' : 'Removed'} default case:`, cardData);
+    }
+    
+    moveSwitchCase(cardId, caseIndex, direction) {
+        const cardData = this.findCardById(cardId);
+        if (!cardData || !cardData.switch || !cardData.switch.cases) return;
+        
+        const cases = cardData.switch.cases;
+        const targetIndex = direction === 'up' ? caseIndex - 1 : caseIndex + 1;
+        
+        // Boundary check
+        if (targetIndex < 0 || targetIndex >= cases.length) return;
+        
+        // Check if trying to move default case or move something after default
+        const isMovingDefault = cases[caseIndex].when === "default";
+        const isTargetDefault = cases[targetIndex].when === "default";
+        
+        // Don't allow moving default up or moving other cases down past default
+        if (isMovingDefault && direction === 'up') return;
+        if (isTargetDefault && direction === 'down') return;
+        
+        // Swap positions (including the entire case structure with do array)
+        [cases[caseIndex], cases[targetIndex]] = [cases[targetIndex], cases[caseIndex]];
+        
+        // Refresh the properties panel and card display
+        this.updatePropertiesPanel();
+        this.refreshCard(cardId);
+        
+        console.log(`Moved case ${caseIndex} ${direction}:`, cardData);
+    }
+    
+    // ===== 統一 Canvas 更新系統 =====
+    // 智能更新控制器 - 所有更新都通過此接口
+    updateCanvas(options = {}) {
+        const defaults = {
+            fullRefresh: false,      // 是否完整重建
+            preserveScroll: true,    // 保留捲動位置
+            skipDuringDrag: true,    // 拖曳時跳過
+            source: 'unknown'        // 呼叫來源（用於除錯）
+        };
+        
+        const config = { ...defaults, ...options };
+        
+        // 拖曳中檢查
+        const isDragging = this.isDragging();
+        console.log(`🔄 updateCanvas called: source=${config.source}, skipDuringDrag=${config.skipDuringDrag}, isDragging=${isDragging}`);
+        
+        if (config.skipDuringDrag && isDragging) {
+            console.log(`🚫 Skipping canvas update during drag (source: ${config.source})`);
+            return;
+        }
+        
+        console.log(`🔄 Canvas update proceeding (source: ${config.source}, full: ${config.fullRefresh})`);
+        
+        // 保存捲動位置
+        const scrollState = config.preserveScroll ? this.saveScrollState() : null;
+        
+        // 執行更新
+        if (config.fullRefresh) {
+            console.log('🔄 Performing full refresh');
+            this.performFullRefresh();
+        } else {
+            console.log('🔄 Performing partial update');
+            this.performPartialUpdate();
+        }
+        
+        // 恢復捲動位置
+        if (scrollState) {
+            this.restoreScrollState(scrollState);
+        }
+    }
+    
+    // 檢查是否正在拖曳
+    isDragging() {
+        return this.draggedElement || 
+               document.body.classList.contains('dragging');
+    }
+    
+    // 檢查移動操作是否改變了結構（嵌套 <-> 外層）
+    checkIfStructureChanged(moveData) {
+        if (!moveData || !moveData.cardId) return true; // 安全起見，預設完整更新
+        
+        // 使用記錄的原始位置
+        const originalPos = this.cardOriginalPositions.get(moveData.cardId);
+        const wasNested = originalPos ? originalPos.isNested : false;
+        
+        // 檢查新位置是否嵌套
+        const isNowNested = moveData.position && moveData.position.nested;
+        
+        // 如果從嵌套移到外層或從外層移到嵌套，需要完整更新
+        if (wasNested && !isNowNested) {
+            console.log('📤 Card moved from nested to top level - full refresh needed');
+            return true;
+        }
+        if (!wasNested && isNowNested) {
+            console.log('📦 Card moved from top level to nested - full refresh needed');
+            return true;
+        }
+        
+        // 檢查是否在不同的嵌套分支間移動（如 then -> else）
+        if (wasNested && isNowNested) {
+            // 都在嵌套中，但可能在不同分支
+            // 為了安全起見，嵌套間的移動都需要完整更新
+            console.log('🔄 Card moved between nested branches - full refresh needed');
+            this.cardOriginalPositions.delete(moveData.cardId);
+            return true;
+        }
+        
+        // 清理記錄（拖曳結束）
+        this.cardOriginalPositions.delete(moveData.cardId);
+        
+        // 只有頂層之間的移動才是部分更新
+        console.log('↔️ Card moved within top level - partial update sufficient');
+        return false;
+    }
+    
+    // 保存捲動狀態
+    saveScrollState() {
+        const container = document.querySelector('.tafl-canvas-container');
+        if (!container) return null;
+        return {
+            scrollTop: container.scrollTop,
+            scrollLeft: container.scrollLeft
+        };
+    }
+    
+    // 恢復捲動狀態
+    restoreScrollState(state) {
+        if (!state) return;
+        const container = document.querySelector('.tafl-canvas-container');
+        if (container) {
+            requestAnimationFrame(() => {
+                container.scrollTop = state.scrollTop;
+                container.scrollLeft = state.scrollLeft;
+            });
+        }
+    }
+    
+    // 部分更新（僅更新位置，適用於拖曳）
+    performPartialUpdate() {
+        const dropZone = document.getElementById('canvas-drop-zone');
+        if (!dropZone) return;
+        
+        console.log('⚡ Performing partial update (order only)');
+        
+        // 只更新頂層卡片的順序，不處理嵌套結構變化
+        const flow = taflFlowStore.getFlow();
+        const cards = flow.flow || [];
+        cards.forEach((card, index) => {
+            const element = dropZone.querySelector(`:scope > [data-card-id="${card.id}"]`);
+            if (element) {
+                // 使用 CSS order 屬性重新排序，避免 DOM 重建
+                element.style.order = index;
+            }
+        });
+    }
+    
+    // 完整重建（保留原 refreshCanvas 邏輯）
+    performFullRefresh() {
+        this.refreshCanvasCore();
+    }
+    
+    // 舊的 refreshCanvas 保留為向後相容
+    refreshCanvas() {
+        // 直接調用新的統一更新系統
+        this.updateCanvas({ 
+            fullRefresh: true, 
+            source: 'legacy-refresh' 
+        });
+    }
+    
+    // 原始的 refreshCanvas 邏輯（被 performFullRefresh 使用）
+    refreshCanvasCore() {
+        console.log('🎨 refreshCanvasCore() called');
+        const canvas = document.getElementById('flow-canvas');
+        if (!canvas) {
+            console.error('🎨 Canvas element not found!');
+            return;
+        }
+        
+        const flow = taflFlowStore.getFlow();
+        console.log('🎨 Current flow from store:', flow);
+        console.log('🎨 Current flow.flow:', flow.flow, 'Length:', flow.flow ? flow.flow.length : 'undefined');
+        console.log('🎨 Flow card IDs:', flow.flow ? flow.flow.map(c => c.id || 'no-id') : 'empty');
+        
+        // 保存選中狀態
+        const selectedId = this.selectedCard?.dataset?.cardId;
+        
+        // 清空畫布
+        console.log('🎨 Clearing canvas');
+        canvas.innerHTML = '';
+        
+        if (flow.flow.length === 0) {
+            console.log('🎨 Flow is empty, showing empty canvas UI');
+            // 顯示空白提示 - 與 HTML 模板保持一致
+            canvas.innerHTML = `
+                <div class="canvas-drop-zone" id="canvas-drop-zone">
+                    <div class="drop-zone-content">
+                        <span class="icon is-large has-text-grey-light">
+                            <i class="fas fa-grip-vertical fa-3x"></i>
+                        </span>
+                        <p class="has-text-grey">Drag TAFL verbs here to build your flow</p>
+                        <p class="has-text-grey-light is-size-7">Or click on a verb from the toolbox</p>
+                    </div>
+                </div>
+            `;
+            // 重新設置空畫布的放置區
+            this.createInitialDropZone();
+        } else {
+            // 創建 drop zone 容器
+            const dropZone = document.createElement('div');
+            dropZone.id = 'canvas-drop-zone';
+            dropZone.className = 'canvas-drop-zone has-cards'; // 加上 has-cards class
+            canvas.appendChild(dropZone);
+            
+            // 渲染所有卡片到 drop zone 內（不再綁定個別事件）
+            console.log('🎨 Rendering cards, flow.flow:', JSON.stringify(flow.flow, null, 2));
+            flow.flow.forEach((cardData, index) => {
+                console.log(`🎨 Creating card ${index}:`, cardData);
+                const cardElement = this.createCardElementSimple(cardData);
+                if (cardElement) {
+                    console.log(`🎨 Card element created:`, cardElement);
+                    dropZone.appendChild(cardElement);
+                } else {
+                    console.error(`🎨 Failed to create card element for index ${index}`);
+                }
+            });
+        }
+        
+        // 恢復選中狀態
+        if (selectedId) {
+            const card = document.querySelector(`[data-card-id="${selectedId}"]`);
+            if (card) {
+                this.selectCard(card);
+            }
+        }
+        
+        // Ensure all cards are draggable after refresh
+        this.refreshCardDragHandlers();
+    }
+    
+    // 已被全域事件委派取代 - cloneNode(true)會破壞事件冒泡！
     setupNestedCardInteractions() {
-        // Set up click events for nested cards
-        document.querySelectorAll('.tafl-card.nested').forEach(nestedCard => {
+        return; // 直接返回，不執行任何操作
+        // Set up click events for ALL nested cards (including deeply nested ones)
+        // Use a more general selector that catches all nested cards at any depth
+        document.querySelectorAll('.nested-cards .tafl-card').forEach(nestedCard => {
+            // Skip if this is a direct child of flow-canvas (not actually nested)
+            if (nestedCard.parentElement.id === 'flow-canvas') {
+                return;
+            }
+            
             // Remove any existing click listeners to avoid duplicates
             const newCard = nestedCard.cloneNode(true);
             nestedCard.parentNode.replaceChild(newCard, nestedCard);
@@ -2096,77 +3052,41 @@ class TAFLEditor {
                 this.selectCard(newCard);
             });
             
-            // Set up control buttons for nested cards
-            const duplicateBtn = newCard.querySelector('.card-duplicate-btn');
-            const deleteBtn = newCard.querySelector('.card-delete-btn');
+            // Note: Control buttons for nested cards are handled by event delegation
+            // No need to bind individual events - they're handled in setupEventListeners()
             
-            if (duplicateBtn) {
-                duplicateBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const cardId = newCard.dataset.cardId;
-                    // Find the card data using existing findCardById which already searches nested structures
-                    const cardData = this.findCardById(cardId);
-                    if (cardData) {
-                        // Clone the card data
-                        const newCardData = JSON.parse(JSON.stringify(cardData));
-                        newCardData.id = this.generateId();
-                        
-                        // Find parent and add the duplicate
-                        const parentCards = newCard.closest('.nested-cards');
-                        if (parentCards) {
-                            const branchType = parentCards.dataset.branch;
-                            const parentCardEl = parentCards.closest('.tafl-card:not(.nested)');
-                            if (parentCardEl) {
-                                const parentId = parentCardEl.dataset.cardId;
-                                this.addToNestedStructure(parentId, branchType, newCardData);
-                                this.refreshCanvas();
-                                this.showNotification('Card duplicated', 'is-success');
-                            }
-                        }
-                    }
-                });
+            // Setup drag functionality for nested cards
+            // 註：拖放事件已經由 setupGlobalEventDelegation 統一處理
+            // 這裡只需要確保卡片有 draggable 屬性
+            const dragHandle = newCard.querySelector('.card-drag-handle');
+            if (dragHandle && !dragHandle.classList.contains('bound')) {
+                dragHandle.classList.add('bound');
+                newCard.draggable = true;
+                // 不再單獨綁定 dragstart/dragend 事件
+                // 全局事件委派會處理所有拖放操作
             }
-            
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const cardId = newCard.dataset.cardId;
-                    // Remove from nested structure
-                    const removed = this.removeNestedCard(cardId);
-                    if (removed) {
-                        this.refreshCanvas();
-                        this.showNotification('Card deleted', 'is-success');
-                    }
-                });
-            }
-            
-            // Nested cards should not be draggable
-            newCard.draggable = false;
         });
         
-        // Set up nested drop zones
-        document.querySelectorAll('.nested-drop-zone').forEach(dropZone => {
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.classList.add('drag-over');
-            });
-            
-            dropZone.addEventListener('dragleave', (e) => {
-                if (!dropZone.contains(e.relatedTarget)) {
-                    dropZone.classList.remove('drag-over');
-                }
-            });
-            
+        // All drop handling is done through unified drop handler
+    }
+    
+    setupNestedDropTargets() {
+        // Handle empty drop zones
+        // Note: dragover and dragleave are now handled via event delegation in setupUnifiedDragDrop
+        document.querySelectorAll('.nested-drop-zone.empty-zone').forEach(dropZone => {
             dropZone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 dropZone.classList.remove('drag-over');
                 
-                const dragData = this.getDragData(e);
+                // Clear insertion lines when dropping
+                this.hideDropIndicators();
+                
+                const dragData = this.getDragData(e) || this.dragData;
                 if (!dragData) return;
                 
-                const parentCard = dropZone.closest('.tafl-card');
+                const nestedCards = dropZone.closest('.nested-cards');
+                const parentCard = nestedCards?.closest('.tafl-card');
                 const parentCardId = parentCard?.dataset.cardId;
                 const branchType = dropZone.dataset.branch;
                 
@@ -2181,7 +3101,10 @@ class TAFLEditor {
                         };
                         
                         this.addToNestedStructure(parentCardId, branchType, cardData);
-                        this.refreshCanvas();
+                        this.updateCanvas({
+                            fullRefresh: true,
+                            source: 'nested:drag-add'
+                        });
                         
                         // Select new card
                         const newElement = document.querySelector(`[data-card-id="${cardId}"]`);
@@ -2199,7 +3122,10 @@ class TAFLEditor {
                         if (cardData) {
                             this.removeCardFromFlow(dragData.cardId);
                             this.addToNestedStructure(parentCardId, branchType, cardData);
-                            this.refreshCanvas();
+                            this.updateCanvas({
+                                fullRefresh: true,
+                                source: 'nested:drag-add-else'
+                            });
                             
                             const movedElement = document.querySelector(`[data-card-id="${dragData.cardId}"]`);
                             if (movedElement) {
@@ -2210,6 +3136,95 @@ class TAFLEditor {
                             
                             this.markDirty();
                             this.showNotification(`Moved card to ${branchType} branch`, 'is-success');
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Set up horizontal drop indicators
+        document.querySelectorAll('.drop-indicator.horizontal').forEach(indicator => {
+            indicator.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Clear all other active indicators
+                document.querySelectorAll('.drop-indicator.horizontal').forEach(ind => {
+                    ind.classList.remove('active');
+                });
+                
+                // Activate this indicator
+                indicator.classList.add('active');
+            });
+            
+            indicator.addEventListener('dragleave', (e) => {
+                if (!indicator.contains(e.relatedTarget)) {
+                    indicator.classList.remove('active');
+                }
+            });
+            
+            indicator.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                indicator.classList.remove('active');
+                
+                // Clear insertion lines when dropping
+                this.hideDropIndicators();
+                
+                const dragData = this.getDragData(e) || this.dragData;
+                if (!dragData) return;
+                
+                const nestedCards = indicator.closest('.nested-cards');
+                const parentCard = nestedCards?.closest('.tafl-card');
+                const parentCardId = parentCard?.dataset.cardId;
+                const branchType = indicator.dataset.branch;
+                const position = parseInt(indicator.dataset.position);
+                
+                if (parentCardId && branchType && !isNaN(position)) {
+                    if (dragData.type === 'verb') {
+                        // Add new card to nested structure at specific position
+                        const cardId = this.generateId();
+                        const cardData = {
+                            id: cardId,
+                            [dragData.verb]: this.getDefaultParams(dragData.verb)[dragData.verb]
+                        };
+                        
+                        this.addToNestedStructureAtPosition(parentCardId, branchType, cardData, position);
+                        this.updateCanvas({
+                            fullRefresh: true,
+                            source: 'nested:drag-position'
+                        });
+                        
+                        // Select new card
+                        const newElement = document.querySelector(`[data-card-id="${cardId}"]`);
+                        if (newElement) {
+                            newElement.classList.add('just-added');
+                            setTimeout(() => newElement.classList.remove('just-added'), 500);
+                            this.selectCard(newElement);
+                        }
+                        
+                        this.markDirty();
+                        this.showNotification(`Added ${dragData.verb} at position ${position + 1}`, 'is-success');
+                    } else if (dragData.type === 'card') {
+                        // Move existing card to specific position
+                        const cardData = this.findCardById(dragData.cardId);
+                        if (cardData) {
+                            this.removeCardFromFlow(dragData.cardId);
+                            this.addToNestedStructureAtPosition(parentCardId, branchType, cardData, position);
+                            this.updateCanvas({
+                                fullRefresh: true,
+                                source: 'nested:drag-position-else'
+                            });
+                            
+                            const movedElement = document.querySelector(`[data-card-id="${dragData.cardId}"]`);
+                            if (movedElement) {
+                                movedElement.classList.add('just-moved');
+                                setTimeout(() => movedElement.classList.remove('just-moved'), 500);
+                                this.selectCard(movedElement);
+                            }
+                            
+                            this.markDirty();
+                            this.showNotification(`Moved card to position ${position + 1}`, 'is-success');
                         }
                     }
                 }
@@ -2250,499 +3265,162 @@ class TAFLEditor {
             targetPanel.style.display = 'block';
         }
         
+        // If switching to variables tab, update the panel
+        if (tab === 'variables' && window.taflPanels) {
+            window.taflPanels.updateVariablesPanel();
+        }
+        
+        // Refresh CodeMirror editors for tabs that use JSON editors
+        if (['preload', 'rules', 'variables'].includes(tab)) {
+            // Small delay to ensure panel is visible before refreshing
+            setTimeout(() => {
+                if (window.taflPanels && window.taflPanels.refreshCodeMirrors) {
+                    window.taflPanels.refreshCodeMirrors();
+                }
+            }, 50);
+        }
+        
         // Refresh YAML if switching to YAML tab
         if (tab === 'yaml') {
-            this.refreshYAML();
+            this.yamlModule.refreshYAML();
         }
     }
     
-    newFlow() {
-        if (this.isDirty) {
-            if (!confirm('You have unsaved changes. Create a new flow anyway?')) {
-                return;
-            }
-        }
-        
-        // TAFL v1.1 - Initialize with 6-segment structure
-        this.currentFlow = {
-            metadata: {
-                id: null,
-                name: 'Untitled Flow',
-                version: '1.1',
-                description: ''
-            },
-            settings: {
-                timeout: 3600,
-                max_retries: 3,
-                retry_on_failure: false
-            },
-            preload: {},
-            rules: {},
-            variables: {},
-            flow: []
-        };
-        
-        this.initializeVariables();
-        this.refreshCanvas();
-        this.updateUI();
-        this.isDirty = false;
-    }
+    // newFlow() moved to tafl-editor-modals.js
     
-    async openFlowModal() {
-        const modal = document.getElementById('flow-list-modal');
-        const flowList = document.getElementById('flow-list');
-        
-        modal.classList.add('is-active');
-        
-        try {
-            const response = await fetch('/tafl/flows');
-            const data = await response.json();
-            
-            if (data.flows.length === 0) {
-                flowList.innerHTML = `
-                    <div class="has-text-centered">
-                        <p class="has-text-grey">No TAFL flows found.</p>
-                        <button class="button is-primary mt-3" onclick="document.getElementById('flow-list-modal').classList.remove('is-active')">
-                            Create New Flow
-                        </button>
-                    </div>
-                `;
-            } else {
-                flowList.innerHTML = data.flows.map(flow => `
-                    <div class="flow-item" data-flow-id="${flow.id}">
-                        <div class="flow-name">${flow.name}</div>
-                        <div class="flow-description">${flow.description || 'No description'}</div>
-                        <div class="flow-meta">
-                            <span>Version: ${flow.version}</span>
-                            <span>ID: ${flow.id}</span>
-                        </div>
-                    </div>
-                `).join('');
-                
-                // Add click handlers
-                flowList.querySelectorAll('.flow-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        this.openFlow(item.dataset.flowId);
-                        modal.classList.remove('is-active');
-                    });
-                });
-            }
-        } catch (error) {
-            flowList.innerHTML = `
-                <div class="notification is-danger">
-                    Error loading flows: ${error.message}
-                </div>
-            `;
-        }
-    }
+    // OpenFlowModal removed - using dropdown selector instead
+    // The dropdown in the header now handles flow selection
     
+    // Delegate to flow module
     async openFlow(flowId) {
-        try {
-            const response = await fetch(`/tafl/flows/${flowId}`);
-            const data = await response.json();
-            
-            this.currentFlow = data.flow;
-            this.refreshCanvas();
-            this.refreshVariablesUI();
-            this.refreshPreloadUI();
-            this.refreshRulesUI();
-            this.updateUI();
-            this.isDirty = false;
-            
-            this.showNotification(`Opened flow: ${this.currentFlow.metadata.name}`, 'is-success');
-        } catch (error) {
-            this.showNotification(`Error opening flow: ${error.message}`, 'is-danger');
-        }
+        return this.flowModule.openFlow(flowId);
     }
     
-    // Public method for loading flows from dropdown
+    /**
+     * Recursively ensure all cards have IDs (including nested cards)
+     */
+    // Delegate to flow module
+    ensureAllCardsHaveIds(cards) {
+        return this.flowModule.ensureAllCardsHaveIds(cards);
+    }
+    
+    // Delegate to flow module
     async loadFlow(flowDataOrId) {
-        // Handle both flow data object and flow ID string
-        if (typeof flowDataOrId === 'string') {
-            // It's a flow ID, fetch the flow
-            await this.openFlow(flowDataOrId);
-        } else if (typeof flowDataOrId === 'object' && flowDataOrId !== null) {
-            // It's already flow data
-            if (flowDataOrId.flow) {
-                // The response has a wrapper
-                this.currentFlow = flowDataOrId.flow;
-            } else {
-                // Direct flow data
-                this.currentFlow = flowDataOrId;
-            }
-            
-            // Ensure all steps have IDs for internal tracking
-            const flow = taflFlowStore.getFlow();
-            if (flow.flow && Array.isArray(flow.flow)) {
-                flow.flow.forEach(step => {
-                    if (!step.id) {
-                        step.id = this.generateId();
-                    }
-                });
-            }
-            
-            this.refreshCanvas();
-            this.refreshVariablesUI();
-            this.refreshPreloadUI();
-            this.refreshRulesUI();
-            this.updateUI();
-            this.isDirty = false;
-            
-            const flowName = this.currentFlow.metadata?.name || this.currentFlow.name || 'Flow';
-            this.showNotification(`Loaded flow: ${flowName}`, 'is-success');
-        } else {
-            console.error('Invalid flow data or ID provided');
-        }
+        return this.flowModule.loadFlow(flowDataOrId);
     }
     
-    saveFlowModal() {
-        const modal = document.getElementById('save-flow-modal');
-        
-        // Pre-fill with current values
-        document.getElementById('save-flow-id').value = this.currentFlow.metadata.id || '';
-        document.getElementById('save-flow-name').value = this.currentFlow.metadata.name || '';
-        document.getElementById('save-flow-description').value = this.currentFlow.metadata.description || '';
-        
-        modal.classList.add('is-active');
-    }
+    // saveFlowModal() and saveFlow() moved to tafl-editor-modals.js
     
-    async saveFlow() {
-        const flowId = document.getElementById('save-flow-id').value.trim();
-        const flowName = document.getElementById('save-flow-name').value.trim();
-        const flowDescription = document.getElementById('save-flow-description').value.trim();
-        
-        if (!flowId) {
-            this.showNotification('Flow ID is required', 'is-danger');
-            return;
-        }
-        
-        if (!flowName) {
-            this.showNotification('Flow name is required', 'is-danger');
-            return;
-        }
-        
-        // Update current flow metadata
-        this.currentFlow.metadata.id = flowId;
-        this.currentFlow.metadata.name = flowName;
-        this.currentFlow.metadata.description = flowDescription;
-        
-        try {
-            const response = await fetch('/tafl/flows', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(this.currentFlow)
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                this.showNotification('Flow saved successfully', 'is-success');
-                this.isDirty = false;
-                this.updateUI();
-                document.getElementById('save-flow-modal').classList.remove('is-active');
-            } else {
-                this.showNotification(`Error saving flow: ${result.detail}`, 'is-danger');
-            }
-        } catch (error) {
-            this.showNotification(`Error saving flow: ${error.message}`, 'is-danger');
-        }
-    }
     
-    async validateFlow() {
-        try {
-            const response = await fetch('/tafl/validate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    metadata: taflFlowStore.getFlow().metadata,
-                    variables: taflFlowStore.getFlow().variables,
-                    flow: taflFlowStore.getFlow().flow
-                })
-            });
-            
-            const result = await response.json();
-            
-            this.displayValidationResults(result);
-            this.switchPropertiesTab('validation');
-        } catch (error) {
-            this.showNotification(`Validation error: ${error.message}`, 'is-danger');
-        }
-    }
-    
-    displayValidationResults(result) {
-        const resultsContainer = document.getElementById('validation-results');
-        
-        if (result.valid && result.errors.length === 0 && result.warnings.length === 0) {
-            resultsContainer.innerHTML = `
-                <div class="validation-item success">
-                    <span class="icon validation-icon has-text-success">
-                        <i class="mdi mdi-check-circle"></i>
-                    </span>
-                    <div class="validation-message">
-                        <strong>TAFL Flow is valid!</strong><br>
-                        No errors or warnings found.
-                    </div>
-                </div>
-            `;
-        } else {
-            let html = '';
-            
-            result.errors.forEach(error => {
-                html += `
-                    <div class="validation-item error">
-                        <span class="icon validation-icon has-text-danger">
-                            <i class="mdi mdi-alert-circle"></i>
-                        </span>
-                        <div class="validation-message">
-                            <strong>Error:</strong> ${error}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            result.warnings.forEach(warning => {
-                html += `
-                    <div class="validation-item warning">
-                        <span class="icon validation-icon has-text-warning">
-                            <i class="mdi mdi-alert"></i>
-                        </span>
-                        <div class="validation-message">
-                            <strong>Warning:</strong> ${warning}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            resultsContainer.innerHTML = html;
-        }
-    }
-    
+    // Delegate to flow module
     async executeFlow() {
-        try {
-            const response = await fetch('/tafl/execute', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    metadata: this.currentFlow.metadata,
-                    variables: this.currentFlow.variables,
-                    flow: this.currentFlow.flow
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showNotification('TAFL flow executed successfully (test mode)', 'is-success');
-                console.log('Execution log:', result.execution_log);
-            } else {
-                this.showNotification(`Execution failed: ${result.message}`, 'is-danger');
-            }
-        } catch (error) {
-            this.showNotification(`Execution error: ${error.message}`, 'is-danger');
-        }
+        return this.flowModule.executeFlow();
     }
     
-    refreshYAML() {
-        if (!this.yamlEditor) return;
-        
-        this.yamlEditor.setValue(this.generateYAML());
-    }
     
-    generateYAML() {
-        // Generate TAFL v1.0 compliant YAML
-        const flowData = {
-            metadata: this.currentFlow.metadata,
-            variables: this.currentFlow.variables,
-            flow: this.currentFlow.flow.map(card => {
-                // Remove the internal id and return the verb structure
-                const verb = this.getCardVerb(card);
-                const result = {};
-                result[verb] = card[verb];
-                return result;
-            })
-        };
-        
-        // Convert to YAML-like string
-        return this.objectToYAML(flowData);
-    }
-    
-    objectToYAML(obj, indent = 0) {
-        const spaces = '  '.repeat(indent);
-        let yaml = '';
-        
-        for (const [key, value] of Object.entries(obj)) {
-            if (Array.isArray(value)) {
-                yaml += `${spaces}${key}:\n`;
-                value.forEach(item => {
-                    yaml += `${spaces}  - `;
-                    if (typeof item === 'object') {
-                        if (Object.keys(item).length === 1) {
-                            // Single key object (like verb: params)
-                            const [verbKey, verbParams] = Object.entries(item)[0];
-                            yaml += `${verbKey}:`;
-                            if (typeof verbParams === 'string') {
-                                yaml += ` ${verbParams}\n`;
-                            } else {
-                                yaml += '\n' + this.objectToYAML(verbParams, indent + 2);
-                            }
-                        } else {
-                            yaml += '\n' + this.objectToYAML(item, indent + 2);
-                        }
-                    } else {
-                        yaml += `${item}\n`;
-                    }
-                });
-            } else if (typeof value === 'object' && value !== null) {
-                yaml += `${spaces}${key}:\n`;
-                yaml += this.objectToYAML(value, indent + 1);
-            } else {
-                const quotedValue = typeof value === 'string' && (value.includes(' ') || value.includes('${')) ? `"${value}"` : value;
-                yaml += `${spaces}${key}: ${quotedValue}\n`;
-            }
-        }
-        
-        return yaml;
-    }
-    
-    applyYAMLChanges() {
-        try {
-            // This would require a YAML parser
-            // For now, show a message
-            this.showNotification('YAML parsing not yet implemented - use the visual editor', 'is-info');
-        } catch (error) {
-            this.showNotification(`YAML parse error: ${error.message}`, 'is-danger');
-        }
-    }
+    // Note: rebuildCardsFromFlow has been removed - use updateCanvas instead
+    // This function was redundant with refreshCanvas/refreshCanvasCore
     
     markDirty() {
         taflFlowStore.setDirty(true);
-        this.updateUI();
+        this.notificationsModule.markDirty();
+        this.notificationsModule.updateUI();
     }
     
     updateUI() {
         // Update metadata inputs
-        document.getElementById('flow-id').value = this.currentFlow.metadata.id || '';
-        document.getElementById('flow-name').value = this.currentFlow.metadata.name || '';
-        document.getElementById('flow-version').value = this.currentFlow.metadata.version || '1.0';
-        document.getElementById('flow-description').value = this.currentFlow.metadata.description || '';
+        document.getElementById('flow-id').value = taflFlowStore.getFlow().metadata.id || '';
+        document.getElementById('flow-name').value = taflFlowStore.getFlow().metadata.name || '';
+        document.getElementById('flow-version').value = taflFlowStore.getFlow().metadata.version || '1.0';
+        document.getElementById('flow-description').value = taflFlowStore.getFlow().metadata.description || '';
         
         // Update save button state
         const saveBtn = document.getElementById('save-flow-btn');
-        saveBtn.disabled = !this.isDirty || this.currentFlow.flow.length === 0;
+        saveBtn.disabled = !taflFlowStore.isDirty() || taflFlowStore.getFlow().flow.length === 0;
+        
+        // Use notifications module for additional UI updates
+        this.notificationsModule.updateUI();
         
         // Update title
-        document.title = `TAFL Editor - ${this.currentFlow.metadata.name}${this.isDirty ? ' *' : ''}`;
+        document.title = `TAFL Editor - ${taflFlowStore.getFlow().metadata.name}${taflFlowStore.isDirty() ? ' *' : ''}`;
     }
     
     showNotification(message, type = 'is-info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.zIndex = '9999';
-        notification.style.minWidth = '300px';
+        // Delegate to notifications module
+        this.notificationsModule.showNotification(message, type);
+    }
+    
+    /**
+     * 當流程改變時調用（供拖放系統使用）
+     */
+    onFlowChanged() {
+        console.log('Flow structure changed');
         
-        notification.innerHTML = `
-            <button class="delete"></button>
-            ${message}
-        `;
+        // 更新 store 中的流程資料
+        if (this.store) {
+            const flowData = this.exportFlowFromCanvas();
+            this.store.updateFlow(flowData);
+        }
         
-        document.body.appendChild(notification);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 5000);
-        
-        // Manual close
-        notification.querySelector('.delete').addEventListener('click', () => {
-            notification.remove();
-        });
+        // 觸發任何需要的更新
+        // 例如：更新 YAML 視圖、保存草稿等
     }
 }
+
+// Export the TAFLEditor class
+export { TAFLEditor };
 
 // Initialize TAFL Editor when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    window.taflEditor = new TAFLEditor();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Don't clear localStorage on every page load - let the store manage persistence
+    // localStorage.removeItem('taflEditor');
     
-    // Load flows dropdown
-    loadFlowsDropdown();
+    const taflEditor = new TAFLEditor();
+    
+    // Setup event delegation for flow dropdown items
+    const dropdownContent = document.getElementById('flows-dropdown-content');
+    if (dropdownContent) {
+        dropdownContent.addEventListener('click', async function(e) {
+            const flowItem = e.target.closest('.flow-dropdown-item');
+            if (flowItem) {
+                const flowId = flowItem.dataset.flowId;
+                if (flowId) {
+                    try {
+                        const flowData = await taflAPI.getFlow(flowId);
+                        taflEditor.loadFlow(flowData);
+                        
+                        // Show success notification using the notification module
+                        const flowName = flowData.flow?.metadata?.name || flowData.flow?.name || flowId;
+                        taflEditor.notificationsModule.success(`Flow "${flowName}" loaded successfully`);
+                        
+                        // Save as last edited flow
+                        localStorage.setItem('lastEditedFlowId', flowId);
+                        // Close dropdown
+                        const dropdown = flowItem.closest('.navbar-dropdown');
+                        if (dropdown) {
+                            dropdown.parentElement.classList.remove('is-active');
+                        }
+                    } catch (error) {
+                        console.error('Failed to load flow:', error);
+                        taflEditor.notificationsModule.error('Failed to load flow: ' + error.message);
+                    }
+                }
+            }
+        });
+    }
+    
+    // Load flows dropdown using module method
+    await taflEditor.flowModule.loadFlowsDropdown();
+    
+    // Make loadFlowsDropdown available globally for modals module
+    window.loadFlowsDropdown = () => taflEditor.flowModule.loadFlowsDropdown();
+    
+    // 不要自動載入 localStorage 中的 flow
+    // 使用者需要手動選擇要載入的 flow
+    console.log('TAFL Editor initialized. Please select a flow from the dropdown or create a new one.');
 });
 
-// Load flows into dropdown
-async function loadFlowsDropdown() {
-    const dropdownContent = document.getElementById('flows-dropdown-content');
-    if (!dropdownContent) return;
-    
-    try {
-        const response = await fetch('/tafl/flows');
-        const data = await response.json();
-        const flows = data.flows || [];  // Extract flows array from response object
-        
-        if (flows.length === 0) {
-            dropdownContent.innerHTML = `
-                <div class="navbar-item has-text-grey">
-                    No flows available
-                </div>
-            `;
-            return;
-        }
-        
-        dropdownContent.innerHTML = flows.map(flow => `
-            <a class="navbar-item" onclick="loadFlow('${flow.id}')">
-                <div>
-                    <strong>${flow.name || flow.id}</strong>
-                    ${flow.description ? `<br><small class="has-text-grey">${flow.description}</small>` : ''}
-                </div>
-            </a>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Failed to load flows:', error);
-        dropdownContent.innerHTML = `
-            <div class="navbar-item has-text-danger">
-                Failed to load flows
-            </div>
-        `;
-    }
-}
-
-// Load a specific flow
-async function loadFlow(flowId) {
-    try {
-        const response = await fetch(`/tafl/flows/${flowId}`);
-        const flowData = await response.json();
-        
-        if (window.taflEditor) {
-            window.taflEditor.loadFlow(flowData);
-            
-            // Show success notification
-            const flowName = flowData.flow?.metadata?.name || flowData.flow?.name || flowId;
-            const notification = document.createElement('div');
-            notification.className = 'notification is-success';
-            notification.style.position = 'fixed';
-            notification.style.top = '70px';
-            notification.style.right = '20px';
-            notification.style.zIndex = '1000';
-            notification.innerHTML = `
-                <button class="delete" onclick="this.parentElement.remove()"></button>
-                Flow "${flowName}" loaded successfully
-            `;
-            document.body.appendChild(notification);
-            
-            // Auto-remove after 3 seconds
-            setTimeout(() => notification.remove(), 3000);
-        }
-    } catch (error) {
-        console.error('Failed to load flow:', error);
-        alert('Failed to load flow: ' + error.message);
-    }
-}
+// Global functions have been moved to module methods:
+// - loadFirstAvailableFlow -> taflEditor.flowModule.loadFirstAvailableFlow()
+// - loadFlowsDropdown -> taflEditor.flowModule.loadFlowsDropdown()
+// - loadFlow is handled inline in the event handler or via taflEditor.loadFlow()

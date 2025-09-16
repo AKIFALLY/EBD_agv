@@ -1,15 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-TW" data-theme="light">
+<html lang="zh-TW" data-theme="dark">
 
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>{% block title %}操作面板{% endblock %}</title>
+    <title>{% block title %}AGV 監控系統{% endblock %}</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
     <link rel="stylesheet" href="/static/css/bulma_1_0_4.min.css" />
     <link rel="stylesheet" href="/static/css/materialdesignicons.min.css" />
     <link rel="stylesheet" href="/static/css/opui-bulma-extend.css" />
+    <link rel="stylesheet" href="/static/css/agvui-dark.css" />
+    <link rel="stylesheet" href="/static/css/agvui-cards.css" />
     <!-- Socket.IO 前端 library -->
     <script src="/static/js/lib/socket.io.min.js"></script>
     <script type="module" src="/static/index.js"></script>
@@ -19,7 +23,7 @@
 
 </head>
 
-<body>
+<body data-theme="dark">
     <main class="main-root">
         {% include "navbar.html" %}
         {% block content %}{% endblock %}

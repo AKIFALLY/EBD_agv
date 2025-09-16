@@ -24,8 +24,28 @@ export function createStore(key, initialState = {}) {
     }
 
     function setState(newState) {
+        console.debug(`[miniStore] setState called with:`, JSON.stringify(newState));
+        console.debug(`[miniStore] Current state before merge:`, JSON.stringify(state));
         state = { ...state, ...newState };
-        localStorage.setItem(key, JSON.stringify(state));
+        console.debug(`[miniStore] New state after merge:`, JSON.stringify(state));
+        
+        try {
+            const stateStr = JSON.stringify(state);
+            console.debug(`[miniStore] Saving to localStorage, key=${key}, size=${stateStr.length} bytes`);
+            localStorage.setItem(key, stateStr);
+            console.debug(`[store] setState 被呼叫，已保存到 localStorage:`, key, state);
+            
+            // Verify it was saved
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                const savedState = JSON.parse(saved);
+                console.debug(`[miniStore] Verification - localStorage now has:`, savedState.currentFlow?.flow?.length, 'cards');
+            } else {
+                console.error(`[miniStore] ERROR: localStorage.getItem returned null after setItem!`);
+            }
+        } catch (e) {
+            console.error(`[miniStore] ERROR saving to localStorage:`, e);
+        }
 
         const listeners = listenersMap.get('change');
         if (listeners) {
@@ -51,13 +71,17 @@ export function createStore(key, initialState = {}) {
     }
 
     function clear() {
+        console.debug(`[store] clear 被呼叫 for key: ${key}`);
+        console.debug(`[store] initialState:`, JSON.stringify(initialState));
         state = { ...initialState }; // 重置為初始狀態
         localStorage.removeItem(key);
-        console.debug(`[store] clear 被呼叫，狀態已重置:`, state);
+        console.debug(`[store] localStorage removed for key: ${key}`);
+        console.debug(`[store] state after clear:`, JSON.stringify(state));
 
         // 也觸發 change 通知
         const listeners = listenersMap.get('change');
         if (listeners) {
+            console.debug(`[store] triggering ${listeners.size} change listeners`);
             listeners.forEach((listener) => listener(getState()));
         }
     }

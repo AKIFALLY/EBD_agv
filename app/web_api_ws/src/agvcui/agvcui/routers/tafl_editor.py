@@ -12,6 +12,7 @@ This is replacing the Linear Flow Designer and will be the primary flow editor.
 
 import json
 import yaml
+import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -74,7 +75,7 @@ class TAFLFlow(BaseModel):
     id: str
     name: str
     description: Optional[str] = ""
-    version: str = "1.0"
+    version: str = "1.1.2"
     created_at: str
     updated_at: str
     flow: List[Dict[str, Any]]
@@ -92,34 +93,35 @@ class TAFLExecutionResult(BaseModel):
     result: Optional[Dict[str, Any]] = None
 
 # TAFL verb definitions with metadata - Updated for TAFL v1.1 compliance
+# TAFL v1.1.1 compliant verb definitions
 TAFL_VERBS = {
     "query": {
         "name": "Query",
         "description": "Query data from database or system",
         "color": "is-info",
         "icon": "fas fa-database",
-        "params": ["target", "where", "order", "limit", "as", "store_as"]  # Added store_as for v1.1
+        "params": ["target", "where", "order", "limit", "as"]  # TAFL v1.1.1: use 'as' not 'store_as'
     },
     "check": {
         "name": "Check", 
         "description": "Check conditions or status",
         "color": "is-success",
         "icon": "fas fa-check-circle",
-        "params": ["condition", "where", "as", "target"]  # Added target for v1.1
+        "params": ["target", "condition", "as"]  # TAFL v1.1.1: target + condition + as
     },
     "create": {
         "name": "Create",
         "description": "Create new resources or records", 
         "color": "is-primary",
         "icon": "fas fa-plus-circle",
-        "params": ["target", "with", "params", "as"]  # Added params for v1.1
+        "params": ["target", "with", "as"]  # TAFL v1.1.1: use 'with' not 'params'
     },
     "update": {
         "name": "Update",
         "description": "Update existing data",
         "color": "is-warning",
         "icon": "fas fa-edit",
-        "params": ["target", "where", "set", "as"]
+        "params": ["target", "where", "set"]  # TAFL v1.1.1: target + where + set
     },
     "if": {
         "name": "If",
@@ -133,35 +135,35 @@ TAFL_VERBS = {
         "description": "Loop through collection",
         "color": "is-purple",
         "icon": "fas fa-redo",
-        "params": ["each", "in", "as", "filter", "do"]  # TAFL v1.1: Added filter parameter
+        "params": ["in", "as", "do", "filter"]  # TAFL v1.1.1: in + as + do (not 'each')
     },
     "switch": {
         "name": "Switch",
         "description": "Multi-branch conditional",
         "color": "is-orange", 
         "icon": "fas fa-code-branch",
-        "params": ["expression", "cases", "default", "when"]  # Added when for v1.1
+        "params": ["expression", "cases", "default"]  # TAFL v1.1.1: expression + cases array + default
     },
     "set": {
         "name": "Set",
         "description": "Set variable values",
         "color": "is-dark",
         "icon": "fas fa-equals",
-        "params": ["variable", "value", "expression", "multi"]  # TAFL v1.1: Added multi-variable support
+        "params": []  # TAFL v1.1.1: Set is a single assignment expression string, not object
     },
     "stop": {
         "name": "Stop",
         "description": "Stop flow execution",
         "color": "is-danger-dark",
         "icon": "fas fa-stop-circle",
-        "params": ["reason", "code", "message"]  # Added message for v1.1
+        "params": ["reason", "condition"]  # TAFL v1.1.1: reason + optional condition
     },
     "notify": {
         "name": "Notify",
         "description": "Send notifications",
         "color": "is-link",
         "icon": "fas fa-bell",
-        "params": ["type", "message", "recipients", "level"]  # TAFL v1.1: Complete parameter set
+        "params": ["level", "message", "recipients", "details"]  # TAFL v1.1.1: level is primary field
     }
 }
 
@@ -319,17 +321,34 @@ async def validate_tafl_flow(request: Request):
             # Optional: validate preload section
             preload = data.get("preload", {})
             if preload:
-                for key, value in preload.items():
-                    if isinstance(value, dict) and "query" not in value:
-                        warnings.append(f"Preload item '{key}' should contain a query")
+                # Check if preload is in the correct format (should be dict for v1.1.1)
+                if isinstance(preload, list):
+                    errors.append("Preload must be a dictionary (key-value pairs) in TAFL v1.1.1, not a list. Each key should be the variable name, and value should contain a 'query' object.")
+                elif isinstance(preload, dict):
+                    for key, value in preload.items():
+                        if not isinstance(value, dict):
+                            errors.append(f"Preload item '{key}' must be an object containing a 'query'")
+                        elif "query" not in value:
+                            warnings.append(f"Preload item '{key}' should contain a 'query' field")
+                        elif not isinstance(value.get("query"), dict):
+                            errors.append(f"Preload item '{key}': 'query' must be an object")
+                else:
+                    errors.append("Preload must be a dictionary (key-value pairs)")
+            
+            # Optional: validate settings section
+            settings = data.get("settings", {})
+            if settings and not isinstance(settings, dict):
+                errors.append("Settings must be a dictionary (key-value pairs) in TAFL v1.1.1, not a list")
             
             # Optional: validate rules section
             rules = data.get("rules", {})
-            # Rules are free-form key-value pairs, no specific validation needed
+            if rules and not isinstance(rules, dict):
+                errors.append("Rules must be a dictionary (key-value pairs) in TAFL v1.1.1, not a list")
             
             # Optional: validate variables section
             variables = data.get("variables", {})
-            # Variables are free-form key-value pairs, no specific validation needed
+            if variables and not isinstance(variables, dict):
+                errors.append("Variables must be a dictionary (key-value pairs) in TAFL v1.1.1, not a list")
             
         else:
             # Legacy format - just get flow
@@ -356,7 +375,14 @@ async def validate_tafl_flow(request: Request):
                     verb_content = statement[verb]
                     
                     # Validate required parameters for certain verbs
-                    if verb == "for" and isinstance(verb_content, dict):
+                    if verb == "set":
+                        # Set can be string (single assignment) or dict (multiple assignments)
+                        # But CANNOT be a list
+                        if isinstance(verb_content, list):
+                            errors.append(f"Statement {i+1}: 'set' must be a string (single assignment) or dictionary (multiple assignments), not a list")
+                        elif not isinstance(verb_content, (str, dict)):
+                            errors.append(f"Statement {i+1}: 'set' must be a string or dictionary")
+                    elif verb == "for" and isinstance(verb_content, dict):
                         if "do" not in verb_content:
                             warnings.append(f"Statement {i+1}: 'for' should have a 'do' section")
                     elif verb == "if" and isinstance(verb_content, dict):
@@ -439,9 +465,170 @@ async def get_tafl_verbs():
     """Get TAFL verb definitions"""
     return {"verbs": TAFL_VERBS}
 
-@router.post("/execute", response_class=JSONResponse)
-async def execute_tafl_flow(request: Request):
-    """Execute TAFL flow (dry run)"""
+@router.post("/testrun", response_class=JSONResponse)
+async def test_run_flow_simulation(request: Request):
+    """
+    Run a TAFL flow in simulation mode
+    This simulates the execution without affecting real systems
+    """
+    try:
+        data = await request.json()
+        flow_data = data.get("flow", [])
+        metadata = data.get("metadata", {})
+        variables = data.get("variables", {})
+        
+        # Simulation execution log
+        execution_log = []
+        step_number = 0
+        
+        # Process each card in the flow
+        for card in flow_data:
+            step_number += 1
+            
+            # Get the verb from the card
+            verb = None
+            for key in card:
+                if key != "id" and key in TAFL_VERBS:
+                    verb = key
+                    break
+            
+            if not verb:
+                continue
+                
+            # Simulate execution based on verb type
+            step_result = {
+                "step": step_number,
+                "verb": verb,
+                "card_id": card.get("id", f"card_{step_number}")
+            }
+            
+            # Simulate different verb behaviors
+            if verb == "query":
+                params = card[verb]
+                target = params.get("target", "unknown")
+                step_result["action"] = f"Query {target}"
+                # Return structured result for query
+                step_result["result"] = {
+                    "type": "query_result",
+                    "target": target,
+                    "count": 5,
+                    "records": [
+                        {"id": f"sim_{i}", "name": f"Simulated {target} {i}"} 
+                        for i in range(1, min(6, 3))  # Show first 2 records
+                    ],
+                    "message": f"Simulated: Found 5 {target} records"
+                }
+                step_result["status"] = "success"
+                
+            elif verb == "check":
+                params = card[verb]
+                condition = params.get("condition", "true")
+                step_result["action"] = f"Check condition: {condition}"
+                step_result["result"] = "Simulated: Condition evaluated to true"
+                step_result["status"] = "success"
+                
+            elif verb == "set":
+                params = card[verb]
+                variable = params.get("variable", "var")
+                value = params.get("value", "")
+                step_result["action"] = f"Set {variable} = {value}"
+                step_result["result"] = f"Simulated: Variable '{variable}' set to '{value}'"
+                step_result["status"] = "success"
+                # Update simulated variables
+                variables[variable] = value
+                
+            elif verb == "create":
+                params = card[verb]
+                target = params.get("target", "resource")
+                step_result["action"] = f"Create {target}"
+                step_result["result"] = {
+                    "type": "create_result",
+                    "target": target,
+                    "created_id": "sim_123",
+                    "message": f"Simulated: Created {target} with ID sim_123"
+                }
+                step_result["status"] = "success"
+                
+            elif verb == "update":
+                params = card[verb]
+                target = params.get("target", "resource")
+                step_result["action"] = f"Update {target}"
+                step_result["result"] = f"Simulated: Updated {target}"
+                step_result["status"] = "success"
+                
+            elif verb == "notify":
+                params = card[verb]
+                message = params.get("message", "notification")
+                step_result["action"] = f"Send notification"
+                step_result["result"] = f"Simulated: Notification sent - {message}"
+                step_result["status"] = "success"
+                
+            elif verb == "if":
+                params = card[verb]
+                condition = params.get("condition", "true")
+                step_result["action"] = f"If {condition}"
+                step_result["result"] = "Simulated: Conditional branch - took 'then' path"
+                step_result["status"] = "success"
+                
+            elif verb == "for":
+                params = card[verb]
+                each = params.get("each", "item")
+                in_collection = params.get("in", "collection")
+                step_result["action"] = f"For {each} in {in_collection}"
+                step_result["result"] = "Simulated: Loop executed 3 times"
+                step_result["status"] = "success"
+                
+            elif verb == "switch":
+                params = card[verb]
+                expression = params.get("expression", "$var")
+                step_result["action"] = f"Switch on {expression}"
+                step_result["result"] = "Simulated: Matched case 1"
+                step_result["status"] = "success"
+                
+            elif verb == "stop":
+                params = card[verb]
+                reason = params.get("reason", "completed")
+                step_result["action"] = "Stop execution"
+                step_result["result"] = f"Simulated: Flow stopped - {reason}"
+                step_result["status"] = "completed"
+                execution_log.append(step_result)
+                break
+                
+            else:
+                step_result["action"] = f"Execute {verb}"
+                step_result["result"] = f"Simulated: {verb} executed"
+                step_result["status"] = "success"
+            
+            execution_log.append(step_result)
+            
+            # Simulate processing delay
+            await asyncio.sleep(0.1)
+        
+        return {
+            "success": True,
+            "mode": "simulation",
+            "message": "Flow simulation completed successfully",
+            "execution_log": execution_log,
+            "final_variables": variables,
+            "total_steps": step_number,
+            "flow_id": metadata.get("id", "unnamed_flow"),
+            "flow_name": metadata.get("name", "Unnamed Flow")
+        }
+        
+    except Exception as e:
+        logger.error(f"Simulation error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {
+            "success": False,
+            "mode": "simulation",
+            "message": f"Simulation failed: {str(e)}",
+            "error": str(e)
+        }
+
+# DISABLED: Using enhanced version from tafl_editor_direct.py instead
+# @router.post("/execute", response_class=JSONResponse)
+async def execute_tafl_flow_disabled(request: Request):
+    """Execute TAFL flow (dry run) - DISABLED"""
     try:
         data = await request.json()
         flow = data.get("flow", [])

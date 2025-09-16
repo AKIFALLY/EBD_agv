@@ -1,0 +1,154 @@
+# TAFL Rules Phase Test File
+# Tests the RULES phase (Phase 2) of TAFL 4-phase execution model
+# Created: 2025-09-15
+
+metadata:
+  id: test_rules_phase
+  name: "Test Rules Phase"
+  version: "1.0.0"
+  description: "Test RULES phase - business rules definition and access"
+  author: "TAFL Test Suite"
+  created_at: "2025-09-15"
+
+# ========================================
+# PHASE 2: RULES - Business Rules Definition
+# ========================================
+rules:
+  # Configuration Value Rules (simple values)
+  max_priority:
+    value: 10
+    description: "Maximum task priority allowed"
+  
+  min_battery:
+    value: 30
+    description: "Minimum battery level for AGV dispatch"
+  
+  default_timeout:
+    value: 300
+    description: "Default operation timeout in seconds"
+  
+  dispatch_threshold:
+    value: 2
+    description: "Minimum AGVs needed for batch dispatch"
+  
+  # Numeric Rules
+  priority_multiplier:
+    value: 1.5
+    description: "Priority calculation multiplier"
+  
+  max_retry_count:
+    value: 3
+    description: "Maximum retry attempts"
+  
+  # String Rules
+  default_status:
+    value: "pending"
+    description: "Default task status"
+  
+  # Boolean Rules
+  auto_dispatch_enabled:
+    value: true
+    description: "Enable automatic dispatch"
+  
+  # Conditional Rules (stored for later evaluation)
+  high_priority_check:
+    condition: "${priority} > 7"
+    description: "Check if task is high priority"
+  
+  battery_sufficient:
+    condition: "${battery} >= ${rules.min_battery}"
+    description: "Check if battery level is sufficient"
+
+# ========================================
+# PHASE 3: VARIABLES - Initial Values
+# ========================================
+variables:
+  priority: 8
+  battery: 45
+  agv_count: 3
+  test_results: []
+
+# ========================================
+# PHASE 4: FLOW - Main Execution
+# ========================================
+flow:
+  # Test accessing simple rule values
+  - set:
+      max_priority_test: "${rules.max_priority}"
+  
+  - set:
+      min_battery_test: "${rules.min_battery}"
+  
+  - set:
+      timeout_test: "${rules.default_timeout}"
+  
+  # Test accessing different data types
+  - set:
+      multiplier_test: "${rules.priority_multiplier}"
+  
+  - set:
+      status_test: "${rules.default_status}"
+  
+  - set:
+      auto_dispatch_test: "${rules.auto_dispatch_enabled}"
+  
+  # Test using rules in calculations
+  - set:
+      calculated_priority: "${priority * rules.priority_multiplier}"
+  
+  # Test using rules in conditions
+  - if:
+      condition: "${battery} >= ${rules.min_battery}"
+      then:
+        - notify:
+            message: "✅ Battery check passed: ${battery}% >= ${rules.min_battery}%"
+            level: info
+        - set:
+            battery_check_result: "passed"
+      else:
+        - notify:
+            message: "❌ Battery check failed: ${battery}% < ${rules.min_battery}%"
+            level: warning
+        - set:
+            battery_check_result: "failed"
+  
+  - if:
+      condition: "${priority} <= ${rules.max_priority}"
+      then:
+        - notify:
+            message: "✅ Priority within limits: ${priority} <= ${rules.max_priority}"
+            level: info
+        - set:
+            priority_check_result: "passed"
+      else:
+        - notify:
+            message: "❌ Priority exceeds limit: ${priority} > ${rules.max_priority}"
+            level: warning
+        - set:
+            priority_check_result: "failed"
+  
+  - if:
+      condition: "${agv_count} >= ${rules.dispatch_threshold}"
+      then:
+        - notify:
+            message: "✅ Sufficient AGVs for dispatch: ${agv_count} >= ${rules.dispatch_threshold}"
+            level: info
+        - set:
+            dispatch_check_result: "ready"
+  
+  # Test nested rule access
+  - if:
+      condition: "${rules.auto_dispatch_enabled}"
+      then:
+        - notify:
+            message: "🚀 Auto dispatch is enabled"
+            level: info
+  
+  # Summary check
+  - check:
+      condition: "${battery_check_result == 'passed' && priority_check_result == 'passed'}"
+      as: all_rules_tests_passed
+  
+  - notify:
+      message: "📊 Rules Phase Test Complete - All checks: ${all_rules_tests_passed}"
+      level: info

@@ -49,12 +49,12 @@ flow:
         - set:
             processed: "${item} * 2"
         - notify:
-            channel: test
+            level: info
             message: "Processed ${item}"
   
   # Final notification
   - notify:
-      channel: system
+      level: info
       message: "TAFL test completed with counter=${counter}"
 """
 

@@ -198,14 +198,40 @@ AGV_PID_FILE="/tmp/agv.pid"
 # =====================================
 # 🖥️ AGVUI 服務自動啟動配置
 # =====================================
-AUTO_START_AGVUI=true  # 設定為 true 啟用自動啟動，false 停用
+AUTO_START_AGVUI=false  # 設定為 true 啟用自動啟動，false 停用
+USE_ROS_LAUNCH=true    # 設定為 true 使用 ROS 2 Launch，false 使用原始方式
 
 # 載入 setup.bash 以取得管理函數
 source /app/setup.bash
 
 if [ "$AUTO_START_AGVUI" = "true" ]; then
-    echo "🖥️ 使用 manage_agvui 啟動車載監控界面..."
-    manage_agvui start
+    # 等待系統資源就緒
+    echo "⏳ 等待系統資源就緒..."
+    sleep 5
+    
+    if [ "$USE_ROS_LAUNCH" = "true" ]; then
+        echo "🚀 使用 ROS 2 Launch 啟動 AGVUI..."
+        # 使用新的 ROS 2 Launch 方式
+        if manage_web_agv_launch start; then
+            echo "✅ AGVUI 服務啟動成功 (ROS 2 Launch)"
+        else
+            echo "⚠️ AGVUI 服務啟動失敗"
+            echo "📝 請使用以下指令查看錯誤詳情："
+            echo "   tail -f /tmp/web_agv_launch.log"
+            echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
+        fi
+    else
+        echo "🖥️ 使用傳統方式啟動 AGVUI..."
+        # 使用原始方式（向後相容）
+        if manage_agvui start; then
+            echo "✅ AGVUI 服務啟動成功 (傳統方式)"
+        else
+            echo "⚠️ AGVUI 服務啟動失敗"
+            echo "📝 請使用以下指令查看錯誤詳情："
+            echo "   tail -f /tmp/agvui.log"
+            echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
+        fi
+    fi
 else
     echo "⏸️ AGVUI 自動啟動已停用 (AUTO_START_AGVUI=false)"
 fi

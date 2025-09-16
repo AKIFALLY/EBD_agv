@@ -1,4 +1,4 @@
-# TAFL Language Specification v1.1 (Task Automation Flow Language)
+# TAFL Language Specification v1.1.2 (Task Automation Flow Language)
 
 ## 🎯 適用場景
 - 作為 Linear Flow v2 的替代方案
@@ -7,12 +7,12 @@
 - 業務人員也能理解的技術語言
 - 高效能流程執行和資料預載
 
-## 📋 TAFL v1.1 概述
+## 📋 TAFL v1.1.2 概述
 
 ### 語言定位
-**TAFL (Task Automation Flow Language) v1.1** 是專為 WCS/AGV 系統設計的領域特定語言（DSL），採用 4-Phase 執行模型和 5-Level 變數作用域，實現高效能的任務自動化流程。
+**TAFL (Task Automation Flow Language) v1.1.2** 是專為 WCS/AGV 系統設計的領域特定語言（DSL），採用 4-Phase 執行模型和 5-Level 變數作用域，實現高效能的任務自動化流程。
 
-### v1.1 設計哲學
+### v1.1.2 設計哲學
 1. **最小語法集** - 只有必要的語法元素，降低學習成本
 2. **一致性** - 所有操作遵循相同的語法模式
 3. **可組合** - 小元素可組合成複雜邏輯
@@ -20,7 +20,7 @@
 5. **效能導向** - Preload 資料預載和規則最佳化
 6. **範圍明確** - 5-Level 變數作用域管理
 
-### v1.1 核心優勢
+### v1.1.2 核心優勢
 - **簡單性**: 10個核心動詞涵蓋所有功能
 - **完整性**: 完全替代 Linear Flow v2 的所有功能
 - **可讀性**: 英文技術語法配合中文註解
@@ -35,26 +35,27 @@
 | 動詞 | 用途 | 範例 |
 |------|------|------|
 | **query** | 查詢資料 | `query: locations` |
-| **check** | 檢查條件 | `check: task_exists` |
+| **check** | 檢查條件（必須含 as） | `check: {condition: expr, as: var}` |
 | **create** | 創建資源 | `create: task` |
 | **update** | 更新資料 | `update: rack` |
 | **if** | 條件判斷 | `if: ${condition}` |
 | **for** | 迴圈處理 | `for: ${collection}` |
 | **switch** | 多分支選擇 | `switch: ${expression}` |
-| **set** | 設定變數 | `set: count = 0` |
+| **set** | 設定變數 | `set: {count: 0}` |
 | **stop** | 停止流程 | `stop: "reason"` |
 | **notify** | 發送通知 | `notify: alarm` |
 
-### 2. TAFL v1.1 程式結構
+### 2. TAFL v1.1.2 程式結構
 
-TAFL v1.1 採用 6 段式結構，支援 4-Phase 執行模型：
+TAFL v1.1.2 採用 6 段式結構，支援 4-Phase 執行模型：
 
 ```yaml
 metadata:         # 可選：程式元資料
   id: flow_001
   name: Sample Flow
-  version: 1.1
-  description: TAFL v1.1 範例流程
+  version: 1.1.2
+  enabled: true   # v1.1.2 新增：控制流程是否啟用自動執行
+  description: TAFL v1.1.2 範例流程
 
 settings:         # 可選：執行設定
   timeout: 3600
@@ -80,7 +81,8 @@ flow:            # Phase 4：主要流程執行
   - query:
       target: locations
       store_as: locations
-  - set: task_count = "${task_count + 1}"
+  - set:
+      task_count: "${task_count + 1}"
 ```
 
 #### 執行階段說明
@@ -100,12 +102,12 @@ flow:            # Phase 4：主要流程執行
 
 所有語句遵循統一模式，支援三種語法格式：
 
-#### 簡化格式（推薦用於簡單操作）
+#### 簡化格式（適用於部分動詞）
 ```yaml
 <verb>: <expression>
-# 範例
-set: counter = 10
+# 範例（注意：SET 不支援簡化格式）
 for: item in ${collection}
+stop: "reason"
 ```
 
 #### 結構化格式（推薦用於複雜操作）
@@ -121,28 +123,30 @@ query:
   store_as: locations
 ```
 
-#### v1.1 多變數格式（新增）
+#### SET 標準格式（v1.1.2 統一規範）
 ```yaml
+# SET 必須使用物件格式（即使只有單一變數）
 set:
   var1: value1
-  var2: value2
-  var3: "${expression}"
-# 範例
+  
+# 多變數範例
 set:
   task_count: 0
   priority: high
   timeout: "${rules.default_timeout}"
 ```
 
-**實作說明**: 三種格式都完全支援，可在同一檔案中混用。
+**實作說明**: SET 動詞統一使用物件格式，不支援單行字串格式。其他動詞仍可使用簡化或結構化格式。
 
 ### 4. v1.1 增強表達式系統
 
 #### 數學運算（v1.1 修復）
 ```yaml
 # 現在正確支援數學表達式
-set: total = "${count + 1}"
-set: average = "${sum / count}"
+set:
+  total: "${count + 1}"
+set:
+  average: "${sum / count}"
 if:
   condition: "${score >= threshold * 0.8}"
 ```
@@ -150,8 +154,10 @@ if:
 #### 物件屬性存取
 ```yaml
 # 支援深層物件屬性
-set: location_id = "${item.location.id}"
-set: priority = "${task.metadata.priority}"
+set:
+  location_id: "${item.location.id}"
+set:
+  priority: "${task.metadata.priority}"
 ```
 
 #### 規則引用（v1.1 新增）
@@ -284,19 +290,29 @@ timestamp()          # 時間戳記
 
 ### check - 檢查操作
 
+**⚠️ 重要**: `as` 參數為必要欄位，用於儲存檢查結果
+
 ```yaml
+# ✅ 正確格式：必須包含 as 參數
+- check:
+    condition: ${expression}
+    as: result_variable  # 必要參數
+
 # 檢查存在性
 - check: task_exists
   where:
     rack_id: ${rack.id}
     status: pending
-  as: has_pending_task
+  as: has_pending_task  # 必要參數
 
 # 檢查狀態
 - check: rack_status
   where:
     id: ${rack.id}
-  as: rack_state
+  as: rack_state  # 必要參數
+
+# ❌ 錯誤格式：不允許省略 as
+# - check: "${counter < 100}"  # 缺少 as 參數
 ```
 
 ### create - 創建操作
@@ -419,19 +435,35 @@ timestamp()          # 時間戳記
 - `when: "default"`: 特殊值，表示預設分支，必須放在最後
 - 每個 switch 最多只能有一個 default case
 
+**實作狀態 (2025-09-09)**: 
+- ✅ Parser 和 Executor 已更新支援 v1.1.1 格式
+- ✅ 保持向後相容舊格式 (on/cases/default)
+- ✅ TAFL Editor 已支援新格式生成
+
 ### set - 變數設定
 
 ```yaml
-# 簡單賦值
-- set: count = 0
-- set: total = ${count + 1}
-
+# 標準格式（單一變數）
+- set:
+    count: 0
+    
+# 多變數設定
+- set:
+    task_count: 0
+    priority: high
+    timeout: "${rules.default_timeout}"
+    
+# 表達式賦值
+- set:
+    total: "${count + 1}"
+    average: "${sum / count}"
+    
 # 複雜賦值
-- set: summary = {
-    total: count(${racks}),
-    pending: count(${racks.filter(r => r.status == "pending")}),
-    completed: count(${racks.filter(r => r.status == "completed")})
-  }
+- set:
+    summary: 
+      total: count(${racks})
+      pending: count(${racks.filter(r => r.status == "pending")})
+      completed: count(${racks.filter(r => r.status == "completed")})
 ```
 
 ### stop - 停止流程
@@ -497,12 +529,14 @@ flow:
       - stop: "No inlet locations found"
   
   # 記錄找到的位置數量
-  - set: total_locations = count(${inlet_locations})
+  - set:
+      total_locations: count(${inlet_locations})
   - notify: info
     message: "Found ${total_locations} inlet locations"
   
   # 初始化總任務計數
-  - set: total_tasks_created = 0
+  - set:
+      total_tasks_created: 0
   
   # 處理每個位置
   - for: ${inlet_locations}
@@ -523,7 +557,8 @@ flow:
           # 使用條件判斷來跳過後續處理，而非 continue
       
       # 初始化位置任務計數
-      - set: location_task_count = 0
+      - set:
+          location_task_count: 0
       
       # 處理每個架台
       - for: ${location_racks}
@@ -566,8 +601,10 @@ flow:
                         as: new_task
                       
                       # 更新計數器
-                      - set: location_task_count = ${location_task_count + 1}
-                      - set: total_tasks_created = ${total_tasks_created + 1}
+                      - set:
+                          location_task_count: "${location_task_count + 1}"
+                      - set:
+                          total_tasks_created: "${total_tasks_created + 1}"
                       
                       # 記錄任務創建
                       - notify: info
@@ -575,7 +612,8 @@ flow:
                 else:
                   - notify: warning
                     message: "Task limit reached for ${location.name}"
-                  - set: skip_remaining_racks = true  # 設置旗標以跳過剩餘架台
+                  - set:
+                      skip_remaining_racks: true  # 設置旗標以跳過剩餘架台
   
   # 總結報告
   - switch:
@@ -650,7 +688,8 @@ flow:
         then:
           - notify: warning
             message: "No more AGVs for task ${task.id}"
-          - set: no_agvs_available = true  # 設置旗標以處理無AGV情況
+          - set:
+              no_agvs_available: true  # 設置旗標以處理無AGV情況
       
       # 根據任務優先級選擇派車策略
       - switch:
@@ -659,20 +698,26 @@ flow:
             - when: ">= ${config.priority_levels.urgent}"
               do:
                 # 緊急任務：選最近的AGV
-                - set: selected_agv = find_nearest(${available_agvs}, ${task.location})
-                - set: dispatch_type = "express"
+                - set:
+                    selected_agv: find_nearest(${available_agvs}, ${task.location})
+                - set:
+                    dispatch_type: "express"
             
             - when: ">= ${config.priority_levels.normal}"
               do:
                 # 普通任務：選電量最高的AGV
-                - set: selected_agv = ${available_agvs[0]}
-                - set: dispatch_type = "standard"
+                - set:
+                    selected_agv: "${available_agvs[0]}"
+                - set:
+                    dispatch_type: "standard"
             
             - when: "default"
               do:
                 # 低優先級：選最遠的AGV（平衡使用）
-                - set: selected_agv = find_farthest(${available_agvs}, ${task.location})
-                - set: dispatch_type = "economy"
+                - set:
+                    selected_agv: find_farthest(${available_agvs}, ${task.location})
+                - set:
+                    dispatch_type: "economy"
       
       # 創建派車指令
       - create: dispatch
@@ -705,7 +750,8 @@ flow:
           dispatch_id: ${dispatch_order.id}
       
       # 從可用列表移除
-      - set: available_agvs = ${available_agvs.filter(a => a.id != selected_agv.id)}
+      - set:
+          available_agvs: "${available_agvs.filter(a => a.id != selected_agv.id)}"
       
       # 發送通知
       - notify: info
@@ -824,6 +870,39 @@ flow:
               details: ${problem_tasks}
 ```
 
+## 🔄 版本相容性說明
+
+### Switch 語句格式演進
+
+#### v1.0 格式（舊版，仍支援）
+```yaml
+- switch:
+    on: ${expression}          # 使用 'on' 欄位
+    cases:
+      1: [action1]             # 字典格式的 cases
+      2: [action2]
+    default: [default_action]  # 獨立的 default 欄位
+```
+
+#### v1.1.1 格式（推薦使用）
+```yaml
+- switch:
+    expression: ${expression}  # 使用 'expression' 欄位
+    cases:                     # 陣列格式的 cases
+      - when: "1"
+        do: [action1]
+      - when: "2"  
+        do: [action2]
+      - when: "default"        # default 作為特殊 case
+        do: [default_action]
+```
+
+**關鍵差異**：
+- 欄位名稱：`on` → `expression`
+- Cases 結構：字典 → 陣列
+- Default 處理：獨立欄位 → 特殊 case
+- 條件支援：僅精確匹配 → 支援條件表達式
+
 ## 🔄 與 Linear Flow v2 的對照
 
 | Linear Flow v2 | TAFL v4 | 改進 |
@@ -934,10 +1013,53 @@ flow:
 - **測試狀態**: 所有核心功能測試通過
 - **驗證工具**: `r tafl-validate` 支援 v1.1 驗證
 
+## 🔄 遷移指南
+
+### v1.1.2 SET 格式遷移
+從 TAFL v1.1.2 開始，SET 動詞不再支援單行字串格式。所有 SET 語句必須使用物件格式。
+
+#### 遷移範例
+```yaml
+# ❌ 舊格式（不再支援）
+set: "task_status = completed"
+set: "counter = ${counter} + 1"
+set: "message = Task ${task_id} completed"
+
+# ✅ 新格式（必須使用）
+set: {task_status: "completed"}
+set: {counter: "${counter + 1}"}
+set: {message: "Task ${task_id} completed"}
+
+# ✅ 多行格式（保持不變）
+set:
+  task_status: "completed"
+  counter: "${counter + 1}"
+  message: "Task ${task_id} completed"
+```
+
+#### 自動遷移腳本
+可以使用以下正則表達式進行批量轉換：
+- 搜尋: `^(\s*)set:\s*"([^=]+)\s*=\s*([^"]+)"\s*$`
+- 替換: `$1set: {$2: "$3"}`
+
+#### 注意事項
+1. 物件格式確保語法一致性
+2. 支援更好的語法高亮和驗證
+3. 與 TAFL Editor 實作保持一致
+4. 多變數設定語法保持不變
+
 ## 🔗 相關文檔
 - TAFL 實作計畫: @docs-ai/operations/development/tafl-implementation-plan.md
 
 ## 📅 版本記錄
+- **2025-09-10**: TAFL v1.1.2 SET 語法標準化
+  - **重大變更**: 移除單行字串格式 `set: "variable = value"`
+  - 統一使用物件格式：單變數 `set: {variable: value}` 或多行 YAML
+  - 確保 TAFL Editor 實作與規範一致性
+  - **遷移指南**：
+    - 舊格式: `set: "task_status = completed"`
+    - 新格式: `set: {task_status: "completed"}`
+    - 多變數格式保持不變
 - **2025-08-21**: TAFL v1.1 語言規範完成，包含：
   - 4-Phase 執行模型實作
   - 5-Level 變數作用域系統

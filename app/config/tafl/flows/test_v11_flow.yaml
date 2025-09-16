@@ -1,23 +1,28 @@
-flow:
-- query:
-    target: tasks
-    where: status = 'pending'
 metadata:
+  enabled: true
   created_at: '2025-08-22T07:09:44.715353'
   description: Testing v1.1 structure
   id: test_v11_flow
   name: Test TAFL v1.1 Flow
-  updated_at: '2025-08-22T07:09:44.715346'
-  version: '1.1'
+  updated_at: '2025-09-12T07:03:45.899645'
+  version: 1.1.2
+settings:
+  retry: 3
+  timeout: 30
 preload:
   racks:
     query:
       target: racks
-      where: active = true
+      where: is_carry = false
 rules:
   max_tasks: 10
-settings:
-  retry: 3
-  timeout: 30
 variables:
   counter: 0
+flow:
+- query:
+    target: tasks
+    where: status_id = 1
+    as: pending_tasks
+- notify:
+    level: info
+    message: "Found ${pending_tasks.total} tasks with status_id = 1 (待處理)"

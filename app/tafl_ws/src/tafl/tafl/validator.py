@@ -28,18 +28,28 @@ class TAFLValidator:
     Performs syntax and semantic validation on TAFL AST.
     """
     
-    # Core verb requirements (TAFL v1.1)
+    # Core verb requirements (TAFL v1.1.2 - Strict specification compliance)
     VERB_REQUIREMENTS = {
-        'query': {'required': ['target'], 'optional': ['where', 'store', 'limit', 'comment']},
-        'check': {'required': ['condition'], 'optional': ['store', 'comment']},
-        'create': {'required': ['target'], 'optional': ['store', 'comment']},
-        'update': {'required': ['target', 'id'], 'optional': ['comment']},
-        'if': {'required': ['condition', 'then'], 'optional': ['else', 'comment']},
-        'for': {'required': ['each', 'in', 'do'], 'optional': ['filter', 'comment']},  # v1.1: added filter
-        'switch': {'required': ['on', 'cases'], 'optional': ['default', 'comment']},
-        'set': {'required': [], 'optional': ['comment']},  # Validated separately
-        'stop': {'required': [], 'optional': ['reason', 'if', 'comment']},
-        'notify': {'required': ['message'], 'optional': ['channel', 'level', 'comment']}
+        # query: 根據規格書，使用 where 而非 filter，使用 as 而非 store_as
+        'query': {'required': ['target'], 'optional': ['where', 'as', 'order', 'limit', 'description']},
+        # check: 使用 as 而非 store_as
+        'check': {'required': ['condition'], 'optional': ['where', 'as', 'description']},
+        # create: 使用 with 而非 params，使用 as 而非 store_as
+        'create': {'required': ['target'], 'optional': ['with', 'as', 'description']},
+        # update: where 和 set 是必需的
+        'update': {'required': ['target', 'where', 'set'], 'optional': ['description']},
+        # if: 標準條件結構
+        'if': {'required': ['condition'], 'optional': ['then', 'else', 'description']},
+        # for: 使用 in/as/do 而非 each/items，v1.1 增加 filter
+        'for': {'required': ['in', 'as', 'do'], 'optional': ['filter', 'description']},
+        # switch: v1.1.2 使用 expression 和 cases，default 在 cases 內
+        'switch': {'required': ['expression', 'cases'], 'optional': ['description']},
+        # set: v1.1.2 只接受物件格式，不再支援字串格式
+        'set': {'required': [], 'optional': ['description']},  # Validated separately
+        # stop: 停止流程
+        'stop': {'required': [], 'optional': ['reason', 'message', 'description']},
+        # notify: 使用 level 而非 channel
+        'notify': {'required': ['message'], 'optional': ['level', 'recipients', 'details', 'description']}
     }
     
     def __init__(self):
@@ -139,6 +149,10 @@ class TAFLValidator:
         # Validate ID format (alphanumeric and underscore)
         if not metadata.id.replace('_', '').replace('-', '').isalnum():
             raise TAFLValidationError(f"Invalid flow ID format: {metadata.id}")
+        
+        # v1.1.2: Validate enabled field (optional, but must be boolean if present)
+        if hasattr(metadata, 'enabled') and not isinstance(metadata.enabled, bool):
+            raise TAFLValidationError(f"Flow enabled must be boolean, got: {type(metadata.enabled).__name__}")
     
     def _validate_settings(self, settings: FlowSettings):
         """Validate flow settings / 驗證流程設置"""
@@ -173,10 +187,10 @@ class TAFLValidator:
                 raise TAFLValidationError(f"Invalid preload limit: {stmt.limit}", stmt)
         
         # Register preloaded variable
-        if stmt.store_as:
-            self.preload_scope.add(stmt.store_as)
+        if stmt.as_:
+            self.preload_scope.add(stmt.as_)
         else:
-            raise TAFLValidationError("Preload statement must specify store_as", stmt)
+            raise TAFLValidationError("Preload statement must specify 'as'", stmt)
     
     def _validate_rule(self, rule_name: str, rule_def: RuleDefinition):
         """Validate rule definition / 驗證規則定義"""
@@ -238,15 +252,25 @@ class TAFLValidator:
                 self._validate_expression(expr)
         
         # Register variable if storing result
-        if stmt.store_as:
-            self.defined_variables.add(stmt.store_as)
+        if stmt.as_:
+            self.defined_variables.add(stmt.as_)
     
     def _validate_check(self, stmt: CheckStatement):
-        """Validate check statement / 驗證檢查語句"""
+        """Validate check statement / 驗證檢查語句
+        
+        v1.1.3: 'as' parameter is now required for all check statements
+        """
         self._validate_expression(stmt.condition)
         
-        if stmt.store_as:
-            self.defined_variables.add(stmt.store_as)
+        # v1.1.3: 'as' is now required
+        if not stmt.as_:
+            raise TAFLValidationError(
+                f"Check statement must include 'as' parameter to store result. "
+                f"Example: check: {{condition: '...', as: 'result_variable'}}",
+                stmt
+            )
+        
+        self.defined_variables.add(stmt.as_)
     
     def _validate_create(self, stmt: CreateStatement):
         """Validate create statement / 驗證創建語句"""
@@ -257,31 +281,37 @@ class TAFLValidator:
         if stmt.target not in valid_targets:
             self.warnings.append(f"Unknown create target: {stmt.target}")
         
-        # Validate parameters
-        for key, expr in stmt.parameters.items():
+        # Validate with parameters (符合規格書: with)
+        for key, expr in stmt.with_.items():
             self._validate_expression(expr)
         
         # Check required parameters for tasks
         if stmt.target == 'task':
             required = ['type', 'work_id']
             for req in required:
-                if req not in stmt.parameters:
+                if req not in stmt.with_:
                     self.warnings.append(f"Task creation missing recommended parameter: {req}")
         
-        if stmt.store_as:
-            self.defined_variables.add(stmt.store_as)
+        if stmt.as_:
+            self.defined_variables.add(stmt.as_)
     
     def _validate_update(self, stmt: UpdateStatement):
         """Validate update statement / 驗證更新語句"""
         if not stmt.target:
             raise TAFLValidationError("Update target is required", stmt)
         
-        self._validate_expression(stmt.id_expr)
+        # Validate where conditions (符合規格書: where)
+        if not stmt.where:
+            raise TAFLValidationError("Update requires where conditions", stmt)
         
-        if not stmt.changes:
-            self.warnings.append("Update statement has no changes specified")
+        for key, expr in stmt.where.items():
+            self._validate_expression(expr)
         
-        for key, expr in stmt.changes.items():
+        # Validate set changes (符合規格書: set)
+        if not stmt.set:
+            self.warnings.append("Update statement has no set changes specified")
+        
+        for key, expr in stmt.set.items():
             self._validate_expression(expr)
     
     def _validate_if(self, stmt: IfStatement):
@@ -300,28 +330,30 @@ class TAFLValidator:
     
     def _validate_for(self, stmt: ForStatement):
         """Validate for loop / 驗證循環語句"""
-        if not stmt.variable:
-            raise TAFLValidationError("For loop variable is required", stmt)
+        if not stmt.as_:
+            raise TAFLValidationError("For loop 'as' variable is required", stmt)
         
-        self._validate_expression(stmt.iterable)
+        # Validate 'in' expression (符合規格書: in)
+        self._validate_expression(stmt.in_)
         
         # TAFL v1.1: Validate filter if present
         if stmt.filter is not None:
             self._validate_expression(stmt.filter)
         
-        if not stmt.body:
-            self.warnings.append("For loop has empty body")
+        # Validate 'do' body (符合規格書: do)
+        if not stmt.do:
+            self.warnings.append("For loop has empty do body")
         
         # Add loop variable to scope temporarily
-        was_defined = stmt.variable in self.defined_variables
-        self.defined_variables.add(stmt.variable)
+        was_defined = stmt.as_ in self.defined_variables
+        self.defined_variables.add(stmt.as_)
         
-        for s in stmt.body:
+        for s in stmt.do:
             self._validate_statement(s)
         
         # Remove loop variable from scope if it wasn't defined before
         if not was_defined:
-            self.defined_variables.discard(stmt.variable)
+            self.defined_variables.discard(stmt.as_)
     
     def _validate_switch(self, stmt: SwitchStatement):
         """Validate switch statement / 驗證分支語句"""
@@ -335,23 +367,27 @@ class TAFLValidator:
         # Check for duplicate case values
         case_values = []
         for case in stmt.cases:
-            self._validate_expression(case.value)
+            # Validate 'when' expression (符合規格書: when)
+            self._validate_expression(case.when)
             
             # Check for duplicates (simplified - doesn't evaluate expressions)
-            if isinstance(case.value, Literal):
-                if case.value.value in case_values:
-                    self.warnings.append(f"Duplicate case value: {case.value.value}")
-                case_values.append(case.value.value)
+            if isinstance(case.when, Literal):
+                if case.when.value in case_values:
+                    self.warnings.append(f"Duplicate case value: {case.when.value}")
+                case_values.append(case.when.value)
             
-            for s in case.body:
+            # Validate 'do' body (符合規格書: do)
+            for s in case.do:
                 self._validate_statement(s)
         
-        if stmt.default:
-            for s in stmt.default:
-                self._validate_statement(s)
+        # TAFL v1.1.2: default is handled as a regular case with when:"default"
+        # No separate default attribute to validate
     
     def _validate_set(self, stmt: SetStatement):
-        """Validate set statement / 驗證設置語句"""
+        """Validate set statement / 驗證設置語句
+        
+        TAFL v1.1.2: Accepts only object format, no string format
+        """
         if not stmt.variable:
             raise TAFLValidationError("Set statement requires a variable name", stmt)
         
@@ -365,22 +401,24 @@ class TAFLValidator:
     
     def _validate_notify(self, stmt: NotifyStatement):
         """Validate notify statement / 驗證通知語句"""
-        if not stmt.channel:
-            raise TAFLValidationError("Notify channel is required", stmt)
+        # Level is the primary field per spec (符合規格書: level 為主要欄位)
+        if not stmt.level:
+            raise TAFLValidationError("Notify level is required", stmt)
         
-        valid_channels = ['log', 'alarm', 'message', 'email', 'console', 'system']
-        if stmt.channel not in valid_channels:
-            self.warnings.append(f"Unknown notify channel: {stmt.channel}")
+        valid_levels = ['info', 'warning', 'error', 'critical', 'alarm', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'ALARM']
+        if stmt.level not in valid_levels:
+            self.warnings.append(f"Unknown notify level: {stmt.level}")
         
         self._validate_expression(stmt.message)
         
-        if stmt.level:
-            valid_levels = ['debug', 'info', 'warning', 'error', 'critical', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-            if stmt.level not in valid_levels:
-                self.warnings.append(f"Unknown notify level: {stmt.level}")
+        # Validate optional recipients
+        if stmt.recipients:
+            if not isinstance(stmt.recipients, list):
+                self.warnings.append("Notify recipients should be a list")
         
-        if stmt.metadata:
-            for key, expr in stmt.metadata.items():
+        # Validate optional details (符合規格書: details)
+        if stmt.details:
+            for key, expr in stmt.details.items():
                 self._validate_expression(expr)
     
     def _validate_expression(self, expr: Expression):

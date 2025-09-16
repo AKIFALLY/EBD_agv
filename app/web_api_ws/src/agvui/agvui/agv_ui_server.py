@@ -8,8 +8,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from agvui.agv_ui_socket import AgvUiSocket
-from agvui.agv_ui_ros import AgvUiRos
+try:
+    from agvui.agv_ui_socket import AgvUiSocket
+    from agvui.agv_ui_ros import AgvUiRos
+except ImportError:
+    # Fallback for direct execution
+    from agv_ui_socket import AgvUiSocket
+    from agv_ui_ros import AgvUiRos
 
 
 class AgvUiServer:
@@ -138,6 +143,13 @@ class AgvUiServer:
             return self.templates.TemplateResponse("multi.html", {
                 "request": request,
                 "container_type": self.container_type
+            })
+        
+        @self.app.get("/demo", response_class=HTMLResponse)
+        async def demo_page(request: Request):
+            """深色主題展示頁面 - 展示新的 UI 風格"""
+            return self.templates.TemplateResponse("demo.html", {
+                "request": request
             })
         
         @self.app.get("/api/agv-status/{agv_id}")
@@ -331,7 +343,17 @@ class AgvUiServer:
 
 # 👉 for ros2 run entry point 使用
 def entry_point():
-    asyncio.run(AgvUiServer().start())
+    try:
+        asyncio.run(AgvUiServer().start())
+    except KeyboardInterrupt:
+        print("\n⚠️ 接收到鍵盤中斷，正在關閉 AGVUI...")
+    except Exception as e:
+        print(f"❌ AGVUI 伺服器錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+        # 返回錯誤碼而非直接退出，避免容器終止
+        return 1
+    return 0
 
 
 # 👉 方便測試用：直接用 python 執行也可

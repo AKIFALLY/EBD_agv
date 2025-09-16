@@ -1,0 +1,331 @@
+/* AGVUI 深色主題樣式 - 參考 OPUI/HMI 設計語言 */
+
+/* ========================================
+   基礎設定和變數
+   ======================================== */
+:root {
+    /* 深色主題色彩變數 */
+    --agvui-bg-primary: #0a0a0a;
+    --agvui-bg-secondary: #1a1a1a;
+    --agvui-bg-card: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+    --agvui-border-light: rgba(255, 255, 255, 0.1);
+    --agvui-border-gradient: linear-gradient(135deg, #ff4757, #5f27cd, #00d2d3, #48dbfb);
+    --agvui-text-primary: #ffffff;
+    --agvui-text-secondary: #b0b0b0;
+    --agvui-success: #48c774;
+    --agvui-danger: #f14668;
+    --agvui-warning: #ffdd57;
+    --agvui-info: #3298dc;
+}
+
+/* ========================================
+   深色主題基礎樣式
+   ======================================== */
+html[data-theme="dark"],
+body[data-theme="dark"] {
+    background: var(--agvui-bg-primary);
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .main-root {
+    background: var(--agvui-bg-primary);
+    min-height: 100vh;
+}
+
+[data-theme="dark"] .section {
+    background: var(--agvui-bg-primary);
+}
+
+[data-theme="dark"] .container {
+    background: transparent;
+}
+
+/* ========================================
+   導航欄深色樣式
+   ======================================== */
+[data-theme="dark"] .navbar {
+    background-color: #000000 !important;
+    border-bottom: 1px solid var(--agvui-border-light);
+}
+
+/* ========================================
+   防止更新閃爍
+   ======================================== */
+#status-categories,
+#status-summary {
+    transition: opacity 0.15s ease;
+    min-height: 100px;
+}
+
+#status-categories.updating,
+#status-summary.updating {
+    opacity: 0.9;
+}
+
+/* 避免重建時的跳動 */
+.card {
+    transition: transform 0.1s ease;
+}
+
+.columns {
+    min-height: 200px;
+}
+
+/* ========================================
+   IO 指示器樣式
+   ======================================== */
+.io-indicator {
+    width: 100%;
+    aspect-ratio: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--agvui-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.io-indicator.active {
+    background: linear-gradient(135deg, #48c774 0%, #3abb67 100%);
+    border-color: #48c774;
+    color: white;
+    box-shadow: 0 0 10px rgba(72, 199, 116, 0.5);
+}
+
+.io-indicator:hover {
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .navbar-item,
+[data-theme="dark"] .navbar-link {
+    color: var(--agvui-text-secondary);
+}
+
+[data-theme="dark"] .navbar-item:hover,
+[data-theme="dark"] .navbar-link:hover {
+    color: var(--agvui-text-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   標題和文字樣式
+   ======================================== */
+[data-theme="dark"] .title {
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .subtitle {
+    color: var(--agvui-text-secondary);
+}
+
+/* ========================================
+   分頁標籤深色樣式
+   ======================================== */
+[data-theme="dark"] .tabs.is-boxed li.is-active a {
+    background-color: var(--agvui-bg-secondary);
+    border-color: var(--agvui-border-light);
+    border-bottom-color: transparent !important;
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .tabs.is-boxed a {
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    color: var(--agvui-text-secondary);
+}
+
+[data-theme="dark"] .tabs.is-boxed a:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--agvui-border-light);
+    color: var(--agvui-text-primary);
+}
+
+/* ========================================
+   按鈕深色樣式
+   ======================================== */
+[data-theme="dark"] .button {
+    background-color: var(--agvui-bg-secondary);
+    border: 1px solid var(--agvui-border-light);
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .button.is-primary {
+    background-color: var(--agvui-info);
+    border-color: var(--agvui-info);
+    color: white;
+}
+
+[data-theme="dark"] .button.is-primary:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+}
+
+/* ========================================
+   卡片深色樣式
+   ======================================== */
+[data-theme="dark"] .box {
+    background: var(--agvui-bg-card);
+    border: 1px solid var(--agvui-border-light);
+    border-radius: 12px;
+    color: var(--agvui-text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card {
+    background: var(--agvui-bg-card);
+    border: 1px solid var(--agvui-border-light);
+    border-radius: 12px;
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .card-header {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--agvui-border-light);
+}
+
+[data-theme="dark"] .card-content {
+    background: transparent;
+}
+
+/* ========================================
+   表格深色樣式
+   ======================================== */
+[data-theme="dark"] .table {
+    background-color: transparent;
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .table td,
+[data-theme="dark"] .table th {
+    border-color: var(--agvui-border-light);
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .table thead th {
+    color: var(--agvui-text-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   標籤深色樣式
+   ======================================== */
+[data-theme="dark"] .tag {
+    background-color: var(--agvui-bg-secondary);
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .tag.is-success {
+    background-color: var(--agvui-success);
+    color: white;
+}
+
+[data-theme="dark"] .tag.is-danger {
+    background-color: var(--agvui-danger);
+    color: white;
+}
+
+[data-theme="dark"] .tag.is-warning {
+    background-color: var(--agvui-warning);
+    color: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .tag.is-info {
+    background-color: var(--agvui-info);
+    color: white;
+}
+
+/* ========================================
+   通知深色樣式
+   ======================================== */
+[data-theme="dark"] .notification {
+    background-color: var(--agvui-bg-secondary);
+    border: 1px solid var(--agvui-border-light);
+    color: var(--agvui-text-primary);
+}
+
+[data-theme="dark"] .notification.is-primary {
+    background-color: rgba(50, 152, 220, 0.2);
+    border-color: var(--agvui-info);
+    color: var(--agvui-text-primary);
+}
+
+/* ========================================
+   連線狀態指示器
+   ======================================== */
+[data-theme="dark"] .mdi-wifi.is-connected {
+    color: var(--agvui-success) !important;
+}
+
+[data-theme="dark"] .mdi-wifi.is-disconnected {
+    color: var(--agvui-danger) !important;
+}
+
+/* ========================================
+   觸控優化
+   ======================================== */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* ========================================
+   動畫效果
+   ======================================== */
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 5px rgba(72, 199, 116, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(72, 199, 116, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(72, 199, 116, 0.5);
+    }
+}
+
+.pulse-animation {
+    animation: pulse-glow 2s infinite;
+}
+
+/* ========================================
+   滾動條深色樣式
+   ======================================== */
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--agvui-bg-primary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--agvui-bg-secondary);
+    border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

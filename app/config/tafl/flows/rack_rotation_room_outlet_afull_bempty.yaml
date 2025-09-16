@@ -1,0 +1,142 @@
+metadata:
+  id: "rack_rotation_room_outlet_afull_bempty"
+  name: "房間出口架台翻轉（A面滿B面空）"
+  version: "1.0.0"
+  description: "檢查所有房間出口架台，當A面已滿、B面為空且房間內還有載具待處理時創建180度翻轉任務"
+  author: "TAFL System"
+  created_at: "2025-09-16"
+  tags: ["rack_rotation", "room_outlet", "automation"]
+
+settings:
+  log_level: "INFO"
+  enable_checkpoint: true
+  parallel_execution: false
+  timeout: 120
+  retry_on_failure: true
+  max_retries: 3
+  execution_interval: 300  # Execute every 5 minutes
+  execution_mode: "sequential"
+
+variables:
+  work_id: 220001  # KUKA rack rotation work ID
+  rotation_angle: 180
+  priority: 5
+  model: "KUKA400i"
+
+flow:
+  # 查詢所有房間出口位置
+  - query:
+      target: locations
+      where:
+        type: "room_outlet"
+      as: outlet_locations
+      description: "查詢所有房間出口位置"
+
+  # 檢查是否有出口位置 - removed this check since query is working
+
+  # 遍歷每個出口位置
+  - for:
+      in: "${outlet_locations}"
+      as: location
+      do:
+        # 查詢該位置的架台
+        - query:
+            target: racks
+            where:
+              location_id: "${location.id}"
+            as: racks_at_location
+            description: "查詢位置 ${location.id} 的架台"
+
+        # 如果該位置有架台
+        - if:
+            condition: "${racks_at_location}"
+            then:
+              # 取得第一個架台
+              - set:
+                  rack: "${racks_at_location[0]}"
+
+              # 查詢架台上的載具（A面：1-16，B面：17-32）
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${rack.id}"
+                    rack_index_min: 1
+                    rack_index_max: 16
+                  as: a_side_carriers
+                  description: "查詢架台 ${rack.id} A面載具"
+
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${rack.id}"
+                    rack_index_min: 17
+                    rack_index_max: 32
+                  as: b_side_carriers
+                  description: "查詢架台 ${rack.id} B面載具"
+
+              # 計算側面狀態 - using .length property for array length
+              - set:
+                  a_side_count: "${a_side_carriers.length}"
+                  b_side_count: "${b_side_carriers.length}"
+                  a_side_full: "${a_side_count == 16}"
+                  b_side_empty: "${b_side_count == 0}"
+
+              # 查詢房間內的載具
+              - query:
+                  target: carriers
+                  where:
+                    room_id: "${location.room_id}"
+                  as: room_carriers
+                  description: "查詢房間 ${location.room_id} 內的載具"
+
+              - set:
+                  room_carrier_count: "${room_carriers.length}"
+                  has_room_carriers: "${room_carrier_count > 0}"
+
+              # 檢查是否滿足翻轉條件（A面滿、B面空、房間有載具）
+              - if:
+                  condition: "${a_side_full} && ${b_side_empty} && ${has_room_carriers}"
+                  then:
+                    # 檢查是否已存在未完成的翻轉任務
+                    - query:
+                        target: tasks
+                        where:
+                          work_id: "${work_id}"
+                          rack_id: "${rack.id}"
+                          status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                        as: existing_tasks
+                        description: "檢查是否已存在翻轉任務"
+
+                    # 如果沒有重複任務，創建新任務
+                    - if:
+                        condition: "${existing_tasks.length == 0}"
+                        then:
+                          # 創建架台翻轉任務
+                          - create:
+                              target: task
+                              with:
+                                name: "房間${location.room_id}出口架台翻轉"
+                                description: "A面已滿(${a_side_count}個載具)、B面為空，房間內有${room_carrier_count}個載具需要處理"
+                                work_id: "${work_id}"
+                                rack_id: "${rack.id}"
+                                priority: "${priority}"
+                                status_id: 1  # PENDING
+                                parameters:
+                                  rack_name: "${rack.name}"
+                                  rack_id: "${rack.id}"
+                                  location_name: "${location.name}"
+                                  location_id: "${location.id}"
+                                  room_id: "${location.room_id}"
+                                  rotation_angle: "${rotation_angle}"
+                                  reason: "A面已滿載，B面為空，房間內有載具待處理"
+                                  model: "${model}"
+                                  nodes: ["${location.node_id}", "${location.node_id + 1}", "${location.node_id}"]
+                                  a_side_count: "${a_side_count}"
+                                  b_side_count: "${b_side_count}"
+                                  room_carriers: "${room_carrier_count}"
+                              as: created_task
+                              description: "創建架台翻轉任務"
+
+                          # 記錄任務創建成功（移除 log 動詞）
+
+  # 流程完成

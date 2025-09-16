@@ -46,8 +46,11 @@ class TAFLWCSManager:
         if self.logger:
             self.logger.info(f"TAFL WCS Manager initialized with flows_dir: {self.flows_dir}")
     
-    def scan_flows(self) -> List[str]:
+    def scan_flows(self, only_enabled: bool = True) -> List[str]:
         """Scan flows directory and load TAFL files
+        
+        Args:
+            only_enabled: If True, only load flows with enabled=true
         
         Returns:
             List of loaded flow IDs
@@ -76,6 +79,18 @@ class TAFLWCSManager:
                 
                 if self._validate_tafl_structure(flow_data):
                     flow_id = flow_data.get('metadata', {}).get('id', flow_file.stem)
+                    is_enabled = flow_data.get('metadata', {}).get('enabled', True)
+                    
+                    # Skip disabled flows if only_enabled is True
+                    if only_enabled and not is_enabled:
+                        if self.logger:
+                            self.logger.debug(f"Skipping disabled flow: {flow_id}")
+                        # Remove from loaded_flows if it was previously loaded
+                        if flow_id in self.loaded_flows:
+                            del self.loaded_flows[flow_id]
+                            if self.logger:
+                                self.logger.info(f"Removed disabled flow from cache: {flow_id}")
+                        continue
                     
                     # Check if flow needs reloading
                     if flow_id not in self.flow_checksums or self.flow_checksums[flow_id] != checksum:
@@ -83,7 +98,7 @@ class TAFLWCSManager:
                             'id': flow_id,
                             'name': flow_data.get('metadata', {}).get('name', flow_id),
                             'description': flow_data.get('metadata', {}).get('description', ''),
-                            'enabled': flow_data.get('metadata', {}).get('enabled', True),
+                            'enabled': is_enabled,
                             'content': content,
                             'data': flow_data,
                             'file': str(flow_file),
@@ -93,8 +108,9 @@ class TAFLWCSManager:
                         self.flow_checksums[flow_id] = checksum
                         loaded_flow_ids.append(flow_id)
                         
+                        status = "enabled" if is_enabled else "disabled"
                         if self.logger:
-                            self.logger.info(f"Loaded TAFL flow: {flow_id}")
+                            self.logger.info(f"Loaded {status} TAFL flow: {flow_id}")
                 else:
                     if self.logger:
                         self.logger.warning(f"Invalid TAFL structure in {flow_file}")
@@ -106,30 +122,61 @@ class TAFLWCSManager:
         return loaded_flow_ids
     
     def _validate_tafl_structure(self, flow_data: Dict) -> bool:
-        """Validate TAFL flow structure
+        """Validate TAFL flow structure according to v1.1 specification
         
         Args:
             flow_data: Parsed YAML data
         
         Returns:
-            True if valid TAFL structure
+            True if valid TAFL v1.1 structure
         """
-        # Check for TAFL v1.0/v1.1 structure
+        # Check for TAFL v1.1 6-section structure
         if not isinstance(flow_data, dict):
             return False
         
-        # Must have metadata
+        # Required sections
         if 'metadata' not in flow_data:
+            if self.logger:
+                self.logger.warning("Missing required 'metadata' section")
             return False
         
-        # Must have flow section
         if 'flow' not in flow_data:
+            if self.logger:
+                self.logger.warning("Missing required 'flow' section")
             return False
         
-        # Metadata must have id
+        # Metadata must have id and name
         metadata = flow_data.get('metadata', {})
         if not metadata.get('id'):
+            if self.logger:
+                self.logger.warning("Missing required 'id' in metadata")
             return False
+        
+        if not metadata.get('name'):
+            if self.logger:
+                self.logger.warning("Missing required 'name' in metadata")
+            return False
+        
+        # Optional but validated sections (TAFL v1.1)
+        valid_sections = {
+            'metadata',    # Required: Program metadata
+            'settings',    # Optional: Execution settings
+            'preload',     # Optional: Data preloading (Phase 1)
+            'rules',       # Optional: Rule definitions (Phase 2)
+            'variables',   # Optional: Variable initialization (Phase 3)
+            'flow'        # Required: Main flow execution (Phase 4)
+        }
+        
+        # Check for unknown sections
+        for section in flow_data.keys():
+            if section not in valid_sections:
+                if self.logger:
+                    self.logger.warning(f"Unknown section '{section}' in TAFL flow. Valid sections: {valid_sections}")
+        
+        # Log detected TAFL version
+        if 'preload' in flow_data or 'rules' in flow_data:
+            if self.logger:
+                self.logger.info("Detected TAFL v1.1+ flow with preload/rules sections")
         
         return True
     
@@ -226,6 +273,87 @@ class TAFLWCSManager:
                 results.append(result)
         
         return results
+    
+    def execute_flow_sync(self, flow_id: str) -> Dict[str, Any]:
+        """Execute a TAFL flow synchronously (like RCS dispatch)
+        
+        Args:
+            flow_id: Flow identifier
+        
+        Returns:
+            Execution result
+        """
+        if flow_id not in self.loaded_flows:
+            return {
+                'status': 'failed',
+                'error': f"Flow '{flow_id}' not found",
+                'flow_id': flow_id
+            }
+        
+        flow = self.loaded_flows[flow_id]
+        
+        # Check if flow is enabled
+        if not flow.get('enabled', True):
+            return {
+                'status': 'skipped',
+                'reason': 'Flow is disabled',
+                'flow_id': flow_id
+            }
+        
+        # Check if already executing
+        if flow_id in self.active_executions:
+            return {
+                'status': 'skipped',
+                'reason': 'Flow is already executing',
+                'flow_id': flow_id
+            }
+        
+        # Mark as active
+        self.active_executions[flow_id] = {
+            'started_at': datetime.now().isoformat(),
+            'status': 'running'
+        }
+        
+        try:
+            # Execute flow synchronously
+            if self.logger:
+                self.logger.info(f"Starting synchronous execution of flow: {flow_id}")
+            
+            # Use executor_wrapper's synchronous execution
+            result = self.executor_wrapper.execute_flow_sync(
+                flow['content'],
+                flow_id
+            )
+            
+            # Update active executions
+            self.active_executions[flow_id].update({
+                'completed_at': datetime.now().isoformat(),
+                'status': result.get('status', 'unknown'),
+                'result': result
+            })
+            
+            return result
+            
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Flow execution failed for {flow_id}: {e}")
+            
+            self.active_executions[flow_id].update({
+                'completed_at': datetime.now().isoformat(),
+                'status': 'failed',
+                'error': str(e)
+            })
+            
+            return {
+                'status': 'failed',
+                'error': str(e),
+                'flow_id': flow_id
+            }
+        finally:
+            # Clean up active execution after a short delay
+            # Note: In sync mode, we just remove it immediately
+            if flow_id in self.active_executions:
+                del self.active_executions[flow_id]
     
     def get_flow_status(self, flow_id: str) -> Dict[str, Any]:
         """Get flow status

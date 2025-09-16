@@ -90,28 +90,26 @@ r containers-status       # 檢查容器運行狀態
 ### OPUI 完整操作流程
 ```
 作業員完整操作流程
-1. 【產品裝載】射出機完成生產 → 作業員將眼鏡掛到carrier → 安裝到rack
+1. 【手動加入 Rack】當需要新空rack時：
+   ├── 作業員從倉儲區手動搬運空rack到射出機旁
+   ├── 在OPUI平板上選擇「Rack管理」→「加入Rack」
+   ├── 輸入rack編號（如 "101"）進行識別
+   ├── 系統驗證並將rack納入管理（分配location_id）
+   └── 顯示「Rack已成功加入系統」確認訊息
 
-2. 【OPUI資訊設定】在平板上設定：
+2. 【產品裝載】射出機完成生產 → 作業員將眼鏡掛到carrier → 安裝到rack
+
+3. 【OPUI資訊設定】在平板上設定：
    ├── 產品類型和數量 (告知AGVC這個rack裝的是什麼)
    ├── 目標房間 (告知WCS最終要送到哪個房間製程)
    └── 目的：讓系統知道rack內容，方便WCS調度
 
-3. 【叫空車】當需要新空rack時：
-   ├── 平板URL帶入device_id認證
-   ├── 檢查license表白名單驗證
-   ├── AGVC派遣KUKA AGV將空rack送到停車格
-   └── 空rack送達停車格
-
-4. 【確認取走空車】作業員手動移走空rack後：
-   ├── 必須按「確認送達」按鈕通知系統
-   ├── 系統才知道停車格已空出
-   └── 才能再次派送下一個空rack
-
-5. 【派滿車】當rack裝滿後：
+4. 【派滿車】當rack裝滿後：
    ├── 按「派車」按鈕產生任務請求
    ├── WCS系統根據房間製程需求決定調度
    └── 不會立刻派送，由WCS決定何時派哪台車搬運
+
+註：已取消自動叫空車功能，改為人工搬運配合OPUI手動加入系統
 ```
 
 ## 📊 資料庫結構對應
@@ -1254,11 +1252,11 @@ OCR NG 檢測流程（待實作）
 1. 製程完成的滿 rack
 2. KUKA AGV 搬運到人工收料區（Location ID: 51-55）
 
-階段 2：人工處理與系統移除（需新增 AGVCUI 功能）
+階段 2：人工處理與系統移除（已在 OPUI-HMI 實作）
 3. 👷 作業員手動取出所有 carrier（實體操作）
-4. 📱 作業員使用平板操作 AGVCUI：
+4. 📱 作業員使用 OPUI-HMI 操作：
    ├── 選擇該 rack（根據位置或 ID）
-   ├── 執行「移除 rack 及 carrier」功能
+   ├── 執行「移出系統」功能
    ├── 系統自動：
    │   ├── 刪除該 rack 上所有 carrier 記錄
    │   └── 設置 rack.location_id = None（標記為系統外）
@@ -1273,40 +1271,22 @@ OCR NG 檢測流程（待實作）
    ├── 根據 rack 名稱查找系統中的 rack 記錄
    ├── 更新 rack.location_id 到指定停車格
    └── rack 重新成為系統管理的活躍 rack
-10. ✅ 空 rack 可供 KUKA AGV 調度使用
+10. ✅ 空 rack 可供系統調度使用
 ```
 
-**需要開發的功能**：
+**已實作功能**：
 
-#### AGVCUI 新增功能
-```python
-# 偽代碼 - AGVCUI 需要新增的 rack 移除功能
-def remove_rack_from_system(rack_id: int):
-    """
-    將 rack 及其所有 carrier 從系統移除
-    用於人工收料區的 rack 回收流程
-    """
-    # 1. 查詢並移除所有 carrier
-    carriers = query_carriers_on_rack(rack_id)
-    for carrier in carriers:
-        delete_carrier(carrier.id)
-    
-    # 2. 更新 rack 狀態為系統外
-    rack = get_rack(rack_id)
-    rack.location_id = None  # 設為 None 表示系統外
-    rack.status_id = 1       # 狀態設為空閒
-    update_rack(rack)
-    
-    # 3. 記錄操作日誌
-    log_operation(f"Rack {rack_id} removed from system at manual collection area")
-    
-    return {"success": True, "message": f"Rack {rack_id} 已從系統移除"}
-```
+#### OPUI-HMI Rack 移出功能（已實作）
+- 在 OPUI-HMI 中已實作「移出系統」功能
+- 可將人工收料區的 rack 設置為 location_id = None
+- 自動清除相關 carrier 記錄
+- 記錄操作日誌供追蹤
 
-#### OPUI 現有功能確認
+#### OPUI 手動加入 Rack 功能（已實作）
 - OPUI 已有手動加入 rack 功能（`rackPage.js` 的 `handleAddRack`）
 - 可以將 location_id = None 的 rack 重新分配到停車格
 - 使用 rack 名稱（如 "101"）而非 ID 來識別
+- 驗證 rack 存在性並分配適當的 location_id
 
 ### 3. 系統狀態管理更新
 **Rack 的三種存在狀態**：
@@ -1321,10 +1301,49 @@ def remove_rack_from_system(rack_id: int):
      └──────── OPUI 加入 ←──────┘
 ```
 
+## 🔄 Rack 生命週期管理 2.0
+
+### Rack 的生命週期狀態
+基於新的商業邏輯，Rack 現在有以下生命週期：
+
+```
+系統外儲存 (location=null) 
+    ↓ [手動搬運到射出機]
+OPUI 手動加入 → 系統內活躍 (location=停車格)
+    ↓ [裝載產品]
+製程處理中 (location=房間入口/出口)
+    ↓ [製程完成]
+人工收料區 (location=51-55)
+    ↓ [OPUI-HMI 移出]
+系統外儲存 (location=null)
+```
+
+### 狀態轉換詳解
+
+#### 1. 系統外 → 系統內
+- **觸發**：射出機作業員需要空 Rack
+- **操作**：人工搬運 + OPUI「加入 Rack」
+- **結果**：Rack 獲得 location_id，納入系統管理
+
+#### 2. 系統內流轉
+- **正常流程**：停車格 → 房間入口 → 房間出口 → 人工收料區
+- **NG 流程**：原地停止，等待人工處理（新機制）
+
+#### 3. 系統內 → 系統外
+- **觸發**：人工收料完成
+- **操作**：OPUI-HMI「移出系統」
+- **結果**：location_id = null，Rack 脫離系統追蹤
+
+### 關鍵變更點
+1. **取消自動叫空車**：不再由 KUKA AGV 自動送空 Rack
+2. **手動 Rack 管理**：人工搬運配合 OPUI 系統識別
+3. **NG 原地停止**：不再搬到 NG 處理區，原地等待處理
+4. **簡化回收流程**：處理完直接移出系統，不再自動搬運
+
 ### 實作優先級建議
 1. **高優先級**：OCR NG 暫停機制（確保品質管控）
-2. **中優先級**：AGVCUI rack 移除功能（完善回收流程）
-3. **低優先級**：其他輔助功能優化
+2. **中優先級**：文檔更新與人員培訓
+3. **低優先級**：監控報表優化
 
 ## 🔗 交叉引用
 - RosAGV 系統概覽: @docs-ai/context/system/rosagv-overview.md

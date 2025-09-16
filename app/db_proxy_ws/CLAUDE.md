@@ -52,7 +52,7 @@ db_proxy_ws/
 
 ### 📊 SQLModel ORM 整合
 - **現代化 ORM**: 基於 SQLModel (Pydantic v2 + SQLAlchemy 2.x)
-- **26 個資料模型**: 完整的 AGVC 系統資料模型
+- **25 個資料模型**: 完整的 AGVC 系統資料模型
 - **型別安全**: 全面的 Python type hints 支援
 - **FastAPI 整合**: 原生支援 FastAPI 生態系統
 
@@ -99,7 +99,7 @@ python3 src/db_proxy/db_proxy/agvc_database_node.py
 ```bash
 # 測試 ROS 2 服務
 ros2 service list | grep db_proxy
-ros2 service call /sql_query db_proxy_interfaces/srv/SqlQuery "sql: 'SELECT COUNT(*) FROM agvc_task'"
+ros2 service call /sql_query db_proxy_interfaces/srv/SqlQuery "sql: 'SELECT COUNT(*) FROM task'"
 
 # 測試 CRUD 操作
 ros2 service call /carrier_query db_proxy_interfaces/srv/CarrierQuery "query_type: 'get_all'"
@@ -117,7 +117,7 @@ ros2 service call /rack_query db_proxy_interfaces/srv/RackQuery "query_type: 'ge
 
 #### AGVCDatabaseNode 主要節點
 - **節點名稱**: `agvc_database_node`
-- **資料庫連線**: `postgresql://postgres:postgres@postgres_container:5432/postgres`
+- **資料庫連線**: `postgresql+psycopg2://agvc:password@192.168.100.254/agvc`
 - **連線池管理**: ConnectionPoolManager (5+5 連線配置)
 - **自動初始化**: 執行預設資料初始化
 
@@ -137,7 +137,7 @@ ros2 service call /rack_query db_proxy_interfaces/srv/RackQuery "query_type: 'ge
 /generic_query           # 通用查詢
 ```
 
-#### SQLModel 資料模型 (26個模型)
+#### SQLModel 資料模型 (25個模型)
 基於實際 models/ 目錄檔案：
 - **日誌模型**: log_level, rosout_log, runtime_log, modify_log, audit_log
 - **拓撲模型**: node, edge, node_type
@@ -160,7 +160,7 @@ ros2 service call /rack_query db_proxy_interfaces/srv/RackQuery "query_type: 'ge
 ```bash
 # SQL 查詢服務
 ros2 service call /sql_query db_proxy_interfaces/srv/SqlQuery \
-  "sql: 'SELECT * FROM agvc_task WHERE status = ''pending'' LIMIT 10'"
+  "sql: 'SELECT * FROM task WHERE status_id = 1 LIMIT 10'"
 
 # Carrier 查詢服務
 ros2 service call /carrier_query db_proxy_interfaces/srv/CarrierQuery \
@@ -197,12 +197,12 @@ with pool_manager.get_session() as session:
 ```python
 # 執行完整初始化 (實際的方式)
 from db_proxy.connection_pool_manager import ConnectionPoolManager
-from db_proxy.sql.init_data.init_manager import initialize_all_data
+from db_proxy.sql.db_install import initialize_default_data
 
-# 建立連線池和 session
-pool_manager = ConnectionPoolManager("postgresql://postgres:postgres@postgres_container:5432/postgres")
-with pool_manager.get_session() as session:
-    initialize_all_data(session)
+# 建立連線池
+pool_manager = ConnectionPoolManager("postgresql+psycopg2://agvc:password@192.168.100.254/agvc")
+# 初始化預設資料
+initialize_default_data(pool_manager)
 ```
 
 ## 🚨 資料庫代理服務專項故障排除
@@ -236,15 +236,16 @@ ros2 node info /agvc_database_node
 # 連線池狀態會每 5 秒記錄一次在節點日誌中
 
 # 檢查資料庫容器狀態
-docker compose -f docker-compose.agvc.yml ps postgres_container
+docker compose -f docker-compose.agvc.yml ps postgres
 ```
 
 ## 📋 技術限制和注意事項
 
 ### 環境依賴
 - **AGVC 容器專用**: 必須在 AGVC 容器內執行，不能在 AGV 容器中使用
-- **PostgreSQL 依賴**: 需要 PostgreSQL 容器正常運行且可連接
+- **PostgreSQL 依賴**: 需要 PostgreSQL 容器正常運行 (192.168.100.254:5432)
 - **網路設定**: 在 docker-compose.agvc.yml 的 bridge 網路 (192.168.100.0/24) 中運行
+- **資料庫設定**: 使用 agvc 使用者連接 agvc 資料庫
 
 ### 效能和安全考量
 詳細的效能最佳化和安全性指導請參考: @docs-ai/operations/development/database-operations.md
@@ -258,7 +259,7 @@ docker compose -f docker-compose.agvc.yml ps postgres_container
 
 ### 相關模組
 - **Web API 服務**: `../web_api_ws/CLAUDE.md` - 資料庫整合使用者
-- **AI WCS 系統**: `../ai_wcs_ws/CLAUDE.md` - 決策引擎資料存取
+- **TAFL WCS 系統**: `../tafl_wcs_ws/CLAUDE.md` - TAFL 決策引擎資料存取
 
 ### 專業指導
 - **資料庫操作**: @docs-ai/operations/development/database-operations.md

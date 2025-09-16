@@ -1112,9 +1112,26 @@ manage_web_api_launch() {
                     return 0
                 else
                     # 清理過時的 PID 檔案
+                    echo "🧹 清理過時的 PID 檔案..."
                     rm -f "$WEB_API_PID_FILE"
                 fi
             fi
+            
+            # 啟動前檢查環境
+            echo "🔍 啟動前環境檢查..."
+            
+            # 檢查工作空間是否已建置
+            if [ ! -d "/app/web_api_ws/install" ]; then
+                echo "⚠️ 警告: web_api_ws 未建置，請先執行: build_ws web_api_ws"
+            fi
+            
+            # 檢查端口是否已被佔用
+            for port in 8000 8001 8002; do
+                if ss -tuln 2>/dev/null | grep -q ":$port "; then
+                    echo "⚠️ 警告: 端口 $port 已被佔用"
+                    echo "   使用以下指令查看佔用進程: ss -tulnp | grep :$port"
+                fi
+            done
 
             echo "🚀 啟動 Web API Launch 服務群組..."
             nohup ros2 launch web_api_launch launch.py > "$WEB_API_LOG_FILE" 2>&1 &
@@ -1155,28 +1172,49 @@ manage_web_api_launch() {
                 sleep 5
                 echo "🔍 檢查 Web 服務端口狀態..."
                 
+                local port_check_failed=false
+                
                 if ss -tuln 2>/dev/null | grep -q ":8000 "; then
                     echo "✅ Web API 端口 8000 已開啟"
                 else
-                    echo "⚠️ Web API 端口 8000 未開啟，服務可能仍在啟動中"
+                    echo "⚠️ Web API 端口 8000 未開啟，服務可能仍在啟動中或已失敗"
+                    port_check_failed=true
                 fi
                 
                 if ss -tuln 2>/dev/null | grep -q ":8001 "; then
                     echo "✅ AGVCUI 端口 8001 已開啟"
                 else
-                    echo "⚠️ AGVCUI 端口 8001 未開啟，服務可能仍在啟動中"
+                    echo "⚠️ AGVCUI 端口 8001 未開啟，服務可能仍在啟動中或已失敗"
+                    port_check_failed=true
                 fi
                 
                 if ss -tuln 2>/dev/null | grep -q ":8002 "; then
                     echo "✅ OPUI 端口 8002 已開啟"
                 else
-                    echo "⚠️ OPUI 端口 8002 未開啟，服務可能仍在啟動中"
+                    echo "⚠️ OPUI 端口 8002 未開啟，服務可能仍在啟動中或已失敗"
+                    port_check_failed=true
+                fi
+                
+                # 如果有端口檢查失敗，提供詳細診斷資訊
+                if [ "$port_check_failed" = true ]; then
+                    echo "💡 診斷建議:"
+                    echo "   1. 查看詳細日誌: tail -f $WEB_API_LOG_FILE"
+                    echo "   2. 檢查個別服務狀態:"
+                    echo "      ps aux | grep -E '(agvc_ui_server|op_ui_server|api_server)'"
+                    echo "   3. 手動啟動單個服務進行測試:"
+                    echo "      python3 /app/web_api_ws/src/agvcui/agvcui/agvc_ui_server.py"
+                    echo "      python3 /app/web_api_ws/src/opui/opui/core/op_ui_server.py"
+                    echo "      python3 /app/web_api_ws/src/web_api/web_api/api_server.py"
                 fi
                 
                 return 0
             else
                 echo "❌ Web API Launch 啟動失敗"
                 echo "📝 檢查日誌: tail -f $WEB_API_LOG_FILE"
+                echo "💡 可能的原因:"
+                echo "   - 套件未正確建置 (執行: build_ws web_api_ws)"
+                echo "   - Python 依賴未安裝"
+                echo "   - 端口已被佔用 (檢查: ss -tuln | grep -E '800[0-2]')"
                 return 1
             fi
             ;;
@@ -1314,59 +1352,71 @@ manage_web_api_launch() {
     esac
 }
 
-# ===== AGVUI 控制函式 =====
-manage_agvui() {
-    local AGVUI_LOG_FILE="/tmp/agvui.log"
-    local AGVUI_PID_FILE="/tmp/agvui.pid"
-    
+# ===== Web AGV Launch 控制函式 (使用 ROS 2 Launch) =====
+manage_web_agv_launch() {
+    local WEB_AGV_LOG_FILE="/tmp/web_agv_launch.log"
+    local WEB_AGV_PID_FILE="/tmp/web_agv_launch.pid"
+
     case "$1" in
         start)
-            # 首先檢查 PID 檔案是否存在且進程是否在運行
-            if [ -f "$AGVUI_PID_FILE" ]; then
-                # 讀取並驗證所有 PID
+            # 檢查 PID 檔案是否存在且進程仍在運行
+            if [ -f "$WEB_AGV_PID_FILE" ]; then
                 local all_running=true
                 while IFS= read -r pid; do
                     if ! kill -0 $pid 2>/dev/null; then
                         all_running=false
                         break
                     fi
-                done < "$AGVUI_PID_FILE"
+                done < "$WEB_AGV_PID_FILE"
                 
                 if [ "$all_running" = true ]; then
-                    echo "✅ AGVUI 已經在運行中"
+                    echo "✅ Web AGV Launch 已經在運行中"
                     return 0
                 else
-                    echo "🔄 清理過時的 PID 檔案..."
-                    rm -f "$AGVUI_PID_FILE"
+                    echo "🧹 清理過時的 PID 檔案..."
+                    rm -f "$WEB_AGV_PID_FILE"
                 fi
             fi
             
-            echo "🖥️ 啟動 AGVUI 車載監控界面..."
-            cd /app/web_api_ws/src/agvui
+            echo "🔍 啟動前環境檢查..."
             
-            # 載入 ROS 2 環境和工作空間
-            source /opt/ros/$ROS_DISTRO/setup.bash
-            source /opt/ws_rmw_zenoh/install/setup.bash
-            if [ -f "/app/agv_ws/install/setup.bash" ]; then
-                source /app/agv_ws/install/setup.bash
+            # 檢查工作空間是否已建置
+            if [ ! -d "/app/web_api_ws/install/agvui" ]; then
+                echo "⚠️ 警告: agvui 未建置，請先執行: build_ws web_api_ws"
             fi
             
-            # 設定 Python 路徑
-            export PYTHONPATH="/app/web_api_ws/src:$PYTHONPATH"
+            if [ ! -d "/app/launch_ws/install/web_agv_launch" ]; then
+                echo "⚠️ 警告: web_agv_launch 未建置，請先執行: build_ws launch_ws"
+            fi
             
-            # 啟動服務並記錄父進程 PID
-            nohup python3 agvui/agv_ui_server.py > "$AGVUI_LOG_FILE" 2>&1 &
+            # 檢查端口
+            if ss -tuln 2>/dev/null | grep -q ":8003 "; then
+                echo "⚠️ 警告: 端口 8003 已被佔用"
+            fi
+
+            echo "🚀 啟動 Web AGV Launch (AGVUI)..."
+            
+            # 確保所有必要的工作空間已載入，然後啟動
+            # 注意：agvui 需要 agv_interfaces，所以必須載入 agv_ws
+            (
+                source /app/agv_ws/install/setup.bash 2>/dev/null
+                source /app/launch_ws/install/setup.bash 2>/dev/null
+                source /app/web_api_ws/install/setup.bash 2>/dev/null
+                exec ros2 launch web_agv_launch launch.py
+            ) > "$WEB_AGV_LOG_FILE" 2>&1 &
             local PARENT_PID=$!
-            echo $PARENT_PID > "$AGVUI_PID_FILE"
+            
+            # 記錄 PID
+            echo $PARENT_PID > "$WEB_AGV_PID_FILE"
             
             # 等待一下讓子進程產生
-            sleep 1
+            sleep 2
             
             # 記錄所有子進程 PID
             local CHILD_PIDS=$(pgrep -P $PARENT_PID 2>/dev/null)
             if [ -n "$CHILD_PIDS" ]; then
                 for pid in $CHILD_PIDS; do
-                    echo $pid >> "$AGVUI_PID_FILE"
+                    echo $pid >> "$WEB_AGV_PID_FILE"
                 done
             fi
             
@@ -1374,40 +1424,27 @@ manage_agvui() {
             sleep 3
             
             # 檢查是否啟動成功
-            if pgrep -f "agvui" > /dev/null 2>&1; then
-                echo "✅ AGVUI 服務已啟動 (PID: $(cat $AGVUI_PID_FILE))"
+            if pgrep -f "agv_ui_server" > /dev/null 2>&1; then
+                echo "✅ Web AGV Launch 已啟動"
                 
-                # 檢查端口
                 if ss -tuln 2>/dev/null | grep -q ":8003 "; then
                     echo "✅ AGVUI 端口 8003 已開啟"
                     echo "📍 監控界面: http://$(hostname -I | awk '{print $1}'):8003"
-                    
-                    # 如果是 AGV 環境，顯示本機 AGV ID
-                    if [ -f "/app/.agv_identity" ]; then
-                        local agv_id=$(grep "AGV_ID=" /app/.agv_identity | cut -d'=' -f2)
-                        if [ -n "$agv_id" ]; then
-                            echo "📍 本機 AGV ID: $agv_id"
-                        fi
-                    fi
-                else
-                    echo "⚠️ AGVUI 端口 8003 未開啟，服務可能仍在啟動中"
                 fi
+                
                 return 0
             else
-                echo "❌ AGVUI 啟動失敗"
-                echo "📝 檢查日誌: tail -f $AGVUI_LOG_FILE"
+                echo "❌ Web AGV Launch 啟動失敗"
+                echo "📝 檢查日誌: tail -f $WEB_AGV_LOG_FILE"
                 return 1
             fi
             ;;
-            
         stop)
-            if [ -f "$AGVUI_PID_FILE" ]; then
-                echo "🛑 停止 AGVUI 服務..."
+            if [ -f "$WEB_AGV_PID_FILE" ]; then
+                echo "🛑 停止 Web AGV Launch..."
                 
-                # 讀取所有 PID 並反向處理（先停子進程，後停父進程）
-                local PIDS=$(tac "$AGVUI_PID_FILE" 2>/dev/null)
-                
-                # 嘗試優雅停止所有進程
+                # 按照相反順序停止進程（先停子進程）
+                local PIDS=$(tac "$WEB_AGV_PID_FILE" 2>/dev/null)
                 for pid in $PIDS; do
                     if kill -0 $pid 2>/dev/null; then
                         echo "  停止 PID: $pid"
@@ -1415,9 +1452,10 @@ manage_agvui() {
                     fi
                 done
                 
+                # 等待進程結束
                 sleep 2
                 
-                # 檢查並強制終止任何剩餘進程
+                # 強制終止仍在運行的進程
                 for pid in $PIDS; do
                     if kill -0 $pid 2>/dev/null; then
                         echo "  強制停止 PID: $pid"
@@ -1425,73 +1463,90 @@ manage_agvui() {
                     fi
                 done
                 
-                rm -f "$AGVUI_PID_FILE"
-                echo "✅ AGVUI 服務已停止"
+                rm -f "$WEB_AGV_PID_FILE"
+                echo "✅ Web AGV Launch 已停止"
             else
-                echo "⚠️ AGVUI PID 檔案不存在"
+                echo "⚠️ Web AGV Launch 未運行"
             fi
             ;;
-            
         restart)
-            echo "🔄 重新啟動 AGVUI..."
-            manage_agvui stop
+            echo "🔄 重新啟動 Web AGV Launch..."
+            manage_web_agv_launch stop
             sleep 2
-            manage_agvui start
+            manage_web_agv_launch start
             ;;
-            
         status)
-            if [ -f "$AGVUI_PID_FILE" ]; then
-                # 檢查所有記錄的 PID 是否仍在運行
+            if [ -f "$WEB_AGV_PID_FILE" ]; then
                 local all_pids=""
                 local any_running=false
+                
                 while IFS= read -r pid; do
                     if kill -0 $pid 2>/dev/null; then
                         all_pids="$all_pids $pid"
                         any_running=true
                     fi
-                done < "$AGVUI_PID_FILE"
+                done < "$WEB_AGV_PID_FILE"
                 
                 if [ "$any_running" = true ]; then
-                    echo "✅ AGVUI 正在運行 (PIDs:$all_pids)"
+                    echo "✅ Web AGV Launch 正在運行 (PIDs:$all_pids)"
                     
-                    # 檢查端口
                     if ss -tuln 2>/dev/null | grep -q ":8003 "; then
                         echo "✅ 端口 8003 已開啟"
-                        echo "📍 監控界面: http://$(hostname -I | awk '{print $1}'):8003"
-                    else
-                        echo "⚠️ 端口 8003 未開啟"
                     fi
                     
-                    # 顯示最近的日誌
-                    if [ -f "$AGVUI_LOG_FILE" ]; then
+                    if [ -f "$WEB_AGV_LOG_FILE" ]; then
                         echo ""
                         echo "📋 最近日誌:"
-                        tail -5 "$AGVUI_LOG_FILE"
+                        tail -5 "$WEB_AGV_LOG_FILE"
                     fi
                 else
-                    echo "❌ AGVUI 未運行"
-                    if [ -f "$AGVUI_LOG_FILE" ]; then
-                        echo ""
-                        echo "📋 最後日誌:"
-                        tail -5 "$AGVUI_LOG_FILE"
-                    fi
+                    echo "❌ Web AGV Launch 未運行"
                 fi
             else
-                echo "❌ AGVUI 未運行"
+                echo "❌ Web AGV Launch 未運行"
             fi
+            ;;
+        logs)
+            if [ -f "$WEB_AGV_LOG_FILE" ]; then
+                echo "📋 Web AGV Launch 日誌:"
+                tail -f "$WEB_AGV_LOG_FILE"
+            else
+                echo "❌ 日誌檔案不存在: $WEB_AGV_LOG_FILE"
+            fi
+            ;;
+        *)
+            echo "用法: manage_web_agv_launch {start|stop|restart|status|logs}"
+            return 1
+            ;;
+    esac
+}
+
+# ===== AGVUI 控制函式 (向後相容，內部調用 manage_web_agv_launch) =====
+manage_agvui() {
+    # 為了向後相容，保留 manage_agvui 函數名稱
+    # 但內部直接調用新的 manage_web_agv_launch 函數
+    echo "📝 注意: manage_agvui 現在使用 ROS 2 Launch 方式 (manage_web_agv_launch)"
+    
+    case "$1" in
+        start|stop|restart|status)
+            manage_web_agv_launch "$1"
+            return $?
             ;;
             
         logs)
-            if [ -f "$AGVUI_LOG_FILE" ]; then
-                echo "📋 AGVUI 日誌:"
-                tail -f "$AGVUI_LOG_FILE"
+            # 保留 logs 功能，查看 web_agv_launch 的日誌
+            local WEB_AGV_LOG_FILE="/tmp/web_agv_launch.log"
+            if [ -f "$WEB_AGV_LOG_FILE" ]; then
+                echo "📋 AGVUI 日誌 (Web AGV Launch):"
+                tail -f "$WEB_AGV_LOG_FILE"
             else
-                echo "❌ 日誌檔案不存在: $AGVUI_LOG_FILE"
+                echo "❌ 日誌檔案不存在: $WEB_AGV_LOG_FILE"
             fi
             ;;
             
         *)
             echo "用法: manage_agvui {start|stop|restart|status|logs}"
+            echo "📝 此函數現在內部調用 manage_web_agv_launch"
             return 1
             ;;
     esac

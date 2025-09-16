@@ -1,0 +1,165 @@
+# TAFL v1.1.2 Preload Phase Test
+# 測試資料預載階段功能
+
+metadata:
+  id: test_preload
+  name: "Test Preload Phase"
+  version: "1.1.2"
+  description: "Test preload phase data caching and access"
+  created_at: "2025-09-15T10:10:00"
+  author: "TAFL Test Suite"
+
+# ========================================
+# PHASE 1: PRELOAD - 資料預載階段
+# ========================================
+preload:
+  # 預載可用的 AGV (啟用的 AGV)
+  available_agvs:
+    query:
+      target: agvs
+      where:
+        enable: 1
+  
+  # 預載所有位置
+  room_inlets:
+    query:
+      target: locations
+  
+  # 預載待處理的架台
+  pending_racks:
+    query:
+      target: racks
+      where:
+        status_id: 1
+  
+  # 預載工作單
+  active_works:
+    query:
+      target: works
+      limit: 5
+
+# ========================================
+# PHASE 2: RULES - 業務規則定義
+# ========================================
+rules:
+  min_battery_for_dispatch:
+    value: 30
+    description: "最低派車電池電量"
+  
+  max_tasks_per_agv:
+    value: 3
+    description: "每台 AGV 最大任務數"
+
+# ========================================
+# PHASE 3: VARIABLES - 初始變數
+# ========================================
+variables:
+  dispatch_count: 0
+  total_agvs: 0
+  total_locations: 0
+
+# ========================================
+# PHASE 4: FLOW - 主流程
+# ========================================
+flow:
+  # 驗證 preload 資料可以存取
+  - notify:
+      message: "=== Testing Preload Data Access ==="
+      level: info
+  
+  # 從 preload 快取讀取資料
+  - set:
+      total_agvs: "${len(available_agvs)}"
+  
+  - set:
+      total_locations: "${len(room_inlets)}"
+  
+  - notify:
+      message: "Preloaded: ${total_agvs} AGVs, ${total_locations} room inlets"
+      level: info
+  
+  # 檢查 preload 資料
+  - check:
+      condition: "${total_agvs > 0}"
+      as: has_agvs
+  
+  - if:
+      condition: "${has_agvs}"
+      then:
+        - notify:
+            message: "✅ AGVs available for dispatch"
+            level: info
+        
+        # 遍歷預載的 AGV 資料
+        - for:
+            as: agv
+            in: "${available_agvs}"
+            do:
+              - notify:
+                  message: "AGV ${agv.name}: Battery ${agv.battery}%"
+                  level: debug
+              
+              # 檢查電池是否符合派車規則
+              - if:
+                  condition: "${agv.battery >= rules.min_battery_for_dispatch}"
+                  then:
+                    - set:
+                        dispatch_count: "${dispatch_count + 1}"
+      else:
+        - notify:
+            message: "⚠️ No AGVs available"
+            level: warning
+  
+  # 檢查房間入口資料
+  - if:
+      condition: "${len(room_inlets) > 0}"
+      then:
+        - notify:
+            message: "Processing ${len(room_inlets)} room inlet locations"
+            level: info
+        
+        # 示範使用預載的位置資料
+        - for:
+            as: location
+            in: "${room_inlets}"
+            do:
+              - notify:
+                  message: "Location: ${location.name} (ID: ${location.id})"
+                  level: debug
+  
+  # 檢查架台資料
+  - if:
+      condition: "${len(pending_racks) > 0}"
+      then:
+        - notify:
+            message: "Found ${len(pending_racks)} pending racks"
+            level: info
+      else:
+        - notify:
+            message: "No pending racks found"
+            level: info
+  
+  # 檢查工作單資料
+  - if:
+      condition: "${len(active_works) > 0}"
+      then:
+        - notify:
+            message: "Found ${len(active_works)} active work orders"
+            level: info
+  
+  # 總結
+  - notify:
+      message: "=== Preload Test Summary ==="
+      level: info
+  
+  - notify:
+      message: "Preloaded data sets: 4 (agvs, locations, racks, works)"
+      level: info
+  
+  - notify:
+      message: "AGVs ready for dispatch: ${dispatch_count}/${total_agvs}"
+      level: info
+  
+  - notify:
+      message: "✅ Preload phase test completed successfully"
+      level: info

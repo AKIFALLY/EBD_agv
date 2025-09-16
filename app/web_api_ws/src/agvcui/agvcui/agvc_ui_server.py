@@ -11,7 +11,7 @@ from agvcui.agvc_ui_socket import AgvcUiSocket
 from agvcui.routers import map, tasks, works, devices, signals
 from agvcui.routers import rosout_logs, runtime_logs, audit_logs
 from agvcui.routers import clients, racks, products, carriers, agvs, auth, users
-from agvcui.routers import linear_flow_designer, nodes, tafl_editor
+from agvcui.routers import linear_flow_designer, nodes, tafl_editor, tafl_editor_direct
 from agvcui.middleware import AuthMiddleware
 from contextlib import asynccontextmanager
 
@@ -154,8 +154,12 @@ class AgvcUiServer:
         self.app.include_router(linear_flow_designer.get_router(self.templates))
         self.app.include_router(nodes.get_router(self.templates))
         
-        # Add TAFL Editor router
+        # Add TAFL Editor routers
+        # tafl_editor provides the page route (/tafl/editor) and basic API
         self.app.include_router(tafl_editor.get_router(self.templates))
+        # tafl_editor_direct provides enhanced API routes (Phase 3)
+        # API routes from tafl_editor_direct will override the basic ones
+        self.app.include_router(tafl_editor_direct.router)
 
     def run(self):
         uvicorn.run(self.sio_app, host=self.host, port=self.port)
@@ -190,7 +194,11 @@ def main():
         logger.info("\n⚠️ 接收到鍵盤中斷，正在關閉...")
     except Exception as e:
         logger.error(f"❌ 伺服器錯誤: {e}")
-        sys.exit(1)
+        import traceback
+        traceback.print_exc()
+        # 改為返回錯誤碼而非直接退出，避免容器終止
+        # 這樣容器仍會保持運行，可以透過 SSH 查看錯誤日誌
+        return 1
 
 
 if __name__ == "__main__":

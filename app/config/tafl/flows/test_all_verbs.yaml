@@ -1,0 +1,248 @@
+# TAFL v1.1.2 所有動詞測試範例
+# 可執行的完整範例，展示所有 10 個核心動詞
+
+metadata:
+  id: test_all_verbs
+  name: "Test All TAFL Verbs"
+  version: "1.1.2"
+  description: "Executable example demonstrating all 10 TAFL core verbs"
+  author: "TAFL Test Suite"
+  created_at: "2025-09-15T10:00:00"
+  tags: ["test", "all-verbs", "v1.1.2"]
+
+variables:
+  # 測試資料
+  counter: 0
+  threshold: 5
+  test_mode: "basic"
+  items: [10, 20, 30]
+  results: []
+  message: ""
+
+flow:
+  # ========================================
+  # 1. QUERY - 查詢資料
+  # ========================================
+  - notify:
+      message: "=== Testing QUERY verb ==="
+      level: info
+      
+  - query:
+      target: locations
+      limit: 3
+      as: location_list
+  
+  - notify:
+      message: "Query found ${len(location_list)} locations"
+      level: info
+
+  # ========================================
+  # 2. CHECK - 檢查條件 (必須有 as 參數)
+  # ========================================
+  - notify:
+      message: "=== Testing CHECK verb ==="
+      level: info
+      
+  - check:
+      condition: "${len(location_list) > 0}"
+      as: has_locations
+  
+  - notify:
+      message: "Check result: has_locations = ${has_locations}"
+      level: info
+
+  # ========================================
+  # 3. CREATE - 創建實體
+  # ========================================
+  - notify:
+      message: "=== Testing CREATE verb ==="
+      level: info
+      
+  - create:
+      target: task
+      with:
+        name: "Test Task ${counter}"
+        priority: 5
+        work_id: 1
+        status_id: 1
+      as: new_task
+  
+  - notify:
+      message: "Created task with ID: ${new_task.id}"
+      level: info
+
+  # ========================================
+  # 4. UPDATE - 更新資料
+  # ========================================
+  - notify:
+      message: "=== Testing UPDATE verb ==="
+      level: info
+      
+  - update:
+      target: task
+      where:
+        id: 1
+      set:
+        priority: 8
+        updated_at: "${now()}"
+  
+  - notify:
+      message: "Updated task priority to 8"
+      level: info
+
+  # ========================================
+  # 5. IF - 條件分支
+  # ========================================
+  - notify:
+      message: "=== Testing IF verb ==="
+      level: info
+  
+  - set:
+      counter: 10
+      
+  - if:
+      condition: "${counter > threshold}"
+      then:
+        - notify:
+            message: "IF THEN: Counter ${counter} is above threshold ${threshold}"
+            level: info
+        - set:
+            message: "Counter is high"
+      else:
+        - notify:
+            message: "IF ELSE: Counter ${counter} is below threshold ${threshold}"
+            level: info
+        - set:
+            message: "Counter is low"
+
+  # ========================================
+  # 6. FOR - 迴圈遍歷
+  # ========================================
+  - notify:
+      message: "=== Testing FOR verb ==="
+      level: info
+  
+  - set:
+      total: 0
+      
+  - for:
+      as: item
+      in: "${items}"
+      do:
+        - set:
+            total: "${total + item}"
+        - notify:
+            message: "FOR: Processing item ${item}, total now: ${total}"
+            level: debug
+  
+  - notify:
+      message: "FOR completed: Total sum = ${total}"
+      level: info
+
+  # ========================================
+  # 7. SWITCH - 多重條件分支
+  # ========================================
+  - notify:
+      message: "=== Testing SWITCH verb ==="
+      level: info
+  
+  - set:
+      priority: 5
+      
+  - switch:
+      expression: "${priority}"
+      cases:
+        - when: "10"
+          do:
+            - set:
+                priority_level: "Critical"
+        - when: "5..9"
+          do:
+            - set:
+                priority_level: "High"
+        - when: "1..4"
+          do:
+            - set:
+                priority_level: "Normal"
+        - when: "default"
+          do:
+            - set:
+                priority_level: "Low"
+  
+  - notify:
+      message: "SWITCH: Priority ${priority} mapped to level: ${priority_level}"
+      level: info
+
+  # ========================================
+  # 8. SET - 設置變數 (使用物件格式)
+  # ========================================
+  - notify:
+      message: "=== Testing SET verb ==="
+      level: info
+  
+  # 單一變數設置
+  - set:
+      status: "active"
+  
+  # 多個變數設置 (每個 set 一個變數)
+  - set:
+      timestamp: "${now()}"
+      
+  - set:
+      summary: "Test completed at ${timestamp}"
+  
+  - notify:
+      message: "SET: Status=${status}, Summary=${summary}"
+      level: info
+
+  # ========================================
+  # 9. NOTIFY - 發送通知 (各種級別)
+  # ========================================
+  - notify:
+      message: "=== Testing NOTIFY verb (all levels) ==="
+      level: info
+  
+  - notify:
+      message: "DEBUG: Detailed debugging information"
+      level: debug
+      
+  - notify:
+      message: "INFO: Normal information message"
+      level: info
+      
+  - notify:
+      message: "WARNING: This is a warning message"
+      level: warning
+      
+  - notify:
+      message: "ERROR: This is an error message"
+      level: error
+      
+  - notify:
+      message: "CRITICAL: This is a critical message"
+      level: critical
+
+  # ========================================
+  # 10. STOP - 停止流程 (必須放在最後)
+  # ========================================
+  - notify:
+      message: "=== Testing STOP verb ==="
+      level: info
+  
+  - check:
+      condition: "${counter >= 10}"
+      as: should_stop
+      
+  - if:
+      condition: "${should_stop}"
+      then:
+        - notify:
+            message: "Stopping flow as counter reached ${counter}"
+            level: warning
+        - stop:
+            reason: "Test completed - all verbs tested successfully"
+  
+  # 這行不應該執行
+  - notify:
+      message: "This message should not appear (flow stopped)"
+      level: error

@@ -55,6 +55,9 @@ export const homePage = (() => {
 
         // 料架選擇區域事件
         bindRackSelectionArea();
+        
+        // Modal 事件
+        bindModalEvents();
     }
 
     /**
@@ -104,21 +107,11 @@ export const homePage = (() => {
     function bindActionButtons() {
         if (boundEvents.has('actionButtons')) return;
 
-        // 叫空車按鈕
-        document.querySelectorAll('[data-call-empty]').forEach(btn => {
+        // 加入料架按鈕
+        document.querySelectorAll('[data-add-rack]').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const side = e.target.getAttribute('data-call-empty');
-                const buttonText = e.target.textContent.trim();
-
-
-
-                if (buttonText === '取消') {
-                    handleCancelTask(side);
-                } else if (buttonText === '確認送達') {
-                    handleConfirmDelivery(side);
-                } else {
-                    handleCallEmpty(side);
-                }
+                const side = e.currentTarget.getAttribute('data-add-rack');
+                handleAddRack(side);
             });
         });
 
@@ -331,9 +324,6 @@ export const homePage = (() => {
 
         // 檢查派車任務是否應該自動完成（rack 被取走）
         checkDispatchTaskCompletion(newState.parking);
-
-        // 檢查叫空車任務是否應該自動完成
-        checkCallEmptyTaskCompletion();
 
         // 當資料變更時，也需要更新房間按鈕的啟用狀態
         const operationState = operationStore.getState();
@@ -661,47 +651,12 @@ export const homePage = (() => {
 
         ['left', 'right'].forEach(side => {
             const activeTask = state.active?.[side];
-            const callEmptyBtn = document.querySelector(`[data-call-empty="${side}"]`);
             const callFullBtn = document.querySelector(`[data-call-full="${side}"]`);
             const dispatchFullBtn = document.querySelector(`[data-dispatch-full="${side}"]`);
 
 
 
-            // 更新叫空車按鈕
-            if (callEmptyBtn) {
-                if (activeTask) {
-                    // 有活躍任務時的處理
-                    if (activeTask.type === 'call_empty') {
-                        if (activeTask.status === 'delivered' || activeTask.status === 'completed') {
-                            // 叫空車任務已送達：顯示確認送達按鈕
-                            callEmptyBtn.textContent = '確認送達';
-                            callEmptyBtn.className = 'button is-success';
-                            callEmptyBtn.disabled = false;
-                        } else {
-                            // 叫空車任務進行中：顯示取消按鈕
-                            callEmptyBtn.textContent = '取消';
-                            callEmptyBtn.className = 'button is-danger';
-                            callEmptyBtn.disabled = false;
-                        }
-                    } else if (activeTask.type === 'dispatch_full') {
-                        // 派車任務：不需要確認送達，當 rack 被取走後自動恢復
-                        // 派車任務進行中：禁用叫空車按鈕
-                        callEmptyBtn.textContent = '叫空車';
-                        callEmptyBtn.className = 'button is-info';
-                        callEmptyBtn.disabled = true;
-                    } else {
-                        // 其他任務：禁用叫空車按鈕
-                        callEmptyBtn.textContent = '叫空車';
-                        callEmptyBtn.className = 'button is-info';
-                        callEmptyBtn.disabled = true;
-                    }
-                } else {
-                    // 沒有活躍任務時顯示正常按鈕
-                    callEmptyBtn.textContent = '叫空車';
-                    callEmptyBtn.className = 'button is-info';
-                    callEmptyBtn.disabled = false;
-                }
-            }
+            // 加入料架按鈕不需要根據任務狀態更新
 
             // 更新叫滿車按鈕
             if (callFullBtn) {
@@ -730,12 +685,28 @@ export const homePage = (() => {
                         dispatchFullBtn.className = 'button is-danger';
                         dispatchFullBtn.disabled = false;
                     } else {
-                        dispatchFullBtn.textContent = '派車';
+                        // 保留圖標結構，只更新文字
+                        const textSpan = dispatchFullBtn.querySelector('span:not(.icon)');
+                        if (textSpan) {
+                            textSpan.textContent = '派車';
+                        } else if (!dispatchFullBtn.querySelector('.icon')) {
+                            dispatchFullBtn.innerHTML = '<span class="icon"><i class="mdi mdi-truck-delivery"></i></span><span>派車</span>';
+                        } else {
+                            dispatchFullBtn.textContent = '派車';
+                        }
                         dispatchFullBtn.className = 'button is-warning';
                         dispatchFullBtn.disabled = true; // 有其他任務時禁用
                     }
                 } else {
-                    dispatchFullBtn.textContent = '派車';
+                    // 保留圖標結構，只更新文字
+                    const textSpan = dispatchFullBtn.querySelector('span:not(.icon)');
+                    if (textSpan) {
+                        textSpan.textContent = '派車';
+                    } else if (!dispatchFullBtn.querySelector('.icon')) {
+                        dispatchFullBtn.innerHTML = '<span class="icon"><i class="mdi mdi-truck-delivery"></i></span><span>派車</span>';
+                    } else {
+                        dispatchFullBtn.textContent = '派車';
+                    }
                     dispatchFullBtn.className = 'button is-warning';
                     dispatchFullBtn.disabled = false;
                 }
@@ -841,18 +812,86 @@ export const homePage = (() => {
     // ===== 事件處理方法 =====
 
     /**
-     * 處理叫空車
+     * 載入可用料架列表
      */
-    function handleCallEmpty(side) {
-        //console.log(`🚗 處理叫空車: ${side} 側`);
-
-        const parkingSpace = getParkingSpaceBySide(side);
-        if (parkingSpace) {
-            socketAPI.callEmpty({ side, parkingSpace });
-            //console.log(`✅ 叫空車請求已發送: ${side} 側, 停車格: ${JSON.stringify(parkingSpace)}`);
-        } else {
-            console.warn(`⚠️ 叫空車失敗: ${side} 側找不到停車格`);
-            notify.showErrorMessage('找不到對應的停車格');
+    async function loadAvailableRacks() {
+        const select = document.getElementById('addRackSelect');
+        const noRacksMessage = document.getElementById('noRacksMessage');
+        const confirmBtn = document.getElementById('confirmAddRack');
+        
+        if (!select) return;
+        
+        // 顯示載入中
+        select.innerHTML = '<option value="">載入中...</option>';
+        select.disabled = true;
+        
+        try {
+            // 調用 API 獲取可用料架
+            const response = await fetch('/api/rack/available');
+            const data = await response.json();
+            
+            if (data.success && data.racks && data.racks.length > 0) {
+                // 清空並填充選項
+                select.innerHTML = '<option value="">請選擇料架</option>';
+                
+                data.racks.forEach(rack => {
+                    const option = document.createElement('option');
+                    option.value = rack.name;
+                    option.textContent = rack.name;
+                    select.appendChild(option);
+                });
+                
+                select.disabled = false;
+                if (confirmBtn) confirmBtn.disabled = false;
+                
+                // 隱藏無料架訊息
+                if (noRacksMessage) {
+                    noRacksMessage.style.display = 'none';
+                }
+            } else {
+                // 沒有可用料架
+                select.innerHTML = '<option value="">沒有可用料架</option>';
+                select.disabled = true;
+                if (confirmBtn) confirmBtn.disabled = true;
+                
+                // 顯示無料架訊息
+                if (noRacksMessage) {
+                    noRacksMessage.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error('載入可用料架失敗:', error);
+            select.innerHTML = '<option value="">載入失敗</option>';
+            select.disabled = true;
+            if (confirmBtn) confirmBtn.disabled = true;
+        }
+    }
+    
+    /**
+     * 處理加入料架
+     */
+    async function handleAddRack(side) {
+        //console.log(`📦 處理加入料架: ${side} 側`);
+        
+        // 儲存當前操作的側邊
+        window.currentAddRackSide = side;
+        
+        // 顯示 Modal
+        const modal = document.getElementById('addRackModal');
+        const select = document.getElementById('addRackSelect');
+        const helpText = document.getElementById('addRackHelp');
+        const noRacksMessage = document.getElementById('noRacksMessage');
+        
+        if (modal && select) {
+            // 更新提示文字
+            helpText.textContent = `選擇要加入到${side === 'left' ? '左側' : '右側'}停車格的料架`;
+            helpText.classList.remove('is-danger');
+            
+            // 顯示 Modal
+            modal.classList.add('is-active');
+            
+            // 載入可用料架列表
+            await loadAvailableRacks();
         }
     }
 
@@ -925,6 +964,121 @@ export const homePage = (() => {
 
         console.log(`✅ 派車請求資料:`, dispatchData);
         socketAPI.dispatchFull(dispatchData);
+    }
+
+    /**
+     * 綁定 Modal 事件
+     */
+    function bindModalEvents() {
+        if (boundEvents.has('modalEvents')) return;
+        
+        const modal = document.getElementById('addRackModal');
+        const confirmBtn = document.getElementById('confirmAddRack');
+        const cancelBtn = document.getElementById('cancelAddRack');
+        const closeBtn = modal?.querySelector('.modal-card-head .delete');
+        const background = modal?.querySelector('.modal-background');
+        const select = document.getElementById('addRackSelect');
+        
+        // 確認按鈕
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', confirmAddRack);
+        }
+        
+        // 取消按鈕
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeAddRackModal);
+        }
+        
+        // 關閉按鈕
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeAddRackModal);
+        }
+        
+        // 背景點擊關閉
+        if (background) {
+            background.addEventListener('click', closeAddRackModal);
+        }
+        
+        // 選擇框 Change 事件（可選）
+        if (select) {
+            select.addEventListener('change', (e) => {
+                // 當選擇改變時可以做一些處理
+                const helpText = document.getElementById('addRackHelp');
+                if (helpText) {
+                    helpText.classList.remove('is-danger');
+                }
+            });
+        }
+        
+        boundEvents.add('modalEvents');
+    }
+    
+    /**
+     * 確認加入 Rack
+     */
+    function confirmAddRack() {
+        const select = document.getElementById('addRackSelect');
+        const helpText = document.getElementById('addRackHelp');
+        const side = window.currentAddRackSide;
+        
+        if (!select || !side) return;
+        
+        const rackName = select.value;
+        
+        if (!rackName) {
+            helpText.textContent = '請選擇一個料架';
+            helpText.classList.add('is-danger');
+            return;
+        }
+        
+        // 發送加入 Rack 請求
+        socketAPI.addRack(side, rackName)
+            .then(() => {
+                notify.showNotifyMessage(`已將料架 ${rackName} 加入到 ${side === 'left' ? '左側' : '右側'}`);
+                closeAddRackModal();
+            })
+            .catch(error => {
+                console.error('加入料架失敗:', error);
+                
+                // 如果是料架不存在的錯誤，提供更清楚的指引
+                if (error.message && error.message.includes('不存在於系統中')) {
+                    helpText.textContent = `料架 ${rackName} 不存在，請先在 AGVCUI 創建此料架`;
+                    helpText.classList.add('is-danger');
+                } else {
+                    helpText.textContent = error.message || '加入料架失敗';
+                    helpText.classList.add('is-danger');
+                }
+            });
+    }
+    
+    /**
+     * 關閉加入 Rack Modal
+     */
+    function closeAddRackModal() {
+        const modal = document.getElementById('addRackModal');
+        const select = document.getElementById('addRackSelect');
+        const helpText = document.getElementById('addRackHelp');
+        const noRacksMessage = document.getElementById('noRacksMessage');
+        
+        if (modal) {
+            modal.classList.remove('is-active');
+        }
+        
+        if (select) {
+            select.value = '';
+        }
+        
+        if (helpText) {
+            helpText.textContent = '選擇要加入的料架';
+            helpText.classList.remove('is-danger');
+        }
+        
+        if (noRacksMessage) {
+            noRacksMessage.style.display = 'none';
+        }
+        
+        // 清除暫存的側邊資訊
+        window.currentAddRackSide = null;
     }
 
     /**
@@ -1056,7 +1210,6 @@ export const homePage = (() => {
      */
     function getTaskTypeText(type) {
         const typeMap = {
-            'call_empty': '叫空車',
             'call_full': '叫滿車',
             'dispatch_full': '派送滿車'
         };
@@ -1105,31 +1258,6 @@ export const homePage = (() => {
         });
     }
 
-    /**
-     * 檢查叫空車任務是否應該自動完成
-     * 臨時解決方案：如果後端沒有推送任務狀態更新，我們需要手動檢查
-     */
-    function checkCallEmptyTaskCompletion() {
-        const tasksState = tasksStore.getState();
-
-        ['left', 'right'].forEach(side => {
-            const activeTask = tasksState.active?.[side];
-
-            // 檢查叫空車任務
-            if (activeTask && activeTask.type === 'call_empty') {
-                const taskAge = Date.now() - new Date(activeTask.createdAt).getTime();
-                const taskAgeMinutes = taskAge / (1000 * 60);
-
-                //console.log(`🚗 檢查 ${side} 側叫空車任務，已進行 ${taskAgeMinutes.toFixed(1)} 分鐘`);
-
-                // 如果任務超過一定時間且沒有狀態更新，可能需要手動處理
-                // 這裡暫時只記錄，不自動清除，因為需要確認送達
-                if (taskAgeMinutes > 5) {
-                    console.warn(`⚠️ ${side} 側叫空車任務已進行超過5分鐘，可能需要檢查後端狀態推送`);
-                }
-            }
-        });
-    }
 
     /**
      * 檢查派車任務是否應該自動完成（rack 被取走）

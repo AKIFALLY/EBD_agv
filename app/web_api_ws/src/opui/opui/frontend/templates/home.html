@@ -27,7 +27,7 @@
         font-size: 1.25rem;
     }
 
-    .call-empty-left {
+    .add-rack-left {
         position: absolute;
         left: 1rem;
         top: 1rem;
@@ -41,7 +41,7 @@
         z-index: 100;
     }
 
-    .call-empty-right {
+    .add-rack-right {
         position: absolute;
         right: 1rem;
         top: 1rem;
@@ -105,11 +105,17 @@
 
         <!-- 左半 -->
         <div class="column panel-left" data-panel="left">
-            <div class="call-empty-left">
-                <button class="button is-info" data-call-empty="left">叫車</button>
+            <div class="add-rack-left">
+                <button class="button is-primary" data-add-rack="left">
+                    <span class="icon"><i class="mdi mdi-tag-plus"></i></span>
+                    <span>加入料架</span>
+                </button>
             </div>
             <div class="dispatch-full-left">
-                <button class="button is-warning" data-dispatch-full="left">派車</button>
+                <button class="button is-warning" data-dispatch-full="left">
+                    <span class="icon"><i class="mdi mdi-truck-delivery"></i></span>
+                    <span>派車</span>
+                </button>
             </div>
             <!-- 上層 -->
             <div class="level m-1 mt-4">
@@ -243,11 +249,17 @@
         <!-- 右半 -->
         <div class="column panel-right" data-panel="right">
 
-            <div class="call-empty-right">
-                <button class="button is-info" data-call-empty="right">叫車</button>
+            <div class="add-rack-right">
+                <button class="button is-primary" data-add-rack="right">
+                    <span class="icon"><i class="mdi mdi-tag-plus"></i></span>
+                    <span>加入料架</span>
+                </button>
             </div>
             <div class="dispatch-full-right">
-                <button class="button is-warning" data-dispatch-full="right">派車</button>
+                <button class="button is-warning" data-dispatch-full="right">
+                    <span class="icon"><i class="mdi mdi-truck-delivery"></i></span>
+                    <span>派車</span>
+                </button>
             </div>
             <!-- 上層 -->
             <div class="level m-1 mt-4">
@@ -380,4 +392,36 @@
         </div>
     </div>
 </section>
+
+<!-- 加入 Rack Modal -->
+<div class="modal" id="addRackModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">加入料架</p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">選擇料架</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="addRackSelect">
+                            <option value="">載入中...</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="help" id="addRackHelp">選擇要加入的料架（僅顯示未在停車格的料架）</p>
+            </div>
+            <div class="notification is-info is-light" id="noRacksMessage" style="display: none;">
+                <p>目前沒有可用的料架</p>
+                <p class="is-size-7">所有料架都已在停車格中</p>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-primary" id="confirmAddRack">確認加入</button>
+            <button class="button" id="cancelAddRack">取消</button>
+        </footer>
+    </div>
+</div>
 {% endblock %}

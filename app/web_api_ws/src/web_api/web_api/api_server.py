@@ -114,7 +114,11 @@ def main():
         logger.info("\n⚠️ 接收到鍵盤中斷，正在關閉...")
     except Exception as e:
         logger.error(f"❌ 伺服器錯誤: {e}")
-        sys.exit(1)
+        import traceback
+        traceback.print_exc()
+        # 改為返回錯誤碼而非直接退出，避免容器終止
+        # 這樣容器仍會保持運行，可以透過 SSH 查看錯誤日誌
+        return 1
 
 
 if __name__ == "__main__":

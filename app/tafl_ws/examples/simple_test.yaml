@@ -4,7 +4,8 @@
 metadata:
   id: test_basic_flow
   name: "Basic TAFL Test Flow"
-  version: "1.0"
+  version: "1.1.2"
+  enabled: true  # v1.1.2: Controls whether flow is auto-executed
   author: "TAFL Test"
   description: "Testing basic TAFL functionality including for loops"
 
@@ -72,19 +73,22 @@ flow:
                   channel: log
                   message: "Location ${location.id}, Item ${item}"
   
-  # Test 5: Switch statement
+  # Test 5: Switch statement (v1.1.2 format)
   - switch:
-      on: "${counter}"
+      expression: "${counter}"
       cases:
-        5:
-          - notify:
-              channel: log
-              message: "Counter is 5"
-        10:
-          - notify:
-              channel: log
-              message: "Counter is 10"
-      default:
-        - notify:
-            channel: log
-            message: "Counter is ${counter}"
+        - when: 5
+          do:
+            - notify:
+                channel: log
+                message: "Counter is 5"
+        - when: 10
+          do:
+            - notify:
+                channel: log
+                message: "Counter is 10"
+        - when: "default"  # v1.1.2: default case in cases array
+          do:
+            - notify:
+                channel: log
+                message: "Counter is ${counter} (default case)"

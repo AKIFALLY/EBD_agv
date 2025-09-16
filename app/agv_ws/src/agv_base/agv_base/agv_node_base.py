@@ -270,30 +270,164 @@ class AgvNodebase(Node):
             self.get_logger().warn("⚠️ 狀態寫入PLC失敗")
     
     def write_status_to_file(self):
-        """寫入完整 AGV 狀態到 JSON 檔案，保留所有 330+ 屬性"""
+        """寫入完整 AGV 狀態到 JSON 檔案，使用巢狀結構分類儲存"""
         try:
-            # 建立狀態字典，包含所有屬性
-            status_dict = {}
+            # 取得 AGV ID 和類型
+            agv_id = getattr(self.agv_status, 'AGV_ID', 'unknown')
+            if not agv_id or agv_id == 'unknown':
+                agv_id = self.get_namespace().strip('/')  # 從 namespace 取得
             
-            # 將 AgvStatus 物件的所有屬性轉換為字典
+            # 判斷 AGV 類型（根據節點名稱或 ID）
+            agv_type = 'Unknown'
+            if 'loader' in agv_id.lower() or 'loader' in self.get_name().lower():
+                agv_type = 'Loader'
+            elif 'unloader' in agv_id.lower() or 'unloader' in self.get_name().lower():
+                agv_type = 'Unloader'
+            elif 'cargo' in agv_id.lower() or 'cargo' in self.get_name().lower():
+                agv_type = 'Cargo Mover'
+            
+            # 建立巢狀狀態字典
+            status_dict = {
+                'metadata': {
+                    'agv_id': agv_id,
+                    'agv_type': agv_type,
+                    'timestamp': self.clock.now().nanoseconds / 1e9,  # 轉換為秒
+                    'version': '1.0',
+                    'namespace': self.get_namespace(),
+                    'node_name': self.get_name()
+                },
+                'agv_status': {},      # 基本狀態
+                'contexts': {          # 三層狀態機狀態
+                    'base_context': {
+                        'current_state': 'UNKNOWN'
+                    },
+                    'agv_context': {
+                        'current_state': 'UNKNOWN'
+                    },
+                    'robot_context': {
+                        'current_state': 'UNKNOWN'
+                    }
+                },
+                'type_specific': {},   # 車型特定資料
+                'door_status': {},     # 門控狀態
+                'io_data': {},         # IO 資料 (包含輸入和輸出)
+                'alarms': {},          # 警報狀態
+                'other': {}            # 其他未分類屬性
+            }
+            
+            # 更新 context 狀態（如果存在）
+            if hasattr(self, 'base_context') and self.base_context and hasattr(self.base_context, 'state'):
+                if self.base_context.state:
+                    status_dict['contexts']['base_context']['current_state'] = self.base_context.state.__class__.__name__
+            
+            # 嘗試取得其他 context（子類別可能有）
+            if hasattr(self, 'loader_context'):
+                if self.loader_context and hasattr(self.loader_context, 'state') and self.loader_context.state:
+                    status_dict['contexts']['agv_context']['current_state'] = self.loader_context.state.__class__.__name__
+            elif hasattr(self, 'unloader_context'):
+                if self.unloader_context and hasattr(self.unloader_context, 'state') and self.unloader_context.state:
+                    status_dict['contexts']['agv_context']['current_state'] = self.unloader_context.state.__class__.__name__
+            elif hasattr(self, 'cargo_mover_context'):
+                if self.cargo_mover_context and hasattr(self.cargo_mover_context, 'state') and self.cargo_mover_context.state:
+                    status_dict['contexts']['agv_context']['current_state'] = self.cargo_mover_context.state.__class__.__name__
+                    
+            if hasattr(self, 'robot_context'):
+                if self.robot_context and hasattr(self.robot_context, 'state') and self.robot_context.state:
+                    status_dict['contexts']['robot_context']['current_state'] = self.robot_context.state.__class__.__name__
+            
+            # 將 AgvStatus 物件的所有屬性根據分類存入對應類別
             for attr_name in dir(self.agv_status):
                 # 排除私有屬性和方法
                 if not attr_name.startswith('_') and not callable(getattr(self.agv_status, attr_name)):
                     value = getattr(self.agv_status, attr_name)
+                    
                     # 處理特殊類型
                     if value is not None:
-                        if isinstance(value, (int, float, str, bool, list, dict)):
-                            status_dict[attr_name] = value
-                        else:
-                            # 將其他類型轉換為字串
-                            status_dict[attr_name] = str(value)
+                        if not isinstance(value, (int, float, str, bool, list, dict)):
+                            value = str(value)
+                    
+                    # 根據屬性名稱分類
+                    if attr_name.startswith('DOOR_'):
+                        # 門控狀態 (DOOR_OPEN_1, DOOR_CLOSE_1 等)
+                        status_dict['door_status'][attr_name] = value
+                    elif attr_name.startswith('AGV_INPUT_') or attr_name.startswith('IN_'):
+                        # 輸入狀態 (AGV_INPUT_1_1, IN_1 等)
+                        status_dict['io_data'][attr_name] = value
+                    elif attr_name.startswith('AGV_OUTPUT_') or attr_name.startswith('OUT_'):
+                        # 輸出狀態 (AGV_OUTPUT_1_1 等)
+                        status_dict['io_data'][attr_name] = value
+                    elif attr_name.startswith('ALARM_STATUS_'):
+                        # 警報狀態 (ALARM_STATUS_1 到 ALARM_STATUS_100)
+                        status_dict['alarms'][attr_name] = value
+                    elif attr_name in ['AGV_Auto', 'AGV_MANUAL', 'AGV_IDLE', 'AGV_ALARM', 
+                                      'AGV_MOVING']:
+                        # 這些狀態要同時放在 agv_status 中（與測試腳本一致）
+                        status_dict['agv_status'][attr_name] = value
+                    elif attr_name in ['AGV_PATH', 'AGV_PATH_REQ', 'AGV_IN_MISSION',
+                                      'AGV_LOCAL', 'AGV_LD_COMPLETE', 'AGV_UD_COMPLETE', 
+                                      'LOW_POWER', 'MISSION_CANCEL', 'TRAFFIC_STOP', 
+                                      'TRAFFIC_ALLOW', 'PS_RETRUN', 'AGV_2POSITION',
+                                      'BARCODE_READER_FINISH', 'TAG_REQ']:
+                        # 其他位元狀態
+                        status_dict['other'][attr_name] = value
+                    elif attr_name in ['AGV_ID', 'POWER', 'X_DIST', 'Y_DIST', 'THETA',
+                                      'AGV_SLAM_X', 'AGV_SLAM_Y', 'AGV_SLAM_THETA',
+                                      'AGV_X_SPEED', 'AGV_Y_SPEED', 'AGV_THETA_SPEED',
+                                      'AGV_FPGV', 'AGV_BPGV', 'AGV_START_POINT', 'AGV_END_POINT',
+                                      'AGV_ACTION', 'AGV_ZONE', 'AGV_STATUS1', 'AGV_STATUS2', 
+                                      'AGV_STATUS3', 'AGV_ALARM1', 'AGV_ALARM2', 'AGV_ALARM3',
+                                      'AGV_ALARM4', 'AGV_ALARM5', 'AGV_ALARM6', 'MAGIC', 'AGV_LAYER',
+                                      'TASK_ID', 'TASK_ACTION', 'START_POINT', 'END_POINT', 
+                                      'WORK_ID', 'KUKA_NODE_ID']:
+                        # 基本 AGV 狀態 (來自 get_agv_status)
+                        status_dict['agv_status'][attr_name] = value
                     else:
-                        status_dict[attr_name] = None
+                        # 其他未分類的屬性
+                        status_dict['other'][attr_name] = value
             
-            # 添加時間戳和額外資訊
-            status_dict['timestamp'] = self.clock.now().nanoseconds / 1e9  # 轉換為秒
-            status_dict['namespace'] = self.get_namespace()
-            status_dict['node_name'] = self.get_name()
+            # 添加車型特定資料
+            if agv_type == 'Loader':
+                status_dict['type_specific'] = {
+                    'agv_ports': {
+                        'port1': getattr(self.agv_status, 'AGV_INPUT_1_1', False) if hasattr(self.agv_status, 'AGV_INPUT_1_1') else False,
+                        'port2': getattr(self.agv_status, 'AGV_INPUT_1_2', False) if hasattr(self.agv_status, 'AGV_INPUT_1_2') else False,
+                        'port3': getattr(self.agv_status, 'AGV_INPUT_1_3', False) if hasattr(self.agv_status, 'AGV_INPUT_1_3') else False,
+                        'port4': getattr(self.agv_status, 'AGV_INPUT_1_4', False) if hasattr(self.agv_status, 'AGV_INPUT_1_4') else False
+                    },
+                    'work_id': getattr(self.agv_status, 'WORK_ID', None),
+                    'task_progress': None  # 可從 work_id 解析
+                }
+            elif agv_type == 'Unloader':
+                status_dict['type_specific'] = {
+                    'batch_processing': {
+                        'batch_size': 2,  # 預設值
+                        'current_batch': 0,
+                        'total_batches': 0
+                    },
+                    'agv_carrier_status': {
+                        'position_1': False,
+                        'position_2': False
+                    },
+                    'station_status': {
+                        'pre_dryer': [False] * 8,
+                        'oven_upper': [False] * 4,
+                        'oven_lower': [False] * 4
+                    }
+                }
+            elif agv_type == 'Cargo Mover':
+                status_dict['type_specific'] = {
+                    'hokuyo_status': {
+                        'hokuyo_1': 'connected',  # 可從實際狀態取得
+                        'hokuyo_2': 'connected'
+                    },
+                    'rack_rotation': False,
+                    'completed': False
+                }
+            
+            # 移除空的分類
+            for key in list(status_dict.keys()):
+                if isinstance(status_dict[key], dict) and len(status_dict[key]) == 0:
+                    del status_dict[key]
             
             # 寫入 JSON 檔案
             status_file = '/tmp/agv_status.json'

@@ -1,0 +1,167 @@
+/**
+ * TAFL Editor - SortableJS Styles
+ * 專門為 SortableJS 整合設計的樣式
+ */
+
+/* SortableJS Ghost - 拖動時的半透明預覽 */
+.sortable-ghost {
+    opacity: 0.4;
+    background: #f0f9ff;
+    border: 2px dashed #90CAF9;
+    border-radius: 8px;
+}
+
+/* SortableJS Chosen - 被選中準備拖動的元素 */
+.sortable-chosen {
+    opacity: 1 !important;
+    box-shadow: 0 5px 20px rgba(33, 150, 243, 0.3);
+    transform: scale(1.02);
+}
+
+/* SortableJS Drag - 正在拖動的元素 */
+.sortable-drag {
+    opacity: 0 !important;
+}
+
+/* 拖動時的 body 狀態 */
+body.dragging {
+    cursor: grabbing !important;
+    user-select: none;
+}
+
+/* 拖動時顯示所有可放置區域 */
+body.dragging .nested-cards {
+    min-height: 60px;
+    border: 2px dashed rgba(144, 202, 249, 0.3);
+    border-radius: 4px;
+    background: rgba(240, 249, 255, 0.5);
+    transition: all 0.3s ease;
+}
+
+body.dragging .nested-cards:empty::before {
+    content: 'Drop here';
+    display: block;
+    text-align: center;
+    padding: 20px;
+    color: #90CAF9;
+    font-size: 14px;
+}
+
+/* 拖動懸停效果 */
+.nested-cards.sortable-over {
+    background: rgba(33, 150, 243, 0.1);
+    border-color: #2196F3;
+}
+
+/* 主畫布的拖動區域 */
+#canvas-drop-zone {
+    min-height: 100px;
+    transition: background-color 0.3s ease;
+}
+
+body.dragging #canvas-drop-zone:empty {
+    border: 2px dashed rgba(144, 202, 249, 0.5);
+    border-radius: 8px;
+    background: rgba(240, 249, 255, 0.3);
+}
+
+body.dragging #canvas-drop-zone:empty::before {
+    content: 'Drop cards here to start building your flow';
+    display: block;
+    text-align: center;
+    padding: 40px;
+    color: #90CAF9;
+    font-size: 16px;
+}
+
+/* 動詞面板項目的拖動樣式 */
+.verb-item {
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.verb-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.verb-item.sortable-chosen {
+    cursor: grabbing;
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+}
+
+/* 卡片的拖動手柄 */
+.tafl-card {
+    cursor: move;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tafl-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 巢狀容器的樣式 */
+.branch-container {
+    margin-top: 10px;
+}
+
+.branch-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+/* 動畫效果 */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.tafl-card.new-card-added {
+    animation: pulse 0.5s ease;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .sortable-ghost {
+        opacity: 0.6;
+    }
+    
+    .tafl-card {
+        cursor: default;
+    }
+    
+    body.dragging .nested-cards:empty::before {
+        font-size: 12px;
+        padding: 15px;
+    }
+}
+
+/* 平滑過渡效果 */
+.tafl-card,
+.nested-cards,
+#canvas-drop-zone {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 卡片間距調整 */
+.tafl-card + .tafl-card {
+    margin-top: 8px;
+}
+
+/* 巢狀卡片間距 */
+.nested-cards .tafl-card {
+    margin: 4px 0;
+}
+
+.nested-cards .tafl-card:first-child {
+    margin-top: 0;
+}
+
+.nested-cards .tafl-card:last-child {
+    margin-bottom: 0;
+}

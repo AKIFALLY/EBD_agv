@@ -65,12 +65,10 @@ fi
 #啟動SSH
 echo "🚀 啟動 SSH 服務..."
 service ssh start
-#啟動zenoh router
-ZENOH_LOG_FILE="/tmp/zenoh_router.log"
-ZENOH_PID_FILE="/tmp/zenoh_router.pid"
-echo "🚀 啟動 Zenoh Router..."
-nohup ros2 run rmw_zenoh_cpp rmw_zenohd > "$ZENOH_LOG_FILE" 2>&1 &
-echo $! > "$ZENOH_PID_FILE"
+
+# Zenoh Router 會在 source /app/setup.bash 時自動啟動 (setup.bash 第 1918 行)
+# 使用統一的 manage_zenoh 函式管理，確保 PID 檔案格式一致
+# 如需手動管理，可使用: manage_zenoh {start|stop|restart|status}
 
 #if [ $NODE_INSTALLED -eq 0 ]; then
 #    # Node.js 服務 agvc.ui
@@ -112,11 +110,12 @@ else
     echo "❌ SSH 服務 啟動失敗"
 fi
 
-# 檢查 Zenoh Router 是否已經運行
-if [ -f "$ZENOH_PID_FILE" ] && pgrep -F "$ZENOH_PID_FILE" > /dev/null; then
-    echo "✅ Zenoh Router 已經在運行中 (PID: $(cat $ZENOH_PID_FILE))"
+# 檢查 Zenoh Router 是否已經運行 (由 manage_zenoh 管理)
+# 使用 manage_zenoh status 或直接檢查進程
+if pgrep -f "rmw_zenohd" > /dev/null; then
+    echo "✅ Zenoh Router 已經在運行中"
 else
-    echo "❌ Zenoh Router 啟動失敗"
+    echo "⚠️ Zenoh Router 尚未啟動 (將在載入 setup.bash 時自動啟動)"
 fi
 
 # =============================================================================
@@ -124,12 +123,21 @@ fi
 # =============================================================================
 
 # 設定自動啟動開關 (true=啟動, false=跳過)
-AUTO_START_WEB_API_LAUNCH=false
+AUTO_START_WEB_API_LAUNCH=true
 
 # 根據開關決定是否啟動 Web API Launch
 if [ "$AUTO_START_WEB_API_LAUNCH" = "true" ]; then
     echo "🌐 啟動 Web API Launch 服務群組..."
-    manage_web_api_launch start
+    # 捕獲錯誤但不退出，確保容器繼續運行
+    if manage_web_api_launch start; then
+        echo "✅ Web API Launch 服務群組啟動成功"
+    else
+        echo "⚠️ Web API Launch 服務群組啟動失敗"
+        echo "📝 請使用以下指令查看錯誤詳情："
+        echo "   tail -f /tmp/web_api_launch.log"
+        echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
+        # 不執行 exit，讓容器繼續運行
+    fi
 else
     echo "⏸️ Web API Launch 自動啟動已停用 (AUTO_START_WEB_API_LAUNCH=false)"
 fi

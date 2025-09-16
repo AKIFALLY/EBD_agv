@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test IF Card Deletion - TAFL Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #3273dc;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #666;
+            margin-top: 0;
+        }
+        .test-button {
+            background: #3273dc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background: #2366d1;
+        }
+        .danger-button {
+            background: #ff3860;
+        }
+        .danger-button:hover {
+            background: #ff1443;
+        }
+        #output {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+        .success {
+            color: #48c774;
+            font-weight: bold;
+        }
+        .error {
+            color: #ff3860;
+            font-weight: bold;
+        }
+        .info {
+            color: #3273dc;
+        }
+        .warning {
+            color: #ffdd57;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test IF Card Deletion - TAFL Editor</h1>
+    
+    <div class="test-section">
+        <h2>Test Setup</h2>
+        <p>This test will verify that IF cards can be properly deleted in the TAFL Editor.</p>
+        <button class="test-button" onclick="openEditor()">1. Open TAFL Editor</button>
+        <button class="test-button" onclick="testCreateIfCard()">2. Create IF Card</button>
+        <button class="test-button" onclick="testDeleteIfCard()">3. Test Delete IF Card</button>
+        <button class="test-button danger-button" onclick="clearOutput()">Clear Output</button>
+        
+        <div id="output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>TAFL Editor</h2>
+        <iframe id="editor-frame" src="http://localhost:8001/tafl/editor"></iframe>
+    </div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+            log('Output cleared', 'info');
+        }
+        
+        function openEditor() {
+            const frame = document.getElementById('editor-frame');
+            frame.src = 'http://localhost:8001/tafl/editor';
+            log('✅ TAFL Editor loaded', 'success');
+            log('Please wait for the editor to fully load...', 'info');
+        }
+        
+        async function testCreateIfCard() {
+            try {
+                const frame = document.getElementById('editor-frame');
+                const editorWindow = frame.contentWindow;
+                
+                if (!editorWindow || !editorWindow.taflEditor) {
+                    log('❌ Editor not loaded. Please open the editor first.', 'error');
+                    return;
+                }
+                
+                log('Creating test IF card...', 'info');
+                
+                // Execute in editor context
+                editorWindow.eval(`
+                    // Add an IF card
+                    const ifCard = {
+                        id: 'test_if_card_' + Date.now(),
+                        if: {
+                            condition: 'test_condition == true',
+                            then: [],
+                            else: []
+                        }
+                    };
+                    
+                    // Get current flow
+                    const currentFlow = taflFlowStore.getFlow();
+                    
+                    // Add the card
+                    currentFlow.flow.push(ifCard);
+                    
+                    // Update the flow
+                    taflFlowStore.updateFlow(currentFlow);
+                    
+                    console.log('IF card added:', ifCard);
+                `);
+                
+                log('✅ IF card created successfully', 'success');
+                log('Card structure: { if: { condition, then: [], else: [] } }', 'info');
+                
+                // Verify the card exists
+                const flowData = editorWindow.taflFlowStore.getFlow();
+                const ifCards = flowData.flow.filter(card => 'if' in card);
+                log(`Found ${ifCards.length} IF card(s) in the flow`, 'info');
+                
+            } catch (error) {
+                log(`❌ Error creating IF card: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDeleteIfCard() {
+            try {
+                const frame = document.getElementById('editor-frame');
+                const editorWindow = frame.contentWindow;
+                
+                if (!editorWindow || !editorWindow.taflEditor) {
+                    log('❌ Editor not loaded. Please open the editor first.', 'error');
+                    return;
+                }
+                
+                log('Testing IF card deletion...', 'info');
+                
+                // Get current flow
+                const flowBefore = editorWindow.taflFlowStore.getFlow();
+                const ifCardsBefore = flowBefore.flow.filter(card => 'if' in card);
+                
+                if (ifCardsBefore.length === 0) {
+                    log('⚠️ No IF cards found. Please create one first.', 'warning');
+                    return;
+                }
+                
+                const cardToDelete = ifCardsBefore[0];
+                const cardId = cardToDelete.id;
+                
+                log(`Found IF card with ID: ${cardId}`, 'info');
+                log('Attempting to delete...', 'info');
+                
+                // Test the getCardVerb function
+                editorWindow.eval(`
+                    const testCard = taflFlowStore.findCardById('${cardId}');
+                    const verb = taflFlowStore.getCardVerb(testCard);
+                    console.log('getCardVerb result for IF card:', verb);
+                    
+                    // Now delete the card
+                    taflFlowStore.deleteCard('${cardId}');
+                `);
+                
+                // Wait a bit for the operation to complete
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Check if deletion was successful
+                const flowAfter = editorWindow.taflFlowStore.getFlow();
+                const ifCardsAfter = flowAfter.flow.filter(card => 'if' in card);
+                
+                if (ifCardsAfter.length < ifCardsBefore.length) {
+                    log('✅ IF card deleted successfully!', 'success');
+                    log(`Before: ${ifCardsBefore.length} IF cards, After: ${ifCardsAfter.length} IF cards`, 'info');
+                } else {
+                    log('❌ IF card deletion failed!', 'error');
+                    log(`Still have ${ifCardsAfter.length} IF cards`, 'error');
+                    
+                    // Check console for errors
+                    log('Check browser console for detailed error messages', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Error during deletion test: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+        
+        // Initial message
+        log('Test page loaded. Click the buttons in order to test IF card deletion.', 'info');
+        log('Make sure the TAFL Editor is running on http://localhost:8001', 'info');
+    </script>
+</body>
+</html>

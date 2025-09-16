@@ -104,8 +104,9 @@ class TAFLParser:
         return FlowMetadata(
             id=data.get('id', 'unnamed_flow'),
             name=data.get('name', 'Unnamed Flow'),
-            version=data.get('version', '1.0'),
+            version=data.get('version', '1.1.2'),
             author=data.get('author'),
+            enabled=data.get('enabled', True),  # v1.1.2: Default to True if not specified
             description=data.get('description'),
             tags=data.get('tags', []),
             created_at=data.get('created_at'),
@@ -145,7 +146,7 @@ class TAFLParser:
         verb = None
         for key in data.keys():
             if key in ['query', 'check', 'create', 'update', 'if', 'for', 
-                      'switch', 'set', 'stop', 'notify']:
+                      'switch', 'set', 'stop', 'notify', 'log']:
                 verb = key
                 break
         
@@ -182,99 +183,149 @@ class TAFLParser:
         return None
     
     def _parse_query(self, data: Any, comment: Optional[str]) -> QueryStatement:
-        """Parse query statement / 解析查詢語句"""
+        """Parse query statement / 解析查詢語句 - TAFL v1.1.2"""
         if isinstance(data, str):
-            # Simple query: "query: racks"
+            # Simple query: "query: locations"
             return QueryStatement(target=data, comment=comment)
         
-        # Complex query with filters
-        # Support 'from', 'target', or 'what' as target field
-        target = data.get('from', data.get('target', data.get('what', '')))
-        filters = {}
-        store_as = data.get('store_as', data.get('store', data.get('as')))
+        # Complex query with filters - TAFL v1.1.2
+        target = data.get('target')
+        if not target:
+            raise TAFLParseError("Query statement requires 'target' field (TAFL v1.1.2)")
         
-        # Parse where clause or filters
-        where = data.get('where', data.get('filter', {}))
+        filters = {}
+        # TAFL v1.1.2: 'as' field for storing results
+        as_ = data.get('as')
+        
+        # Parse where clause - TAFL v1.1.2
+        where = data.get('where', {})
         if where:
-            for key, value in where.items():
-                filters[key] = self._parse_expression(value)
+            if isinstance(where, dict):
+                # Dictionary format: {key: value, ...}
+                for key, value in where.items():
+                    filters[key] = self._parse_expression(value)
+            elif isinstance(where, str):
+                # String format: "status = 'pending'"
+                # For now, treat as a single filter expression
+                filters['_expression'] = self._parse_expression(where)
+        
+        # Parse limit parameter
+        limit = None
+        if 'limit' in data:
+            limit = self._parse_expression(data['limit'])
         
         return QueryStatement(
             target=target,
             filters=filters if filters else None,
-            store_as=store_as,
+            limit=limit,
+            as_=as_,
             comment=comment
         )
     
     def _parse_check(self, data: Any, comment: Optional[str]) -> CheckStatement:
-        """Parse check statement / 解析檢查語句"""
+        """Parse check statement / 解析檢查語句
+        
+        v1.1.3: 'as' parameter is now required for all check statements
+        """
         if isinstance(data, str):
-            # Simple check parsed as expression
-            return CheckStatement(
-                target="condition",
-                condition=self._parse_expression(data),
-                comment=comment
+            # Simple format not allowed for check - must have 'as' parameter
+            raise TAFLParseError(
+                f"Check statement must include 'as' parameter to store result. "
+                f"Use structured format: check: {{condition: '{data}', as: 'variable_name'}}"
             )
         
-        target = data.get('target', data.get('what', 'condition'))
-        condition = self._parse_expression(data.get('condition', data.get('if', True)))
-        store_as = data.get('store', data.get('as'))
+        # TAFL v1.1.3: condition field is required
+        condition_expr = data.get('condition')
+        if condition_expr is None:
+            raise TAFLParseError("Check statement requires 'condition' field (TAFL v1.1.3)")
+        
+        target = data.get('target', 'condition')
+        condition = self._parse_expression(condition_expr)
+        # TAFL v1.1.3: 'as' parameter is required
+        as_ = data.get('as')
+        
+        if not as_:
+            raise TAFLParseError(
+                f"Check statement must include 'as' parameter to store result. "
+                f"Example: check: {{condition: '{condition_expr}', as: 'result_variable'}}"
+            )
         
         return CheckStatement(
             target=target,
             condition=condition,
-            store_as=store_as,
+            as_=as_,
             comment=comment
         )
     
     def _parse_create(self, data: Any, comment: Optional[str]) -> CreateStatement:
-        """Parse create statement / 解析創建語句"""
+        """Parse create statement / 解析創建語句 - TAFL v1.1.2"""
         if isinstance(data, str):
             # Simple create: "create: task"
             return CreateStatement(target=data, comment=comment)
         
-        target = data.get('target', data.get('what', 'task'))
-        store_as = data.get('store', data.get('as'))
+        target = data.get('target')
+        if not target:
+            raise TAFLParseError("Create statement requires 'target' field (TAFL v1.1.2)")
         
-        # Parse parameters
-        parameters = {}
-        for key, value in data.items():
-            if key not in ['target', 'what', 'store', 'as']:
-                parameters[key] = self._parse_expression(value)
+        # TAFL v1.1.2: 'as' field for storing results
+        as_ = data.get('as')
+        
+        # TAFL v1.1.2: 'with' field for parameters
+        with_ = {}
+        
+        if 'with' in data:
+            with_data = data['with']
+            if isinstance(with_data, dict):
+                for key, value in with_data.items():
+                    with_[key] = self._parse_expression(value)
         
         return CreateStatement(
             target=target,
-            parameters=parameters,
-            store_as=store_as,
+            with_=with_,
+            as_=as_,
             comment=comment
         )
     
     def _parse_update(self, data: Any, comment: Optional[str]) -> UpdateStatement:
-        """Parse update statement / 解析更新語句"""
-        target = data.get('target', data.get('what', ''))
-        id_expr = self._parse_expression(data.get('id', data.get('which', 0)))
+        """Parse update statement / 解析更新語句 - TAFL v1.1.2"""
+        target = data.get('target')
+        if not target:
+            raise TAFLParseError("Update statement requires 'target' field (TAFL v1.1.2)")
         
-        # Parse changes
-        changes = {}
-        set_data = data.get('set', data.get('with', {}))
-        for key, value in set_data.items():
-            changes[key] = self._parse_expression(value)
+        # Parse where conditions - TAFL v1.1.2
+        where = {}
+        where_data = data.get('where', {})
+        
+        # Parse where conditions
+        if isinstance(where_data, dict):
+            for key, value in where_data.items():
+                where[key] = self._parse_expression(value)
+        
+        # Parse set changes - TAFL v1.1.2
+        set_ = {}
+        set_data = data.get('set', {})
+        if isinstance(set_data, dict):
+            for key, value in set_data.items():
+                set_[key] = self._parse_expression(value)
         
         return UpdateStatement(
             target=target,
-            id_expr=id_expr,
-            changes=changes,
+            where=where,
+            set=set_,
             comment=comment
         )
     
     def _parse_if(self, data: Any, comment: Optional[str]) -> IfStatement:
-        """Parse if statement / 解析條件語句"""
-        condition = self._parse_expression(data.get('condition', data.get('when', True)))
+        """Parse if statement / 解析條件語句 - TAFL v1.1.2"""
+        condition = data.get('condition')
+        if not condition:
+            raise TAFLParseError("If statement requires 'condition' field (TAFL v1.1.2)")
+        condition = self._parse_expression(condition)
         
-        then_data = data.get('then', data.get('do', []))
+        then_data = data.get('then', [])
         then_branch = self._parse_statements(then_data if isinstance(then_data, list) else [then_data])
         
-        else_data = data.get('else', data.get('otherwise'))
+        else_data = data.get('else')
         else_branch = None
         if else_data:
             else_branch = self._parse_statements(else_data if isinstance(else_data, list) else [else_data])
@@ -287,86 +338,107 @@ class TAFLParser:
         )
     
     def _parse_for(self, data: Any, comment: Optional[str]) -> ForStatement:
-        """Parse for loop statement / 解析循環語句"""
-        # Parse loop variable and iterable
-        each = data.get('each', data.get('item', 'item'))
-        in_expr = data.get('in', data.get('from', []))
+        """Parse for loop statement / 解析循環語句 - TAFL v1.1.2"""
+        # TAFL v1.1.2: 'as' field is required
+        as_ = data.get('as')
+        if not as_:
+            raise TAFLParseError("For statement requires 'as' field (TAFL v1.1.2)")
         
-        # Parse filter condition (new in v1.1)
+        # Parse iteration target - TAFL v1.1.2
+        in_expr = data.get('in')
+        if not in_expr:
+            raise TAFLParseError("For statement requires 'in' field (TAFL v1.1.2)")
+        
+        # Parse filter condition (v1.1)
         filter_expr = data.get('filter')
         filter_condition = None
         if filter_expr:
             filter_condition = self._parse_expression(filter_expr)
         
-        # Parse loop body
-        do_data = data.get('do', data.get('body', []))
-        body = self._parse_statements(do_data if isinstance(do_data, list) else [do_data])
+        # Parse loop body - TAFL v1.1.2
+        do_data = data.get('do', [])
+        do = self._parse_statements(do_data if isinstance(do_data, list) else [do_data])
         
         return ForStatement(
-            variable=each,
-            iterable=self._parse_expression(in_expr),
+            in_=self._parse_expression(in_expr),
+            as_=as_,
+            do=do,
             filter=filter_condition,
-            body=body,
             comment=comment
         )
     
     def _parse_switch(self, data: Any, comment: Optional[str]) -> SwitchStatement:
-        """Parse switch statement / 解析分支語句"""
+        """Parse switch statement / 解析分支語句
+        
+        TAFL v1.1.2 format: expression + cases array with when/do
+        Default case uses when:"default" in cases array
+        """
         # Handle simplified format: switch: expression
         if isinstance(data, str):
-            on = self._parse_expression(data)
+            expression = self._parse_expression(data)
             cases = []
-            default = []
         else:
-            # Handle YAML quirk where 'on' becomes boolean True
-            on_value = data.get('on') or data.get(True) or data.get('value', '')
-            on = self._parse_expression(on_value) if on_value else Literal(value=None, type='null')
+            # TAFL v1.1.2 format requires expression and cases array
+            if 'expression' not in data or not isinstance(data.get('cases'), list):
+                raise TAFLParseError(
+                    f"Switch statement must have 'expression' and 'cases' array (TAFL v1.1.2 format). "
+                    f"Found: {list(data.keys()) if isinstance(data, dict) else type(data)}"
+                )
             
+            expression = self._parse_expression(data['expression'])
             cases = []
-            cases_data = data.get('cases', {})
-            # Handle empty cases list
-            if isinstance(cases_data, list) and len(cases_data) == 0:
-                cases_data = {}
-            for value, body in cases_data.items():
-                # Parse the case value based on its type
-                if isinstance(value, (int, float)):
-                    case_value = Literal(value=value, type='number')
-                elif isinstance(value, bool):
-                    case_value = Literal(value=value, type='boolean')
-                elif isinstance(value, str):
-                    # Check if it's a number string
-                    try:
-                        if '.' in value:
-                            case_value = Literal(value=float(value), type='number')
-                        else:
-                            case_value = Literal(value=int(value), type='number')
-                    except ValueError:
-                        # It's a string literal
-                        case_value = Literal(value=value, type='string')
+            has_default = False
+            
+            for case_item in data['cases']:
+                when_value = case_item.get('when')
+                do_body = case_item.get('do', [])
+                
+                if not when_value:
+                    raise TAFLParseError(f"Switch case must have 'when' field")
+                
+                # Check if this is a default case - keep it as a regular case
+                if when_value == 'default':
+                    if has_default:
+                        raise TAFLParseError(f"Switch can only have one default case")
+                    has_default = True
+                    # Store "default" as a special literal
+                    case_value = Literal(value='default', type='string')
                 else:
-                    # Default to string representation
-                    case_value = Literal(value=str(value), type='string')
+                    # Parse the when condition
+                    if isinstance(when_value, str):
+                        # Parse conditions like "> 8", "5..8", etc.
+                        case_value = self._parse_case_condition(when_value)
+                    else:
+                        case_value = self._parse_expression(when_value)
                 
                 case = SwitchCase(
-                    value=case_value,
-                    body=self._parse_statements(body if isinstance(body, list) else [body])
+                    when=case_value,
+                    do=self._parse_statements(do_body if isinstance(do_body, list) else [do_body])
                 )
                 cases.append(case)
-            
-            default_data = data.get('default')
-            default = None
-            if default_data:
-                default = self._parse_statements(default_data if isinstance(default_data, list) else [default_data])
         
         return SwitchStatement(
-            expression=on,
+            expression=expression,
             cases=cases,
-            default=default,
             comment=comment
         )
     
+    def _parse_case_condition(self, condition: str) -> Expression:
+        """Parse case condition strings like '> 8', '5..8', '< 5'
+        
+        For now, returns as string literal to maintain compatibility.
+        Future enhancement: parse into proper comparison expressions.
+        """
+        # For now, keep it simple and return as string literal
+        # The executor will need to handle these special conditions
+        return Literal(value=condition, type='string')
+    
     def _parse_set(self, data: Any, comment: Optional[str]):
-        """Parse set statement / 解析設置語句"""
+        """Parse set statement / 解析設置語句
+        
+        TAFL v1.1.2: Only accepts object/dictionary format
+        不再支援單行字串格式 "variable = value"
+        """
         if isinstance(data, dict):
             # Dictionary format: set: {var1: value1, var2: value2, ...}
             statements = []
@@ -380,14 +452,16 @@ class TAFLParser:
             # Return single statement if only one, list if multiple
             return statements[0] if len(statements) == 1 else statements
         
-        # String format parsed as assignment
-        if isinstance(data, str) and '=' in data:
-            var, value = data.split('=', 1)
-            return SetStatement(
-                variable=var.strip(),
-                value=self._parse_expression(value.strip()),
-                comment=comment
-            )
+        # TAFL v1.1.2: String format no longer supported
+        if isinstance(data, str):
+            if '=' in data:
+                raise TAFLParseError(
+                    f"TAFL v1.1.2: String format 'variable = value' is no longer supported. "
+                    f"Use object format instead: set: {{variable: value}} or multi-line YAML format. "
+                    f"Found: {data}"
+                )
+            else:
+                raise TAFLParseError(f"Invalid set statement format: {data}")
         
         raise TAFLParseError(f"Invalid set statement format: {data}")
     
@@ -409,38 +483,48 @@ class TAFLParser:
         return StopStatement(comment=comment)
     
     def _parse_notify(self, data: Any, comment: Optional[str]) -> NotifyStatement:
-        """Parse notify statement / 解析通知語句"""
+        """Parse notify statement / 解析通知語句 - 符合 TAFL v1.1.1 規格"""
         if isinstance(data, str):
-            # Simple notification
+            # Simple notification - interpret as level
             return NotifyStatement(
-                channel='log',
-                message=Literal(value=data, type='string'),
+                level=data if data in ['info', 'warning', 'error', 'critical', 'alarm'] else 'info',
+                message=Literal(value=data if data not in ['info', 'warning', 'error', 'critical', 'alarm'] else '', type='string'),
                 comment=comment
             )
         
         if not isinstance(data, dict):
             # Handle None or other invalid types
             return NotifyStatement(
-                channel='log',
+                level='info',
                 message=Literal(value='', type='string'),
                 comment=comment
             )
         
-        channel = data.get('channel', data.get('to', 'log'))
-        message = self._parse_expression(data.get('message', data.get('text', '')))
-        level = data.get('level', data.get('severity'))
+        # 使用標準 'level' 欄位（TAFL v1.1 規格）
+        level = data.get('level', 'info')
+        message = self._parse_expression(data.get('message', ''))
         
-        # Parse metadata
-        metadata = {}
+        # Parse recipients
+        recipients = data.get('recipients')
+        if recipients and not isinstance(recipients, list):
+            recipients = [recipients]
+        
+        # Parse details (replacing metadata)
+        details = {}
         for key, value in data.items():
-            if key not in ['channel', 'to', 'message', 'text', 'level', 'severity']:
-                metadata[key] = self._parse_expression(value)
+            if key not in ['level', 'message', 'recipients', 'details']:
+                details[key] = self._parse_expression(value)
+        
+        # Also include explicit details field if present
+        if 'details' in data and isinstance(data['details'], dict):
+            for key, value in data['details'].items():
+                details[key] = self._parse_expression(value)
         
         return NotifyStatement(
-            channel=channel,
-            message=message,
             level=level,
-            metadata=metadata if metadata else None,
+            message=message,
+            recipients=recipients,
+            details=details if details else None,
             comment=comment
         )
     
@@ -467,33 +551,54 @@ class TAFLParser:
             return DictExpression(pairs=pairs)
         
         if isinstance(expr, str):
-            # TAFL v1.1 Fix: Check for expressions with operators FIRST
-            # This fixes ${variable + 1} being parsed as Variable instead of expression
-            if any(op in expr for op in ['==', '!=', '<=', '>=', '<', '>', '+', '-', '*', '/', 
-                                         ' and ', ' or ', 'not ']):
-                return self._parse_complex_expression(expr)
-            
             # Check for pure variable reference (entire string is ${...})
-            # Only after checking for operators
             var_match = self.VARIABLE_PATTERN.fullmatch(expr)
             if var_match:
-                var_path = var_match.group(1).split('.')
-                return Variable(name=var_path[0], path=var_path[1:])
+                inner_content = var_match.group(1)
+                
+                # Check for array/dict indexing BEFORE checking for operators
+                if '[' in inner_content and ']' in inner_content:
+                    return self._parse_index_access(inner_content)
+                
+                # Check if the content contains operators - if so, parse as complex expression
+                # Check for any operator presence
+                has_operator = any(op in inner_content for op in 
+                                 ['==', '!=', '<=', '>=', '<', '>', ' and ', ' or ', 
+                                  '+', '-', '*', '/', 'not '])
+                
+                if has_operator or '(' in inner_content:  # Also check for parentheses
+                    # Parse as complex expression
+                    return self._parse_complex_expression(expr)
+                else:
+                    # Parse as variable reference
+                    var_path = inner_content.split('.')
+                    return Variable(name=var_path[0], path=var_path[1:])
             
             # Check for function calls
-            if '(' in expr and ')' in expr:
+            if '(' in expr and ')' in expr and not '${' in expr:
                 return self._parse_function_call(expr)
             
-            # Check if it's a number
-            try:
-                if '.' in expr:
-                    return Literal(value=float(expr), type='number')
-                else:
-                    return Literal(value=int(expr), type='number')
-            except ValueError:
-                pass
+            # Check if it's a pure number (no ${} interpolation)
+            if '${' not in expr:
+                try:
+                    if '.' in expr:
+                        return Literal(value=float(expr), type='number')
+                    else:
+                        return Literal(value=int(expr), type='number')
+                except ValueError:
+                    pass
             
-            # Otherwise, it's a string literal
+            # Strip quotes from string literals
+            # Check if the string is quoted (starts and ends with matching quotes)
+            if ((expr.startswith('"') and expr.endswith('"')) or 
+                (expr.startswith("'") and expr.endswith("'"))) and len(expr) >= 2:
+                # Strip the quotes from the value
+                expr = expr[1:-1]
+            
+            # IMPORTANT: Expressions with ${...} interpolation should be treated as
+            # string literals that will be evaluated at runtime by the executor.
+            # This includes mathematical expressions like "${a} + ${b}"
+            # The executor's _interpolate_string and _evaluate_expression will handle them.
             return Literal(value=expr, type='string')
         
         # Default to literal
@@ -521,53 +626,200 @@ class TAFLParser:
                     operand = self._parse_expression(operand_expr)
                 return UnaryOp(operator='not', operand=operand)
             
-            # Handle binary operators (order matters: check longer operators first)
-            for op in ['==', '!=', '<=', '>=', ' and ', ' or ', '<', '>', '+', '-', '*', '/']:
-                if op in inner_expr:
-                    parts = inner_expr.split(op, 1)
-                    if len(parts) == 2:
-                        left_part = parts[0].strip()
-                        right_part = parts[1].strip()
-                        
-                        # Parse left operand
-                        if self._is_simple_variable(left_part):
-                            left = Variable(name=left_part, path=[])
-                        else:
-                            left = self._parse_expression(left_part)
-                        
-                        # Parse right operand  
-                        if self._is_simple_variable(right_part):
-                            right = Variable(name=right_part, path=[])
-                        else:
-                            right = self._parse_expression(right_part)
-                        
-                        return BinaryOp(
-                            operator=op.strip(),
-                            left=left,
-                            right=right
-                        )
-            
-            # If no operators found in ${...}, treat as variable
-            if self._is_simple_variable(inner_expr):
-                return Variable(name=inner_expr, path=[])
-            else:
-                return self._parse_expression(inner_expr)
+            # Parse the expression respecting parentheses
+            return self._parse_binary_expression(inner_expr)
         
         # Handle expressions without ${...} wrapper
         # Handle 'not' operator
         if expr.startswith('not '):
             return UnaryOp(operator='not', operand=self._parse_expression(expr[4:]))
         
-        # Handle binary operators (simplified)
-        for op in ['==', '!=', '<=', '>=', '<', '>', ' and ', ' or ', '+', '-', '*', '/']:
-            if op in expr:
-                parts = expr.split(op, 1)
-                if len(parts) == 2:
+        # Parse binary expressions
+        return self._parse_binary_expression(expr)
+    
+    def _parse_binary_expression(self, expr: str) -> Expression:
+        """
+        Parse binary expression respecting parentheses and operator precedence
+        """
+        expr = expr.strip()
+        
+        # Remove outer parentheses if they wrap the entire expression
+        if expr.startswith('(') and expr.endswith(')'):
+            # Check if these parentheses are balanced and wrap the whole expression
+            if self._find_matching_paren(expr, 0) == len(expr) - 1:
+                # Recursively parse the content inside parentheses
+                return self._parse_binary_expression(expr[1:-1])
+        
+        # Process operators in order of precedence (lower precedence first)
+        # This way higher precedence operators are nested deeper in the tree
+        # Comparison operators have lower precedence than arithmetic
+        operator_groups = [
+            [' or '],
+            [' and '],
+            ['==', '!=', '<=', '>=', '<', '>'],
+            ['+', '-'],
+            ['*', '/']
+        ]
+        
+        for operators in operator_groups:
+            for op in operators:
+                # Find the operator at the top level (not inside parentheses)
+                pos = self._find_operator_at_level(expr, op)
+                if pos != -1:
+                    left_part = expr[:pos].strip()
+                    right_part = expr[pos + len(op):].strip()
+                    
+                    # Helper function to parse operand
+                    def parse_operand(part):
+                        # Check if it needs recursive parsing
+                        if '(' in part or any(o in part for o in ['*', '/', '+', '-', '<', '>', '==', '!=']):
+                            return self._parse_binary_expression(part)
+                        
+                        # Check if it's a simple variable
+                        if self._is_simple_variable(part):
+                            return Variable(name=part, path=[])
+                        
+                        # Check if it's a dotted variable (e.g., rules.priority_multiplier)
+                        if '.' in part and all(self._is_simple_variable(p) for p in part.split('.')):
+                            parts = part.split('.')
+                            return Variable(name=parts[0], path=parts[1:])
+                        
+                        # Otherwise parse as expression
+                        return self._parse_expression(part)
+                    
+                    # Recursively parse operands
+                    left = parse_operand(left_part)
+                    right = parse_operand(right_part)
+                    
                     return BinaryOp(
                         operator=op.strip(),
-                        left=self._parse_expression(parts[0].strip()),
-                        right=self._parse_expression(parts[1].strip())
+                        left=left,
+                        right=right
                     )
+        
+        # If no operators found, parse as simple expression
+        # Try to parse as number first
+        try:
+            if '.' in expr:
+                return Literal(value=float(expr), type='number')
+            else:
+                return Literal(value=int(expr), type='number')
+        except ValueError:
+            pass
+        
+        # Check if it's a variable
+        if self._is_simple_variable(expr):
+            return Variable(name=expr, path=[])
+        else:
+            return self._parse_expression(expr)
+    
+    def _parse_index_access(self, expr: str) -> Expression:
+        """
+        Parse array/dict index access expressions like variable[0] or array[-1]
+        解析陣列/字典索引存取表達式
+        """
+        # Find the first '[' to split object and index
+        bracket_pos = expr.find('[')
+        if bracket_pos == -1:
+            # No brackets, shouldn't happen but handle gracefully
+            var_path = expr.split('.')
+            return Variable(name=var_path[0], path=var_path[1:])
+        
+        # Get the object part (before '[')
+        object_part = expr[:bracket_pos].strip()
+        
+        # Parse remaining part for indices (may have nested indexing like [0][1])
+        remaining = expr[bracket_pos:]
+        indices = []
+        
+        while remaining and remaining.startswith('['):
+            # Find matching ']'
+            bracket_end = self._find_matching_bracket(remaining, 0)
+            if bracket_end == -1:
+                raise TAFLSyntaxError(f"Unmatched '[' in expression: {expr}")
+            
+            # Extract index expression (without brackets)
+            index_expr = remaining[1:bracket_end]
+            indices.append(index_expr)
+            
+            # Move to next potential index
+            remaining = remaining[bracket_end + 1:]
+        
+        # Parse the object part
+        if '.' in object_part:
+            var_path = object_part.split('.')
+            obj_expr = Variable(name=var_path[0], path=var_path[1:])
+        else:
+            obj_expr = Variable(name=object_part, path=[])
+        
+        # Build nested IndexAccess for multiple indices
+        result = obj_expr
+        for index_str in indices:
+            # Parse the index expression
+            # Check if it's a negative number (common case)
+            if index_str.startswith('-') and index_str[1:].isdigit():
+                index_expr = Literal(value=int(index_str), type='number')
+            # Check if it's a positive number
+            elif index_str.isdigit():
+                index_expr = Literal(value=int(index_str), type='number')
+            else:
+                # Parse as expression (could be variable or complex expression)
+                index_expr = self._parse_expression(index_str)
+            
+            result = IndexAccess(object=result, index=index_expr)
+        
+        return result
+    
+    def _find_matching_bracket(self, expr: str, start_pos: int) -> int:
+        """
+        Find the position of matching closing bracket ']'
+        """
+        if expr[start_pos] != '[':
+            return -1
+        level = 1
+        i = start_pos + 1
+        while i < len(expr):
+            if expr[i] == '[':
+                level += 1
+            elif expr[i] == ']':
+                level -= 1
+                if level == 0:
+                    return i
+            i += 1
+        return -1
+    
+    def _find_operator_at_level(self, expr: str, op: str) -> int:
+        """
+        Find operator position at top level (not inside parentheses)
+        Returns -1 if not found at top level
+        """
+        level = 0
+        i = 0
+        while i < len(expr):
+            if expr[i] == '(':
+                level += 1
+            elif expr[i] == ')':
+                level -= 1
+            elif level == 0 and expr[i:i+len(op)] == op:
+                return i
+            i += 1
+        return -1
+    
+    def _find_matching_paren(self, expr: str, start_pos: int) -> int:
+        """
+        Find the position of matching closing parenthesis
+        """
+        if expr[start_pos] != '(':
+            return -1
+        level = 1
+        i = start_pos + 1
+        while i < len(expr) and level > 0:
+            if expr[i] == '(':
+                level += 1
+            elif expr[i] == ')':
+                level -= 1
+            i += 1
+        return i - 1 if level == 0 else -1
         
         # If no operators found, treat as string
         return Literal(value=expr, type='string')
@@ -598,37 +850,85 @@ class TAFLParser:
         
         return Literal(value=expr, type='string')
     
-    def _parse_preload_statements(self, preload_data: List[Any]) -> List[PreloadStatement]:
-        """Parse preload statements / 解析預載入語句"""
+    def _parse_preload_statements(self, preload_data: Any) -> List[PreloadStatement]:
+        """Parse preload statements / 解析預載入語句
+        
+        Supports both dict format (v1.1) and list format:
+        - Dict: {name: {query: {...}}, ...}
+        - List: [{query: {...}}, ...]
+        """
         result = []
-        for stmt_data in preload_data:
-            if isinstance(stmt_data, dict) and 'query' in stmt_data:
-                query_data = stmt_data['query']
-                comment = stmt_data.get('comment')
-                
-                # Parse query fields
-                target = query_data.get('target', '')
-                store_as = query_data.get('store_as', '')
-                
-                # Parse where clause
-                filters = None
-                where = query_data.get('where', {})
-                if where:
-                    filters = {}
-                    for key, value in where.items():
-                        filters[key] = self._parse_expression(value)
-                
-                # Parse limit
-                limit = query_data.get('limit')
-                
-                preload_stmt = PreloadStatement(
-                    target=target,
-                    filters=filters,
-                    limit=limit,
-                    store_as=store_as,
-                    comment=comment
-                )
-                result.append(preload_stmt)
+        
+        # Handle dict format (v1.1)
+        if isinstance(preload_data, dict):
+            for name, stmt_data in preload_data.items():
+                if isinstance(stmt_data, dict) and 'query' in stmt_data:
+                    query_data = stmt_data['query']
+                    comment = stmt_data.get('comment')
+                    
+                    # Parse query fields
+                    target = query_data.get('target', '')
+                    # 統一使用 'as' （規格書定義）
+                    as_ = name  # Use the key as as_ name
+                    
+                    # Parse where clause
+                    filters = None
+                    where = query_data.get('where')
+                    if where:
+                        if isinstance(where, dict):
+                            filters = {}
+                            for key, value in where.items():
+                                filters[key] = self._parse_expression(value)
+                        elif isinstance(where, str):
+                            # Handle string where clause like "active = true"
+                            # Wrap in dict to maintain consistent structure
+                            filters = {'_expression': self._parse_expression(where)}
+                    
+                    # Parse limit
+                    limit = query_data.get('limit')
+                    
+                    preload_stmt = PreloadStatement(
+                        target=target,
+                        filters=filters,
+                        limit=limit,
+                        as_=as_,
+                        comment=comment
+                    )
+                    result.append(preload_stmt)
+        
+        # Handle list format (backward compatibility)
+        elif isinstance(preload_data, list):
+            for stmt_data in preload_data:
+                if isinstance(stmt_data, dict) and 'query' in stmt_data:
+                    query_data = stmt_data['query']
+                    comment = stmt_data.get('comment')
+                    
+                    # Parse query fields - TAFL v1.1.2
+                    target = query_data.get('target')
+                    if not target:
+                        raise TAFLParseError("Preload query requires 'target' field (TAFL v1.1.2)")
+                    # TAFL v1.1.2: 'as' field for storing results
+                    as_ = query_data.get('as')
+                    
+                    # Parse where clause
+                    filters = None
+                    where = query_data.get('where', {})
+                    if where:
+                        filters = {}
+                        for key, value in where.items():
+                            filters[key] = self._parse_expression(value)
+                    
+                    # Parse limit
+                    limit = query_data.get('limit')
+                    
+                    preload_stmt = PreloadStatement(
+                        target=target,
+                        filters=filters,
+                        limit=limit,
+                        as_=as_,
+                        comment=comment
+                    )
+                    result.append(preload_stmt)
         
         return result
     
@@ -646,8 +946,16 @@ class TAFLParser:
                         condition=condition,
                         description=description
                     )
+                elif 'value' in rule_data:
+                    # Configuration rule with value and optional description
+                    value = rule_data.get('value')
+                    description = rule_data.get('description')
+                    rule = RuleDefinition(
+                        value=value,
+                        description=description
+                    )
                 else:
-                    # Configuration rule with static value
+                    # Dict without 'condition' or 'value' keys - treat as value
                     rule = RuleDefinition(value=rule_data)
             else:
                 # Simple configuration value

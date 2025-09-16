@@ -4,7 +4,8 @@
 metadata:
   id: task_creation_001
   name: Task Creation Flow
-  version: 1.0
+  version: 1.1.2
+  enabled: true  # v1.1.2: Controls whether flow is auto-executed
   description: Query locations and create tasks for available racks
 
 variables:
@@ -45,7 +46,7 @@ flow:
                     # Create task for this location
                     - create:
                         target: task
-                        params:
+                        with:
                           work_id: "${work_id}"
                           location_id: "${location.id}"
                           priority: 1

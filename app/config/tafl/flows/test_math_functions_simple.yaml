@@ -1,0 +1,18 @@
+metadata:
+  id: test_math_functions_simple
+  name: Test Math Functions Simple
+  version: "1.0.0"
+  description: Simple test of math functions with arrays
+  created_at: '2025-01-15T10:30:00'
+
+variables:
+  items: [1, 2, 3, 4, 5]
+
+flow:
+  - notify:
+      message: "Testing math functions with array: ${items}"
+      level: info
+
+  - notify:
+      message: "Sum: ${sum(items)}, Average: ${avg(items)}, Min: ${min(items)}, Max: ${max(items)}"
+      level: info

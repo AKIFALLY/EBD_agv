@@ -199,7 +199,7 @@ def dispatch(self):
 ### 與其他專案整合 (簡化版本)
 - **db_proxy_ws**: 使用 ConnectionPoolManager 查詢 AGV 狀態和任務資訊
 - **agv_ws**: 透過 `/agv/state_change` 和 `/agv/status` 主題接收 AGV 狀態
-- **ai_wcs_ws**: 整合 AI WCS 決策引擎的任務分派
+- **tafl_wcs_ws**: 整合 TAFL WCS (Task Automation Flow Language) 的任務自動化流程
 - **kuka_fleet_ws**: KUKA 車隊整合 (KukaFleetAdapter)
 
 ### WCS 系統整合 (基於實際實現)
@@ -263,7 +263,7 @@ ros2 run rcs rcs_core  # 觀察日誌輸出
 ### 相關模組
 - **db_proxy_ws**: `../db_proxy_ws/CLAUDE.md` - 資料庫連接池管理
 - **agv_ws**: `../agv_ws/CLAUDE.md` - AGV 狀態監控整合
-- **ai_wcs_ws**: `../ai_wcs_ws/CLAUDE.md` - AI WCS 任務分派
+- **tafl_wcs_ws**: `../tafl_wcs_ws/CLAUDE.md` - TAFL WCS 任務自動化流程
 - **kuka_fleet_ws**: `../kuka_fleet_ws/CLAUDE.md` - KUKA 車隊整合
 
 ### 通用支援

@@ -1,12 +1,4 @@
 <style>
-    .is-connected {
-        color: lightgreen;
-    }
-
-    .is-disconnected {
-        color: coral;
-    }
-
     .navbar {
         flex-wrap: nowrap;
         overflow-x: auto;
@@ -28,17 +20,75 @@
         align-items: center;
         flex-wrap: nowrap;
     }
+    
+    .navbar-center {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+    }
+    
+    #current-time {
+        font-size: 0.9rem;
+        color: #b0b0b0;
+    }
 </style>
 <nav class="navbar is-black has-shadow" role="navigation" aria-label="main navigation">
-    <!-- 🔧 加入 navbar-menu 才能 override 成水平 -->
+    <div class="navbar-brand">
+        <a class="navbar-item" href="/">
+            <img src="/static/favicon.png" alt="AGVUI" style="width: 24px; height: 24px; margin-right: 8px;">
+            <strong>AGVUI</strong>
+        </a>
+    </div>
+    
+    <div class="navbar-center">
+        <div class="navbar-item">
+            <span class="has-text-white has-text-weight-bold">AGV 監控系統</span>
+        </div>
+    </div>
+    
     <div class="navbar-menu is-active">
         <div class="navbar-start">
             <a class="navbar-item" href="/">
-                <span class="mdi mdi-wifi is-disconnected"></span>
-                <strong>agvui</strong>
+                <span class="icon"><i class="mdi mdi-monitor-dashboard"></i></span>
+                <span>監控面板</span>
             </a>
-            <a class="navbar-item" href="/">Agv</a>
-
+            <a class="navbar-item" href="/multi">
+                <span class="icon"><i class="mdi mdi-view-grid"></i></span>
+                <span>多車監控</span>
+            </a>
+            <a class="navbar-item" href="/test">
+                <span class="icon"><i class="mdi mdi-test-tube"></i></span>
+                <span>測試模式</span>
+            </a>
+        </div>
+        
+        <div class="navbar-end">
+            <div class="navbar-item">
+                <span id="current-time"></span>
+            </div>
+            <div class="navbar-item">
+                <span class="mdi mdi-wifi is-disconnected" id="connection-status" title="連線狀態"></span>
+            </div>
         </div>
     </div>
 </nav>
+
+<script>
+    // 更新時間顯示
+    function updateNavbarTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('zh-TW');
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+            timeElement.textContent = timeString;
+        }
+    }
+    
+    // 初始化時間顯示
+    updateNavbarTime();
+    setInterval(updateNavbarTime, 1000);
+    
+    // 連線狀態會由 Socket.IO 管理更新
+</script>

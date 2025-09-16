@@ -305,17 +305,47 @@ export class UIManager {
             btn.classList.remove('is-danger', 'is-success', 'is-warning', 'is-disabled');
             btn.disabled = false;
 
+            // 確保按鈕有圖標結構
+            const hasIconStructure = btn.querySelector('.icon');
+            
             if (status === PARKING_STATUS_ID.TASK_ACTIVE) {
                 // 派車任務進行中：紅色取消按鈕
-                btn.textContent = '取消';
+                if (hasIconStructure) {
+                    // 保留圖標結構，只更新文字
+                    const textSpan = btn.querySelector('span:not(.icon)');
+                    if (textSpan) {
+                        textSpan.textContent = '取消';
+                    }
+                } else {
+                    // 沒有圖標結構，直接設置文字
+                    btn.textContent = '取消';
+                }
                 btn.classList.add('is-danger');
             } else if (hasRack) {
                 // 有料架時才能派車：恢復原始的橙色警告樣式
-                btn.textContent = '派車';
+                if (!hasIconStructure) {
+                    // 添加圖標結構
+                    btn.innerHTML = '<span class="icon"><i class="mdi mdi-truck-delivery"></i></span><span>派車</span>';
+                } else {
+                    // 保留圖標結構，只更新文字
+                    const textSpan = btn.querySelector('span:not(.icon)');
+                    if (textSpan) {
+                        textSpan.textContent = '派車';
+                    }
+                }
                 btn.classList.add('is-warning');
             } else {
                 // 沒有料架時禁用派車按鈕：保持橙色但禁用
-                btn.textContent = '派車';
+                if (!hasIconStructure) {
+                    // 添加圖標結構
+                    btn.innerHTML = '<span class="icon"><i class="mdi mdi-truck-delivery"></i></span><span>派車</span>';
+                } else {
+                    // 保留圖標結構，只更新文字
+                    const textSpan = btn.querySelector('span:not(.icon)');
+                    if (textSpan) {
+                        textSpan.textContent = '派車';
+                    }
+                }
                 btn.classList.add('is-warning', 'is-disabled');
                 btn.disabled = true;
             }

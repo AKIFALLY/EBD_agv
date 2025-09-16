@@ -1,0 +1,105 @@
+metadata:
+  enabled: true
+  id: test_stop_verb
+  name: Test Stop Verb
+  version: 1.1.2
+  description: Test stop verb functionality in various scenarios
+  updated_at: '2025-09-12T16:08:39.059306'
+  created_at: '2025-09-12T16:08:39.059314'
+settings:
+  timeout: 3600
+  max_retries: 3
+  retry_on_failure: false
+preload: {}
+rules: {}
+variables:
+  counter: 0
+  max_iterations: 5
+  emergency: false
+  process_status: running
+flow:
+- set:
+    test_section: 'Test 1: Basic conditional stop'
+- notify:
+    message: Starting ${test_section}
+    level: info
+- if:
+    condition: ${emergency}
+    then:
+    - notify:
+        message: Emergency detected, stopping flow
+        level: error
+    - stop:
+        reason: Emergency condition triggered
+- set:
+    test_section: 'Test 2: Stop in loop'
+- notify:
+    message: Starting ${test_section}
+    level: info
+- for:
+    as: i
+    in:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    do:
+    - set:
+        counter: ${i}
+    - notify:
+        message: Loop iteration ${i}
+        level: debug
+    - if:
+        condition: ${counter >= max_iterations}
+        then:
+        - notify:
+            message: Reached max iterations (${max_iterations}), stopping loop
+            level: warning
+        - stop:
+            reason: Max iterations reached
+- notify:
+    message: After loop - counter is ${counter}
+    level: info
+- set:
+    test_section: 'Test 3: Process status stop'
+- notify:
+    message: Starting ${test_section}
+    level: info
+- set:
+    process_status: error
+- switch:
+    expression: ${process_status}
+    cases:
+    - when: running
+      do:
+      - notify:
+          message: Process is running normally
+          level: info
+    - when: error
+      do:
+      - notify:
+          message: Process error detected
+          level: error
+      - stop:
+          reason: 'Process error: ${process_status}'
+    - when: default
+      do:
+      - notify:
+          message: 'Unknown process status: ${process_status}'
+          level: warning
+- set:
+    test_section: 'Test 4: Final section'
+- notify:
+    message: This message should not appear if stop was triggered
+    level: info
+- set:
+    final_result: Flow completed without stop
+- notify:
+    message: 'Final result: ${final_result}'
+    level: info

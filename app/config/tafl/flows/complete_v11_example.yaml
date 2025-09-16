@@ -1,0 +1,357 @@
+# TAFL v1.1.2 完整範例 - 展示所有動詞的正確用法
+# 符合規格書的標準格式
+
+metadata:
+  enabled: false  # Disabled - has complex logic requiring undefined properties
+  id: complete_v11_example
+  name: "TAFL v1.1.2 完整動詞範例"
+  version: "1.1.2"
+  author: "TAFL Validator"
+  description: "展示所有 TAFL v1.1.2 動詞的標準用法 (SET 使用字典格式, SWITCH default 在 cases 內)"
+  tags: ["example", "v1.1.2", "all-verbs"]
+
+settings:
+  timeout: 600
+  retry_on_failure: true
+  max_retries: 3
+  parallel_execution: false
+  log_level: "INFO"
+
+# Preload 區塊 - 預先載入資料 (示範用，實際執行時需要對應的查詢函數)
+# 註解掉以避免執行錯誤，但保留作為語法範例
+# preload:
+#   active_racks:
+#     query:
+#       target: racks
+#       where:
+#         status: "active"
+#   
+#   available_locations:
+#     query:
+#       target: locations
+#       where:
+#         type: "room_inlet"
+
+# Rules 區塊 - 業務規則定義
+rules:
+  max_task_priority:
+    value: 10
+    description: "最高任務優先級"
+  
+  min_battery_level:
+    value: 20
+    description: "最低電池電量"
+  
+  is_working_hours:
+    condition: ${true}
+    description: "工作時間判斷"
+
+# Variables 區塊 - 初始變數
+variables:
+  system_mode: "auto"
+  task_counter: 0
+  emergency_mode: false
+
+# Flow 區塊 - 主要流程
+flow:
+  # 1. QUERY 動詞範例 - 查詢資料
+  - query:
+      target: tasks
+      where:
+        status: "pending"
+        priority__gt: 5
+      as: pending_tasks
+  
+  # 2. CHECK 動詞範例 - 檢查條件
+  - check:
+      target: system
+      condition: ${system.ready == true}
+      as: system_ready
+  
+  # 3. SET 動詞範例 - 設定變數
+  # 單一變數設定 (多行 YAML 格式 - TAFL v1.1.2 標準)
+  - set:
+      task_counter: "${task_counter + 1}"
+  - set:
+      current_time: "${now()}"
+  
+  # 多個變數設定 (字典格式) - TAFL v1.1.2 保持支援
+  - set:
+      operation_status: "active"
+      process_id: ${generate_id()}
+      start_timestamp: ${current_time}
+      max_workers: 5
+      debug_mode: false
+  
+  # 4. IF 動詞範例 - 條件判斷
+  - if:
+      condition: ${system_ready and rules.is_working_hours}
+      then:
+        # 使用字典格式一次設定多個相關變數
+        - set:
+            operation_mode: "normal"
+            operation_priority: 10
+            operation_flags:
+              allow_concurrent: true
+              enable_logging: true
+        - notify:
+            level: info
+            message: "系統正常運作中"
+      else:
+        # 也可以使用字典格式設定多個變數
+        - set:
+            operation_mode: "limited"
+            operation_priority: 5
+            operation_flags:
+              allow_concurrent: false
+              enable_logging: true
+        - notify:
+            level: warning
+            message: "系統處於限制模式"
+  
+  # 5. FOR 動詞範例 - 迴圈處理（符合規格：in, as, do）
+  - query:
+      target: agvs
+      where:
+        enable: true
+      limit: 5
+      as: available_agvs
+  
+  - for:
+      in: ${pending_tasks}
+      as: task
+      filter: ${task.priority >= 7}
+      do:
+        - set:
+            processing_task: "${task.id}"
+        
+        # 6. CREATE 動詞範例 - 創建實體（符合規格：with）
+        - create:
+            target: work
+            with:
+              task_id: ${task.id}
+              type: "transport"
+              priority: ${task.priority}
+              assigned_agv: ${available_agvs[0].id}
+            as: new_work
+        
+        # 7. UPDATE 動詞範例 - 更新實體（符合規格：where, set）
+        - update:
+            target: tasks
+            where:
+              id: ${task.id}
+            set:
+              status: "processing"
+              work_id: ${new_work.id}
+              start_time: ${current_time}
+  
+  # 8. SWITCH 動詞範例 - 分支處理（v1.1.2 格式：cases 內含 default）
+  - switch:
+      expression: ${operation_mode}
+      cases:
+        - when: "normal"
+          do:
+            # 字典格式設定多個配置
+            - set:
+                max_concurrent_tasks: 10
+                task_timeout: 3600
+                retry_enabled: true
+                retry_count: 3
+            - notify:
+                level: info
+                message: "正常模式：最多處理 10 個任務"
+        
+        - when: "limited"
+          do:
+            # 使用字典格式設定所有變數
+            - set:
+                max_concurrent_tasks: 5
+                task_timeout: 1800
+                retry_enabled: true
+                retry_count: 2
+            - notify:
+                level: warning
+                message: "限制模式：最多處理 5 個任務"
+        
+        - when: "emergency"
+          do:
+            # 字典格式設定所有參數
+            - set:
+                max_concurrent_tasks: 1
+                task_timeout: 600
+                retry_enabled: false
+                emergency_flag: true
+            - notify:
+                level: critical
+                message: "緊急模式：僅處理緊急任務"
+        
+        - when: "default"
+          do:
+            - set:
+                max_concurrent_tasks: 3
+            - notify:
+                level: info
+                message: "預設模式：最多處理 3 個任務"
+  
+  # 9. 進階 SWITCH 範例 - 範圍條件（v1.1.2 保持支援）
+  - query:
+      target: agvs
+      where:
+        id: "AGV001"
+      as: target_agv
+  
+  - switch:
+      expression: ${target_agv.battery}
+      cases:
+        - when: "> 80"
+          do:
+            - set:
+                agv_status: "full_operation"
+            - update:
+                target: agv
+                where:
+                  id: ${target_agv.id}
+                set:
+                  mode: "high_performance"
+        
+        - when: "50..80"
+          do:
+            - set:
+                agv_status: "normal_operation"
+            - update:
+                target: agv
+                where:
+                  id: ${target_agv.id}
+                set:
+                  mode: "balanced"
+        
+        - when: "20..50"
+          do:
+            - set:
+                agv_status: "power_saving"
+            - update:
+                target: agv
+                where:
+                  id: ${target_agv.id}
+                set:
+                  mode: "economy"
+        
+        - when: "< 20"
+          do:
+            - set:
+                agv_status: "critical_battery"
+            - create:
+                target: alarm
+                with:
+                  type: "low_battery"
+                  agv_id: ${target_agv.id}
+                  battery_level: ${target_agv.battery}
+  
+  # 10. NOTIFY 動詞範例 - 通知（符合規格：level 為主要欄位）
+  - notify:
+      level: info
+      message: "流程開始執行"
+      recipients: ["admin", "operator"]
+      details:
+        timestamp: ${current_time}
+        task_count: ${task_counter}
+  
+  - notify:
+      level: warning
+      message: "發現 ${pending_tasks.length} 個待處理任務"
+      details:
+        queue_size: ${pending_tasks.length}
+  
+  - notify:
+      level: error
+      message: "系統錯誤"
+      recipients: ["admin"]
+      details:
+        error_code: "E001"
+        description: "無法連接資料庫"
+  
+  - notify:
+      level: critical
+      message: "緊急狀況！"
+      recipients: ["admin", "supervisor", "operator"]
+      details:
+        severity: "high"
+        action_required: true
+  
+  - notify:
+      level: alarm
+      message: "觸發警報：設備故障"
+      recipients: ["maintenance_team"]
+      details:
+        device_id: "PLC001"
+        fault_type: "communication_error"
+  
+  # 11. 巢狀結構範例 - 複雜邏輯  
+  - query:
+      target: racks
+      where:
+        status_id: 1
+      limit: 3
+      as: active_racks
+  
+  - for:
+      in: ${active_racks}
+      as: rack
+      do:
+        - if:
+            condition: ${rack.has_material}
+            then:
+              - check:
+                  target: rack
+                  condition: ${rack.weight < 1000}
+                  as: weight_ok
+              
+              - if:
+                  condition: ${weight_ok}
+                  then:
+                    - for:
+                        in: ${available_agvs}
+                        as: agv
+                        filter: ${agv.capacity >= rack.weight}
+                        do:
+                          - create:
+                              target: tasks
+                              with:
+                                type: "pickup"
+                                rack_id: ${rack.id}
+                                agv_id: ${agv.id}
+                                priority: ${rack.priority}
+                              as: pickup_task
+                          
+                          - update:
+                              target: rack
+                              where:
+                                id: ${rack.id}
+                              set:
+                                assigned_task: ${pickup_task.id}
+                                status: "assigned"
+                  else:
+                    - notify:
+                        level: warning
+                        message: "Rack ${rack.id} 超重：${rack.weight} kg"
+  
+  # 12. STOP 動詞範例 - 停止流程
+  - if:
+      condition: ${emergency_mode}
+      then:
+        - notify:
+            level: critical
+            message: "緊急模式啟動，停止所有操作"
+        - stop:
+            reason: "Emergency mode activated"
+            condition: ${emergency_mode == true}
+  
+  # 最終狀態報告
+  - notify:
+      level: info
+      message: "流程執行完成"
+      details:
+        total_tasks: ${task_counter}
+        operation_mode: ${operation_mode}
+        agv_status: ${agv_status}
+        completion_time: ${now()}

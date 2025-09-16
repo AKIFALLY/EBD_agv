@@ -1,0 +1,139 @@
+metadata:
+  id: test_arithmetic_operations
+  name: Test Arithmetic Operations
+  version: "1.0.0"
+  description: Test TAFL variable arithmetic operations and math functions
+  created_at: '2025-01-15T10:00:00'
+  updated_at: '2025-01-15T10:00:00'
+
+variables:
+  # Test variables for arithmetic
+  counter: 10
+  multiplier: 3
+  divisor: 2
+  subtrahend: 5
+
+  # Test arrays for math functions
+  numeric_array: [1, 2, 3, 4, 5]
+  mixed_array: [1, "2", 3, "4", 5]  # Mixed types to test conversion
+
+  # Results storage
+  addition_result: 0
+  subtraction_result: 0
+  multiplication_result: 0
+  division_result: 0
+
+flow:
+  # Test 1: Addition
+  - notify:
+      message: "Test 1: Addition Operations"
+      level: info
+
+  - set:
+      addition_result: "${counter + 1}"
+
+  - notify:
+      message: "Addition: ${counter} + 1 = ${addition_result}"
+      level: info
+
+  # Test 2: Subtraction
+  - notify:
+      message: "Test 2: Subtraction Operations"
+      level: info
+
+  - set:
+      subtraction_result: "${counter - subtrahend}"
+
+  - notify:
+      message: "Subtraction: ${counter} - ${subtrahend} = ${subtraction_result}"
+      level: info
+
+  # Test 3: Multiplication
+  - notify:
+      message: "Test 3: Multiplication Operations"
+      level: info
+
+  - set:
+      multiplication_result: "${counter * multiplier}"
+
+  - notify:
+      message: "Multiplication: ${counter} * ${multiplier} = ${multiplication_result}"
+      level: info
+
+  # Test 4: Division
+  - notify:
+      message: "Test 4: Division Operations"
+      level: info
+
+  - set:
+      division_result: "${counter / divisor}"
+
+  - notify:
+      message: "Division: ${counter} / ${divisor} = ${division_result}"
+      level: info
+
+  # Test 5: Complex expressions
+  - notify:
+      message: "Test 5: Complex Expressions"
+      level: info
+
+  - set:
+      complex_result: "${(counter + 5) * 2 - 10}"
+
+  - notify:
+      message: "Complex: (${counter} + 5) * 2 - 10 = ${complex_result}"
+      level: info
+
+  # Test 6: Math functions with numeric array
+  - notify:
+      message: "Test 6: Math Functions with Numeric Array"
+      level: info
+
+  - notify:
+      message: "Numeric array: ${numeric_array}"
+      level: info
+
+  - notify:
+      message: "Sum: ${sum(numeric_array)}, Avg: ${avg(numeric_array)}, Min: ${min(numeric_array)}, Max: ${max(numeric_array)}"
+      level: info
+
+  # Test 7: Math functions with mixed-type array
+  - notify:
+      message: "Test 7: Math Functions with Mixed-Type Array"
+      level: info
+
+  - notify:
+      message: "Mixed array: ${mixed_array}"
+      level: info
+
+  - notify:
+      message: "Sum: ${sum(mixed_array)}, Avg: ${avg(mixed_array)}, Min: ${min(mixed_array)}, Max: ${max(mixed_array)}"
+      level: info
+
+  # Test 8: Incremental counter in loop
+  - notify:
+      message: "Test 8: Incremental Counter in Loop"
+      level: info
+
+  - set:
+      loop_counter: 0
+
+  - for:
+      as: i
+      in: [1, 2, 3]
+      do:
+        - set:
+            loop_counter: "${loop_counter + i}"
+
+        - notify:
+            message: "Loop iteration ${i}: counter = ${loop_counter}"
+            level: debug
+
+  - notify:
+      message: "Final loop counter: ${loop_counter}"
+      level: info
+
+  # Summary
+  - notify:
+      message: "✅ All arithmetic operation tests completed!"
+      level: info

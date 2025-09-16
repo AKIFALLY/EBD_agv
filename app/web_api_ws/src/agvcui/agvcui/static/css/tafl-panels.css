@@ -499,6 +499,97 @@ body.dark-theme .rules-list pre.content {
     padding: 1.5rem;
 }
 
+/* ===== Execution and Results Panel Specific Styles ===== */
+
+/* Execution Log Content - Single vertical scrollbar, no horizontal */
+.execution-log-content {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;  /* Prevent horizontal scrollbar */
+    padding-right: 0.5rem;  /* Space for scrollbar */
+}
+
+/* Variable Changes Content - Similar to execution log */
+.variable-changes-content {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;  /* Prevent horizontal scrollbar at container level */
+    padding-right: 0.5rem;
+}
+
+/* Tables inside variable changes should be responsive */
+.variable-changes-content table {
+    table-layout: fixed;  /* Fixed layout for predictable column widths */
+    word-wrap: break-word;
+}
+
+.variable-changes-content td code {
+    word-break: break-all;  /* Break long values if needed */
+    display: block;
+    max-width: 100%;
+}
+
+/* Pre elements inside execution logs - Remove nested scrollbars */
+.execution-log-content pre {
+    max-height: none;  /* Remove height restriction */
+    overflow-x: auto;  /* Only show horizontal scroll if needed */
+    overflow-y: visible;  /* No vertical scroll on pre */
+    white-space: pre-wrap;  /* Wrap long lines */
+    word-wrap: break-word;
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+/* Box elements inside execution log */
+.execution-log-content .box {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    overflow: hidden;  /* Prevent individual boxes from scrolling */
+}
+
+/* Validation content - Similar treatment */
+.validation-content {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+}
+
+/* Results container - Parent of all result panels */
+.results-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;  /* Prevent container from scrolling */
+}
+
+/* Custom scrollbar styling for execution panels */
+.execution-log-content::-webkit-scrollbar,
+.variable-changes-content::-webkit-scrollbar,
+.validation-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.execution-log-content::-webkit-scrollbar-track,
+.variable-changes-content::-webkit-scrollbar-track,
+.validation-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.execution-log-content::-webkit-scrollbar-thumb,
+.variable-changes-content::-webkit-scrollbar-thumb,
+.validation-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.execution-log-content::-webkit-scrollbar-thumb:hover,
+.variable-changes-content::-webkit-scrollbar-thumb:hover,
+.validation-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
 /* Responsive adjustments */
 @media (max-height: 768px) {
     .property-editor {
@@ -508,5 +599,12 @@ body.dark-theme .rules-list pre.content {
     .property-editor .title {
         font-size: 1.125rem;
         margin-bottom: 1rem;
+    }
+    
+    /* Reduce max-height on smaller screens */
+    .execution-log-content,
+    .variable-changes-content,
+    .validation-content {
+        max-height: 300px;
     }
 }

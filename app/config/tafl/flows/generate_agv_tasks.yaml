@@ -1,0 +1,91 @@
+metadata:
+  id: generate_agv_tasks
+  name: AGV 任務產生器
+  version: 1.1.2
+  author: TAFL System
+  enabled: false
+  description: 根據料架狀態自動產生旋轉任務
+  updated_at: '2025-09-12T01:52:53.269501'
+  created_at: '2025-09-11T15:41:09.972015'
+settings:
+  timeout: 30
+  log_level: INFO
+preload: {}
+rules: {}
+variables:
+  max_tasks_per_cycle: 3
+flow:
+- query:
+    target: racks
+    where:
+      status_id: 2
+    limit: ${max_tasks_per_cycle}
+    as: pending_racks
+    comment: 查詢需要旋轉的料架
+- for:
+    as: rack
+    in: ${pending_racks}
+    do:
+    - query:
+        target: tasks
+        where:
+          rack_id: ${rack.id}
+          status_id_in:
+          - 1
+          - 2
+        as: existing_tasks
+        comment: 檢查料架 ${rack.id} 是否已有任務
+    - if:
+        condition: ${existing_tasks.length} == 0
+        then:
+        - query:
+            target: locations
+            where:
+              id: ${rack.location_id}
+            as: rack_location
+            comment: 取得料架位置資訊
+        - create:
+            target: tasks
+            with:
+              work_id: 220001
+              rack_id: ${rack.id}
+              source_location_id: ${rack.location_id}
+              target_location_id: ${rack.location_id}
+              priority: 5
+              status_id: 1
+              metadata:
+                rotation_angle: 180
+                room_id: ${rack_location[0].room_id}
+                model: KUKA400i
+                created_by: tafl_auto_generator
+                created_at: ${now()}
+            as: new_task
+            comment: 創建料架 ${rack.id} 的旋轉任務
+        - notify:
+            channel: log
+            level: info
+            message: 已創建任務 ${new_task.id} 用於料架 ${rack.id} 旋轉
+        - update:
+            target: rack
+            where:
+              id: ${rack.id}
+            set:
+              status_id: 3
+            comment: 更新料架狀態為任務已派發
+        else:
+        - notify:
+            channel: log
+            level: debug
+            message: 料架 ${rack.id} 已有 ${existing_tasks.length} 個進行中的任務，跳過
+- if:
+    condition: ${pending_racks.length} > 0
+    then:
+    - notify:
+        channel: log
+        level: info
+        message: 本次執行檢查了 ${pending_racks.length} 個料架
+    else:
+    - notify:
+        channel: log
+        level: debug
+        message: 本次執行沒有發現需要處理的料架

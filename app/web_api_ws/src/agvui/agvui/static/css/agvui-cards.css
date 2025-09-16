@@ -1,0 +1,382 @@
+/* AGVUI 卡片和動畫樣式 - 參考 OPUI/HMI 現代化設計 */
+
+/* ========================================
+   AGV 狀態卡片樣式
+   ======================================== */
+.agv-status-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+    border: 1px solid transparent;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+/* 漸層邊框效果 */
+.agv-status-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 3px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ff4757, #5f27cd, #00d2d3, #48dbfb);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+}
+
+/* 懸停效果 */
+.agv-status-card:hover::before {
+    opacity: 0.8;
+}
+
+.agv-status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ========================================
+   AGV 狀態指示器
+   ======================================== */
+.agv-status-indicator {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #666;
+}
+
+.agv-status-indicator.online {
+    background-color: #48c774;
+    animation: pulse 2s infinite;
+}
+
+.agv-status-indicator.offline {
+    background-color: #f14668;
+}
+
+.agv-status-indicator.busy {
+    background-color: #ffdd57;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 currentColor;
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(0, 0, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+}
+
+/* ========================================
+   資訊網格佈局
+   ======================================== */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: #b0b0b0;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+}
+
+.info-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.info-value.value-battery {
+    color: #48c774;
+}
+
+.info-value.value-task {
+    color: #3298dc;
+}
+
+.info-value.value-position {
+    color: #00d2d3;
+}
+
+/* ========================================
+   觸控按鈕樣式
+   ======================================== */
+.button-large {
+    min-height: 60px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3298dc 0%, #2980b9 100%);
+    border: none;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.button-large:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 16px rgba(50, 152, 220, 0.4);
+}
+
+.button-large:active {
+    transform: scale(0.98);
+}
+
+.button-large::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.button-large:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+.button-disabled {
+    min-height: 60px;
+    font-size: 1.25rem;
+    border-radius: 12px;
+    background: #2a2a2a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+    cursor: not-allowed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ========================================
+   觸控動畫類別
+   ======================================== */
+.touched {
+    animation: touchResponse 0.6s ease-out;
+}
+
+@keyframes touchResponse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.95);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.touched::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    animation: touchGlow 0.6s ease-out;
+}
+
+@keyframes touchGlow {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/* ========================================
+   資料更新動畫
+   ======================================== */
+.data-update {
+    animation: dataFlash 0.5s ease;
+}
+
+@keyframes dataFlash {
+    0% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(50, 152, 220, 0.2);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* ========================================
+   載入動畫
+   ======================================== */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #3298dc;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ========================================
+   響應式網格佈局
+   ======================================== */
+.agv-grid {
+    display: grid;
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+/* 單欄佈局 (手機) */
+@media (max-width: 768px) {
+    .agv-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 雙欄佈局 (平板) */
+@media (min-width: 769px) and (max-width: 1023px) {
+    .agv-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* 三欄佈局 (桌面) */
+@media (min-width: 1024px) {
+    .agv-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 四欄佈局 (大螢幕) */
+@media (min-width: 1408px) {
+    .agv-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ========================================
+   Modal 深色樣式
+   ======================================== */
+.modal-card {
+    background: #1a1a1a;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.modal-card-head {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+}
+
+.modal-card-title {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.modal-card-body {
+    padding: 2rem;
+    background: #1a1a1a;
+    color: #b0b0b0;
+}
+
+.modal-card-foot {
+    background: #1a1a1a;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* ========================================
+   徽章和標記
+   ======================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge.is-success {
+    background: rgba(72, 199, 116, 0.2);
+    border-color: #48c774;
+    color: #48c774;
+}
+
+.badge.is-warning {
+    background: rgba(255, 221, 87, 0.2);
+    border-color: #ffdd57;
+    color: #ffdd57;
+}
+
+.badge.is-danger {
+    background: rgba(241, 70, 104, 0.2);
+    border-color: #f14668;
+    color: #f14668;
+}
+
+.badge.is-info {
+    background: rgba(50, 152, 220, 0.2);
+    border-color: #3298dc;
+    color: #3298dc;
+}

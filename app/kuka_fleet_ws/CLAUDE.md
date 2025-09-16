@@ -348,7 +348,7 @@ pkill -f kuka_fleet_adapter
 
 ### 與其他模組整合
 - **rcs_ws**: 使用 KukaFleetAdapter 進行 KUKA 車隊管理
-- **ai_wcs_ws**: 透過 KukaFleetAdapter 整合 KUKA 任務派發
+- **tafl_wcs_ws**: 透過 TAFL 流程自動化整合 KUKA 任務派發
 - **web_api_ws**: 提供 KUKA Fleet 狀態的 Web API 介面
 
 ### 外部系統依賴

@@ -85,7 +85,7 @@ variables:
   items: [1, 2, 3]
 flow:
   - for:
-      each: loop_var
+      as: loop_var
       in: "${items}"
       do:
         - set:
@@ -110,11 +110,11 @@ variables:
     - [3, 4]
 flow:
   - for:
-      each: row
+      as: row
       in: "${matrix}"
       do:
         - for:
-            each: item
+            as: item
             in: "${row}"
             do:
               - set:
@@ -133,17 +133,20 @@ variables:
   value: 1
 flow:
   - switch:
-      on: "${value}"
+      expression: "${value}"
       cases:
-        1:
-          - set:
-              result: "one"
-        2:
-          - set:
-              result: "two"
-      default:
-        - set:
-            result: "other"
+        - when: 1
+          do:
+            - set:
+                result: "one"
+        - when: 2
+          do:
+            - set:
+                result: "two"
+        - when: "default"
+          do:
+            - set:
+                result: "other"
         """
         program = self.parser.parse_string(yaml_content)
         is_valid = self.validator.validate(program)
@@ -205,12 +208,12 @@ flow:
         yaml_content = """
 flow:
   - query:
-      from: racks
+      target: locations
       where:
         status: "ready"
-      store_as: available_racks
+      as: available_locations
   - set:
-      first_rack: "${available_racks[0]}"
+      first_location: "${available_locations[0]}"
         """
         program = self.parser.parse_string(yaml_content)
         is_valid = self.validator.validate(program)
@@ -223,10 +226,10 @@ flow:
 flow:
   - create:
       target: task
-      params:
+      with:
         name: "Test Task"
         priority: 1
-      store_as: new_task
+      as: new_task
   - set:
       task_id: "${new_task.id}"
         """
@@ -242,15 +245,69 @@ variables:
   message: "Test notification"
 flow:
   - notify:
-      channel: log
-      message: "${message}"
       level: info
+      message: "${message}"
         """
         program = self.parser.parse_string(yaml_content)
         is_valid = self.validator.validate(program)
         
         self.assertTrue(is_valid)
         self.assertEqual(len(self.validator.get_errors()), 0)
+    
+    def test_check_statement_validation(self):
+        """Test check statement validation"""
+        yaml_content = """
+variables:
+  value: 10
+flow:
+  - check:
+      condition: "${value} > 5"
+      as: is_valid
+  - set:
+      result: "${is_valid}"
+        """
+        program = self.parser.parse_string(yaml_content)
+        is_valid = self.validator.validate(program)
+        
+        self.assertTrue(is_valid)
+        self.assertEqual(len(self.validator.get_errors()), 0)
+    
+    def test_update_statement_validation(self):
+        """Test update statement validation"""
+        yaml_content = """
+flow:
+  - update:
+      target: task
+      where:
+        id: 1
+      set:
+        status: "completed"
+        priority: 10
+        """
+        program = self.parser.parse_string(yaml_content)
+        is_valid = self.validator.validate(program)
+        
+        self.assertTrue(is_valid)
+        self.assertEqual(len(self.validator.get_errors()), 0)
+    
+    def test_stop_statement_validation(self):
+        """Test stop statement validation"""
+        yaml_content = """
+flow:
+  - set:
+      value: 1
+  - stop:
+      reason: "Early termination"
+  - set:
+      unreachable: "This won't execute"
+        """
+        program = self.parser.parse_string(yaml_content)
+        is_valid = self.validator.validate(program)
+        
+        self.assertTrue(is_valid)
+        # May have warning about unreachable code after stop
+        warnings = self.validator.get_warnings()
+        # Validator may or may not warn about unreachable code, both are acceptable
 
 
 if __name__ == '__main__':

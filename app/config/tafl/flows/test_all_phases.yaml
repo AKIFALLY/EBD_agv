@@ -1,0 +1,243 @@
+# TAFL All Phases Integration Test File
+# Tests all 4 phases of TAFL execution model working together
+# Created: 2025-09-15
+
+metadata:
+  id: test_all_phases
+  name: "Test All Phases Integration"
+  version: "1.0.0"
+  description: "Integration test for TAFL 4-phase execution model"
+  author: "TAFL Test Suite"
+  created_at: "2025-09-15"
+  tags: ["test", "integration", "4-phase"]
+
+# ========================================
+# PHASE 1: PRELOAD - Data Caching
+# ========================================
+preload:
+  # Preload available AGVs
+  available_agvs:
+    query:
+      target: agvs
+      where:
+        enable: 1
+  
+  # Preload work locations
+  work_locations:
+    query:
+      target: locations
+      limit: 5
+  
+  # Preload pending works
+  pending_works:
+    query:
+      target: works
+
+# ========================================
+# PHASE 2: RULES - Business Rules
+# ========================================
+rules:
+  # Dispatch rules
+  min_agvs_for_batch:
+    value: 2
+    description: "Minimum AGVs needed for batch dispatch"
+  
+  max_tasks_per_agv:
+    value: 3
+    description: "Maximum tasks per AGV"
+  
+  # Priority rules
+  priority_base:
+    value: 5
+    description: "Base priority for new tasks"
+  
+  priority_multiplier:
+    value: 1.5
+    description: "Priority multiplier for urgent tasks"
+  
+  urgent_threshold:
+    value: 7
+    description: "Priority threshold for urgent tasks"
+  
+  # Battery rules
+  min_battery_dispatch:
+    value: 30
+    description: "Minimum battery for dispatch"
+  
+  critical_battery:
+    value: 20
+    description: "Critical battery level"
+  
+  # Conditional rules
+  can_dispatch:
+    condition: "${agv_count >= rules.min_agvs_for_batch && all_batteries_ok}"
+    description: "Check if dispatch is possible"
+
+# ========================================
+# PHASE 3: VARIABLES - Initial State
+# ========================================
+variables:
+  # System state
+  system_ready: false
+  dispatch_mode: "manual"
+  
+  # Counters
+  task_counter: 0
+  dispatch_counter: 0
+  
+  # Calculated values (will be set in flow)
+  agv_count: 0
+  location_count: 0
+  work_count: 0
+  
+  # Flags
+  all_batteries_ok: false
+  urgent_mode: false
+
+# ========================================
+# PHASE 4: FLOW - Main Logic
+# ========================================
+flow:
+  # Step 1: Process preloaded data
+  - notify:
+      message: "🚀 Starting 4-Phase Integration Test"
+      level: info
+  
+  - set:
+      agv_count: "${len(available_agvs)}"
+  
+  - set:
+      location_count: "${len(work_locations)}"
+  
+  - set:
+      work_count: "${len(pending_works)}"
+  
+  - notify:
+      message: "📊 Preload Results: AGVs=${agv_count}, Locations=${location_count}, Works=${work_count}"
+      level: info
+  
+  # Step 2: Check battery levels using preloaded data
+  - set:
+      all_batteries_ok: true
+  
+  - for:
+      as: agv
+      in: "${available_agvs}"
+      do:
+        - if:
+            condition: "${agv.battery < rules.min_battery_dispatch}"
+            then:
+              - set:
+                  all_batteries_ok: false
+              - notify:
+                  message: "⚠️ AGV ${agv.name} battery too low: ${agv.battery}%"
+                  level: warning
+  
+  # Step 3: Apply business rules
+  - if:
+      condition: "${agv_count >= rules.min_agvs_for_batch}"
+      then:
+        - notify:
+            message: "✅ Sufficient AGVs for batch dispatch (${agv_count} >= ${rules.min_agvs_for_batch})"
+            level: info
+        - set:
+            system_ready: true
+      else:
+        - notify:
+            message: "❌ Insufficient AGVs for batch dispatch (${agv_count} < ${rules.min_agvs_for_batch})"
+            level: warning
+  
+  # Step 4: Calculate priority using rules
+  - set:
+      base_priority: "${rules.priority_base}"
+  
+  - set:
+      calculated_priority: "${base_priority * rules.priority_multiplier}"
+  
+  - if:
+      condition: "${calculated_priority >= rules.urgent_threshold}"
+      then:
+        - set:
+            urgent_mode: true
+        - notify:
+            message: "🔴 URGENT MODE: Priority ${calculated_priority} >= ${rules.urgent_threshold}"
+            level: warning
+  
+  # Step 5: Create tasks based on conditions
+  - if:
+      condition: "${system_ready && all_batteries_ok}"
+      then:
+        - set:
+            dispatch_mode: "automatic"
+        
+        - for:
+            as: work
+            in: "${pending_works}"
+            filter: "${task_counter < rules.max_tasks_per_agv}"
+            do:
+              - set:
+                  task_counter: "${task_counter + 1}"
+              
+              - notify:
+                  message: "📝 Creating task ${task_counter} for work ${work.name}"
+                  level: debug
+        
+        - set:
+            dispatch_counter: "${dispatch_counter + 1}"
+        
+        - notify:
+            message: "✅ Dispatch #${dispatch_counter} ready with ${task_counter} tasks"
+            level: info
+      else:
+        - notify:
+            message: "⏸️ System not ready for automatic dispatch"
+            level: warning
+  
+  # Step 6: Final integration check
+  - check:
+      condition: "${agv_count > 0 && location_count > 0 && work_count > 0 && dispatch_mode != 'manual'}"
+      as: integration_test_passed
+  
+  # Step 7: Summary report
+  - notify:
+      message: "="
+      level: info
+  
+  - notify:
+      message: "📊 4-PHASE INTEGRATION TEST SUMMARY"
+      level: info
+  
+  - notify:
+      message: "  Phase 1 (Preload): ✅ ${agv_count} AGVs, ${location_count} locations, ${work_count} works"
+      level: info
+  
+  - notify:
+      message: "  Phase 2 (Rules): ✅ ${len(rules)} rules loaded and applied"
+      level: info
+  
+  - notify:
+      message: "  Phase 3 (Variables): ✅ Initial state configured"
+      level: info
+  
+  - notify:
+      message: "  Phase 4 (Flow): ✅ Logic executed, ${task_counter} tasks created"
+      level: info
+  
+  - notify:
+      message: "  Integration Result: ${integration_test_passed ? '✅ PASSED' : '❌ FAILED'}"
+      level: info
+  
+  - notify:
+      message: "  System Status: ${dispatch_mode} mode, urgent=${urgent_mode}"
+      level: info
+  
+  - notify:
+      message: "="
+      level: info
+  
+  # Step 8: Stop if test passed
+  - if:
+      condition: "${integration_test_passed}"
+      then:
+        - stop:
+            reason: "All 4 phases integration test completed successfully"

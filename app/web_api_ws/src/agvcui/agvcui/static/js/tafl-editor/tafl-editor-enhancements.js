@@ -8,14 +8,12 @@ export class TAFLEditorEnhancements {
         this.taflEditor = taflEditor || window.taflEditor;
         this.shortcuts = {
             'Ctrl+S': { action: 'save', description: 'Save Flow' },
-            'Ctrl+N': { action: 'new', description: 'New Flow' },
-            'Ctrl+D': { action: 'duplicate', description: 'Duplicate Card' },
             'Delete': { action: 'delete', description: 'Delete Selected Card' },
             // 'Ctrl+Z': { action: 'undo', description: 'Undo' },  // TODO: Implement undo functionality
             // 'Ctrl+Y': { action: 'redo', description: 'Redo' },  // TODO: Implement redo functionality
             'Ctrl+A': { action: 'selectAll', description: 'Select All Cards' },
             'Escape': { action: 'deselect', description: 'Deselect' },
-            'F2': { action: 'rename', description: 'Rename Flow' },
+            'F2': { action: 'rename', description: 'Edit Flow ID' },
             '?': { action: 'showHelp', description: 'Show Keyboard Shortcuts' }
         };
         
@@ -24,10 +22,13 @@ export class TAFLEditorEnhancements {
     }
     
     init() {
+        console.log('🚀 TAFLEditorEnhancements initializing...');
         this.bindKeyboardEvents();
         this.createHelpPanel();
         this.createShortcutIndicators();
         this.createShortcutHintBox();
+        // Removed fixButtonIcons - not needed, icons are already in HTML
+        console.log('✅ TAFLEditorEnhancements initialized successfully!');
     }
     
     bindKeyboardEvents() {
@@ -81,23 +82,10 @@ export class TAFLEditorEnhancements {
                 if (saveBtn) saveBtn.click();
                 break;
                 
-            case 'new':
-                // Trigger new button click
-                const newBtn = document.querySelector('.tafl-toolbar .button:has(.fa-plus)');
-                if (newBtn) newBtn.click();
-                break;
-                
             case 'delete':
                 // Delete selected card
                 if (this.taflEditor && this.taflEditor.selectedCard) {
                     this.taflEditor.deleteCard(this.taflEditor.selectedCard);
-                }
-                break;
-                
-            case 'duplicate':
-                // Duplicate selected card
-                if (this.taflEditor && this.taflEditor.selectedCard) {
-                    this.duplicateCard();
                 }
                 break;
                 
@@ -119,11 +107,11 @@ export class TAFLEditorEnhancements {
                 break;
                 
             case 'rename':
-                // Focus on flow name input
-                const nameInput = document.querySelector('input[placeholder="Flow Name"]');
-                if (nameInput) {
-                    nameInput.focus();
-                    nameInput.select();
+                // Focus on flow ID input
+                const idInput = document.getElementById('flow-id');
+                if (idInput) {
+                    idInput.focus();
+                    idInput.select();
                 }
                 break;
                 
@@ -146,22 +134,6 @@ export class TAFLEditorEnhancements {
         }
     }
     
-    duplicateCard() {
-        if (!this.taflEditor || !this.taflEditor.selectedCard) return;
-        
-        const selectedCard = this.taflEditor.selectedCard;
-        const cardData = this.taflEditor.getCardData(selectedCard);
-        
-        if (cardData) {
-            // Create duplicate with new ID
-            const duplicateData = JSON.parse(JSON.stringify(cardData));
-            duplicateData.id = this.taflEditor.generateId();
-            
-            // Add to flow
-            this.taflEditor.addCardFromData(duplicateData);
-            this.showToast('Card duplicated');
-        }
-    }
     
     createHelpPanel() {
         const helpPanel = document.createElement('div');
@@ -254,6 +226,7 @@ export class TAFLEditorEnhancements {
     }
     
     createShortcutHintBox() {
+        console.log('📦 Creating keyboard hint box...');
         // Create fixed position hint box in bottom-left corner
         const hintBox = document.createElement('div');
         hintBox.id = 'keyboard-hint-box';
@@ -268,10 +241,17 @@ export class TAFLEditorEnhancements {
         `;
         
         document.body.appendChild(hintBox);
+        console.log('✅ Keyboard hint box created and added to DOM');
+        console.log('Hint box element:', hintBox);
         
         // Make the hint box clickable to open help
-        hintBox.addEventListener('click', () => this.toggleHelp());
+        hintBox.addEventListener('click', () => {
+            console.log('🖱️ Hint box clicked');
+            this.toggleHelp();
+        });
     }
+    
+    // Removed fixButtonIcons - not needed, HTML already has icons
     
     showToast(message, type = 'info') {
         // Remove existing toast
@@ -369,12 +349,19 @@ style.textContent = `
         gap: 8px;
     }
     
+    .keyboard-hint-box .hint-text {
+        color: #fff;
+    }
+    
     .keyboard-hint-box .icon {
         color: #3273dc;
     }
     
     .keyboard-hint-box kbd {
         margin: 0 3px;
+        color: #333 !important;
+        background: #f4f4f4 !important;
+        border: 1px solid #ccc !important;
     }
 `;
 
@@ -383,6 +370,11 @@ export function injectEnhancementsStyles() {
     if (!document.getElementById('tafl-enhancements-styles')) {
         style.id = 'tafl-enhancements-styles';
         document.head.appendChild(style);
+        console.log('✅ TAFL Enhancements styles injected successfully!');
+        console.log('Injected style element:', style);
+        console.log('Style content preview:', style.textContent.substring(0, 200) + '...');
+    } else {
+        console.log('⚠️ TAFL Enhancements styles already exist');
     }
 }
 

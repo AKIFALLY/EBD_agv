@@ -1,0 +1,118 @@
+metadata:
+  id: test_query_verb
+  name: Test Query Verb
+  version: "1.1.2"
+  description: Test query verb functionality with various scenarios
+  created_at: '2025-01-15T09:45:00'
+  updated_at: '2025-01-15T09:45:00'
+
+variables:
+  max_results: 5
+  target_status: 1
+
+flow:
+  # Test 1: Basic query with limit
+  - set:
+      test_section: "Test 1: Basic query with limit"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - query:
+      target: "locations"
+      limit: "${max_results}"
+      as: "location_list"
+  
+  - notify:
+      message: "Queried ${len(location_list)} locations"
+      level: info
+  
+  # Test 2: Query with where conditions
+  - set:
+      test_section: "Test 2: Query with where conditions"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - query:
+      target: "racks"
+      where:
+        status_id: "${target_status}"
+      as: "active_racks"
+  
+  - notify:
+      message: "Found ${len(active_racks)} racks with status ${target_status}"
+      level: info
+  
+  # Test 3: Query with multiple conditions
+  - set:
+      test_section: "Test 3: Query with multiple conditions"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - query:
+      target: "tasks"
+      where:
+        status_id: 1
+        priority: 5
+      limit: 10
+      as: "priority_tasks"
+  
+  - notify:
+      message: "Found ${len(priority_tasks)} high priority active tasks"
+      level: info
+  
+  # Test 4: Query with ordering (if supported)
+  - set:
+      test_section: "Test 4: Query with ordering"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - query:
+      target: "works"
+      order: "id"
+      limit: 3
+      as: "ordered_works"
+  
+  - notify:
+      message: "Retrieved ${len(ordered_works)} works in order"
+      level: info
+  
+  # Test 5: Query all without conditions
+  - set:
+      test_section: "Test 5: Query all without conditions"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - query:
+      target: "locations"
+      as: "all_locations"
+  
+  - notify:
+      message: "Total locations in database: ${len(all_locations)}"
+      level: info
+  
+  # Test 6: Use query results in condition
+  - if:
+      condition: "${len(all_locations) > 10}"
+      then:
+        - notify:
+            message: "✅ System has sufficient locations (${len(all_locations)})"
+            level: info
+      else:
+        - notify:
+            message: "⚠️ System has limited locations (${len(all_locations)})"
+            level: warning
+  
+  # Final summary
+  - notify:
+      message: "Query verb test completed successfully"
+      level: info

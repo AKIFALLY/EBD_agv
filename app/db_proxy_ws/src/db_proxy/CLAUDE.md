@@ -50,7 +50,7 @@ ros2 service call /rack_query db_proxy_interfaces/srv/RackQuery "query_type: 'ge
 # 檢查 ConnectionPoolManager 狀態
 python3 -c "
 from db_proxy.connection_pool_manager import ConnectionPoolManager
-pool = ConnectionPoolManager('postgresql://postgres:postgres@postgres_container:5432/postgres')
+pool = ConnectionPoolManager('postgresql+psycopg2://agvc:password@192.168.100.254/agvc')
 print('連線池初始化成功')
 "
 

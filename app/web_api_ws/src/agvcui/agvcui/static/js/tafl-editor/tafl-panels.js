@@ -9,6 +9,7 @@ class TAFLPanels {
     constructor() {
         this.panels = {};
         this.codeMirrorEditors = []; // Store CodeMirror instances for refresh
+        this.isUpdatingPanel = false; // Flag to prevent infinite update loops
         this.initPanels();
         this.bindStoreEvents();
     }
@@ -113,12 +114,17 @@ class TAFLPanels {
     // ============================================
     
     updateVariablesPanel() {
+        // Prevent infinite update loops
+        if (this.isUpdatingPanel) return;
+        
         const container = this.panels.variables;
         console.log('📌 updateVariablesPanel called, container:', container);
         if (!container) {
             console.error('❌ Variables panel container not found!');
             return;
         }
+        
+        this.isUpdatingPanel = true;
         
         // Clear old variable editors from the array
         const oldEditors = container.querySelectorAll('.CodeMirror');
@@ -175,19 +181,11 @@ class TAFLPanels {
         const item = document.createElement('div');
         item.className = 'box';
         
-        // 顯示變數名稱和值的預覽
+        // 標題應該永遠顯示變數名稱 (key)，而不是值 (value)
         const heading = document.createElement('p');
         heading.className = 'heading';
-        // 顯示變數名稱和值的簡短預覽
-        let valuePreview = '';
-        if (typeof value === 'object') {
-            valuePreview = ' = {...}';
-        } else if (typeof value === 'string') {
-            valuePreview = ` = "${value.substring(0, 20)}${value.length > 20 ? '...' : ''}"`;
-        } else {
-            valuePreview = ` = ${String(value).substring(0, 30)}`;
-        }
-        heading.textContent = `${key}${valuePreview}`;
+        // 直接使用 key 作為標題
+        heading.textContent = key;
         item.appendChild(heading);
         
         // 創建 CodeMirror 編輯器容器
@@ -201,8 +199,17 @@ class TAFLPanels {
         item.appendChild(control);
         
         // 立即初始化 CodeMirror 編輯器
+        // 直接顯示原始值，不自動加引號
+        let editorValue;
+        if (typeof value === 'object' && value !== null) {
+            editorValue = JSON.stringify(value, null, 2);
+        } else {
+            // 所有其他類型都直接轉換為字串，不自動加引號
+            editorValue = String(value);
+        }
+        
         const editor = CodeMirror(editorContainer, {
-            value: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value),
+            value: editorValue,
             mode: 'application/json',
             theme: 'default',
             lineNumbers: true,
@@ -214,12 +221,33 @@ class TAFLPanels {
             extraKeys: {
                 'Ctrl-Space': 'autocomplete',
                 'Ctrl-F': function(cm) {
-                    // 格式化 JSON
+                    // 格式化值
                     try {
-                        const parsed = JSON.parse(cm.getValue());
-                        cm.setValue(JSON.stringify(parsed, null, 2));
+                        const currentValue = cm.getValue().trim();
+                        let parsed;
+                        
+                        // 嘗試解析為 JSON
+                        try {
+                            parsed = JSON.parse(currentValue);
+                        } catch {
+                            // 如果不是有效的 JSON，嘗試將其視為原始值
+                            if (currentValue === 'true' || currentValue === 'false') {
+                                parsed = currentValue === 'true';
+                            } else if (!isNaN(currentValue) && currentValue !== '') {
+                                parsed = Number(currentValue);
+                            } else {
+                                parsed = currentValue;
+                            }
+                        }
+                        
+                        // 格式化值
+                        if (typeof parsed === 'object' && parsed !== null) {
+                            cm.setValue(JSON.stringify(parsed, null, 2));
+                        } else {
+                            cm.setValue(JSON.stringify(parsed));
+                        }
                     } catch (e) {
-                        console.error('Invalid JSON:', e);
+                        console.error('Cannot format value:', e);
                     }
                 }
             }
@@ -231,10 +259,10 @@ class TAFLPanels {
         // Store editor reference for later refresh
         this.codeMirrorEditors.push(editor);
         
-        // Force refresh after a small delay to ensure proper rendering
-        setTimeout(() => {
+        // Force refresh after rendering to ensure proper display
+        requestAnimationFrame(() => {
             editor.refresh();
-        }, 100);
+        });
         
         // 使用防抖來避免頻繁更新
         let updateTimeout = null;
@@ -277,16 +305,8 @@ class TAFLPanels {
                     variables[key] = parsedValue;
                     taflFlowStore.updateVariables(variables);
                     
-                    // 更新標題預覽
-                    let valuePreview = '';
-                    if (typeof parsedValue === 'object') {
-                        valuePreview = ' = {...}';
-                    } else if (typeof parsedValue === 'string') {
-                        valuePreview = ` = "${parsedValue.substring(0, 20)}${parsedValue.length > 20 ? '...' : ''}"`;
-                    } else {
-                        valuePreview = ` = ${String(parsedValue).substring(0, 30)}`;
-                    }
-                    heading.textContent = `${key}${valuePreview}`;
+                    // 不更新標題 - 標題應該保持為變數名稱（key）
+                    // heading.textContent 不應該在這裡被更新
                 } catch (error) {
                     console.error('Error updating variable:', error);
                 }
@@ -315,10 +335,34 @@ class TAFLPanels {
         formatBtn.onclick = () => {
             if (item.cmEditor) {
                 try {
-                    const parsed = JSON.parse(item.cmEditor.getValue());
-                    item.cmEditor.setValue(JSON.stringify(parsed, null, 2));
+                    const currentValue = item.cmEditor.getValue().trim();
+                    let parsed;
+                    
+                    // 嘗試解析為 JSON
+                    try {
+                        parsed = JSON.parse(currentValue);
+                    } catch {
+                        // 如果不是有效的 JSON，嘗試將其視為原始值
+                        // 數字、布林值或字串
+                        if (currentValue === 'true' || currentValue === 'false') {
+                            parsed = currentValue === 'true';
+                        } else if (!isNaN(currentValue) && currentValue !== '') {
+                            parsed = Number(currentValue);
+                        } else {
+                            // 將其視為字串
+                            parsed = currentValue;
+                        }
+                    }
+                    
+                    // 格式化值
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        item.cmEditor.setValue(JSON.stringify(parsed, null, 2));
+                    } else {
+                        // 對於原始值，轉換為 JSON 字串表示
+                        item.cmEditor.setValue(JSON.stringify(parsed));
+                    }
                 } catch (e) {
-                    console.error('Cannot format invalid JSON');
+                    console.error('Cannot format value:', e);
                 }
             }
         };
@@ -418,6 +462,9 @@ class TAFLPanels {
                 });
             }
         }
+        
+        // Reset the flag after update is complete
+        this.isUpdatingPanel = false;
     }
     
     // ============================================
@@ -425,8 +472,13 @@ class TAFLPanels {
     // ============================================
     
     updateRulesPanel() {
+        // Prevent infinite update loops
+        if (this.isUpdatingPanel) return;
+        
         const container = this.panels.rules;
         if (!container) return;
+        
+        this.isUpdatingPanel = true;
         
         // Clear old rule editors from the array
         const oldEditors = container.querySelectorAll('.CodeMirror');
@@ -467,6 +519,9 @@ class TAFLPanels {
         });
         
         // Add Rule button is now in HTML and bound in initPanels()
+        
+        // Reset the flag after update is complete
+        this.isUpdatingPanel = false;
     }
     
     createRuleItem(key, value) {
@@ -474,33 +529,11 @@ class TAFLPanels {
         const item = document.createElement('div');
         item.className = 'box';
         
-        // 不顯示無意義的索引，改為顯示規則內容預覽
+        // 標題應該永遠顯示規則名稱 (key)，而不是值 (value)
         const heading = document.createElement('p');
         heading.className = 'heading';
-        // 檢查是否為數字 key（陣列索引）
-        const isNumericKey = /^\d+$/.test(key);
-        let title = 'Rule';
-        
-        if (value && typeof value === 'object') {
-            if (value.name) {
-                title = value.name;
-            } else if (value.description) {
-                title = value.description;
-            } else if (value.condition) {
-                // 顯示條件的簡短版本
-                title = `When: ${String(value.condition).substring(0, 30)}...`;
-            } else if (!isNumericKey) {
-                // 只有非數字 key 才顯示 key
-                title = key;
-            }
-        } else if (typeof value === 'string') {
-            // 如果規則是字符串，顯示前30個字符
-            title = value.substring(0, 30) + (value.length > 30 ? '...' : '');
-        } else if (!isNumericKey) {
-            // 只有非數字 key 才顯示 key
-            title = key;
-        }
-        heading.textContent = title;
+        // 直接使用 key 作為標題
+        heading.textContent = key;
         item.appendChild(heading);
         
         // 創建 CodeMirror 編輯器容器
@@ -514,8 +547,17 @@ class TAFLPanels {
         item.appendChild(control);
         
         // 立即初始化 CodeMirror 編輯器
+        // 直接顯示原始值，不自動加引號
+        let editorValue;
+        if (typeof value === 'object' && value !== null) {
+            editorValue = JSON.stringify(value, null, 2);
+        } else {
+            // 所有其他類型都直接轉換為字串，不自動加引號
+            editorValue = String(value);
+        }
+        
         const editor = CodeMirror(editorContainer, {
-            value: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value),
+            value: editorValue,
             mode: 'application/json',
             theme: 'default',
             lineNumbers: true,
@@ -527,12 +569,33 @@ class TAFLPanels {
             extraKeys: {
                 'Ctrl-Space': 'autocomplete',
                 'Ctrl-F': function(cm) {
-                    // 格式化 JSON
+                    // 格式化值
                     try {
-                        const parsed = JSON.parse(cm.getValue());
-                        cm.setValue(JSON.stringify(parsed, null, 2));
+                        const currentValue = cm.getValue().trim();
+                        let parsed;
+                        
+                        // 嘗試解析為 JSON
+                        try {
+                            parsed = JSON.parse(currentValue);
+                        } catch {
+                            // 如果不是有效的 JSON，嘗試將其視為原始值
+                            if (currentValue === 'true' || currentValue === 'false') {
+                                parsed = currentValue === 'true';
+                            } else if (!isNaN(currentValue) && currentValue !== '') {
+                                parsed = Number(currentValue);
+                            } else {
+                                parsed = currentValue;
+                            }
+                        }
+                        
+                        // 格式化值
+                        if (typeof parsed === 'object' && parsed !== null) {
+                            cm.setValue(JSON.stringify(parsed, null, 2));
+                        } else {
+                            cm.setValue(JSON.stringify(parsed));
+                        }
                     } catch (e) {
-                        console.error('Invalid JSON:', e);
+                        console.error('Cannot format value:', e);
                     }
                 }
             }
@@ -544,10 +607,10 @@ class TAFLPanels {
         // Store editor reference for later refresh
         this.codeMirrorEditors.push(editor);
         
-        // Force refresh after a small delay to ensure proper rendering
-        setTimeout(() => {
+        // Force refresh after rendering to ensure proper display
+        requestAnimationFrame(() => {
             editor.refresh();
-        }, 100);
+        });
         
         // 使用防抖來避免頻繁更新
         let updateTimeout = null;
@@ -591,24 +654,8 @@ class TAFLPanels {
                     flow.rules[key] = parsedValue;
                     taflFlowStore.updateFlow(flow);
                     
-                    // 更新標題
-                    let title = key + ': ';
-                    if (parsedValue && typeof parsedValue === 'object') {
-                        if (parsedValue.name) {
-                            title += parsedValue.name;
-                        } else if (parsedValue.description) {
-                            title += parsedValue.description;
-                        } else if (parsedValue.condition) {
-                            title += `When ${String(parsedValue.condition).substring(0, 30)}...`;
-                        } else {
-                            title += '{...}';
-                        }
-                    } else if (typeof parsedValue === 'string') {
-                        title += parsedValue.substring(0, 30) + (parsedValue.length > 30 ? '...' : '');
-                    } else {
-                        title += String(parsedValue);
-                    }
-                    heading.textContent = title;
+                    // 不更新標題 - 標題應該保持為規則名稱（key）
+                    // heading.textContent 不應該在這裡被更新
                 } catch (error) {
                     console.error('Error updating rule:', error);
                 }
@@ -637,10 +684,34 @@ class TAFLPanels {
         formatBtn.onclick = () => {
             if (item.cmEditor) {
                 try {
-                    const parsed = JSON.parse(item.cmEditor.getValue());
-                    item.cmEditor.setValue(JSON.stringify(parsed, null, 2));
+                    const currentValue = item.cmEditor.getValue().trim();
+                    let parsed;
+                    
+                    // 嘗試解析為 JSON
+                    try {
+                        parsed = JSON.parse(currentValue);
+                    } catch {
+                        // 如果不是有效的 JSON，嘗試將其視為原始值
+                        // 數字、布林值或字串
+                        if (currentValue === 'true' || currentValue === 'false') {
+                            parsed = currentValue === 'true';
+                        } else if (!isNaN(currentValue) && currentValue !== '') {
+                            parsed = Number(currentValue);
+                        } else {
+                            // 將其視為字串
+                            parsed = currentValue;
+                        }
+                    }
+                    
+                    // 格式化值
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        item.cmEditor.setValue(JSON.stringify(parsed, null, 2));
+                    } else {
+                        // 對於原始值，轉換為 JSON 字串表示
+                        item.cmEditor.setValue(JSON.stringify(parsed));
+                    }
                 } catch (e) {
-                    console.error('Cannot format invalid JSON');
+                    console.error('Cannot format value:', e);
                 }
             }
         };
@@ -690,8 +761,13 @@ class TAFLPanels {
     // ============================================
     
     updatePreloadPanel() {
+        // Prevent infinite update loops
+        if (this.isUpdatingPanel) return;
+        
         const container = this.panels.preload;
         if (!container) return;
+        
+        this.isUpdatingPanel = true;
         
         // Clear old preload editors from the array
         // Find and destroy old preload editors
@@ -731,47 +807,20 @@ class TAFLPanels {
         });
         
         // Add Preload button is now in HTML and bound in initPanels()
+        
+        // Reset the flag after update is complete
+        this.isUpdatingPanel = false;
     }
     
     createPreloadItem(key, value) {
         const item = document.createElement('div');
         item.className = 'box';
         
-        // 顯示 key 作為標題，並加上資料的補充資訊
+        // 標題應該永遠顯示預載項目名稱 (key)，而不是值 (value)
         const heading = document.createElement('p');
         heading.className = 'heading';
-        // 檢查是否為數字 key（陣列索引）
-        const isNumericKey = /^\d+$/.test(key);
-        let title = 'Preload Data';
-        
-        if (value && typeof value === 'object') {
-            if (value.name) {
-                // 有 name 屬性時直接使用
-                title = value.name;
-            } else if (value.id && !isNumericKey) {
-                // 有 id 但 key 不是數字時顯示
-                title = `${key} (ID: ${value.id})`;
-            } else if (value.id) {
-                // 只有 id
-                title = `Data (ID: ${value.id})`;
-            } else if (value.type && !isNumericKey) {
-                // 有 type 但 key 不是數字時顯示
-                title = `${key} (${value.type})`;
-            } else if (value.type) {
-                // 只有 type
-                title = `Data (${value.type})`;
-            } else if (value.query && value.query.target) {
-                // 如果有 query.target，用它作為標題
-                title = `Query: ${value.query.target}`;
-            } else if (!isNumericKey) {
-                // 非數字 key 才使用 key 作為標題
-                title = key;
-            }
-        } else if (!isNumericKey) {
-            // 非數字 key 直接使用
-            title = key;
-        }
-        heading.textContent = title;
+        // 直接使用 key 作為標題
+        heading.textContent = key;
         item.appendChild(heading);
         
         // 創建 CodeMirror 編輯器容器
@@ -856,18 +905,8 @@ class TAFLPanels {
                         taflFlowStore.setFlow(flow);
                         taflFlowStore.markDirty();
                         
-                        // 更新標題
-                        let newTitle = key;
-                        if (newValue && typeof newValue === 'object') {
-                            if (newValue.name) {
-                                newTitle = `${key}: ${newValue.name}`;
-                            } else if (newValue.id) {
-                                newTitle = `${key} (ID: ${newValue.id})`;
-                            } else if (newValue.type) {
-                                newTitle = `${key} (${newValue.type})`;
-                            }
-                        }
-                        heading.textContent = newTitle;
+                        // 不更新標題 - 標題應該保持為預載項目名稱（key）
+                        // heading.textContent 不應該在這裡被更新
                     }
                 } catch (error) {
                     // JSON 無效時不更新
@@ -897,10 +936,34 @@ class TAFLPanels {
         formatBtn.onclick = () => {
             if (item.cmEditor) {
                 try {
-                    const parsed = JSON.parse(item.cmEditor.getValue());
-                    item.cmEditor.setValue(JSON.stringify(parsed, null, 2));
+                    const currentValue = item.cmEditor.getValue().trim();
+                    let parsed;
+                    
+                    // 嘗試解析為 JSON
+                    try {
+                        parsed = JSON.parse(currentValue);
+                    } catch {
+                        // 如果不是有效的 JSON，嘗試將其視為原始值
+                        // 數字、布林值或字串
+                        if (currentValue === 'true' || currentValue === 'false') {
+                            parsed = currentValue === 'true';
+                        } else if (!isNaN(currentValue) && currentValue !== '') {
+                            parsed = Number(currentValue);
+                        } else {
+                            // 將其視為字串
+                            parsed = currentValue;
+                        }
+                    }
+                    
+                    // 格式化值
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        item.cmEditor.setValue(JSON.stringify(parsed, null, 2));
+                    } else {
+                        // 對於原始值，轉換為 JSON 字串表示
+                        item.cmEditor.setValue(JSON.stringify(parsed));
+                    }
                 } catch (e) {
-                    console.error('Cannot format invalid JSON');
+                    console.error('Cannot format value:', e);
                 }
             }
         };
@@ -1354,6 +1417,154 @@ class TAFLPanels {
             const firstInput = modal.querySelector('input, select, textarea');
             if (firstInput) firstInput.focus();
         }, 100);
+        
+        return modal;
+    }
+    
+    /**
+     * Show confirmation modal for flow deletion
+     * @param {string} flowId - Flow ID to delete
+     * @param {string} flowName - Flow name for display
+     * @param {Function} onConfirm - Callback when user confirms deletion
+     */
+    showDeleteFlowModal(flowId, flowName, onConfirm) {
+        const modal = document.createElement('div');
+        modal.className = 'modal is-active';
+        modal.innerHTML = `
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Delete Flow</p>
+                    <button class="delete" aria-label="close"></button>
+                </header>
+                <section class="modal-card-body">
+                    <div class="notification is-warning">
+                        <p class="has-text-weight-semibold">Are you sure you want to delete this flow?</p>
+                        <p class="mt-2">Flow: <strong>${flowName}</strong></p>
+                        <p class="mt-2 has-text-danger">This action cannot be undone!</p>
+                    </div>
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button is-danger modal-delete-btn">
+                        <span class="icon">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span>Delete</span>
+                    </button>
+                    <button class="button modal-cancel-btn">Cancel</button>
+                </footer>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Event handlers
+        const closeModal = () => modal.remove();
+        
+        // Close on background click
+        modal.querySelector('.modal-background').addEventListener('click', closeModal);
+        
+        // Close on X button click
+        modal.querySelector('.delete').addEventListener('click', closeModal);
+        
+        // Close on Cancel button click
+        modal.querySelector('.modal-cancel-btn').addEventListener('click', closeModal);
+        
+        // Handle Delete button click
+        modal.querySelector('.modal-delete-btn').addEventListener('click', async () => {
+            closeModal();
+            if (onConfirm) {
+                await onConfirm(flowId);
+            }
+        });
+        
+        // ESC key to close
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+        
+        return modal;
+    }
+    
+    /**
+     * Show confirmation modal for flow execution
+     * @param {string} mode - Execution mode ('real' or 'simulation')
+     * @param {string} flowName - Flow name for display
+     * @param {Function} onConfirm - Callback when user confirms execution
+     */
+    showExecuteFlowModal(mode, flowName, onConfirm) {
+        const isRealExecution = mode === 'real';
+        const modal = document.createElement('div');
+        modal.className = 'modal is-active';
+        modal.innerHTML = `
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">${isRealExecution ? 'Execute Flow' : 'Test Run Flow'}</p>
+                    <button class="delete" aria-label="close"></button>
+                </header>
+                <section class="modal-card-body">
+                    <div class="notification ${isRealExecution ? 'is-warning' : 'is-info'}">
+                        <p class="has-text-weight-semibold">
+                            ${isRealExecution ? '⚠️ Real System Execution' : '🧪 Simulation Mode'}
+                        </p>
+                        <p class="mt-2">Flow: <strong>${flowName}</strong></p>
+                        <p class="mt-2">
+                            ${isRealExecution 
+                                ? 'This will execute on the real system and affect actual resources.' 
+                                : 'This is a simulation only. No real resources will be affected.'}
+                        </p>
+                        ${isRealExecution 
+                            ? '<p class="mt-2 has-text-danger">Are you sure you want to proceed?</p>' 
+                            : ''}
+                    </div>
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button ${isRealExecution ? 'is-danger' : 'is-primary'} modal-execute-btn">
+                        <span class="icon">
+                            <i class="fas ${isRealExecution ? 'fa-play-circle' : 'fa-vial'}"></i>
+                        </span>
+                        <span>${isRealExecution ? 'Execute' : 'Test Run'}</span>
+                    </button>
+                    <button class="button modal-cancel-btn">Cancel</button>
+                </footer>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Event handlers
+        const closeModal = () => modal.remove();
+        
+        // Close on background click
+        modal.querySelector('.modal-background').addEventListener('click', closeModal);
+        
+        // Close on X button click
+        modal.querySelector('.delete').addEventListener('click', closeModal);
+        
+        // Close on Cancel button click
+        modal.querySelector('.modal-cancel-btn').addEventListener('click', closeModal);
+        
+        // Handle Execute/Test Run button click
+        modal.querySelector('.modal-execute-btn').addEventListener('click', async () => {
+            closeModal();
+            if (onConfirm) {
+                await onConfirm();
+            }
+        });
+        
+        // ESC key to close
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
         
         return modal;
     }

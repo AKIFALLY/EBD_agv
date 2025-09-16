@@ -1,0 +1,70 @@
+# TAFL v1.1.2 If Conditions Test
+# 測試 if/then/else 條件判斷
+
+metadata:
+  enabled: false  # 暫時停用測試流程
+  id: test_if_conditions
+  name: "Test If Conditions"
+  version: "1.1.2"
+  description: "Test if statement with then/else branches"
+
+variables:
+  counter: 5
+  flag: false
+  result1: ""
+  result2: ""
+  result3: ""
+
+flow:
+  # Test 1: Simple true condition
+  - if:
+      condition: ${counter} > 0
+      then:
+        - set:
+            result1: "Counter is positive"
+        - notify:
+            level: info
+            message: "Test 1 THEN branch: counter=${counter} is positive"
+      else:
+        - set:
+            result1: "Counter is not positive"
+        - notify:
+            level: warning
+            message: "Test 1 ELSE branch: counter=${counter} is not positive"
+  
+  # Test 2: Simple false condition
+  - if:
+      condition: ${flag}
+      then:
+        - set:
+            result2: "Flag is true"
+        - notify:
+            level: info
+            message: "Test 2 THEN branch: flag is true"
+      else:
+        - set:
+            result2: "Flag is false"
+        - notify:
+            level: info
+            message: "Test 2 ELSE branch: flag is false"
+  
+  # Test 3: Another simple condition
+  - if:
+      condition: ${counter} == 5
+      then:
+        - set:
+            result3: "Counter equals 5"
+        - notify:
+            level: info
+            message: "Test 3 THEN: counter equals 5"
+      else:
+        - set:
+            result3: "Counter does not equal 5"
+        - notify:
+            level: warning
+            message: "Test 3 ELSE: counter does not equal 5"
+  
+  # Final summary
+  - notify:
+      level: info
+      message: "Final Results: result1='${result1}', result2='${result2}', result3='${result3}'"

@@ -1,0 +1,32 @@
+# TAFL v1.1.2 Switch Default Test
+# 測試 default 作為 cases 內的 when: "default" 格式
+
+metadata:
+  enabled: false  # 暫時停用測試流程
+  id: test_switch_default
+  name: "Test Switch Default Format"
+  version: "1.1.2"
+  description: "Test v1.1.2 switch statement with default in cases"
+
+variables:
+  test_value: "unknown"
+
+flow:
+  - switch:
+      expression: ${test_value}
+      cases:
+        - when: "A"
+          do:
+            - set:
+                result: "Got A"
+        - when: "B"
+          do:
+            - set:
+                result: "Got B"
+        - when: "default"
+          do:
+            - set:
+                result: "Got default value"
+            - notify:
+                level: info
+                message: "Handled default case: ${test_value}"

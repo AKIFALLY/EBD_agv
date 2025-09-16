@@ -1,0 +1,191 @@
+metadata:
+  id: test_set_verb
+  name: Test Set Verb
+  version: "1.1.2"
+  description: Test set verb functionality with various data types and expressions
+  created_at: '2025-01-15T09:46:00'
+  updated_at: '2025-01-15T09:46:00'
+
+variables:
+  initial_value: 100
+  multiplier: 2
+
+flow:
+  # Test 1: Basic set with literal value
+  - set:
+      test_section: "Test 1: Basic set with literal"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      simple_string: "Hello TAFL"
+  
+  - set:
+      simple_number: 42
+  
+  - set:
+      simple_boolean: true
+  
+  - notify:
+      message: "Set values: string='${simple_string}', number=${simple_number}, boolean=${simple_boolean}"
+      level: info
+  
+  # Test 2: Set with variable reference
+  - set:
+      test_section: "Test 2: Set with variable reference"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      copied_value: "${initial_value}"
+  
+  - set:
+      derived_value: "${copied_value}"
+  
+  - notify:
+      message: "Copied ${initial_value} -> ${copied_value} -> ${derived_value}"
+      level: info
+  
+  # Test 3: Set with mathematical expressions
+  - set:
+      test_section: "Test 3: Set with mathematical expressions"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      calculated: "${initial_value * multiplier}"
+  
+  - set:
+      sum_result: "${initial_value + calculated}"
+  
+  - set:
+      division_result: "${calculated / 4}"
+  
+  - notify:
+      message: "Calculations: ${initial_value} * ${multiplier} = ${calculated}, sum = ${sum_result}, division = ${division_result}"
+      level: info
+  
+  # Test 4: Set with arrays
+  - set:
+      test_section: "Test 4: Set with arrays"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      number_array: [1, 2, 3, 4, 5]
+  
+  - set:
+      string_array: ["apple", "banana", "cherry"]
+  
+  - set:
+      mixed_array: [1, "two", 3.14, true]
+  
+  - notify:
+      message: "Arrays created: numbers=${len(number_array)} items, strings=${len(string_array)} items"
+      level: info
+  
+  # Test 5: Set with objects/dictionaries
+  - set:
+      test_section: "Test 5: Set with objects"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      task_config:
+        id: 123
+        name: "Test Task"
+        priority: 5
+        enabled: true
+  
+  - notify:
+      message: "Created task config object with id=${task_config.id}"
+      level: info
+  
+  # Test 6: Set with string interpolation
+  - set:
+      test_section: "Test 6: String interpolation"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      greeting: "Hello"
+  
+  - set:
+      name: "TAFL"
+  
+  - set:
+      full_message: "${greeting}, ${name}! Value is ${initial_value}"
+  
+  - notify:
+      message: "Interpolated message: ${full_message}"
+      level: info
+  
+  # Test 7: Set with conditional expression
+  - set:
+      test_section: "Test 7: Conditional expressions"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      threshold: 50
+  
+  - set:
+      is_above_threshold: "${initial_value > threshold}"
+  
+  - set:
+      status_text: "${is_above_threshold ? 'HIGH' : 'LOW'}"
+  
+  - notify:
+      message: "Value ${initial_value} is ${status_text} (threshold: ${threshold})"
+      level: info
+  
+  # Test 8: Overwriting existing variables
+  - set:
+      test_section: "Test 8: Variable overwriting"
+  
+  - notify:
+      message: "Starting ${test_section}"
+      level: info
+  
+  - set:
+      counter: 1
+  
+  - notify:
+      message: "Initial counter: ${counter}"
+      level: debug
+  
+  - set:
+      counter: "${counter + 1}"
+  
+  - notify:
+      message: "Incremented counter: ${counter}"
+      level: debug
+  
+  - set:
+      counter: "${counter * 10}"
+  
+  - notify:
+      message: "Final counter: ${counter}"
+      level: info
+  
+  # Final summary
+  - set:
+      test_completed: true
+  
+  - notify:
+      message: "Set verb test completed: ${test_completed}"
+      level: info

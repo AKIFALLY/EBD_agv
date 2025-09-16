@@ -5,6 +5,92 @@ This document tracks updates to the TAFL specification based on implementation e
 
 ## Update History
 
+### 2025-09-11: TAFL v1.1.2 Syntax Standardization
+
+#### Background
+Based on the official TAFL specification in docs-ai and implementation consistency requirements, TAFL has been updated to v1.1.2 with syntax standardization for SWITCH and SET statements.
+
+#### Major Changes
+
+##### 1. SWITCH Statement - Default Case Format
+**Previous (v1.1.1)**:
+```yaml
+- switch:
+    on: <expression>
+    cases: <dict>
+    default: <statements>  # Separate key at same level
+```
+
+**New (v1.1.2)**:
+```yaml
+- switch:
+    expression: <expression>  # Use 'expression' not 'on'
+    cases:                    # Array format
+      - when: <value>
+        do: <statements>
+      - when: "default"       # Default as special case
+        do: <statements>
+```
+
+**Key Changes**:
+- Use `expression` key instead of `on`
+- Cases are now an array, not a dictionary
+- Default is `when: "default"` within cases array
+- Default must be placed at the end of cases
+- More consistent with overall switch structure
+
+##### 2. SET Statement - Format Restriction
+**Previous (v1.1.x)**:
+```yaml
+# Two formats were supported
+- set: variable = value        # String format
+- set:                         # Object format
+    variable: value
+```
+
+**New (v1.1.2)**:
+```yaml
+# Only object format allowed
+- set:
+    variable: value
+# Or multiple variables
+- set:
+    var1: value1
+    var2: value2
+```
+
+**Key Changes**:
+- String format `"variable = value"` no longer supported
+- Only object/dictionary format allowed
+- Ensures consistency and clarity
+- Eliminates parsing ambiguities
+
+#### Implementation Status
+- ✅ Parser updated (parser.py line 329-334 for switch, 473-482 for set)
+- ✅ Validator updated with v1.1.2 requirements
+- ✅ Example flows updated (complete_v11_example.yaml)
+- ✅ Test flows validated
+- ✅ **Backward compatibility removed** (2025-09-11): Parser now only accepts v1.1.2 format
+
+#### Migration Guide
+For existing TAFL flows:
+
+1. **Update SWITCH statements**:
+   - Change `on:` to `expression:`
+   - Convert cases from dictionary to array format
+   - Move `default:` into cases as `when: "default"`
+
+2. **Update SET statements**:
+   - Convert any `set: "var = value"` to `set: {var: value}`
+   - Use multi-line YAML for better readability
+
+#### Rationale
+- **Consistency**: All verbs now use consistent syntax patterns
+- **Clarity**: Clearer structure reduces confusion
+- **YAML Best Practices**: Better alignment with YAML conventions
+- **Parser Simplification**: Reduces special cases in parser
+- **Editor Support**: Easier for TAFL Editor to generate correct syntax
+
 ### 2025-08-21: TAFL v1.1 Major Update - Preload and Rules Integration
 
 #### Background

@@ -1,3 +1,5 @@
+/* AGVUI Bulma 擴展樣式 - 與 OPUI 一致的設計語言 */
+
 .button {
     --bulma-button-border-width: 0px !important;
     --bulma-button-outer-shadow-a: 0.05 !important;
@@ -13,4 +15,107 @@
 
 .hidden {
     display: none !important;
+}
+
+/* 連線狀態圖示樣式 */
+.mdi-wifi.is-connected {
+    color: #48c774 !important;
+    /* 綠色 - 已連線 */
+}
+
+.mdi-wifi.is-disconnected {
+    color: #f14668 !important;
+    /* 紅色 - 已斷線 */
+}
+
+/* 防止文字選取（觸控優化） */
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 觸控回饋動畫 */
+.touch-feedback {
+    transition: transform 0.1s ease;
+}
+
+.touch-feedback:active {
+    transform: scale(0.95);
+}
+
+/* 即時資料更新動畫 */
+.data-updated {
+    animation: highlightUpdate 0.5s ease;
+}
+
+@keyframes highlightUpdate {
+    0% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(50, 152, 220, 0.3);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* 狀態指示器基礎樣式 */
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.status-indicator.online {
+    background-color: #48c774;
+    animation: statusPulse 2s infinite;
+}
+
+.status-indicator.offline {
+    background-color: #f14668;
+}
+
+.status-indicator.busy {
+    background-color: #ffdd57;
+    animation: statusPulse 1.5s infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* 改進的標籤樣式 */
+.tag.is-rounded {
+    min-width: 60px;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* 大型按鈕觸控優化 */
+.button.is-large-touch {
+    min-height: 48px;
+    min-width: 120px;
+    font-size: 1.125rem;
+}
+
+/* 響應式間距調整 */
+@media (max-width: 768px) {
+    .section {
+        padding: 1.5rem 1rem;
+    }
+    
+    .button {
+        min-height: 44px;
+    }
 }

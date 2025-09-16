@@ -4,15 +4,21 @@
 
 {% block extra_head %}
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/font-awesome.all.min.css">
     <!-- CodeMirror for YAML editing -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/lint.min.css">
+    <link rel="stylesheet" href="/static/css/codemirror.min.css">
+    <!-- Light themes -->
+    <link rel="stylesheet" href="/static/css/codemirror-theme-idea.min.css">
+    <link rel="stylesheet" href="/static/css/codemirror-theme-eclipse.min.css">
+    <link rel="stylesheet" href="/static/css/codemirror-theme-xq-light.min.css">
+    <link rel="stylesheet" href="/static/css/codemirror-theme-neat.min.css">
+    <!-- Dark theme (keep for option) -->
+    <link rel="stylesheet" href="/static/css/codemirror-theme-material.min.css">
+    <link rel="stylesheet" href="/static/css/codemirror-foldgutter.min.css">
+    <link rel="stylesheet" href="/static/css/codemirror-lint.min.css">
     <!-- TAFL Editor CSS -->
-    <link rel="stylesheet" href="/static/css/tafl-editor.css?v=1756315632">
-    <link rel="stylesheet" href="/static/css/tafl-panels.css?v=1.0">
+    <link rel="stylesheet" href="/static/css/tafl-editor.css">
+    <link rel="stylesheet" href="/static/css/tafl-panels.css">
 {% endblock %}
 
 {% block content %}
@@ -83,11 +89,19 @@
                             </button>
                         </p>
                         <p class="control">
-                            <button class="button is-info" id="execute-btn" data-tooltip="Test run the flow">
+                            <button class="button is-info" id="test-run-btn" data-tooltip="Test run the flow in simulation mode">
+                                <span class="icon">
+                                    <i class="fas fa-flask"></i>
+                                </span>
+                                <span>Test Run</span>
+                            </button>
+                        </p>
+                        <p class="control">
+                            <button class="button is-warning" id="execute-btn" data-tooltip="Execute the flow on real system">
                                 <span class="icon">
                                     <i class="fas fa-play"></i>
                                 </span>
-                                <span>Test Run</span>
+                                <span>Execute</span>
                             </button>
                         </p>
                     </div>
@@ -111,14 +125,14 @@
                 
                 <div class="panel-block">
                     <div class="field is-fullwidth">
-                        <label class="label is-small">Flow ID</label>
+                        <label class="label is-small">Flow ID (檔名)</label>
                         <input class="input is-small" type="text" id="flow-id" placeholder="example_001">
                     </div>
                 </div>
                 
                 <div class="panel-block">
                     <div class="field is-fullwidth">
-                        <label class="label is-small">Flow Name</label>
+                        <label class="label is-small">Flow Name (流程名稱)</label>
                         <input class="input is-small" type="text" id="flow-name" placeholder="Enter flow name">
                     </div>
                 </div>
@@ -134,6 +148,19 @@
                     <div class="field is-fullwidth">
                         <label class="label is-small">Description</label>
                         <textarea class="textarea is-small" id="flow-description" placeholder="Flow description" rows="2"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Enabled checkbox -->
+                <div class="panel-block">
+                    <div class="field is-fullwidth">
+                        <div class="control">
+                            <label class="checkbox">
+                                <input type="checkbox" id="flow-enabled" checked>
+                                <strong>Enabled (啟用)</strong>
+                            </label>
+                            <p class="help">Enable this flow for execution by TAFL WCS</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -320,12 +347,12 @@
                             <span>Variables</span>
                         </a>
                     </li>
-                    <li data-tab="validation">
-                        <a data-tooltip="Validation">
+                    <li data-tab="results">
+                        <a data-tooltip="Validation & Execution Results">
                             <span class="icon">
-                                <i class="fas fa-check-circle"></i>
+                                <i class="fas fa-clipboard-check"></i>
                             </span>
-                            <span>Validation</span>
+                            <span>Results</span>
                         </a>
                     </li>
                 </ul>
@@ -425,14 +452,66 @@
                 </div>
             </div>
             
-            <!-- Validation Panel -->
-            <div id="validation-panel" class="properties-content" style="display: none;">
-                <div class="validation-results" id="validation-results">
-                    <div class="has-text-centered">
-                        <span class="icon is-large has-text-grey-light">
-                            <i class="far fa-check-circle fa-3x"></i>
-                        </span>
-                        <p class="has-text-grey">Click 'Validate' to check your flow</p>
+            <!-- Results Panel (Validation & Execution) -->
+            <div id="results-panel" class="properties-content" style="display: none;">
+                <div class="results-container">
+                    <!-- Result Type Indicator -->
+                    <div class="result-mode mb-3" id="result-mode">
+                        <span class="tag is-light">No results yet</span>
+                    </div>
+                    
+                    <!-- Results Summary -->
+                    <div class="results-summary" id="results-summary">
+                        <div class="has-text-centered">
+                            <span class="icon is-large has-text-grey-light">
+                                <i class="fas fa-clipboard-check fa-3x"></i>
+                            </span>
+                            <p class="has-text-grey">Results will appear here</p>
+                            <p class="has-text-grey is-size-7 mt-2">
+                                <strong>Validate:</strong> Check TAFL syntax and structure<br>
+                                <strong>Test Run:</strong> Simulate execution without affecting real systems<br>
+                                <strong>Execute:</strong> Run on real system and affect actual resources
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Validation Results -->
+                    <div class="validation-results mt-4" id="validation-results" style="display: none;">
+                        <h5 class="title is-6">
+                            <span class="icon is-small">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
+                            <span>Validation Results</span>
+                        </h5>
+                        <div class="validation-content">
+                            <!-- Validation messages will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Execution Log -->
+                    <div class="execution-log mt-4" id="execution-log" style="display: none;">
+                        <h5 class="title is-6">
+                            <span class="icon is-small">
+                                <i class="fas fa-list-ol"></i>
+                            </span>
+                            <span>Execution Steps</span>
+                        </h5>
+                        <div class="execution-log-content">
+                            <!-- Log entries will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Variable Changes -->
+                    <div class="variable-changes mt-4" id="variable-changes" style="display: none;">
+                        <h5 class="title is-6">
+                            <span class="icon is-small">
+                                <i class="fas fa-code"></i>
+                            </span>
+                            <span>Variable Changes</span>
+                        </h5>
+                        <div class="variable-changes-content">
+                            <!-- Variable updates will be shown here -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -451,14 +530,14 @@
         </header>
         <section class="modal-card-body">
             <div class="field">
-                <label class="label">Flow ID</label>
+                <label class="label">Flow ID (檔名)</label>
                 <div class="control">
                     <input class="input" type="text" id="save-flow-id" placeholder="unique-flow-id">
                 </div>
                 <p class="help">Unique identifier for the flow (no spaces or special characters)</p>
             </div>
             <div class="field">
-                <label class="label">Flow Name</label>
+                <label class="label">Flow Name (流程名稱)</label>
                 <div class="control">
                     <input class="input" type="text" id="save-flow-name" placeholder="Flow Display Name">
                 </div>
@@ -472,25 +551,28 @@
         </section>
         <footer class="modal-card-foot">
             <button class="button is-primary" id="confirm-save-btn">Save Flow</button>
-            <button class="button">Cancel</button>
+            <button class="button cancel-btn">Cancel</button>
         </footer>
     </div>
 </div>
 
 <!-- Scripts -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+<script src="/static/js/lib/codemirror.min.js"></script>
+<script src="/static/js/lib/codemirror-mode-yaml.min.js"></script>
 <!-- js-yaml for YAML parsing and generation -->
-<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/indent-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/lint.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/json-lint.min.js"></script>
-<!-- All modules are now imported directly in tafl-editor.js -->
-<script type="module" src="/static/js/tafl-editor.js?t=1756314400"></script>
+<script src="/static/js/lib/js-yaml.min.js"></script>
+<script src="/static/js/lib/codemirror-mode-javascript.min.js"></script>
+<script src="/static/js/lib/codemirror-fold-foldcode.min.js"></script>
+<script src="/static/js/lib/codemirror-fold-foldgutter.min.js"></script>
+<script src="/static/js/lib/codemirror-fold-indent.min.js"></script>
+<script src="/static/js/lib/codemirror-fold-brace.min.js"></script>
+<script src="/static/js/lib/codemirror-edit-matchbrackets.min.js"></script>
+<script src="/static/js/lib/codemirror-edit-closebrackets.min.js"></script>
+<script src="/static/js/lib/codemirror-lint.min.js"></script>
+<script src="/static/js/lib/jsonlint.min.js"></script>
+<script src="/static/js/lib/codemirror-lint-json.min.js"></script>
+<!-- Overlay mode addon for TAFL variable highlighting -->
+<script src="/static/js/lib/codemirror-mode-overlay.min.js"></script>
+<!-- All modules are now imported directly in tafl-editor.js using ES6 modules -->
+<script type="module" src="/static/js/tafl-editor.js"></script>
 {% endblock %}
