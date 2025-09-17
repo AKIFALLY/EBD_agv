@@ -357,7 +357,25 @@ class TAFLExecutorWrapper:
                             self._log_info(f"Preloaded {key}: {len(result) if isinstance(result, list) else 1} items")
                 
                 except Exception as e:
-                    self._log_error(f"Preload failed for {key}: {str(e)}")
+                    error_detail = str(e)
+                    # Enhance error message for common database errors
+                    if 'operator does not exist' in error_detail:
+                        # Extract the operator error for clarity
+                        if 'integer = boolean' in error_detail:
+                            error_detail = f"Type mismatch: boolean value used where integer expected. {error_detail}"
+                    elif 'column' in error_detail and 'does not exist' in error_detail:
+                        error_detail = f"Database column error: {error_detail}"
+
+                    self._log_error(f"Preload failed for {key}: {error_detail}")
+                    # Store error in context for debugging
+                    if self.current_context:
+                        if 'preload_errors' not in self.current_context.metadata:
+                            self.current_context.metadata['preload_errors'] = {}
+                        self.current_context.metadata['preload_errors'][key] = {
+                            'error': error_detail,
+                            'query': query_params if 'query_params' in locals() else None,
+                            'timestamp': datetime.now().isoformat()
+                        }
     
     def _process_rules(self, rules: Dict[str, Any]):
         """Phase 3: Process rule definitions (read-only)
@@ -691,13 +709,21 @@ class TAFLExecutorWrapper:
     
     def _create_error_response(self, error: str, details: Any, flow_id: str) -> Dict[str, Any]:
         """Create error response with detailed information"""
+        # Enhance error message for common issues
+        enhanced_error = error
+        if 'operator does not exist: integer = boolean' in error:
+            enhanced_error = "Type error: Boolean value used where integer expected (likely 'enable' field). Please check TAFL flow parameters."
+        elif 'Unknown error' in error or not error:
+            enhanced_error = "Execution failed with unknown error. Enable debug logging for details."
+
         response = {
             'status': 'failed',
             'flow_id': flow_id,
-            'error': error,
+            'error': enhanced_error,
+            'original_error': error if enhanced_error != error else None,
             'timestamp': datetime.now().isoformat()
         }
-        
+
         if details:
             response['details'] = details
         

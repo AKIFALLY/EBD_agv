@@ -37,7 +37,137 @@ class SortOrder(Enum):
     DESC = "desc"
 
 
-class TAFLDatabaseBridge:
+class BaseQueryMixin:
+    """Base mixin class for unified query filtering logic"""
+
+    def _apply_status_filters(self, model, status_model, conditions, kwargs):
+        """
+        Apply unified status filtering
+
+        Args:
+            model: The main model (e.g., Task, Carrier, Rack)
+            status_model: The status model (e.g., TaskStatus, CarrierStatus) or None
+            conditions: List to append conditions to
+            kwargs: Query parameters
+        """
+        # Single status ID
+        if 'status_id' in kwargs:
+            conditions.append(model.status_id == kwargs['status_id'])
+
+        # Multiple status IDs (include)
+        if 'status_id_in' in kwargs:
+            status_ids = kwargs['status_id_in']
+            if isinstance(status_ids, list):
+                conditions.append(model.status_id.in_(status_ids))
+
+        # Single status ID (exclude)
+        if 'status_id_not' in kwargs:
+            conditions.append(model.status_id != kwargs['status_id_not'])
+
+        # Multiple status IDs (exclude)
+        if 'status_id_not_in' in kwargs:
+            status_ids = kwargs['status_id_not_in']
+            if isinstance(status_ids, list):
+                conditions.append(~model.status_id.in_(status_ids))
+
+        # Status name filters (if status model exists)
+        if status_model:
+            # Single status name
+            if 'status' in kwargs:
+                conditions.append(status_model.name == kwargs['status'])
+
+            # Multiple status names (include)
+            if 'status_list' in kwargs:
+                status_list = kwargs['status_list']
+                if isinstance(status_list, list):
+                    conditions.append(status_model.name.in_(status_list))
+
+            # Single status name (exclude)
+            if 'status_not' in kwargs:
+                conditions.append(status_model.name != kwargs['status_not'])
+
+            # Multiple status names (exclude)
+            if 'status_not_list' in kwargs:
+                status_list = kwargs['status_not_list']
+                if isinstance(status_list, list):
+                    conditions.append(~status_model.name.in_(status_list))
+
+    def _apply_date_filters(self, model, conditions, kwargs):
+        """
+        Apply unified date filtering
+
+        Args:
+            model: The model with date fields
+            conditions: List to append conditions to
+            kwargs: Query parameters
+        """
+        # Created date filters
+        if 'created_after' in kwargs:
+            conditions.append(model.created_at >= kwargs['created_after'])
+        if 'created_before' in kwargs:
+            conditions.append(model.created_at <= kwargs['created_before'])
+
+        # Updated date filters (if model has updated_at)
+        if hasattr(model, 'updated_at'):
+            if 'updated_after' in kwargs:
+                conditions.append(model.updated_at >= kwargs['updated_after'])
+            if 'updated_before' in kwargs:
+                conditions.append(model.updated_at <= kwargs['updated_before'])
+
+    def _apply_pagination_and_sorting(self, query, model, kwargs):
+        """
+        Apply unified pagination and sorting
+
+        Args:
+            query: SQLAlchemy query
+            model: The model being queried
+            kwargs: Query parameters containing sort_by, sort_order, offset, limit
+
+        Returns:
+            Modified query with sorting and pagination applied
+        """
+        # Sorting
+        sort_by = kwargs.get('sort_by', 'id')
+        sort_order = kwargs.get('sort_order', 'asc')
+
+        if hasattr(model, sort_by):
+            sort_column = getattr(model, sort_by)
+            if sort_order == 'desc':
+                query = query.order_by(desc(sort_column))
+            else:
+                query = query.order_by(asc(sort_column))
+
+        # Pagination
+        if 'offset' in kwargs:
+            query = query.offset(kwargs['offset'])
+        if 'limit' in kwargs:
+            query = query.limit(kwargs['limit'])
+
+        return query
+
+    def _apply_numeric_range_filters(self, model, field_name, conditions, kwargs):
+        """
+        Apply numeric range filters (min/max)
+
+        Args:
+            model: The model being queried
+            field_name: Field name to filter on
+            conditions: List to append conditions to
+            kwargs: Query parameters
+        """
+        min_key = f"{field_name}_min"
+        max_key = f"{field_name}_max"
+
+        if min_key in kwargs and hasattr(model, field_name):
+            field = getattr(model, field_name)
+            conditions.append(field >= kwargs[min_key])
+
+        if max_key in kwargs and hasattr(model, field_name):
+            field = getattr(model, field_name)
+            conditions.append(field <= kwargs[max_key])
+
+
+class TAFLDatabaseBridge(BaseQueryMixin):
     """Enhanced database bridge for TAFL operations"""
     
     def __init__(self, database_url: str):
@@ -50,26 +180,43 @@ class TAFLDatabaseBridge:
     
     def query_locations(self, **kwargs) -> Dict[str, Any]:
         """
-        Query locations with enhanced filtering options
-        
-        Supported filters:
+        Query locations with unified enhanced filtering options
+
+        Basic filters:
+        - id: Filter by location ID
         - room_id: Filter by room ID
         - node_id: Filter by node ID
-        - status: Filter by status name
-        - area: Filter by area (new)
-        - type: Filter by location type (new)
-        - available_only: Only return available locations (new)
-        - occupied_only: Only return occupied locations (new)
-        - sort_by: Field to sort by (new)
-        - sort_order: 'asc' or 'desc' (new)
-        - offset: Pagination offset (new)
+        - type: Filter by location type (e.g., 'room_inlet', 'room_outlet')
+        - available_only: Only return available locations
+        - occupied_only: Only return occupied locations
+
+        Enhanced status filters (NEW - unified standard):
+        - status_id: Single status ID
+        - status_id_in: List of status IDs to include [1, 2, 3]
+        - status_id_not: Single status ID to exclude
+        - status_id_not_in: List of status IDs to exclude [7, 8]
+        - status: Single status name
+        - status_list: List of status names to include
+        - status_not: Single status name to exclude
+        - status_not_list: List of status names to exclude
+
+        Date filters:
+        - created_after: Created after date
+        - created_before: Created before date
+        - updated_after: Updated after date
+        - updated_before: Updated before date
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
         - limit: Maximum results
         """
         with self.pool_manager.get_session() as session:
             query = select(Location, LocationStatus).join(
                 LocationStatus, Location.location_status_id == LocationStatus.id, isouter=True
             )
-            
+
             # Apply filters
             conditions = []
 
@@ -80,42 +227,26 @@ class TAFLDatabaseBridge:
                 conditions.append(Location.room_id == kwargs['room_id'])
             if 'node_id' in kwargs:
                 conditions.append(Location.node_id == kwargs['node_id'])
-            if 'status' in kwargs:
-                conditions.append(LocationStatus.name == kwargs['status'])
-            
-            # New enhanced filters
-            # Note: Location model doesn't have 'area' field
             if 'type' in kwargs:
                 conditions.append(Location.type == kwargs['type'])
+
+            # Special filters
             if kwargs.get('available_only'):
                 conditions.append(LocationStatus.name == 'AVAILABLE')
             if kwargs.get('occupied_only'):
                 conditions.append(LocationStatus.name == 'OCCUPIED')
-            
-            # Multiple status filter
-            if 'status_list' in kwargs:
-                status_list = kwargs['status_list']
-                if isinstance(status_list, list):
-                    conditions.append(LocationStatus.name.in_(status_list))
-            
+
+            # Apply unified status filters
+            self._apply_status_filters(Location, LocationStatus, conditions, kwargs)
+
+            # Apply unified date filters
+            self._apply_date_filters(Location, conditions, kwargs)
+
             if conditions:
                 query = query.where(and_(*conditions))
-            
-            # Apply sorting
-            sort_by = kwargs.get('sort_by', 'id')
-            sort_order = kwargs.get('sort_order', 'asc')
-            
-            if hasattr(Location, sort_by):
-                if sort_order == 'desc':
-                    query = query.order_by(desc(getattr(Location, sort_by)))
-                else:
-                    query = query.order_by(asc(getattr(Location, sort_by)))
-            
-            # Apply pagination
-            if 'offset' in kwargs:
-                query = query.offset(kwargs['offset'])
-            if 'limit' in kwargs:
-                query = query.limit(kwargs['limit'])
+
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, Location, kwargs)
             
             results = session.exec(query).all()
             
@@ -146,84 +277,78 @@ class TAFLDatabaseBridge:
     
     def query_racks(self, **kwargs) -> Dict[str, Any]:
         """
-        Query racks with enhanced filtering options
-        
-        Supported filters:
+        Query racks with unified enhanced filtering options
+
+        Basic filters:
         - location_id: Filter by location ID
-        - status: Filter by status name
-        - status_list: Filter by multiple statuses (new)
         - is_carry: Filter by carry status
         - is_docked: Filter by docked status
-        - needs_rotation: Only racks needing rotation (new)
-        - completed_only: Only completed racks (new)
-        - in_progress_only: Only in-progress racks (new)
-        - created_after: Created after date (new)
-        - created_before: Created before date (new)
-        - sort_by: Field to sort by (new)
-        - sort_order: 'asc' or 'desc' (new)
-        - offset: Pagination offset (new)
+        - needs_rotation: Only racks needing rotation
+        - completed_only: Only completed racks
+        - in_progress_only: Only in-progress racks
+
+        Enhanced status filters (NEW - unified standard):
+        - status_id: Single status ID
+        - status_id_in: List of status IDs to include [1, 2, 3]
+        - status_id_not: Single status ID to exclude
+        - status_id_not_in: List of status IDs to exclude [7, 8]
+        - status: Single status name
+        - status_list: List of status names to include
+        - status_not: Single status name to exclude
+        - status_not_list: List of status names to exclude
+
+        Date filters:
+        - created_after: Created after date
+        - created_before: Created before date
+        - updated_after: Updated after date
+        - updated_before: Updated before date
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
         - limit: Maximum results
         """
         with self.pool_manager.get_session() as session:
             query = select(Rack, RackStatus).join(
                 RackStatus, Rack.status_id == RackStatus.id, isouter=True
             )
-            
+
             # Apply filters
             conditions = []
-            
+
             # Basic filters
             if 'location_id' in kwargs:
                 conditions.append(Rack.location_id == kwargs['location_id'])
-            if 'status' in kwargs:
-                conditions.append(RackStatus.name == kwargs['status'])
             if 'is_carry' in kwargs:
                 conditions.append(Rack.is_carry == kwargs['is_carry'])
             if 'is_docked' in kwargs:
                 conditions.append(Rack.is_docked == kwargs['is_docked'])
-            
-            # Enhanced filters
-            if 'status_list' in kwargs:
-                status_list = kwargs['status_list']
-                if isinstance(status_list, list):
-                    conditions.append(RackStatus.name.in_(status_list))
-            
+
+            # Special filters
             if kwargs.get('needs_rotation'):
                 conditions.append(and_(Rack.is_carry == True, Rack.is_docked == False))
-            
+
             if kwargs.get('completed_only'):
                 conditions.append(and_(Rack.is_carry == True, Rack.is_docked == True))
-            
+
             if kwargs.get('in_progress_only'):
                 conditions.append(or_(
                     and_(Rack.is_carry == True, Rack.is_docked == False),
                     and_(Rack.is_carry == False, Rack.is_docked == False)
                 ))
-            
-            # Date filters
-            if 'created_after' in kwargs:
-                conditions.append(Rack.created_at >= kwargs['created_after'])
-            if 'created_before' in kwargs:
-                conditions.append(Rack.created_at <= kwargs['created_before'])
-            
+
+            # Apply unified status filters
+            self._apply_status_filters(Rack, RackStatus, conditions, kwargs)
+
+            # Apply unified date filters
+            self._apply_date_filters(Rack, conditions, kwargs)
+
             if conditions:
                 query = query.where(and_(*conditions))
-            
-            # Apply sorting
-            sort_by = kwargs.get('sort_by', 'id')
-            sort_order = kwargs.get('sort_order', 'asc')
-            
-            if hasattr(Rack, sort_by):
-                if sort_order == 'desc':
-                    query = query.order_by(desc(getattr(Rack, sort_by)))
-                else:
-                    query = query.order_by(asc(getattr(Rack, sort_by)))
-            
-            # Apply pagination
-            if 'offset' in kwargs:
-                query = query.offset(kwargs['offset'])
-            if 'limit' in kwargs:
-                query = query.limit(kwargs['limit'])
+
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, Rack, kwargs)
             
             results = session.exec(query).all()
             
@@ -255,26 +380,41 @@ class TAFLDatabaseBridge:
     
     def query_tasks(self, **kwargs) -> Dict[str, Any]:
         """
-        Query tasks with enhanced filtering options
-        
-        Supported filters:
-        - rack_id: Filter by rack ID (for TAFL)
+        Query tasks with unified enhanced filtering options
+
+        Basic filters:
+        - rack_id: Filter by rack ID
         - work_id: Filter by work ID
-        - status: Filter by status name
-        - status_id: Filter by status ID (for TAFL)
-        - status_id_in: Filter by multiple status IDs (for TAFL)
-        - status_list: Filter by multiple statuses (new)
         - priority: Filter by priority
-        - priority_min: Minimum priority (new)
-        - priority_max: Maximum priority (new)
-        - assigned_to: Filter by assignee (new)
-        - created_after: Created after date (new)
-        - created_before: Created before date (new)
-        - updated_after: Updated after date (new)
-        - overdue_only: Only overdue tasks (new)
-        - pending_only: Only pending tasks (new)
+        - assigned_to: Filter by assignee
+
+        Enhanced status filters (NEW - unified standard):
+        - status_id: Single status ID
+        - status_id_in: List of status IDs to include [1, 2, 3]
+        - status_id_not: Single status ID to exclude
+        - status_id_not_in: List of status IDs to exclude [7, 8]
+        - status: Single status name
+        - status_list: List of status names to include
+        - status_not: Single status name to exclude
+        - status_not_list: List of status names to exclude
+
+        Date filters:
+        - created_after: Created after date
+        - created_before: Created before date
+        - updated_after: Updated after date
+        - updated_before: Updated before date
+
+        Numeric range filters:
+        - priority_min: Minimum priority
+        - priority_max: Maximum priority
+
+        Special filters:
+        - pending_only: Only pending tasks (PENDING, QUEUED)
+        - active_only: Only active tasks (IN_PROGRESS, RUNNING)
+
+        Pagination and sorting:
         - sort_by: Field to sort by (default: priority,created_at)
-        - sort_order: 'asc' or 'desc'
+        - sort_order: 'asc' or 'desc' (default: desc,asc)
         - offset: Pagination offset
         - limit: Maximum results
         """
@@ -285,54 +425,30 @@ class TAFLDatabaseBridge:
             
             # Apply filters
             conditions = []
-            
+
             # Basic filters
             if 'rack_id' in kwargs:
                 conditions.append(Task.rack_id == kwargs['rack_id'])
             if 'work_id' in kwargs:
                 conditions.append(Task.work_id == kwargs['work_id'])
-            if 'status' in kwargs:
-                conditions.append(TaskStatus.name == kwargs['status'])
-            if 'status_id' in kwargs:
-                conditions.append(Task.status_id == kwargs['status_id'])
-            if 'status_id_in' in kwargs:
-                status_ids = kwargs['status_id_in']
-                if isinstance(status_ids, list):
-                    conditions.append(Task.status_id.in_(status_ids))
             if 'priority' in kwargs:
                 conditions.append(Task.priority == kwargs['priority'])
-            
-            # Enhanced filters
-            if 'status_list' in kwargs:
-                status_list = kwargs['status_list']
-                if isinstance(status_list, list):
-                    conditions.append(TaskStatus.name.in_(status_list))
-            
-            if 'priority_min' in kwargs:
-                conditions.append(Task.priority >= kwargs['priority_min'])
-            if 'priority_max' in kwargs:
-                conditions.append(Task.priority <= kwargs['priority_max'])
-            
             if 'assigned_to' in kwargs:
                 conditions.append(Task.assigned_to == kwargs['assigned_to'])
-            
-            # Date filters
-            if 'created_after' in kwargs:
-                conditions.append(Task.created_at >= kwargs['created_after'])
-            if 'created_before' in kwargs:
-                conditions.append(Task.created_at <= kwargs['created_before'])
-            if 'updated_after' in kwargs:
-                conditions.append(Task.updated_at >= kwargs['updated_after'])
+
+            # Apply numeric range filters for priority
+            self._apply_numeric_range_filters(Task, 'priority', conditions, kwargs)
+
+            # Apply unified status filters
+            self._apply_status_filters(Task, TaskStatus, conditions, kwargs)
+
+            # Apply unified date filters
+            self._apply_date_filters(Task, conditions, kwargs)
             
             # Special filters
-            # Note: Task model doesn't have deadline field, skip overdue filter
-            if kwargs.get('overdue_only'):
-                # Skip overdue filter as Task doesn't have deadline field
-                pass
-            
             if kwargs.get('pending_only'):
                 conditions.append(TaskStatus.name.in_(['PENDING', 'QUEUED']))
-            
+
             if kwargs.get('active_only'):
                 conditions.append(TaskStatus.name.in_(['IN_PROGRESS', 'RUNNING']))
             
@@ -406,52 +522,52 @@ class TAFLDatabaseBridge:
     
     def query_works(self, **kwargs) -> Dict[str, Any]:
         """
-        Query works with enhanced filtering options
-        
-        Supported filters:
+        Query works with unified enhanced filtering options
+
+        Basic filters:
+        - id: Filter by work ID
         - work_code: Filter by work code
         - enabled: Filter by enabled status
-        - category: Filter by work category (new)
-        - created_after: Created after date (new)
-        - sort_by: Field to sort by (new)
-        - sort_order: 'asc' or 'desc' (new)
-        - offset: Pagination offset (new)
+        - category: Filter by work category
+
+        Date filters:
+        - created_after: Created after date
+        - created_before: Created before date
+        - updated_after: Updated after date (if Work has updated_at)
+        - updated_before: Updated before date (if Work has updated_at)
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
         - limit: Maximum results
+
+        Note: Work model doesn't have status_id field, only 'enabled' field
         """
         with self.pool_manager.get_session() as session:
             query = select(Work)
-            
+
             # Apply filters
             conditions = []
+
+            # Basic filters
+            if 'id' in kwargs:
+                conditions.append(Work.id == kwargs['id'])
             if 'work_code' in kwargs:
                 conditions.append(Work.work_code == kwargs['work_code'])
             if 'enabled' in kwargs:
                 conditions.append(Work.enabled == kwargs['enabled'])
             if 'category' in kwargs:
                 conditions.append(Work.category == kwargs['category'])
-            
-            # Date filter
-            if 'created_after' in kwargs:
-                conditions.append(Work.created_at >= kwargs['created_after'])
-            
+
+            # Apply unified date filters
+            self._apply_date_filters(Work, conditions, kwargs)
+
             if conditions:
                 query = query.where(and_(*conditions))
-            
-            # Apply sorting
-            sort_by = kwargs.get('sort_by', 'id')
-            sort_order = kwargs.get('sort_order', 'asc')
-            
-            if hasattr(Work, sort_by):
-                if sort_order == 'desc':
-                    query = query.order_by(desc(getattr(Work, sort_by)))
-                else:
-                    query = query.order_by(asc(getattr(Work, sort_by)))
-            
-            # Apply pagination
-            if 'offset' in kwargs:
-                query = query.offset(kwargs['offset'])
-            if 'limit' in kwargs:
-                query = query.limit(kwargs['limit'])
+
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, Work, kwargs)
             
             results = session.exec(query).all()
             
@@ -473,53 +589,128 @@ class TAFLDatabaseBridge:
             }
     
     def query_agvs(self, **kwargs) -> Dict[str, Any]:
-        """Query AGVs from database
-        
-        Args:
-            **kwargs: Query filters (e.g., status_id=1, enable=1)
-        
-        Returns:
-            List of AGV dictionaries
         """
-        try:
-            with self.pool_manager.get_session() as session:
-                # Import AGV model
-                from db_proxy.models.agvc_rcs import AGV
-                
-                # Build query
-                query = session.query(AGV)
-                
-                # Apply filters if provided
-                if kwargs:
-                    for key, value in kwargs.items():
-                        if hasattr(AGV, key):
-                            query = query.filter(getattr(AGV, key) == value)
-                
-                # Execute query
-                agvs = query.all()
-                
-                # Convert to dictionaries
-                result = []
-                for agv in agvs:
-                    result.append({
-                        'id': agv.id,
-                        'name': agv.name,
-                        'description': agv.description,
-                        'model': agv.model,
-                        'x': agv.x,
-                        'y': agv.y,
-                        'heading': agv.heading,
-                        'battery': agv.battery if agv.battery is not None else 0,  # Default to 0 if None
-                        'last_node_id': agv.last_node_id,
-                        'enable': agv.enable,
-                        'status_id': agv.status_id
-                    })
-                
-                return result
-                
-        except Exception as e:
-            logger.error(f"Failed to query AGVs: {str(e)}")
-            return []
+        Query AGVs with unified enhanced filtering options
+
+        Basic filters:
+        - id: Filter by AGV ID
+        - name: Filter by AGV name
+        - model: Filter by AGV model
+        - enable: Filter by enable status (0/1)
+        - last_node_id: Filter by last node ID
+
+        Enhanced status filters (NEW - unified standard):
+        - status_id: Single status ID
+        - status_id_in: List of status IDs to include [1, 2, 3]
+        - status_id_not: Single status ID to exclude
+        - status_id_not_in: List of status IDs to exclude [7, 8]
+
+        Location filters:
+        - x_min/x_max: X coordinate range
+        - y_min/y_max: Y coordinate range
+        - battery_min/battery_max: Battery level range
+
+        Date filters:
+        - created_after: Created after date
+        - created_before: Created before date
+        - updated_after: Updated after date
+        - updated_before: Updated before date
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
+        - limit: Maximum results
+
+        Returns:
+            Dictionary with 'data', 'total', pagination info
+        """
+        with self.pool_manager.get_session() as session:
+            # Import models
+            from db_proxy.models.agvc_rcs import AGV
+            from db_proxy.models.agv_status import AgvStatus
+
+            # Build modern query with optional status join
+            query = select(AGV, AgvStatus).join(
+                AgvStatus, AGV.status_id == AgvStatus.id, isouter=True
+            )
+
+            # Apply filters
+            conditions = []
+
+            # Basic filters
+            if 'id' in kwargs:
+                conditions.append(AGV.id == kwargs['id'])
+            if 'name' in kwargs:
+                conditions.append(AGV.name == kwargs['name'])
+            if 'model' in kwargs:
+                conditions.append(AGV.model == kwargs['model'])
+            if 'enable' in kwargs:
+                # Handle boolean to integer conversion for enable field
+                # PostgreSQL expects integer (0/1) but TAFL may pass boolean
+                enable_value = kwargs['enable']
+                if isinstance(enable_value, bool):
+                    enable_value = 1 if enable_value else 0
+                elif isinstance(enable_value, str):
+                    # Handle string representations of boolean
+                    enable_value = 1 if enable_value.lower() in ['true', '1', 'yes'] else 0
+                conditions.append(AGV.enable == enable_value)
+            if 'last_node_id' in kwargs:
+                conditions.append(AGV.last_node_id == kwargs['last_node_id'])
+
+            # Apply unified status filters
+            self._apply_status_filters(AGV, AgvStatus, conditions, kwargs)
+
+            # Apply numeric range filters
+            self._apply_numeric_range_filters(AGV, 'x', conditions, kwargs)
+            self._apply_numeric_range_filters(AGV, 'y', conditions, kwargs)
+            self._apply_numeric_range_filters(AGV, 'battery', conditions, kwargs)
+
+            # Apply unified date filters
+            self._apply_date_filters(AGV, conditions, kwargs)
+
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, AGV, kwargs)
+
+            results = session.exec(query).all()
+
+            # Get total count
+            count_query = select(AGV, AgvStatus).join(
+                AgvStatus, AGV.status_id == AgvStatus.id, isouter=True
+            )
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_count = len(session.exec(count_query).all())
+
+            # Convert to dictionaries with enhanced info
+            agvs = []
+            for agv, status in results:
+                agv_dict = {
+                    'id': agv.id,
+                    'name': agv.name,
+                    'description': agv.description,
+                    'model': agv.model,
+                    'x': agv.x,
+                    'y': agv.y,
+                    'heading': agv.heading,
+                    'battery': agv.battery if agv.battery is not None else 0,
+                    'last_node_id': agv.last_node_id,
+                    'enable': agv.enable,
+                    'status_id': agv.status_id,
+                    'status': status.name if status else 'UNKNOWN'
+                }
+                agvs.append(agv_dict)
+
+            return {
+                'data': agvs,
+                'total': total_count,
+                'offset': kwargs.get('offset', 0),
+                'limit': kwargs.get('limit', None),
+                'has_more': total_count > (kwargs.get('offset', 0) + len(agvs))
+            }
     
     # ========== Enhanced Check Functions ==========
     
@@ -1079,19 +1270,34 @@ class TAFLDatabaseBridge:
     
     def query_carriers(self, **kwargs) -> Dict[str, Any]:
         """
-        Query carriers with enhanced filtering options
+        Query carriers with unified enhanced filtering options
 
-        Supported filters:
+        Basic filters:
         - rack_id: Filter by rack ID
         - room_id: Filter by room ID
-        - status_id: Filter by status ID
         - rack_index: Filter by specific rack index
         - rack_index_min: Minimum rack index (for side filtering)
         - rack_index_max: Maximum rack index (for side filtering)
         - port_id: Filter by port ID
         - product_name: Filter by associated product name (requires JOIN)
+
+        Enhanced status filters (NEW - unified standard):
+        - status_id: Single status ID
+        - status_id_in: List of status IDs to include [1, 2, 3]
+        - status_id_not: Single status ID to exclude
+        - status_id_not_in: List of status IDs to exclude [7, 8]
+        - status: Single status name
+        - status_list: List of status names to include
+        - status_not: Single status name to exclude
+        - status_not_list: List of status names to exclude
+
+        Date filters:
         - created_after: Created after date
         - created_before: Created before date
+        - updated_after: Updated after date
+        - updated_before: Updated before date
+
+        Pagination and sorting:
         - sort_by: Field to sort by (default: id)
         - sort_order: 'asc' or 'desc'
         - offset: Pagination offset
@@ -1110,43 +1316,25 @@ class TAFLDatabaseBridge:
                 conditions.append(Carrier.rack_id == kwargs['rack_id'])
             if 'room_id' in kwargs:
                 conditions.append(Carrier.room_id == kwargs['room_id'])
-            if 'status_id' in kwargs:
-                conditions.append(Carrier.status_id == kwargs['status_id'])
             if 'rack_index' in kwargs:
                 conditions.append(Carrier.rack_index == kwargs['rack_index'])
             if 'port_id' in kwargs:
                 conditions.append(Carrier.port_id == kwargs['port_id'])
 
             # Rack index range filters (for A-side/B-side filtering)
-            if 'rack_index_min' in kwargs:
-                conditions.append(Carrier.rack_index >= kwargs['rack_index_min'])
-            if 'rack_index_max' in kwargs:
-                conditions.append(Carrier.rack_index <= kwargs['rack_index_max'])
+            self._apply_numeric_range_filters(Carrier, 'rack_index', conditions, kwargs)
 
-            # Date filters
-            if 'created_after' in kwargs:
-                conditions.append(Carrier.created_at >= kwargs['created_after'])
-            if 'created_before' in kwargs:
-                conditions.append(Carrier.created_at <= kwargs['created_before'])
+            # Apply unified status filters
+            self._apply_status_filters(Carrier, CarrierStatus, conditions, kwargs)
+
+            # Apply unified date filters
+            self._apply_date_filters(Carrier, conditions, kwargs)
 
             if conditions:
                 query = query.where(and_(*conditions))
 
-            # Apply sorting
-            sort_by = kwargs.get('sort_by', 'id')
-            sort_order = kwargs.get('sort_order', 'asc')
-
-            if hasattr(Carrier, sort_by):
-                if sort_order == 'desc':
-                    query = query.order_by(desc(getattr(Carrier, sort_by)))
-                else:
-                    query = query.order_by(asc(getattr(Carrier, sort_by)))
-
-            # Apply pagination
-            if 'offset' in kwargs:
-                query = query.offset(kwargs['offset'])
-            if 'limit' in kwargs:
-                query = query.limit(kwargs['limit'])
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, Carrier, kwargs)
 
             results = session.exec(query).all()
 
