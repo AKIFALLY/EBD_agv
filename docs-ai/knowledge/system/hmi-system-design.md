@@ -348,6 +348,6 @@ curl -X POST "http://localhost:8002/api/hmi/remove_rack" \
 
 ## 🔗 交叉引用
 - OPUI 系統: `/app/web_api_ws/src/opui/CLAUDE.md`
-- 資料庫設計: @docs-ai/knowledge/agv-domain/wcs-database-design.md
-- Web 開發: @docs-ai/operations/development/web-development.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
+- 資料庫設計: docs-ai/knowledge/agv-domain/wcs-database-design.md
+- Web 開發: docs-ai/operations/development/web/web-development.md
+- 雙環境架構: docs-ai/context/system/dual-environment.md

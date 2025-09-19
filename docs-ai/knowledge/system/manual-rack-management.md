@@ -215,7 +215,7 @@ def add_rack_to_system(rack_id: str, location_id: int):
 - `remove_rack_from_system()`: 將 Rack 移出系統
 
 ## 🔗 相關文檔
-- 眼鏡生產業務流程: @docs-ai/knowledge/business/eyewear-production-process.md
-- WCS 系統設計: @docs-ai/knowledge/agv-domain/wcs-system-design.md
-- TAFL 語言規格: @docs-ai/knowledge/system/tafl-language-specification.md
-- 操作手冊: @docs-ai/operations/manual/rack-management-guide.md
+- 眼鏡生產業務流程: docs-ai/knowledge/business/eyewear-production-process.md
+- WCS 系統設計: docs-ai/knowledge/agv-domain/wcs-system-design.md
+- TAFL 語言規格: docs-ai/knowledge/system/tafl/tafl-language-specification.md
+- 操作手冊: docs-ai/operations/guides/rack-management-guide.md

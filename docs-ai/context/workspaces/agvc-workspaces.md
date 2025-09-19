@@ -7,8 +7,8 @@
 
 ## 📋 AGVC 工作空間架構
 
-### 工作空間總覽 (9個)
-AGVC 管理系統包含 9 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
+### 工作空間總覽 (10個)
+AGVC 管理系統包含 10 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
 
 ```
 AGVC 管理系統工作空間
@@ -16,7 +16,8 @@ AGVC 管理系統工作空間
 ├── db_proxy_ws/               # 資料庫代理服務
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-├── flow_wcs_ws/               # Linear Flow v2 WCS (唯一 WCS)
+├── flow_wcs_ws_old/           # [DEPRECATED] Linear Flow v2 WCS (已被 tafl_wcs_ws 取代)
+├── tafl_wcs_ws/               # TAFL WCS (目前使用的 WCS 系統)
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
 ├── keyence_plc_ws/            # Keyence PLC 通訊 (共用)
 ├── plc_proxy_ws/              # PLC 代理服務 (共用)
@@ -222,8 +223,11 @@ rcs_ws/src/
 - **KUKA 車隊整合**: 完整的 KUKA Fleet 管理和配置
 - **交通管制**: 交通區域控制和衝突避免
 
-### flow_wcs_ws/ - Linear Flow v2 WCS 系統
-**職責**: 唯一的 WCS 實作，基於 Linear Flow v2 格式的倉庫控制系統
+### flow_wcs_ws_old/ - [DEPRECATED] Linear Flow v2 WCS 系統
+**職責**: 舊的 WCS 實作，基於 Linear Flow v2 格式的倉庫控制系統（已被 tafl_wcs_ws 取代）
+
+### tafl_wcs_ws/ - TAFL WCS 系統
+**職責**: 目前使用的 WCS 實作，基於 TAFL (Task Automation Flow Language) 的倉庫控制系統
 
 #### 套件結構
 ```
@@ -293,10 +297,11 @@ echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
 #### AGVC 應用工作空間 (依序載入)
 7. **ecs_ws**: 設備控制系統
 8. **rcs_ws**: 機器人控制系統
-9. **flow_wcs_ws**: Linear Flow v2 WCS (唯一 WCS 實作)
-10. **web_api_ws**: Web API 和使用者介面
-11. **kuka_fleet_ws**: KUKA Fleet 外部整合
-12. **launch_ws**: AGVC 啟動編排服務
+9. **flow_wcs_ws_old**: [DEPRECATED] Linear Flow v2 WCS
+10. **tafl_wcs_ws**: TAFL WCS (目前使用的 WCS 實作)
+11. **web_api_ws**: Web API 和使用者介面
+12. **kuka_fleet_ws**: KUKA Fleet 外部整合
+13. **launch_ws**: AGVC 啟動編排服務
 
 ### 建置管理
 ```bash
@@ -339,7 +344,8 @@ start_wcs             # 啟動倉庫控制系統
 ### AGVC 專用應用工作空間 (6個)
 - **ecs_ws**: 設備控制系統
 - **rcs_ws**: 機器人控制系統 (車隊協調)
-- **flow_wcs_ws**: Linear Flow v2 WCS (唯一 WCS 實作)
+- **flow_wcs_ws_old**: [DEPRECATED] Linear Flow v2 WCS
+- **tafl_wcs_ws**: TAFL WCS (目前使用的 WCS 實作)
 - **web_api_ws**: Web API 和使用者介面
 - **kuka_fleet_ws**: KUKA Fleet 外部整合
 - **launch_ws**: AGVC 啟動編排
@@ -419,8 +425,7 @@ ROS 2 服務 → 控制系統 → AGV 車載系統
 - 跨站腳本攻擊防護
 
 ## 🔗 交叉引用
-- AGV 工作空間: @docs-ai/context/workspaces/agv-workspaces.md
-- 共用組件: @docs-ai/context/workspaces/shared-components.md
-- Web 開發: @docs-ai/operations/development/web-development.md
-- 資料庫操作: @docs-ai/operations/development/database-operations.md
-- 車隊管理: @docs-ai/knowledge/automation/fleet-coordination.md
+- AGV 工作空間: docs-ai/context/workspaces/agv-workspaces.md
+- Web 開發: docs-ai/operations/development/web/web-development.md
+- 資料庫操作: docs-ai/operations/development/database-operations.md
+- 車隊管理: docs-ai/knowledge/protocols/kuka-fleet-api.md

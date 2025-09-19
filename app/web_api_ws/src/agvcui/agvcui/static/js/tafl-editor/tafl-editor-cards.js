@@ -5,7 +5,6 @@
 
 import { taflFlowStore } from './tafl-editor-store.js';
 import taflNotifications from './tafl-editor-notifications.js';
-import taflEventBus from './tafl-event-bus.js';
 
 class TAFLEditorCards {
     constructor() {

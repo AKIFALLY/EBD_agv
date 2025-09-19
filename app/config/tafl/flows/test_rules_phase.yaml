@@ -4,6 +4,7 @@
 
 metadata:
   id: test_rules_phase
+  enabled: false
   name: "Test Rules Phase"
   version: "1.0.0"
   description: "Test RULES phase - business rules definition and access"

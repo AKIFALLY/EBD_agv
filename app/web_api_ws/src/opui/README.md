@@ -7,7 +7,7 @@ OPUI (Operator User Interface) 是一個基於 ROS2、FastAPI + Socket.IO 的即
 OPUI 負責提供操作員友善的 Web 介面，用於管理 AGV 任務調度、監控系統狀態，並與後端 RCS 系統協作完成自動化倉儲作業。
 
 ### 核心功能
-- 🚛 **AGV 任務管理**：叫車（call car）和派車（dispatch car）操作
+- 🚛 **AGV 任務管理**：加入料架（add rack）和派車（dispatch car）操作
 - 📊 **即時監控**：任務狀態、料架位置、機台狀態即時更新
 - 🏭 **多機台支援**：支援多個生產機台的並行操作
 - 📦 **料架管理**：料架分配、移動追蹤、狀態同步
@@ -236,7 +236,7 @@ opui/
 **主要事件處理**：
 - **連線管理**: `connect`, `disconnect`, `login`, `restore_client_by_id`
 - **資料同步**: `client_update`, `notify_products/machines/rooms/parking_list`
-- **AGV 操作**: `call_empty` (叫車), `dispatch_full` (派車)
+- **AGV 操作**: `add_rack` (加入料架), `dispatch_full` (派車)
 - **料架管理**: `add_rack`, `del_rack`
 - **任務控制**: `cancel_task`, `confirm_delivery`
 - **共用邏輯**: 統一的客戶端通知、資料格式化、會話處理
@@ -287,10 +287,11 @@ const appStore = createStore('opuiAppState', {
 
 ### 2. AGV 任務操作流程
 
-#### 叫車 (Call Car) 流程
+#### 加入料架 (Add Rack) 流程
 ```
-操作員點擊叫車 → 前端收集停車位資訊 → Socket 發送 call_empty 事件 →
-後端創建 Task 記錄 → 啟動任務監控 → 回應前端 → 更新 UI 狀態
+作業員手動搬運空rack到作業區 → 點擊「加入料架」按鈕 →
+從下拉選單選擇Rack編號 → Socket 發送 add_rack 事件 →
+後端記錄rack到停車格 → 回應前端 → 更新 UI 狀態
 ```
 
 #### 派車 (Dispatch Car) 流程
@@ -313,23 +314,26 @@ const appStore = createStore('opuiAppState', {
 
 ## 🚛 AGV 任務管理功能
 
-### 叫車 (Call Car) 功能
-**業務含義**: 呼叫 AGV 將料架運送到空的停車位
+### 加入料架 (Add Rack) 功能
+**業務含義**: 記錄作業員手動搬運的空rack到停車格
 
 **操作流程**:
-1. **前置條件**: 停車位為空，無料架
-2. **操作步驟**: 操作員點擊叫車按鈕
+1. **前置條件**: 停車位為空，作業員已手動搬運空rack到作業區
+2. **操作步驟**:
+   - 操作員點擊「加入料架」按鈕
+   - 從彈出的Modal中選擇對應的rack編號
+   - 點擊「確認加入」
 3. **系統處理**:
-   - 收集停車位資訊、客戶端 ID、機台 ID
-   - 創建 call_empty 類型任務
-   - 啟動任務監控
-   - 更新停車位狀態為「等待中」
+   - 系統載入可用rack列表（未在任何停車格的rack）
+   - 記錄選擇的rack到對應停車格
+   - 更新資料庫中rack位置
+   - 廣播停車格狀態變更
 
-**任務參數**:
+**事件參數**:
 ```python
 {
-    "task_type": "call_empty",
-    "parking_space": {...},
+    "side": "left",  # 或 "right"
+    "rack": "R001",  # rack編號
     "machine_id": 1,
     "client_id": "client_123"
 }
@@ -398,14 +402,8 @@ if (status === TASK_STATUS_ID.EXECUTING) {
 ```
 
 **完成檢測邏輯**:
-- **叫車任務**: 檢測到指定停車位有料架時完成
 - **派車任務**: 檢測到指定料架離開停車位時完成
 
-### 確認送達功能
-當叫車任務完成且料架到達停車位後，操作員需要手動確認送達：
-- 按鈕狀態變更為「確認送達」
-- 操作員確認後，系統更新料架和停車位狀態
-- 按鈕恢復為正常的派車狀態
 
 ## 🗄️ 資料庫整合
 
@@ -506,10 +504,9 @@ DB_URL="postgresql+psycopg2://agvc:password@192.168.100.254/agvc"
 |----------|------|------|
 | `login` | `{clientId, machineId, userAgent}` | 使用者登入驗證 |
 | `client_update` | `{machineId, ...}` | 更新客戶端設定 |
-| `call_empty` | `{parking_space, ...}` | 叫車操作 |
+| `add_rack` | `{side, rack}` | 加入料架操作 |
 | `dispatch_full` | `{name, count, rackId, room, side}` | 派車操作 |
 | `cancel_task` | `{taskId}` | 取消任務 |
-| `confirm_delivery` | `{taskId}` | 確認送達 |
 | `add_rack` | `{rackName, locationId}` | 新增料架到停車位 |
 | `del_rack` | `{rackId}` | 從停車位移除料架 |
 

@@ -147,7 +147,7 @@ DB_URL = 'postgresql+psycopg2://agvc:password@192.168.100.254/agvc'
 # - db_proxy_ws
 # - ecs_ws
 # - rcs_ws
-# - ai_wcs_ws
+# - tafl_wcs_ws
 ```
 
 ## 🔧 連線池管理
@@ -650,7 +650,7 @@ WHERE idx_tup_read = 0 AND idx_tup_fetch = 0;
 ```
 
 ## 🔗 交叉引用
-- 技術棧詳細: @docs-ai/context/system/technology-stack.md
-- Web 開發: @docs-ai/operations/development/web-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
+- 技術棧詳細: docs-ai/context/system/technology-stack.md
+- Web 開發: docs-ai/operations/development/web/web-development.md
+- 系統診斷: docs-ai/operations/guides/system-diagnostics.md
+- AGVC 工作空間: docs-ai/context/workspaces/agvc-workspaces.md

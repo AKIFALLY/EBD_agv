@@ -1,7 +1,12 @@
 # agvcui - 車隊管理界面系統
 
 ## 📚 Context Loading
-../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档
+../../../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档
+
+# Web 界面專業知識（專業層）
+@docs-ai/knowledge/system/agvui-monitoring-system.md   # 監控系統
+@docs-ai/knowledge/system/tafl/tafl-editor-specification.md  # TAFL 編輯器
 
 ## 📋 套件概述
 agvcui 是 Web API 工作空間中的 **車隊管理界面系統**，提供完整的 MVC 架構和企業級管理功能。基於 FastAPI + Socket.IO + Jinja2，提供即時 Web 界面，支援 AGV 車隊監控、任務管理、地圖視覺化等核心管理功能。
@@ -61,15 +66,14 @@ routers/
 ├── audit_logs.py       # 審計日誌API
 ├── rosout_logs.py      # ROS日誌API
 ├── runtime_logs.py     # 運行時日誌API
-├── tafl_editor.py      # TAFL Editor API (路由: /tafl/editor)
-└── linear_flow_designer.py  # Linear Flow Designer (即將被 TAFL Editor 取代)
+└── tafl_editor.py      # TAFL Editor API (路由: /tafl/editor)
 ```
 
 ### 🚨 重要路由說明
 **TAFL Editor 路由**: `/tafl/editor` (⚠️ 不是 `/tafl-editor`)
 - 完整路徑由前綴 `/tafl` + 端點 `/editor` 組成
 - JavaScript API 呼叫: `/tafl/verbs`, `/tafl/flows`, `/tafl/validate` 等
-- **註：Linear Flow Designer 即將廢棄，由 TAFL Editor 完全取代**
+- TAFL Editor 是目前使用的視覺化流程編輯器
 
 ```
 

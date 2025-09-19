@@ -1,6 +1,7 @@
 metadata:
   id: "rack_rotation_room_inlet_aempty_bwork"
   name: "房間入口架台翻轉（A面空B面待作業）"
+  enabled: false
   version: "1.0.0"
   description: "檢查所有房間入口架台，當A面為空（載具已取走）、B面有待作業載具時創建180度翻轉任務"
   author: "TAFL System"
@@ -8,14 +9,7 @@ metadata:
   tags: ["rack_rotation", "room_inlet", "automation"]
 
 settings:
-  log_level: "INFO"
-  enable_checkpoint: true
-  parallel_execution: false
-  timeout: 120
-  retry_on_failure: true
-  max_retries: 3
-  execution_interval: 300  # Execute every 5 minutes
-  execution_mode: "sequential"
+  execution_interval: 10  # Execute every 10 seconds
 
 variables:
   work_id: 220001  # KUKA rack rotation work ID for inlet

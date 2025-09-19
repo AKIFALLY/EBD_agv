@@ -815,3 +815,9 @@ class TAFLExecutorWrapper:
     def _log_debug(self, message: str):
         if self.logger:
             self.logger.debug(message)
+
+    def shutdown(self):
+        """Shutdown executor and close database connection"""
+        if hasattr(self, 'db_bridge'):
+            self.db_bridge.close()
+            print("Database connection closed in TAFLExecutorWrapper")

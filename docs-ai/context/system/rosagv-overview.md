@@ -92,7 +92,6 @@ RosAGV/
 ├── app/                        # 應用程式碼目錄
 ├── scripts/                    # 工具腳本集合
 ├── docs-ai/                    # AI Agent 指導文件
-├── .augment-guidelines         # 環境識別和基礎規範
 ├── CLAUDE.md                   # AI Agent 主要記憶文件
 └── README.md                   # 專案概覽
 ```
@@ -166,7 +165,7 @@ app/
 3. **開發指導**: 為具體開發工作提供方向指引
 
 ### 交叉引用
-- 詳細的雙環境架構: @docs-ai/context/system/dual-environment.md
-- 技術棧詳細說明: @docs-ai/context/system/technology-stack.md
-- 部署架構詳解: @docs-ai/context/system/deployment-architecture.md
-- 工作空間詳細資訊: @docs-ai/context/workspaces/agv-workspaces.md, @docs-ai/context/workspaces/agvc-workspaces.md
+- 詳細的雙環境架構: docs-ai/context/system/dual-environment.md
+- 技術棧詳細說明: docs-ai/context/system/technology-stack.md
+- 部署架構詳解: docs-ai/operations/deployment/docker-compose-configuration.md
+- 工作空間詳細資訊: docs-ai/context/workspaces/agv-workspaces.md, docs-ai/context/workspaces/agvc-workspaces.md

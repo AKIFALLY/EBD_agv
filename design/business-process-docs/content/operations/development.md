@@ -173,7 +173,7 @@ web_api_ws/                # Web API 服務
 db_proxy_ws/               # 資料庫代理
 ecs_ws/                    # 設備控制系統
 rcs_ws/                    # 機器人控制系統
-ai_wcs_ws/                 # AI 倉庫控制
+tafl_wcs_ws/               # TAFL 流程執行引擎
 kuka_fleet_ws/             # KUKA Fleet 整合
 
 # 建置特定工作空間

@@ -1,7 +1,12 @@
 # web_api - API Gateway 核心服務
 
 ## 📚 Context Loading
-../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档
+../../../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档
+
+# API Gateway 專業知識（專業層）
+@docs-ai/knowledge/protocols/kuka-fleet-api.md        # KUKA Fleet API
+@docs-ai/knowledge/protocols/kuka-fleet-callback.md   # Fleet 回調
 
 ## 📋 套件概述
 web_api 是 Web API 工作空間中的 **API Gateway 服務**，專注於外部系統整合。基於 FastAPI 框架，提供標準化的 HTTP API 端點，統一管理 PLC 控制、門控制、交通管制、地圖匯入、KUKA Fleet 整合等核心功能。

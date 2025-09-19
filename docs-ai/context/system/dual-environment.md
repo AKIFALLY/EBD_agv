@@ -127,9 +127,10 @@ web_api_ws/               # Web API 和 Socket.IO
 db_proxy_ws/              # 資料庫代理服務
 ecs_ws/                   # 設備控制系統
 rcs_ws/                   # 機器人控制系統
-# (wcs_ws 已整合至 ai_wcs_ws)
+# (wcs_ws 已整合至 tafl_wcs_ws)
 kuka_fleet_ws/            # KUKA Fleet 整合
-ai_wcs_ws/                # AI 倉庫控制系統
+tafl_ws/                  # TAFL 解析器和執行器
+tafl_wcs_ws/              # TAFL WCS 整合系統
 keyence_plc_ws/           # PLC 通訊 (共用)
 plc_proxy_ws/             # PLC 代理 (共用)
 path_algorithm/           # 路徑規劃 (共用)
@@ -260,8 +261,8 @@ check_zenoh_status    # Zenoh 通訊檢查
 4. **日誌分析**: 分析兩個環境的日誌資訊
 
 ### 交叉引用
-- 技術棧詳細說明: @docs-ai/context/system/technology-stack.md
-- 部署架構詳解: @docs-ai/context/system/deployment-architecture.md
-- AGV 工作空間: @docs-ai/context/workspaces/agv-workspaces.md
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
-- 容器管理操作: @docs-ai/operations/deployment/container-management.md
+- 技術棧詳細說明: docs-ai/context/system/technology-stack.md
+- 部署架構詳解: docs-ai/operations/deployment/docker-compose-configuration.md
+- AGV 工作空間: docs-ai/context/workspaces/agv-workspaces.md
+- AGVC 工作空間: docs-ai/context/workspaces/agvc-workspaces.md
+- 容器管理操作: docs-ai/operations/deployment/container-management.md

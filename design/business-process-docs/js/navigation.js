@@ -151,11 +151,23 @@ class NavigationManager {
                             file: 'operations/troubleshooting.md',
                             description: '問題診斷和解決方案'
                         },
-                        { 
-                            id: 'system-diagnostics', 
-                            title: '系統診斷工具', 
+                        {
+                            id: 'system-diagnostics',
+                            title: '系統診斷工具',
                             file: 'operations/system-diagnostics.md',
                             description: '完整診斷工具和監控'
+                        },
+                        {
+                            id: 'unified-tools',
+                            title: '統一工具系統',
+                            file: 'operations/unified-tools.md',
+                            description: 'r 命令完整使用指南'
+                        },
+                        {
+                            id: 'service-management',
+                            title: '服務管理工具',
+                            file: 'operations/service-management.md',
+                            description: '統一服務管理 API'
                         }
                     ]
                 },
@@ -189,11 +201,17 @@ class NavigationManager {
                             file: 'technical-details/kuka-integration.md',
                             description: '外部機器人系統協作'
                         },
-                        { 
-                            id: 'ai-wcs-integration', 
-                            title: 'AI WCS 整合', 
-                            file: 'technical-details/ai-wcs-integration.md',
-                            description: 'AI 倉庫控制系統'
+                        {
+                            id: 'tafl-editor',
+                            title: 'TAFL 編輯器指南',
+                            file: 'technical-details/tafl-editor.md',
+                            description: '視覺化流程編輯器使用'
+                        },
+                        {
+                            id: 'tafl-wcs-integration',
+                            title: 'TAFL WCS 整合',
+                            file: 'technical-details/tafl-wcs-integration.md',
+                            description: 'TAFL 倉儲控制系統整合'
                         },
                         { 
                             id: 'performance-optimization', 
@@ -219,7 +237,7 @@ class NavigationManager {
     initRouter() {
         // 監聽 hash 變化
         window.addEventListener('hashchange', () => this.handleRouteChange());
-        
+
         // 初始載入
         this.handleRouteChange();
     }
@@ -236,7 +254,65 @@ class NavigationManager {
                 const path = link.dataset.navigate;
                 this.navigateTo(path);
             }
+
+            // 頁籤切換事件
+            const tabButton = e.target.closest('[data-tab]');
+            if (tabButton) {
+                e.preventDefault();
+                this.switchTab(tabButton.dataset.tab);
+            }
         });
+    }
+
+    /**
+     * 切換頁籤
+     */
+    switchTab(tabName) {
+        // 更新頁籤按鈕狀態
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active', 'border-blue-600', 'text-blue-600');
+            btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+        });
+
+        const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active', 'border-blue-600', 'text-blue-600');
+            activeTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+        }
+
+        // 切換內容顯示
+        const mainContent = document.getElementById('main-content');
+        const aiContent = document.getElementById('ai-knowledge-content');
+        const sidebar = document.getElementById('sidebar');
+
+        if (tabName === 'ai-knowledge') {
+            // 顯示 AI 知識庫
+            mainContent.style.display = 'none';
+            aiContent.style.display = 'block';
+            sidebar.style.display = 'none';
+
+            // 初始化 AI 知識庫
+            if (window.initAIKnowledge) {
+                window.initAIKnowledge();
+            }
+
+            // 更新 URL
+            window.location.hash = 'ai-knowledge';
+        } else {
+            // 顯示業務或技術文檔
+            mainContent.style.display = 'block';
+            aiContent.style.display = 'none';
+            sidebar.style.display = '';
+
+            // 載入對應的內容
+            if (tabName === 'business') {
+                // 載入業務文檔首頁
+                this.navigateTo('index.md');
+            } else if (tabName === 'technical') {
+                // 載入技術文檔首頁
+                this.navigateTo('technical-details/tafl-system.md');
+            }
+        }
     }
 
     /**
@@ -245,16 +321,28 @@ class NavigationManager {
     async handleRouteChange() {
         const hash = window.location.hash.slice(1) || 'home';
         this.currentPath = hash;
-        
+
         console.log(`導航到: ${hash}`);
-        
+
+        // 處理 AI 知識庫路由
+        if (hash === 'ai-knowledge') {
+            this.switchTab('ai-knowledge');
+            return;
+        }
+
+        // 確保顯示正確的頁籤
+        const mainContent = document.getElementById('main-content');
+        const aiContent = document.getElementById('ai-knowledge-content');
+        if (mainContent) mainContent.style.display = 'block';
+        if (aiContent) aiContent.style.display = 'none';
+
         if (hash === 'home' || hash === '') {
             await this.loadContent('index.md');
         } else {
             // 直接傳遞 hash，讓 loadContent 處理檔案查找邏輯
             await this.loadContent(hash);
         }
-        
+
         this.updateActiveNavigation();
     }
 

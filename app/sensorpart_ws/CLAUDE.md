@@ -80,7 +80,7 @@ TestSensorPartNode (ROS 2 節點)
 ## 🔧 核心組件
 
 ### 1. SensorPart 類別 (sensorpart.py)
-@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/ros2/ros2-development.md
 
 **SensorPart** 是核心的 TCP 客戶端類別，負責與外部感測器伺服器建立連線並接收資料。
 

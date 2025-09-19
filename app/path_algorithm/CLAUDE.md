@@ -3,7 +3,7 @@
 ## 📚 Context Loading
 @docs-ai/context/system/rosagv-overview.md
 @docs-ai/context/system/dual-environment.md
-@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/ros2/ros2-development.md
 @docs-ai/operations/development/docker-development.md
 
 ## 系統概述
@@ -277,7 +277,7 @@ x, y = astar.getXY(tag_id)
 
 ## 故障排除
 
-**完整故障排除指導**: @docs-ai/operations/maintenance/troubleshooting.md
+**完整故障排除指導**: @docs-ai/operations/guides/troubleshooting.md
 
 ### 模組特定問題
 - **配置檔案未找到**: 檢查 `/app/config/path.yaml` 和 `stationID.yaml`
@@ -320,7 +320,7 @@ AGV控制系統 (路徑執行)
 
 ## 🔗 交叉引用
 - **系統架構**: @docs-ai/context/system/rosagv-overview.md
-- **ROS 2 開發指導**: @docs-ai/operations/development/ros2-development.md
+- **ROS 2 開發指導**: @docs-ai/operations/development/ros2/ros2-development.md
 - **容器開發環境**: @docs-ai/operations/development/docker-development.md
-- **系統診斷工具**: @docs-ai/operations/maintenance/system-diagnostics.md
+- **系統診斷工具**: @docs-ai/operations/guides/system-diagnostics.md
 - **車型應用**: @docs-ai/knowledge/agv-domain/vehicle-types.md

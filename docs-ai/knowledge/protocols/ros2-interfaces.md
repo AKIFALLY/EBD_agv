@@ -409,7 +409,7 @@ class IntegrationTest:
 ```
 
 ## 🔗 交叉引用
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- AGV 工作空間: @docs-ai/context/workspaces/agv-workspaces.md
-- Zenoh 通訊: @docs-ai/knowledge/protocols/zenoh-rmw.md
-- 技術棧: @docs-ai/context/system/technology-stack.md
+- ROS 2 開發: docs-ai/operations/development/ros2/ros2-development.md
+- AGV 工作空間: docs-ai/context/workspaces/agv-workspaces.md
+- Zenoh 通訊: docs-ai/knowledge/protocols/zenoh-rmw.md
+- 技術棧: docs-ai/context/system/technology-stack.md

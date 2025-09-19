@@ -495,10 +495,10 @@ else:  # 中間點 (不受 MAGIC 影響)
 - **優先處理**: 在 MissionSelectState 中優先檢查本地任務
 
 ## 🔗 交叉引用
-- AGV狀態機架構: @docs-ai/knowledge/agv-domain/agv-state-machine.md
+- AGV狀態機架構: docs-ai/knowledge/agv-domain/agv-state-machine.md
 - A*演算法模組: `app/path_algorithm/CLAUDE.md`
-- PLC通訊協議: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
-- PLC通訊開發: @docs-ai/operations/development/plc-communication.md
-- 資料庫操作: @docs-ai/operations/development/database-operations.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- MAGIC值分析: @docs-ai/knowledge/agv-domain/magic-value-analysis.md
+- PLC通訊協議: docs-ai/knowledge/protocols/keyence-plc-protocol.md
+- PLC通訊開發: docs-ai/operations/development/ros2/plc-communication.md
+- 資料庫操作: docs-ai/operations/development/database-operations.md
+- 系統診斷: docs-ai/operations/guides/system-diagnostics.md
+- MAGIC值分析: docs-ai/knowledge/agv-domain/magic-value-analysis.md

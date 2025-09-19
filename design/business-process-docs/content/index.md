@@ -46,7 +46,7 @@
 </div>
 <div class="path-step">
 <span class="step-number">3</span>
-<a href="#" data-navigate="business-processes/indoor-process.md">室內製程智能調度</a>
+<a href="#" data-navigate="business-processes/indoor-process.md">室內製程基礎調度</a>
 <span class="duration">8 分鐘</span>
 </div>
 <div class="path-step">
@@ -157,7 +157,7 @@
 ### 🏭 完整業務流程
 - **眼鏡生產端到端自動化**：從射出機到最終包裝
 - **智能品質檢查**：3D 視覺 + OCR 識別
-- **七級優先度任務系統**：WCS 智能調度
+- **七級優先度任務系統**：WCS 調度系統
 
 ### 🤖 三種專業 AGV
 - **Cargo Mover**：貨物搬運 + 品質檢查專家
@@ -171,7 +171,7 @@
 
 ### 🌐 系統整合能力
 - **KUKA Fleet 整合**：外部 AGV 系統無縫整合
-- **雙層 WCS 架構**：AI WCS + Simple WCS
+- **TAFL WCS 架構**：統一的 TAFL 語言驅動 WCS
 - **工業 4.0 就緒**：完整的數據驅動決策
 
 </div>
@@ -202,7 +202,7 @@
 
 ### 🏭 業務流程
 - **[眼鏡生產業務流程](business-processes/eyewear-production.md)**：完整端到端自動化
-- **[室內製程智能調度](business-processes/indoor-process.md)**：WCS 智能決策系統
+- **[室內製程基礎調度](business-processes/indoor-process.md)**：WCS 配置驅動系統
 
 ### 🚗 AGV 車型
 - **[AGV 車型介紹](agv-vehicles/vehicle-types.md)**：Cargo/Loader/Unloader 技術詳解
@@ -219,7 +219,7 @@
 - **[PLC 整合方案](technical-details/plc-integration.md)**：工業控制整合
 - **[KUKA Fleet 整合](technical-details/kuka-integration.md)**：外部系統整合
 - **[Zenoh 通訊機制](technical-details/zenoh-communication.md)**：高效能通訊
-- **[AI WCS 整合](technical-details/ai-wcs-integration.md)**：智能倉庫控制系統
+- **[TAFL WCS 整合](technical-details/tafl-wcs-integration.md)**：TAFL 倉儲控制系統整合
 - **[效能調優](technical-details/performance-optimization.md)**：系統效能最佳化
 - **[監控配置](technical-details/monitoring-setup.md)**：完整監控告警設定
 

@@ -34,7 +34,10 @@ class TAFLWCSManager:
         self.loaded_flows = {}
         self.flow_checksums = {}
         self.active_executions = {}
-        
+
+        # Track last execution time for each flow
+        self.flow_last_execution = {}
+
         # Executor
         self.executor_wrapper = TAFLExecutorWrapper(database_url, logger)
         
@@ -485,9 +488,85 @@ class TAFLWCSManager:
             'executor_stats': self.executor_wrapper.get_stats()
         }
     
+    def check_and_execute_flows(self, current_time: float, progress_reporter=None):
+        """Check each flow and execute if its execution_interval has passed
+
+        Args:
+            current_time: Current timestamp
+            progress_reporter: Optional progress reporter for execution updates
+        """
+        # Note: scan_flows is now handled by main_timer_callback every 3 seconds
+        # No need to scan here on every execution check
+
+        # Check each enabled flow
+        for flow_id, flow in self.loaded_flows.items():
+            # Skip disabled flows
+            if not flow.get('enabled', True):
+                continue
+
+            # Get execution interval from settings (default 5 seconds)
+            settings = flow.get('data', {}).get('settings', {})
+            execution_interval = settings.get('execution_interval', 5.0)
+
+            # Check if it's time to execute this flow
+            last_execution = self.flow_last_execution.get(flow_id, 0)
+            time_since_last = current_time - last_execution
+
+            if time_since_last >= execution_interval:
+                try:
+                    if self.logger:
+                        self.logger.info(
+                            f'Executing flow {flow_id} (interval: {execution_interval}s, '
+                            f'last: {time_since_last:.1f}s ago)'
+                        )
+
+                    # Report execution start if reporter available
+                    if progress_reporter:
+                        progress_reporter.report_progress(
+                            flow_id, 0, 100, 'EXECUTING',
+                            f'Starting execution (interval: {execution_interval}s)'
+                        )
+
+                    # Execute the flow synchronously
+                    start_time = datetime.now()
+                    result = self.execute_flow_sync(flow_id)
+                    execution_time = (datetime.now() - start_time).total_seconds()
+
+                    # Update last execution time
+                    self.flow_last_execution[flow_id] = current_time
+
+                    # Report execution result if reporter available
+                    if progress_reporter:
+                        if result.get('status') == 'completed':
+                            progress_reporter.report_progress(
+                                flow_id, 100, 100, 'COMPLETED',
+                                f'Completed in {execution_time:.2f}s'
+                            )
+                        elif result.get('status') == 'skipped':
+                            progress_reporter.report_progress(
+                                flow_id, -1, 100, 'SKIPPED',
+                                result.get('reason', 'Flow was skipped')
+                            )
+                        else:
+                            progress_reporter.report_progress(
+                                flow_id, -1, 100, 'FAILED',
+                                f'Failed: {result.get("error", "Unknown error")}'
+                            )
+
+                    if self.logger:
+                        self.logger.info(
+                            f'Flow {flow_id} {result.get("status", "unknown")} '
+                            f'in {execution_time:.2f}s'
+                        )
+
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(f'Failed to execute flow {flow_id}: {e}')
+                    # Update last execution time even on failure to avoid rapid retries
+                    self.flow_last_execution[flow_id] = current_time
+
     def shutdown(self):
         """Shutdown manager and clean up resources"""
         self.thread_pool.shutdown(wait=True)
         self.executor_wrapper.shutdown()
-        if self.logger:
-            self.logger.info("TAFL WCS Manager shutdown complete")
+        print("TAFL WCS Manager shutdown complete")

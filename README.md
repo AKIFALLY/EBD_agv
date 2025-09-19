@@ -47,8 +47,8 @@ RosAGV 採用創新的雙環境設計，將系統分為兩個獨立但協同的�
 
 ### 📦 容器架構
 
-- **AGV 環境**: `docker-compose.yml` - 9個專用工作空間，Host 網路模式
-- **AGVC 環境**: `docker-compose.agvc.yml` - 11個專用工作空間，Bridge 網路模式
+- **AGV 環境**: `docker-compose.yml` - 7個專用工作空間，Host 網路模式
+- **AGVC 環境**: `docker-compose.agvc.yml` - 10個專用工作空間，Bridge 網路模式
 - **共用組件**: Zenoh Router, PostgreSQL, PLC 通訊模組
 
 > 📖 **詳細架構說明**: [@docs-ai/context/system/dual-environment.md](docs-ai/context/system/dual-environment.md)
@@ -122,9 +122,17 @@ app/
 ├── db_proxy_ws/               # 資料庫代理服務
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-├── flow_wcs_ws/               # Flow 倉庫控制系統 (唯一的 WCS 實作)
+├── tafl_wcs_ws/               # TAFL 倉庫控制系統 (現行 WCS 實作)
+├── flow_wcs_ws_old/           # [已棄用] Linear Flow v2 WCS
+├── tafl_ws/                   # TAFL 語言解析器
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
-└── keyence_plc_ws/            # Keyence PLC 通訊
+├── keyence_plc_ws/            # Keyence PLC 通訊
+├── plc_proxy_ws/              # PLC 代理服務
+├── sensorpart_ws/             # 感測器資料處理
+├── launch_ws/                 # ROS 2 Launch 系統管理
+├── shared_constants_ws/       # 共享常數定義
+├── uno_gpio_ws/               # 研華 UNO-137 GPIO 控制
+└── path_algorithm/            # 路徑規劃演算法（非ROS工作空間）
 ```
 
 ### 開發最佳實踐
@@ -133,10 +141,10 @@ app/
 - **容器內開發**: 在對應容器內進行 ROS 2 節點開發和測試
 - **統一工具使用**: 使用 `r` 命令進行系統診斷和管理
 
-> 📖 **完整開發指導**: 
-> - [@docs-ai/operations/development/ros2-development.md](docs-ai/operations/development/ros2-development.md)
+> 📖 **完整開發指導**:
+> - [@docs-ai/operations/development/ros2/ros2-development.md](docs-ai/operations/development/ros2/ros2-development.md)
 > - [@docs-ai/operations/development/docker-development.md](docs-ai/operations/development/docker-development.md)
-> - [@docs-ai/operations/development/core-principles.md](docs-ai/operations/development/core-principles.md)
+> - [@docs-ai/operations/development/core/core-principles.md](docs-ai/operations/development/core/core-principles.md)
 
 ## 🛠️ 統一工具系統
 
@@ -226,7 +234,7 @@ r network-check
 - **雙環境架構**: [@docs-ai/context/system/dual-environment.md](docs-ai/context/system/dual-environment.md)
 - **技術棧詳解**: [@docs-ai/context/system/technology-stack.md](docs-ai/context/system/technology-stack.md)
 - **語言配置**: [@docs-ai/context/system/language-configuration.md](docs-ai/context/system/language-configuration.md)
-- **系統現狀**: [@docs-ai/knowledge/system/current-system-status.md](docs-ai/knowledge/system/current-system-status.md)
+- **業務流程與系統現狀**: [@docs-ai/knowledge/business/eyewear-production-process.md](docs-ai/knowledge/business/eyewear-production-process.md)
 
 #### 工作空間結構
 - **AGV 工作空間**: [@docs-ai/context/workspaces/agv-workspaces.md](docs-ai/context/workspaces/agv-workspaces.md)
@@ -235,53 +243,83 @@ r network-check
 ### 🔧 開發文檔
 
 #### 核心開發指導
-- **核心開發原則**: [@docs-ai/operations/development/core-principles.md](docs-ai/operations/development/core-principles.md)
-- **ROS 2 開發**: [@docs-ai/operations/development/ros2-development.md](docs-ai/operations/development/ros2-development.md)
+- **核心開發原則**: [@docs-ai/operations/development/core/core-principles.md](docs-ai/operations/development/core/core-principles.md)
+- **Linus Torvalds 思維**: [@docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md](docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md)
+- **文檔標準**: [@docs-ai/operations/development/core/documentation-standards.md](docs-ai/operations/development/core/documentation-standards.md)
+- **ROS 2 開發**: [@docs-ai/operations/development/ros2/ros2-development.md](docs-ai/operations/development/ros2/ros2-development.md)
 - **Docker 開發**: [@docs-ai/operations/development/docker-development.md](docs-ai/operations/development/docker-development.md)
 
 #### 技術專項開發
-- **Web 開發**: [@docs-ai/operations/development/web-development.md](docs-ai/operations/development/web-development.md)
+- **Web 開發**: [@docs-ai/operations/development/web/web-development.md](docs-ai/operations/development/web/web-development.md)
+- **Web API Launch**: [@docs-ai/operations/development/web/web-api-launch-management.md](docs-ai/operations/development/web/web-api-launch-management.md)
 - **資料庫操作**: [@docs-ai/operations/development/database-operations.md](docs-ai/operations/development/database-operations.md)
-- **PLC 通訊開發**: [@docs-ai/operations/development/plc-communication.md](docs-ai/operations/development/plc-communication.md)
+- **PLC 通訊開發**: [@docs-ai/operations/development/ros2/plc-communication.md](docs-ai/operations/development/ros2/plc-communication.md)
+- **ROS 2 容器指令**: [@docs-ai/operations/development/ros2/ros2-container-commands.md](docs-ai/operations/development/ros2/ros2-container-commands.md)
 
-#### 測試和建置
-- **測試程序**: [@docs-ai/operations/development/testing-procedures.md](docs-ai/operations/development/testing-procedures.md)
-- **測試標準**: [@docs-ai/operations/development/testing-standards.md](docs-ai/operations/development/testing-standards.md)
+#### 測試相關
+- **測試程序**: [@docs-ai/operations/development/testing/testing-procedures.md](docs-ai/operations/development/testing/testing-procedures.md)
+- **測試標準**: [@docs-ai/operations/development/testing/testing-standards.md](docs-ai/operations/development/testing/testing-standards.md)
+- **Pytest 測試**: [@docs-ai/operations/development/testing/ros2-pytest-testing.md](docs-ai/operations/development/testing/ros2-pytest-testing.md)
+- **測試檔案管理**: [@docs-ai/operations/development/testing/test-file-management.md](docs-ai/operations/development/testing/test-file-management.md)
 - **建置和測試**: [@docs-ai/operations/development/build-and-test.md](docs-ai/operations/development/build-and-test.md)
 
-### 🛠️ 運維和維護
+### 🛠️ 運維指南
 
-#### 系統診斷和維護
-- **系統診斷**: [@docs-ai/operations/maintenance/system-diagnostics.md](docs-ai/operations/maintenance/system-diagnostics.md)
-- **故障排除**: [@docs-ai/operations/maintenance/troubleshooting.md](docs-ai/operations/maintenance/troubleshooting.md)
-- **日誌分析**: [@docs-ai/operations/maintenance/log-analysis.md](docs-ai/operations/maintenance/log-analysis.md)
-- **維護工具指南**: [@docs-ai/operations/maintenance/unified-tools.md](docs-ai/operations/maintenance/unified-tools.md)
+#### 系統診斷和故障排除
+- **系統診斷**: [@docs-ai/operations/guides/system-diagnostics.md](docs-ai/operations/guides/system-diagnostics.md)
+- **故障排除**: [@docs-ai/operations/guides/troubleshooting.md](docs-ai/operations/guides/troubleshooting.md)
+- **日誌分析**: [@docs-ai/operations/guides/log-analysis.md](docs-ai/operations/guides/log-analysis.md)
+- **節點管理修復**: [@docs-ai/operations/guides/node-management-status-fix.md](docs-ai/operations/guides/node-management-status-fix.md)
+- **Rack 管理操作**: [@docs-ai/operations/guides/rack-management-guide.md](docs-ai/operations/guides/rack-management-guide.md)
 
-#### 開發和工具系統
+#### 工具系統
 - **統一工具系統**: [@docs-ai/operations/tools/unified-tools.md](docs-ai/operations/tools/unified-tools.md)
 
-#### 部署和容器管理
+### 🚀 部署配置
+
+#### 容器和部署管理
 - **容器管理**: [@docs-ai/operations/deployment/container-management.md](docs-ai/operations/deployment/container-management.md)
+- **Docker Compose 配置**: [@docs-ai/operations/deployment/docker-compose-configuration.md](docs-ai/operations/deployment/docker-compose-configuration.md)
+- **Nginx 配置**: [@docs-ai/operations/deployment/nginx-configuration.md](docs-ai/operations/deployment/nginx-configuration.md)
+- **套件清單**: [@docs-ai/operations/deployment/installed-packages-inventory.md](docs-ai/operations/deployment/installed-packages-inventory.md)
 
 ### 🧠 領域知識
 
-#### AGV 車型和系統
-- **AGV 車型**: [@docs-ai/knowledge/agv-domain/vehicle-types.md](docs-ai/knowledge/agv-domain/vehicle-types.md)  
+#### AGV 領域
+- **AGV 車型**: [@docs-ai/knowledge/agv-domain/vehicle-types.md](docs-ai/knowledge/agv-domain/vehicle-types.md)
 - **WCS 系統設計**: [@docs-ai/knowledge/agv-domain/wcs-system-design.md](docs-ai/knowledge/agv-domain/wcs-system-design.md)
 - **WCS 資料庫設計**: [@docs-ai/knowledge/agv-domain/wcs-database-design.md](docs-ai/knowledge/agv-domain/wcs-database-design.md)
 - **WCS WorkID 系統**: [@docs-ai/knowledge/agv-domain/wcs-workid-system.md](docs-ai/knowledge/agv-domain/wcs-workid-system.md)
 - **Robot PGNO 規則**: [@docs-ai/knowledge/agv-domain/robot-pgno-rules.md](docs-ai/knowledge/agv-domain/robot-pgno-rules.md)
+- **狀態機設計**: [@docs-ai/knowledge/agv-domain/magic-value-analysis.md](docs-ai/knowledge/agv-domain/magic-value-analysis.md)
+- **ROS 2 節點生命週期**: [@docs-ai/knowledge/system/ros2-node-lifecycle.md](docs-ai/knowledge/system/ros2-node-lifecycle.md)
 
-#### 業務領域知識
-- **眼鏡生產流程**: [@docs-ai/knowledge/business/eyewear-production-process.md](docs-ai/knowledge/business/eyewear-production-process.md)
+#### 業務領域
+- **眼鏡生產流程（含系統現狀）**: [@docs-ai/knowledge/business/eyewear-production-process.md](docs-ai/knowledge/business/eyewear-production-process.md)
 
-#### 通訊協定
+#### 系統知識
+- **Rack 管理架構**: [@docs-ai/knowledge/system/rack-management-architecture.md](docs-ai/knowledge/system/rack-management-architecture.md)
+- **Rack 旋轉邏輯**: [@docs-ai/knowledge/system/rack-rotation-logic.md](docs-ai/knowledge/system/rack-rotation-logic.md)
+- **手動 Rack 管理**: [@docs-ai/knowledge/system/manual-rack-management.md](docs-ai/knowledge/system/manual-rack-management.md)
+- **AGVUI 監控系統**: [@docs-ai/knowledge/system/agvui-monitoring-system.md](docs-ai/knowledge/system/agvui-monitoring-system.md)
+- **HMI 系統設計**: [@docs-ai/knowledge/system/hmi-system-design.md](docs-ai/knowledge/system/hmi-system-design.md)
+
+#### 通訊協議
 - **PLC 通訊**: [@docs-ai/knowledge/protocols/keyence-plc-protocol.md](docs-ai/knowledge/protocols/keyence-plc-protocol.md)
 - **Zenoh RMW**: [@docs-ai/knowledge/protocols/zenoh-rmw.md](docs-ai/knowledge/protocols/zenoh-rmw.md)
 - **KUKA Fleet API**: [@docs-ai/knowledge/protocols/kuka-fleet-api.md](docs-ai/knowledge/protocols/kuka-fleet-api.md)
 - **KUKA Fleet 回調**: [@docs-ai/knowledge/protocols/kuka-fleet-callback.md](docs-ai/knowledge/protocols/kuka-fleet-callback.md)
 - **ROS 2 介面**: [@docs-ai/knowledge/protocols/ros2-interfaces.md](docs-ai/knowledge/protocols/ros2-interfaces.md)
-- **PLC-ROS2 介面**: [@docs-ai/knowledge/protocols/plc-ros2-interfaces.md](docs-ai/knowledge/protocols/plc-ros2-interfaces.md)
+- **PLC ROS 2 介面**: [@docs-ai/knowledge/protocols/plc-ros2-interfaces.md](docs-ai/knowledge/protocols/plc-ros2-interfaces.md)
+
+#### TAFL 語言
+- **TAFL 語言規格**: [@docs-ai/knowledge/system/tafl/tafl-language-specification.md](docs-ai/knowledge/system/tafl/tafl-language-specification.md)
+- **TAFL API 參考**: [@docs-ai/knowledge/system/tafl/tafl-api-reference.md](docs-ai/knowledge/system/tafl/tafl-api-reference.md)
+- **TAFL 快速入門**: [@docs-ai/knowledge/system/tafl/tafl-quick-start-guide.md](docs-ai/knowledge/system/tafl/tafl-quick-start-guide.md)
+- **TAFL 故障排除**: [@docs-ai/knowledge/system/tafl/tafl-troubleshooting-guide.md](docs-ai/knowledge/system/tafl/tafl-troubleshooting-guide.md)
+- **TAFL 編輯器規格**: [@docs-ai/knowledge/system/tafl/tafl-editor-specification.md](docs-ai/knowledge/system/tafl/tafl-editor-specification.md)
+- **TAFL 實作專案**: [@docs-ai/knowledge/system/tafl/tafl-implementation-project.md](docs-ai/knowledge/system/tafl/tafl-implementation-project.md)
+- **TAFL 實作計畫**: [@docs-ai/knowledge/system/tafl/tafl-implementation-plan.md](docs-ai/knowledge/system/tafl/tafl-implementation-plan.md)
 
 ### 📋 模組索引
 
@@ -310,24 +348,24 @@ r log-errors && r network-check && r zenoh-check
 |----------|----------|----------|
 | **容器無法啟動** | `r containers-status` | [@docs-ai/operations/deployment/container-management.md](docs-ai/operations/deployment/container-management.md) |
 | **網路連接問題** | `r network-check` | [@docs-ai/knowledge/protocols/zenoh-rmw.md](docs-ai/knowledge/protocols/zenoh-rmw.md) |
-| **Zenoh 通訊故障** | `r zenoh-check` | [@docs-ai/operations/maintenance/troubleshooting.md](docs-ai/operations/maintenance/troubleshooting.md) |
+| **Zenoh 通訊故障** | `r zenoh-check` | [@docs-ai/operations/guides/troubleshooting.md](docs-ai/operations/guides/troubleshooting.md) |
 | **資料庫連接失敗** | `r agvc-check` | [@docs-ai/operations/development/database-operations.md](docs-ai/operations/development/database-operations.md) |
-| **PLC 通訊異常** | `r log-scan` | [@docs-ai/operations/development/plc-communication.md](docs-ai/operations/development/plc-communication.md) |
-| **Web 服務無回應** | `r system-health` | [@docs-ai/operations/development/web-development.md](docs-ai/operations/development/web-development.md) |
+| **PLC 通訊異常** | `r log-scan` | [@docs-ai/operations/development/ros2/plc-communication.md](docs-ai/operations/development/ros2/plc-communication.md) |
+| **Web 服務無回應** | `r system-health` | [@docs-ai/operations/development/web/web-development.md](docs-ai/operations/development/web/web-development.md) |
 
 ### 📖 完整故障排除指南
 
-> 📖 **詳細故障排除**: [@docs-ai/operations/maintenance/troubleshooting.md](docs-ai/operations/maintenance/troubleshooting.md)
-> 
-> 📖 **系統診斷**: [@docs-ai/operations/maintenance/system-diagnostics.md](docs-ai/operations/maintenance/system-diagnostics.md)
+> 📖 **詳細故障排除**: [@docs-ai/operations/guides/troubleshooting.md](docs-ai/operations/guides/troubleshooting.md)
+>
+> 📖 **系統診斷**: [@docs-ai/operations/guides/system-diagnostics.md](docs-ai/operations/guides/system-diagnostics.md)
 
 ## 🤝 貢獻指南
 
 ### 開發流程
 
 1. **環境準備**: 使用 Docker 容器進行開發
-2. **代碼開發**: 遵循 [@docs-ai/operations/development/core-principles.md](docs-ai/operations/development/core-principles.md)
-3. **測試驗證**: 使用 [@docs-ai/operations/development/testing-procedures.md](docs-ai/operations/development/testing-procedures.md)
+2. **代碼開發**: 遵循 [@docs-ai/operations/development/core/core-principles.md](docs-ai/operations/development/core/core-principles.md)
+3. **測試驗證**: 使用 [@docs-ai/operations/development/testing/testing-procedures.md](docs-ai/operations/development/testing/testing-procedures.md)
 4. **代碼審查**: 提交 Pull Request 前進行完整測試
 
 ### 技術規範
@@ -341,12 +379,32 @@ r log-errors && r network-check && r zenoh-check
 
 本專案採用 [MIT License](LICENSE) 授權。
 
+## 📝 最新更新
+
+### 2025-09-18 更新
+- ✅ 整理和優化 @docs-ai/ 文檔結構
+  - 移除2個空目錄和1個重複檔案
+  - 更新 STRUCTURE.md 以反映當前狀態
+- ✅ 優化 CLAUDE.md 減少 context loading
+  - 從載入 10+ 檔案優化為僅載入 3 個核心檔案
+  - 其餘文檔改為註解引用，減少約 70% 的 context 使用
+- ✅ 更新 README.md 修正文檔路徑
+  - 修正 51 個錯誤的 @docs-ai 引用路徑
+  - 更新工作空間數量：AGV 7個專用、AGVC 10個專用
+  - 說明 tafl_wcs_ws 為現行 WCS、flow_wcs_ws_old 已棄用
+- ✅ 更新 design/business-process-docs 網頁文檔
+  - 新增 TAFL 編輯器使用指南
+  - 新增統一工具系統 (r 命令) 文檔
+  - 新增服務管理工具文檔
+  - 更正技術棧中的工作空間數量
+  - 重新命名 ai-wcs-integration.md 為 tafl-wcs-integration.md（TAFL WCS 系統）
+
 ---
 
 <div align="center">
 
 **🚀 RosAGV - 推動工業自動化的未來**
 
-[📖 完整文檔](docs-ai/README.md) | [🛠️ 工具指南](CLAUDE.md) | [🐛 問題回報](https://github.com/your-repo/issues)
+[📖 完整文檔](docs-ai/README.md) | [📚 文檔結構導航](docs-ai/STRUCTURE.md) | [🛠️ 工具指南](CLAUDE.md) | [🐛 問題回報](https://github.com/your-repo/issues)
 
 </div>

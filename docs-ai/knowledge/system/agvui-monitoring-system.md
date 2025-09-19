@@ -183,7 +183,7 @@ source /app/setup.bash && agvc_source
 3. **錯誤處理**: 處理 JSON 解析錯誤和檔案不存在情況
 
 ## 🔗 交叉引用
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
+- AGVC 工作空間: docs-ai/context/workspaces/agvc-workspaces.md
 - Web API 系統: `app/web_api_ws/CLAUDE.md`
-- Docker 開發: @docs-ai/operations/development/docker-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- Docker 開發: docs-ai/operations/development/docker-development.md
+- 系統診斷: docs-ai/operations/guides/system-diagnostics.md

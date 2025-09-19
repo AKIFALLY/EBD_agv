@@ -23,25 +23,6 @@
             <a class="navbar-item" href="/works">
                 Works
             </a>
-            <div class="navbar-item has-dropdown is-hoverable">
-                <a class="navbar-link">
-                    Flows
-                </a>
-                <div class="navbar-dropdown is-boxed">
-                    <a class="navbar-item" href="/linear-flow/list">
-                        <span class="icon">
-                            <i class="mdi mdi-sitemap"></i>
-                        </span>
-                        <span>Linear Flow Designer</span>
-                    </a>
-                    <a class="navbar-item" href="/tafl/editor">
-                        <span class="icon">
-                            <i class="mdi mdi-code-braces"></i>
-                        </span>
-                        <span>TAFL Editor</span>
-                    </a>
-                </div>
-            </div>
             <a class="navbar-item" href="/agvs">
                 AGVs
             </a>
@@ -50,9 +31,6 @@
             </a>
             <a class="navbar-item" href="/signals">
                 Signals
-            </a>
-            <a class="navbar-item" href="/nodes">
-                Nodes
             </a>
             <div class="navbar-item has-dropdown is-hoverable">
                 <a class="navbar-link">
@@ -151,6 +129,18 @@
                             <i class="mdi mdi-database"></i>
                         </span>
                         <span>資料庫管理</span>
+                    </a>
+                    <a class="navbar-item" href="/tafl/editor" id="tafl-editor-link" style="display: none;">
+                        <span class="icon">
+                            <i class="mdi mdi-code-braces"></i>
+                        </span>
+                        <span>TAFL Editor</span>
+                    </a>
+                    <a class="navbar-item" href="/nodes" id="nodes-management-link" style="display: none;">
+                        <span class="icon">
+                            <i class="mdi mdi-server-network"></i>
+                        </span>
+                        <span>節點管理</span>
                     </a>
                     <hr class="navbar-divider" id="user-management-divider" style="display: none;">
                     <a class="navbar-item" href="#" id="logout-btn">

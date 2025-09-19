@@ -2,7 +2,15 @@
 
 ## 📚 Context Loading
 ../../CLAUDE.md  # 引用根目錄系統文档
-@docs-ai/operations/development/database-operations.md
+
+# 資料庫領域知識（工作空間層）
+@docs-ai/knowledge/agv-domain/wcs-database-design.md    # 資料庫設計
+@docs-ai/knowledge/agv-domain/wcs-workid-system.md      # WorkID 系統
+@docs-ai/knowledge/agv-domain/license-table-design.md   # 授權表設計
+@docs-ai/operations/development/database-operations.md   # 資料庫操作
+
+# 通用協議
+@docs-ai/knowledge/protocols/ros2-interfaces.md         # ROS2 介面
 
 ## 📋 工作空間概述
 

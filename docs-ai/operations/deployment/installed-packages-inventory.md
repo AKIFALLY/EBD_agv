@@ -243,7 +243,7 @@ json5 --validate /app/routerconfig.json5
 - 便於套件版本管理
 
 ## 🔗 交叉引用
-- Docker Compose 配置: @docs-ai/operations/deployment/docker-compose-configuration.md
-- 技術棧: @docs-ai/context/system/technology-stack.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- 容器管理: @docs-ai/operations/deployment/container-management.md
+- Docker Compose 配置: docs-ai/operations/deployment/docker-compose-configuration.md
+- 技術棧: docs-ai/context/system/technology-stack.md
+- 雙環境架構: docs-ai/context/system/dual-environment.md
+- 容器管理: docs-ai/operations/deployment/container-management.md

@@ -298,8 +298,6 @@ ros2 run joystick_ws joystick_node
 - 定期更新架構文檔
 
 ## 🔗 交叉引用
-- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
-- 共用組件: @docs-ai/context/workspaces/shared-components.md
-- AGV 控制邏輯: @docs-ai/context/business/agv-control-logic.md
-- ROS 2 開發指導: @docs-ai/operations/development/ros2-development.md
-- 車型領域知識: @docs-ai/knowledge/agv-domain/vehicle-types.md
+- AGVC 工作空間: docs-ai/context/workspaces/agvc-workspaces.md
+- ROS 2 開發指導: docs-ai/operations/development/ros2/ros2-development.md
+- 車型領域知識: docs-ai/knowledge/agv-domain/vehicle-types.md

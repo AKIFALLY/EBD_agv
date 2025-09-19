@@ -6,7 +6,6 @@
 
 import { taflFlowStore } from './tafl-editor-store.js';
 import taflEditorProperties from './tafl-editor-properties.js';
-import taflEventBus from './tafl-event-bus.js';
 
 class TAFLPanelsProperties {
     constructor() {

@@ -302,10 +302,8 @@ class TAFLEditorAPI {
                 version: '1.1', 
                 description: '' 
             },
-            settings: flow.settings || { 
-                timeout: 3600, 
-                max_retries: 3, 
-                retry_on_failure: false 
+            settings: flow.settings || {
+                execution_interval: 5
             },
             preload: flow.preload || {},
             rules: flow.rules || {},

@@ -24,7 +24,7 @@
 └── 📈 報告和分析工具
     ├── 診斷報告生成
     ├── 趨勢分析
-    └── 預測性分析
+    └── 狀態分析
 ```
 
 ## 🔍 統一診斷工具 (r 命令系列)
@@ -286,10 +286,10 @@ while true; do
 done
 ```
 
-### 預測性監控
+### 趨勢監控
 ```python
-# 預測性問題檢測
-class PredictiveMonitor:
+# 趨勢分析和問題檢測
+class TrendMonitor:
     def __init__(self):
         self.historical_data = []
         self.alert_thresholds = {
@@ -311,7 +311,7 @@ class PredictiveMonitor:
         memory_trend = self.calculate_trend('memory_usage')
         error_trend = self.calculate_trend('error_rate')
         
-        # 預測性告警
+        # 趨勢告警
         alerts = []
         if cpu_trend > self.alert_thresholds['cpu_trend']:
             alerts.append("CPU 使用率呈上升趨勢，建議檢查系統負載")

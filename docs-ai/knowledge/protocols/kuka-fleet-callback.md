@@ -450,7 +450,7 @@ def handle_callback_error(callback_data, error):
 4. **連接池**: 使用資料庫連接池提高效率
 
 ## 🔗 交叉引用
-- KUKA Fleet API 規格: @docs-ai/knowledge/protocols/kuka-fleet-api.md
+- KUKA Fleet API 規格: docs-ai/knowledge/protocols/kuka-fleet-api.md
 - KUKA Fleet 適配器實作: @app/kuka_fleet_ws/CLAUDE.md
 - ROS 2 訊息介面: @app/agv_ws/src/agv_interfaces/CLAUDE.md
-- 任務狀態管理: @docs-ai/knowledge/agv-domain/mission-management.md
+- 任務狀態管理: docs-ai/knowledge/agv-domain/wcs-system-design.md

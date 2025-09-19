@@ -193,14 +193,8 @@ class TAFLEditorYaml {
         if (flow.settings) {
             // Only include non-default settings
             const settings = {};
-            if (flow.settings.timeout && flow.settings.timeout !== 3600) {
-                settings.timeout = flow.settings.timeout;
-            }
-            if (flow.settings.max_retries && flow.settings.max_retries !== 3) {
-                settings.max_retries = flow.settings.max_retries;
-            }
-            if (flow.settings.retry_on_failure !== undefined && flow.settings.retry_on_failure !== false) {
-                settings.retry_on_failure = flow.settings.retry_on_failure;
+            if (flow.settings.execution_interval && flow.settings.execution_interval !== 5) {
+                settings.execution_interval = flow.settings.execution_interval;
             }
             if (Object.keys(settings).length > 0) {
                 flowData.settings = settings;

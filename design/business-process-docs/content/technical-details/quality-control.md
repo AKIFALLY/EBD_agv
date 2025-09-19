@@ -1,330 +1,156 @@
-# 品質管制系統
+# 品質管制系統 (規劃中)
 
 ## 概述
 
-RosAGV 系統整合了完整的品質管制機制，透過視覺檢測、製程適配驗證和異常處理流程，確保眼鏡生產的品質一致性和可追溯性。
+**⚠️ 注意：品質管制功能目前處於規劃階段，以下描述為系統設計目標，實際功能尚未完全實作。**
 
-## 核心組件
+RosAGV 系統規劃整合視覺檢測和異常處理機制，以支援眼鏡生產的品質管理需求。
 
-### 視覺檢測系統
+## 規劃功能
 
-#### SensorPart 相機系統
-- **技術規格**: 3D 視覺定位 + OCR 識別
-- **部署位置**: Cargo AGV 機械臂
-- **主要功能**:
-  - Rack 整體 3D 掃描定位
-  - 單一 Carrier 精確 OCR 識別
-  - 產品編號/條碼讀取
-  - 產品類型自動分類
+### 視覺檢測系統 (開發中)
 
-#### 檢測流程
+#### SensorPart 整合 (計劃)
+- **規劃功能**: 3D 視覺定位 + OCR 識別
+- **預定部署**: Cargo AGV 機械臂
+- **目標能力**:
+  - Rack 整體掃描定位
+  - Carrier 位置識別
+  - 產品編號讀取 (OCR)
+  - 產品類型識別
+
+#### 檢測流程 (概念設計)
 ```
-3D 視覺檢測工作流程
-1. Rack 整體掃描 → 識別所有 Carrier 位置座標
-2. 建立定位基準點 → 更新機械臂座標系
-3. 逐一 Carrier 處理：
-   ├── 移動定位到 Carrier 前方
-   ├── OCR 掃描讀取產品資訊
-   ├── 識別產品類型和製程需求
-   └── 執行製程適配性檢查
-```
-
-### 製程適配驗證
-
-#### 智能品質管制邏輯
-- **製程匹配檢查**: 
-  - 查詢產品的 `process_settings_id`
-  - 比對當前房間的製程能力
-  - 判斷製程適配性 (泡藥1次 vs 2次)
-  
-#### 分支處理機制
-```python
-# 製程適配檢查邏輯
-if 製程匹配:
-    # 正常流程
-    機械臂抓取 Carrier
-    8bit 通訊開啟傳送箱門
-    將 Carrier 放入入口傳送箱
-    更新系統狀態為正常
-else:
-    # 異常處理
-    標記 Carrier 為 NG 狀態
-    機械臂回到 Home 位置
-    記錄異常日誌
-    繼續處理下一個 Carrier
+規劃的視覺檢測流程
+1. Rack 整體掃描 → 取得 Carrier 位置
+2. 逐一 Carrier 處理：
+   ├── 移動到指定位置
+   ├── 執行視覺識別
+   └── 記錄處理結果
 ```
 
-## 品質管制機制
+### 製程適配驗證 (概念)
 
-### 多層次檢查體系
+#### 規劃的驗證機制
+- **目標功能**:
+  - 產品類型識別
+  - 房間製程能力匹配
+  - 異常產品標記
 
-#### 第一層：產品識別驗證
-- **OCR 準確性檢查**: 確保產品編號正確讀取
-- **產品類型驗證**: S/L 尺寸產品正確分類
-- **條碼完整性**: 防止破損或不清晰的條碼進入製程
+#### 處理邏輯 (設計概念)
+```
+規劃的處理流程：
+- 正常情況：將產品送入製程
+- 異常情況：標記並隔離處理
+```
 
-#### 第二層：製程適配性檢查
-- **房間能力驗證**: 
-  - Room1/Room2 只接受泡藥1次產品
-  - 泡藥2次產品自動標記為 NG
-- **設備資源檢查**: 確認目標設備的可用性
-- **負載均衡**: 避免特定設備過載
+## 品質管制機制 (設計階段)
 
-#### 第三層：異常狀態處理
-- **NG 產品隔離**: NG 產品保留在 Rack 上，不影響其他產品處理
-- **完整性記錄**: 記錄每個 Carrier 的處理狀態和異常原因
-- **可追溯性**: 建立從原料到成品的完整追蹤鏈
+### 規劃的檢查體系
 
-### NG 處理系統
+#### 基礎功能目標
+- **產品識別**: 透過視覺系統識別產品
+- **狀態追蹤**: 記錄產品處理狀態
+- **異常處理**: 隔離異常產品
 
-#### NG 判定標準
+### 異常處理流程 (規劃)
+
+#### 異常產品處理
+- **隔離區域**: 規劃 NG 處理區 (71-72)
+- **人工介入**: 需要人工確認和處理
+- **狀態重置**: 透過 AGVCUI 介面管理
+
+#### 基本處理步驟
+```
+規劃的異常處理流程：
+1. 識別異常 → 標記產品
+2. 隔離處理 → 送到專用區域
+3. 人工處理 → 確認和修正
+4. 狀態重置 → 更新系統記錄
+```
+
+## 資料管理
+
+### 實際資料庫結構
+
+#### Carrier 資料表 (現有)
 ```sql
--- NG Rack 判定邏輯
-SELECT r.id as rack_id, COUNT(c.id) as ng_count
-FROM rack r
-LEFT JOIN carrier c ON c.rack_id = r.id
-WHERE c.status = 'NG'
-GROUP BY r.id
-HAVING COUNT(c.id) > 0;
--- 有任何 NG Carrier 的 Rack 整體標記為 NG
-```
-
-#### NG 處理工作流程
-```
-NG Rack 完整處理流程
-1. 系統檢測 → 自動識別 NG Rack
-2. WCS 調度 → 產生 NG Rack 派車任務
-3. KUKA AGV → 將 NG Rack 搬運到 NG 處理區 (71-72)
-4. 人工檢查 → 作業員檢查 NG 原因
-   ├── 產品修正或報廢處理
-   ├── 清理 Rack 上的所有產品
-   └── 分析 NG 根本原因
-5. 狀態重置 → AGVCUI 網頁操作
-   ├── 登入 agvc.ui 管理介面
-   ├── 將 Rack 重新設為空 Rack 狀態
-   └── 更新資料庫狀態記錄
-6. 物理回收 → 人工搬運空 Rack 到回放格
-7. 系統識別 → 空 Rack 重新進入循環使用
-```
-
-## 品質數據管理
-
-### 資料庫追蹤
-
-#### 品質相關資料表
-```sql
--- Carrier 狀態追蹤
+-- 實際的 carrier 表結構
 carrier 表:
-├── id: Carrier 識別碼
-├── rack_id: 所屬 Rack
-├── status: 狀態 (NORMAL/NG/PROCESSING)
-├── product_id: 產品識別
-├── quality_check_result: 品質檢查結果
-├── ng_reason: NG 原因碼
-└── created_at, updated_at: 時間戳
-
--- 品質檢查記錄
-quality_log 表 (系統生成):
-├── carrier_id: 被檢查的 Carrier
-├── check_type: 檢查類型 (OCR/PROCESS_MATCH/VISUAL)
-├── check_result: 檢查結果 (PASS/FAIL)
-├── error_details: 錯誤詳情 JSON
-├── inspector: 檢查員 (系統/人工)
-└── timestamp: 檢查時間
+├── id: 主鍵
+├── room_id: 房間 ID (可選)
+├── rack_id: 所屬 Rack ID (可選)
+├── port_id: 設備端口 ID (可選)
+├── rack_index: Rack 位置索引 (可選)
+├── status_id: 狀態 ID (可選)
+├── created_at: 建立時間
+└── updated_at: 更新時間
 ```
 
-#### 品質報表生成
-```sql
--- 品質統計報表
-SELECT 
-    DATE(created_at) as date,
-    COUNT(*) as total_carriers,
-    SUM(CASE WHEN status = 'NORMAL' THEN 1 ELSE 0 END) as pass_count,
-    SUM(CASE WHEN status = 'NG' THEN 1 ELSE 0 END) as ng_count,
-    ROUND(SUM(CASE WHEN status = 'NORMAL' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as pass_rate
-FROM carrier 
-WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-GROUP BY DATE(created_at)
-ORDER BY date DESC;
+**註：** 目前 Carrier 表僅追蹤基本位置和狀態資訊，尚未包含品質檢查相關欄位。
+
+### 監控功能 (規劃)
+
+#### 規劃的監控機制
+- **狀態追蹤**: Carrier 和 Rack 狀態監控
+- **異常通知**: 透過 Web 介面顯示
+- **基本統計**: 處理數量統計
+
+## 系統整合現況
+
+### AGV 整合
+
+#### Cargo AGV 視覺定位 (實作中)
+- **rack_vision_position_state.py**: 處理 Rack 上下層拍照定位
+- **transfer_vision_position_state.py**: 處理傳送箱視覺定位
+- **實際功能**: 目前主要用於位置定位，OCR 功能尚在開發中
+
+### WCS 整合
+
+#### 任務優先級配置 (YAML 驅動)
+```yaml
+# 實際的優先級配置 (來自 TAFL 流程)
+priorities:
+  100: AGV旋轉檢查
+  90: NG料架回收
+  80: 滿料架到人工收料區
+  60: 系統準備區到房間
+  40: 空料架搬運
 ```
 
-### 即時監控
+### Web API 現況
 
-#### Socket.IO 即時通知
-```javascript
-// 品質異常即時通知
-socket.on('quality_alert', (data) => {
-    const alert = {
-        type: 'NG_DETECTED',
-        rack_id: data.rack_id,
-        carrier_id: data.carrier_id,
-        ng_reason: data.ng_reason,
-        timestamp: data.timestamp,
-        location: data.current_location
-    };
-    
-    // 顯示警示訊息
-    showQualityAlert(alert);
-    
-    // 更新統計面板
-    updateQualityStats();
-});
-```
+#### 實際可用的 API
+- **Carrier 查詢**: `/carrier_query` (ROS 2 服務)
+- **Rack 查詢**: `/rack_query` (ROS 2 服務)
+- **狀態更新**: 透過 AGVCUI 介面進行
 
-## 系統整合
+**註：** 專門的品質管理 API 尚未實作。
 
-### 與製程系統整合
+## 監控指標 (規劃)
 
-#### AGV 狀態機整合
-```python
-# 品質檢查集成到 AGV 狀態機
-class CargoAgvQualityState(BaseContext):
-    def __init__(self):
-        self.sensor_part = SensorPartInterface()
-        self.quality_checker = QualityChecker()
-        
-    def execute_quality_check(self, carrier):
-        # OCR 識別
-        ocr_result = self.sensor_part.scan_carrier(carrier)
-        
-        # 製程適配檢查
-        process_match = self.quality_checker.check_process_compatibility(
-            ocr_result.product_id, 
-            self.current_room.process_settings
-        )
-        
-        if process_match:
-            return QualityResult.PASS
-        else:
-            self.log_ng_reason(carrier, "PROCESS_MISMATCH")
-            return QualityResult.NG
-```
+### 基礎指標
+- **處理數量**: Carrier 處理總數
+- **狀態分佈**: 各狀態 Carrier 數量
+- **處理時間**: 平均處理時間
 
-#### WCS 決策引擎整合
-```python
-# WCS 中的品質相關任務優先級
-QUALITY_TASK_PRIORITIES = {
-    'NG_RACK_HANDLING': 90,      # NG Rack 回收 (高優先級)
-    'QUALITY_CHECK': 70,         # 品質檢查任務
-    'NORMAL_TRANSPORT': 60       # 正常搬運任務
-}
+### 未來發展
+- 視覺系統整合完成後，可增加識別準確率等指標
+- 異常處理機制完善後，可追蹤 NG 處理效率
 
-def create_ng_handling_task(rack_id):
-    """創建 NG Rack 處理任務"""
-    return Task(
-        work_id='220001',  # KUKA 移動貨架任務
-        priority=90,
-        source_location=f'room_{room_id}_entrance',
-        target_location='ng_processing_area_71',
-        rack_id=rack_id,
-        task_type='NG_HANDLING'
-    )
-```
+## 開發建議
 
-### Web API 整合
+### 當前重點
+1. **完成視覺整合**: 實作 SensorPart OCR 功能
+2. **資料庫擴展**: 在 Carrier 表增加品質相關欄位
+3. **API 開發**: 實作品質管理相關 API
+4. **介面完善**: 在 AGVCUI 增加品質監控功能
 
-#### 品質數據 API
-```python
-# FastAPI 品質監控端點
-@app.get("/quality/stats")
-async def get_quality_stats(
-    date_from: date = None,
-    date_to: date = None,
-    session: AsyncSession = Depends(get_session)
-):
-    """獲取品質統計數據"""
-    return await get_quality_statistics(session, date_from, date_to)
-
-@app.get("/quality/ng-racks")
-async def get_ng_racks(session: AsyncSession = Depends(get_session)):
-    """獲取當前 NG Rack 列表"""
-    return await get_current_ng_racks(session)
-
-@app.post("/quality/reset-rack/{rack_id}")
-async def reset_rack_status(
-    rack_id: int,
-    session: AsyncSession = Depends(get_session)
-):
-    """重置 Rack 狀態 (AGVCUI 操作)"""
-    return await reset_rack_to_empty(session, rack_id)
-```
-
-## 效能監控
-
-### 關鍵品質指標 (KQI)
-
-#### 實時品質指標
-- **通過率 (Pass Rate)**: 正常通過品質檢查的比例
-- **NG 檢出率**: 及時發現品質問題的比例
-- **誤檢率**: 錯誤將正常產品標記為 NG 的比例
-- **處理週期時間**: 從檢測到 NG 處理完成的時間
-
-#### 系統效能指標
-- **OCR 識別準確率**: SensorPart 系統的識別精度
-- **視覺定位精度**: 3D 掃描的定位準確性
-- **處理吞吐量**: 單位時間內處理的 Carrier 數量
-- **系統可用度**: 品質檢查系統的運行時間比例
-
-### 預警機制
-
-#### 品質趨勢監控
-```python
-# 品質趨勢分析
-class QualityTrendAnalyzer:
-    def __init__(self):
-        self.alert_thresholds = {
-            'ng_rate_high': 0.05,      # NG 率超過 5%
-            'ng_rate_spike': 0.02,     # NG 率突然增加 2%
-            'ocr_accuracy_low': 0.95   # OCR 準確率低於 95%
-        }
-    
-    def analyze_quality_trend(self, recent_data):
-        alerts = []
-        
-        current_ng_rate = self.calculate_ng_rate(recent_data)
-        if current_ng_rate > self.alert_thresholds['ng_rate_high']:
-            alerts.append({
-                'type': 'HIGH_NG_RATE',
-                'value': current_ng_rate,
-                'threshold': self.alert_thresholds['ng_rate_high']
-            })
-        
-        return alerts
-```
-
-## 最佳實踐
-
-### 運營建議
-
-#### 日常品質管理
-1. **定期校準**: SensorPart 相機系統定期校準確保準確性
-2. **數據分析**: 每日檢視品質統計報表，識別趨勢和異常
-3. **根因分析**: 對 NG 產品進行根本原因分析，改善製程
-4. **持續改進**: 基於品質數據調整檢查參數和標準
-
-#### 異常處理流程
-1. **快速響應**: NG 檢出後立即進入處理流程
-2. **隔離控制**: 確保 NG 產品不進入後續製程
-3. **狀態追蹤**: 全程記錄 NG 處理的每個步驟
-4. **系統恢復**: 處理完成後及時恢復正常運行
-
-### 系統維護
-
-#### 預防性維護
-```bash
-# 品質系統健康檢查
-r quality-check                    # 檢查品質系統狀態
-r sensor-calibration              # 執行感測器校準
-r quality-data-cleanup            # 清理過期品質數據
-```
-
-#### 故障排除
-```bash
-# 常見品質系統問題診斷
-r quality-diag                    # 品質系統診斷
-r ocr-accuracy-test               # OCR 準確性測試
-r vision-system-status            # 視覺系統狀態檢查
-```
+### 實施步驟
+1. **第一階段**: 完成基本 Carrier 狀態追蹤
+2. **第二階段**: 整合視覺系統和 OCR 功能
+3. **第三階段**: 實作異常處理流程
+4. **第四階段**: 增加統計和報表功能
 
 ## 相關文檔
 

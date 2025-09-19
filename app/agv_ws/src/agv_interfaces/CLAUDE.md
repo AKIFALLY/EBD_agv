@@ -1,10 +1,8 @@
 # agv_interfaces - AGV ROS 2訊息接口定義
 
 ## 📚 Context Loading
-@docs-ai/context/system/technology-stack.md
-@docs-ai/knowledge/protocols/ros2-interfaces.md
-@docs-ai/operations/development/docker-development.md
-@docs-ai/operations/maintenance/system-diagnostics.md
+../../../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
 
 ## 📋 專案概述
 agv_interfaces 定義 RosAGV 系統中 AGV 相關的 ROS 2 訊息類型，提供標準化的通訊接口。
@@ -93,5 +91,5 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 - **web_api_ws**: 透過 WebSocket 轉發狀態給前端
 
 ## 🚨 故障排除
-@docs-ai/operations/maintenance/system-diagnostics.md
+@docs-ai/operations/guides/system-diagnostics.md
 @docs-ai/knowledge/protocols/ros2-interfaces.md

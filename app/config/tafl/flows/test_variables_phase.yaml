@@ -4,6 +4,7 @@
 
 metadata:
   id: test_variables_phase
+  enabled: false
   name: "Test Variables Phase"
   version: "1.0.0"
   description: "Test VARIABLES phase - initial variable setup and types"

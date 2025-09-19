@@ -99,7 +99,7 @@ def validate_pgno_format(pgno_string):
 - [ ] 確認任務執行結果
 
 ## 🔗 交叉引用
-- AGV 車型特性: @docs-ai/knowledge/agv-domain/vehicle-types.md
-- Robot 控制邏輯: @docs-ai/context/workspaces/agv-workspaces.md
-- PLC 通訊協定: @docs-ai/knowledge/protocols/plc-communication.md
-- 開發規範: @docs-ai/operations/development/core-principles.md
+- AGV 車型特性: docs-ai/knowledge/agv-domain/vehicle-types.md
+- Robot 控制邏輯: docs-ai/context/workspaces/agv-workspaces.md
+- PLC 通訊協定: docs-ai/operations/development/ros2/plc-communication.md
+- 開發規範: docs-ai/operations/development/core/core-principles.md

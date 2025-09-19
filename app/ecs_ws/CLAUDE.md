@@ -2,7 +2,14 @@
 
 ## 📚 Context Loading
 ../../CLAUDE.md  # 引用根目錄系統文档
-@docs-ai/knowledge/business/eyewear-production-process.md
+
+# 設備控制領域知識（工作空間層）
+@docs-ai/knowledge/business/eyewear-production-process.md  # 生產流程
+@docs-ai/knowledge/protocols/keyence-plc-protocol.md       # PLC 協議
+
+# 通用協議與介面
+@docs-ai/knowledge/protocols/ros2-interfaces.md            # ROS2 介面
+@docs-ai/knowledge/protocols/zenoh-rmw.md                  # Zenoh 通訊
 
 ## 📋 工作空間概述
 

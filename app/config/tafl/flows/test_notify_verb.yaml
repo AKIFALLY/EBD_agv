@@ -1,5 +1,6 @@
 metadata:
   id: test_notify_verb
+  enabled: false
   name: Test Notify Verb
   version: "1.1.2"
   description: Test notify verb functionality with all notification levels

@@ -1,5 +1,6 @@
 metadata:
   id: test_query_verb
+  enabled: false
   name: Test Query Verb
   version: "1.1.2"
   description: Test query verb functionality with various scenarios

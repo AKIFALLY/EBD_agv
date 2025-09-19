@@ -138,7 +138,6 @@ volumes:
   - ~/RosAGV/Dockerfile:/app/host/Dockerfile:ro
   - ~/RosAGV/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
   - ~/RosAGV/README.md:/app/host/README.md:rw
-  - ~/RosAGV/.augment-guidelines:/app/host/.augment-guidelines:rw
   - /tmp/.X11-unix:/tmp/.X11-unix:rw  # X11 顯示支援
 ```
 
@@ -292,8 +291,8 @@ docker compose -f docker-compose.agvc.yml restart agvc_server
 - 使用唯讀掛載保護配置檔案
 
 ## 🔗 交叉引用
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- Nginx 配置: @docs-ai/operations/deployment/nginx-configuration.md
-- 容器管理: @docs-ai/operations/deployment/container-management.md
-- 技術棧: @docs-ai/context/system/technology-stack.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 雙環境架構: docs-ai/context/system/dual-environment.md
+- Nginx 配置: docs-ai/operations/deployment/nginx-configuration.md
+- 容器管理: docs-ai/operations/deployment/container-management.md
+- 技術棧: docs-ai/context/system/technology-stack.md
+- 系統診斷: docs-ai/operations/guides/system-diagnostics.md

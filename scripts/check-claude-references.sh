@@ -65,15 +65,28 @@ check_claude_file() {
 # 主要檢查邏輯
 main() {
     echo "開始檢查 CLAUDE.md 文件..."
-    
-    # 檢查的 CLAUDE.md 文件列表
-    claude_files=(
-        "app/agv_ws/CLAUDE.md"
-        "app/db_proxy_ws/CLAUDE.md"
-        "app/ai_wcs_ws/CLAUDE.md"
-        "app/joystick_ws/CLAUDE.md"
-    )
-    
+
+    # 動態查找所有 CLAUDE.md 文件（根目錄 + 所有工作空間）
+    claude_files=()
+
+    # 添加根目錄的 CLAUDE.md（如果存在）
+    if [ -f "CLAUDE.md" ]; then
+        claude_files+=("CLAUDE.md")
+    fi
+
+    # 添加所有工作空間的 CLAUDE.md
+    while IFS= read -r -d '' file; do
+        claude_files+=("$file")
+    done < <(find app -name "CLAUDE.md" -type f -print0 | sort -z)
+
+    # 如果沒有找到任何 CLAUDE.md 文件
+    if [ ${#claude_files[@]} -eq 0 ]; then
+        echo -e "${YELLOW}⚠️  沒有找到任何 CLAUDE.md 文件${NC}"
+        exit 1
+    fi
+
+    echo -e "找到 ${GREEN}${#claude_files[@]}${NC} 個 CLAUDE.md 文件需要檢查\n"
+
     # 檢查每個文件
     for claude_file in "${claude_files[@]}"; do
         check_claude_file "$claude_file"

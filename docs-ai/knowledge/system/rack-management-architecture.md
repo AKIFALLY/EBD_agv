@@ -149,6 +149,6 @@ graph LR
 - **核心確認**: OPUI 不創建新 Rack，只管理 location_id
 
 ## 🔗 相關文檔
-- 手動 Rack 管理詳細說明：@docs-ai/knowledge/system/manual-rack-management.md
-- 眼鏡生產業務流程：@docs-ai/knowledge/business/eyewear-production-process.md
-- WCS 系統設計：@docs-ai/knowledge/agv-domain/wcs-system-design.md
+- 手動 Rack 管理詳細說明：docs-ai/knowledge/system/manual-rack-management.md
+- 眼鏡生產業務流程：docs-ai/knowledge/business/eyewear-production-process.md
+- WCS 系統設計：docs-ai/knowledge/agv-domain/wcs-system-design.md

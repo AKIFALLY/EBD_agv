@@ -109,7 +109,7 @@ class IndustrialAGVNode(Node):
 ├── db_proxy_ws/              # 資料庫代理服務
 ├── ecs_ws/                   # 設備控制系統
 ├── rcs_ws/                   # 機器人控制系統
-├── ai_wcs_ws/                # AI 倉庫控制系統
+├── tafl_wcs_ws/              # TAFL 流程執行引擎
 ├── kuka_fleet_ws/            # KUKA Fleet 整合
 └── [共用工作空間] - 與 AGV 環境共用
 ```

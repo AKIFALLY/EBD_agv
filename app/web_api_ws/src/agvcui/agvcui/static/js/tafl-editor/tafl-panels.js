@@ -418,47 +418,19 @@ class TAFLPanels {
         const settings = taflFlowStore.getFlow().settings || {};
         
         // 更新現有的 HTML 欄位，而不是創建新的
-        const timeoutInput = container.querySelector('#settings-timeout');
-        if (timeoutInput) {
-            timeoutInput.value = settings.timeout || 3600;
+        const executionIntervalInput = container.querySelector('#settings-execution-interval');
+        if (executionIntervalInput) {
+            executionIntervalInput.value = settings.execution_interval || 5;
             // 只綁定一次事件
-            if (!timeoutInput.dataset.bound) {
-                timeoutInput.dataset.bound = 'true';
-                timeoutInput.addEventListener('change', (e) => {
+            if (!executionIntervalInput.dataset.bound) {
+                executionIntervalInput.dataset.bound = 'true';
+                executionIntervalInput.addEventListener('change', (e) => {
                     const flow = taflFlowStore.getFlow();
-                    flow.settings = flow.settings || {};
-                    flow.settings.timeout = parseInt(e.target.value, 10);
-                    taflFlowStore.updateFlow(flow);
-                });
-            }
-        }
-        
-        const maxRetriesInput = container.querySelector('#settings-max-retries');
-        if (maxRetriesInput) {
-            maxRetriesInput.value = settings.max_retries || 3;
-            // 只綁定一次事件
-            if (!maxRetriesInput.dataset.bound) {
-                maxRetriesInput.dataset.bound = 'true';
-                maxRetriesInput.addEventListener('change', (e) => {
-                    const flow = taflFlowStore.getFlow();
-                    flow.settings = flow.settings || {};
-                    flow.settings.max_retries = parseInt(e.target.value, 10);
-                    taflFlowStore.updateFlow(flow);
-                });
-            }
-        }
-        
-        const retryCheckbox = container.querySelector('#settings-retry-on-failure');
-        if (retryCheckbox) {
-            retryCheckbox.checked = settings.retry_on_failure || false;
-            // 只綁定一次事件
-            if (!retryCheckbox.dataset.bound) {
-                retryCheckbox.dataset.bound = 'true';
-                retryCheckbox.addEventListener('change', (e) => {
-                    const flow = taflFlowStore.getFlow();
-                    flow.settings = flow.settings || {};
-                    flow.settings.retry_on_failure = e.target.checked;
-                    taflFlowStore.updateFlow(flow);
+                    const newSettings = {
+                        ...(flow.settings || {}),
+                        execution_interval: parseInt(e.target.value, 10)
+                    };
+                    taflFlowStore.updateFlow({ settings: newSettings });
                 });
             }
         }

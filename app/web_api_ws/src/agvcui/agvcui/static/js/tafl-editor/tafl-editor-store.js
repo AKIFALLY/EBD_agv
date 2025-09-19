@@ -20,9 +20,7 @@ class TAFLFlowStore {
                 enabled: true  // Default to enabled for new flows
             },
             settings: {
-                timeout: 3600,
-                max_retries: 3,
-                retry_on_failure: false
+                execution_interval: 5
             },
             preload: {},
             rules: {},
@@ -129,6 +127,7 @@ class TAFLFlowStore {
             isDirty: true
         });
         this.emit('flow:changed', newFlow);
+        this.emit('dirty:changed', true);
     }
     
     updateMetadata(metadata) {
@@ -146,6 +145,7 @@ class TAFLFlowStore {
             isDirty: true
         });
         this.emit('metadata:changed', newFlow.metadata);
+        this.emit('dirty:changed', true);
     }
     
     updateVariables(variables) {
@@ -160,6 +160,7 @@ class TAFLFlowStore {
             isDirty: true
         });
         this.emit('variables:changed', variables);
+        this.emit('dirty:changed', true);
     }
     
     loadFlow(flowData) {

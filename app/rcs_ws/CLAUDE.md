@@ -3,9 +3,15 @@
 ## 📚 Context Loading
 ../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/business/eyewear-production-process.md
+@docs-ai/knowledge/system/rack-rotation-logic.md
+@docs-ai/knowledge/system/rack-management-architecture.md
+@docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md
+@docs-ai/knowledge/agv-domain/wcs-database-design.md
+@docs-ai/knowledge/agv-domain/wcs-workid-system.md
 @docs-ai/operations/development/docker-development.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
+@docs-ai/operations/development/testing/testing-standards.md
+@docs-ai/operations/guides/system-diagnostics.md
+@docs-ai/operations/guides/troubleshooting.md
 @docs-ai/operations/tools/unified-tools.md
 
 ## 📋 工作空間概述
@@ -23,6 +29,44 @@
 - **專注核心**: 專注於基本的任務查詢和派發功能
 - **易於理解**: 清晰的邏輯，便於維護和擴展
 - **統一參數**: 使用一致的 `parameters["model"]` 格式 (小寫)
+
+## ⚠️ 重構警告與教訓 (2025-07-29 事件)
+
+### 重構歷史
+- **原始系統**: 包含 7+ 個 KUKA 相關模組，總計超過 3000 行程式碼
+  - `kuka_manager.py` (1517 行)、`kuka_dispatcher.py`、`kuka_robot.py`、`kuka_container.py` 等
+- **簡化後**: 合併為單一 `simple_kuka_manager.py` (481 行)
+- **問題發生**: 重構時誤刪關鍵監控功能，導致前端無法顯示即時狀態
+- **修復**: 2025-09-18 透過 commit d77f8275 恢復遺漏功能
+
+### 🔴 絕對不可刪除的功能清單
+1. **機器人位置更新** (`on_robot_update`)
+   - 同步 KUKA 機器人位置到資料庫
+   - 座標轉換: KUKA mm → 像素 (12.5mm = 1px)
+   - 觸發 `ModifyLog.mark(session, "agv")` 通知前端
+
+2. **容器狀態管理** (`on_container_update`)
+   - 同步 KUKA 容器狀態到 Rack 表
+   - 更新 `is_carry` 和 `is_in_map` 狀態
+   - 觸發 `ModifyLog.mark(session, "rack")` 通知前端
+
+3. **監控機制** (KukaFleetAdapter)
+   - 每 0.05 秒查詢一次機器人和容器狀態
+   - 自動啟動監控 (`start_monitoring`)
+   - 回調機制連接資料庫更新
+
+4. **ModifyLog 機制**
+   - 前後端即時同步的核心
+   - `agvc_ui_socket.py` 依賴此機制更新前端顯示
+   - 絕對不可移除或註解
+
+### 重構教訓
+- ❌ **錯誤**: 將「監控更新」判斷為非核心功能
+- ❌ **錯誤**: 沒理解前端對即時資料的依賴
+- ❌ **錯誤**: 過度簡化，刪除了必要功能
+- ✅ **正確**: 簡化應保留所有核心功能
+- ✅ **正確**: 重構前應列出所有功能清單
+- ✅ **正確**: 必須有端到端測試驗證
 
 ### 核心定位
 - **簡化車隊調度**: 管理 CT 和 KUKA 兩套車隊系統

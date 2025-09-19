@@ -533,7 +533,6 @@ telnet 192.168.10.3 10870
 - **日誌記錄**: 記錄 API 呼叫和錯誤資訊用於除錯
 
 ## 🔗 交叉引用
-- KUKA Fleet 回調規格: @docs-ai/knowledge/protocols/kuka-fleet-callback.md
+- KUKA Fleet 回調規格: docs-ai/knowledge/protocols/kuka-fleet-callback.md
 - KUKA Fleet 適配器實作: @app/kuka_fleet_ws/CLAUDE.md
-- 外部系統整合: @docs-ai/knowledge/integration/external-systems.md
 - API 客戶端實作: @app/kuka_fleet_ws/src/kuka_fleet_adapter/kuka_fleet_adapter/kuka_api_client.py

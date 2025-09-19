@@ -11,7 +11,7 @@ from agvcui.agvc_ui_socket import AgvcUiSocket
 from agvcui.routers import map, tasks, works, devices, signals
 from agvcui.routers import rosout_logs, runtime_logs, audit_logs
 from agvcui.routers import clients, racks, products, carriers, agvs, auth, users
-from agvcui.routers import linear_flow_designer, nodes, tafl_editor, tafl_editor_direct
+from agvcui.routers import nodes, tafl_editor, tafl_editor_direct
 from agvcui.middleware import AuthMiddleware
 from contextlib import asynccontextmanager
 
@@ -151,7 +151,6 @@ class AgvcUiServer:
         self.app.include_router(signals.get_router(self.templates))
         self.app.include_router(auth.get_router(self.templates))
         self.app.include_router(users.get_router(self.templates))
-        self.app.include_router(linear_flow_designer.get_router(self.templates))
         self.app.include_router(nodes.get_router(self.templates))
         
         # Add TAFL Editor routers

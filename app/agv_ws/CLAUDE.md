@@ -1,8 +1,20 @@
 # agv_ws - AGV 核心控制系統工作空間
 
 ## 📚 Context Loading
-../../CLAUDE.md  # 引用根目錄系統文档
-@docs-ai/knowledge/agv-domain/vehicle-types.md
+../../CLAUDE.md  # 引用根目錄通用層知識（系統架構、核心原則、通用工具）
+
+## 🔧 工作空間層文檔（第二層）
+# AGV 領域專業知識
+@docs-ai/knowledge/agv-domain/agv-state-machine.md  # AGV 狀態機設計
+@docs-ai/knowledge/agv-domain/vehicle-types.md      # 車型定義與規格
+@docs-ai/knowledge/system/manual-rack-management.md # Rack 管理技術
+@docs-ai/operations/guides/rack-management-guide.md # Rack 操作指南
+
+# 工作空間通用文檔
+@docs-ai/context/workspaces/agv-workspaces.md      # AGV 工作空間架構
+@docs-ai/knowledge/protocols/ros2-interfaces.md     # ROS2 介面規範
+@docs-ai/knowledge/protocols/zenoh-rmw.md          # Zenoh 通訊協議
+@docs-ai/operations/development/ros2/ros2-development.md # ROS2 開發流程
 
 ## 📋 工作空間概述
 

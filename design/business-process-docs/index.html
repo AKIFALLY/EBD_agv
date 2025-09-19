@@ -15,6 +15,7 @@
     <script src="js/vendors/marked.js"></script>
     <script src="js/content-loader.js"></script>
     <script src="js/navigation.js"></script>
+    <script src="js/ai-knowledge.js"></script>
     
     <!-- 自定義樣式 (載入在 Prism CSS 之後以確保優先級) -->
     <style>
@@ -276,6 +277,26 @@
         </div>
     </header>
 
+    <!-- 頁籤導航 -->
+    <div class="border-b border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <nav class="flex space-x-8" aria-label="Tabs">
+                <button data-tab="business" class="tab-button active py-4 px-1 border-b-2 font-medium text-sm">
+                    🏭 業務文檔
+                </button>
+                <button data-tab="technical" class="tab-button py-4 px-1 border-b-2 font-medium text-sm">
+                    🔧 技術文檔
+                </button>
+                <button data-tab="ai-knowledge" class="tab-button py-4 px-1 border-b-2 font-medium text-sm">
+                    🤖 AI 知識庫
+                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        AI Agent 來源
+                    </span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
     <!-- 主要布局容器 -->
     <div class="flex max-w-7xl mx-auto bg-white shadow-sm">
         <!-- 緊湊式側邊導航 -->
@@ -331,6 +352,9 @@
                             <li><a data-navigate="operations/maintenance.md" class="nav-link text-blue-700 hover:bg-blue-50">維護操作</a></li>
                             <li><a data-navigate="operations/troubleshooting.md" class="nav-link text-blue-700 hover:bg-blue-50">故障排除</a></li>
                             <li><a data-navigate="operations/system-diagnostics.md" class="nav-link text-blue-700 hover:bg-blue-50">系統診斷</a></li>
+                            <li><a data-navigate="operations/unified-tools.md" class="nav-link text-blue-700 hover:bg-blue-50">統一工具系統</a></li>
+                            <li><a data-navigate="operations/service-management.md" class="nav-link text-blue-700 hover:bg-blue-50">服務管理</a></li>
+                            <li><a data-navigate="operations/performance-tuning.md" class="nav-link text-blue-700 hover:bg-blue-50">效能調優</a></li>
                         </ul>
                     </div>
                     
@@ -338,13 +362,16 @@
                     <div class="nav-section">
                         <h3 class="text-xs font-semibold text-purple-600 mb-2 px-2 uppercase tracking-wide">🔧 技術實作</h3>
                         <ul class="space-y-1">
+                            <li><a data-navigate="technical-details/tafl-system.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL 系統概覽</a></li>
+                            <li><a data-navigate="technical-details/tafl-language.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL 語言規範</a></li>
+                            <li><a data-navigate="technical-details/tafl-editor.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL 編輯器</a></li>
                             <li><a data-navigate="technical-details/ros2-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">ROS 2 整合</a></li>
                             <li><a data-navigate="technical-details/zenoh-communication.md" class="nav-link text-purple-700 hover:bg-purple-50">Zenoh 通訊</a></li>
                             <li><a data-navigate="technical-details/plc-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">PLC 整合</a></li>
                             <li><a data-navigate="technical-details/kuka-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">KUKA 整合</a></li>
-                            <li><a data-navigate="technical-details/ai-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">AI WCS</a></li>
-                            <li><a data-navigate="technical-details/performance-optimization.md" class="nav-link text-purple-700 hover:bg-purple-50">效能調優</a></li>
-                            <li><a data-navigate="technical-details/monitoring-setup.md" class="nav-link text-purple-700 hover:bg-purple-50">監控配置</a></li>
+                            <li><a data-navigate="technical-details/tafl-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL WCS 整合</a></li>
+                            <li><a data-navigate="technical-details/database-design.md" class="nav-link text-purple-700 hover:bg-purple-50">資料庫設計</a></li>
+                            <li><a data-navigate="technical-details/quality-control.md" class="nav-link text-purple-700 hover:bg-purple-50">品質控制</a></li>
                         </ul>
                     </div>
                 </div>
@@ -424,6 +451,9 @@
                             <li><a data-navigate="operations/maintenance.md" class="nav-link text-blue-700 hover:bg-blue-50">維護操作</a></li>
                             <li><a data-navigate="operations/troubleshooting.md" class="nav-link text-blue-700 hover:bg-blue-50">故障排除</a></li>
                             <li><a data-navigate="operations/system-diagnostics.md" class="nav-link text-blue-700 hover:bg-blue-50">系統診斷</a></li>
+                            <li><a data-navigate="operations/unified-tools.md" class="nav-link text-blue-700 hover:bg-blue-50">統一工具系統</a></li>
+                            <li><a data-navigate="operations/service-management.md" class="nav-link text-blue-700 hover:bg-blue-50">服務管理</a></li>
+                            <li><a data-navigate="operations/performance-tuning.md" class="nav-link text-blue-700 hover:bg-blue-50">效能調優</a></li>
                         </ul>
                     </div>
                     
@@ -431,13 +461,16 @@
                     <div class="nav-section">
                         <h3 class="text-xs font-semibold text-purple-600 mb-2 px-2 uppercase tracking-wide">🔧 技術實作</h3>
                         <ul class="space-y-1">
+                            <li><a data-navigate="technical-details/tafl-system.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL 系統概覽</a></li>
+                            <li><a data-navigate="technical-details/tafl-language.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL 語言規範</a></li>
+                            <li><a data-navigate="technical-details/tafl-editor.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL 編輯器</a></li>
                             <li><a data-navigate="technical-details/ros2-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">ROS 2 整合</a></li>
                             <li><a data-navigate="technical-details/zenoh-communication.md" class="nav-link text-purple-700 hover:bg-purple-50">Zenoh 通訊</a></li>
                             <li><a data-navigate="technical-details/plc-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">PLC 整合</a></li>
                             <li><a data-navigate="technical-details/kuka-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">KUKA 整合</a></li>
-                            <li><a data-navigate="technical-details/ai-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">AI WCS</a></li>
-                            <li><a data-navigate="technical-details/performance-optimization.md" class="nav-link text-purple-700 hover:bg-purple-50">效能調優</a></li>
-                            <li><a data-navigate="technical-details/monitoring-setup.md" class="nav-link text-purple-700 hover:bg-purple-50">監控配置</a></li>
+                            <li><a data-navigate="technical-details/tafl-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL WCS 整合</a></li>
+                            <li><a data-navigate="technical-details/database-design.md" class="nav-link text-purple-700 hover:bg-purple-50">資料庫設計</a></li>
+                            <li><a data-navigate="technical-details/quality-control.md" class="nav-link text-purple-700 hover:bg-purple-50">品質控制</a></li>
                         </ul>
                     </div>
                 </div>
@@ -446,6 +479,7 @@
 
         <!-- 主要內容區域 -->
         <main class="flex-1 min-h-screen">
+            <!-- 業務/技術文檔內容 -->
             <div class="max-w-4xl mx-auto px-8 py-12" id="main-content">
                 <!-- 內容將由 JavaScript 動態載入 -->
                 <div class="flex items-center justify-center py-32">
@@ -456,6 +490,11 @@
                         <p class="text-stone-600 text-lg font-light">正在載入 RosAGV 技術指南...</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- AI 知識庫內容 (預設隱藏) -->
+            <div class="max-w-6xl mx-auto px-8 py-12" id="ai-knowledge-content" style="display: none;">
+                <!-- AI 知識庫內容將由 ai-knowledge.js 動態載入 -->
             </div>
         </main>
     </div>

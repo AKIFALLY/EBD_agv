@@ -173,7 +173,7 @@ ros2 topic echo /agv_status
 ### 測試任務分配
 ```bash
 # 發送測試任務
-ros2 service call /create_task ai_wcs_interfaces/CreateTask "
+ros2 service call /create_task tafl_wcs_interfaces/CreateTask "
 task: {
   task_id: 'test_task_001'
   agv_type: 'cargo_mover'

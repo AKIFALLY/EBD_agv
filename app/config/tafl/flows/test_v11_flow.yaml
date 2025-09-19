@@ -1,5 +1,5 @@
 metadata:
-  enabled: true
+  enabled: false
   created_at: '2025-08-22T07:09:44.715353'
   description: Testing v1.1 structure
   id: test_v11_flow

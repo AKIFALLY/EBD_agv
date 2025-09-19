@@ -343,9 +343,9 @@ async def get_all_status():
                 # 沒有節點資訊，使用備用方法
                 # 先嘗試簡單的 PID 檔案檢查（更快更可靠）
                 # 為了確保可靠性，使用最簡單的檢查方式
-                if node_name == "flow_wcs":
-                    # Flow WCS 特殊處理
-                    pid_check_cmd = "pgrep -f 'flow_wcs' > /dev/null 2>&1 && echo running || echo stopped"
+                if node_name == "tafl_wcs":
+                    # TAFL WCS 特殊處理
+                    pid_check_cmd = "pgrep -f 'tafl_wcs' > /dev/null 2>&1 && echo running || echo stopped"
                 elif node_name == "ecs_core":
                     # ECS 特殊處理
                     pid_check_cmd = "pgrep -f 'ecs_core' > /dev/null 2>&1 && echo running || echo stopped"
@@ -419,9 +419,9 @@ async def get_all_status():
                     status["running"] = True
                 else:
                     status["status"] = "stopped"
-            elif node_name == "flow_wcs":
-                # flow_wcs 節點檢查
-                if "flow_wcs_node" in running_nodes:
+            elif node_name == "tafl_wcs":
+                # tafl_wcs 節點檢查
+                if "tafl_wcs_node" in running_nodes:
                     status["status"] = "running"
                     status["running"] = True
                 else:
@@ -496,7 +496,7 @@ async def get_all_status():
                 
                 # 特殊節點名稱映射
                 node_mapping = {
-                    "flow_wcs": "flow_wcs_node",
+                    "tafl_wcs": "tafl_wcs_node",
                     "ecs_core": "ecs_core",
                     "rcs_core": "rcs_core",
                     "db_proxy": "db_proxy_node",

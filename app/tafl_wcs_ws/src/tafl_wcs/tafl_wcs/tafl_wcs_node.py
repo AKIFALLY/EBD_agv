@@ -11,6 +11,7 @@ import asyncio
 from datetime import datetime
 from typing import Dict, Any, Optional
 import threading
+import time
 from .tafl_wcs_manager import TAFLWCSManager
 
 class ProgressReporter:
@@ -115,20 +116,16 @@ class EnhancedTAFLWCSNode(Node):
     """Enhanced TAFL WCS Node with progress reporting and monitoring"""
     
     def __init__(self):
-        super().__init__('enhanced_tafl_wcs_node')
+        super().__init__('tafl_wcs_node')
         
         # Declare parameters for active execution
         self.declare_parameter('flows_dir', '/app/config/tafl/flows')
-        self.declare_parameter('scan_interval', 3.0)
-        self.declare_parameter('execution_interval', 5.0)
         self.declare_parameter('auto_execute', True)
         self.declare_parameter('database_url', 
             'postgresql://agvc:password@192.168.100.254:5432/agvc')
         
         # Get parameter values
         flows_dir = self.get_parameter('flows_dir').value
-        scan_interval = self.get_parameter('scan_interval').value
-        execution_interval = self.get_parameter('execution_interval').value
         auto_execute = self.get_parameter('auto_execute').value
         database_url = self.get_parameter('database_url').value
         
@@ -181,50 +178,47 @@ class EnhancedTAFLWCSNode(Node):
         
         # Execution thread pool
         self.executor_thread = None
-        
-        # Create timers for active execution
+
+        # Tracking for single timer architecture
+        self.last_scan_time = 0
+        self.scan_interval = 3.0  # Scan every 3 seconds
+
+        # Create single main timer (1 second interval)
         if auto_execute:
-            # Scan timer
-            self.scan_timer = self.create_timer(
-                scan_interval,
-                self.scan_flows_callback
+            self.main_timer = self.create_timer(
+                1.0,  # 1 second interval
+                self.main_timer_callback
             )
-            self.get_logger().info(f'Created scan timer: every {scan_interval} seconds')
-            
-            # Execution timer
-            self.execute_timer = self.create_timer(
-                execution_interval,
-                self.execute_flows_callback
-            )
-            self.get_logger().info(f'Created execution timer: every {execution_interval} seconds')
-            
+            self.get_logger().info('Created single main timer: every 1 second')
+
             # Initial scan
-            self.scan_flows_callback()
+            self.manager.scan_flows()
         
         self.get_logger().info('Enhanced TAFL WCS Node started with active execution mode')
     
-    def scan_flows_callback(self):
-        """Periodically scan flow files"""
+    def main_timer_callback(self):
+        """Single timer callback - handles both scanning and execution"""
         try:
-            self.get_logger().debug('Starting flow directory scan...')
-            loaded_flows = self.manager.scan_flows()
-            
-            if loaded_flows:
-                self.get_logger().info(
-                    f'Scan complete: loaded/updated {len(loaded_flows)} flows'
-                )
-                for flow_id in loaded_flows:
-                    flow = self.manager.loaded_flows.get(flow_id, {})
-                    self.get_logger().debug(
-                        f'  - {flow_id}: {flow.get("name", "unnamed")} '
-                        f'(enabled: {flow.get("enabled", True)})'
+            current_time = time.time()
+
+            # Check if need to scan for new/updated flows (every 3 seconds)
+            if current_time - self.last_scan_time >= self.scan_interval:
+                self.get_logger().debug('Scanning for flow updates...')
+                loaded_flows = self.manager.scan_flows()
+
+                if loaded_flows:
+                    self.get_logger().info(
+                        f'Loaded/updated {len(loaded_flows)} flows'
                     )
-            else:
-                self.get_logger().debug('Scan complete: no new or updated flows')
-                
+
+                self.last_scan_time = current_time
+
+            # Check and execute flows based on their individual execution_interval
+            self.manager.check_and_execute_flows(current_time, self.progress_reporter)
+
         except Exception as e:
-            self.get_logger().error(f'Flow scan failed: {e}')
-    
+            self.get_logger().error(f'Main timer callback error: {e}')
+
     def execute_flows_callback(self):
         """Periodically execute all enabled flows synchronously (like RCS dispatch)"""
         try:
@@ -531,28 +525,60 @@ class EnhancedTAFLWCSNode(Node):
         """Get performance metrics"""
         return {
             **self.metrics,
-            'success_rate': (self.metrics['successful_flows'] / 
-                           self.metrics['total_flows'] * 100) 
+            'success_rate': (self.metrics['successful_flows'] /
+                           self.metrics['total_flows'] * 100)
                           if self.metrics['total_flows'] > 0 else 0,
-            'failure_rate': (self.metrics['failed_flows'] / 
-                           self.metrics['total_flows'] * 100) 
+            'failure_rate': (self.metrics['failed_flows'] /
+                           self.metrics['total_flows'] * 100)
                           if self.metrics['total_flows'] > 0 else 0
         }
+
+    def shutdown(self):
+        """Clean up resources before shutdown"""
+        try:
+            # Use print instead of logger to avoid rosout context errors
+            print('Shutting down TAFL WCS Node...')
+
+            # Destroy timer if exists
+            if hasattr(self, 'main_timer'):
+                self.destroy_timer(self.main_timer)
+                print('Main timer destroyed')
+
+            # Shutdown manager (handles database and thread pool)
+            if hasattr(self, 'manager'):
+                self.manager.shutdown()
+                print('Manager shutdown complete (including database)')
+
+            # Save execution history (if needed)
+            if hasattr(self, 'progress_reporter'):
+                # History is auto-saved after each execution, but force one final save
+                if hasattr(self.progress_reporter, '_persist_history'):
+                    self.progress_reporter._persist_history()
+                    print('Final execution history saved')
+
+            print('TAFL WCS Node shutdown complete')
+
+        except Exception as e:
+            print(f'Error during shutdown: {e}')
 
 
 def main(args=None):
     """Main entry point"""
     rclpy.init(args=args)
-    
+
     node = EnhancedTAFLWCSNode()
-    
+
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
+        # Don't use logger here to avoid rosout context errors
         pass
     finally:
+        # Call shutdown method to clean up resources
+        node.shutdown()
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

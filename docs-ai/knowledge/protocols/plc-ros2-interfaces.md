@@ -334,8 +334,8 @@ class TestPLCClientPattern(unittest.TestCase):
 ```
 
 ## 🔗 交叉引用
-- **ROS 2 介面設計**: @docs-ai/knowledge/protocols/ros2-interfaces.md - 通用介面設計原則
-- **Keyence PLC 協議**: @docs-ai/knowledge/protocols/keyence-plc-protocol.md - 底層協議規範
-- **PLC 通訊開發**: @docs-ai/operations/development/plc-communication.md - 開發實踐指導
-- **ROS 2 開發**: @docs-ai/operations/development/ros2-development.md - ROS 2 開發環境
-- **技術棧**: @docs-ai/context/system/technology-stack.md - 系統技術架構
+- **ROS 2 介面設計**: docs-ai/knowledge/protocols/ros2-interfaces.md - 通用介面設計原則
+- **Keyence PLC 協議**: docs-ai/knowledge/protocols/keyence-plc-protocol.md - 底層協議規範
+- **PLC 通訊開發**: docs-ai/operations/development/ros2/plc-communication.md - 開發實踐指導
+- **ROS 2 開發**: docs-ai/operations/development/ros2/ros2-development.md - ROS 2 開發環境
+- **技術棧**: docs-ai/context/system/technology-stack.md - 系統技術架構

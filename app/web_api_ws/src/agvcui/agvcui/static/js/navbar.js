@@ -86,6 +86,8 @@ function updateNavbarUserInfo(userState) {
     const userStatus = document.getElementById('user-status');
     const userManagementLink = document.getElementById('user-management-link');
     const databaseManagementLink = document.getElementById('database-management-link');
+    const taflEditorLink = document.getElementById('tafl-editor-link');
+    const nodesManagementLink = document.getElementById('nodes-management-link');
     const userManagementDivider = document.getElementById('user-management-divider');
 
     if (userState && userState.isLoggedIn === true) {
@@ -101,11 +103,15 @@ function updateNavbarUserInfo(userState) {
             if (adminBadge) adminBadge.style.display = 'inline-block';
             if (userManagementLink) userManagementLink.style.display = 'block';
             if (databaseManagementLink) databaseManagementLink.style.display = 'block';
+            if (taflEditorLink) taflEditorLink.style.display = 'block';
+            if (nodesManagementLink) nodesManagementLink.style.display = 'block';
             if (userManagementDivider) userManagementDivider.style.display = 'block';
         } else {
             if (adminBadge) adminBadge.style.display = 'none';
             if (userManagementLink) userManagementLink.style.display = 'none';
             if (databaseManagementLink) databaseManagementLink.style.display = 'none';
+            if (taflEditorLink) taflEditorLink.style.display = 'none';
+            if (nodesManagementLink) nodesManagementLink.style.display = 'none';
             if (userManagementDivider) userManagementDivider.style.display = 'none';
         }
 

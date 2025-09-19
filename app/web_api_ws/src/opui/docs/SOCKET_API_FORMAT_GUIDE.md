@@ -79,25 +79,6 @@ isConnected = data.get("isConnected") or False
 
 ### 🚛 任務操作 API
 
-#### `call_empty` 事件
-**功能**：叫空車操作
-
-**前端發送格式**：
-```javascript
-{
-    side: "left" | "right",
-    parkingSpace?: number  // 可選，後端會自動計算
-}
-```
-
-**後端回應格式**：
-```javascript
-{
-    success: true,
-    message: "叫車成功，任務 ID: 123"
-}
-```
-
 #### `dispatch_full` 事件
 **功能**：派滿車操作
 

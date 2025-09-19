@@ -1,7 +1,7 @@
 # RosAGV AI Agent 記憶系統
 
 ## 🎯 設計目標
-將 CLAUDE.md 重新定位為 AI Agent 的主要記憶文件，透過 @docs-ai/ 引用機制提供模組化的專案指導資訊，避免與 .augment-guidelines 內容重複。
+將 CLAUDE.md 重新定位為 AI Agent 的主要記憶文件，透過 docs-ai/ 引用機制提供模組化的專案指導資訊。
 
 ## 🏗️ 三層架構設計
 
@@ -25,32 +25,31 @@ docs-ai/context/
     └── external-integration.md     # 外部系統整合邏輯
 ```
 
-### 🔧 Prompts 文件系列 - AI Agent 操作指導
-提供具體的操作指導和最佳實踐，涵蓋開發、維護、部署、整合等面向。
+### 🔧 Operations 文件系列 - AI Agent 操作指導
+提供具體的操作指導和最佳實踐，涵蓋開發、部署、指導、工具等面向。
 
 ```
 docs-ai/operations/
 ├── development/                     # 開發操作指導
-│   ├── ros2-development.md         # ROS 2 節點開發指導
+│   ├── core/                       # 核心開發原則
+│   ├── ros2/                       # ROS 2 開發指導
+│   ├── testing/                    # 測試程序文檔
+│   ├── web/                        # Web 開發指導
 │   ├── docker-development.md       # Docker 容器開發指導
-│   ├── database-operations.md      # 資料庫操作指導
-│   ├── web-development.md          # Web API 開發指導
-│   └── testing-procedures.md       # 測試和驗證程序
-├── maintenance/                     # 維護操作指導
+│   └── database-operations.md      # 資料庫操作指導
+├── guides/                          # 操作指南
 │   ├── system-diagnostics.md       # 系統診斷程序
 │   ├── troubleshooting.md          # 故障排除流程
-│   ├── log-analysis.md             # 日誌分析方法
 │   ├── performance-monitoring.md   # 效能監控指導
-│   └── backup-recovery.md          # 備份和恢復程序
+│   ├── rack-management-guide.md    # Rack 管理操作
+│   └── device-authorization-guide.md # 設備授權指南
 ├── deployment/                      # 部署操作指導
 │   ├── container-management.md     # 容器管理操作
-│   ├── environment-setup.md        # 環境設定指導
-│   ├── configuration-management.md # 配置管理操作
-│   └── version-control.md          # 版本控制最佳實踐
-└── integration/                     # 整合操作指導
-    ├── external-systems.md         # 外部系統整合指導
-    ├── api-integration.md          # API 整合操作
-    └── data-migration.md           # 資料遷移程序
+│   ├── docker-compose-configuration.md # Docker Compose 配置
+│   ├── installed-packages-inventory.md # 安裝套件清單
+│   └── nginx-configuration.md      # Nginx 配置管理
+└── tools/                           # 工具系統
+    └── unified-tools.md            # 統一工具系統
 ```
 
 ### 🧠 Knowledge 文件系列 - 領域專業知識
@@ -146,28 +145,31 @@ r quick-diag         # 快速診斷
 
 3. **第三階段：問題解決** (5-15分鐘)
    - 根據診斷結果執行對應解決方案
-   - 參考相關 @docs-ai/ 文檔進行詳細操作
+   - 參考相關 docs-ai/ 文檔進行詳細操作
 
 ## 🔄 與現有文件系統的整合
 
 ### 職責分工
-- **`.augment-guidelines`**: 環境識別和基礎開發規範（宿主機 vs 容器內）
 - **`README.md`**: 專案概覽和快速開始指南
-- **CLAUDE.md**: AI Agent 主要記憶文件，透過 @docs-ai/ 引用載入詳細指導
-- **`docs-ai/`**: 模組化的 AI Agent 操作指導庫
+- **CLAUDE.md**: AI Agent 主要記憶文件，透過 docs-ai/ 引用載入詳細指導
+- **`docs-ai/`**: 模組化的 AI Agent 操作指導庫（context/, knowledge/, operations/）
 
-## 📚 Prompts 使用指南
+## 📚 文檔引用使用指南
 
 ### 設計理念
-RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保持簡潔，同時動態載入豐富的 contextual prompts。
+RosAGV AI Agent 記憶系統採用 docs-ai/路徑 語法，讓 CLAUDE.md 可以保持簡潔，同時動態載入豐富的 contextual 文檔。
 
-### 📝 @ 引用語法
+### 📝 引用語法
+
+**⚠️ 注意**：本文檔中的所有引用示例使用 `docs-ai/` 格式（弱引用）。
+強引用格式 `@docs-ai/` 僅在 CLAUDE.md 文件中使用。
+詳細規範請參考：`docs-ai/operations/development/core/documentation-standards.md`
 
 #### 基本語法
 ```markdown
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/knowledge/agv-domain/vehicle-types.md
+docs-ai/context/system/rosagv-overview.md
+docs-ai/operations/development/ros2/ros2-development.md
+docs-ai/knowledge/agv-domain/vehicle-types.md
 ```
 
 #### CLAUDE.md 引用範例
@@ -175,22 +177,22 @@ RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保�
 # AGV Base CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/workspaces/agv-workspaces.md
-@docs-ai/knowledge/agv-domain/vehicle-types.md
+docs-ai/context/system/dual-environment.md
+docs-ai/context/workspaces/agv-workspaces.md
+docs-ai/knowledge/agv-domain/vehicle-types.md
 
 ## 開發指導
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/development/testing-procedures.md
+docs-ai/operations/development/ros2/ros2-development.md
+docs-ai/operations/development/testing/testing-procedures.md
 
 ## 維護支援
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
+docs-ai/operations/guides/system-diagnostics.md
+docs-ai/operations/guides/troubleshooting.md
 ```
 
 ## 🎯 智能選擇指南
 
-### 根據任務類型選擇 Prompts 組合
+### 根據任務類型選擇文檔組合
 
 | 任務類型 | Context | Operations | Knowledge |
 |---------|---------|------------|-----------|
@@ -226,9 +228,9 @@ RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保�
 # RosAGV CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/context/system/rosagv-overview.md
-@docs-ai/context/system/dual-environment.md
-@docs-ai/context/system/technology-stack.md
+docs-ai/context/system/rosagv-overview.md
+docs-ai/context/system/dual-environment.md
+docs-ai/context/system/technology-stack.md
 
 ## 系統概述
 簡潔的專案描述...
@@ -237,16 +239,16 @@ RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保�
 關鍵架構要點...
 
 ## 開發指導
-@docs-ai/operations/development/ros2-development.md
-@docs-ai/operations/deployment/environment-setup.md
+docs-ai/operations/development/ros2/ros2-development.md
+docs-ai/operations/deployment/container-management.md
 
 ## 維護支援
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
+docs-ai/operations/guides/system-diagnostics.md
+docs-ai/operations/guides/troubleshooting.md
 
 ## 領域知識
-@docs-ai/knowledge/agv-domain/vehicle-types.md
-@docs-ai/knowledge/automation/fleet-coordination.md
+docs-ai/knowledge/agv-domain/vehicle-types.md
+docs-ai/knowledge/protocols/kuka-fleet-api.md
 ```
 
 ### 工作空間層級 CLAUDE.md 模板
@@ -254,19 +256,19 @@ RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保�
 # [工作空間名稱] CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/context/workspaces/[agv|agvc]-workspaces.md
-@docs-ai/context/business/[相關業務邏輯].md
-@docs-ai/knowledge/[相關領域]/[相關知識].md
+docs-ai/context/workspaces/[agv|agvc]-workspaces.md
+docs-ai/knowledge/business/[相關業務流程].md
+docs-ai/knowledge/[相關領域]/[相關知識].md
 
 ## 工作空間概述
 工作空間功能和職責...
 
 ## 開發指導
-@docs-ai/operations/development/[相關技術]-development.md
-@docs-ai/operations/development/testing-procedures.md
+docs-ai/operations/development/[相關技術]-development.md
+docs-ai/operations/development/testing/testing-procedures.md
 
 ## 維護支援
-@docs-ai/operations/maintenance/[相關維護].md
+docs-ai/operations/guides/[相關維護].md
 
 ## 快速開始
 基本操作指令...
@@ -277,8 +279,8 @@ RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保�
 # [套件名稱] CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/context/workspaces/[相關工作空間].md
-@docs-ai/knowledge/[相關領域]/[相關知識].md
+docs-ai/context/workspaces/[相關工作空間].md
+docs-ai/knowledge/[相關領域]/[相關知識].md
 
 ## 套件概述
 套件功能和用途...
@@ -313,68 +315,70 @@ RosAGV Prompts Library 採用 @docs-ai/路徑 語法，讓 CLAUDE.md 可以保�
 ## 📋 維護原則
 
 ### 內容同步
-- 定期檢查 prompts 內容與實際程式碼的同步性
+- 定期檢查文檔內容與實際程式碼的同步性
 - 建立文件更新的標準流程
 - 確保引用的一致性和準確性
+- 使用 `scripts/check-claude-references.sh` 驗證引用有效性
 
-### 避免重複
+### 避免重複（階層繼承原則）
 - Context 文件專注於背景知識
 - Operations 文件專注於具體操作
 - Knowledge 文件專注於領域專業知識
-- 與 `.augment-guidelines` 保持職責分工
+- **上層已引用的文檔，下層不再重複引用**
+- 根層 → 工作空間層 → 套件層 形成繼承關係
 
 ## 📖 核心文檔引用清單
 
 ### 🔥 必讀文檔 (AI 助理優先級 1)
-- `@docs-ai/operations/maintenance/system-diagnostics.md` - 統一工具使用指南
-- `@docs-ai/operations/development/docker-development.md` - Docker 容器管理
-- `@docs-ai/operations/maintenance/troubleshooting.md` - 故障排除指導
+- `docs-ai/operations/guides/system-diagnostics.md` - 統一工具使用指南
+- `docs-ai/operations/development/docker-development.md` - Docker 容器管理
+- `docs-ai/operations/guides/troubleshooting.md` - 故障排除指導
 
 ### 🔧 專業工具 (優先級 2)
-- `@docs-ai/operations/maintenance/log-analysis.md` - 日誌分析
-- `@docs-ai/operations/development/ros2-development.md` - ROS 2 開發建置
-- `@docs-ai/operations/development/testing-procedures.md` - 測試程序
+- `docs-ai/operations/guides/log-analysis.md` - 日誌分析
+- `docs-ai/operations/development/ros2/ros2-development.md` - ROS 2 開發建置
+- `docs-ai/operations/development/testing/testing-procedures.md` - 測試程序
 
 ### 📖 系統架構 (優先級 3)
-- `@docs-ai/context/system/technology-stack.md` - ROS 2 + Zenoh 架構
-- `@docs-ai/context/system/dual-environment.md` - 雙環境設計
+- `docs-ai/context/system/technology-stack.md` - ROS 2 + Zenoh 架構
+- `docs-ai/context/system/dual-environment.md` - 雙環境設計
 
 ### 🎯 常用引用組合
 
 #### AGV 車載開發
 ```markdown
-@docs-ai/context/workspaces/agv-workspaces.md
-@docs-ai/knowledge/agv-domain/vehicle-types.md
-@docs-ai/operations/development/ros2-development.md
+docs-ai/context/workspaces/agv-workspaces.md
+docs-ai/knowledge/agv-domain/vehicle-types.md
+docs-ai/operations/development/ros2/ros2-development.md
 ```
 
 #### AGVC 管理開發
 ```markdown
-@docs-ai/context/workspaces/agvc-workspaces.md
-@docs-ai/operations/development/web-development.md
-@docs-ai/operations/development/database-operations.md
+docs-ai/context/workspaces/agvc-workspaces.md
+docs-ai/operations/development/web/web-development.md
+docs-ai/operations/development/database-operations.md
 ```
 
 #### 系統診斷維護
 ```markdown
-@docs-ai/context/system/dual-environment.md
-@docs-ai/operations/maintenance/system-diagnostics.md
-@docs-ai/operations/maintenance/troubleshooting.md
+docs-ai/context/system/dual-environment.md
+docs-ai/operations/guides/system-diagnostics.md
+docs-ai/operations/guides/troubleshooting.md
 ```
 
 ## 🔍 快速文檔定位
 
 ### 按問題類型定位
-- **狀態機問題** → `@docs-ai/context/workspaces/agv-workspaces.md`
-- **Web API 問題** → `@docs-ai/operations/development/web-development.md`
-- **資料庫問題** → `@docs-ai/operations/development/database-operations.md`
-- **PLC 通訊問題** → `@docs-ai/knowledge/protocols/keyence-plc-protocol.md`
-- **容器問題** → `@docs-ai/operations/development/docker-development.md`
-- **網路通訊問題** → `@docs-ai/knowledge/protocols/zenoh-rmw.md`
+- **狀態機問題** → `docs-ai/context/workspaces/agv-workspaces.md`
+- **Web API 問題** → `docs-ai/operations/development/web/web-development.md`
+- **資料庫問題** → `docs-ai/operations/development/database-operations.md`
+- **PLC 通訊問題** → `docs-ai/knowledge/protocols/keyence-plc-protocol.md`
+- **容器問題** → `docs-ai/operations/development/docker-development.md`
+- **網路通訊問題** → `docs-ai/knowledge/protocols/zenoh-rmw.md`
 
 ### 按開發階段定位
-- **需求分析** → `@docs-ai/knowledge/` 領域知識文檔
-- **架構設計** → `@docs-ai/context/system/` 系統架構文檔
-- **實作開發** → `@docs-ai/operations/development/` 開發指導文檔
-- **測試驗證** → `@docs-ai/operations/development/testing-procedures.md`
-- **部署維護** → `@docs-ai/operations/maintenance/` 維護操作文檔
+- **需求分析** → `docs-ai/knowledge/` 領域知識文檔
+- **架構設計** → `docs-ai/context/system/` 系統架構文檔
+- **實作開發** → `docs-ai/operations/development/` 開發指導文檔
+- **測試驗證** → `docs-ai/operations/development/testing/testing-procedures.md`
+- **部署維護** → `docs-ai/operations/guides/` 維護操作文檔

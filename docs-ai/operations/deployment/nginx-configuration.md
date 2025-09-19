@@ -245,8 +245,8 @@ cp -r /home/ct/RosAGV/nginx /home/ct/RosAGV/nginx.backup.$(date +%Y%m%d)
 4. 驗證服務正常
 
 ## 🔗 交叉引用
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- 技術棧: @docs-ai/context/system/technology-stack.md
-- Web 開發: @docs-ai/operations/development/web-development.md
-- 容器管理: @docs-ai/operations/deployment/container-management.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 雙環境架構: docs-ai/context/system/dual-environment.md
+- 技術棧: docs-ai/context/system/technology-stack.md
+- Web 開發: docs-ai/operations/development/web/web-development.md
+- 容器管理: docs-ai/operations/deployment/container-management.md
+- 系統診斷: docs-ai/operations/guides/system-diagnostics.md

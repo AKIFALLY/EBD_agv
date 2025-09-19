@@ -321,8 +321,8 @@ class UnloaderRobotContext:
 - **ROS 2 Jazzy**: 統一的 ROS 2 發行版和 Zenoh RMW
 
 ## 🔗 交叉引用
-- AGV 工作空間: @docs-ai/context/workspaces/agv-workspaces.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- 容器開發: @docs-ai/operations/development/docker-development.md
-- 技術棧: @docs-ai/context/system/technology-stack.md
+- AGV 工作空間: docs-ai/context/workspaces/agv-workspaces.md
+- ROS 2 開發: docs-ai/operations/development/ros2/ros2-development.md
+- 系統診斷: docs-ai/operations/guides/system-diagnostics.md
+- 容器開發: docs-ai/operations/development/docker-development.md
+- 技術棧: docs-ai/context/system/technology-stack.md

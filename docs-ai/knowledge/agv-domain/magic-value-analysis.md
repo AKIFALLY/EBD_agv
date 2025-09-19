@@ -222,9 +222,9 @@ RunningState (執行移動)
 ```
 
 ## 🔗 交叉引用
-- AGV狀態機架構: @docs-ai/knowledge/agv-domain/agv-state-machine.md
-- WritePathState分析: @docs-ai/knowledge/agv-domain/write-path-state-analysis.md
+- AGV狀態機架構: docs-ai/knowledge/agv-domain/agv-state-machine.md
+- WritePathState分析: docs-ai/knowledge/agv-domain/write-path-state-analysis.md
 - MissionSelectState: `app/agv_ws/src/agv_base/agv_base/agv_states/mission_select_state.py`
-- PLC通訊協議: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
+- PLC通訊協議: docs-ai/knowledge/protocols/keyence-plc-protocol.md
 - AGV狀態管理: `app/agv_ws/src/agv_base/agv_base/agv_status.py`
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
+- 系統診斷: docs-ai/operations/guides/system-diagnostics.md

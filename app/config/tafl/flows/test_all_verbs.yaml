@@ -4,6 +4,7 @@
 metadata:
   id: test_all_verbs
   name: "Test All TAFL Verbs"
+  enabled: false
   version: "1.1.2"
   description: "Executable example demonstrating all 10 TAFL core verbs"
   author: "TAFL Test Suite"

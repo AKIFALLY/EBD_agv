@@ -36,7 +36,7 @@ class KukaFleetAdapter:
 
         # 透過傳入的 node 來宣告和取得參數
         self.node.declare_parameter(
-            'api_base_url', 'http://192.168.10.3:10870')
+            'api_base_url', 'http://192.168.12.237:10870')
         self.node.declare_parameter('api_username', 'admin')
         self.node.declare_parameter('api_password', 'Admin')
         self.node.declare_parameter(

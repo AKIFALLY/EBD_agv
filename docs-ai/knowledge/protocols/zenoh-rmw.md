@@ -419,8 +419,8 @@ class ServiceClient(Node):
 4. **日誌記錄**: 詳細記錄通訊事件和錯誤
 
 ## 🔗 交叉引用
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- 網路診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 容器管理: @docs-ai/operations/deployment/container-management.md
-- 技術棧: @docs-ai/context/system/technology-stack.md
+- 雙環境架構: docs-ai/context/system/dual-environment.md
+- 網路診斷: docs-ai/operations/guides/system-diagnostics.md
+- ROS 2 開發: docs-ai/operations/development/ros2/ros2-development.md
+- 容器管理: docs-ai/operations/deployment/container-management.md
+- 技術棧: docs-ai/context/system/technology-stack.md

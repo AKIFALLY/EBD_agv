@@ -1,12 +1,14 @@
 # loader_agv - 裝載車AGV控制系統
 
 ## 📚 Context Loading
-../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+../../../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+
+# Loader 專屬知識（套件特有）
+@docs-ai/knowledge/agv-domain/write-path-state-analysis.md  # 路徑狀態分析
 
 ## 📋 專案概述
 loader_agv 實現 Loader AGV 的完整控制邏輯，支援從傳送箱取料、多工位操作（清潔機、浸潤機、預乾燥機）、AGV端口管理等複雜載料流程。負責眼鏡生產房間內前段製程的精密載料操作，包含 4 種設備類型共 7 種業務流程。
-
-詳細 Loader AGV 開發指導請參考: @docs-ai/knowledge/agv-domain/vehicle-types.md
 
 ## 🏭 核心業務流程 (基於眼鏡生產系統)
 

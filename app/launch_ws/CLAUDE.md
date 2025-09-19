@@ -263,7 +263,7 @@ curl http://localhost:8000/health
 **⚠️ 通用故障排除請參考**: ../../CLAUDE.md 故障排除章節
 
 ### ROS 2 啟動配置特有問題
-- @docs-ai/operations/maintenance/system-diagnostics.md - 系統診斷工具
+- @docs-ai/operations/guides/system-diagnostics.md - 系統診斷工具
 - @docs-ai/operations/tools/unified-tools.md - 統一工具系統
 
 ### 常見問題排查

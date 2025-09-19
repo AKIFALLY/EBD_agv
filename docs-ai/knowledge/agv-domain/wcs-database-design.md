@@ -431,7 +431,7 @@ ORDER BY w.name, task_count DESC;
 ```
 
 ## 🔗 交叉引用
-- WCS 系統設計: @docs-ai/knowledge/agv-domain/wcs-system-design.md
-- Work ID 系統: @docs-ai/knowledge/agv-domain/wcs-workid-system.md
-- AI WCS 實作: @app/ai_wcs_ws/CLAUDE.md
-- 資料庫操作: @docs-ai/operations/development/database-operations.md
+- WCS 系統設計: docs-ai/knowledge/agv-domain/wcs-system-design.md
+- Work ID 系統: docs-ai/knowledge/agv-domain/wcs-workid-system.md
+- TAFL WCS 實作: @app/tafl_wcs_ws/
+- 資料庫操作: docs-ai/operations/development/database-operations.md

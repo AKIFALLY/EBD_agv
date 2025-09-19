@@ -255,7 +255,7 @@ build_agvc() {
     local agvc_app_workspaces=(
         "ecs_ws"
         "rcs_ws"
-        "flow_wcs_ws"  # 現行 WCS 實作 (將逐步由 TAFL 取代)
+        # "flow_wcs_ws"  # 已移除 - 改用 TAFL 系統
         "tafl_ws"      # TAFL parser and executor (新一代 WCS 基礎)
         "tafl_wcs_ws"  # TAFL WCS integration (未來的 WCS 實作)
         "web_api_ws"
@@ -364,7 +364,7 @@ build_all_workspaces() {
         # AGVC 應用工作空間 (依賴 db_proxy_ws)
         "ecs_ws"               # 設備控制系統
         "rcs_ws"               # 機器人控制系統
-        "flow_wcs_ws"          # 現行 WCS 實作 (將逐步由 TAFL 取代)
+        # "flow_wcs_ws"          # 已移除 - 改用 TAFL 系統
         "tafl_ws"              # TAFL parser and executor (新一代 WCS 基礎)
         "tafl_wcs_ws"          # TAFL WCS integration (未來的 WCS 實作)
         "web_api_ws"           # Web API 服務
@@ -773,7 +773,7 @@ agvc_source() {
     local agvc_app_workspaces=(
         "/app/ecs_ws/install"
         "/app/rcs_ws/install"
-        "/app/flow_wcs_ws/install"  # 現行 WCS 實作 (將逐步由 TAFL 取代)
+        # "/app/flow_wcs_ws/install"  # 已移除 - 改用 TAFL 系統
         "/app/tafl_ws/install"       # TAFL parser and executor (新一代 WCS 基礎)
         "/app/tafl_wcs_ws/install"   # TAFL WCS integration (未來的 WCS 實作)
         "/app/web_api_ws/install"
@@ -863,7 +863,7 @@ show_help() {
     echo "  manage_zenoh <action>  - Zenoh Router 管理 (start|stop|restart|status)"
     echo "  manage_web_api_launch <action> - Web API Launch 管理 (start|stop|restart|status)"
     echo "  manage_agvui <action>  - AGVUI 車載監控管理 (start|stop|restart|status|logs)"
-    echo "  manage_flow_wcs <action> - Flow WCS 節點管理 (start|stop|restart|status|logs)"
+    echo "  manage_tafl_wcs <action> - TAFL WCS 節點管理 (start|stop|restart|status|logs)"  # 新一代 WCS 系統
     if is_agvc_environment; then
         echo "  start_db/stop_db       - 啟動/停止資料庫服務 (僅 AGVC 環境)"
         echo "  start_ecs              - 啟動 ECS 設備控制系統 (僅 AGVC 環境)"
@@ -1552,7 +1552,8 @@ manage_agvui() {
     esac
 }
 
-# ===== Flow WCS 控制函式 =====
+# ===== Flow WCS 控制函式 (已停用 - 改用 TAFL 系統) =====
+: 'COMMENTED OUT - USE TAFL SYSTEM
 manage_flow_wcs() {
     local FLOW_WCS_LOG_FILE="/tmp/flow_wcs.log"
     local FLOW_WCS_PID_FILE="/tmp/flow_wcs.pid"
@@ -1740,6 +1741,134 @@ manage_flow_wcs() {
 
         *)
             echo "用法: manage_flow_wcs {start|stop|restart|status|logs}"
+            return 1
+            ;;
+    esac
+}
+COMMENTED OUT'
+
+# ===== TAFL WCS 控制函式 (新一代 WCS 系統) =====
+manage_tafl_wcs() {
+    local TAFL_WCS_LOG_FILE="/tmp/tafl_wcs.log"
+    local TAFL_WCS_PID_FILE="/tmp/tafl_wcs.pid"
+
+    case "$1" in
+        start)
+            # 檢查是否已經在運行
+            if pgrep -f "tafl_wcs_node" > /dev/null 2>&1; then
+                echo "⚠️ TAFL WCS 已經在運行中"
+                return 0
+            fi
+
+            echo "🚀 啟動 TAFL WCS 節點..."
+
+            # 確保日誌檔案存在
+            touch "$TAFL_WCS_LOG_FILE"
+
+            # 啟動 TAFL WCS 節點
+            nohup ros2 run tafl_wcs tafl_wcs_node > "$TAFL_WCS_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+
+            # 記錄主進程 PID
+            echo "$PARENT_PID" > "$TAFL_WCS_PID_FILE"
+
+            # 等待節點啟動
+            sleep 3
+
+            # 檢查節點是否成功啟動
+            if ros2 node list | grep -q "tafl_wcs_node"; then
+                echo "✅ TAFL WCS 節點已成功啟動"
+                echo "📝 日誌檔案: $TAFL_WCS_LOG_FILE"
+
+                # 顯示節點資訊
+                echo "📊 節點資訊："
+                ros2 node info /tafl_wcs_node 2>/dev/null | head -n 10
+            else
+                echo "❌ TAFL WCS 節點啟動失敗"
+                echo "請檢查日誌: tail -f $TAFL_WCS_LOG_FILE"
+                return 1
+            fi
+            ;;
+
+        stop)
+            echo "🛑 停止 TAFL WCS..."
+
+            # 使用進程名稱查找並終止
+            local pids=$(pgrep -f "tafl_wcs_node")
+            if [ -n "$pids" ]; then
+                echo "找到 TAFL WCS 進程: $pids"
+                for pid in $pids; do
+                    echo "終止進程 $pid..."
+                    kill -TERM $pid 2>/dev/null || true
+                done
+
+                # 等待進程結束
+                sleep 2
+
+                # 強制終止仍在運行的進程
+                pids=$(pgrep -f "tafl_wcs_node")
+                if [ -n "$pids" ]; then
+                    echo "強制終止剩餘進程..."
+                    for pid in $pids; do
+                        kill -KILL $pid 2>/dev/null || true
+                    done
+                fi
+
+                # 清理 PID 檔案
+                rm -f "$TAFL_WCS_PID_FILE"
+                echo "✅ TAFL WCS 已停止"
+            else
+                echo "📌 TAFL WCS 未在運行"
+            fi
+            ;;
+
+        restart)
+            echo "🔄 重新啟動 TAFL WCS..."
+            manage_tafl_wcs stop
+            sleep 2
+            manage_tafl_wcs start
+            ;;
+
+        status)
+            # 使用進程名稱檢查
+            if pgrep -f "tafl_wcs_node" > /dev/null 2>&1; then
+                PIDS=$(pgrep -f "tafl_wcs_node")
+                echo "✅ TAFL WCS 正在運行 (PIDs: $PIDS)"
+
+                # 檢查 ROS 2 節點狀態
+                echo "🔍 ROS 2 節點狀態："
+                if ros2 node list | grep -q "tafl_wcs_node"; then
+                    echo "  ✅ tafl_wcs_node 節點在線"
+
+                    # 顯示節點資訊
+                    echo "📊 節點資訊："
+                    ros2 node info /tafl_wcs_node 2>/dev/null | head -n 10
+                else
+                    echo "  ⚠️ tafl_wcs_node 節點未在 ROS 2 中註冊"
+                fi
+
+                # 顯示最新日誌
+                if [ -f "$TAFL_WCS_LOG_FILE" ]; then
+                    echo "📜 最新日誌 (最後 5 行)："
+                    tail -n 5 "$TAFL_WCS_LOG_FILE"
+                fi
+            else
+                echo "🚫 TAFL WCS 未在運行"
+            fi
+            ;;
+
+        logs)
+            if [ -f "$TAFL_WCS_LOG_FILE" ]; then
+                echo "📜 TAFL WCS 日誌："
+                tail -f "$TAFL_WCS_LOG_FILE"
+            else
+                echo "❌ 找不到日誌檔案: $TAFL_WCS_LOG_FILE"
+                return 1
+            fi
+            ;;
+
+        *)
+            echo "用法: manage_tafl_wcs {start|stop|restart|status|logs}"
             return 1
             ;;
     esac
@@ -2095,7 +2224,7 @@ check_agvc_status() {
 
     # 檢查 AGVC 專用工作空間
     echo "=== AGVC 工作空間狀態 ==="
-    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "flow_wcs_ws" "tafl_ws" "tafl_wcs_ws" "web_api_ws" "kuka_fleet_ws")
+    local agvc_workspaces=("db_proxy_ws" "ecs_ws" "rcs_ws" "tafl_ws" "tafl_wcs_ws" "web_api_ws" "kuka_fleet_ws")
     for ws in "${agvc_workspaces[@]}"; do
         if [ -d "/app/$ws/install" ]; then
             echo "✅ $ws 已建置"
@@ -2596,7 +2725,7 @@ manage_all_nodes() {
             manage_web_api_launch status
             echo ""
             echo "=== 核心服務 ==="
-            manage_flow_wcs status
+            manage_tafl_wcs status  # 新一代 WCS 系統
             manage_ecs_core status
             manage_db_proxy status
             manage_rcs_core status
@@ -2618,7 +2747,7 @@ manage_all_nodes() {
             manage_db_proxy start
             manage_ecs_core start
             manage_rcs_core start
-            manage_flow_wcs start
+            manage_tafl_wcs start  # 新一代 WCS 系統
             sleep 2
             
             echo ""
@@ -2645,7 +2774,7 @@ manage_all_nodes() {
             
             echo ""
             echo "3. 停止核心服務..."
-            manage_flow_wcs stop
+            manage_tafl_wcs stop  # 新一代 WCS 系統
             manage_rcs_core stop
             manage_ecs_core stop
             manage_db_proxy stop
@@ -2668,7 +2797,7 @@ manage_all_nodes() {
             echo "  - SSH 服務 (manage_ssh)"
             echo "  - Zenoh Router (manage_zenoh)"
             echo "  - Web API Launch (manage_web_api_launch)"
-            echo "  - Flow WCS (manage_flow_wcs)"
+            echo "  - TAFL WCS (manage_tafl_wcs)"  # 新一代 WCS 系統
             echo "  - ECS Core (manage_ecs_core)"
             echo "  - DB Proxy (manage_db_proxy)"
             echo "  - RCS (manage_rcs_core)"
@@ -2775,7 +2904,7 @@ echo "  check_zenoh_status/zenoh   - 檢查 Zenoh 狀態"
 echo "  check_ros_env/rosenv       - 檢查 ROS 2 環境"
 echo "  manage_zenoh <cmd>         - 管理 Zenoh Router"
 echo "  manage_web_api_launch <cmd> - 管理 Web API Launch"
-echo "  manage_flow_wcs <cmd>      - 管理 Flow WCS 節點"
+echo "  manage_tafl_wcs <cmd>      - 管理 TAFL WCS 節點"  # 新一代 WCS 系統
 echo "  manage_ssh <cmd>           - 管理 SSH 服務"
 
 if is_agvc_environment; then

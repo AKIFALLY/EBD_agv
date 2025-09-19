@@ -121,6 +121,19 @@ export const mapPage = (() => {
         // 假設你收到新狀態資料時
         MapChangehandler(newState, mapContext);
 
+        // 確保地圖尺寸正確並強制更新
+        if (map && map.invalidateSize) {
+            map.invalidateSize();
+            console.log('Map size updated after data load');
+
+            // 檢查是否需要重試渲染
+            const currentNodes = document.querySelectorAll('[id^="node-"]').length;
+            if (currentNodes === 0 && (newState.nodes?.length > 0 || newState.kukaNodes?.length > 0)) {
+                console.warn('Nodes not rendered, retrying...');
+                MapChangehandler(newState, mapContext);
+            }
+        }
+
     }
 
 
@@ -573,6 +586,8 @@ export const mapPage = (() => {
         //}
         //requestAnimationFrame(animate);
 
+        // 簡單修正初始化時的尺寸問題
+        map.invalidateSize();
 
     }
 
@@ -653,8 +668,13 @@ export const mapPage = (() => {
         locationsStore.on('change', handleLocationsChange);
         locationsStore.on('change', handleLocationsChange);
 
-
-
+        // 檢查現有數據並渲染（必要的，因為Socket.IO可能不會再次推送）
+        const currentState = mapStore.getState();
+        if (currentState.kukaNodes?.length > 0 || currentState.nodes?.length > 0) {
+            setTimeout(() => {
+                handleMapChange(currentState);
+            }, 200);
+        }
 
         let isShiftDown = false;
         let isDragging = false;

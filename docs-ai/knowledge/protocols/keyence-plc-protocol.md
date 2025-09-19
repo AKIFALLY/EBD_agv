@@ -160,5 +160,5 @@ def check_response(response):
 ## 🔗 交叉引用
 - PLC 通訊實作: `app/keyence_plc_ws/CLAUDE.md`
 - PLC 代理服務: `app/plc_proxy_ws/CLAUDE.md`
-- 網路診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- ROS 2 整合: @docs-ai/knowledge/protocols/ros2-interfaces.md
+- 網路診斷: docs-ai/operations/guides/system-diagnostics.md
+- ROS 2 整合: docs-ai/knowledge/protocols/ros2-interfaces.md

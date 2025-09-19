@@ -1,7 +1,11 @@
 # agv_base - AGV 基礎核心框架
 
 ## 📚 Context Loading
-../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+../../../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+
+# AGV Base 層專屬知識（套件特有）
+@docs-ai/knowledge/agv-domain/magic-value-analysis.md  # 魔術值分析
 
 ## 📋 套件概述
 agv_base 是 AGV 工作空間中的 **基礎核心框架套件**，實現 3層狀態機架構中的 Base 層。提供 AGV 狀態機的抽象基類、事件處理機制、硬體控制介面等通用邏輯，為所有 AGV 車型提供統一的基礎架構。

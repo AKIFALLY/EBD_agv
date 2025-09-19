@@ -361,7 +361,6 @@ tail -f /tmp/agv.log
 - **網路配置**: 確保 port 7447 可用於 Zenoh Router
 
 ### 程式碼規範
-- 遵循 `.augment-guidelines` 中的開發原則
 - 使用 Python 3.12+ 語法 (容器內版本)
 - 完整的錯誤處理和日誌記錄
 - 所有 ROS 2 節點支援 Zenoh RMW

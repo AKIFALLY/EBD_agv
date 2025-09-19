@@ -1,5 +1,6 @@
 metadata:
   id: test_arithmetic_operations
+  enabled: false
   name: Test Arithmetic Operations
   version: "1.0.0"
   description: Test TAFL variable arithmetic operations and math functions

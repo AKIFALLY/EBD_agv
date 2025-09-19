@@ -400,8 +400,8 @@ tail -f /tmp/agv.log | rg "任務|Mission"
 4. **Robot 任務異常**: 檢查 Robot 層狀態和 PGNO 系統
 
 ## 🔗 交叉引用
-- AGV 工作空間: @docs-ai/context/workspaces/agv-workspaces.md
-- 車型特性: @docs-ai/knowledge/agv-domain/vehicle-types.md
-- PLC 通訊: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
+- AGV 工作空間: docs-ai/context/workspaces/agv-workspaces.md
+- 車型特性: docs-ai/knowledge/agv-domain/vehicle-types.md
+- PLC 通訊: docs-ai/knowledge/protocols/keyence-plc-protocol.md
 - 路徑規劃: `app/path_algorithm/CLAUDE.md`
 - Robot 控制: `app/agv_ws/src/agv_base/agv_base/robot.py`

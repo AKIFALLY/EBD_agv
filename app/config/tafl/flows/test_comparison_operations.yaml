@@ -1,5 +1,6 @@
 metadata:
   id: test_comparison_operations
+  enabled: false
   name: Test Comparison Operations
   version: "1.0.0"
   description: Test TAFL comparison operations with mixed types

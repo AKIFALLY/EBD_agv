@@ -9,6 +9,8 @@ services:
       - ~/RosAGV/nginx:/etc/nginx/conf.d:ro
       # 新增：直接掛載說明文件目錄
       - ~/RosAGV/design/business-process-docs:/usr/share/nginx/html/docs:ro
+      # 新增：掛載 docs-ai 目錄供 AI 知識庫使用
+      - ~/RosAGV/docs-ai:/usr/share/nginx/html/docs-ai:ro
     restart: always
     networks:
       bridge_network:
@@ -42,7 +44,6 @@ services:
       - ~/RosAGV/Dockerfile:/app/host/Dockerfile:ro
       - ~/RosAGV/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
       - ~/RosAGV/README.md:/app/host/README.md:rw
-      - ~/RosAGV/.augment-guidelines:/app/host/.augment-guidelines:rw
       - /tmp/.X11-unix:/tmp/.X11-unix:rw # (ubuntu 需要)將宿主機的 /tmp/.X11-unix 掛載到容器的 /tmp/.X11-unix 目錄 宿主機需要執行 xhost +local:
     ports:
       - 7447:7447 # 7447 zenoh router

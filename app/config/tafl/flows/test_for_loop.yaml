@@ -2,7 +2,7 @@
 # 測試 for 迴圈功能
 
 metadata:
-  enabled: true   # 啟用測試流程
+  enabled: false   # 停用測試流程
   id: test_for_loop
   name: "Test For Loop"
   version: "1.1.2"

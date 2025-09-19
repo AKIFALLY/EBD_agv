@@ -31,7 +31,7 @@ class TAFLEditorFlow {
             // Ensure flow has all required sections
             const normalizedFlow = {
                 metadata: flowToLoad.metadata || { id: null, name: 'Untitled Flow', version: '1.1', description: '' },
-                settings: flowToLoad.settings || { timeout: 3600, max_retries: 3, retry_on_failure: false },
+                settings: flowToLoad.settings || { execution_interval: 5 },
                 preload: flowToLoad.preload || {},
                 rules: flowToLoad.rules || {},
                 variables: flowToLoad.variables || {},
@@ -351,9 +351,7 @@ class TAFLEditorFlow {
                 description: ''
             },
             settings: {
-                timeout: 3600,
-                max_retries: 3,
-                retry_on_failure: false
+                execution_interval: 5
             },
             preload: {},
             rules: {},

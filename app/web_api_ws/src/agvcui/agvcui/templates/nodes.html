@@ -8,7 +8,7 @@
         <h1 class="title">
             <span class="icon-text">
                 <span class="icon">
-                    <i class="fas fa-network-wired"></i>
+                    <i class="mdi mdi-server-network"></i>
                 </span>
                 <span>節點管理</span>
             </span>
@@ -47,7 +47,7 @@
             <p class="control">
                 <button class="button is-primary" onclick="refreshStatus()">
                     <span class="icon">
-                        <i class="fas fa-sync"></i>
+                        <i class="mdi mdi-refresh"></i>
                     </span>
                     <span>刷新狀態</span>
                 </button>
@@ -55,7 +55,7 @@
             <p class="control">
                 <button class="button is-success" onclick="startAllNodes()">
                     <span class="icon">
-                        <i class="fas fa-play"></i>
+                        <i class="mdi mdi-play"></i>
                     </span>
                     <span>啟動全部</span>
                 </button>
@@ -63,7 +63,7 @@
             <p class="control">
                 <button class="button is-danger" onclick="stopAllNodes()">
                     <span class="icon">
-                        <i class="fas fa-stop"></i>
+                        <i class="mdi mdi-stop"></i>
                     </span>
                     <span>停止全部</span>
                 </button>
@@ -79,7 +79,7 @@
                         <p class="card-header-title">
                             <span class="icon-text">
                                 <span class="icon">
-                                    <i class="fas fa-cube"></i>
+                                    <i class="mdi mdi-cube"></i>
                                 </span>
                                 <span>{{ node.name }}</span>
                             </span>
@@ -107,19 +107,19 @@
                     <footer class="card-footer">
                         <a href="#" class="card-footer-item has-text-success" onclick="startNode('{{ node.name }}'); return false;">
                             <span class="icon">
-                                <i class="fas fa-play"></i>
+                                <i class="mdi mdi-play"></i>
                             </span>
                             <span>啟動</span>
                         </a>
                         <a href="#" class="card-footer-item has-text-danger" onclick="stopNode('{{ node.name }}'); return false;">
                             <span class="icon">
-                                <i class="fas fa-stop"></i>
+                                <i class="mdi mdi-stop"></i>
                             </span>
                             <span>停止</span>
                         </a>
                         <a href="#" class="card-footer-item has-text-info" onclick="restartNode('{{ node.name }}'); return false;">
                             <span class="icon">
-                                <i class="fas fa-redo"></i>
+                                <i class="mdi mdi-restart"></i>
                             </span>
                             <span>重啟</span>
                         </a>
@@ -134,7 +134,7 @@
         <h2 class="subtitle mt-6">
             <span class="icon-text">
                 <span class="icon">
-                    <i class="fas fa-truck"></i>
+                    <i class="mdi mdi-truck"></i>
                 </span>
                 <span>遠端 AGV 節點</span>
             </span>
@@ -148,7 +148,7 @@
                         <p class="card-header-title">
                             <span class="icon-text">
                                 <span class="icon">
-                                    <i class="fas fa-robot"></i>
+                                    <i class="mdi mdi-robot"></i>
                                 </span>
                                 <span>{{ agv.name }}</span>
                             </span>
@@ -168,19 +168,19 @@
                     <footer class="card-footer">
                         <a href="#" class="card-footer-item has-text-success" onclick="controlAGV('{{ agv.name }}', 'start'); return false;">
                             <span class="icon">
-                                <i class="fas fa-play"></i>
+                                <i class="mdi mdi-play"></i>
                             </span>
                             <span>啟動</span>
                         </a>
                         <a href="#" class="card-footer-item has-text-danger" onclick="controlAGV('{{ agv.name }}', 'stop'); return false;">
                             <span class="icon">
-                                <i class="fas fa-stop"></i>
+                                <i class="mdi mdi-stop"></i>
                             </span>
                             <span>停止</span>
                         </a>
                         <a href="#" class="card-footer-item has-text-info" onclick="controlAGV('{{ agv.name }}', 'restart'); return false;">
                             <span class="icon">
-                                <i class="fas fa-redo"></i>
+                                <i class="mdi mdi-restart"></i>
                             </span>
                             <span>重啟</span>
                         </a>

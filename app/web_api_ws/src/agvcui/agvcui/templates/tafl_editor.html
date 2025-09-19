@@ -375,22 +375,11 @@
                 <div class="property-editor">
                     <h4 class="title is-5 mb-4">Execution Settings</h4>
                     <div class="field">
-                        <label class="label is-small">Timeout (seconds)</label>
+                        <label class="label is-small">Execution Interval (seconds)</label>
                         <div class="control">
-                            <input class="input is-small" type="number" id="settings-timeout" value="3600" min="1">
+                            <input class="input is-small" type="number" id="settings-execution-interval" value="5" min="1">
+                            <p class="help">How often this flow should be executed</p>
                         </div>
-                    </div>
-                    <div class="field">
-                        <label class="label is-small">Max Retries</label>
-                        <div class="control">
-                            <input class="input is-small" type="number" id="settings-max-retries" value="3" min="0">
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="checkbox">
-                            <input type="checkbox" id="settings-retry-on-failure">
-                            Retry on Failure
-                        </label>
                     </div>
                 </div>
             </div>

@@ -74,6 +74,6 @@
 - **Colcon** - Colcon build tool
 
 ## 🔗 Cross References
-- System Overview: @docs-ai/context/system/rosagv-overview.md
-- Development Standards: @docs-ai/operations/development/core-principles.md
-- Documentation Standards: @docs-ai/context/structure/module-index.md
+- System Overview: docs-ai/context/system/rosagv-overview.md
+- Development Standards: docs-ai/operations/development/core/core-principles.md
+- Documentation Standards: docs-ai/context/structure/module-index.md

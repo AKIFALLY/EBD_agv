@@ -2,7 +2,18 @@
 
 ## 📚 Context Loading
 ../../CLAUDE.md  # 引用根目錄系統文档
-@docs-ai/knowledge/protocols/keyence-plc-protocol.md
+
+# AGV 領域知識（工作空間層）
+@docs-ai/knowledge/agv-domain/vehicle-types.md      # 車型定義
+@docs-ai/knowledge/agv-domain/agv-state-machine.md  # 狀態機設計
+@docs-ai/knowledge/system/manual-rack-management.md # Rack 管理
+
+# PLC 通訊協議
+@docs-ai/knowledge/protocols/keyence-plc-protocol.md # Keyence PLC 協議
+@docs-ai/knowledge/protocols/plc-ros2-interfaces.md # PLC-ROS2 介面
+
+# 通用協議
+@docs-ai/knowledge/protocols/ros2-interfaces.md     # ROS2 介面
 
 ## 📋 工作空間概述
 

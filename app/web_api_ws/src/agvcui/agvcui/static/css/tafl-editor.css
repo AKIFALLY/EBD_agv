@@ -2307,3 +2307,32 @@ body.dragging .drop-indicator.horizontal {
     background-color: rgba(54, 162, 235, 0.05) !important;
     border-left-color: #36a2eb !important;
 }
+
+/* ===== Switch Case Properties Panel ===== */
+/* Case items in properties panel with enhanced visual separation */
+
+.property-editor .case-item.box {
+    background-color: #fafafa !important;
+    border: 1px solid #e8e8e8 !important;
+    transition: all 0.2s ease !important;
+}
+
+.property-editor .case-item.box:hover {
+    background-color: #f0f8ff !important;
+    border-color: #3298dc !important;
+    box-shadow: 0 2px 8px rgba(50, 152, 220, 0.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Default case with warning theme */
+.property-editor .case-item.box.default-case-box {
+    background-color: #fffbf0 !important;
+    border: 1px solid #ffe08a !important;
+}
+
+.property-editor .case-item.box.default-case-box:hover {
+    background-color: #fff8e6 !important;
+    border-color: #ffdd57 !important;
+    box-shadow: 0 2px 8px rgba(255, 221, 87, 0.2) !important;
+    transform: translateY(-1px) !important;
+}

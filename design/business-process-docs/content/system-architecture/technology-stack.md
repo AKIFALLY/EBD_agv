@@ -95,14 +95,14 @@ export RMW_IMPLEMENTATION=rmw_zenohd
 AGV 車載環境:
   - 容器: rosagv (單容器)
   - 網路: host (直接硬體存取)
-  - 工作空間: 10個 (含4個共用基礎設施)
-  - 服務: AGV 控制、PLC 通訊、感測器處理、GPIO 控制
+  - 工作空間: 7個專用 + 共用基礎設施
+  - 服務: AGV 控制、PLC 通訊、感測器處理、搖桿控制
 
 AGVC 管理環境:
   - 容器: agvc_server, postgres, nginx, pgadmin (4個容器)
   - 網路: bridge (192.168.100.0/24)
-  - 工作空間: 12個 (含5個共用基礎設施)
-  - 服務: Web API、資料庫、反向代理、資料庫管理
+  - 工作空間: 10個專用 + 共用基礎設施
+  - 服務: Web API、資料庫、反向代理、TAFL WCS、KUKA Fleet
 ```
 
 ### Ubuntu 24.04 LTS
@@ -192,6 +192,38 @@ class KeyencePlcCommunication:
 - **CPU**: 多核心並行處理
 - **網路**: Gigabit 乙太網路
 - **儲存**: SSD 推薦 (NVMe 更佳)
+
+## 📦 工作空間架構
+
+### AGV 車載工作空間 (7個專用)
+| 工作空間 | 功能描述 |
+|---------|---------|
+| `agv_ws` | 核心 AGV 控制和狀態機 |
+| `agv_cmd_service_ws` | 手動指令服務介面 |
+| `joystick_ws` | 搖桿控制整合 |
+| `sensorpart_ws` | 感測器資料處理 (3D相機、OCR) |
+| `keyence_plc_ws` | Keyence PLC 通訊協議 |
+| `plc_proxy_ws` | PLC 代理服務 |
+| `path_algorithm` | 路徑規劃演算法 |
+
+### AGVC 管理工作空間 (10個專用)
+| 工作空間 | 功能描述 |
+|---------|---------|
+| `web_api_ws` | Web API 和 Socket.IO 服務 |
+| `db_proxy_ws` | 資料庫代理和 ORM |
+| `ecs_ws` | 設備控制系統 (門控) |
+| `rcs_ws` | 機器人控制系統 |
+| `tafl_wcs_ws` | TAFL WCS (現行 WCS 實作) |
+| `tafl_ws` | TAFL 語言解析器 |
+| `kuka_fleet_ws` | KUKA Fleet 系統整合 |
+| `launch_ws` | ROS 2 Launch 系統管理 |
+| `shared_constants_ws` | 共享常數定義 |
+| `uno_gpio_ws` | 研華 UNO-137 GPIO 控制 |
+
+### 共用基礎設施
+- `keyence_plc_ws` - AGV 和 AGVC 共用
+- `plc_proxy_ws` - AGV 和 AGVC 共用
+- `path_algorithm` - AGV 和 AGVC 共用
 
 ## 🔧 開發工具鏈
 

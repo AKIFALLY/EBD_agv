@@ -1,9 +1,14 @@
 # TAFL WCS Workspace CLAUDE.md
 
 ## 📚 Context Loading
-@docs-ai/knowledge/system/tafl-language-spec.md
-@docs-ai/operations/development/ros2-workspace-test-structure.md
-@docs-ai/operations/development/testing-standards.md
+@docs-ai/knowledge/system/tafl/tafl-language-specification.md
+@docs-ai/knowledge/system/tafl/tafl-api-reference.md
+@docs-ai/knowledge/system/tafl/tafl-troubleshooting-guide.md
+@docs-ai/knowledge/agv-domain/wcs-system-design.md
+@docs-ai/knowledge/agv-domain/wcs-workid-system.md
+@docs-ai/knowledge/agv-domain/wcs-database-design.md
+@docs-ai/operations/development/testing/ros2-workspace-test-structure.md
+@docs-ai/operations/development/testing/testing-standards.md
 
 ## 🎯 Module Overview
 **TAFL WCS** (Task Automation Flow Language - Warehouse Control System) 是基於 TAFL v1.1 語言的倉庫控制系統實作，作為 Linear Flow v2 的替代方案，提供更結構化和標準化的流程定義和執行能力。
@@ -224,10 +229,13 @@ Database Tables: 單數 (rack, task, location, work)
 - ✅ 只需一次轉換：只在 SQL 查詢時轉換（複數→單數）
 
 ## 🔗 Related Documentation
-- TAFL 語言規格: @docs-ai/knowledge/system/tafl-language-spec.md
+- TAFL 語言規格: @docs-ai/knowledge/system/tafl/tafl-language-specification.md
+- TAFL 實作計畫: @docs-ai/knowledge/system/tafl/tafl-implementation-plan.md
+- TAFL 快速入門: @docs-ai/knowledge/system/tafl/tafl-quick-start-guide.md
 - Flow WCS 系統: `app/flow_wcs_ws/CLAUDE.md`
 - 資料庫代理: `app/db_proxy_ws/CLAUDE.md`
-- ROS 2 工作空間測試結構: @docs-ai/operations/development/ros2-workspace-test-structure.md
+- ROS 2 工作空間測試結構: @docs-ai/operations/development/testing/ros2-workspace-test-structure.md
+- 測試程序: @docs-ai/operations/development/testing/testing-procedures.md
 
 ## 📅 Development Timeline
 - **2024-12-22**: 初始建立，實現基本 TAFL v1.1 執行框架

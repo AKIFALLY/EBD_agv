@@ -1,12 +1,14 @@
 # cargo_mover_agv - 貨物搬運車AGV控制系統
 
 ## 📚 Context Loading
-../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+../../../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+
+# Cargo Mover 專屬知識（套件特有）
+@docs-ai/knowledge/agv-domain/write-path-state-analysis.md  # 路徑狀態分析
 
 ## 📋 專案概述
 cargo_mover_agv 實現 Cargo Mover AGV 的完整控制邏輯，支援 Hokuyo 8bit 光通訊模組管理、架台搬運操作、入口/出口流程控制等。負責房間門口的 Rack ↔ 傳送箱轉移作業，並執行 SensorPart 3D 視覺定位 + OCR 產品識別的智能品質檢查。
-
-詳細 Cargo Mover 開發指導請參考: @docs-ai/knowledge/agv-domain/vehicle-types.md
 
 ## 🏭 核心業務流程 (基於眼鏡生產系統)
 
@@ -17,11 +19,12 @@ cargo_mover_agv 實現 Cargo Mover AGV 的完整控制邏輯，支援 Hokuyo 8bi
 - **通訊整合**: Hokuyo 8bit 光通訊模組 (左右側)
 
 ### 完整操作流程
-#### 階段1：3D視覺定位 (Rack整體掃描)
+#### 階段1：3D視覺定位 (2D Mark定位)
 ```
-SensorPart 相機對整個 Rack 進行 3D 掃描
-├── 識別所有 Carrier 的位置座標
-├── 更新定位基準點到機械臂座標系
+SensorPart 相機對 Rack 上的 2D Mark 進行 3D 定位
+├── 掃描識別 2D Mark 位置
+├── 定位資訊傳送到 Robot
+├── Robot 進行 base 座標更新
 ├── 建立 Carrier 抓取路徑規劃
 └── 準備逐一 Carrier 處理循環
 ```
@@ -44,18 +47,22 @@ For 每個 Carrier:
    ├── 8bit 通訊開啟傳送箱門
    ├── 將 Carrier 放入入口傳送箱
    └── 更新系統狀態
-   ❌ 製程不匹配：
-   ├── 標記 Carrier 為 NG 狀態
-   ├── 機械臂回到 Home 位置
-   ├── 記錄異常日誌
-   └── 繼續處理下一個 Carrier
+
+   ❌ OCR失敗/製程不匹配：
+   ├── 立即停止處理
+   ├── 發出 PLC Alarm 到 HMI
+   ├── 等待人員現場處理
+   └── 人員處理流程：
+       • OCR失敗：處理問題後 Alarm Reset 重試
+       • 錯誤產品：移除產品 → AGVCUI清除資料 → Alarm Reset
 ```
 
 ### 智能品質管制特色
-- **製程適配性檢查**: Room1/Room2 只接受泡藥1次產品，泡藥2次產品標記NG
+- **製程適配性檢查**: Room1/Room2 只接受泡藥1次產品，泡藥2次產品需人工處理
 - **產品識別驗證**: OCR 確保產品正確性，防止混料誤送
-- **異常處理機制**: NG 產品保留在 Rack 上，不影響其他產品處理
-- **品質追溯**: 完整記錄每個 Carrier 的處理狀態和異常原因
+- **即時異常處理**: OCR NG 立即發出 Alarm，人員現場處理（非事後集中處理）
+- **系統資料同步**: AGVCUI 提供資料清除功能，確保錯誤產品移除後資料一致性
+- **Alarm Reset 機制**: 人員處理完成後可 Reset 重試，系統自動恢復
 
 ### A/B 雙面處理流程
 ```
@@ -65,7 +72,9 @@ For 每個 Carrier:
 3. A 面處理完成後，WCS → 產生 Rack 轉向任務
 4. KUKA AGV → 執行轉向任務，將 Rack 轉180度 (B面朝向)
 5. Cargo AGV → 處理 B 面所有 Carrier (重複流程)
-6. 雙面處理完成，判定最終狀態 (正常/NG)
+6. 雙面處理完成，Rack 送到人工收料區
+
+注：所有 OCR NG 問題都在當下即時處理，不會有 NG Rack 事後處理
 ```
 
 ### 技術實作特點
@@ -170,6 +179,10 @@ rotation_params:
 
 ### Cargo AGV 特有問題
 - **Hokuyo 8bit 光通訊問題**: 檢查左右側光通訊模組狀態
-- **SensorPart 3D 視覺問題**: 驗證 3D 掃描和 OCR 識別功能
+- **SensorPart 2D Mark定位**: 驗證 2D Mark 3D定位和 base 座標更新
+- **OCR NG Alarm處理**:
+  - 檢查 PLC Alarm 是否正確發送到 HMI
+  - 確認人員處理後 Alarm Reset 功能正常
+  - 驗證 AGVCUI 資料清除功能
 - **A/B 雙面處理異常**: 檢查 Rack 轉向邏輯和狀態同步
-- **製程適配性檢查錯誤**: 驗證產品 OCR 識別和製程匹配邏輯
+- **製程適配性檢查**: 驗證產品 OCR 識別和製程匹配邏輯

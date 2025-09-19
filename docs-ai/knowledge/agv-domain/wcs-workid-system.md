@@ -340,6 +340,6 @@ class WorkIDParameterManager:
 ```
 
 ## 🔗 交叉引用
-- WCS 系統設計: @docs-ai/knowledge/agv-domain/wcs-system-design.md
-- 資料庫設計: @docs-ai/knowledge/agv-domain/wcs-database-design.md
-- AI WCS 實作: @app/ai_wcs_ws/CLAUDE.md
+- WCS 系統設計: docs-ai/knowledge/agv-domain/wcs-system-design.md
+- 資料庫設計: docs-ai/knowledge/agv-domain/wcs-database-design.md
+- TAFL WCS 實作: @app/tafl_wcs_ws/

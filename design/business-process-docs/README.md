@@ -4,17 +4,20 @@
 
 ```
 business-process-docs/
-├── index.html                                    # 📋 主導航頁面
-├── assets/                                       # 🎨 共用資源
-│   ├── css/
-│   │   └── rosagv-common.css                    # 統一樣式表
-│   └── js/
-│       └── rosagv-common.js                     # 統一 JavaScript 功能庫
-├── rosagv_business_process_2025.html           # 🏠 房間內製程操作指南 (藍色主題)
-├── rosagv_outdoor_process_2025.html            # 🌿 房間外製程操作指南 (綠色主題)
-├── rosagv_architecture_2025.html               # 🏗️ 系統架構技術文件 (紫色主題)
-├── rosagv_complete_business_system_2025.html   # 🏢 完整業務系統指南 (橘色主題)
-├── simple_wcs_system_2025.html                 # ⚡ Simple WCS 決策引擎指南 (紅色主題)
+├── index.html                                    # 📋 主導航頁面（動態 Markdown 載入系統）
+├── content/                                      # 📝 Markdown 內容檔案
+│   ├── getting-started/                         # 快速入門指南
+│   ├── business-processes/                      # 業務流程說明
+│   ├── agv-vehicles/                            # AGV 車輛相關
+│   ├── system-architecture/                     # 系統架構
+│   ├── operations/                              # 操作指南
+│   └── technical-details/                       # 技術細節
+├── css/                                          # 🎨 樣式資源
+│   └── vendors/                                 # 第三方樣式
+├── js/                                           # 📜 JavaScript 資源
+│   ├── content-loader.js                        # Markdown 內容載入器
+│   ├── navigation.js                            # 導航功能
+│   └── vendors/                                 # 第三方程式庫
 └── README.md                                    # 📖 本說明文件
 ```
 
@@ -43,64 +46,58 @@ r agvc-check              # 執行 AGVC 健康檢查
 
 ### 快速開始
 1. 開啟 `index.html` 作為導航入口
-2. 根據需求點選對應的文件類型
-3. 每個文件都採用統一的視覺設計和互動功能
+2. 系統會動態載入 `content/` 目錄下的 Markdown 檔案
+3. 透過左側導航選單瀏覽不同主題的文檔
 
-### 文件分類
+### 文檔內容分類
 
-#### 🏠 房間內製程操作指南
-- **檔案**: `rosagv_business_process_2025.html`
-- **主題色**: 藍色
-- **適用對象**: 製程工程師、AGV操作員
-- **主要內容**: Loader AGV、Unloader AGV協同作業流程
+#### 🎯 快速入門 (getting-started/)
+- 什麼是 RosAGV？
+- 系統整體概覽
+- 核心概念解釋
+- 快速上手指導
 
-#### 🌿 房間外製程操作指南  
-- **檔案**: `rosagv_outdoor_process_2025.html`
-- **主題色**: 綠色
-- **適用對象**: 射出工程師、KUKA操作員、OPUI使用者
-- **主要內容**: KUKA Fleet整合、架台管理、OPUI操作流程
+#### 🏭 業務流程 (business-processes/)
+- 眼鏡生產流程
+- 室內物料搬運
 
-#### 🏗️ 系統架構技術文件
-- **檔案**: `rosagv_architecture_2025.html`  
-- **主題色**: 紫色
-- **適用對象**: 系統架構師、後端工程師、DevOps工程師
-- **主要內容**: 技術架構、模組設計、API接口
+#### 🚗 AGV 車輛 (agv-vehicles/)
+- 車型介紹
+- Cargo Mover
+- Loader AGV
+- Unloader AGV
 
-#### 🏢 完整業務系統指南
-- **檔案**: `rosagv_complete_business_system_2025.html`
-- **主題色**: 橘色  
-- **適用對象**: 專案經理、業務分析師、系統整合工程師
-- **主要內容**: 企業級整合方案、業務流程設計
+#### 🏗️ 系統架構 (system-architecture/)
+- 雙環境架構
+- 技術棧架構
 
-#### ⚡ Simple WCS 決策引擎指南
-- **檔案**: `simple_wcs_system_2025.html`
-- **主題色**: 紅色
-- **適用對象**: AI工程師、配置管理員、WCS開發者
-- **主要內容**: 極簡化配置驅動的WCS決策引擎，YAML配置系統，AI Agent自動化管理
+#### 🔧 操作指南 (operations/)
+- 部署指南
+- 開發環境
+- 維護操作
+- 故障排除
+- 系統診斷
+- 統一工具系統
+- 服務管理
+- 效能調優
+
+#### 💻 技術細節 (technical-details/)
+- TAFL 系統概覽
+- TAFL 語言規格
+- TAFL 開發指南
 
 ## 🛠️ 技術特色
 
 ### 統一設計系統
 - **響應式設計**: 支援桌面、平板、手機
-- **主題色彩**: 每個文件有專屬主題色，易於識別
-- **統一元件**: 卡片、時間軸、統計數據、導航等統一設計
-- **動畫效果**: 平滑滾動、淡入動畫、懸停效果
+- **動態內容載入**: Markdown 檔案即時渲染
+- **語法高亮**: 使用 Prism.js 提供程式碼語法高亮
+- **平滑導航**: 左側導航選單，點擊即可切換內容
 
-### 互動功能
-- **平滑導航**: 點擊導航自動滾動到對應章節
-- **動態統計**: 數字計數動畫效果
-- **懸停回饋**: 卡片和按鈕的互動回饋
-- **主題切換**: 支援 URL 參數切換主題
-
-### 統一樣式系統
-```css
-/* 主要 CSS 變數 */
---primary-blue: #3498db;      /* 房間內製程 */
---primary-green: #27ae60;     /* 房間外製程 */  
---primary-purple: #9b59b6;    /* 系統架構 */
---primary-orange: #e67e22;    /* 完整業務系統 */
---primary-red: #e74c3c;       /* Simple WCS 決策引擎 */
-```
+### 技術特點
+- **Markdown 支援**: 使用 marked.js 解析 Markdown
+- **單頁應用**: 無需重新載入頁面即可切換內容
+- **本地化資源**: 所有資源都本地化，無需網路連接
 
 ## 📱 使用方式
 
@@ -115,36 +112,30 @@ npx serve .
 http://localhost:8000
 ```
 
-### 主題切換
-可以透過 URL 參數切換文件主題：
-```
-rosagv_business_process_2025.html?theme=blue
-rosagv_outdoor_process_2025.html?theme=green  
-rosagv_architecture_2025.html?theme=purple
-rosagv_complete_business_system_2025.html?theme=orange
-simple_wcs_system_2025.html?theme=red
-```
+### 訪問方式
+- **Web 訪問**: `http://agvc.ui/docs/index.html`
+- **本地開發**: 使用 Python HTTP 伺服器或 Node.js serve
+- **注意**: `http://agvc.ui/docs` 是 FastAPI 文檔，不是業務流程文檔
 
 ## 🔧 維護說明
 
 ### 更新內容
-- 內容更新只需修改對應的 HTML 文件
-- 樣式修改統一在 `assets/css/rosagv-common.css`
-- 功能增強統一在 `assets/js/rosagv-common.js`
+- **內容更新**: 直接修改 `content/` 目錄下對應的 Markdown 檔案
+- **新增頁面**: 在適當的子目錄下創建新的 `.md` 檔案
+- **導航更新**: 修改 `index.html` 中的導航選單項目
 
-### 新增文件
-1. 複製現有 HTML 文件作為模板
-2. 修改標題和內容
-3. 調整主題色彩變數
-4. 在 `index.html` 中添加導航連結
+### Markdown 檔案格式
+```markdown
+# 頁面標題
 
-### 樣式自定義
-每個文件都支援頁面特定的樣式覆蓋：
-```html
-<style>
-    /* 頁面特定樣式 */
-    body { background: custom-gradient; }
-</style>
+## 章節標題
+
+內容說明...
+
+\`\`\`javascript
+// 程式碼區塊會自動語法高亮
+const example = "code";
+\`\`\`
 ```
 
 ## 📊 系統需求
@@ -155,32 +146,15 @@ simple_wcs_system_2025.html?theme=red
 
 ## 🚀 更新歷史
 
-### 2025-07-31
-- ✅ 更新系統架構文檔新增 Web API Launch 服務管理
-- ✅ 新增 launch_ws 服務編排工作空間說明
-- ✅ 統一服務管理 API 架構更新 (manage_web_api_launch)
-- ✅ ROS 2 Launch 系統整合到核心技術棧
-- ✅ 統一工具系統服務管理功能擴展
-- ✅ **新增配置管理工具到 r 工具集**
-  - 新增 `r zenoh-config` - Zenoh Router 配置管理
-  - 新增 `r hardware-config` - 硬體映射配置管理
-  - 整合現有 scripts/config-tools/ 專業工具
-  - 更新統一工具文檔和使用指南
+### 2025-09-19
+- ✅ 移除舊版 2025.html 檔案，改用動態 Markdown 載入系統
+- ✅ 整理文檔結構，使用 `content/` 目錄組織 Markdown 內容
+- ✅ 更新為單頁應用架構，提升使用體驗
 
-### 2025-07-30
-- ✅ 新增 Simple WCS 決策引擎系統文檔
-- ✅ 完整的 YAML 配置驅動系統設計說明
-- ✅ AI Agent 整合和 yq 工具使用指導
-- ✅ 紅色主題設計，與現有文檔體系整合
-- ✅ 更新主導航頁面，新增 Simple WCS 入口
-
-### 2025-01-30
-- ✅ 建立統一的 CSS 和 JS 資源文件
-- ✅ 實施統一的設計系統和主題色彩
-- ✅ 建立 index.html 導航中心  
-- ✅ 整合所有現有文件並統一樣式
-- ✅ 實作響應式設計和互動功能
-- ✅ 完成 KUKA Fleet 和架台系統整合文件
+### 2025-08-04
+- ✅ 建立新的動態文檔系統
+- ✅ 整合 Markdown 解析和語法高亮功能
+- ✅ 實作左側導航選單和內容動態載入
 
 ## 📞 技術支援
 

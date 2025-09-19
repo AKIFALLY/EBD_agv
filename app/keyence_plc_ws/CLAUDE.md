@@ -3,7 +3,7 @@
 ## 📚 Context Loading
 ../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/protocols/keyence-plc-protocol.md
-@docs-ai/operations/development/plc-communication.md
+@docs-ai/operations/development/ros2/plc-communication.md
 
 ## 📋 工作空間概述
 
@@ -176,14 +176,13 @@ class MockKeyencePlcCom:
 ```
 
 ## 配置參數
-**詳細配置說明**: @docs-ai/operations/development/plc-communication.md
+**詳細配置說明**: @docs-ai/operations/development/ros2/plc-communication.md
 
 主要參數: 連接超時(5秒)、連線池大小(1-5個)、重連間隔(5秒)
 
 ## 🔧 開發環境設定
 
 ### 容器內開發環境
-@docs-ai/operations/development/docker-development.md
 
 ```bash
 # 進入 AGV 容器
@@ -211,7 +210,7 @@ colcon test --packages-select keyence_plc
 
 ## 快速開始
 
-**詳細使用範例**: @docs-ai/operations/development/plc-communication.md
+**詳細使用範例**: @docs-ai/operations/development/ros2/plc-communication.md
 
 ```python
 # 基本使用
@@ -226,7 +225,7 @@ plc.disconnect()
 
 ## 測試
 
-**詳細測試指導**: @docs-ai/operations/development/plc-communication.md
+**詳細測試指導**: @docs-ai/operations/development/ros2/plc-communication.md
 
 ### 測試結構
 - 基本通訊測試: `test/keyence_plc_com_test.py`
@@ -235,7 +234,7 @@ plc.disconnect()
 
 ## 故障排除
 
-**完整故障排除指導**: @docs-ai/operations/development/plc-communication.md
+**完整故障排除指導**: @docs-ai/operations/development/ros2/plc-communication.md
 
 ### 模組特定問題
 - **連線池耗盡**: 檢查 `pool.lost_connections` 狀態
@@ -261,17 +260,15 @@ python3 test/keyence_plc_com_test.py
 - 連線池可提高並發性能，適合高頻操作場景
 
 ### 雙環境支援
-@docs-ai/context/system/dual-environment.md
 - AGV 車載環境和 AGVC 管理環境都可使用此模組
 - 透過 Zenoh RMW 實現跨容器通訊
 - 需要正確配置 PLC 網路連接
 
 ## 🔗 交叉引用
 - **協議和實踐**: @docs-ai/knowledge/protocols/keyence-plc-protocol.md - Keyence 協議詳解
-- **開發最佳實踐**: @docs-ai/operations/development/plc-communication.md - PLC 通訊開發指導
+- **開發最佳實踐**: @docs-ai/operations/development/ros2/plc-communication.md - PLC 通訊開發指導
 - **PLC 代理服務**: `app/plc_proxy_ws/CLAUDE.md` - ROS 2 PLC 服務封裝
 - **手動控制服務**: `app/agv_cmd_service_ws/CLAUDE.md` - 上層應用整合
-- **ROS 2 開發指導**: @docs-ai/operations/development/ros2-development.md
-- **容器開發環境**: @docs-ai/operations/development/docker-development.md
-- **系統診斷工具**: @docs-ai/operations/maintenance/system-diagnostics.md
+- **ROS 2 開發指導**: @docs-ai/operations/development/ros2/ros2-development.md
+- **系統診斷工具**: @docs-ai/operations/guides/system-diagnostics.md
 - **Zenoh 通訊機制**: @docs-ai/knowledge/protocols/zenoh-rmw.md

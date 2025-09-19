@@ -1,12 +1,14 @@
 # unloader_agv - 卸載車AGV控制系統
 
 ## 📚 Context Loading
-../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+../../../../CLAUDE.md  # 引用根目錄系統文檔
+../../CLAUDE.md  # 引用上層 agv_ws 工作空間文檔
+
+# Unloader 專屬知識（套件特有）
+@docs-ai/knowledge/agv-domain/write-path-state-analysis.md  # 路徑狀態分析
 
 ## 📋 專案概述
 unloader_agv 實現 Unloader AGV 的完整控制邏輯，支援從烘箱取料、預乾燥機操作、出料傳送帶操作、數量計算等複雜卸載流程。負責眼鏡生產房間內後段製程的批量卸載操作，包含 3 種設備類型共 4 種業務流程，採用一次2格的高效批量處理方式。
-
-詳細 Unloader AGV 開發指導請參考: @docs-ai/knowledge/agv-domain/vehicle-types.md
 
 ## 🏭 核心業務流程 (基於眼鏡生產系統)
 

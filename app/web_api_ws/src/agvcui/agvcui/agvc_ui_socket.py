@@ -236,6 +236,25 @@ class AgvcUiSocket:
         await self.sio.emit("agv_list", jsonable_encoder(payload), room=sid)
 
     async def notify_by_modifylog(self, sid):
+        """
+        🔴 關鍵機制 - ModifyLog 監聽與通知
+
+        此函數是前後端即時同步的核心機制！
+        它監聽 ModifyLog 表中的變更記錄，並通過 WebSocket 通知前端更新
+
+        ⚠️ 重要：
+        - 後端系統（如 simple_kuka_manager.py）在更新資料後會呼叫 ModifyLog.mark()
+        - 此函數每 0.1 秒檢查一次 ModifyLog 表
+        - 發現更新後立即通知對應的前端元件
+
+        依賴此機制的功能：
+        - AGV 位置即時更新（地圖顯示）
+        - Rack 狀態即時更新（搬運/入場狀態）
+        - Task 狀態即時更新（任務進度）
+        - Carrier/Signal 等其他實體更新
+
+        🔴 絕對不可刪除或修改！
+        """
         now = datetime.now(timezone.utc)
         # The check interval is 0.1s. We use a slightly larger window to be safe.
         check_since = now - timedelta(seconds=0.2)
@@ -250,9 +269,12 @@ class AgvcUiSocket:
             return
 
         # Mapping table names to notification functions
+        # ⚠️ 重要：這是 ModifyLog 表名到通知函數的對應關係
+        # 後端呼叫 ModifyLog.mark(session, "agv") 會觸發 self.notify_agvs
+        # 每個通知函數會通過 WebSocket 更新對應的前端元件
         notify_map = {
-            "agv": self.notify_agvs,
-            "rack": self.notify_racks,
+            "agv": self.notify_agvs,      # AGV 位置更新 → 地圖顯示
+            "rack": self.notify_racks,    # Rack 狀態更新 → Rack 顯示
             "carrier": self.notify_carriers,
             "signal": self.notify_signals,
             "task": self.notify_tasks,

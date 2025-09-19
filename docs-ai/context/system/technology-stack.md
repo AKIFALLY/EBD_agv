@@ -331,7 +331,6 @@ PostgreSQL 16 ←→ psycopg2 2.9+
 - **未來支援**: V1 已停止維護
 
 ## 🔗 交叉引用
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- 部署架構: @docs-ai/context/system/deployment-architecture.md
-- 開發環境設定: @docs-ai/operations/deployment/environment-setup.md
-- 容器管理: @docs-ai/operations/deployment/container-management.md
+- 雙環境架構: docs-ai/context/system/dual-environment.md
+- 部署架構: docs-ai/operations/deployment/docker-compose-configuration.md
+- 容器管理: docs-ai/operations/deployment/container-management.md

@@ -1,5 +1,12 @@
 # opui - 操作員介面系統
 
+## 📚 Context Loading
+../../../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档
+
+# 操作員界面專業知識（專業層）
+@docs-ai/knowledge/business/eyewear-production-process.md  # 生產流程
+
 ## 專案概述
 OPUI (Operator User Interface) 是基於 ROS2、FastAPI + Socket.IO 的即時 Web 應用程式，專為 AGV 調度系統的操作員介面設計。提供操作員友善的 Web 介面，用於管理 AGV 任務調度、監控系統狀態，並與後端 RCS 系統協作完成自動化倉儲作業。
 
@@ -131,8 +138,8 @@ DATABASE_CONFIG = {
 ```javascript
 // 客戶端事件
 socket.emit('client_update', clientData);
-socket.emit('call_car', taskData);
-socket.emit('dispatch_car', dispatchData);
+socket.emit('add_rack', rackData);         // 加入料架
+socket.emit('dispatch_full', dispatchData); // 派車
 
 // 伺服器事件
 socket.on('client_update', handleClientUpdate);

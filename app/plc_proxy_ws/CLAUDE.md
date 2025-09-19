@@ -3,7 +3,8 @@
 ## 📚 Context Loading
 ../../CLAUDE.md  # 引用根目錄系統文档
 @docs-ai/knowledge/protocols/keyence-plc-protocol.md
-@docs-ai/operations/development/plc-communication.md
+@docs-ai/knowledge/protocols/plc-ros2-interfaces.md
+@docs-ai/operations/development/ros2/plc-communication.md
 
 ## 📋 工作空間概述
 
@@ -96,7 +97,7 @@ PlcClientNode (節點客戶端)
 ## 🔧 核心組件
 
 ### 1. PlcService 節點 (plc_service.py)
-@docs-ai/operations/development/ros2-development.md
+@docs-ai/operations/development/ros2/ros2-development.md
 
 **PlcService** 是核心的 ROS 2 服務提供者節點，負責將 Keyence PLC 操作封裝為標準 ROS 2 服務。
 
@@ -641,7 +642,7 @@ else:
     self.get_logger().warn(f"讀取失敗: {response.message if response else '無回應'}")
 ```
 
-更多 PLC 通訊效能最佳化技巧請參考：@docs-ai/operations/development/plc-communication.md
+更多 PLC 通訊效能最佳化技巧請參考：@docs-ai/operations/development/ros2/plc-communication.md
 
 ## 🏗️ 系統整合架構
 
@@ -676,7 +677,7 @@ Keyence PLC 硬體
 
 ### 專業指導
 - **Keyence 協議詳解**: @docs-ai/knowledge/protocols/keyence-plc-protocol.md
-- **PLC 開發最佳實踐**: @docs-ai/operations/development/plc-communication.md
+- **PLC 開發最佳實踐**: @docs-ai/operations/development/ros2/plc-communication.md
 
 ### 通用支援
 詳細指導請參考: ../../CLAUDE.md 交叉引用章節

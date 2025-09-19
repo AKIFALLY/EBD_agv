@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""
+生成 docs-ai 文檔索引和引用統計
+掃描所有 CLAUDE.md 文件中的 @docs-ai 引用
+輸出 JSON 索引供前端使用
+"""
+
+import json
+import os
+import re
+from pathlib import Path
+from collections import defaultdict
+from datetime import datetime
+
+# 基礎路徑配置
+ROSAGV_ROOT = Path("/home/ct/RosAGV")
+DOCS_AI_PATH = ROSAGV_ROOT / "docs-ai"
+OUTPUT_PATH = ROSAGV_ROOT / "design/business-process-docs/js/docs-ai-index.json"
+
+# 文檔分類定義
+CATEGORIES = {
+    "core": {
+        "name": "🔥 核心原則",
+        "description": "AI Agent 必讀文檔",
+        "patterns": [
+            "operations/development/core/",
+            "operations/tools/unified-tools.md"
+        ]
+    },
+    "architecture": {
+        "name": "📚 系統架構",
+        "description": "系統設計和架構",
+        "patterns": [
+            "context/system/",
+            "context/workspaces/"
+        ]
+    },
+    "operations": {
+        "name": "📖 操作指南",
+        "description": "開發和運維指導",
+        "patterns": [
+            "operations/guides/",
+            "operations/deployment/",
+            "operations/development/"
+        ]
+    },
+    "knowledge": {
+        "name": "🏷️ 領域知識",
+        "description": "業務和技術知識",
+        "patterns": [
+            "knowledge/"
+        ]
+    },
+    "testing": {
+        "name": "🧪 測試標準",
+        "description": "測試相關文檔",
+        "patterns": [
+            "operations/development/testing/"
+        ]
+    }
+}
+
+def scan_docs_ai_files():
+    """掃描所有 docs-ai 目錄下的 .md 文件"""
+    docs = {}
+
+    for md_file in DOCS_AI_PATH.rglob("*.md"):
+        relative_path = md_file.relative_to(DOCS_AI_PATH)
+        path_str = str(relative_path).replace('\\', '/')
+
+        # 讀取文件標題和描述
+        title = path_str
+        description = ""
+
+        try:
+            with open(md_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                for line in lines[:10]:  # 只檢查前10行
+                    if line.startswith("# "):
+                        title = line[2:].strip()
+                    elif line.startswith("## 🎯 適用場景"):
+                        # 讀取下一行作為描述
+                        idx = lines.index(line)
+                        if idx + 1 < len(lines):
+                            description = lines[idx + 1].strip().lstrip("- ")
+                        break
+        except:
+            pass
+
+        # 判斷分類
+        category = "other"
+        for cat_key, cat_info in CATEGORIES.items():
+            for pattern in cat_info["patterns"]:
+                if pattern in path_str:
+                    category = cat_key
+                    break
+            if category != "other":
+                break
+
+        docs[path_str] = {
+            "path": path_str,
+            "title": title,
+            "description": description[:100] if description else "",
+            "category": category,
+            "references": 0,  # 將由掃描 CLAUDE.md 更新
+            "referenced_by": [],
+            "size": md_file.stat().st_size,
+            "modified": md_file.stat().st_mtime
+        }
+
+    return docs
+
+def scan_claude_references():
+    """掃描所有 CLAUDE.md 文件中的 @docs-ai 引用"""
+    references = defaultdict(list)
+
+    # 掃描根目錄的 CLAUDE.md
+    claude_files = list(ROSAGV_ROOT.glob("CLAUDE.md"))
+    # 掃描所有工作空間的 CLAUDE.md
+    claude_files.extend(ROSAGV_ROOT.glob("app/**/CLAUDE.md"))
+
+    for claude_file in claude_files:
+        relative_claude = claude_file.relative_to(ROSAGV_ROOT)
+
+        try:
+            with open(claude_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+                # 查找所有 @docs-ai/ 引用
+                pattern = r'@docs-ai/([^\s\]]+\.md)'
+                matches = re.findall(pattern, content)
+
+                for match in matches:
+                    references[match].append(str(relative_claude))
+        except:
+            continue
+
+    return references
+
+def categorize_importance(ref_count):
+    """根據引用次數判斷重要性"""
+    if ref_count >= 10:
+        return "critical"
+    elif ref_count >= 5:
+        return "important"
+    elif ref_count >= 2:
+        return "common"
+    elif ref_count >= 1:
+        return "referenced"
+    else:
+        return "unreferenced"
+
+def generate_index():
+    """生成完整的索引文件"""
+    print("🔍 掃描 docs-ai 文件...")
+    docs = scan_docs_ai_files()
+
+    print("📊 掃描 CLAUDE.md 引用...")
+    references = scan_claude_references()
+
+    # 更新引用計數
+    for doc_path, ref_list in references.items():
+        if doc_path in docs:
+            docs[doc_path]["references"] = len(ref_list)
+            docs[doc_path]["referenced_by"] = ref_list
+            docs[doc_path]["importance"] = categorize_importance(len(ref_list))
+
+    # 為未被引用的文檔設置重要性
+    for doc_path, doc_info in docs.items():
+        if "importance" not in doc_info:
+            doc_info["importance"] = "unreferenced"
+
+    # 統計信息
+    stats = {
+        "total_docs": len(docs),
+        "total_references": sum(len(refs) for refs in references.values()),
+        "critical_docs": len([d for d in docs.values() if d["importance"] == "critical"]),
+        "important_docs": len([d for d in docs.values() if d["importance"] == "important"]),
+        "unreferenced_docs": len([d for d in docs.values() if d["importance"] == "unreferenced"]),
+        "categories": {
+            cat_key: {
+                "name": cat_info["name"],
+                "description": cat_info["description"],
+                "count": len([d for d in docs.values() if d["category"] == cat_key])
+            }
+            for cat_key, cat_info in CATEGORIES.items()
+        },
+        "generated_at": datetime.now().isoformat(),
+        "generated_by": "generate-docs-ai-index.py"
+    }
+
+    # 構建最終輸出
+    output = {
+        "stats": stats,
+        "categories": CATEGORIES,
+        "documents": docs,
+        "top_referenced": sorted(
+            [d for d in docs.values() if d["references"] > 0],
+            key=lambda x: x["references"],
+            reverse=True
+        )[:10]
+    }
+
+    return output
+
+def main():
+    """主函數"""
+    print("=" * 60)
+    print("📚 RosAGV docs-ai 索引生成器")
+    print("=" * 60)
+
+    # 生成索引
+    index = generate_index()
+
+    # 確保輸出目錄存在
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    # 寫入 JSON 文件
+    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+        json.dump(index, f, ensure_ascii=False, indent=2)
+
+    print(f"\n✅ 索引生成成功！")
+    print(f"📁 輸出檔案: {OUTPUT_PATH}")
+    print(f"\n📊 統計信息:")
+    print(f"  - 總文檔數: {index['stats']['total_docs']}")
+    print(f"  - 總引用數: {index['stats']['total_references']}")
+    print(f"  - 關鍵文檔: {index['stats']['critical_docs']}")
+    print(f"  - 重要文檔: {index['stats']['important_docs']}")
+    print(f"  - 未引用文檔: {index['stats']['unreferenced_docs']}")
+
+    print(f"\n🔥 最常被引用的文檔:")
+    for i, doc in enumerate(index["top_referenced"][:5], 1):
+        print(f"  {i}. {doc['title']} ({doc['references']} 次)")
+        print(f"     路徑: {doc['path']}")
+
+if __name__ == "__main__":
+    main()

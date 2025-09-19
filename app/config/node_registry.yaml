@@ -18,14 +18,14 @@ nodes:
     log_file: /tmp/web_api_launch.log
     status_check: "ros2 node list | grep -E '(agvc_ui_server|op_ui_server|web_api_server)'"
     
-  # ===== Flow WCS 系統 =====
-  flow_wcs:
+  # ===== TAFL WCS 系統 (新一代) =====
+  tafl_wcs:
     type: launch
-    description: "Flow WCS 倉儲控制系統"
-    package: flow_wcs
-    launch_file: flow_wcs_launch.py
-    log_file: /tmp/flow_wcs.log
-    status_check: "ros2 node list | grep flow_wcs_node"
+    description: "TAFL WCS 倉儲控制系統 (新一代)"
+    package: tafl_wcs
+    launch_file: tafl_wcs_launch.py
+    log_file: /tmp/tafl_wcs.log
+    status_check: "ros2 node list | grep tafl_wcs_node"
     
   # ===== ECS 設備控制系統 =====
   # 注意: 在 setup.bash 中對應的函數是 manage_ecs_core

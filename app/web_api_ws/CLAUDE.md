@@ -1,12 +1,27 @@
 # web_api_ws CLAUDE.md
 
 ## 📚 Context Loading
-../../CLAUDE.md  # 引用根目錄系統文档
-@docs-ai/knowledge/protocols/kuka-fleet-api.md
-@docs-ai/knowledge/protocols/kuka-fleet-callback.md
-@docs-ai/knowledge/business/eyewear-production-process.md
-@docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md
-@docs-ai/operations/maintenance/troubleshooting.md
+../../CLAUDE.md  # 引用根目錄通用層知識（系統架構、核心原則、通用工具）
+
+## 🔧 工作空間層文檔（第二層）
+# Web 開發領域知識
+@docs-ai/knowledge/system/agvui-monitoring-system.md    # AGVCUI 監控系統
+@docs-ai/knowledge/system/hmi-system-design.md          # HMI 系統設計
+@docs-ai/operations/development/web/web-development.md  # Web 開發指南
+@docs-ai/operations/development/web/web-api-launch-management.md # API Launch 管理
+
+# 外部系統整合
+@docs-ai/knowledge/protocols/kuka-fleet-api.md          # KUKA Fleet API
+@docs-ai/knowledge/protocols/kuka-fleet-callback.md     # KUKA Fleet 回調
+@docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md  # KUKA AGV Rack 旋轉
+
+# 工作空間通用文檔
+@docs-ai/context/workspaces/agvc-workspaces.md         # AGVC 工作空間架構
+@docs-ai/operations/development/testing/testing-standards.md # 測試標準
+
+# 設備授權和權限管理
+@docs-ai/knowledge/agv-domain/license-table-design.md      # 授權表設計
+@docs-ai/operations/guides/device-authorization-guide.md   # 設備授權操作
 
 ## 📋 模組概述
 
@@ -307,15 +322,14 @@ agvc_logs                           # 查看系統日誌
 - **系統整合**: 與 PLC、KUKA Fleet、資料庫等外部系統整合
 
 ## 🔗 交叉引用
-- 系統概覽: @docs-ai/context/system/rosagv-overview.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
-- 技術棧詳解: @docs-ai/context/system/technology-stack.md
+- AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
 - KUKA Fleet API: @docs-ai/knowledge/protocols/kuka-fleet-api.md
 - KUKA Fleet 回調: @docs-ai/knowledge/protocols/kuka-fleet-callback.md
 - ROS 2 介面: @docs-ai/knowledge/protocols/ros2-interfaces.md
-- Web 開發指導: @docs-ai/operations/development/web-development.md
 - 資料庫操作: @docs-ai/operations/development/database-operations.md
-- Docker 開發: @docs-ai/operations/development/docker-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
-- 統一工具: @docs-ai/operations/tools/unified-tools.md
+- Web API 啟動管理: @docs-ai/operations/development/web/web-api-launch-management.md
+- Web 開發: @docs-ai/operations/development/web/web-development.md
+- 測試標準: @docs-ai/operations/development/testing/testing-standards.md
+- 系統診斷: @docs-ai/operations/guides/system-diagnostics.md
+- 監控系統: @docs-ai/knowledge/system/agvui-monitoring-system.md
+- HMI 設計: @docs-ai/knowledge/system/hmi-system-design.md

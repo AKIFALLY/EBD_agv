@@ -5,6 +5,7 @@
 metadata:
   id: test_all_phases
   name: "Test All Phases Integration"
+  enabled: false
   version: "1.0.0"
   description: "Integration test for TAFL 4-phase execution model"
   author: "TAFL Test Suite"

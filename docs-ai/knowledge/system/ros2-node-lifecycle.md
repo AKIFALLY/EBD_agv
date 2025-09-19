@@ -502,7 +502,7 @@ exit 1
 - 沒有處理異常情況
 
 ## 🔗 交叉引用
-- Flow WCS 開發: @docs-ai/operations/development/flow-wcs-development.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 服務管理: @docs-ai/operations/tools/unified-tools.md
-- 容器管理: @docs-ai/operations/deployment/container-management.md
+- WCS 系統設計: docs-ai/knowledge/agv-domain/wcs-system-design.md
+- ROS 2 開發: docs-ai/operations/development/ros2/ros2-development.md
+- 服務管理: docs-ai/operations/tools/unified-tools.md
+- 容器管理: docs-ai/operations/deployment/container-management.md

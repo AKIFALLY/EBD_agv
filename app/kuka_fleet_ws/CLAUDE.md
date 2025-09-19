@@ -368,23 +368,18 @@ pkill -f kuka_fleet_adapter
 ⚠️ **回調處理**: 需實作 missionStateCallback 接收 KUKA Fleet 狀態回調，詳見: @docs-ai/knowledge/protocols/kuka-fleet-callback.md
 
 ### 工具使用策略
-詳細工具指導請參考: @docs-ai/operations/maintenance/system-diagnostics.md
+詳細工具指導請參考: @docs-ai/operations/guides/system-diagnostics.md
 
 - **統一入口優先**: 使用 `r` 命令處理日常操作
 - **專業工具深入**: 複雜問題使用對應的專業工具集
 - **便捷函數組合**: 載入工具集後使用便捷函數提高效率
 
 ### 標準開發工作流程
-詳細開發工作流程請參考: @docs-ai/operations/development/ros2-development.md
+詳細開發工作流程請參考: @docs-ai/operations/development/ros2/ros2-development.md
 
 ## 🔗 交叉引用
-- 系統概覽: @docs-ai/context/system/rosagv-overview.md
-- 雙環境架構: @docs-ai/context/system/dual-environment.md
 - AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md
-- ROS 2 開發: @docs-ai/operations/development/ros2-development.md
-- 容器開發: @docs-ai/operations/development/docker-development.md
-- 系統診斷: @docs-ai/operations/maintenance/system-diagnostics.md
-- 故障排除: @docs-ai/operations/maintenance/troubleshooting.md
-- 統一工具: @docs-ai/operations/tools/unified-tools.md
+- ROS 2 開發: @docs-ai/operations/development/ros2/ros2-development.md
+- 系統診斷: @docs-ai/operations/guides/system-diagnostics.md
 - **KUKA Fleet API 規格**: @docs-ai/knowledge/protocols/kuka-fleet-api.md
 - **KUKA Fleet 回調規格**: @docs-ai/knowledge/protocols/kuka-fleet-callback.md

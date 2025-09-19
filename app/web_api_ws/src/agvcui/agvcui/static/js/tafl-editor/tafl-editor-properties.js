@@ -192,7 +192,9 @@ class TAFLEditorProperties {
         // Add description if available
         const verbDescription = this.getVerbDescription(verb);
         if (verbDescription) {
-            html += `<p class="is-size-7 has-text-grey mb-3">${verbDescription}</p>`;
+            html += `<div class="notification is-light mb-3">`;
+            html += `<p class="is-size-7">${verbDescription}</p>`;
+            html += `</div>`;
         }
         
         console.log('🎯 [STD-5] Starting HTML generation for object params');
@@ -265,7 +267,7 @@ class TAFLEditorProperties {
     
     renderSetEditor(cardData, params) {
         const cardId = cardData.id;
-        
+
         // Always convert to object format if it's a string
         let variables = {};
         if (typeof params === 'string') {
@@ -281,11 +283,20 @@ class TAFLEditorProperties {
         } else if (typeof params === 'object' && params !== null && !Array.isArray(params)) {
             variables = params;
         }
-        
+
         let html = '<div class="property-editor">';
-        
+
         html += '<h4 class="title is-5 mb-4">Variable Assignments</h4>';
         html += '<p class="is-size-7 has-text-grey mb-3">Define one or more variable assignments. Each assignment consists of a variable name and its value.</p>';
+        html += '<div class="notification is-info is-light mb-3">';
+        html += '<p class="is-size-7"><strong>Examples:</strong></p>';
+        html += '<ul class="is-size-7">';
+        html += '<li><code>simple_string: "Hello TAFL"</code></li>';
+        html += '<li><code>calculated: ${initial_value * 2}</code></li>';
+        html += '<li><code>array_data: [1, 2, 3]</code></li>';
+        html += '<li><code>object_data: {key: "value"}</code></li>';
+        html += '</ul>';
+        html += '</div>';
         
         // Add Variable button at the top (like in Variables/Preload/Rules panels)
         html += `
@@ -332,7 +343,7 @@ class TAFLEditorProperties {
                         data-var-index="${index}"
                         data-var-type="key"
                         value="${this.escapeHtml(key)}"
-                        placeholder="Variable name"
+                        placeholder="e.g., counter, status, result"
                     />
                 </div>
                 <div class="control">
@@ -350,7 +361,7 @@ class TAFLEditorProperties {
                         data-var-type="value"
                         data-var-key="${key}"
                         value="${this.escapeHtml(String(value || ''))}"
-                        placeholder="Value or expression"
+                        placeholder='e.g., 42, "active", $\{counter + 1}'
                     />
                 </div>
                 <div class="control">
@@ -388,7 +399,7 @@ class TAFLEditorProperties {
     
     renderInputByType(fieldId, cardId, verb, key, value) {
         const paramType = this.getParamType(verb, key);
-        
+
         // Debug logging
         console.log('🔍 renderInputByType called:', {
             fieldId,
@@ -400,6 +411,9 @@ class TAFLEditorProperties {
             paramType,
             isObject: value !== null && typeof value === 'object'
         });
+
+        // Get placeholder examples based on verb and key
+        const placeholderExamples = this.getPlaceholderExample(verb, key);
         
         // Check if value is an object or array that needs special handling
         const isComplexValue = value !== null && typeof value === 'object';
@@ -418,7 +432,7 @@ class TAFLEditorProperties {
                         data-verb="${verb}"
                         data-property="${key}"
                         data-type="json"
-                        placeholder='{"key": "value"}'
+                        placeholder='${this.getJsonPlaceholder(verb, key)}'
                     >${this.escapeHtml(jsonValue)}</textarea>
                 </div>
                 <p class="help is-info">
@@ -489,6 +503,7 @@ class TAFLEditorProperties {
                         data-card-id="${cardId}"
                         data-verb="${verb}"
                         data-property="${key}"
+                        placeholder="${placeholderExamples || ''}"
                     >${this.escapeHtml(String(value || ''))}</textarea>
                 `;
                 
@@ -505,7 +520,7 @@ class TAFLEditorProperties {
                             data-verb="${verb}"
                             data-property="${key}"
                             data-type="json"
-                            placeholder='{"key": "value"}'
+                            placeholder='${this.getJsonPlaceholder(verb, key)}'
                         >${this.escapeHtml(jsonStr)}</textarea>
                     </div>
                     <p class="help is-info">
@@ -518,14 +533,15 @@ class TAFLEditorProperties {
                 
             default:
                 return `
-                    <input 
+                    <input
                         id="${fieldId}"
-                        class="input property-input" 
+                        class="input property-input"
                         type="text"
                         data-card-id="${cardId}"
                         data-verb="${verb}"
                         data-property="${key}"
                         value="${this.escapeHtml(String(value || ''))}"
+                        placeholder="${placeholderExamples || ''}"
                     />
                 `;
         }
@@ -539,7 +555,10 @@ class TAFLEditorProperties {
         let html = `
             <div class="property-editor">
                 <h4 class="title is-5 mb-4">Switch Configuration</h4>
-                <p class="is-size-7 has-text-grey mb-3">Branch based on the value of an expression</p>
+                <div class="notification is-light mb-3">
+                    <p class="is-size-7">Branch execution based on the value of an expression. Each case matches a specific value, with an optional default case for unmatched values.</p>
+                    <p class="is-size-7 mt-2"><strong>Example expressions:</strong> <code>\${task_type}</code>, <code>\${status}</code>, <code>\${priority}</code></p>
+                </div>
                 
                 <!-- Expression field -->
                 <div class="field mb-4">
@@ -551,13 +570,13 @@ class TAFLEditorProperties {
                                data-verb="switch"
                                data-property="switch.expression"
                                value="${this.escapeHtml(switchData.expression || '')}"
-                               placeholder="e.g., \${task_priority} or \${status}">
+                               placeholder="Examples: \${task_type}, \${status}, \${priority}">
                     </div>
-                    <p class="is-size-7 has-text-grey mt-1">The variable or expression to evaluate</p>
+                    <p class="is-size-7 has-text-grey mt-1">The variable or expression to evaluate. Use \${} syntax for variables.</p>
                 </div>
                 
-                <hr>
-                
+                <hr class="my-3">
+
                 <h5 class="title is-6 mb-3">Cases</h5>
                 <div class="switch-cases">
         `;
@@ -566,59 +585,74 @@ class TAFLEditorProperties {
         cases.forEach((caseData, index) => {
             const isDefault = caseData.when === 'default';
             const normalCaseCount = cases.filter((c, i) => i < index && c.when !== 'default').length;
-            
+            const stepCount = (caseData.do || caseData.then || []).length;
+
             html += `
-                <div class="case-item${isDefault ? ' default-case' : ''}" data-case-index="${index}">
-                    <div class="level">
+                <div class="case-item box p-3 mb-3${isDefault ? ' default-case-box' : ''}" data-case-index="${index}">
+                    <!-- Header row with case label and buttons -->
+                    <div class="level is-mobile mb-2">
                         <div class="level-left">
                             <span class="tag ${isDefault ? 'is-warning' : 'is-info'}">
                                 ${isDefault ? 'Default' : `Case ${normalCaseCount + 1}`}
                             </span>
                         </div>
                         <div class="level-right">
-                            <div class="field is-grouped">
+                            <div class="buttons has-addons">
                                 ${!isDefault && index > 0 ? `
-                                    <button class="button is-small move-case-up" 
-                                            data-card-id="${cardId}" 
-                                            data-case-index="${index}">
-                                        <span class="icon"><i class="fas fa-arrow-up"></i></span>
+                                    <button class="button is-small move-case-up"
+                                            data-card-id="${cardId}"
+                                            data-case-index="${index}"
+                                            title="Move up">
+                                        <span class="icon is-small"><i class="fas fa-arrow-up"></i></span>
                                     </button>
                                 ` : ''}
                                 ${!isDefault && index < cases.length - 1 && cases[index + 1].when !== 'default' ? `
-                                    <button class="button is-small move-case-down" 
-                                            data-card-id="${cardId}" 
-                                            data-case-index="${index}">
-                                        <span class="icon"><i class="fas fa-arrow-down"></i></span>
+                                    <button class="button is-small move-case-down"
+                                            data-card-id="${cardId}"
+                                            data-case-index="${index}"
+                                            title="Move down">
+                                        <span class="icon is-small"><i class="fas fa-arrow-down"></i></span>
                                     </button>
                                 ` : ''}
-                                <button class="button is-small is-danger ${isDefault ? 'remove-default-btn' : 'remove-case-btn'}" 
-                                        data-card-id="${cardId}" 
-                                        ${!isDefault ? `data-case-index="${index}"` : ''}>
-                                    <span class="icon"><i class="fas fa-times"></i></span>
+                                <button class="button is-small is-danger ${isDefault ? 'remove-default-btn' : 'remove-case-btn'}"
+                                        data-card-id="${cardId}"
+                                        ${!isDefault ? `data-case-index="${index}"` : ''}
+                                        title="Remove case">
+                                    <span class="icon is-small"><i class="fas fa-times"></i></span>
                                 </button>
                             </div>
                         </div>
                     </div>
-                    
+
                     ${!isDefault ? `
-                        <div class="field mb-3">
-                            <label class="label is-size-6">When</label>
+                        <!-- When field -->
+                        <div class="field has-addons mb-1">
                             <div class="control">
-                                <input class="input property-input case-when" 
+                                <a class="button is-static is-small">When</a>
+                            </div>
+                            <div class="control is-expanded">
+                                <input class="input is-small property-input case-when"
                                        type="text"
                                        data-card-id="${cardId}"
                                        data-property="switch.cases.${index}.when"
                                        value="${this.escapeHtml(caseData.when || '')}"
-                                       placeholder="Enter condition"
+                                       placeholder="Value to match (e.g., \"A\", \"active\", 1)"
                                 />
                             </div>
                         </div>
                     ` : ''}
-                    
-                    <div class="field mb-3">
-                        <label class="label is-size-6">${isDefault ? 'Default Actions' : 'Do'}</label>
-                        <div class="is-size-7 has-text-grey">
-                            ${(caseData.do || caseData.then || []).length} steps
+
+                    <!-- Do/Actions field -->
+                    <div class="field has-addons mb-0">
+                        <div class="control">
+                            <a class="button is-static is-small">${isDefault ? 'Actions' : 'Do'}</a>
+                        </div>
+                        <div class="control">
+                            <a class="button is-static is-small">
+                                <span class="${stepCount === 0 ? 'has-text-grey' : 'has-text-info'}">
+                                    ${stepCount} ${stepCount === 1 ? 'step' : 'steps'}
+                                </span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -628,24 +662,35 @@ class TAFLEditorProperties {
         // 舊版 Default case (向下相容)
         // 如果有舊的 default 欄位且 cases 陣列中沒有 when: "default"，顯示遷移提示
         if (switchData.default && !cases.some(c => c.when === 'default')) {
+            const legacyStepCount = switchData.default?.length || 0;
             html += `
-                <div class="notification is-warning is-light">
-                    <p>⚠️ Legacy default format detected. Click "Add Default" to migrate to TAFL v1.1.1 format.</p>
+                <div class="notification is-warning is-light mb-3">
+                    <p class="is-size-7">⚠️ Legacy default format detected. Click "Add Default" to migrate to TAFL v1.1.1 format.</p>
                 </div>
-                <div class="case-item default-case">
-                    <div class="level">
+                <div class="case-item box p-3 mb-3 default-case-box">
+                    <div class="level is-mobile mb-2">
                         <div class="level-left">
                             <span class="tag is-warning">Default (Legacy)</span>
                         </div>
                         <div class="level-right">
-                            <button class="button is-small is-danger remove-default-btn" 
-                                    data-card-id="${cardId}">
-                                <span class="icon"><i class="fas fa-times"></i></span>
+                            <button class="button is-small is-danger remove-default-btn"
+                                    data-card-id="${cardId}"
+                                    title="Remove default">
+                                <span class="icon is-small"><i class="fas fa-times"></i></span>
                             </button>
                         </div>
                     </div>
-                    <div class="has-text-grey-light">
-                        <small>${switchData.default?.length || 0} steps</small>
+                    <div class="field has-addons mb-0">
+                        <div class="control">
+                            <a class="button is-static is-small">Actions</a>
+                        </div>
+                        <div class="control">
+                            <a class="button is-static is-small">
+                                <span class="${legacyStepCount === 0 ? 'has-text-grey' : 'has-text-info'}">
+                                    ${legacyStepCount} ${legacyStepCount === 1 ? 'step' : 'steps'}
+                                </span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             `;
@@ -957,25 +1002,89 @@ class TAFLEditorProperties {
     
     getVerbDescription(verb) {
         const descriptions = {
-            'query': 'Query data from the system or database',
-            'check': 'Evaluate a condition and branch based on the result',
-            'create': 'Create a new entity or resource',
-            'update': 'Update an existing entity or resource',
-            'delete': 'Delete an entity or resource',
+            'query': 'Query data from database tables like locations, racks, tasks, carriers. Store results in a variable for later use.',
+            'check': 'Evaluate a condition and store the boolean result. Use ${} syntax for variables and expressions.',
+            'create': 'Create a new resource (task, rack, carrier) with specified parameters. Returns the created object.',
+            'update': 'Update existing records based on conditions. Use where to filter and set to specify new values.',
+            'delete': 'Delete an entity or resource from the system',
             'call': 'Call an external service or function',
             'wait': 'Wait for a specified condition or duration',
-            'stop': 'Stop the flow execution',
-            'for': 'Iterate over a collection or range',
+            'stop': 'Stop the flow execution with optional reason and condition',
+            'for': 'Loop through arrays or collections. Access each item with the loop variable.',
             'while': 'Loop while a condition is true',
-            'switch': 'Branch based on expression value'
+            'switch': 'Branch execution based on expression value. Include default case for unmatched values.',
+            'set': 'Assign values to variables. Supports strings, numbers, arrays, objects, and expressions.',
+            'if': 'Conditional execution with then/else branches. Supports complex boolean expressions.',
+            'notify': 'Send notifications with different severity levels (info/warning/error).'
         };
         return descriptions[verb] || '';
     }
     
     getParamHelp(verb, param) {
-        const verbDef = this.verbDefinitions?.[verb];
-        const paramDef = verbDef?.params?.[param];
-        return paramDef?.help || '';
+        // Provide detailed help with examples for each parameter
+        const helpTexts = {
+            query: {
+                target: 'The table/resource to query. Examples: locations, racks, tasks, carriers, works',
+                where: 'Filter conditions as object. Example: {type: "room_outlet", status_id: 1}',
+                limit: 'Maximum number of results. Example: 10',
+                order: 'Sort order field. Examples: id, created_at, priority',
+                as: 'Variable name to store results. Example: outlet_locations'
+            },
+            check: {
+                condition: 'Expression to evaluate. Examples: ${counter > threshold}, ${status == "active"}',
+                target: 'Optional target to check. Example: battery_level, status',
+                as: 'Variable to store boolean result. Example: is_valid, is_ready'
+            },
+            create: {
+                target: 'Resource type to create. Examples: task, rack, carrier',
+                with: 'Object with creation parameters. Example: {work_id: 100001, name: "Test Task", priority: 5}',
+                as: 'Optional variable to store created resource. Example: new_task'
+            },
+            update: {
+                target: 'Resource type to update. Examples: rack, task, carrier',
+                where: 'Conditions to find records. Example: {id: ${rack_id}}',
+                set: 'Fields to update. Example: {status_id: 2, is_carry: 1, updated_at: ${now()}}'
+            },
+            if: {
+                condition: 'Boolean expression. Examples: ${a_side_full && b_side_empty}, ${count > 0}',
+                then: 'Array of steps to execute if true',
+                else: 'Array of steps to execute if false'
+            },
+            for: {
+                in: 'Array or variable to iterate. Examples: ${outlet_locations}, [1, 2, 3], ${items}',
+                as: 'Loop variable name. Examples: location, item, i',
+                filter: 'Optional filter expression. Example: ${item.value >= 20}',
+                do: 'Array of steps to execute in each iteration'
+            },
+            switch: {
+                expression: 'Value to switch on. Examples: ${task_type}, ${status}, ${priority}',
+                cases: 'Array of cases with when and do properties',
+                default: 'Optional default case steps'
+            },
+            set: {
+                _info: 'Define one or more variables. Examples:\n• simple_string: "Hello TAFL"\n• calculated: ${initial_value * 2}\n• array_data: [1, 2, 3]\n• object_data: {key: "value"}'
+            },
+            notify: {
+                level: 'Message level: info, warning, or error',
+                message: 'Notification text. Example: "Task ${task_id} completed"',
+                recipients: 'Optional array of recipients. Example: ["admin", "operator"]',
+                details: 'Optional additional data. Example: {task_id: 123, status: "done"}'
+            },
+            stop: {
+                reason: 'Reason for stopping. Example: "Task completed successfully"',
+                condition: 'Optional condition to stop. Example: ${error_count == 0}'
+            }
+        };
+
+        const verbHelp = helpTexts[verb];
+        if (!verbHelp) return '';
+
+        // Special case for set verb
+        if (verb === 'set' && param === '_info') {
+            return verbHelp._info;
+        }
+
+        return verbHelp[param] || '';
     }
     
     getParamType(verb, param) {
@@ -1023,6 +1132,69 @@ class TAFLEditorProperties {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    getPlaceholderExample(verb, key) {
+        const examples = {
+            query: {
+                target: 'e.g., locations, racks, tasks',
+                limit: 'e.g., 10',
+                order: 'e.g., id, created_at',
+                as: 'e.g., outlet_locations'
+            },
+            check: {
+                condition: 'e.g., ${counter > 5}',
+                target: 'e.g., battery_level',
+                as: 'e.g., is_valid'
+            },
+            create: {
+                target: 'e.g., task, rack',
+                as: 'e.g., new_task'
+            },
+            update: {
+                target: 'e.g., rack, task'
+            },
+            notify: {
+                level: 'info, warning, or error',
+                message: 'e.g., Task ${task_id} completed'
+            },
+            stop: {
+                reason: 'e.g., Task completed successfully',
+                condition: 'e.g., ${error_count == 0}'
+            },
+            for: {
+                in: 'e.g., ${outlet_locations}',
+                as: 'e.g., location',
+                filter: 'e.g., ${item.value >= 20}'
+            },
+            switch: {
+                expression: 'e.g., ${task_type}'
+            }
+        };
+
+        const verbExamples = examples[verb];
+        return verbExamples ? verbExamples[key] || '' : '';
+    }
+
+    getJsonPlaceholder(verb, key) {
+        const jsonExamples = {
+            query: {
+                where: '{\"type\": \"room_outlet\", \"status_id\": 1}'
+            },
+            create: {
+                with: '{\"work_id\": 100001, \"name\": \"Test Task\", \"priority\": 5}'
+            },
+            update: {
+                where: '{\"id\": \"${rack_id}\"}',
+                set: '{\"status_id\": 2, \"is_carry\": 1}'
+            },
+            notify: {
+                details: '{\"task_id\": 123, \"status\": \"done\"}'
+            }
+        };
+
+        const verbExamples = jsonExamples[verb];
+        return verbExamples ? verbExamples[key] || '{\"key\": \"value\"}' : '{\"key\": \"value\"}';
     }
     
     // ========================================
