@@ -10,10 +10,6 @@ web_api/
 ├── docs/                        # 文檔目錄
 │   ├── README.md               # 文檔索引
 │   └── kuka_api.md            # Kuka API 說明文件
-├── tests/                       # 測試工具目錄
-│   ├── README.md               # 測試說明
-│   ├── test_kuka_api.py       # Kuka API 測試腳本
-│   └── create_test_task.py    # 測試任務創建工具
 ├── web_api/                     # 主要程式碼
 │   ├── __init__.py
 │   ├── api_server.py          # API 伺服器主程式
@@ -85,11 +81,11 @@ ros2 run web_api api_server
 ### 3. 測試 API
 
 ```bash
-# 創建測試資料
-python tests/create_test_task.py
+# 健康檢查
+curl http://localhost:8000/health
 
-# 測試 Kuka API
-python tests/test_kuka_api.py
+# API 文檔
+curl http://localhost:8000/docs
 ```
 
 ## 開發指南

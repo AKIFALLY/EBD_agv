@@ -1,0 +1,163 @@
+metadata:
+  id: "machine_to_prepare"
+  name: "射出機停車格到系統準備區調度"
+  enabled: true
+  version: "1.0.0"
+  description: "將射出機停車格已準備好的料架搬運到系統準備區空位"
+  author: "TAFL System"
+  created_at: "2025-09-26"
+  tags:
+    - "dispatch"
+    - "machine"
+    - "prepare"
+    - "automation"
+
+settings:
+  execution_interval: 30  # 每30秒執行一次
+
+variables:
+  dispatched_count: 0
+  work_id: 210001  # KUKA 移動貨架 work ID
+
+flow:
+  # 查詢啟用的機台
+  - query:
+      target: machine
+      where:
+        enable: 1
+      as: active_machines
+      description: "查詢所有啟用的射出機台"
+
+  - notify:
+      level: "info"
+      message: "找到 ${active_machines.length} 個啟用的機台"
+
+  # 對每個機台進行處理
+  - for:
+      in: "${active_machines}"
+      as: machine
+      do:
+        - notify:
+            level: "debug"
+            message: "正在處理機台 ${machine.id}: ${machine.name}"
+
+        # 查詢該機台兩個停車格的料架
+        # 每個機台有 parking_space_1 和 parking_space_2
+        - query:
+            target: racks
+            where:
+              location_id_in: ["${machine.parking_space_1}", "${machine.parking_space_2}"]
+            limit: 1
+            as: parking_racks
+            description: "查詢機台${machine.id}停車格的待搬運料架"
+
+        - notify:
+            level: "debug"
+            message: "機台 ${machine.id} 停車格找到 ${parking_racks.length} 個待搬運料架"
+
+        # 如果有待搬運的料架
+        - if:
+            condition: "${parking_racks.length > 0}"
+            then:
+              - set:
+                  rack: "${parking_racks[0]}"
+
+              # 檢查料架是否已設定目標房間（OPUI已派車）
+              - if:
+                  condition: "${rack.room_id != null}"
+                  then:
+                    # 查詢系統準備區未佔用的位置（location_status_id = 2）
+                    - query:
+                        target: locations
+                        where:
+                          id_in: [11, 12, 13, 14, 15, 16, 17, 18]
+                          location_status_id: 2  # 未佔用
+                        limit: 1  # 只需要一個空位
+                        as: available_prepare_locations
+                        description: "查詢系統準備區第一個未佔用位置"
+
+                    - notify:
+                        level: "debug"
+                        message: "找到 ${available_prepare_locations.length} 個空閒準備區位置"
+
+                    # 如果找到空位
+                    - if:
+                        condition: "${available_prepare_locations.length > 0}"
+                        then:
+                          - set:
+                              target_location: "${available_prepare_locations[0]}"
+
+                          # 檢查是否已有相同的任務存在（避免重複）
+                          - query:
+                              target: tasks
+                              where:
+                                work_id: "${work_id}"
+                                rack_id: "${rack.id}"
+                                status_id_in: [1, 2]  # PENDING 或 RUNNING
+                              as: existing_tasks
+                              description: "檢查是否已有搬運任務"
+
+                          # 如果沒有重複任務
+                          - if:
+                              condition: "${existing_tasks.length == 0}"
+                              then:
+                                # 創建 KUKA 搬運任務
+                                - create:
+                                    target: task
+                                    with:
+                                      work_id: "${work_id}"
+                                      source_location_id: "${rack.location_id}"
+                                      target_location_id: "${target_location.id}"
+                                      rack_id: "${rack.id}"
+                                      room_id: "${rack.room_id}"  # 保留目標房間資訊
+                                      priority: 6  # 中等優先級
+                                      status_id: 1  # PENDING
+                                      parameters:
+                                        source_location_id: "${rack.location_id}"
+                                        target_location_id: "${target_location.id}"
+                                    as: created_task
+                                    description: "創建搬運任務：料架${rack.id}從機台${machine.id}停車格到系統準備區"
+
+                                # 更新系統準備區位置狀態為任務佔用中
+                                - set:
+                                    update_result: update_location_status(${target_location.id}, '任務佔用中', '準備接收料架${rack.id}')
+
+                                - if:
+                                    condition: "${update_result[0] == true}"
+                                    then:
+                                      - notify:
+                                          level: "debug"
+                                          message: "成功更新位置 ${target_location.id} 狀態為任務佔用中"
+                                    else:
+                                      - notify:
+                                          level: "warning"
+                                          message: "更新位置狀態失敗: ${update_result[1]}"
+
+                                # 更新計數器
+                                - set:
+                                    dispatched_count: "${dispatched_count + 1}"
+
+                                # 發送通知
+                                - notify:
+                                    level: "info"
+                                    message: "已調度料架 ${rack.id} 從機台 ${machine.name} 停車格到系統準備區位置 ${target_location.id}"
+                              else:
+                                - notify:
+                                    level: "debug"
+                                    message: "料架 ${rack.id} 已有進行中的搬運任務，跳過"
+                        else:
+                          - notify:
+                              level: "warning"
+                              message: "系統準備區已滿，無法調度機台 ${machine.name} 的料架 ${rack.id}"
+
+  # 完成後的總結
+  - if:
+      condition: "${dispatched_count > 0}"
+      then:
+        - notify:
+            level: "info"
+            message: "本次執行共調度 ${dispatched_count} 個料架從停車格到系統準備區"
+      else:
+        - notify:
+            level: "debug"
+            message: "本次執行未找到需要調度的料架"

@@ -152,7 +152,7 @@ main() {
         test_manage_function "manage_ssh" "/tmp/ssh.pid"
         test_manage_function "manage_zenoh" "/tmp/zenoh_router.pid"
         test_manage_function "manage_web_api_launch" "/tmp/web_api_launch.pid"
-        test_manage_function "manage_flow_wcs" "/tmp/flow_wcs.pid"
+        test_manage_function "manage_tafl_wcs" "/tmp/tafl_wcs.pid"
         test_manage_function "manage_ecs_core" "/tmp/ecs.pid"
         test_manage_function "manage_db_proxy" "/tmp/db_proxy.pid"
         test_manage_function "manage_rcs_core" "/tmp/rcs_launch.pid"

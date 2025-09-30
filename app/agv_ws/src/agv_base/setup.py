@@ -17,8 +17,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='yaze.lin.j303@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='AGV 核心狀態機與控制系統，採用三層架構設計',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     entry_points={
         'console_scripts': [
             'test_agv_node=agv_base.test_agv_node:main',

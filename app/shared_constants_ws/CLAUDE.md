@@ -160,9 +160,18 @@ print(f'描述: {WorkIds.get_description(WorkIds.KUKA_MOVE)}')
 
 ### AGVC 環境使用
 - `rcs_ws/simple_kuka_manager.py` - KUKA 任務管理和派發 (TaskStatus + WorkIds)
+- `rcs_ws/simple_ct_manager.py` - CT AGV 任務管理 (TaskStatus)
 - `rcs_ws/test/test_rcs_pytest.py` - RCS 系統測試 (TaskStatus + WorkIds)
-- `web_api_ws` - Web API 和操作員介面 (TaskStatus)
+- `web_api_ws/opui/core/op_ui_socket.py` - OPUI Socket.IO 通訊 (TaskStatus)
+- `web_api_ws/opui/services/opui_task_service.py` - OPUI 任務服務 (TaskStatus)
 - `db_proxy_ws` - 可選擇性使用 (TaskStatus)
+
+## 📅 開發時間線
+
+- **2025-08-04**: 建立 shared_constants_ws 工作空間
+  - 解決跨容器依賴問題
+  - 提供統一的 TaskStatus 和 WorkIds 常數定義
+  - 支援 AGV 和 AGVC 環境共享使用
 
 ## 💡 設計原則
 

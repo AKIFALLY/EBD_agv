@@ -1,0 +1,145 @@
+metadata:
+  id: "empty_rack_inlet_to_parking"
+  name: "空料架入口到停車區（備選）"
+  enabled: true
+  version: "1.0.0"
+  description: "當A/B面都為空但房間出口已佔用時，將空Rack搬到系統空車停放區"
+  author: "TAFL System"
+  created_at: "2025-09-30"
+  tags: ["empty_rack", "parking_area", "fallback", "automation"]
+
+settings:
+  execution_interval: 20  # Execute every 20 seconds (slower than flow A as fallback)
+
+variables:
+  work_id: 220001  # KUKA_RACK_MOVE
+  priority: 4  # Priority 40 對應到 1-10 範圍中的 4
+  model: "KUKA400i"
+
+flow:
+  # 查詢所有房間入口位置
+  - query:
+      target: locations
+      where:
+        type: "room_inlet"
+      as: inlet_locations
+      description: "查詢所有房間入口位置"
+
+  # 遍歷每個入口位置
+  - for:
+      in: "${inlet_locations}"
+      as: inlet_location
+      do:
+        # 查詢該入口位置的Rack
+        - query:
+            target: racks
+            where:
+              location_id: "${inlet_location.id}"
+              is_carry: 0      # 未被搬運
+            as: inlet_racks
+            description: "查詢入口位置的Rack"
+
+        # 如果入口有Rack
+        - if:
+            condition: "${inlet_racks.length > 0}"
+            then:
+              - set:
+                  inlet_rack: "${inlet_racks[0]}"
+
+              # 查詢Rack上所有載具（A面+B面）
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${inlet_rack.id}"
+                  as: all_carriers
+                  description: "查詢Rack上所有載具"
+
+              # 檢查是否完全空載（A/B面都為空）
+              - set:
+                  is_empty: "${all_carriers.length == 0}"
+
+              # 如果是空Rack
+              - if:
+                  condition: "${is_empty}"
+                  then:
+                    # 查詢對應的房間出口位置
+                    - query:
+                        target: locations
+                        where:
+                          type: "room_outlet"
+                          room_id: "${inlet_location.room_id}"
+                        as: outlet_locations
+                        description: "查詢對應房間的出口位置"
+
+                    # 如果找到出口位置
+                    - if:
+                        condition: "${outlet_locations.length > 0}"
+                        then:
+                          - set:
+                              outlet_location: "${outlet_locations[0]}"
+
+                          # 檢查出口位置是否已佔用（location_status_id = 3: occupied）
+                          - set:
+                              outlet_occupied: "${outlet_location.location_status_id == 3}"
+
+                          # 如果出口已佔用（這是觸發此流程的條件）
+                          - if:
+                              condition: "${outlet_occupied}"
+                              then:
+                                # 查詢系統空車停放區的空閒位置（位置31-34）
+                                - query:
+                                    target: locations
+                                    where:
+                                      id_in: [31, 32, 33, 34]
+                                      location_status_id: 2  # unoccupied
+                                    limit: 1
+                                    as: free_parking_locations
+                                    description: "查詢空閒的停車位置"
+
+                                # 如果找到空閒停車位
+                                - if:
+                                    condition: "${free_parking_locations.length > 0}"
+                                    then:
+                                      - set:
+                                          parking_location: "${free_parking_locations[0]}"
+
+                                      # 檢查是否已存在未完成的搬運任務
+                                      - query:
+                                          target: tasks
+                                          where:
+                                            work_id: "${work_id}"
+                                            rack_id: "${inlet_rack.id}"
+                                            status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                                          as: existing_tasks
+                                          description: "檢查是否已存在搬運任務"
+
+                                      # 如果沒有重複任務，創建新任務
+                                      - if:
+                                          condition: "${existing_tasks.length == 0}"
+                                          then:
+                                            # 創建空Rack搬運任務
+                                            - create:
+                                                target: task
+                                                with:
+                                                  type: "rack_move"
+                                                  name: "房間${inlet_location.room_id}空料架到停車區"
+                                                  description: "A/B面都為空，出口已佔用，搬到停車區暫存"
+                                                  work_id: "${work_id}"
+                                                  rack_id: "${inlet_rack.id}"
+                                                  room_id: "${inlet_location.room_id}"
+                                                  priority: "${priority}"
+                                                  status_id: 1  # PENDING
+                                                  parameters:
+                                                    rack_name: "${inlet_rack.name}"
+                                                    rack_id: "${inlet_rack.id}"
+                                                    from_location_name: "${inlet_location.name}"
+                                                    from_location_id: "${inlet_location.id}"
+                                                    to_location_name: "${parking_location.name}"
+                                                    to_location_id: "${parking_location.id}"
+                                                    room_id: "${inlet_location.room_id}"
+                                                    reason: "A/B面都為空，出口已佔用，暫存停車區"
+                                                    model: "${model}"
+                                                    nodes: ["${inlet_location.node_id}", "${parking_location.node_id}"]
+                                                description: "創建空Rack搬運任務（入口→停車區）"
+
+  # 流程完成

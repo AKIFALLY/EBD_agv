@@ -1,7 +1,7 @@
 metadata:
   id: "rack_rotation_room_inlet_aempty_bwork"
   name: "房間入口架台翻轉（A面空B面待作業）"
-  enabled: false
+  enabled: true
   version: "1.0.0"
   description: "檢查所有房間入口架台，當A面為空（載具已取走）、B面有待作業載具時創建180度翻轉任務"
   author: "TAFL System"

@@ -14,30 +14,24 @@ from tafl.parser import TAFLParser
 from tafl.validator import TAFLValidator
 
 def find_tafl_file(filepath):
-    """尋找 TAFL 檔案，優先從 config/tafl 尋找（包含子目錄）"""
+    """尋找 TAFL 檔案，從 config/tafl 尋找（包含子目錄）"""
     # 如果是絕對路徑或相對路徑，直接返回
     if filepath.startswith('/') or filepath.startswith('./'):
         return filepath if os.path.exists(filepath) else None
-    
-    # 優先在 config/tafl 目錄（包含子目錄）尋找
+
+    # 在 config/tafl 目錄（包含子目錄）尋找
     config_dir = "/home/ct/RosAGV/app/config/tafl"
     if os.path.exists(config_dir):
         for root, dirs, files in os.walk(config_dir):
             if filepath in files:
                 found_path = os.path.join(root, filepath)
-                print("✅ 在正式配置目錄找到檔案")
+                print("✅ 在配置目錄找到檔案")
                 return found_path
-    
-    # 次要：在 migrated_flows 目錄尋找
-    migrated_path = f"/home/ct/RosAGV/app/tafl_ws/migrated_flows/{filepath}"
-    if os.path.exists(migrated_path):
-        print("🔧 在開發/測試目錄找到檔案")
-        return migrated_path
-    
+
     # 當前目錄
     if os.path.exists(f"./{filepath}"):
         return f"./{filepath}"
-    
+
     return None
 
 def validate_tafl_file(filepath):
@@ -49,8 +43,7 @@ def validate_tafl_file(filepath):
         print(f"❌ 檔案不存在: {filepath}")
         print("   嘗試的位置:")
         print("   - /home/ct/RosAGV/app/config/tafl/")
-        print("   - /home/ct/RosAGV/app/tafl_ws/migrated_flows/")
-        print("   - ./")
+        print("   - ./當前目錄")
         return False
     
     filepath = actual_path
@@ -104,11 +97,10 @@ def main():
         print("用法: python3 validate_tafl.py <tafl_file.yaml>")
         print("\n範例:")
         print("  python3 validate_tafl.py my_flow.tafl.yaml")
-        print("  python3 validate_tafl.py rack_rotation_room_outlet_tafl.yaml")
+        print("  python3 validate_tafl.py flows/rack_rotation_outlet.yaml")
         print("\n檔案搜尋順序:")
-        print("  1. /home/ct/RosAGV/app/config/tafl/ (優先)")
-        print("  2. /home/ct/RosAGV/app/tafl_ws/migrated_flows/")
-        print("  3. ./當前目錄")
+        print("  1. /home/ct/RosAGV/app/config/tafl/")
+        print("  2. ./當前目錄")
         sys.exit(1)
     
     filepath = sys.argv[1]

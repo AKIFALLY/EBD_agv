@@ -13,6 +13,76 @@ agvcui 是 Web API 工作空間中的 **車隊管理界面系統**，提供完�
 
 **🎯 定位**: Port 8001 的管理員界面，具備完整的資料庫操作和即時通訊能力
 
+## 📂 專案結構（實際驗證）
+```
+agvcui/
+├── agvcui/                      # 主要 Python 套件目錄
+│   ├── agvc_ui_server.py       # FastAPI 主伺服器
+│   ├── agvc_ui_socket.py       # WebSocket 即時通訊
+│   ├── auth.py                 # 用戶認證和會話管理
+│   ├── db.py                   # 資料庫連接配置
+│   ├── middleware.py           # 中間件配置
+│   ├── database/               # 資料庫操作層
+│   │   ├── connection.py       # 資料庫連接管理
+│   │   ├── agv_ops.py          # AGV 操作
+│   │   ├── task_ops.py         # 任務操作
+│   │   ├── rack_ops.py         # 架台操作
+│   │   ├── carrier_ops.py      # 載具操作
+│   │   ├── equipment_ops.py    # 設備操作
+│   │   ├── user_ops.py         # 用戶操作
+│   │   ├── audit_log_ops.py    # 審計日誌操作
+│   │   └── utils.py            # 工具函數
+│   ├── routers/                # API 路由器
+│   │   ├── auth.py             # 認證 API
+│   │   ├── agvs.py             # AGV 管理 API
+│   │   ├── tasks.py            # 任務管理 API
+│   │   ├── racks.py            # 架台管理 API
+│   │   ├── carriers.py         # 載具管理 API
+│   │   ├── devices.py          # 設備管理 API
+│   │   ├── users.py            # 用戶管理 API
+│   │   ├── clients.py          # 客戶端管理 API
+│   │   ├── products.py         # 產品管理 API
+│   │   ├── map.py              # 地圖 API
+│   │   ├── signals.py          # 信號 API
+│   │   ├── works.py            # 工作管理 API
+│   │   ├── nodes.py            # ROS 2 節點管理 API
+│   │   ├── audit_logs.py       # 審計日誌 API
+│   │   ├── rosout_logs.py      # ROS 日誌 API
+│   │   ├── runtime_logs.py     # 運行時日誌 API
+│   │   ├── tafl_editor.py      # TAFL Editor API (路由: /tafl/editor)
+│   │   └── tafl_editor_direct.py # TAFL 直接編輯 API
+│   ├── static/                 # 靜態資源
+│   │   ├── css/                # 樣式表
+│   │   │   ├── bulma_1_0_4.min.css
+│   │   │   ├── agvcui-bulma-extend.css
+│   │   │   ├── dashboardPage.css
+│   │   │   ├── mapPage.css
+│   │   │   └── ...
+│   │   ├── js/                 # JavaScript 模組
+│   │   │   ├── mapPage.js      # 地圖頁面邏輯
+│   │   │   ├── dashboardPage.js # 儀表板邏輯
+│   │   │   ├── agvsPage.js     # AGV 頁面邏輯
+│   │   │   ├── tasksPage.js    # 任務頁面邏輯
+│   │   │   ├── socket.js       # WebSocket 客戶端
+│   │   │   └── lib/            # 第三方庫
+│   │   └── objects/            # 地圖物件
+│   │       ├── BaseObject.js
+│   │       ├── RackInfoObject.js
+│   │       ├── TransferBoxObject.js
+│   │       └── ...
+│   ├── templates/              # HTML 模板 (Jinja2)
+│   └── utils/                  # 工具模組
+│       ├── permissions.py      # 權限管理工具
+│       └── template_helpers.py # 模板輔助函數
+├── tests/                       # 測試目錄
+├── resource/                    # ROS2 資源目錄
+├── package.xml                  # ROS2 套件配置
+├── setup.py                     # Python 套件配置
+├── setup.cfg                    # Python 套件設定
+├── README.md                    # 專案說明文檔
+└── CLAUDE.md                    # AI 開發助手指導文檔
+```
+
 ## 核心模組
 
 ### 後端服務
@@ -30,11 +100,11 @@ agvcui 是 Web API 工作空間中的 **車隊管理界面系統**，提供完�
 ## 關鍵檔案
 
 ### 後端核心
-- `/agvcui/agvc_ui_server.py` - 主要FastAPI應用伺服器
-- `/agvcui/agvc_ui_socket.py` - WebSocket連接管理和即時通訊
-- `/agvcui/auth.py` - 用戶認證和會話管理
-- `/agvcui/db.py` - 資料庫連接配置
-- `/agvcui/middleware.py` - 中間件配置
+- `/agvcui/agvcui/agvc_ui_server.py` - 主要FastAPI應用伺服器
+- `/agvcui/agvcui/agvc_ui_socket.py` - WebSocket連接管理和即時通訊
+- `/agvcui/agvcui/auth.py` - 用戶認證和會話管理
+- `/agvcui/agvcui/db.py` - 資料庫連接配置
+- `/agvcui/agvcui/middleware.py` - 中間件配置
 
 ### 資料庫操作層
 ```
@@ -60,13 +130,17 @@ routers/
 ├── carriers.py         # 載具管理API
 ├── devices.py          # 設備管理API
 ├── users.py            # 用戶管理API
+├── clients.py          # 客戶端管理API
+├── products.py         # 產品管理API
 ├── map.py              # 地圖API
 ├── signals.py          # 信號API
 ├── works.py            # 工作管理API
+├── nodes.py            # ROS 2 節點管理API
 ├── audit_logs.py       # 審計日誌API
 ├── rosout_logs.py      # ROS日誌API
 ├── runtime_logs.py     # 運行時日誌API
-└── tafl_editor.py      # TAFL Editor API (路由: /tafl/editor)
+├── tafl_editor.py      # TAFL Editor API (路由: /tafl/editor)
+└── tafl_editor_direct.py # TAFL 直接編輯API
 ```
 
 ### 🚨 重要路由說明
@@ -100,6 +174,13 @@ static/
     └── ...
 ```
 
+### 工具模組
+```
+utils/
+├── permissions.py      # 權限管理工具
+└── template_helpers.py # 模板輔助函數
+```
+
 ## 🚀 AGVCUI 專用啟動
 
 ### 車隊管理界面啟動
@@ -120,13 +201,12 @@ curl http://localhost:8001/
 
 ### AGVCUI 專項測試
 ```bash
-# 車隊管理功能測試
-python3 -m pytest tests/ -v
-python3 tests/test_task_status_api.py    # 任務狀態 API 測試
+# 後端單元測試（如果有 pytest 配置）
+python3 -m pytest -v
 
-# 前端界面測試 (瀏覽器開啟)
-firefox tests/test_cache_verification.html        # 快取驗證測試
-firefox tests/test_rack_marker_interaction.html   # Rack 標記互動測試
+# API 功能測試
+curl http://localhost:8001/health
+curl http://localhost:8001/api/agvs
 ```
 
 ## 📊 AGVCUI 特定配置
@@ -204,9 +284,6 @@ POST /api/map/update_object       # 更新地圖物件
 
 ### 後端API測試
 ```bash
-# 執行後端測試
-python3 -m pytest tests/ -v
-
 # 測試認證功能
 curl -X POST http://localhost:8001/auth/login \
   -H "Content-Type: application/json" \
@@ -215,18 +292,6 @@ curl -X POST http://localhost:8001/auth/login \
 # 測試API端點
 curl -X GET http://localhost:8001/api/agvs \
   -H "Authorization: Bearer <token>"
-```
-
-### 前端功能測試
-```bash
-# 開啟瀏覽器測試頁面
-firefox tests/test_cache_verification.html
-firefox tests/test_rack_marker_interaction.html
-firefox tests/test_task_status_sync.html
-
-# 地圖功能測試
-firefox tests/test_rack_object_debug.html
-firefox tests/test_rack_toggle_diagnosis.html
 ```
 
 ### WebSocket測試
@@ -241,17 +306,10 @@ socket.emit('subscribe_room', {room: 'agv_monitoring'});
 ```bash
 # 啟動完整系統測試
 # 1. 啟動AGVCUI
-python3 agvcui/agvc_ui_server.py &
+python3 agvcui/agvc_ui_server.py
 
-# 2. 開啟瀏覽器
-firefox http://localhost:8001
-
-# 3. 測試各功能頁面
-# - 儀表板 (Dashboard)
-# - AGV監控頁面
-# - 任務管理頁面
-# - 地圖頁面
-# - 設備管理頁面
+# 2. 透過瀏覽器訪問 http://localhost:8001
+# 3. 測試各功能頁面：儀表板、AGV監控、任務管理、地圖、設備管理
 ```
 
 ## 🚨 AGVCUI 專項故障排除  

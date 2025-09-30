@@ -19,8 +19,8 @@ setup(
     zip_safe=True,
     maintainer='RosAGV Team',
     maintainer_email='rosagv@example.com',
-    description='AGV Web Services Launch Package',
-    license='Apache-2.0',
+    description='AGV Web 服務啟動套件',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

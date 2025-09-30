@@ -2,7 +2,7 @@
 
 ## 🎯 TAFL Editor 介紹
 
-TAFL Editor 是 AGVCUI 系統內建的視覺化流程編輯器，採用卡片式設計來創建和管理 TAFL（Task Automation Flow Language）流程。這是取代舊 Linear Flow Designer 的新一代編輯器，提供更直覺的流程設計體驗。
+TAFL Editor 是 AGVCUI 系統內建的視覺化流程編輯器，採用卡片式設計來創建和管理 TAFL（Task Automation Flow Language）流程。提供直覺的拖放式流程設計體驗。
 
 ## 📋 存取方式
 

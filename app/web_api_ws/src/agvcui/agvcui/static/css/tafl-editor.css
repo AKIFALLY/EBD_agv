@@ -1,5 +1,5 @@
 /* TAFL Editor - Professional Card-Based Design */
-/* Based on Linear Flow Designer UI patterns */
+/* Professional TAFL editor interface design */
 
 /* ===== TAFL Variable Syntax Highlighting ===== */
 /* Custom highlighting for TAFL-specific syntax in YAML editor */
@@ -907,7 +907,7 @@
     opacity: 0.85;
 }
 
-/* Drop Indicator Line - Professional Animation (from Linear Flow Designer) */
+/* Drop Indicator Line - Professional Animation */
 .drop-indicator {
     position: absolute;
     width: calc(100% - 2rem);
@@ -950,7 +950,7 @@
 
 /* Removed - no longer needed since we're using gentle-glow */
 
-/* Visual Drop Zones Between Cards (from Linear Flow Designer) */
+/* Visual Drop Zones Between Cards */
 .visual-drop-zone {
     height: 40px;
     margin: 0.5rem 0;

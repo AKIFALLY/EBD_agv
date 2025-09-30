@@ -2,7 +2,7 @@
 
 ## 🎯 什麼是 TAFL？
 
-TAFL (Task Automation Flow Language) 是 RosAGV 系統中新一代的任務自動化流程語言，取代了舊的 Linear Flow v2 系統。TAFL 提供結構化、標準化的流程定義和執行能力。
+TAFL (Task Automation Flow Language) 是 RosAGV 系統的任務自動化流程語言，提供結構化、標準化的流程定義和執行能力。
 
 ## 📋 系統架構
 
@@ -41,16 +41,16 @@ RosAGV 系統架構
 
 ## 🚀 主要優勢
 
-### 相比 Linear Flow v2 的改進
+### TAFL 系統特色
 
-| 特性 | Linear Flow v2 | TAFL v1.1.2 | 改進說明 |
-|------|----------------|------------|---------|
-| **語法結構** | 鬆散的步驟列表 | 結構化動詞系統 | 更清晰的語義 |
-| **變數管理** | 簡單字串替換 | 完整變數作用域 | 避免變數污染 |
-| **錯誤處理** | 基本錯誤檢查 | 結構化錯誤處理 | 更好的除錯能力 |
-| **視覺化** | Linear Flow Designer | TAFL Editor | 更直觀的介面 |
-| **條件控制** | 簡單條件 | if/switch 完整支援 | 複雜邏輯處理 |
-| **迴圈支援** | 有限 | for 迴圈與過濾 | 集合處理能力 |
+| 特性 | TAFL v1.1.2 特點 | 說明 |
+|------|-----------------|-----|
+| **語法結構** | 結構化動詞系統 | 10個核心動詞，清晰的語義 |
+| **變數管理** | 完整變數作用域 | 5層作用域避免變數污染 |
+| **錯誤處理** | 結構化錯誤處理 | 更好的除錯能力 |
+| **視覺化** | TAFL Editor | 直觀的卡片式編輯介面 |
+| **條件控制** | if/switch 完整支援 | 複雜邏輯處理能力 |
+| **迴圈支援** | for 迴圈與過濾 | 強大的集合處理能力 |
 
 ### 實際應用優勢
 
@@ -215,8 +215,7 @@ flow:
 ## 🔧 開發者資訊
 
 ### TAFL 檔案位置
-- **正式配置**: `/home/ct/RosAGV/app/config/tafl/`
-- **測試檔案**: `/home/ct/RosAGV/app/tafl_ws/migrated_flows/`
+- **正式配置**: `/home/ct/RosAGV/app/config/tafl/flows/`
 - **工作空間**: `/home/ct/RosAGV/app/tafl_ws/`
 
 ### 相關工作空間
@@ -294,14 +293,14 @@ TAFL v1.1.2 目前**不支援**：
 
 ## 🚨 常見問題
 
-### Q: 如何從 Linear Flow 遷移到 TAFL？
-A: 系統提供自動遷移工具，但建議重新設計流程以充分利用 TAFL 的新特性。
+### Q: 如何設計新的 TAFL 流程？
+A: 使用 TAFL Editor 視覺化編輯器，或手動編寫 YAML 格式的 TAFL 流程。
 
 ### Q: TAFL Editor 在哪裡？
 A: 在 AGVCUI (Port 8001) 的 `/tafl/editor` 路徑。
 
-### Q: 可以同時使用 Linear Flow 和 TAFL 嗎？
-A: 不建議。系統已經完全遷移到 TAFL，Linear Flow 僅供歷史參考。
+### Q: TAFL 系統穩定嗎？
+A: 是的。TAFL 已在生產環境中穩定運行，支援 RosAGV 系統的日常作業。
 
 ### Q: 如何處理迴圈中的 break？
 A: 使用 `stop` 語句配合 `reason` 參數來終止迴圈執行。
@@ -309,4 +308,4 @@ A: 使用 `stop` 語句配合 `reason` 參數來終止迴圈執行。
 ## 🔗 相關文檔
 - [TAFL 語言規範](./tafl-language.md)
 - [TAFL Editor 使用指南](./tafl-editor.md)
-- [從 Linear Flow 遷移](./tafl-migration.md)
+- [TAFL WCS 整合](./tafl-wcs-integration.md)

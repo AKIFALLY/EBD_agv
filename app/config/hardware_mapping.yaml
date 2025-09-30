@@ -73,4 +73,5 @@ agvc_devices:
     - web_api_ws
     - ecs_ws
     - rcs_ws
-    - flow_wcs_ws
+    - tafl_ws
+    - tafl_wcs_ws

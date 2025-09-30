@@ -11,9 +11,14 @@ OPUI 負責提供操作員友善的 Web 介面，用於管理 AGV 任務調度�
 - 📊 **即時監控**：任務狀態、料架位置、機台狀態即時更新
 - 🏭 **多機台支援**：支援多個生產機台的並行操作
 - 📦 **料架管理**：料架分配、移動追蹤、狀態同步
+- 🏗️ **工作區配置**：支援工作區與停車格分離架構，智能分配料架位置
 - 🔄 **資料同步**：與資料庫和其他系統的即時資料同步
 
 ### 系統特色
+- ✅ **工作區管理**：工作區與停車格分離設計，提供彈性的料架容量管理
+  - 每個作業員擁有獨立工作區（可配置多個位置）
+  - 智能自動分配可用工作區位置
+  - 完善的滿載保護機制
 - ✅ **模組化前端架構**：按頁面功能分離的 JavaScript 架構
   - `index.js`: 共用功能（全域初始化、Store 狀態管理、Socket 連線處理）
   - `pages/homePage.js`: Home 頁面專用功能（產品選擇、數量設定、房號選擇）
@@ -34,19 +39,8 @@ OPUI 負責提供操作員友善的 Web 介面，用於管理 AGV 任務調度�
 
 ## 📚 文件導覽
 
-### 核心文檔
-- **[架構文件](docs/ARCHITECTURE.md)** - 詳細的系統架構說明
-- **[前端架構](docs/FRONTEND_ARCHITECTURE.md)** - 前端模組化架構說明
-- **[Socket API 格式指南](docs/SOCKET_API_FORMAT_GUIDE.md)** - API 資料格式說明
-- **[維護指南](docs/MAINTENANCE.md)** - 日常維護和故障排除
 - **[測試文件](tests/README.md)** - 測試框架和測試指南
-
-### 歷史記錄
-- **[歷史修復記錄](docs/archives/)** - 重要的修復和變更記錄
-  - 扁平化格式遷移總結
-  - Home 頁面顯示修復
-  - 效能優化記錄
-  - 任務狀態重構記錄
+- **[CLAUDE.md](CLAUDE.md)** - AI 開發助手指導文檔
 
 ## 🚀 快速開始
 
@@ -180,12 +174,6 @@ opui/
 │   ├── test_performance.py    # 效能測試
 │   ├── test_socket_api_format_consistency.py # Socket API 格式一致性測試
 │   └── requirements-test.txt  # 測試依賴套件
-├── docs/                       # 文件目錄
-│   ├── ARCHITECTURE.md         # 架構文件
-│   ├── FRONTEND_ARCHITECTURE.md # 前端架構文件
-│   ├── SOCKET_API_FORMAT_GUIDE.md # Socket API 格式指南
-│   ├── MAINTENANCE.md          # 維護指南
-│   └── archives/              # 歷史記錄檔案
 ├── config/                     # 配置檔案
 │   └── settings.py            # 系統設定
 ├── package.xml                 # ROS2 套件配置
@@ -315,19 +303,24 @@ const appStore = createStore('opuiAppState', {
 ## 🚛 AGV 任務管理功能
 
 ### 加入料架 (Add Rack) 功能
-**業務含義**: 記錄作業員手動搬運的空rack到停車格
+**業務含義**: 記錄作業員手動搬運的空rack到工作區
 
 **操作流程**:
-1. **前置條件**: 停車位為空，作業員已手動搬運空rack到作業區
+1. **前置條件**: 工作區有可用空間，作業員已手動搬運空rack到作業區
 2. **操作步驟**:
    - 操作員點擊「加入料架」按鈕
    - 從彈出的Modal中選擇對應的rack編號
    - 點擊「確認加入」
 3. **系統處理**:
-   - 系統載入可用rack列表（未在任何停車格的rack）
-   - 記錄選擇的rack到對應停車格
+   - 系統載入可用rack列表（location_id為 NULL 的rack）
+   - 自動分配到第一個可用的工作區位置
    - 更新資料庫中rack位置
-   - 廣播停車格狀態變更
+   - 廣播工作區狀態變更
+
+**工作區邏輯**:
+- **優先使用工作區**: 系統優先將料架分配到工作區位置
+- **絕不使用停車格**: add_rack 操作絕不使用停車格位置
+- **滿載保護**: 當所有工作區位置都被佔用時，返回「工作區已滿」錯誤
 
 **事件參數**:
 ```python
@@ -340,16 +333,19 @@ const appStore = createStore('opuiAppState', {
 ```
 
 ### 派車 (Dispatch Car) 功能
-**業務含義**: 呼叫 AGV 將停車位上的料架運走
+**業務含義**: 呼叫 AGV 將工作區的料架運到停車格，然後運走
 
 **操作流程**:
-1. **前置條件**: 停車位有料架，已選擇產品和數量
+1. **前置條件**: 工作區有料架，已選擇產品和數量
 2. **操作步驟**: 操作員選擇產品、數量後點擊派車
 3. **系統處理**:
    - 收集產品資訊、料架 ID、數量等
+   - 將料架從工作區移動到停車格
    - 創建 dispatch_full 類型任務
    - 啟動任務監控
    - 更新停車位狀態為「派送中」
+
+**移動路徑**: 工作區 → 停車格 → 目標地
 
 **任務參數**:
 ```python
@@ -430,12 +426,18 @@ task_crud = BaseCRUD(Task, id_column="id")
 |--------|------|----------|
 | **Client** | 客戶端/操作員資訊 | id, clientId, machineId, userAgent |
 | **Product** | 產品資料 | id, name, size, room |
-| **Machine** | 機台資訊 | id, name, enable, parking_status |
+| **Machine** | 機台資訊 | id, name, enable, workspace_1, workspace_2, parking_space_1, parking_space_2 |
 | **Room** | 房間/區域資料 | id, name, description |
 | **Rack** | 料架資訊 | id, name, location_id, status |
 | **Task** | 任務記錄 | id, name, work_id, status_id, parameters |
 | **Work** | 工作類型 | id, name, description |
 | **TaskStatus** | 任務狀態 | id, name, description |
+
+#### Machine 表新增欄位（2025-09 更新）
+- **workspace_1**: INTEGER[] - 作業員1（左側）的工作區 location ID 陣列
+- **workspace_2**: INTEGER[] - 作業員2（右側）的工作區 location ID 陣列
+- **parking_space_1**: INTEGER - 作業員1（左側）的停車格 location ID
+- **parking_space_2**: INTEGER - 作業員2（右側）的停車格 location ID
 
 ### 資料關聯
 - **Client** ↔ **Machine**: 操作員與機台的關聯
@@ -755,7 +757,20 @@ ros2 pkg list | grep opui
 
 本專案為內部開發使用，適用於 AGV 自動化倉儲系統。
 
+## 📝 版本更新記錄
+
+### 2025-09 工作區配置功能
+- ✅ **工作區與停車格分離架構**: 實現料架存放區域的職責分離
+- ✅ **智能分配邏輯**: add_rack 自動分配到可用工作區位置
+- ✅ **滿載保護機制**: 工作區滿時提供明確錯誤提示
+- ✅ **資料庫支援**: PostgreSQL INTEGER[] 陣列支援多個工作區位置
+
+### 2025-07 架構重構
+- ✅ **後端架構分離**: op_ui_server.py 與 op_ui_socket.py 職責分離
+- ✅ **程式碼重複減少**: 統一通知方法和資料格式化
+- ✅ **派車功能修復**: 完整傳送資料並保持向後相容
+
 ---
 
-*最後更新: 2025-07-15*
-*版本: 2025 重構版 - 專案結構同步更新*
+*最後更新: 2025-09-23*
+*版本: 2025.09 - 工作區配置功能更新*

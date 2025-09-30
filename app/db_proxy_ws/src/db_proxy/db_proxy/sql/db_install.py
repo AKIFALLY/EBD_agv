@@ -1,8 +1,6 @@
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 # 只需匯入 SQLModel 與 model
 from db_proxy.models import ProcessSettings, Product, Work, Task, TaskStatus, AGV, AGVContext, TrafficZone, Node, NodeType, Room, Machine, RackStatus, Rack, LocationStatus, Location, Carrier, CarrierStatus, Eqp, EqpPort, EqpSignal, RosoutLog, RuntimeLog, AuditLog, KukaNode, KukaEdge, License
-# 匯入新增的 FlowLog 模型 (flow_wcs 整合)
-from db_proxy.models.agvc_task import FlowLog
 from sqlmodel import select
 from sqlalchemy import text
 # from db_proxy_interfaces.srv import AcquireTrafficArea, ReleaseTrafficArea, AddTrafficArea  # Define custom services
@@ -145,8 +143,7 @@ def reset_all_sequences(session):
         'agv_context',
         'audit_log',
         'kuka_node',
-        'kuka_edge',
-        'flow_log'  # 新增的 flow_wcs 整合表
+        'kuka_edge'
     ]
 
     for table_name in tables_with_id_sequences:

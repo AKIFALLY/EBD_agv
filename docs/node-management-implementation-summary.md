@@ -20,7 +20,7 @@
 - ✅ `manage_db_proxy` - 資料庫代理
 - ✅ `manage_rcs` - 機器人控制系統
 - ✅ `manage_kuka_fleet` - KUKA Fleet 整合
-- ✅ `manage_flow_wcs` - Flow WCS 系統
+- ✅ `manage_tafl_wcs` - TAFL WCS 系統
 - ✅ `manage_agv_launch` - 遠端 AGV 管理
 - ✅ `manage_web_api_launch` - Web API 服務群組
 
@@ -124,7 +124,7 @@ r node-status
 
 # 控制節點
 r node-start web_api_launch
-r node-stop flow_wcs
+r node-stop tafl_wcs
 r node-restart ecs_core
 
 # 管理遠端 AGV

@@ -72,7 +72,7 @@ class Location(SQLModel, table=True):
     node_id: Optional[int] = Field(default=None, foreign_key="node.id")  # 關聯到 node 表
     name: str
     description: Optional[str] = None
-    # 新增 flow_wcs 需要的欄位
+    # tafl_wcs 需要的欄位
     type: Optional[str] = Field(default="enter_or_exit")  # 位置類型
     rack_id: Optional[int] = Field(default=None, foreign_key="rack.id")  # 關聯的架台 ID
     

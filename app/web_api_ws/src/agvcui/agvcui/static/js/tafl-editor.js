@@ -528,7 +528,7 @@ class TAFLEditor {
     /**
      * PROFESSIONAL DRAG & DROP SYSTEM
      * DEPRECATED: Now handled by TAFLEditorDragDrop module
-     * Complete rewrite based on successful patterns from linear flow designer
+     * Professional drag and drop implementation with advanced interaction patterns
      */
     setupDragAndDrop_DEPRECATED() {
         const canvas = document.getElementById('flow-canvas');

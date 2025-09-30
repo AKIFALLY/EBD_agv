@@ -45,17 +45,29 @@ launch_ws/
 │   │   ├── package.xml           # 套件配置
 │   │   ├── setup.py              # Python 套件設定 (僅系統套件)
 │   │   └── setup.cfg             # 建置配置
-│   └── web_api_launch/           # Web API 系統啟動套件
+│   ├── web_api_launch/           # Web API 系統啟動套件
+│   │   ├── launch/
+│   │   │   └── launch.py         # Web API 系統啟動檔案 (完整實作)
+│   │   ├── resource/             # 資源檔案
+│   │   │   └── web_api_launch    # 套件資源標記
+│   │   ├── package.xml           # 套件配置
+│   │   ├── setup.py              # Python 套件設定 (僅系統套件)
+│   │   └── setup.cfg             # 建置配置
+│   └── web_agv_launch/           # AGV Web 服務啟動套件
 │       ├── launch/
-│       │   └── launch.py         # Web API 系統啟動檔案 (完整實作)
+│       │   └── launch.py         # AGV Web 服務啟動檔案
 │       ├── resource/             # 資源檔案
-│       │   └── web_api_launch    # 套件資源標記
+│       │   └── web_agv_launch    # 套件資源標記
+│       ├── test/                 # 測試檔案
+│       │   ├── test_copyright.py # 版權檢查
+│       │   ├── test_flake8.py    # 程式碼風格檢查
+│       │   └── test_pep257.py    # 文檔字串檢查
+│       ├── web_agv_launch/
+│       │   └── __init__.py       # Python 套件初始化
 │       ├── package.xml           # 套件配置
-│       ├── setup.py              # Python 套件設定 (僅系統套件)
+│       ├── setup.py              # Python 套件設定
 │       └── setup.cfg             # 建置配置
-├── build/                         # 建置輸出目錄
-├── install/                       # 安裝目錄
-└── log/                          # 日誌目錄
+└── README.md                      # 本檔案
 ```
 
 ## ⚙️ 主要功能
@@ -84,7 +96,16 @@ launch_ws/
 - `op_ui_server` (opui 套件) - 操作員介面
 - `web_api_server` (web_api 套件) - Web API 服務
 
-### 3. 配置管理功能
+### 3. Web AGV Launch (web_agv_launch/launch.py)
+**AGV 車載 Web 服務啟動管理**:
+- **AGVUI 服務**: 啟動 agvui 套件的 agv_ui_server 節點
+- **命名空間管理**: 使用 `agv` 命名空間 (與 AGVC 區隔)
+- **車載監控介面**: 提供 AGV 車載系統的 Web 監控介面 (Port 8003)
+
+**啟動的節點**:
+- `agv_ui_server` (agvui 套件) - AGV 車載監控介面
+
+### 4. 配置管理功能
 **參數配置支援**:
 - **LaunchConfiguration**: 支援動態參數配置
 - **DeclareLaunchArgument**: 支援啟動參數宣告
@@ -115,6 +136,18 @@ ros2 launch web_api_launch launch.py param_file:=/path/to/custom_config.yaml
 
 # 檢查啟動的節點
 ros2 node list | grep agvc
+```
+
+### Web AGV Launch 使用
+```bash
+# 啟動 AGV 車載 Web 服務
+ros2 launch web_agv_launch launch.py
+
+# 檢查啟動的節點
+ros2 node list | grep agv
+
+# 驗證服務可用性
+curl http://localhost:8003/  # AGVUI 車載監控介面
 ```
 
 ### 自訂 Launch 檔案範例

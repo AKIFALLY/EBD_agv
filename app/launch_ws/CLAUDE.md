@@ -30,25 +30,41 @@ src/
 │   │   └── launch.py        # Web API 服務群組啟動檔案
 │   ├── web_api_launch/
 │   │   └── __init__.py      # Python 模組初始化
+│   ├── resource/           # ROS 2 資源檔案
+│   │   └── web_api_launch  # 套件標記檔案
 │   ├── setup.py            # 套件設定 (Launch-only package)
 │   ├── setup.cfg           # 建置配置
-│   ├── package.xml         # ROS 2 套件資訊
-│   └── test/               # 標準測試檔案
+│   └── package.xml         # ROS 2 套件資訊
+├── web_agv_launch/          # 🚗 AGV Web 服務啟動包
+│   ├── launch/
+│   │   └── launch.py        # AGV Web 服務啟動檔案
+│   ├── web_agv_launch/
+│   │   └── __init__.py      # Python 模組初始化
+│   ├── resource/           # ROS 2 資源檔案
+│   │   └── web_agv_launch  # 套件標記檔案
+│   ├── test/               # 標準測試檔案
+│   │   ├── test_copyright.py  # 版權檢查
+│   │   ├── test_flake8.py     # 程式碼風格檢查
+│   │   └── test_pep257.py     # 文檔字串檢查
+│   ├── setup.py            # 套件設定 (Launch-only package)
+│   ├── setup.cfg           # 建置配置
+│   └── package.xml         # ROS 2 套件資訊
 └── ecs_launch/             # 🔧 ECS 設備控制系統啟動包
     ├── launch/
     │   └── launch.py        # ECS 系統啟動檔案
     ├── ecs_launch/
     │   └── __init__.py      # Python 模組初始化
+    ├── resource/           # ROS 2 資源檔案
+    │   └── ecs_launch      # 套件標記檔案
     ├── setup.py            # 套件設定 (Launch-only package)
     ├── setup.cfg           # 建置配置
-    ├── package.xml         # ROS 2 套件資訊
-    └── test/               # 標準測試檔案
+    └── package.xml         # ROS 2 套件資訊
 ```
 
 ### 套件特性
-- **純 Launch 套件**: 兩個套件都專注於 Launch 檔案，無可執行節點
+- **純 Launch 套件**: 三個套件都專注於 Launch 檔案，無可執行節點
 - **標準結構**: 遵循 ROS 2 套件標準結構和命名慣例
-- **測試支援**: 包含標準的 ROS 2 測試檔案架構
+- **測試支援**: web_agv_launch 包含標準的 ROS 2 測試檔案
 
 ## 🚀 核心功能 (基於實際代碼驗證)
 
@@ -77,6 +93,17 @@ src/
 - **配置檔案**: `/app/config/ecs_config.yaml` (參數化配置)
 - **備用節點**: `door_controller_node_mqtt` (已註解，待需要時啟用)
 - **輸出設定**: 所有節點輸出到螢幕 (`output="screen"`)
+
+### 🚗 web_agv_launch - AGV Web 服務
+專注於 AGV 車載系統的 Web 監控介面啟動：
+
+**🔧 啟動的節點**:
+- **`agv_ui_server`** (agvui 套件) - AGV 車載監控介面 (Port 8003)
+
+**⚙️ 配置特性**:
+- **命名空間**: 使用 `agv` 命名空間 (與 AGVC 區隔)
+- **車載系統**: 專門為 AGV 車載環境設計
+- **輸出設定**: 輸出到螢幕 (`output="screen"`)
 
 ## 🚀 ROS 2 啟動配置專用開發
 

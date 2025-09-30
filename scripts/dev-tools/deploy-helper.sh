@@ -215,7 +215,7 @@ pre_deployment_check() {
     # 檢查工作空間建置狀態
     local workspaces=(
         "agv_ws" "agv_cmd_service_ws" "joystick_ws" "keyence_plc_ws"
-        "plc_proxy_ws" "db_proxy_ws" "ecs_ws" "rcs_ws" "wcs_ws"
+        "plc_proxy_ws" "db_proxy_ws" "ecs_ws" "rcs_ws" "tafl_ws" "tafl_wcs_ws"
         "web_api_ws" "kuka_fleet_ws" "sensorpart_ws" "launch_ws"
     )
     
@@ -456,7 +456,7 @@ build_ros_workspaces() {
         "agvc")
             workspaces=(
                 "keyence_plc_ws" "plc_proxy_ws" "path_algorithm" "db_proxy_ws"
-                "ecs_ws" "rcs_ws" "wcs_ws" "ai_wcs_ws" "web_api_ws"
+                "ecs_ws" "rcs_ws" "tafl_ws" "tafl_wcs_ws" "web_api_ws"
                 "kuka_fleet_ws" "launch_ws"
             )
             ;;

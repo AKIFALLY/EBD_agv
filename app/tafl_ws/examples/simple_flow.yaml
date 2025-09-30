@@ -32,16 +32,16 @@ flow:
   
   # Loop through items
   - for:
-      each: item
+      as: item
       in: "${items}"
       do:
         - set:
             processed: "${item} * 2"
         - notify:
-            channel: debug
+            level: info
             message: "Processed item ${item}: result ${processed}"
   
   # Final notification
   - notify:
-      channel: system
+      level: info
       message: "Flow completed with counter=${counter}"

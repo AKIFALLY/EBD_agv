@@ -32,15 +32,19 @@ class Machine(SQLModel, table=True):
     parking_space_2: Optional[int] = Field(default=None, foreign_key="node.id")
     parking_space_1_status: Optional[int] = Field(default=0)
     parking_space_2_status: Optional[int] = Field(default=0)
+    workspace_1: Optional[List[int]] = Field(default=None)  # 左側工作區位置陣列
+    workspace_2: Optional[List[int]] = Field(default=None)  # 右側工作區位置陣列
     name: str
     description: Optional[str] = None
     enable: int = Field(default=1)
 ```
 
-**用途**: 管理作業區機台配置，每台機台有兩個停車格
+**用途**: 管理作業區機台配置，每台機台有兩個停車格和兩個工作區
 **關鍵欄位**:
 - `parking_space_1/2`: 對應到 Node 表的停車格位置
 - `parking_space_1/2_status`: 停車格狀態 (0=可用, 1=任務中, 2=完成)
+- `workspace_1`: 左側工作區的 Location ID 陣列（作業員1使用）
+- `workspace_2`: 右側工作區的 Location ID 陣列（作業員2使用）
 
 ### Room 表
 ```python
@@ -263,10 +267,10 @@ class LocationStatus(SQLModel, table=True):
 **用途**: 管理系統中所有位置的佔用狀態
 **重要位置編號**:
 - 11-18: 系統準備區
-- 31-34: 系統空架區  
+- 31-34: 系統空架區
 - 51-55: 人工收料區
-- 71-72: NG回收區
-- 91-92: 人工回收空料架區
+- 71-72: NG回收區 (OCR NG 即時處理，實際上不再使用)
+- 91-92: 人工回收空料架區 (🛑 已棄用 - 改為手動管理，不再透過 AGV 搬運)
 
 ## 🔄 資料表關聯邏輯
 

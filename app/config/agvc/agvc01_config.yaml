@@ -71,4 +71,5 @@ service_startup:
     - "web_api_ws"
     - "ecs_ws"
     - "rcs_ws"
-    - "ai_wcs_ws"
+    - "tafl_ws"
+    - "tafl_wcs_ws"

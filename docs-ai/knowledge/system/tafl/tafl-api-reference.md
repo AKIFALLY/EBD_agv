@@ -373,7 +373,8 @@ async function executeTAFLFlow() {
 ## 🔗 相關文檔
 - TAFL 語言規格: docs-ai/knowledge/system/tafl/tafl-language-specification.md
 - TAFL 編輯器規格: docs-ai/knowledge/system/tafl/tafl-editor-specification.md
-- 故障排除指南: docs-ai/knowledge/system/tafl/tafl-troubleshooting-guide.md
+- TAFL 使用者指南: docs-ai/knowledge/system/tafl/tafl-user-guide.md
+- TAFL 開發歷史: docs-ai/knowledge/system/tafl/tafl-development-history.md
 
 ---
 

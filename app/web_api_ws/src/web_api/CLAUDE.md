@@ -23,31 +23,32 @@ web_api 是 Web API 工作空間中的 **API Gateway 服務**，專注於外部�
 ```
 routers/
 ├── plc.py              # PLC控制API
-├── door.py             # 門控制API  
+├── door.py             # 門控制API
 ├── traffic.py          # 交通管制API
 ├── map_importer.py     # 地圖匯入API
-└── kuka.py             # KUKA Fleet整合API
+├── kuka.py             # KUKA Fleet整合API
+├── nodes.py            # ROS 2 節點管理API (統一節點控制)
+├── *.json              # 測試資料檔案 (非router檔案)
+│   ├── 20250509_pathtest.json
+│   └── map_test_test1_jgc.json
+└── __init__.py         # 路由器模組初始化
 ```
 
 ## 關鍵檔案
 
 ### 核心檔案
-- `/web_api/api_server.py` - 主要API伺服器，整合所有功能模組
-- `/web_api/routers/__init__.py` - 路由器模組初始化
-- `/docs/README.md` - API文檔說明
+- `/web_api/web_api/api_server.py` - 主要API伺服器，整合所有功能模組
+- `/web_api/web_api/routers/__init__.py` - 路由器模組初始化
+- `/web_api/docs/README.md` - API文檔說明
 
 ### API路由檔案
-- `/web_api/routers/plc.py` - PLC設備控制API端點
-- `/web_api/routers/door.py` - 門控制系統API端點  
-- `/web_api/routers/traffic.py` - 交通管制區域API端點
-- `/web_api/routers/map_importer.py` - 地圖數據匯入API端點
-- `/web_api/routers/kuka.py` - KUKA Fleet系統整合API端點
+- `/web_api/web_api/routers/plc.py` - PLC設備控制API端點
+- `/web_api/web_api/routers/door.py` - 門控制系統API端點
+- `/web_api/web_api/routers/traffic.py` - 交通管制區域API端點
+- `/web_api/web_api/routers/map_importer.py` - 地圖數據匯入API端點
+- `/web_api/web_api/routers/kuka.py` - KUKA Fleet系統整合API端點
+- `/web_api/web_api/routers/nodes.py` - ROS 2 節點管理API端點 (27KB)
 
-### 測試檔案
-- `/tests/README.md` - 測試說明文檔
-- `/tests/test_kuka_api.py` - KUKA API測試
-- `/tests/test_parameters_update.py` - 參數更新測試
-- `/tests/quick_test.py` - 快速測試腳本
 
 ## 🚀 套件特定啟動
 
@@ -66,12 +67,6 @@ uvicorn web_api.api_server:app --host 0.0.0.0 --port 8000 --reload
 
 ### 套件特定測試
 ```bash
-# API Gateway 專項測試
-python3 -m pytest tests/ -v
-python3 tests/test_kuka_api.py       # KUKA 整合測試
-python3 tests/quick_test.py          # 快速功能驗證
-python3 tests/test_parameters_update.py  # 參數更新測試
-
 # API 健康檢查
 curl http://localhost:8000/health
 curl http://localhost:8000/docs      # Swagger UI
@@ -134,6 +129,15 @@ POST /traffic/release               # 釋放交通區域
 # 地圖匯入API
 POST /map/import                    # 匯入地圖數據
 GET  /map/status                    # 地圖狀態查詢
+
+# ROS 2 節點管理API (nodes.py)
+GET  /api/nodes                     # 列出所有ROS 2節點
+GET  /api/nodes/{node_name}         # 節點詳情
+POST /api/nodes/{node_name}/restart # 重啟節點
+POST /api/nodes/{node_name}/stop    # 停止節點
+POST /api/nodes/{node_name}/start   # 啟動節點
+GET  /api/nodes/{node_name}/status  # 節點狀態
+GET  /api/nodes/{node_name}/log     # 節點日誌
 
 # KUKA Fleet API (詳細規格參考 @docs-ai/knowledge/protocols/kuka-fleet-api.md)
 POST /interfaces/api/amr/missionStateCallback  # 任務狀態回調接收 (實際實作)

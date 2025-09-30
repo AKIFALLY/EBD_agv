@@ -39,7 +39,7 @@ UNO GPIO 工作空間是專為研華 UNO-137 工業電腦設計的 GPIO 控制�
 ```
 uno_gpio_ws/
 ├── README.md                  # 專案說明文檔
-├── README.txt.txt            # 原始技術說明 (研華建議)
+├── README.txt                # 原始技術說明 (研華建議)
 ├── gpio_example.c            # C 語言 GPIO 控制範例 (完整實作)
 ├── gpio_example.py           # Python GPIO 控制範例 (完整實作)
 └── gpio_example              # 編譯後的 C 執行檔

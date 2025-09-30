@@ -14,19 +14,24 @@ from tafl.parser import TAFLParser
 from tafl.validator import TAFLValidator
 
 def validate_tafl_files():
-    """驗證所有轉換後的 TAFL 檔案"""
-    
+    """驗證所有 TAFL 檔案"""
+
     # 初始化解析器和驗證器
     parser = TAFLParser()
     validator = TAFLValidator()
-    
-    # 獲取所有轉換後的 TAFL 檔案
-    migrated_dir = os.path.join(os.path.dirname(__file__), 'migrated_flows')
-    if not os.path.exists(migrated_dir):
-        print(f"❌ 找不到目錄: {migrated_dir}")
+
+    # 獲取所有 TAFL 檔案
+    config_dir = "/home/ct/RosAGV/app/config/tafl"
+    if not os.path.exists(config_dir):
+        print(f"❌ 找不到目錄: {config_dir}")
         return
-        
-    tafl_files = [f for f in os.listdir(migrated_dir) if f.endswith('_tafl.yaml')]
+
+    # 搜尋所有子目錄中的 TAFL 檔案
+    tafl_files = []
+    for root, dirs, files in os.walk(config_dir):
+        for f in files:
+            if f.endswith('.yaml') or f.endswith('.tafl'):
+                tafl_files.append(os.path.join(root, f))
     
     print('=' * 60)
     print('🔍 TAFL 檔案驗證測試')
@@ -39,8 +44,8 @@ def validate_tafl_files():
     errors_detail = []
     
     # 測試每個檔案
-    for i, filename in enumerate(sorted(tafl_files), 1):
-        filepath = os.path.join(migrated_dir, filename)
+    for i, filepath in enumerate(sorted(tafl_files), 1):
+        filename = os.path.basename(filepath)
         print(f'\n[{i}/{total_files}] 測試: {filename}')
         print('-' * 40)
         

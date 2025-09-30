@@ -44,7 +44,7 @@ show_git_tools_menu() {
     echo ""
     echo -e "${YELLOW}使用範例:${NC}"
     echo -e "  ${BLUE}source scripts/git-tools/git-tools.sh${NC}"
-    echo -e "  ${BLUE}commit-stage 'Flow Designer 修復' '修復節點連接問題'${NC}"
+    echo -e "  ${BLUE}commit-stage 'TAFL Editor 修復' '修復節點連接問題'${NC}"
     echo -e "  ${BLUE}commit-quick fix '修復小錯誤'${NC}"
     echo -e "  ${BLUE}show-commits 10${NC}"
     echo ""

@@ -438,7 +438,7 @@ check_service_health() {
         fi
         
         # API 健康檢查
-        if timeout 3 curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null | grep -q "200"; then
+        if timeout 3 curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/docs 2>/dev/null | grep -q "200"; then
             record_check "PASS" "API 服務健康"
         else
             record_check "WARN" "API 服務無響應"

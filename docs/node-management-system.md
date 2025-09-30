@@ -27,7 +27,7 @@ RosAGV 統一節點管理系統提供了三層架構的節點管理解決方案�
 
 ### 1. 節點註冊表 (`/app/config/node_registry.yaml`)
 
-- **本地節點定義**: web_api_launch, flow_wcs, ecs_core, rcs_core, db_proxy, kuka_fleet
+- **本地節點定義**: web_api_launch, tafl_wcs, ecs_core, rcs_core, db_proxy, kuka_fleet
 - **遠端 AGV 配置**: cargo02, loader02, unloader02
 - **節點群組管理**: all, web_services, core_services, integration
 - **系統服務**: zenoh_router, ssh_service
@@ -80,7 +80,7 @@ r node-status
 r node-start web_api_launch
 
 # 停止特定節點
-r node-stop flow_wcs
+r node-stop tafl_wcs
 
 # 重啟節點
 r node-restart ecs_core
@@ -102,7 +102,7 @@ agvc_source
 # 使用管理函數
 manage_all_nodes status      # 查看所有節點狀態
 manage_web_api_launch start  # 啟動 Web API
-manage_flow_wcs restart      # 重啟 Flow WCS
+manage_tafl_wcs restart      # 重啟 TAFL WCS
 manage_agv_launch cargo02 status  # 查看遠端 AGV
 ```
 
@@ -132,7 +132,7 @@ curl -X POST http://localhost:8000/api/nodes/group/web_services/start
   - web_api_server (Port 8000)
 
 ### 核心服務
-- **flow_wcs**: Flow WCS 倉儲控制系統
+- **tafl_wcs**: TAFL WCS 倉儲控制系統
 - **ecs_core**: ECS 設備控制核心
 - **rcs_core**: RCS 機器人控制系統
 - **db_proxy**: 資料庫代理服務

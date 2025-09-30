@@ -19,8 +19,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='yazelin@ching-tech.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='基於 FastAPI 的 Web API 閘道，支援 Socket.IO 即時通訊',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

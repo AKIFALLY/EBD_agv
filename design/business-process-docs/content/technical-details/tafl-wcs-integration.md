@@ -2,11 +2,11 @@
 
 ## 🎯 TAFL WCS 概述
 
-本文檔說明 RosAGV 的 TAFL WCS (Task Automation Flow Language - Warehouse Control System) 流程執行系統。這是基於 TAFL v1.1 語言的倉庫控制流程執行器，取代舊的 Linear Flow v2 系統，提供結構化的流程定義和自動執行能力。
+本文檔說明 RosAGV 的 TAFL WCS (Task Automation Flow Language - Warehouse Control System) 流程執行系統。這是基於 TAFL v1.1 語言的倉庫控制流程執行器，提供結構化的流程定義和自動執行能力。
 
 ## ⚠️ 重要說明
-- **現行系統**: `tafl_wcs_ws` - 基於 TAFL 語言的流程執行器
-- **已棄用**: `flow_wcs_ws_old` - Linear Flow v2 (僅供參考，不再維護)
+- **TAFL 核心**: `tafl_ws` - TAFL 語言核心實作（解析器、執行器、驗證器）
+- **現行系統**: `tafl_wcs_ws` - 基於 TAFL 語言的 WCS 流程執行器
 
 ## 📋 系統功能
 

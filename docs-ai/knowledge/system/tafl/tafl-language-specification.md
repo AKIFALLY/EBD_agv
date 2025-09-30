@@ -1,55 +1,55 @@
-# TAFL Language Specification v1.1.2 (Task Automation Flow Language)
+# TAFL配置規範 v1.1.2 (Task Automation Flow Configuration)
 
 ## 🎯 適用場景
-- 作為 Linear Flow v2 的替代方案
-- WCS/AGV 任務自動化流程控制
-- 簡化流程定義，提高可讀性和可維護性
-- 業務人員也能理解的技術語言
-- 高效能流程執行和資料預載
+- RosAGV 系統的任務流程配置
+- WCS/AGV 基礎流程自動化
+- 簡化重複性任務定義
+- 需要技術背景的YAML配置語法
+- 基礎的同步執行和狀態檢查
 
 ## 📋 TAFL v1.1.2 概述
 
-### 語言定位
-**TAFL (Task Automation Flow Language) v1.1.2** 是專為 WCS/AGV 系統設計的領域特定語言（DSL），採用 4-Phase 執行模型和 5-Level 變數作用域，實現高效能的任務自動化流程。
+### 配置定位
+**TAFL (Task Automation Flow Configuration) v1.1.2** 是基於YAML格式的任務配置規範，採用順序執行模式和基礎變數替換，實現簡化的任務定義和狀態檢查。
 
-### v1.1.2 設計哲學
-1. **最小語法集** - 只有必要的語法元素，降低學習成本
-2. **一致性** - 所有操作遵循相同的語法模式
-3. **可組合** - 小元素可組合成複雜邏輯
-4. **可擴充** - 容易添加新功能而不破壞現有語法
-5. **效能導向** - Preload 資料預載和規則最佳化
-6. **範圍明確** - 5-Level 變數作用域管理
+### v1.1.2 設計原則
+1. **基礎語法集** - 10個核心動詞，涵蓋基本資料庫操作
+2. **YAML一致性** - 遵循標準YAML語法規範
+3. **簡單組合** - 基礎if-then-else和迴圈結構
+4. **有限擴充** - 固定動詞集合，擴展性受限
+5. **穩定執行** - 同步執行避免記憶體問題
+6. **簡單變數** - 基礎的變數替換機制
 
-### v1.1.2 核心優勢
-- **簡單性**: 10個核心動詞涵蓋所有功能
-- **完整性**: 完全替代 Linear Flow v2 的所有功能
-- **可讀性**: 英文技術語法配合中文註解
-- **靈活性**: 支援複雜表達式和邏輯控制
-- **高效能**: 4-Phase 執行模型，資料預載最佳化
-- **作用域管理**: 5-Level 變數作用域，精確控制變數生命週期
+### v1.1.2 實際能力
+- **基礎性**: 10個核心動詞支援簡單資料庫操作
+- **獨立系統**: 專注於RosAGV任務配置需求
+- **YAML語法**: 標準YAML格式配置
+- **基礎邏輯**: 簡單的if-then-else和迴圈結構
+- **同步執行**: 順序執行模式，避免記憶體問題
+- **基礎變數**: 簡單的變數替換和作用域
 
 ## 🔧 語言規範
 
 ### 1. 核心動詞（10個）
 
-| 動詞 | 用途 | 範例 | 狀態 |
+| 動詞 | 用途 | 範例 | 實作狀態 |
 |------|------|------|------|
-| **query** | 查詢資料 | `query: locations` | ✅ 完整實作 |
-| **check** | 檢查條件（必須含 as） | `check: {condition: expr, as: var}` | ✅ 完整實作 |
-| **create** | 創建資源 | `create: task` | ✅ 完整實作 |
-| **update** | 更新資料 | `update: rack` | ✅ 完整實作 |
-| **if** | 條件判斷 | `if: ${condition}` | ✅ 完整實作 |
-| **for** | 迴圈處理 | `for: ${collection}` | ✅ 完整實作 |
-| **switch** | 多分支選擇 | `switch: ${expression}` | ✅ 完整實作 |
-| **set** | 設定變數 | `set: {count: 0}` | ✅ 完整實作 |
-| **stop** | 停止流程 | `stop: "reason"` | ✅ 完整實作 |
-| **notify** | 發送通知 | `notify: alarm` | ✅ 完整實作 |
+| **query** | 資料庫查詢 | `query: locations` | ✅ 基礎實作 |
+| **check** | 條件檢查（必須as參數） | `check: {condition: expr, as: var}` | ✅ 基礎實作 |
+| **create** | 資料庫創建 | `create: task` | ✅ 基礎實作 |
+| **update** | 資料庫更新 | `update: rack` | ✅ 基礎實作 |
+| **if** | 簡單條件判斷 | `if: ${condition}` | ✅ 基礎實作 |
+| **for** | 基礎迴圈 | `for: ${collection}` | ✅ 基礎實作 |
+| **switch** | 多分支選擇 | `switch: ${expression}` | ✅ 基礎實作 |
+| **set** | 變數設定 | `set: {count: 0}` | ✅ 基礎實作 |
+| **stop** | 流程停止 | `stop: "reason"` | ✅ 基礎實作 |
+| **notify** | 日誌輸出 | `notify: message` | ✅ 基礎實作 |
 
-**注意**: Parser 中包含 `log` 動詞識別（parser.py line 149），但執行器未實作對應處理函數。建議使用 `notify` 替代。
+**限制**: 所有動詞只支援基礎功能，複雜的進階特性尚未實作。`log` 動詞未實作，請使用 `notify` 替代。
 
 ### 2. TAFL v1.1.2 程式結構
 
-TAFL v1.1.2 採用 6 段式結構，支援 4-Phase 執行模型：
+TAFL v1.1.2 採用 6 段式結構，順序執行模式：
 
 ```yaml
 metadata:         # 可選：程式元資料
@@ -82,23 +82,23 @@ variables:        # Phase 3：變數初始化
 flow:            # Phase 4：主要流程執行
   - query:
       target: locations
-      store_as: locations
+      as: locations
   - set:
       task_count: "${task_count + 1}"
 ```
 
 #### 執行階段說明
-1. **Phase 1 (Preload)**: 資料預載和快取
-2. **Phase 2 (Rules)**: 規則定義和約束設定
-3. **Phase 3 (Variables)**: 變數初始化
-4. **Phase 4 (Flow)**: 主要邏輯執行
+1. **Preload**: 先行資料查詢和存储
+2. **Rules**: 全域規則參數定義
+3. **Variables**: 變數初始化
+4. **Flow**: 主流程順序執行
 
-#### 5-Level 變數作用域
-1. **Rules Scope**: 全域規則變數（唯讀）
-2. **Preload Scope**: 預載資料快取
-3. **Global Scope**: 全域變數
-4. **Flow Scope**: 流程範圍變數
-5. **Loop Scope**: 迴圈區域變數
+#### 變數作用域
+1. **Rules**: 全域規則參數（唯讀）
+2. **Preload**: 預載資料結果
+3. **Global**: 全域變數
+4. **Flow**: 流程變數
+5. **Loop**: 迴圈變數
 
 ### 3. 統一語法結構
 
@@ -122,7 +122,7 @@ query:
   target: locations
   where:
     room_id: "${room_id}"
-  store_as: locations
+  as: locations
 ```
 
 #### SET 標準格式（v1.1.2 統一規範）
@@ -203,65 +203,62 @@ index: ${array[0]}
 expression: ${a + b * 2}
 ```
 
-### 4. 表達式系統
+### 4. 變數替換系統
 
-#### 算術運算
+#### 基礎變數替換
 ```yaml
-${a + b}    # 加
-${a - b}    # 減
-${a * b}    # 乘
-${a / b}    # 除
-${a % b}    # 取餘
+${variable_name}     # 基礎變數
+${object.property}   # 屬性存取
+${array[0]}          # 陣列索引
 ```
 
-#### 邏輯運算
+#### 有限的數學運算
 ```yaml
-${a && b}   # 且
-${a || b}   # 或
-${!a}       # 非
+${a + b}    # 簡單加法
+${a - b}    # 簡單減法
+# 注意: 乘除和餘數運算可能不穩定
+```
+
+#### 基礎比較運算
+```yaml
 ${a == b}   # 等於
 ${a != b}   # 不等於
-${a > b}    # 大於
-${a < b}    # 小於
-${a >= b}   # 大於等於
-${a <= b}   # 小於等於
+# 注意: 複雜邏輯運算和集合運算可能不支援
 ```
 
-#### 集合運算
+#### 不支援的功能
 ```yaml
-${array.length}      # 長度
-${array[0]}          # 索引
-${array.first}       # 第一個
-${array.last}        # 最後一個
-${object.property}   # 屬性
-${object["key"]}     # 動態屬性
+# 以下功能尚未實作，請勿使用
+${a && b}, ${a || b}, ${!a}    # 複雜邏輯
+${a > b}, ${a < b}, ${a >= b}  # 大小比較
+${array.length}, ${array.first} # 陣列屬性
 ```
 
-### 5. 內建函數
+### 5. 實際可用功能
 
+**目前實作的功能**:
 ```yaml
-# 檢查函數
-empty(collection)     # 檢查是否為空
-exists(value)        # 檢查是否存在
-valid(expression)    # 檢查是否有效
+# 基礎變數操作
+${variable_name}     # 變數替換
+${object.property}   # 屬性存取
+${array[index]}      # 陣列索引
 
-# 計數函數
-count(collection)    # 計算數量
-sum(numbers)         # 求和
-avg(numbers)         # 平均值
-max(numbers)         # 最大值
-min(numbers)         # 最小值
+# 基礎數學運算 (限定支援)
+${a + b}             # 簡單加法
+${a - b}             # 簡單減法
 
-# 字串函數
-concat(str1, str2)   # 串接
-upper(str)           # 大寫
-lower(str)           # 小寫
-trim(str)            # 去除空白
+# 邏輯比較
+${a == b}            # 等於比較
+${a != b}            # 不等於比較
+```
 
-# 時間函數
-now()                # 當前時間
-today()              # 今天日期
-timestamp()          # 時間戳記
+**尚未實作的功能** (切勿使用):
+```yaml
+# 以下函數都不存在，請勿使用
+empty(), exists(), valid()
+count(), sum(), avg(), max(), min()
+concat(), upper(), lower(), trim()
+now(), today(), timestamp()
 ```
 
 ## 📝 語法詳解
@@ -284,7 +281,7 @@ timestamp()          # 時間戳記
 - query: tasks
   where:
     priority: > 5
-    created_at: < ${now() - 3600}
+    status: pending
   order: priority desc
   limit: 10
   as: urgent_tasks
@@ -351,13 +348,13 @@ timestamp()          # 時間戳記
     id: ${rack.id}
   set:
     status: "processing"
-    updated_at: ${now()}
+    side_completed: true
 
 # 批量更新
 - update: tasks
   where:
     status: "pending"
-    created_at: < ${now() - 7200}
+    priority: < 5
   set:
     priority: ${priority + 1}
     escalated: true
@@ -643,217 +640,70 @@ flow:
               message: "Successfully created ${total_tasks_created} rotation tasks"
 ```
 
-### 範例 2: AGV 智能派車
+
+### 範例 2: 真實的Rack狀態檢查
+
+基於實際業務場景的簡單範例：
 
 ```yaml
-name: "Smart AGV Dispatch"
-version: "TAFL-v4"
+metadata:
+  id: "rack_status_check"
+  name: "房間入口架台狀態檢查"
+  enabled: true
 
-config:
-  max_queue_size: 10
-  dispatch_interval: 60
-  battery_threshold: 30
-  priority_levels:
-    urgent: 8
-    normal: 5
-    low: 2
+settings:
+  execution_interval: 10
 
-flow:
-  # 查詢待處理任務
-  - query: tasks
-    where:
-      status: "pending"
-    order: priority desc, created_at asc
-    limit: ${config.max_queue_size}
-    as: pending_tasks
-  
-  # 檢查是否有任務
-  - if: empty(${pending_tasks})
-    then:
-      - stop: "No pending tasks"
-  
-  # 查詢可用AGV
-  - query: agvs
-    where:
-      status: "idle"
-      battery: > ${config.battery_threshold}
-    order: battery desc
-    as: available_agvs
-  
-  # 檢查是否有可用AGV
-  - if: empty(${available_agvs})
-    then:
-      - notify: alarm
-        message: "No available AGVs!"
-      - stop: "Cannot dispatch - no AGVs"
-  
-  # 智能分配任務
-  - for: ${pending_tasks}
-    as: task
-    do:
-      # 檢查是否還有可用AGV
-      - if: empty(${available_agvs})
-        then:
-          - notify: warning
-            message: "No more AGVs for task ${task.id}"
-          - set:
-              no_agvs_available: true  # 設置旗標以處理無AGV情況
-      
-      # 根據任務優先級選擇派車策略
-      - switch:
-          expression: ${task.priority}
-          cases:
-            - when: ">= ${config.priority_levels.urgent}"
-              do:
-                # 緊急任務：選最近的AGV
-                - set:
-                    selected_agv: find_nearest(${available_agvs}, ${task.location})
-                - set:
-                    dispatch_type: "express"
-            
-            - when: ">= ${config.priority_levels.normal}"
-              do:
-                # 普通任務：選電量最高的AGV
-                - set:
-                    selected_agv: "${available_agvs[0]}"
-                - set:
-                    dispatch_type: "standard"
-            
-            - when: "default"
-              do:
-                # 低優先級：選最遠的AGV（平衡使用）
-                - set:
-                    selected_agv: find_farthest(${available_agvs}, ${task.location})
-                - set:
-                    dispatch_type: "economy"
-      
-      # 創建派車指令
-      - create: dispatch
-        with:
-          task_id: ${task.id}
-          agv_id: ${selected_agv.id}
-          type: ${dispatch_type}
-          pickup: ${task.pickup_location}
-          dropoff: ${task.dropoff_location}
-          priority: ${task.priority}
-          estimated_time: calculate_time(${selected_agv.location}, ${task.location})
-        as: dispatch_order
-      
-      # 更新AGV狀態
-      - update: agv
-        where:
-          id: ${selected_agv.id}
-        set:
-          status: "dispatched"
-          current_task: ${task.id}
-          dispatch_time: ${now()}
-      
-      # 更新任務狀態
-      - update: task
-        where:
-          id: ${task.id}
-        set:
-          status: "assigned"
-          assigned_agv: ${selected_agv.id}
-          dispatch_id: ${dispatch_order.id}
-      
-      # 從可用列表移除
-      - set:
-          available_agvs: "${available_agvs.filter(a => a.id != selected_agv.id)}"
-      
-      # 發送通知
-      - notify: info
-        message: "Dispatched ${selected_agv.name} to task ${task.id} (${dispatch_type})"
-```
-
-### 範例 3: 異常處理與恢復
-
-```yaml
-name: "Error Handling and Recovery"
-version: "TAFL-v4"
-
-config:
-  max_retries: 3
-  timeout_seconds: 300
-  recovery_delay: 30
+variables:
+  work_id: 220001
+  priority: 5
 
 flow:
-  # 查詢異常任務
+  # 查詢房間入口位置
   - query:
-      target: tasks
+      target: locations
       where:
-        status: "error"
-      as: error_tasks
+        type: "room_inlet"
+      as: inlet_locations
 
-  # 處理每個異常任務
+  # 檢查每個位置
   - for:
-      in: "${error_tasks}"
-      as: task
+      in: "${inlet_locations}"
+      as: location
       do:
-        # 分析錯誤類型
-        - switch:
-              expression: ${task.error_type}
-              cases:
-                - when: "timeout"
-                  do:
-                    # 超時處理
-                    - if: ${now() - task.started_at > config.timeout_seconds}
-                      then:
-                        # 重新分配
-                        - update: task
-                          set:
-                            status: "pending"
-                            retries: ${task.retries + 1}
-                        - notify: warning
-                          message: "Task ${task.id} timeout - retry ${task.retries + 1}"
-                
-                - when: "agv_error"
-                  do:
-                    # AGV故障處理
-                    - query: agvs
-                      where:
-                        id: ${task.assigned_agv}
-                      as: problem_agv
-                    
-                    - update: agv
-                      where:
-                        id: ${problem_agv.id}
-                      set:
-                        status: "maintenance"
-                    
-                    # 重新派車
-                    - update: task
-                      set:
-                        status: "pending"
-                        assigned_agv: null
-                    
-                    - notify: alarm
-                      message: "AGV ${problem_agv.name} error - task reassigned"
-                
-                - when: "location_blocked"
-                  do:
-                    # 位置阻塞處理
-                    # 注意: TAFL v1.1.2 不支援 wait 動詞
+        # 查詢該位置的架台
+        - query:
+            target: racks
+            where:
+              location_id: "${location.id}"
+            as: location_racks
+
+        # 如果有架台，檢查狀態
+        - if:
+            condition: "${location_racks}"
+            then:
+              - set:
+                  rack: "${location_racks[0]}"
+
+              # 簡單的狀態檢查
+              - if:
+                  condition: "${rack.status_id == 2}"
+                  then:
+                    # 創建基礎任務
+                    - create:
+                        target: task
+                        with:
+                          work_id: "${work_id}"
+                          rack_id: "${rack.id}"
+                          priority: "${priority}"
+                          status_id: 1
+                        as: new_task
+
                     - notify:
-                        level: warning
-                        message: "Location blocked, retrying task"
-                    - update: task
-                      set:
-                        status: "pending"
-                        retries: ${task.retries + 1}
-                
-                - default:
-                  do:
-                    # 未知錯誤
-                    - notify: alarm
-                      message: "Unknown error for task ${task.id}: ${task.error_message}"
-                    - if: ${task.retries >= config.max_retries}
-                      then:
-                        - update: task
-                          set:
-                            status: "failed"
-                        - notify: alarm
-                          message: "Task ${task.id} permanently failed"
+                        message: "已創建任務 ${new_task.id}"
+            else:
+              - notify:
+                  message: "位置 ${location.id} 無架台"
 ```
 
 ## 🔄 版本相容性說明
@@ -889,18 +739,56 @@ flow:
 - Default 處理：獨立欄位 → 特殊 case
 - 條件支援：僅精確匹配 → 支援條件表達式
 
-## 🔄 與 Linear Flow v2 的對照
 
-| Linear Flow v2 | TAFL v4 | 改進 |
-|----------------|---------|------|
-| `exec: "query.locations"`<br>`params: {...}`<br>`store: "var"` | `query: locations`<br>`where: {...}`<br>`as: var` | 語法簡化 60% |
-| `exec: "check.empty"`<br>`params: {...}`<br>`skip_if: "!${var}"` | `if: empty(${var})` | 更直覺 |
-| `exec: "task.create_task"`<br>`params: {...}` | `create: task`<br>`with: {...}` | 統一結構 |
-| `exec: "foreach"`<br>`params: {...}` | `for: ${items}`<br>`as: item`<br>`do: ...` | 更自然 |
-| `exec: "control.stop_flow"` | `stop: "reason"` | 直接明瞭 |
-| `exec: "action.send_notification"` | `notify: type` | 簡潔 |
+### 範例 3: 基礎任務狀態更新
 
-## 🚀 實作計劃
+另一個真實業務場景範例：
+
+```yaml
+metadata:
+  id: "task_status_update"
+  name: "任務狀態更新檢查"
+  enabled: false
+
+variables:
+  max_tasks: 5
+
+flow:
+  # 查詢進行中的任務
+  - query:
+      target: tasks
+      where:
+        status_id: 2
+      limit: "${max_tasks}"
+      as: active_tasks
+
+  # 處理每個任務
+  - for:
+      in: "${active_tasks}"
+      as: task
+      do:
+        # 簡單的完成檢查
+        - if:
+            condition: "${task.updated_at}"
+            then:
+              - update:
+                  target: task
+                  where:
+                    id: "${task.id}"
+                  set:
+                    status_id: 3
+
+              - notify:
+                  message: "任務 ${task.id} 已更新"
+```
+
+**證明該範例的實用性**：
+- 只使用已實作的動詞和功能
+- 基於真實的資料庫結構
+- 可以直接在系統中執行
+- 避免使用不存在的函數和特性
+
+## 🚀 實作狀態
 
 ### 第一階段：核心解析器（Week 1-2）
 1. 創建 TAFL 語法解析器
@@ -914,33 +802,33 @@ flow:
 3. 錯誤處理機制
 4. 效能優化
 
-### 第三階段：相容層（Week 5-6）
-1. v2 到 TAFL 自動轉換器
-2. TAFL 到 v2 的降級轉換
-3. 雙向相容測試
+### 第三階段：工具整合（Week 5-6）
+1. TAFL Editor 界面增強
+2. 驗證工具完善
+3. 錯誤提示優化
 
 ### 第四階段：工具支援（Week 7-8）
-1. Linear Flow Designer 支援
-2. 語法高亮和自動完成
-3. 測試框架
-4. 文檔生成器
+1. 語法高亮和自動完成
+2. 測試框架擴展
+3. 文檔生成器
+4. 效能監控工具
 
-## 📊 預期效益
+## 📊 實際現況
 
-### 開發效率提升
-- **代碼量減少**: 平均減少 40-60%
-- **開發時間**: 縮短 30-50%
-- **錯誤率**: 降低 50%
+### 開發現況
+- **學習成本**: 需要掌握YAML語法和10個動詞規則
+- **適用範圍**: 主要用於簡單的資料庫操作流程
+- **技術依賴**: 需要技術背景進行配置和維護
 
-### 維護性改善
-- **可讀性**: 業務人員也能理解
-- **修改成本**: 降低 60%
-- **測試覆蓋**: 更容易達到 90%+
+### 功能限制
+- **基礎功能**: 僅支援10個核心動詞的基本操作
+- **語法限制**: 複雜邏輯需要多個步驟組合實現
+- **擴展性**: 新功能需要修改核心執行引擎
 
-### 系統效能
-- **解析速度**: 提升 2-3 倍
-- **執行效率**: 提升 30%
-- **記憶體使用**: 減少 40%
+### 系統狀況
+- **執行模式**: 同步執行避免記憶體洩漏問題
+- **穩定性**: 基本功能運作穩定
+- **維護需求**: 需要持續維護和功能擴展
 
 ## 💡 最佳實踐
 
@@ -962,10 +850,10 @@ flow:
 ## 🚀 實作狀態與發現
 
 ### 已實作功能
-- ✅ 完整的解析器 (Parser) - AST 架構
-- ✅ 執行引擎 (Executor) - 異步執行
-- ✅ 驗證器 (Validator) - 基本型別檢查
-- ✅ 10個核心動詞完整支援
+- ✅ 基礎YAML解析器 - 支援TAFL格式
+- ✅ 同步執行器 - 順序執行模式
+- ✅ 基本格式驗證 - 語法檢查
+- ✅ 10個核心動詞基礎支援
 - ✅ 變數插值系統 (`${}`)
 - ✅ 迴圈變數作用域隔離
 - ✅ 兩種語法格式支援（簡化與結構化）
@@ -983,7 +871,7 @@ flow:
 - ✅ **多變數 Set 語句**: `set: {var1: value1, var2: value2}`
 - ✅ **通用 Notify 函數**: 支援 generic notify 功能
 - ✅ **增強 For 迴圈**: 支援 filter 和改良作用域
-- ✅ **Preload 資料預載**: 效能最佳化快取系統
+- ✅ **Preload 資料預載**: 基礎資料預載機制
 - ✅ **Rules 規則定義**: 全域規則和約束管理
 
 ### 待實作功能
@@ -993,11 +881,11 @@ flow:
 - ⏳ 外部函數註冊系統完整整合
 
 ### 實作狀態
-- **當前版本**: TAFL v1.1 完整實作
+- **當前版本**: TAFL v1.1 基礎功能實作
 - **實作程式碼**: `/home/ct/RosAGV/app/tafl_ws/`
-- **完整文檔**: `/home/ct/RosAGV/app/tafl_ws/docs/`
-- **測試狀態**: 所有核心功能測試通過
-- **驗證工具**: `r tafl-validate` 支援 v1.1 驗證
+- **文檔位置**: `/home/ct/RosAGV/app/tafl_ws/docs/`
+- **測試狀態**: 基本功能可運行，部分高級功能待完善
+- **驗證工具**: `r tafl-validate` 支援基礎格式驗證
 
 ## 🔄 遷移指南
 
@@ -1035,7 +923,10 @@ set:
 4. 多變數設定語法保持不變
 
 ## 🔗 相關文檔
-- TAFL 實作計畫: docs-ai/knowledge/system/tafl/tafl-implementation-plan.md
+- TAFL 開發歷史: docs-ai/knowledge/system/tafl/tafl-development-history.md
+- TAFL 使用者指南: docs-ai/knowledge/system/tafl/tafl-user-guide.md
+- TAFL API 參考: docs-ai/knowledge/system/tafl/tafl-api-reference.md
+- TAFL 編輯器規格: docs-ai/knowledge/system/tafl/tafl-editor-specification.md
 
 ## 📅 版本記錄
 - **2025-09-10**: TAFL v1.1.2 SET 語法標準化
@@ -1047,13 +938,13 @@ set:
     - 新格式: `set: {task_status: "completed"}`
     - 多變數格式保持不變
 - **2025-08-21**: TAFL v1.1 語言規範完成，包含：
-  - 4-Phase 執行模型實作
-  - 5-Level 變數作用域系統
-  - 增強表達式解析器（修復數學運算）
-  - Preload 和 Rules 段支援
-  - 多變數 Set 語句
-  - 通用 Notify 功能
+  - 4階段執行流程（settings, preload, rules, variables, flow）
+  - 5層變數作用域管理（rules, preload, global, flow, loop）
+  - 基礎數學運算修復（加減法）
+  - Preload 和 Rules 段基礎支援
+  - 多變數 Set 語句格式
+  - 基礎 Notify 日誌功能
 - **2025-08-21**: TAFL v1.0 語言規範正式發布
 - **2025-08-21**: 根據實作經驗更新規格，加入雙語法格式支援說明
 - **設計者**: Claude AI Assistant + 人類夥伴
-- **狀態**: 作為 Linear Flow v2 的官方替代方案
+- **狀態**: RosAGV系統的獨立任務配置方案

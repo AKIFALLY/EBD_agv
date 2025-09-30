@@ -3,10 +3,11 @@ import asyncio
 import uvicorn
 import socketio
 import json
+from datetime import datetime
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 try:
     from agvui.agv_ui_socket import AgvUiSocket
@@ -93,6 +94,40 @@ class AgvUiServer:
             self.local_agv_id = None
     
     def _register_routes(self):
+        @self.app.get("/health")
+        async def health_check():
+            """健康檢查端點"""
+            overall_status = "healthy"
+            http_status_code = 200
+            health_details = {
+                "service": "agvui",
+                "port": 8003,
+                "timestamp": datetime.now().isoformat(),
+                "local_agv_id": self.local_agv_id,
+                "container_type": self.container_type
+            }
+
+            try:
+                # AGV UI 通常不需要資料庫連接
+                # 但可以檢查 ROS 節點狀態或其他組件
+
+                health_details["status"] = overall_status
+
+                return JSONResponse(
+                    status_code=http_status_code,
+                    content=health_details
+                )
+
+            except Exception as e:
+                # 發生未預期的錯誤時，回傳 503 Service Unavailable
+                health_details["status"] = "unhealthy"
+                health_details["error"] = str(e)
+
+                return JSONResponse(
+                    status_code=503,
+                    content=health_details
+                )
+
         @self.app.get("/", response_class=HTMLResponse)
         async def home(request: Request):
             # 支援 URL 參數覆寫 AGV ID (測試用)

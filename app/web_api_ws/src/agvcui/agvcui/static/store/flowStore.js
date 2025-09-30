@@ -1,5 +1,5 @@
 /**
- * FlowStore - Linear Flow Designer 專用資料儲存
+ * FlowStore - TAFL Editor 專用資料儲存
  * 基於 miniStore 提供進階功能
  */
 
@@ -29,7 +29,7 @@ class FlowStore {
         };
         
         // 使用 miniStore 作為底層儲存
-        this.baseStore = createStore('linearFlowDesigner', defaultFlow);
+        this.baseStore = createStore('taflEditor', defaultFlow);
         
         // 計算屬性快取
         this.computed = {

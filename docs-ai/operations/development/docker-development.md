@@ -121,25 +121,25 @@ echo $PYTHONPATH
 
 ### 標準開發流程
 ```bash
-# 1. 進入容器
+# [宿主機] 1. 進入容器
 agvc_enter             # 或 agv_enter
 
-# 2. 載入工作空間
+# [容器內] 2. 載入工作空間
 all_source
 
-# 3. 檢查環境
+# [容器內] 3. 檢查環境
 check_system_status    # 整體系統狀態
 check_ros_env          # ROS 2 環境驗證
 
-# 4. 開發工作
+# [容器內] 4. 開發工作
 cd /app/workspace/src/your_package
 # 進行程式碼修改
 
-# 5. 建置測試
+# [容器內] 5. 建置測試
 colcon build --packages-select your_package
 ros2 run your_package your_node
 
-# 6. 測試驗證
+# [容器內] 6. 測試驗證
 ros2 topic list
 ros2 node list
 ```
@@ -147,22 +147,28 @@ ros2 node list
 ### 跨容器開發
 ```bash
 # 在 AGV 容器中開發車載功能
+# [宿主機] 進入 AGV 容器
 agv_enter
+# [容器內] 載入環境
 all_source
+# [容器內] 進入開發目錄
 cd /app/workspace/src/agv_base
 # 開發 AGV 狀態機邏輯
 
 # 在 AGVC 容器中開發管理功能
+# [宿主機] 進入 AGVC 容器
 agvc_enter
+# [容器內] 載入環境
 all_source
+# [容器內] 進入開發目錄
 cd /app/workspace/src/web_api
 # 開發 Web API 功能
 
 # 測試跨容器通訊
-# 在一個容器中發布主題
+# [容器內] 在一個容器中發布主題
 ros2 topic pub /test_topic std_msgs/String "data: 'Hello'"
 
-# 在另一個容器中訂閱
+# [容器內] 在另一個容器中訂閱
 ros2 topic echo /test_topic
 ```
 
@@ -170,22 +176,24 @@ ros2 topic echo /test_topic
 
 ### 統一工具 (r 命令)
 ```bash
-# 在容器內也可以使用統一工具
+# [容器內] 在容器內也可以使用統一工具
 r dev-build            # 快速建置
 r dev-test             # 快速測試
 r dev-check            # 代碼檢查
 
 # 注意：某些工具需要在容器內執行
+# [宿主機] 系統狀態工具
 r dev-status           # 在宿主機執行
+# [容器內] 建置工具
 r dev-build            # 在容器內執行
 ```
 
 ### 專業開發工具
 ```bash
-# 載入開發工具集
+# [容器內] 載入開發工具集
 source scripts/dev-tools/dev-tools.sh
 
-# 使用專業工具
+# [容器內] 使用專業工具
 dev_build              # 智能建置
 dev_test               # 執行測試
 dev_check_style        # 代碼風格檢查
@@ -194,13 +202,13 @@ dev_check_lint         # 靜態分析
 
 ### 容器內診斷工具
 ```bash
-# 系統狀態檢查
+# [容器內] 系統狀態檢查
 check_system_status    # 整體系統狀態
 check_zenoh_status     # Zenoh 通訊狀態
 check_ros_env          # ROS 2 環境驗證
 check_agvc_status      # AGVC 系統狀態 (僅 AGVC 容器)
 
-# 網路診斷
+# [容器內] 網路診斷
 ping 192.168.100.254   # 測試資料庫連接 (AGVC 容器)
 telnet localhost 7447  # 測試 Zenoh Router
 ```
@@ -223,10 +231,10 @@ telnet localhost 7447  # 測試 Zenoh Router
 
 ### 檔案權限和掛載
 ```bash
-# 檢查檔案權限
+# [容器內] 檢查檔案權限
 ls -la /app/workspace/src/
 
-# 檢查掛載點
+# [容器內] 檢查掛載點
 mount | rg /app
 
 # 同步檔案變更 (自動同步)
@@ -237,48 +245,48 @@ mount | rg /app
 
 ### 容器內除錯
 ```bash
-# ROS 2 除錯
+# [容器內] ROS 2 除錯
 ros2 node list
 ros2 topic list
 ros2 service list
 
-# 查看節點資訊
+# [容器內] 查看節點資訊
 ros2 node info /node_name
 
-# 查看主題資料
+# [容器內] 查看主題資料
 ros2 topic echo /topic_name
 
-# 查看服務介面
+# [容器內] 查看服務介面
 ros2 service type /service_name
 ```
 
 ### 日誌查看
 ```bash
-# ROS 2 日誌
+# [容器內] ROS 2 日誌
 ros2 log list
 ros2 log view
 
-# 系統日誌
+# [容器內] 系統日誌
 tail -f /tmp/agv.log
 tail -f /tmp/zenoh_router.log
 
-# 建置日誌
+# [容器內] 建置日誌
 cat /app/workspace/log/latest_build/events.log
 ```
 
 ### 效能監控
 ```bash
-# 系統資源
+# [容器內] 系統資源
 top
 htop
 free -h
 df -h
 
-# ROS 2 效能
+# [容器內] ROS 2 效能
 ros2 topic hz /topic_name
 ros2 topic bw /topic_name
 
-# 網路效能  
+# [容器內] 網路效能
 iftop
 netstat -i                  # 網路介面統計 (ss 無法替代此功能)
 ```
@@ -356,10 +364,10 @@ bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop 
 
 ### 依賴管理
 ```bash
-# 檢查依賴
+# [容器內] 檢查依賴
 rosdep check --from-paths src --ignore-src -r
 
-# 安裝依賴
+# [容器內] 安裝依賴
 rosdep install --from-paths src --ignore-src -r -y
 
 # 更新 package.xml
@@ -368,12 +376,12 @@ rosdep install --from-paths src --ignore-src -r -y
 
 ### 版本控制
 ```bash
-# 在容器內使用 Git
+# [容器內] 在容器內使用 Git
 git status
 git add .
 git commit -m "feat: 新增功能"
 
-# 注意：Git 配置在容器內可能需要重新設定
+# [容器內] 注意：Git 配置在容器內可能需要重新設定
 git config --global user.name "Your Name"
 git config --global user.email "your.email@example.com"
 ```
@@ -383,16 +391,16 @@ git config --global user.email "your.email@example.com"
 ### 環境問題
 ```bash
 # 問題：ROS 2 環境未載入
-# 解決：重新載入工作空間
+# [容器內] 解決：重新載入工作空間
 all_source
 
 # 問題：Python 套件找不到
-# 解決：檢查虛擬環境
+# [容器內] 解決：檢查虛擬環境
 echo $PYTHONPATH
 /opt/pyvenv_env/bin/pip3 list
 
 # 問題：建置失敗
-# 解決：清理建置目錄
+# [容器內] 解決：清理建置目錄
 rm -rf /app/workspace/build /app/workspace/install
 colcon build
 ```
@@ -400,12 +408,12 @@ colcon build
 ### 通訊問題
 ```bash
 # 問題：跨容器通訊失敗
-# 解決：檢查 Zenoh Router
+# [容器內] 解決：檢查 Zenoh Router
 check_zenoh_status
 ps aux | rg zenoh
 
 # 問題：主題無法發現
-# 解決：重啟 ROS 2 daemon
+# [容器內] 解決：重啟 ROS 2 daemon
 ros2 daemon stop
 ros2 daemon start
 ```
@@ -413,12 +421,13 @@ ros2 daemon start
 ### 效能問題
 ```bash
 # 問題：建置速度慢
-# 解決：使用並行建置
+# [容器內] 解決：使用並行建置
 colcon build --parallel-workers 4
 
 # 問題：記憶體不足
-# 解決：檢查系統資源
+# [容器內] 解決：檢查系統資源
 free -h
+# [宿主機] 檢查 Docker 容器資源
 docker stats
 ```
 

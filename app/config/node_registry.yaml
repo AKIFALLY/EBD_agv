@@ -169,7 +169,6 @@ node_groups:
       - ssh
       - db_proxy
       - web_api_launch
-      - flow_wcs
       - ecs_core
       - rcs_core
       - kuka_fleet
@@ -187,7 +186,6 @@ node_groups:
     nodes:
       - zenoh
       - db_proxy
-      - flow_wcs
       - ecs_core
       - rcs_core
       

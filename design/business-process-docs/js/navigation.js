@@ -219,11 +219,17 @@ class NavigationManager {
                             file: 'technical-details/performance-optimization.md',
                             description: '系統效能最佳化'
                         },
-                        { 
-                            id: 'monitoring-setup', 
-                            title: '監控系統配置', 
+                        {
+                            id: 'monitoring-setup',
+                            title: '監控系統配置',
                             file: 'technical-details/monitoring-setup.md',
                             description: '完整監控和告警設定'
+                        },
+                        {
+                            id: 'bash-command-reference',
+                            title: 'Bash 命令使用手冊',
+                            file: 'technical-details/bash-command-reference.md',
+                            description: '檔案描述符、重定向、管道與 RosAGV 命令參考'
                         }
                     ]
                 }
@@ -316,6 +322,33 @@ class NavigationManager {
     }
 
     /**
+     * 檢查是否為文檔內錨點
+     */
+    isDocumentAnchor(hash) {
+        // 錨點識別正則表達式
+        // 匹配以下格式：
+        // - 數字開頭: "1-檔案描述符與重定向"
+        // - 中文字符開頭: "檔案描述符與重定向"
+        // - 包含中文的複合錨點: "rosagv-核心命令集"
+        // - 常見錨點模式: 不包含 "/" 路徑分隔符
+        const anchorPattern = /^(\d+[-_]|.*[\u4e00-\u9fff].*|[^\/]*[-_][^\/]*[^\/]*|快速參考|常見問題|進階技巧)$/;
+
+        // 檔案路徑會包含斜線或 .md 後綴，錨點通常不會
+
+        // 如果不包含 "/" 且匹配錨點模式，很可能是文檔內錨點
+        if (!hash.includes('/') && anchorPattern.test(hash)) {
+            return true;
+        }
+
+        // 特別處理：明確的錨點格式
+        if (hash.match(/^\d+[-_][\u4e00-\u9fff]/)) {
+            return true; // 數字-中文 格式，如 "1-檔案描述符"
+        }
+
+        return false;
+    }
+
+    /**
      * 處理路由變化
      */
     async handleRouteChange() {
@@ -327,6 +360,14 @@ class NavigationManager {
         // 處理 AI 知識庫路由
         if (hash === 'ai-knowledge') {
             this.switchTab('ai-knowledge');
+            return;
+        }
+
+        // 檢查是否為文檔內錨點
+        if (this.isDocumentAnchor(hash)) {
+            console.log(`檢測到文檔內錨點: ${hash}，跳過路由處理`);
+            // 讓瀏覽器自然處理錨點跳轉
+            this.scrollToAnchor(hash);
             return;
         }
 
@@ -344,6 +385,80 @@ class NavigationManager {
         }
 
         this.updateActiveNavigation();
+    }
+
+    /**
+     * 滾動到指定錨點（帶平滑動畫）
+     */
+    scrollToAnchor(hash) {
+        try {
+            // 解碼 URL 編碼的錨點
+            const decodedHash = decodeURIComponent(hash);
+
+            // 嘗試直接找到元素
+            let target = document.getElementById(decodedHash);
+
+            // 如果找不到，嘗試其他可能的 ID 格式
+            if (!target) {
+                // 嘗試原始 hash
+                target = document.getElementById(hash);
+            }
+
+            // 如果還是找不到，嘗試通過標題文本和多種 ID 格式查找
+            if (!target) {
+                const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                for (const heading of headings) {
+                    // 提取標題文本進行比對
+                    const headingText = heading.textContent.trim();
+
+                    // 多種匹配策略
+                    const matches = [
+                        // 完全匹配
+                        heading.id === decodedHash,
+                        heading.id === hash,
+                        // 文本內容匹配（移除數字前綴）
+                        headingText.includes(decodedHash.replace(/^\d+[-_]/, '')),
+                        // 特殊處理 RosAGV 核心命令集
+                        decodedHash.includes('rosagv-核心命令集') && headingText.includes('RosAGV 核心命令集'),
+                        // 處理中文標點符號差異
+                        headingText.replace(/[。，；：！？]/g, '').includes(decodedHash.replace(/^\d+[-_]/, '').replace(/[-_]/g, ' ')),
+                        // 數字章節匹配
+                        decodedHash.match(/^(\d+)/) && headingText.startsWith(decodedHash.match(/^(\d+)/)[1] + '.')
+                    ];
+
+                    if (matches.some(match => match)) {
+                        target = heading;
+                        console.log(`通過匹配策略找到目標: ${headingText}`);
+                        break;
+                    }
+                }
+            }
+
+            if (target) {
+                // 平滑滾動到目標元素
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                    inline: 'nearest'
+                });
+
+                // 添加高亮效果
+                target.classList.add('highlight-anchor');
+                setTimeout(() => {
+                    target.classList.remove('highlight-anchor');
+                }, 2000);
+
+                console.log(`成功滾動到錨點: ${hash}`);
+            } else {
+                console.warn(`找不到錨點元素: ${hash}`);
+                // 如果找不到錨點，讓瀏覽器自然處理
+                window.location.hash = hash;
+            }
+        } catch (error) {
+            console.error('錨點滾動失敗:', error);
+            // 降級到瀏覽器原生行為
+            window.location.hash = hash;
+        }
     }
 
     /**

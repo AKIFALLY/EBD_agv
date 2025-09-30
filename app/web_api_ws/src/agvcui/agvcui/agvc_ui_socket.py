@@ -34,7 +34,7 @@ class AgvcUiSocket:
         self.sio.on('user_login')(self.user_login)
         self.sio.on('user_logout')(self.user_logout)
         
-        # Flow Designer 事件
+        # TAFL Editor 事件
         self.sio.on('flow_save')(self.flow_save)
         self.sio.on('flow_load')(self.flow_load)
         self.sio.on('flow_validate')(self.flow_validate)
@@ -127,7 +127,7 @@ class AgvcUiSocket:
 
     async def flow_save(self, sid, data):
         """處理流程保存事件"""
-        print(f"💾 Flow Designer 保存請求 (sid: {sid}): {data.get('name', 'Unknown')}")
+        print(f"💾 TAFL Editor 保存請求 (sid: {sid}): {data.get('name', 'Unknown')}")
         
         # 這裡可以添加保存邏輯，或者只是廣播事件
         await self.sio.emit('flow_saved', {
@@ -142,7 +142,7 @@ class AgvcUiSocket:
 
     async def flow_load(self, sid, data):
         """處理流程載入事件"""
-        print(f"📂 Flow Designer 載入請求 (sid: {sid}): {data.get('name', 'Unknown')}")
+        print(f"📂 TAFL Editor 載入請求 (sid: {sid}): {data.get('name', 'Unknown')}")
         
         await self.sio.emit('flow_loaded', {
             'name': data.get('name', 'Unknown'),
@@ -156,7 +156,7 @@ class AgvcUiSocket:
 
     async def flow_validate(self, sid, data):
         """處理流程驗證事件"""
-        print(f"✅ Flow Designer 驗證請求 (sid: {sid})")
+        print(f"✅ TAFL Editor 驗證請求 (sid: {sid})")
         
         # Simple validation logic - can be enhanced
         valid = True

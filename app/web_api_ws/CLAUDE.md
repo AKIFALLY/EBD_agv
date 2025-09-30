@@ -21,7 +21,6 @@
 
 # 設備授權和權限管理
 @docs-ai/knowledge/agv-domain/license-table-design.md      # 授權表設計
-@docs-ai/operations/guides/device-authorization-guide.md   # 設備授權操作
 
 ## 📋 模組概述
 
@@ -43,24 +42,36 @@ src/
 │   │   ├── plc.py       # PLC 控制 API
 │   │   ├── door.py      # 門控系統 API
 │   │   ├── traffic.py   # 交通管制 API
-│   │   └── map_importer.py # 地圖匯入 API
-│   ├── api_server.py     # FastAPI 主伺服器
-│   └── tests/           # API 測試套件
+│   │   ├── map_importer.py # 地圖匯入 API
+│   │   └── nodes.py     # ROS 2 節點管理 API (統一控制)
+│   └── api_server.py     # FastAPI 主伺服器
 ├── agvcui/              # 🖥️ 車隊管理系統 (Port 8001)
 │   ├── database/        # 資料库操作層 (完整 CRUD)
 │   ├── routers/         # 完整 API 路由系統
+│   │   ├── tafl_editor.py # TAFL 編輯器 API (路由: /tafl/editor)
+│   │   ├── tafl_editor_direct.py # TAFL 直接編輯 API
+│   │   └── ...          # 其他路由器 (agvs, tasks, racks 等)
 │   ├── static/          # 前端靜態資源
 │   ├── templates/       # Jinja2 模板
 │   ├── agvc_ui_server.py # FastAPI 主伺服器
 │   └── agvc_ui_socket.py # Socket.IO 實時通訊
 ├── opui/                # 👨‍💼 操作員界面 (Port 8002)
 │   ├── core/            # 核心伺服器模組
+│   │   ├── op_ui_server.py # FastAPI 主伺服器
+│   │   └── op_ui_socket.py # Socket.IO 實時通訊
+│   ├── monitoring/      # 監控服務層
+│   │   └── task_monitor.py # 任務狀態監控服務
+│   ├── services/        # 業務邏輯服務層
+│   │   └── opui_task_service.py # OPUI 任務業務邏輯
 │   ├── frontend/        # 前端界面資源
 │   ├── api/             # API 客戶端
-│   └── services/        # 業務邏輯服務
-└── agvui/               # 🚗 AGV 車載監控界面
-    ├── agv_ui_server.py # AGV 監控伺服器
-    └── static/          # 監控界面資源
+│   └── tests/           # 標準 pytest 測試
+└── agvui/               # 🚗 AGV 車載監控界面 (Port 8003)
+    ├── agv_ui_server.py # FastAPI 主伺服器
+    ├── agv_ui_socket.py # Socket.IO 實時通訊
+    ├── agv_ui_ros.py    # ROS 2 節點整合
+    ├── static/          # 監控界面資源
+    └── templates/       # HTML 模板
 ```
 
 ### 架構特性
@@ -78,8 +89,8 @@ src/
   - 完整資料庫操作、用戶管理、任務調度、地圖監控
 - **Port 8002**: `opui` - 操作員界面 (任務管理專用)
   - 操作員友好界面、任務分派、狀態監控
-- **Port 8003**: `agvui` - AGV 車載監控 (可選)
-  - AGV 本地監控界面、狀態顯示
+- **Port 8003**: `agvui` - AGV 車載監控
+  - AGV 本地監控界面、狀態顯示、實時更新
 
 ### Web 服務技術棧
 - **後端框架**: FastAPI (高效能 Web 框架)
@@ -105,6 +116,7 @@ agvc_health                  # 健康檢查
 curl http://localhost:8000/health    # API Gateway
 curl http://localhost:8001/          # AGVCUI
 curl http://localhost:8002/          # OPUI
+curl http://localhost:8003/          # AGVUI
 ```
 
 ### 容器內操作 (ROS 2 和 Web 開發)
@@ -148,6 +160,14 @@ python3 src/opui/opui/opui_server.py
 ros2 run web_api api_server
 ros2 run agvcui agvc_ui_server
 ros2 run opui opui_server
+ros2 run agvui agv_ui_server
+
+# 【方法3: 使用Web API Launch管理】(推薦)
+# 在AGVC容器內
+manage_web_api_launch start     # 啟動所有Web服務
+manage_web_api_launch stop      # 停止所有Web服務
+manage_web_api_launch restart   # 重啟所有Web服務
+manage_web_api_launch status    # 檢查服務狀態
 ```
 
 #### 構建與測試
@@ -167,6 +187,7 @@ scripts/dev-tools/test-runner.sh unit --workspace web_api_ws
 curl http://localhost:8000/health    # web_api健康檢查
 curl http://localhost:8001/         # agvcui界面
 curl http://localhost:8002/         # opui界面
+curl http://localhost:8003/         # agvui界面
 ```
 
 ##### 容器內建置 (setup.bash驗證可用)
@@ -184,14 +205,18 @@ build_ws web_api_ws                  # 使用setup.bash中的函數
 ### Web API服務 (API Gateway模式)
 **實際路徑**: `src/web_api/routers/` (驗證存在)
 - `door.py` - 門控系統API
-- `plc.py` - PLC設備API  
+- `plc.py` - PLC設備API
 - `traffic.py` - 交通管理API
 - `kuka.py` - KUKA Fleet整合API
+- `nodes.py` - ROS 2節點管理API (統一節點控制)
 
 ### AGVCUI系統 (完整MVC架構)
 **實際路徑**: `src/agvcui/` (驗證存在完整結構)
 - `database/` - 資料庫操作層
 - `routers/` - 完整的API路由系統
+  - `tafl_editor.py` - TAFL編輯器API (路由: /tafl/editor)
+  - `tafl_editor_direct.py` - TAFL直接編輯API
+  - 其他路由器 (agvs, tasks, racks, carriers 等)
 - `static/` & `templates/` - 前端資源
 
 ### 新增API端點流程
@@ -201,15 +226,24 @@ build_ws web_api_ws                  # 使用setup.bash中的函數
 
 ### 實際API結構範例
 ```python
+# web_api/routers/nodes.py (ROS 2節點管理)
+@router.get("/api/nodes")
+async def list_nodes():
+    # 列出所有ROS 2節點
+
+@router.post("/api/nodes/{node_name}/restart")
+async def restart_node(node_name: str):
+    # 重啟指定節點
+
 # web_api/routers/door.py (外部系統整合)
 @router.get("/door/{door_id}/status")
 async def get_door_status(door_id: str):
     # PLC整合邏輯
-    
-# agvcui/routers/*.py (完整業務邏輯)  
-@router.get("/agv/{agv_id}/status")
-async def get_agv_status(agv_id: str):
-    # 完整的資料庫查詢和業務邏輯
+
+# agvcui/routers/tafl_editor.py (TAFL編輯器)
+@router.get("/tafl/editor")
+async def tafl_editor_page():
+    # TAFL視覺化編輯器頁面
 ```
 
 ## Socket.IO事件管理
@@ -232,16 +266,23 @@ def handle_agv_connect():
 
 ## 前端開發指南
 
-### OPUI (Vue.js 3)
-- **架構**: 完整重構的現代化界面
-- **組件**: 模組化Vue組件設計
-- **狀態管理**: Vuex/Pinia整合
-- **開發**: 支援熱重載開發模式
+### OPUI (操作員界面)
+- **架構**: 分層架構 (monitoring/services/core)
+- **監控層**: task_monitor.py 提供任務狀態監控
+- **服務層**: opui_task_service.py 處理業務邏輯
+- **實時更新**: Socket.IO 即時通訊
 
-### AGVCUI
+### AGVCUI (車隊管理系統)
 - **功能**: 車隊管理與監控
-- **整合**: 與核心API緊密整合
+- **TAFL編輯器**: 視覺化流程編輯器 (/tafl/editor)
+- **節點管理**: 統一ROS 2節點控制
 - **即時更新**: Socket.IO實時資料
+
+### AGVUI (AGV車載監控)
+- **功能**: AGV本地狀態監控
+- **ROS 2整合**: agv_ui_ros.py 節點背景服務
+- **輕量級**: 為車載資源限制設計
+- **即時通訊**: Socket.IO 狀態更新
 
 ## 配置管理
 
@@ -263,8 +304,9 @@ def handle_agv_connect():
 ```bash
 # Web 服務健康檢查
 curl http://localhost:8000/health    # API Gateway
-curl http://localhost:8001/          # AGVCUI 界面  
+curl http://localhost:8001/          # AGVCUI 界面
 curl http://localhost:8002/          # OPUI 界面
+curl http://localhost:8003/          # AGVUI 界面
 curl http://localhost:8000/docs      # API 文檔
 
 # Socket.IO 連接測試
@@ -299,8 +341,8 @@ agvc_health                          # AGVC 系統健康檢查
 curl http://localhost:8000/health    # API Gateway 健康檢查
 
 # 端口和網路檢查
-netstat -tlnp | grep -E "(8000|8001|8002)"  # 檢查 Web 服務端口
-scripts/network-tools/port-check.sh --port 8000-8002
+netstat -tlnp | grep -E "(8000|8001|8002|8003)"  # 檢查 Web 服務端口
+scripts/network-tools/port-check.sh --port 8000-8003
 
 # 服務重啟和日誌
 agvc_restart                         # 重啟 AGVC 系統
@@ -311,15 +353,48 @@ agvc_logs                           # 查看系統日誌
 - **AGVC 容器**: 所有 Web 服務必須在 AGVC 容器內運行
 - **資料庫連接**: PostgreSQL 服務正常運行
 - **ROS 2 環境**: 正確載入 AGVC 工作空間
-- **端口可用性**: 8000-8002 端口未被佔用
+- **端口可用性**: 8000-8003 端口未被佔用
 
 ## 💡 Web 開發要點
 
 - **Web 服務群組**: 四個 Web 服務協同提供完整功能
 - **AGVC 容器運行**: 所有 Web 服務必須在 AGVC 容器內執行
 - **多端口服務**: 8000 (API), 8001 (AGVCUI), 8002 (OPUI), 8003 (AGVUI)
+- **統一管理**: manage_web_api_launch 統一啟動/停止所有服務
 - **即時通訊**: Socket.IO 提供雙向即時資料交換
 - **系統整合**: 與 PLC、KUKA Fleet、資料庫等外部系統整合
+
+## 📊 主要API端點整理
+
+### Web API (Port 8000)
+```bash
+# 節點管理API
+GET  /api/nodes                     # 列出所有ROS 2節點
+GET  /api/nodes/{node_name}         # 節點詳情
+POST /api/nodes/{node_name}/restart # 重啟節點
+POST /api/nodes/{node_name}/stop    # 停止節點
+
+# PLC控制API
+GET  /plc/status                    # PLC狀態
+POST /plc/read_data                 # 讀取PLC數據
+POST /plc/write_data                # 寫入PLC數據
+
+# KUKA Fleet整合
+POST /interfaces/api/amr/missionStateCallback  # 任務狀態回調
+```
+
+### AGVCUI (Port 8001)
+```bash
+# TAFL編輯器
+GET  /tafl/editor                   # TAFL視覺化編輯器
+GET  /tafl/verbs                    # TAFL動詞列表
+POST /tafl/validate                 # 驗證TAFL流程
+POST /tafl/save                     # 保存TAFL流程
+
+# AGV管理
+GET  /api/agvs                      # AGV列表
+GET  /api/agvs/{agv_id}            # AGV詳情
+```
 
 ## 🔗 交叉引用
 - AGVC 工作空間: @docs-ai/context/workspaces/agvc-workspaces.md

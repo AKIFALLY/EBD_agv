@@ -22,8 +22,6 @@
         "/app/path_algorithm/install",
         "/app/agv_ws/src/loader_agv",
         "/app/agv_ws/src/agv_base/agv_states",
-        "/app/wcs_ws/src/wcs_base",
-        "/app/wcs_ws/src/kuka_wcs",
     ],
     "python.analysis.typeCheckingMode": "off",
     "files.eol": "\n",

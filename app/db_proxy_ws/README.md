@@ -26,7 +26,7 @@
 - **web_api_ws**: 使用 `db_proxy.crud` 模組進行資料庫操作
 - **ecs_ws**: 使用資料庫服務進行任務和設備管理
 - **rcs_ws**: 使用 AGV 和交通區域管理功能
-- **wcs_ws**: 使用貨架和載具管理功能
+- **tafl_wcs_ws**: 使用貨架和載具管理功能
 - **外部系統**: 任何需要資料持久化的模組
 
 ### 外部依賴
@@ -45,39 +45,64 @@ db_proxy_ws/
 │   │   │   ├── connection_pool_manager.py # 連線池管理器 (使用虛擬環境 sqlalchemy)
 │   │   │   ├── ros_converter.py           # ROS 訊息轉換器
 │   │   │   ├── agvc_logger_sub.py         # AGVC 日誌訂閱器
-│   │   │   ├── models/                    # 資料模型定義 (使用虛擬環境 sqlmodel)
+│   │   │   ├── models/                    # 資料模型定義 (使用虛擬環境 sqlmodel) - 24個模型檔案
 │   │   │   │   ├── __init__.py           # 模型匯出
 │   │   │   │   ├── agvc_task.py          # 任務模型 (Task, Work, TaskStatus)
 │   │   │   │   ├── agvc_rcs.py           # RCS 模型 (AGV, AGVContext, TrafficZone)
-│   │   │   │   ├── rack.py               # 貨架模型 (Rack, RackStatus)
-│   │   │   │   ├── carrier.py            # 載具模型 (Carrier, CarrierStatus)
+│   │   │   │   ├── rack.py               # 貨架模型 (Rack)
+│   │   │   │   ├── rack_status.py        # 貨架狀態模型 (RackStatus)
+│   │   │   │   ├── carrier.py            # 載具模型 (Carrier)
+│   │   │   │   ├── carrier_status.py     # 載具狀態模型 (CarrierStatus)
 │   │   │   │   ├── agvc_eqp.py           # 設備模型 (Eqp, EqpPort, EqpSignal)
 │   │   │   │   ├── agvc_location.py      # 位置模型 (Location, LocationStatus)
 │   │   │   │   ├── agvc_product.py       # 產品模型 (Product, ProcessSettings)
 │   │   │   │   ├── agvc_kuka.py          # KUKA 模型 (KukaNode, KukaEdge)
 │   │   │   │   ├── client.py             # 客戶端模型 (Client)
-│   │   │   │   ├── machine.py            # 機台模型 (Machine)
+│   │   │   │   ├── machine.py            # 機台模型 (Machine) - 含 workspace 陣列
 │   │   │   │   ├── user.py               # 使用者模型 (User)
 │   │   │   │   ├── room.py               # 房間模型 (Room)
 │   │   │   │   ├── license.py            # 授權模型 (License)
-│   │   │   │   └── base_models.py        # 基礎模型 (Node, Edge, Log 等)
-│   │   │   ├── crud/                     # CRUD 操作模組
+│   │   │   │   ├── node.py               # 節點模型 (Node)
+│   │   │   │   ├── node_type.py          # 節點類型模型 (NodeType)
+│   │   │   │   ├── edge.py               # 邊緣模型 (Edge)
+│   │   │   │   ├── agv_status.py         # AGV 狀態模型 (AGVStatus)
+│   │   │   │   ├── log_level.py          # 日誌等級模型 (LogLevel)
+│   │   │   │   ├── rosout_log.py         # ROS 日誌模型 (RosoutLog)
+│   │   │   │   ├── runtime_log.py        # 運行時日誌模型 (RuntimeLog)
+│   │   │   │   ├── modify_log.py         # 修改日誌模型 (ModifyLog)
+│   │   │   │   └── audit_log.py          # 稽核日誌模型 (AuditLog)
+│   │   │   ├── crud/                     # CRUD 操作模組 - 21個實作檔案
+│   │   │   │   ├── __init__.py           # CRUD 模組匯出
 │   │   │   │   ├── base_crud.py          # 基礎 CRUD 類別
 │   │   │   │   ├── task_crud.py          # 任務 CRUD
 │   │   │   │   ├── rack_crud.py          # 貨架 CRUD
 │   │   │   │   ├── carrier_crud.py       # 載具 CRUD
+│   │   │   │   ├── carrier_status_crud.py # 載具狀態 CRUD
 │   │   │   │   ├── agv_crud.py           # AGV CRUD
+│   │   │   │   ├── agv_status_crud.py    # AGV 狀態 CRUD
 │   │   │   │   ├── eqp_crud.py           # 設備 CRUD
-│   │   │   │   └── ...                   # 其他 CRUD 模組
-│   │   │   └── sql/                      # SQL 腳本和初始化
-│   │   │       ├── db_install.py         # 資料庫初始化 (使用虛擬環境 sqlalchemy)
-│   │   │       ├── sql_query.py          # SQL 查詢工具
-│   │   │       └── init_data/            # 初始化資料
-│   │   │       └── db_install.py         # 資料庫初始化
-│   │   ├── docs/                         # 文檔和測試
-│   │   │   ├── README.md                 # 詳細文檔
-│   │   │   ├── testing/                  # 測試腳本
-│   │   │   └── summaries/                # 功能說明
+│   │   │   │   ├── location_crud.py      # 位置 CRUD
+│   │   │   │   ├── product_crud.py       # 產品 CRUD
+│   │   │   │   ├── process_settings_crud.py # 製程設定 CRUD
+│   │   │   │   ├── machine_crud.py       # 機台 CRUD
+│   │   │   │   ├── user_crud.py          # 使用者 CRUD
+│   │   │   │   ├── room_crud.py          # 房間 CRUD
+│   │   │   │   ├── license_crud.py       # 授權 CRUD
+│   │   │   │   ├── node_crud.py          # 節點 CRUD
+│   │   │   │   ├── traffic_crud.py       # 交通區域 CRUD
+│   │   │   │   ├── runtime_log_crud.py   # 運行日誌 CRUD
+│   │   │   │   ├── rosout_log_crud.py    # ROS 日誌 CRUD
+│   │   │   │   ├── modify_log.py         # 修改日誌 CRUD
+│   │   │   │   └── audit_log_crud.py     # 稽核日誌 CRUD
+│   │   │   ├── sql/                      # SQL 腳本和初始化
+│   │   │   │   ├── db_install.py         # 資料庫初始化 (使用虛擬環境 sqlalchemy)
+│   │   │   │   ├── sql_query.py          # SQL 查詢工具
+│   │   │   │   └── init_data/            # 初始化資料
+│   │   │   ├── examples/                 # 使用範例 (目前為空)
+│   │   │   └── test/                     # 標準測試目錄 - 3個測試檔案
+│   │   │       ├── test_connection_pool_manager.py  # 連線池測試
+│   │   │       ├── test_license.py                  # 授權測試
+│   │   │       └── test_base_crud.py                # 基礎 CRUD 測試
 │   │   ├── package.xml
 │   │   └── setup.py
 │   └── db_proxy_interfaces/       # 服務和訊息介面定義
@@ -118,9 +143,8 @@ db_proxy_ws/
 │   ├── test_connection.py         # 連線測試腳本 (使用虛擬環境套件)
 │   ├── check_db_status.sh         # 資料庫狀態檢查腳本
 │   └── README.md                  # 腳本使用說明
-├── build/                         # 建置輸出目錄
-├── install/                       # 安裝目錄
-└── log/                          # 日誌目錄
+├── CLAUDE.md                      # AI Agent 指導文檔
+└── README.md                      # 工作空間說明
 ```
 
 ## ⚙️ 主要功能
@@ -1223,7 +1247,7 @@ LIMIT 10;
 - **web_api_ws**: Web API 工作空間，使用本工作空間的 CRUD 模組進行資料庫操作
 - **ecs_ws**: ECS 工作空間，使用資料庫服務進行任務和設備管理
 - **rcs_ws**: RCS 工作空間，使用 AGV 和交通區域管理功能
-- **wcs_ws**: WCS 工作空間，使用貨架和載具管理功能
+- **tafl_wcs_ws**: TAFL WCS 工作空間，使用貨架和載具管理功能
 - **SQLModel 官方文檔**: [SQLModel Documentation](https://sqlmodel.tiangolo.com/)
 - **SQLAlchemy 官方文檔**: [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 - **PostgreSQL 官方文檔**: [PostgreSQL Documentation](https://www.postgresql.org/docs/)

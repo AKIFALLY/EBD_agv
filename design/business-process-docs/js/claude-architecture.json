@@ -1,0 +1,767 @@
+{
+  "version": "1.0",
+  "generated_at": "2025-09-30T23:37:34.163928",
+  "generated_by": "generate-claude-architecture-stats.py v1.0",
+  "summary": {
+    "total_claude_files": 27,
+    "layer1_components": {
+      "ai_agents": 6,
+      "root_claude": 1,
+      "docs_ai_refs": 13,
+      "total": 7
+    },
+    "layer2_workspaces": 16,
+    "layer3_modules": 10
+  },
+  "architecture_layers": {
+    "layer1": {
+      "name": "🌐 通用層",
+      "description": "AI Agent 核心規則與開發指導",
+      "components": {
+        "ai_agents": {
+          "count": 6,
+          "files": [
+            {
+              "file": "web-api-development-rules.md",
+              "path": "ai-agents/web-api-development-rules.md",
+              "size": 4453,
+              "title": "AI Agent Web API 開發原則"
+            },
+            {
+              "file": "container-development-rules.md",
+              "path": "ai-agents/container-development-rules.md",
+              "size": 3174,
+              "title": "AI Agent 容器開發原則"
+            },
+            {
+              "file": "database-operations-rules.md",
+              "path": "ai-agents/database-operations-rules.md",
+              "size": 4174,
+              "title": "AI Agent 資料庫操作原則"
+            },
+            {
+              "file": "unified-tools-usage.md",
+              "path": "ai-agents/unified-tools-usage.md",
+              "size": 5875,
+              "title": "RosAGV 統一工具使用指南"
+            },
+            {
+              "file": "ros2-development-rules.md",
+              "path": "ai-agents/ros2-development-rules.md",
+              "size": 3396,
+              "title": "AI Agent ROS2 開發原則"
+            },
+            {
+              "file": "tafl-language-rules.md",
+              "path": "ai-agents/tafl-language-rules.md",
+              "size": 4351,
+              "title": "AI Agent TAFL 語言使用原則"
+            }
+          ]
+        },
+        "root_claude": {
+          "file": "CLAUDE.md",
+          "path": "CLAUDE.md",
+          "size": 8908,
+          "lines": 226,
+          "docs_ai_references": 13,
+          "referenced_docs": [
+            "operations/development/core/linus-torvalds-ai-agent-principles.md",
+            "context/system/dual-environment.md",
+            "operations/deployment/nginx-configuration.md",
+            "some-doc.md",
+            "README.md",
+            "**/*.md",
+            "operations/tools/unified-tools.md",
+            "context/system/technology-stack.md",
+            "operations/development/testing/test-file-management.md",
+            "operations/development/docker-development.md",
+            "operations/development/core/core-principles.md",
+            "context/system/rosagv-overview.md",
+            "operations/guides/troubleshooting.md"
+          ]
+        },
+        "total_components": 7
+      }
+    },
+    "layer2": {
+      "name": "🔧 工作空間層",
+      "description": "領域特定知識",
+      "count": 16,
+      "workspaces": [
+        {
+          "workspace": "agv_cmd_service_ws",
+          "file": "CLAUDE.md",
+          "path": "app/agv_cmd_service_ws/CLAUDE.md",
+          "size": 14069,
+          "lines": 399,
+          "docs_ai_references": 6,
+          "referenced_docs": [
+            "knowledge/agv-domain/agv-state-machine.md",
+            "knowledge/protocols/keyence-plc-protocol.md",
+            "knowledge/protocols/ros2-interfaces.md",
+            "knowledge/agv-domain/vehicle-types.md",
+            "knowledge/protocols/plc-ros2-interfaces.md"
+          ]
+        },
+        {
+          "workspace": "agv_ws",
+          "file": "CLAUDE.md",
+          "path": "app/agv_ws/CLAUDE.md",
+          "size": 3108,
+          "lines": 98,
+          "docs_ai_references": 9,
+          "referenced_docs": [
+            "knowledge/agv-domain/agv-state-machine.md",
+            "knowledge/protocols/zenoh-rmw.md",
+            "operations/guides/rack-management-guide.md",
+            "context/workspaces/agv-workspaces.md",
+            "operations/development/ros2/ros2-development.md"
+          ]
+        },
+        {
+          "workspace": "db_proxy_ws",
+          "file": "CLAUDE.md",
+          "path": "app/db_proxy_ws/CLAUDE.md",
+          "size": 12634,
+          "lines": 328,
+          "docs_ai_references": 5,
+          "referenced_docs": [
+            "knowledge/agv-domain/license-table-design.md",
+            "knowledge/agv-domain/wcs-workid-system.md",
+            "knowledge/agv-domain/wcs-database-design.md",
+            "operations/development/database-operations.md",
+            "knowledge/protocols/ros2-interfaces.md"
+          ]
+        },
+        {
+          "workspace": "ecs_ws",
+          "file": "CLAUDE.md",
+          "path": "app/ecs_ws/CLAUDE.md",
+          "size": 2204,
+          "lines": 62,
+          "docs_ai_references": 4,
+          "referenced_docs": [
+            "knowledge/protocols/zenoh-rmw.md",
+            "knowledge/protocols/keyence-plc-protocol.md",
+            "knowledge/business/eyewear-production-process.md",
+            "knowledge/protocols/ros2-interfaces.md"
+          ]
+        },
+        {
+          "workspace": "joystick_ws",
+          "file": "CLAUDE.md",
+          "path": "app/joystick_ws/CLAUDE.md",
+          "size": 11423,
+          "lines": 335,
+          "docs_ai_references": 1,
+          "referenced_docs": [
+            "context/system/technology-stack.md"
+          ]
+        },
+        {
+          "workspace": "keyence_plc_ws",
+          "file": "CLAUDE.md",
+          "path": "app/keyence_plc_ws/CLAUDE.md",
+          "size": 9501,
+          "lines": 274,
+          "docs_ai_references": 6,
+          "referenced_docs": [
+            "knowledge/protocols/zenoh-rmw.md",
+            "operations/development/ros2/plc-communication.md",
+            "knowledge/protocols/keyence-plc-protocol.md",
+            "operations/guides/system-diagnostics.md",
+            "operations/development/build-and-test.md"
+          ]
+        },
+        {
+          "workspace": "kuka_fleet_ws",
+          "file": "CLAUDE.md",
+          "path": "app/kuka_fleet_ws/CLAUDE.md",
+          "size": 11346,
+          "lines": 385,
+          "docs_ai_references": 5,
+          "referenced_docs": [
+            "operations/guides/system-diagnostics.md",
+            "knowledge/protocols/kuka-fleet-callback.md",
+            "operations/development/ros2/ros2-development.md",
+            "knowledge/protocols/kuka-fleet-api.md",
+            "context/workspaces/agvc-workspaces.md"
+          ]
+        },
+        {
+          "workspace": "launch_ws",
+          "file": "CLAUDE.md",
+          "path": "app/launch_ws/CLAUDE.md",
+          "size": 12500,
+          "lines": 376,
+          "docs_ai_references": 3,
+          "referenced_docs": [
+            "operations/tools/unified-tools.md",
+            "context/system/dual-environment.md",
+            "operations/guides/system-diagnostics.md"
+          ]
+        },
+        {
+          "workspace": "plc_proxy_ws",
+          "file": "CLAUDE.md",
+          "path": "app/plc_proxy_ws/CLAUDE.md",
+          "size": 25092,
+          "lines": 682,
+          "docs_ai_references": 4,
+          "referenced_docs": [
+            "operations/development/ros2/plc-communication.md",
+            "knowledge/protocols/keyence-plc-protocol.md",
+            "knowledge/protocols/plc-ros2-interfaces.md",
+            "operations/development/ros2/ros2-development.md"
+          ]
+        },
+        {
+          "workspace": "rcs_ws",
+          "file": "CLAUDE.md",
+          "path": "app/rcs_ws/CLAUDE.md",
+          "size": 12249,
+          "lines": 318,
+          "docs_ai_references": 12,
+          "referenced_docs": [
+            "operations/guides/system-diagnostics.md",
+            "operations/development/testing/testing-standards.md",
+            "knowledge/agv-domain/wcs-database-design.md",
+            "knowledge/agv-domain/wcs-workid-system.md",
+            "operations/guides/troubleshooting.md"
+          ]
+        },
+        {
+          "workspace": "sensorpart_ws",
+          "file": "CLAUDE.md",
+          "path": "app/sensorpart_ws/CLAUDE.md",
+          "size": 14111,
+          "lines": 416,
+          "docs_ai_references": 2,
+          "referenced_docs": [
+            "operations/development/ros2/ros2-development.md",
+            "knowledge/business/eyewear-production-process.md"
+          ]
+        },
+        {
+          "workspace": "shared_constants_ws",
+          "file": "CLAUDE.md",
+          "path": "app/shared_constants_ws/CLAUDE.md",
+          "size": 6195,
+          "lines": 187,
+          "docs_ai_references": 4,
+          "referenced_docs": [
+            "context/system/dual-environment.md",
+            "context/workspaces/agv-workspaces.md",
+            "context/workspaces/agvc-workspaces.md",
+            "context/system/rosagv-overview.md"
+          ]
+        },
+        {
+          "workspace": "tafl_wcs_ws",
+          "file": "CLAUDE.md",
+          "path": "app/tafl_wcs_ws/CLAUDE.md",
+          "size": 12151,
+          "lines": 293,
+          "docs_ai_references": 10,
+          "referenced_docs": [
+            "operations/development/testing/ros2-workspace-test-structure.md",
+            "operations/development/testing/testing-standards.md",
+            "knowledge/agv-domain/wcs-workid-system.md",
+            "knowledge/agv-domain/wcs-database-design.md",
+            "knowledge/system/tafl/tafl-development-history.md"
+          ]
+        },
+        {
+          "workspace": "tafl_ws",
+          "file": "CLAUDE.md",
+          "path": "app/tafl_ws/CLAUDE.md",
+          "size": 7803,
+          "lines": 211,
+          "docs_ai_references": 6,
+          "referenced_docs": [
+            "operations/development/testing/testing-standards.md",
+            "knowledge/system/tafl/tafl-development-history.md",
+            "knowledge/system/tafl/tafl-user-guide.md",
+            "knowledge/system/tafl/tafl-language-specification.md",
+            "knowledge/system/tafl/tafl-editor-specification.md"
+          ]
+        },
+        {
+          "workspace": "uno_gpio_ws",
+          "file": "CLAUDE.md",
+          "path": "app/uno_gpio_ws/CLAUDE.md",
+          "size": 10943,
+          "lines": 346,
+          "docs_ai_references": 0,
+          "referenced_docs": []
+        },
+        {
+          "workspace": "web_api_ws",
+          "file": "CLAUDE.md",
+          "path": "app/web_api_ws/CLAUDE.md",
+          "size": 15627,
+          "lines": 410,
+          "docs_ai_references": 13,
+          "referenced_docs": [
+            "operations/development/web/web-development.md",
+            "knowledge/agv-domain/license-table-design.md",
+            "operations/guides/system-diagnostics.md",
+            "knowledge/system/hmi-system-design.md",
+            "operations/development/testing/testing-standards.md"
+          ]
+        }
+      ],
+      "workspace_names": [
+        "agv_cmd_service_ws",
+        "agv_ws",
+        "db_proxy_ws",
+        "ecs_ws",
+        "joystick_ws",
+        "keyence_plc_ws",
+        "kuka_fleet_ws",
+        "launch_ws",
+        "plc_proxy_ws",
+        "rcs_ws",
+        "sensorpart_ws",
+        "shared_constants_ws",
+        "tafl_wcs_ws",
+        "tafl_ws",
+        "uno_gpio_ws",
+        "web_api_ws"
+      ]
+    },
+    "layer3": {
+      "name": "🔬 專業層",
+      "description": "模組實作細節",
+      "count": 10,
+      "modules": [
+        {
+          "workspace": "agv_ws",
+          "module": "agv_base",
+          "file": "CLAUDE.md",
+          "path": "app/agv_ws/src/agv_base/CLAUDE.md",
+          "size": 2771,
+          "lines": 79,
+          "docs_ai_references": 1,
+          "referenced_docs": [
+            "knowledge/agv-domain/magic-value-analysis.md"
+          ]
+        },
+        {
+          "workspace": "agv_ws",
+          "module": "agv_interfaces",
+          "file": "CLAUDE.md",
+          "path": "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "size": 2628,
+          "lines": 95,
+          "docs_ai_references": 3,
+          "referenced_docs": [
+            "operations/development/docker-development.md",
+            "knowledge/protocols/ros2-interfaces.md",
+            "operations/guides/system-diagnostics.md"
+          ]
+        },
+        {
+          "workspace": "agv_ws",
+          "module": "cargo_mover_agv",
+          "file": "CLAUDE.md",
+          "path": "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
+          "size": 7085,
+          "lines": 188,
+          "docs_ai_references": 1,
+          "referenced_docs": [
+            "knowledge/agv-domain/write-path-state-analysis.md"
+          ]
+        },
+        {
+          "workspace": "agv_ws",
+          "module": "loader_agv",
+          "file": "CLAUDE.md",
+          "path": "app/agv_ws/src/loader_agv/CLAUDE.md",
+          "size": 7982,
+          "lines": 215,
+          "docs_ai_references": 1,
+          "referenced_docs": [
+            "knowledge/agv-domain/write-path-state-analysis.md"
+          ]
+        },
+        {
+          "workspace": "agv_ws",
+          "module": "unloader_agv",
+          "file": "CLAUDE.md",
+          "path": "app/agv_ws/src/unloader_agv/CLAUDE.md",
+          "size": 7692,
+          "lines": 209,
+          "docs_ai_references": 1,
+          "referenced_docs": [
+            "knowledge/agv-domain/write-path-state-analysis.md"
+          ]
+        },
+        {
+          "workspace": "db_proxy_ws",
+          "module": "db_proxy",
+          "file": "CLAUDE.md",
+          "path": "app/db_proxy_ws/src/db_proxy/CLAUDE.md",
+          "size": 2993,
+          "lines": 86,
+          "docs_ai_references": 0,
+          "referenced_docs": []
+        },
+        {
+          "workspace": "web_api_ws",
+          "module": "agvcui",
+          "file": "CLAUDE.md",
+          "path": "app/web_api_ws/src/agvcui/CLAUDE.md",
+          "size": 13527,
+          "lines": 361,
+          "docs_ai_references": 2,
+          "referenced_docs": [
+            "knowledge/system/agvui-monitoring-system.md",
+            "knowledge/system/tafl/tafl-editor-specification.md"
+          ]
+        },
+        {
+          "workspace": "web_api_ws",
+          "module": "agvui",
+          "file": "CLAUDE.md",
+          "path": "app/web_api_ws/src/agvui/CLAUDE.md",
+          "size": 5396,
+          "lines": 204,
+          "docs_ai_references": 0,
+          "referenced_docs": []
+        },
+        {
+          "workspace": "web_api_ws",
+          "module": "opui",
+          "file": "CLAUDE.md",
+          "path": "app/web_api_ws/src/opui/CLAUDE.md",
+          "size": 15508,
+          "lines": 411,
+          "docs_ai_references": 1,
+          "referenced_docs": [
+            "knowledge/business/eyewear-production-process.md"
+          ]
+        },
+        {
+          "workspace": "web_api_ws",
+          "module": "web_api",
+          "file": "CLAUDE.md",
+          "path": "app/web_api_ws/src/web_api/CLAUDE.md",
+          "size": 7302,
+          "lines": 202,
+          "docs_ai_references": 2,
+          "referenced_docs": [
+            "knowledge/protocols/kuka-fleet-callback.md",
+            "knowledge/protocols/kuka-fleet-api.md"
+          ]
+        }
+      ],
+      "grouped_by_workspace": {
+        "agv_ws": [
+          "agv_base",
+          "agv_interfaces",
+          "cargo_mover_agv",
+          "loader_agv",
+          "unloader_agv"
+        ],
+        "db_proxy_ws": [
+          "db_proxy"
+        ],
+        "web_api_ws": [
+          "agvcui",
+          "agvui",
+          "opui",
+          "web_api"
+        ]
+      }
+    }
+  },
+  "cross_references": {
+    "claude_to_docs": {},
+    "docs_to_claude": {
+      "operations/development/build-and-test.md": [
+        "app/keyence_plc_ws/CLAUDE.md"
+      ],
+      "operations/development/docker-development.md": [
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md"
+      ],
+      "operations/development/database-operations.md": [
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "operations/tools/unified-tools.md": [
+        "app/launch_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md"
+      ],
+      "operations/guides/troubleshooting.md": [
+        "app/path_algorithm/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md"
+      ],
+      "operations/guides/rack-management-guide.md": [
+        "app/agv_ws/CLAUDE.md"
+      ],
+      "operations/guides/system-diagnostics.md": [
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md"
+      ],
+      "operations/development/web/web-development.md": [
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "operations/development/web/web-api-launch-management.md": [
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "operations/development/ros2/ros2-development.md": [
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/sensorpart_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
+      ],
+      "operations/development/ros2/plc-communication.md": [
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
+      ],
+      "operations/development/testing/testing-standards.md": [
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "operations/development/testing/ros2-workspace-test-structure.md": [
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md"
+      ],
+      "operations/development/testing/testing-procedures.md": [
+        "app/tafl_wcs_ws/CLAUDE.md"
+      ],
+      "context/system/dual-environment.md": [
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md"
+      ],
+      "context/system/rosagv-overview.md": [
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md"
+      ],
+      "context/system/technology-stack.md": [
+        "app/joystick_ws/CLAUDE.md"
+      ],
+      "context/workspaces/agvc-workspaces.md": [
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "context/workspaces/agv-workspaces.md": [
+        "app/agv_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md"
+      ],
+      "knowledge/protocols/plc-ros2-interfaces.md": [
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md"
+      ],
+      "knowledge/protocols/kuka-fleet-callback.md": [
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/src/web_api/CLAUDE.md",
+        "app/web_api_ws/src/web_api/CLAUDE.md"
+      ],
+      "knowledge/protocols/ros2-interfaces.md": [
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md"
+      ],
+      "knowledge/protocols/kuka-fleet-api.md": [
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/src/web_api/CLAUDE.md",
+        "app/web_api_ws/src/web_api/CLAUDE.md",
+        "app/web_api_ws/src/web_api/CLAUDE.md"
+      ],
+      "knowledge/protocols/zenoh-rmw.md": [
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
+      ],
+      "knowledge/protocols/kuka-agv-rack-rotation.md": [
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "knowledge/protocols/keyence-plc-protocol.md": [
+        "app/ecs_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/vehicle-types.md": [
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/wcs-database-design.md": [
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/agv-state-machine.md": [
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/magic-value-analysis.md": [
+        "app/agv_ws/src/agv_base/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/license-table-design.md": [
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/wcs-workid-system.md": [
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/write-path-state-analysis.md": [
+        "app/agv_ws/src/unloader_agv/CLAUDE.md",
+        "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
+        "app/agv_ws/src/loader_agv/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/wcs-system-design.md": [
+        "app/tafl_wcs_ws/CLAUDE.md"
+      ],
+      "knowledge/agv-domain/robot-pgno-rules.md": [
+        "app/agv_ws/CLAUDE.md"
+      ],
+      "knowledge/business/eyewear-production-process.md": [
+        "app/ecs_ws/CLAUDE.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/sensorpart_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/src/opui/CLAUDE.md"
+      ],
+      "knowledge/system/rack-rotation-logic.md": [
+        "app/rcs_ws/CLAUDE.md"
+      ],
+      "knowledge/system/hmi-system-design.md": [
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "knowledge/system/manual-rack-management.md": [
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md"
+      ],
+      "knowledge/system/agvui-monitoring-system.md": [
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/src/agvcui/CLAUDE.md"
+      ],
+      "knowledge/system/rack-management-architecture.md": [
+        "app/rcs_ws/CLAUDE.md"
+      ],
+      "knowledge/system/tafl/tafl-api-reference.md": [
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_ws/CLAUDE.md"
+      ],
+      "knowledge/system/tafl/tafl-user-guide.md": [
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_ws/CLAUDE.md",
+        "app/tafl_ws/CLAUDE.md"
+      ],
+      "knowledge/system/tafl/tafl-language-specification.md": [
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_ws/CLAUDE.md",
+        "app/tafl_ws/CLAUDE.md"
+      ],
+      "knowledge/system/tafl/tafl-editor-specification.md": [
+        "app/tafl_ws/CLAUDE.md",
+        "app/web_api_ws/src/agvcui/CLAUDE.md"
+      ]
+    }
+  },
+  "file_lists": {
+    "all_claude_files": [
+      "CLAUDE.md",
+      "app/agv_cmd_service_ws/CLAUDE.md",
+      "app/agv_ws/CLAUDE.md",
+      "app/db_proxy_ws/CLAUDE.md",
+      "app/ecs_ws/CLAUDE.md",
+      "app/joystick_ws/CLAUDE.md",
+      "app/keyence_plc_ws/CLAUDE.md",
+      "app/kuka_fleet_ws/CLAUDE.md",
+      "app/launch_ws/CLAUDE.md",
+      "app/plc_proxy_ws/CLAUDE.md",
+      "app/rcs_ws/CLAUDE.md",
+      "app/sensorpart_ws/CLAUDE.md",
+      "app/shared_constants_ws/CLAUDE.md",
+      "app/tafl_wcs_ws/CLAUDE.md",
+      "app/tafl_ws/CLAUDE.md",
+      "app/uno_gpio_ws/CLAUDE.md",
+      "app/web_api_ws/CLAUDE.md",
+      "app/agv_ws/src/agv_base/CLAUDE.md",
+      "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+      "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
+      "app/agv_ws/src/loader_agv/CLAUDE.md",
+      "app/agv_ws/src/unloader_agv/CLAUDE.md",
+      "app/db_proxy_ws/src/db_proxy/CLAUDE.md",
+      "app/web_api_ws/src/agvcui/CLAUDE.md",
+      "app/web_api_ws/src/agvui/CLAUDE.md",
+      "app/web_api_ws/src/opui/CLAUDE.md",
+      "app/web_api_ws/src/web_api/CLAUDE.md"
+    ]
+  }
+}

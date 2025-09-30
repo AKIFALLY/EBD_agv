@@ -16,9 +16,8 @@ TAFL_TOOLS_DIR="/home/ct/RosAGV/scripts/tafl-tools"
 TAFL_VALIDATOR="$TAFL_TOOLS_DIR/validate-tafl.py"
 TAFL_BATCH_VALIDATOR="$TAFL_TOOLS_DIR/validate-all-tafl.py"
 
-# TAFL 檔案位置（優先順序）
-CONFIG_TAFL_DIR="/home/ct/RosAGV/app/config/tafl"  # 優先：正式配置
-MIGRATED_TAFL_DIR="$TAFL_DIR/migrated_flows"       # 次要：開發/測試
+# TAFL 檔案位置
+CONFIG_TAFL_DIR="/home/ct/RosAGV/app/config/tafl"  # TAFL 配置目錄
 
 # 顯示使用說明
 show_usage() {
@@ -34,11 +33,10 @@ show_usage() {
     echo -e "${YELLOW}範例:${NC}"
     echo -e "  r tafl-validate my_flow.yaml"
     echo -e "  r tafl-validate /path/to/flow.tafl.yaml"
-    echo -e "  r tafl-validate migrated_flows/rack_rotation_room_outlet_tafl.yaml"
+    echo -e "  r tafl-validate flows/rack_rotation_outlet.yaml"
     echo ""
     echo -e "${YELLOW}TAFL 檔案位置:${NC}"
-    echo -e "  優先目錄: $CONFIG_TAFL_DIR/  (正式配置)"
-    echo -e "  次要目錄: $MIGRATED_TAFL_DIR/  (開發/測試)"
+    echo -e "  配置目錄: $CONFIG_TAFL_DIR/"
     echo ""
     echo -e "${YELLOW}驗證內容:${NC}"
     echo -e "  ✅ YAML 語法正確性"
@@ -60,11 +58,10 @@ list_tafl_files() {
     echo -e "${CYAN}===================${NC}"
     
     local config_count=0
-    local migrated_count=0
-    
-    # 優先列出 config/tafl 目錄的檔案（包含子目錄）
+
+    # 列出 config/tafl 目錄的檔案（包含子目錄）
     if [ -d "$CONFIG_TAFL_DIR" ]; then
-        echo -e "\n${GREEN}⭐ 正式配置 TAFL 檔案 (config/tafl):${NC}"
+        echo -e "\n${GREEN}⭐ TAFL 流程檔案 (config/tafl):${NC}"
         # 搜尋所有子目錄
         while IFS= read -r file; do
             # 顯示相對路徑
@@ -72,32 +69,17 @@ list_tafl_files() {
             echo "  $relative_path"
             ((config_count++))
         done < <(find "$CONFIG_TAFL_DIR" -type f \( -name "*.yaml" -o -name "*.tafl" \) 2>/dev/null | sort)
-        
+
         if [ $config_count -eq 0 ]; then
             echo "  (空目錄)"
         fi
+    else
+        echo -e "\n${YELLOW}⚠️ TAFL 配置目錄不存在: $CONFIG_TAFL_DIR${NC}"
     fi
-    
-    # 列出 migrated_flows 目錄的檔案
-    if [ -d "$MIGRATED_TAFL_DIR" ]; then
-        echo -e "\n${YELLOW}🔧 開發/測試 TAFL 檔案 (migrated_flows):${NC}"
-        for file in "$MIGRATED_TAFL_DIR"/*tafl*.yaml "$MIGRATED_TAFL_DIR"/*.tafl; do
-            if [ -f "$file" ]; then
-                echo "  $(basename "$file")"
-                ((migrated_count++))
-            fi
-        done 2>/dev/null
-        if [ $migrated_count -eq 0 ]; then
-            echo "  (空目錄)"
-        fi
-    fi
-    
+
     # 統計
-    local total_count=$((config_count + migrated_count))
     echo -e "\n${CYAN}📊 統計:${NC}"
-    echo -e "  正式配置: $config_count 個"
-    echo -e "  開發測試: $migrated_count 個"
-    echo -e "  ${GREEN}總計: $total_count 個 TAFL 檔案${NC}"
+    echo -e "  ${GREEN}總計: $config_count 個 TAFL 檔案${NC}"
 }
 
 # 驗證單個 TAFL 檔案
@@ -106,15 +88,11 @@ validate_single_file() {
     
     # 如果沒有路徑，嘗試在預設目錄尋找
     if [[ ! "$file" == /* ]] && [[ ! "$file" == ./* ]]; then
-        # 優先在 config/tafl 目錄尋找（包含子目錄）
+        # 在 config/tafl 目錄尋找（包含子目錄）
         found_file=$(find "$CONFIG_TAFL_DIR" -type f -name "$file" 2>/dev/null | head -1)
         if [ -n "$found_file" ]; then
             file="$found_file"
-            echo -e "${GREEN}✔ 在正式配置目錄找到檔案${NC}"
-        # 次要在 migrated_flows 目錄
-        elif [ -f "$MIGRATED_TAFL_DIR/$file" ]; then
-            file="$MIGRATED_TAFL_DIR/$file"
-            echo -e "${YELLOW}✔ 在開發/測試目錄找到檔案${NC}"
+            echo -e "${GREEN}✔ 在配置目錄找到檔案${NC}"
         # 嘗試在當前目錄
         elif [ -f "./$file" ]; then
             file="./$file"

@@ -358,7 +358,7 @@ interface FlowStep {
     [verb: string]: any;  // 動詞參數
     comment?: string;
     skip_if?: string;
-    store_as?: string;
+    as?: string;  // TAFL v1.1.2: 統一使用 'as' 參數
 }
 ```
 
@@ -500,9 +500,9 @@ tafl-editor/
 ## 📚 相關文件
 
 ### 開發文件
-- **模組化計劃**: docs-ai/knowledge/system/tafl-editor-modularization/
-- **miniStore 整合狀態**: docs-ai/knowledge/system/tafl-editor-modularization/ministore-integration-status.md
 - **TAFL 語言規格**: docs-ai/knowledge/system/tafl/tafl-language-specification.md
+- **TAFL Editor 規格**: 本文件
+- **miniStore 整合**: 計劃中（待實作後補充文件）
 
 ### 實作位置
 - **主程式**: `/home/ct/RosAGV/app/web_api_ws/src/agvcui/agvcui/static/js/tafl-editor.js`
@@ -511,22 +511,23 @@ tafl-editor/
 
 ### 測試檔案
 - **整合測試**: `/home/ct/RosAGV/agents/test_tafl_editor_*.py`
-- **UI 測試**: `/home/ct/RosAGV/agents/test_flow_designer_*.html`
+- **UI 測試**: `/home/ct/RosAGV/agents/test_tafl_editor_*.html`
 
 ## 🔄 版本歷史
 
-### v3.0 (2025-01)
+### v3.0 (2025-09 開發中)
 - 完整重寫，專業拖放體驗
 - 支援 TAFL v1.1 六段式結構
 - 新增 Preload、Rules、Settings 支援
 - 改進視覺化和使用者體驗
+- miniStore 整合（計劃中）
 
-### v2.0 (2024-12)
+### v2.0 (2025-08)
 - 支援巢狀結構
 - 新增 YAML 編輯器
 - 改進拖放功能
 
-### v1.0 (2024-11)
+### v1.0 (2025-07)
 - 初始版本
 - 基本拖放功能
 - 簡單流程編輯

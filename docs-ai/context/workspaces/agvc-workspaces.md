@@ -7,8 +7,8 @@
 
 ## 📋 AGVC 工作空間架構
 
-### 工作空間總覽 (10個)
-AGVC 管理系統包含 10 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
+### 工作空間總覽 (11個)
+AGVC 管理系統包含 11 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
 
 ```
 AGVC 管理系統工作空間
@@ -16,7 +16,7 @@ AGVC 管理系統工作空間
 ├── db_proxy_ws/               # 資料庫代理服務
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-├── flow_wcs_ws_old/           # [DEPRECATED] Linear Flow v2 WCS (已被 tafl_wcs_ws 取代)
+├── tafl_ws/                   # TAFL 語言核心實作
 ├── tafl_wcs_ws/               # TAFL WCS (目前使用的 WCS 系統)
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
 ├── keyence_plc_ws/            # Keyence PLC 通訊 (共用)
@@ -223,28 +223,57 @@ rcs_ws/src/
 - **KUKA 車隊整合**: 完整的 KUKA Fleet 管理和配置
 - **交通管制**: 交通區域控制和衝突避免
 
-### flow_wcs_ws_old/ - [DEPRECATED] Linear Flow v2 WCS 系統
-**職責**: 舊的 WCS 實作，基於 Linear Flow v2 格式的倉庫控制系統（已被 tafl_wcs_ws 取代）
+### tafl_ws/ - TAFL 語言核心實作
+**職責**: TAFL (Task Automation Flow Language) 語言核心實作，提供語法解析、執行和驗證功能
+
+#### 套件結構
+```
+tafl_ws/src/
+├── tafl/                       # TAFL 核心套件
+│   ├── parser.py               # TAFL 語法解析器
+│   ├── executor.py             # TAFL 執行引擎
+│   ├── validator.py            # TAFL 語法驗證器
+│   ├── ast_nodes.py           # 抽象語法樹節點
+│   └── cli.py                 # 命令列介面工具
+└── examples/                   # 範例 TAFL 檔案
+    ├── simple_flow.yaml       # 簡單流程範例
+    ├── task_creation_flow.yaml # 任務建立範例
+    └── rack_rotation_flow.yaml # 架台輪轉範例
+```
+
+#### 核心功能
+- **語法解析**: 解析 YAML 格式的 TAFL 流程檔案
+- **執行引擎**: 執行 TAFL 流程邏輯和控制流
+- **語法驗證**: 驗證 TAFL 檔案格式和語法正確性
+- **AST 處理**: 建立和操作抽象語法樹
+- **CLI 工具**: 提供命令列工具進行 TAFL 開發和測試
+
+#### TAFL 語言特性
+- **10個核心動詞**: query, check, create, update, if, for, switch, set, stop, notify
+- **變數系統**: 支援變數定義和引用 (`${variable}`)
+- **條件邏輯**: if/else 條件判斷和 switch 多分支
+- **迴圈處理**: for 迴圈和 foreach 遍歷
+- **資料查詢**: 支援資料庫查詢和條件過濾
 
 ### tafl_wcs_ws/ - TAFL WCS 系統
 **職責**: 目前使用的 WCS 實作，基於 TAFL (Task Automation Flow Language) 的倉庫控制系統
 
 #### 套件結構
 ```
-flow_wcs_ws/src/
-├── flow_wcs/                   # Flow WCS 核心
-│   ├── flow_executor.py       # 流程執行引擎
-│   ├── flow_monitor.py        # 流程監控服務
-│   ├── flow_validator.py      # 流程驗證器
-│   ├── database.py            # 直接資料庫存取
-│   ├── decorators.py          # 裝飾器函數註冊
+tafl_wcs_ws/src/
+├── tafl_wcs/                   # TAFL WCS 核心
+│   ├── tafl_executor.py        # TAFL 執行引擎
+│   ├── tafl_monitor.py         # TAFL 監控服務
+│   ├── tafl_integration.py     # TAFL 整合層
+│   ├── database.py             # 資料庫存取層
+│   ├── decorators.py           # 裝飾器函數註冊
 │   └── functions/              # 內建函數庫
 └── launch/                     # Launch 檔案
-    └── flow_wcs_launch.py
+    └── tafl_wcs_launch.py
 ```
 
 #### 核心特色
-- **Linear Flow v2**: 線性流程執行模式，取代節點圖架構
+- **流程執行**: 線性流程執行模式
 - **變數解析**: 支援 `${variable}` 變數引用語法
 - **條件執行**: `skip_if` 和 `skip_if_not` 條件控制
 - **迴圈支援**: `foreach` 迴圈處理
@@ -278,7 +307,7 @@ flow_wcs_ws/src/
 all_source             # 或別名: sa
 
 # 強制載入 AGVC 工作空間
-agvc_source           # 載入所有 AGVC 工作空間 (包含共用基礎設施和 flow_wcs_ws)
+agvc_source           # 載入所有 AGVC 工作空間 (包含共用基礎設施和 tafl_wcs_ws)
 
 # 檢查載入狀態
 echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
@@ -297,7 +326,7 @@ echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
 #### AGVC 應用工作空間 (依序載入)
 7. **ecs_ws**: 設備控制系統
 8. **rcs_ws**: 機器人控制系統
-9. **flow_wcs_ws_old**: [DEPRECATED] Linear Flow v2 WCS
+9. **tafl_ws**: TAFL 語言核心實作
 10. **tafl_wcs_ws**: TAFL WCS (目前使用的 WCS 實作)
 11. **web_api_ws**: Web API 和使用者介面
 12. **kuka_fleet_ws**: KUKA Fleet 外部整合
@@ -344,7 +373,7 @@ start_wcs             # 啟動倉庫控制系統
 ### AGVC 專用應用工作空間 (6個)
 - **ecs_ws**: 設備控制系統
 - **rcs_ws**: 機器人控制系統 (車隊協調)
-- **flow_wcs_ws_old**: [DEPRECATED] Linear Flow v2 WCS
+- **tafl_ws**: TAFL 語言核心實作 (語法解析、執行、驗證)
 - **tafl_wcs_ws**: TAFL WCS (目前使用的 WCS 實作)
 - **web_api_ws**: Web API 和使用者介面
 - **kuka_fleet_ws**: KUKA Fleet 外部整合

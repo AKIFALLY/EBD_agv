@@ -5,24 +5,43 @@
 
 ## 🏗️ 三層架構設計
 
+### 🎯 分層引入架構
+根據知識的通用性和適用範圍，docs-ai 文檔採用兩種分層視角：
+
+**📁 物理層（目錄結構）**：Context / Operations / Knowledge
+**🧠 邏輯層（引用層級）**：Layer 1 通用層 / Layer 2 工作空間層 / Layer 3 專業層
+
+```
+🌐 Layer 1 (通用層) → 根目錄 CLAUDE.md 引用
+   系統架構、核心原則、通用工具 (11個文檔)
+
+🔧 Layer 2 (工作空間層) → 工作空間 CLAUDE.md 引用
+   領域知識、開發流程、通用協議 (54個文檔)
+
+🔬 Layer 3 (專業層) → 模組 CLAUDE.md 引用
+   特定實作、專業細節、模組特定 (1個文檔)
+```
+
+**引入原則**：
+- 向上相容：深層可以引用上層文檔
+- 最小必要：只引入必要的文檔
+- 避免重複：上層已引用的下層不重複
+
 ### 📚 Context 文件系列 - AI Agent 背景知識庫
 為 AI Agent 提供專案背景知識，確保理解系統架構、技術棧和業務邏輯。
 
 ```
 docs-ai/context/
+├── structure/                       # 結構化文檔
+│   └── module-index.md             # 模組索引
 ├── system/                          # 系統層級背景
 │   ├── rosagv-overview.md           # RosAGV 專案整體概覽
 │   ├── dual-environment.md          # 雙環境架構詳解
 │   ├── technology-stack.md          # 技術棧和依賴關係
-│   └── deployment-architecture.md   # 部署架構和網路配置
-├── workspaces/                      # 工作空間層級背景
-│   ├── agv-workspaces.md           # AGV 車載工作空間概覽
-│   ├── agvc-workspaces.md          # AGVC 管理工作空間概覽
-│   └── shared-components.md        # 共用組件和通訊機制
-└── business/                       # 業務邏輯背景
-    ├── agv-control-logic.md        # AGV 控制邏輯和狀態機
-    ├── fleet-management.md         # 車隊管理和任務調度
-    └── external-integration.md     # 外部系統整合邏輯
+│   └── language-configuration.md    # 語言配置設定
+└── workspaces/                      # 工作空間層級背景
+    ├── agv-workspaces.md           # AGV 車載工作空間概覽
+    └── agvc-workspaces.md          # AGVC 管理工作空間概覽
 ```
 
 ### 🔧 Operations 文件系列 - AI Agent 操作指導
@@ -30,24 +49,35 @@ docs-ai/context/
 
 ```
 docs-ai/operations/
-├── development/                     # 開發操作指導
-│   ├── core/                       # 核心開發原則
-│   ├── ros2/                       # ROS 2 開發指導
-│   ├── testing/                    # 測試程序文檔
-│   ├── web/                        # Web 開發指導
-│   ├── docker-development.md       # Docker 容器開發指導
-│   └── database-operations.md      # 資料庫操作指導
-├── guides/                          # 操作指南
-│   ├── system-diagnostics.md       # 系統診斷程序
-│   ├── troubleshooting.md          # 故障排除流程
-│   ├── performance-monitoring.md   # 效能監控指導
-│   ├── rack-management-guide.md    # Rack 管理操作
-│   └── device-authorization-guide.md # 設備授權指南
 ├── deployment/                      # 部署操作指導
 │   ├── container-management.md     # 容器管理操作
 │   ├── docker-compose-configuration.md # Docker Compose 配置
-│   ├── installed-packages-inventory.md # 安裝套件清單
 │   └── nginx-configuration.md      # Nginx 配置管理
+├── development/                     # 開發操作指導
+│   ├── core/                       # 核心開發原則
+│   │   ├── core-principles.md      # 核心開發原則
+│   │   ├── documentation-standards.md # 文檔標準
+│   │   └── linus-torvalds-ai-agent-principles.md # Linus 思維
+│   ├── ros2/                       # ROS 2 開發指導
+│   │   ├── plc-communication.md    # PLC 通訊開發
+│   │   └── ros2-development.md     # ROS 2 開發指南
+│   ├── testing/                    # 測試程序文檔
+│   │   ├── ros2-workspace-test-structure.md # 測試結構
+│   │   ├── test-file-management.md # 測試檔案管理
+│   │   ├── testing-procedures.md   # 測試程序
+│   │   └── testing-standards.md    # 測試標準（含 ROS 2 pytest 指令）
+│   ├── web/                        # Web 開發指導
+│   │   ├── web-api-launch-management.md # Web API 啟動管理
+│   │   └── web-development.md      # Web 開發指南
+│   ├── build-and-test.md           # 建置和測試指南
+│   ├── database-operations.md      # 資料庫操作指導
+│   └── docker-development.md       # Docker 容器開發指導
+├── guides/                          # 操作指南
+│   ├── log-analysis.md             # 日誌分析指南
+│   ├── performance-monitoring.md   # 效能監控指導
+│   ├── rack-management-guide.md    # Rack 管理操作
+│   ├── system-diagnostics.md       # 系統診斷程序
+│   └── troubleshooting.md          # 故障排除流程
 └── tools/                           # 工具系統
     └── unified-tools.md            # 統一工具系統
 ```
@@ -58,20 +88,37 @@ docs-ai/operations/
 ```
 docs-ai/knowledge/
 ├── agv-domain/                      # AGV 領域知識
+│   ├── agv-state-machine.md        # AGV 狀態機設計
+│   ├── license-table-design.md     # 授權表設計
+│   ├── magic-value-analysis.md     # 魔術值分析
+│   ├── robot-pgno-rules.md         # Robot PGNO 規則
 │   ├── vehicle-types.md            # 車型特性和應用場景
-│   ├── navigation-systems.md       # 導航系統和路徑規劃
-│   ├── safety-protocols.md         # 安全協定和規範
-│   └── performance-optimization.md # 效能優化策略
-├── automation/                      # 工業自動化知識
-│   ├── plc-communication.md        # PLC 通訊協定
-│   ├── sensor-integration.md       # 感測器整合技術
-│   ├── control-systems.md          # 控制系統設計
-│   └── fleet-coordination.md       # 車隊協調機制
-└── protocols/                       # 通訊協定知識
-    ├── zenoh-rmw.md                # Zenoh RMW 通訊機制
-    ├── ros2-interfaces.md          # ROS 2 介面設計
-    ├── web-protocols.md            # Web 通訊協定
-    └── database-schemas.md         # 資料庫結構設計
+│   ├── wcs-database-design.md      # WCS 資料庫設計
+│   ├── wcs-system-design.md        # WCS 系統設計
+│   ├── wcs-workid-system.md        # WCS WorkID 系統
+│   └── write-path-state-analysis.md # 寫入路徑狀態分析
+├── business/                        # 業務流程知識
+│   └── eyewear-production-process.md # 眼鏡生產業務流程
+├── protocols/                       # 通訊協定知識
+│   ├── keyence-plc-protocol.md     # Keyence PLC 協定
+│   ├── kuka-agv-rack-rotation.md   # KUKA AGV Rack 旋轉
+│   ├── kuka-fleet-api.md           # KUKA Fleet API
+│   ├── kuka-fleet-callback.md      # KUKA Fleet 回調
+│   ├── plc-ros2-interfaces.md      # PLC ROS 2 介面
+│   ├── ros2-interfaces.md          # ROS 2 介面設計
+│   └── zenoh-rmw.md                # Zenoh RMW 通訊機制
+└── system/                          # 系統相關知識
+    ├── tafl/                        # TAFL 語言相關
+    │   ├── tafl-api-reference.md   # TAFL API 參考
+    │   ├── tafl-development-history.md # TAFL 開發歷史
+    │   ├── tafl-editor-specification.md # TAFL 編輯器規格
+    │   ├── tafl-language-specification.md # TAFL 語言規格
+    │   └── tafl-user-guide.md      # TAFL 使用者指南
+    ├── agvui-monitoring-system.md  # AGVUI 監控系統
+    ├── hmi-system-design.md        # HMI 系統設計
+    ├── manual-rack-management.md   # 手動 Rack 管理
+    ├── rack-management-architecture.md # Rack 管理架構
+    └── rack-rotation-logic.md      # Rack 旋轉邏輯
 ```
 
 ## 🚀 AI 助理快速上手指南

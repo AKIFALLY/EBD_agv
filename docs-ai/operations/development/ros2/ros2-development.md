@@ -15,17 +15,17 @@
 
 ### 基本開發流程
 ```bash
-# 1. 進入對應容器環境
+# [宿主機] 1. 進入對應容器環境
 docker compose -f docker-compose.yml exec rosagv bash      # AGV 環境
 docker compose -f docker-compose.agvc.yml exec agvc_server bash  # AGVC 環境
 
-# 2. 載入工作空間
+# [容器內] 2. 載入工作空間
 all_source              # 智能載入 (推薦)
 # 或
 agv_source             # 強制載入 AGV 工作空間
 agvc_source            # 強制載入 AGVC 工作空間
 
-# 3. 檢查環境狀態
+# [容器內] 3. 檢查環境狀態
 check_system_status    # 整體系統狀態
 check_ros_env          # ROS 2 環境驗證
 ```
@@ -309,6 +309,77 @@ source install/setup.bash
 # 建立分發包
 colcon build --packages-select package_name --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
+
+## 🛡️ 節點生命週期管理
+
+### 優雅關閉實作
+ROS 2 節點應該實作優雅關閉機制，確保資源正確釋放：
+
+```python
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+import signal
+import sys
+
+class MyNode(Node):
+    def __init__(self):
+        super().__init__('my_node')
+        self.is_shutting_down = False
+        self.init_resources()
+
+    def cleanup(self):
+        """清理資源"""
+        self.get_logger().info("Starting graceful shutdown...")
+        self.is_shutting_down = True
+
+        # 取消定時器
+        if hasattr(self, 'timer'):
+            self.timer.cancel()
+            self.destroy_timer(self.timer)
+
+        # 銷毀發布者/訂閱者
+        if hasattr(self, 'publisher'):
+            self.destroy_publisher(self.publisher)
+
+        self.get_logger().info("Graceful shutdown completed")
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = None
+
+    def signal_handler(signum, frame):
+        nonlocal node
+        if node:
+            node.cleanup()
+        if rclpy.ok():
+            rclpy.shutdown()
+        sys.exit(0)
+
+    # 註冊信號處理器
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    try:
+        node = MyNode()
+        rclpy.spin(node)
+    finally:
+        if node:
+            node.cleanup()
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### 生命週期最佳實踐
+- 註冊 SIGINT 和 SIGTERM 信號處理器
+- 在 cleanup() 方法中釋放所有資源
+- 使用 try-finally 確保清理執行
+- 設置關閉標誌避免處理新請求
+- 等待活動任務完成（帶超時）
 
 ## 🔧 開發工具整合
 

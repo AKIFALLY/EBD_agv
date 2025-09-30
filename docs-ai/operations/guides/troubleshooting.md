@@ -31,7 +31,7 @@
 
 ### 故障排除工具
 ```bash
-# 統一診斷工具
+# [宿主機] 統一診斷工具
 r quick-diag           # 快速綜合診斷
 r agvc-check          # AGVC 系統健康檢查
 r agv-check           # AGV 系統健康檢查
@@ -44,29 +44,30 @@ r log-errors          # 日誌錯誤分析
 
 ### 第一階段：快速評估 (1-2分鐘)
 ```bash
-# 1. 系統整體狀態檢查
+# [宿主機] 1. 系統整體狀態檢查
 r quick-diag
 
-# 2. 容器運行狀態
+# [宿主機] 2. 容器運行狀態
 r containers-status
 
-# 3. 關鍵服務檢查
+# [宿主機] 3. 關鍵服務檢查
 r agvc-check          # 或 r agv-check
 ```
 
 ### 第二階段：問題定位 (3-5分鐘)
 ```bash
 # 根據第一階段結果選擇對應診斷
-# 如果容器異常
+# [宿主機] 如果容器異常
 r log-errors
 
-# 如果網路異常
+# [宿主機] 如果網路異常
 r network-check
 r zenoh-check
 
 # 如果服務異常
-# 進入容器檢查具體服務
+# [宿主機] 進入容器檢查具體服務
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
+# [容器內] 檢查系統狀態
 check_system_status
 ```
 
@@ -83,40 +84,40 @@ check_system_status
 
 **診斷步驟**:
 ```bash
-# 1. 檢查容器狀態
+# [宿主機] 1. 檢查容器狀態
 r containers-status
 
-# 2. 查看啟動日誌
+# [宿主機] 2. 查看啟動日誌
 docker compose -f docker-compose.agvc.yml logs agvc_server
 
-# 3. 檢查端口衝突 (推薦使用 ss)
+# [宿主機] 3. 檢查端口衝突 (推薦使用 ss)
 ss -tulpn | rg "(8000|8001|8002|5432|7447)"
 
-# 備選：netstat
+# [宿主機] 備選：netstat
 netstat -tulpn | rg "(8000|8001|8002|5432|7447)"
 
-# 4. 檢查磁碟空間
+# [宿主機] 4. 檢查磁碟空間
 df -h
 ```
 
 **常見原因和解決方案**:
 ```bash
 # 原因1: 端口被佔用
-# 解決: 停止衝突服務或修改端口配置
+# [宿主機] 解決: 停止衝突服務或修改端口配置
 sudo lsof -i :8000
 sudo kill -9 <PID>
 
 # 原因2: 磁碟空間不足
-# 解決: 清理磁碟空間
+# [宿主機] 解決: 清理磁碟空間
 docker system prune -f
 docker volume prune -f
 
 # 原因3: 映像損壞
-# 解決: 重新建置映像
+# [宿主機] 解決: 重新建置映像
 docker compose -f docker-compose.agvc.yml build --no-cache
 
 # 原因4: 配置檔案錯誤
-# 解決: 檢查並修正配置
+# [宿主機] 解決: 檢查並修正配置
 docker compose -f docker-compose.agvc.yml config
 ```
 
@@ -125,13 +126,13 @@ docker compose -f docker-compose.agvc.yml config
 
 **診斷步驟**:
 ```bash
-# 1. 檢查退出碼
+# [宿主機] 1. 檢查退出碼
 docker compose -f docker-compose.agvc.yml ps
 
-# 2. 查看詳細日誌
+# [宿主機] 2. 查看詳細日誌
 docker compose -f docker-compose.agvc.yml logs --tail=100 agvc_server
 
-# 3. 檢查系統資源
+# [宿主機] 3. 檢查系統資源
 docker stats
 free -h
 ```
@@ -139,12 +140,13 @@ free -h
 **解決方案**:
 ```bash
 # 記憶體不足導致的 OOM Kill
-# 解決: 增加記憶體限制或優化程式
+# [宿主機] 解決: 增加記憶體限制或優化程式
 docker compose -f docker-compose.agvc.yml up -d --scale agvc_server=1
 
 # 程式異常退出
-# 解決: 檢查程式日誌，修復程式錯誤
+# [宿主機] 解決: 檢查程式日誌，修復程式錯誤
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
+# [容器內] 查看日誌
 tail -f /tmp/agv.log
 ```
 
@@ -155,40 +157,40 @@ tail -f /tmp/agv.log
 
 **診斷步驟**:
 ```bash
-# 1. 檢查 Zenoh Router 狀態
+# [宿主機] 1. 檢查 Zenoh Router 狀態
 r zenoh-check
 
-# 2. 檢查 Zenoh 進程
+# [容器內] 2. 檢查 Zenoh 進程
 ps aux | rg zenoh
 cat /tmp/zenoh_router.pid
 
-# 3. 檢查端口監聽 (推薦使用 ss)
+# [宿主機] 3. 檢查端口監聽 (推薦使用 ss)
 ss -tulpn | rg 7447
 
-# 備選：netstat
+# [宿主機] 備選：netstat
 netstat -tulpn | rg 7447
 
 # 4. 測試跨容器連接
-# 在 AGV 容器中
+# [容器內] 在 AGV 容器中
 telnet 192.168.100.100 7447
 
-# 在 AGVC 容器中
+# [容器內] 在 AGVC 容器中
 telnet <AGV_IP> 7447
 ```
 
 **解決方案**:
 ```bash
 # Zenoh Router 未啟動
-# 解決: 重啟 Zenoh Router
+# [宿主機] 解決: 重啟 Zenoh Router
 docker compose -f docker-compose.agvc.yml restart agvc_server
 
 # 網路配置問題
-# 解決: 檢查 Docker 網路配置
+# [宿主機] 解決: 檢查 Docker 網路配置
 docker network ls
 docker network inspect rosagv_agvc_network
 
 # 防火牆阻擋
-# 解決: 開放必要端口
+# [宿主機] 解決: 開放必要端口
 sudo ufw allow 7447
 sudo iptables -A INPUT -p tcp --dport 7447 -j ACCEPT
 ```
@@ -198,36 +200,36 @@ sudo iptables -A INPUT -p tcp --dport 7447 -j ACCEPT
 
 **診斷步驟**:
 ```bash
-# 1. 檢查 RMW 設定
+# [容器內] 1. 檢查 RMW 設定
 echo $RMW_IMPLEMENTATION
 # 應該是: rmw_zenohd
 
-# 2. 測試本地通訊
+# [容器內] 2. 測試本地通訊
 ros2 topic list
 ros2 node list
 
 # 3. 測試跨容器通訊
-# 在一個容器中發布
+# [容器內] 在一個容器中發布
 ros2 topic pub /test_topic std_msgs/String "data: 'test'"
 
-# 在另一個容器中訂閱
+# [容器內] 在另一個容器中訂閱
 ros2 topic echo /test_topic
 ```
 
 **解決方案**:
 ```bash
 # RMW 設定錯誤
-# 解決: 重新設定 RMW
+# [容器內] 解決: 重新設定 RMW
 export RMW_IMPLEMENTATION=rmw_zenohd
 all_source
 
 # ROS 2 daemon 問題
-# 解決: 重啟 daemon
+# [容器內] 解決: 重啟 daemon
 ros2 daemon stop
 ros2 daemon start
 
 # Zenoh 配置問題
-# 解決: 檢查配置檔案
+# [容器內] 解決: 檢查配置檔案
 cat /app/routerconfig.json5
 ```
 
@@ -238,30 +240,30 @@ cat /app/routerconfig.json5
 
 **診斷步驟**:
 ```bash
-# 1. 檢查服務端口
+# [宿主機] 1. 檢查服務端口
 curl http://localhost:8000/health    # 或 http://agvc.webapi/health
 curl http://localhost:8001/          # 或 http://agvc.ui/
 curl http://localhost:8002/          # 或 http://op.ui/
 
-# 2. 檢查 Nginx 狀態
+# [宿主機] 2. 檢查 Nginx 狀態
 docker compose -f docker-compose.agvc.yml exec nginx nginx -t
 
-# 3. 檢查應用程式日誌
+# [宿主機] 3. 檢查應用程式日誌
 docker compose -f docker-compose.agvc.yml logs web_api
 ```
 
 **解決方案**:
 ```bash
 # FastAPI 服務異常
-# 解決: 重啟服務
+# [宿主機] 解決: 重啟服務
 docker compose -f docker-compose.agvc.yml restart agvc_server
 
 # Nginx 配置錯誤
-# 解決: 檢查並重載配置
+# [宿主機] 解決: 檢查並重載配置
 docker compose -f docker-compose.agvc.yml exec nginx nginx -s reload
 
 # 端口衝突
-# 解決: 檢查端口佔用
+# [宿主機] 解決: 檢查端口佔用
 sudo lsof -i :8000
 ```
 
@@ -270,16 +272,16 @@ sudo lsof -i :8000
 
 **診斷步驟**:
 ```bash
-# 1. 檢查資料庫容器
+# [宿主機] 1. 檢查資料庫容器
 docker compose -f docker-compose.agvc.yml ps postgres
 
-# 2. 測試資料庫連接
+# [宿主機] 2. 測試資料庫連接
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT version();"
 
-# 3. 檢查連接配置和資料庫健康狀態
+# [宿主機] 3. 檢查連接配置和資料庫健康狀態
 docker compose -f docker-compose.agvc.yml exec agvc_server env | rg POSTGRES
 
-# 4. 執行完整資料庫健康檢查
+# [宿主機] 4. 執行完整資料庫健康檢查
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 WITH health_metrics AS (
     SELECT 
@@ -317,23 +319,23 @@ FROM health_metrics;"
 **解決方案**:
 ```bash
 # PostgreSQL 服務未啟動
-# 解決: 啟動資料庫服務
+# [宿主機] 解決: 啟動資料庫服務
 docker compose -f docker-compose.agvc.yml up -d postgres
 
 # 連接參數錯誤
-# 解決: 檢查環境變數和配置
+# [宿主機] 解決: 檢查環境變數和配置
 docker compose -f docker-compose.agvc.yml exec agvc_server env | rg POSTGRES
 
 # 資料庫效能問題 (根據健康檢查結果)
 # 問題1: 連接數過高 (> 100)
-# 解決: 檢查連接池配置，查找連接洩漏
+# [宿主機] 解決: 檢查連接池配置，查找連接洩漏
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT pid, usename, application_name, state, query_start 
 FROM pg_stat_activity 
 WHERE datname = 'agvc' AND state != 'idle';"
 
 # 問題2: 高回滾率 (> 10%)
-# 解決: 檢查應用程式日誌，查找死鎖和約束違反
+# [宿主機] 解決: 檢查應用程式日誌，查找死鎖和約束違反
 docker compose -f docker-compose.agvc.yml logs agvc_server | rg -i "rollback|deadlock|constraint"
 
 # 問題3: 低緩存命中率 (< 90%)
@@ -344,10 +346,10 @@ FROM pg_settings
 WHERE name IN ('shared_buffers', 'effective_cache_size', 'work_mem');"
 
 # 資料庫損壞或數據不一致
-# 解決: 檢查資料庫完整性並備份
+# [宿主機] 解決: 檢查資料庫完整性並備份
 docker compose -f docker-compose.agvc.yml exec postgres pg_dump -U agvc -d agvc > backup-$(date +%Y%m%d).sql
 
-# 檢查資料庫完整性
+# [宿主機] 檢查資料庫完整性
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT schemaname, tablename, n_dead_tup, n_live_tup,
        round(n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0) * 100, 2) as dead_ratio
@@ -361,8 +363,8 @@ ORDER BY dead_ratio DESC;"
 
 **診斷步驟**:
 ```bash
-# 1. 檢查資料庫統計指標並分析健康狀態
-docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
+# [宿主機] 1. 檢查資料庫統計指標並分析健康狀態
+docker compose -f docker-compose.agvc.yml exec postgres psql -U agv -d agvc -c "
 SELECT 
     datname,                                          -- 資料庫名稱
     numbackends as active_connections,                -- 當前活動連接數
@@ -377,7 +379,7 @@ SELECT
 FROM pg_stat_database 
 WHERE datname = 'agvc';"
 
-# 2. 檢查當前運行的查詢
+# [宿主機] 2. 檢查當前運行的查詢
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     pid, 
@@ -391,7 +393,7 @@ FROM pg_stat_activity
 WHERE state = 'active' AND datname = 'agvc' AND query != '<IDLE>'
 ORDER BY query_start;"
 
-# 3. 檢查阻塞和鎖定情況
+# [宿主機] 3. 檢查阻塞和鎖定情況
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     blocked_locks.pid AS blocked_pid,
@@ -413,7 +415,7 @@ WHERE NOT blocked_locks.granted AND blocking_locks.granted;"
 
 # 問題1: active_connections > 50 (連接數過高)
 # 原因: 連接池配置不當或連接洩漏
-# 解決: 
+# [宿主機] 解決:
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "
 # 檢查應用程式連接池配置
 python3 -c 'from db_proxy.connection_pool import ConnectionPoolManager; print(ConnectionPoolManager.get_pool_status())'
@@ -425,7 +427,7 @@ python3 -c 'from db_proxy.connection_pool import ConnectionPoolManager; print(Co
 # 查看具體的回滾原因
 docker compose -f docker-compose.agvc.yml logs agvc_server | rg -i "IntegrityError|DeadlockDetected|rollback" | tail -20
 
-# 分析死鎖模式
+# [宿主機] 分析死鎖模式
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT query, calls, mean_exec_time, rows, 100.0 * shared_blks_hit / nullif(shared_blks_hit + shared_blks_read, 0) AS hit_percent
 FROM pg_stat_statements 
@@ -435,7 +437,7 @@ LIMIT 10;"
 # 問題3: cache_hit_ratio < 90% (緩存命中率低)
 # 原因: shared_buffers太小或查詢模式問題
 # 解決:
-# 檢查當前記憶體配置
+# [宿主機] 檢查當前記憶體配置
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     name,
@@ -449,7 +451,7 @@ WHERE name IN ('shared_buffers', 'effective_cache_size', 'work_mem', 'maintenanc
 # 問題4: temp_files > 0 (有臨時檔案)
 # 原因: work_mem不足，複雜查詢溢出到磁碟
 # 解決:
-# 找出產生臨時檔案的查詢
+# [宿主機] 找出產生臨時檔案的查詢
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     temp_files,
@@ -469,20 +471,20 @@ WHERE datname = 'agvc';"
 
 **診斷步驟**:
 ```bash
-# 1. 檢查 AGV 狀態
+# [容器內] 1. 檢查 AGV 狀態
 ros2 topic echo /agv_status
 
-# 2. 檢查狀態機日誌
+# [容器內] 2. 檢查狀態機日誌
 ros2 log view
 
-# 3. 檢查事件處理
+# [容器內] 3. 檢查事件處理
 ros2 topic echo /agv_events
 ```
 
 **解決方案**:
 ```bash
 # 狀態機死鎖
-# 解決: 發送重置事件
+# [容器內] 解決: 發送重置事件
 ros2 topic pub /agv_events agv_interfaces/Event "event_type: 'reset'"
 
 # 狀態轉換邏輯錯誤
@@ -490,7 +492,7 @@ ros2 topic pub /agv_events agv_interfaces/Event "event_type: 'reset'"
 # 查看 agv_base/agv_states/ 目錄下的狀態定義
 
 # 事件處理異常
-# 解決: 重啟 AGV 節點
+# [容器內] 解決: 重啟 AGV 節點
 ros2 lifecycle set /agv_node shutdown
 ros2 run agv_base agv_node
 ```
@@ -500,14 +502,14 @@ ros2 run agv_base agv_node
 
 **診斷步驟**:
 ```bash
-# 1. 檢查 PLC 連接
+# [容器內] 1. 檢查 PLC 連接
 ros2 service call /plc_read plc_interfaces/PLCRead "address: 'D100'"
 
-# 2. 檢查網路連接
+# [容器內] 2. 檢查網路連接
 ping <PLC_IP>
 telnet <PLC_IP> <PLC_PORT>
 
-# 3. 檢查硬體狀態
+# [容器內] 3. 檢查硬體狀態
 ros2 topic echo /hardware_status
 ```
 
@@ -515,12 +517,12 @@ ros2 topic echo /hardware_status
 ```bash
 # PLC 連接失敗
 # 解決: 檢查網路配置和 PLC 設定
-# 重啟 PLC 通訊節點
+# [容器內] 重啟 PLC 通訊節點
 ros2 lifecycle set /plc_node shutdown
 ros2 run keyence_plc plc_node
 
 # 感測器異常
-# 解決: 檢查感測器連接和配置
+# [容器內] 解決: 檢查感測器連接和配置
 ros2 param get /sensor_node sensor_config
 ```
 
@@ -547,8 +549,8 @@ ros2 param get /sensor_node sensor_config
 ### 效能問題
 ```
 效能問題
-├── 檢查系統資源 → docker stats, free -h
-├── 檢查應用程式效能 → ros2 topic hz
+├── [宿主機] 檢查系統資源 → docker stats, free -h
+├── [容器內] 檢查應用程式效能 → ros2 topic hz
 ├── 如果資源不足 → 優化配置或擴容
 └── 如果應用異常 → 檢查程式邏輯
 ```
@@ -557,7 +559,7 @@ ros2 param get /sensor_node sensor_config
 
 ### 監控和預警
 ```bash
-# 設置定期健康檢查
+# [宿主機] 設置定期健康檢查
 #!/bin/bash
 # health-monitor.sh
 while true; do
@@ -572,10 +574,10 @@ done
 
 ### 備份和恢復
 ```bash
-# 定期備份重要資料
+# [宿主機] 定期備份重要資料
 docker compose -f docker-compose.agvc.yml exec postgres pg_dump -U agvc -d agvc > backup-$(date +%Y%m%d).sql
 
-# 配置檔案備份
+# [宿主機] 配置檔案備份
 tar -czf config-backup-$(date +%Y%m%d).tar.gz app/config/
 ```
 

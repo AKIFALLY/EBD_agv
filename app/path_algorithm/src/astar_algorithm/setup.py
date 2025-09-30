@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='root@todo.todo',
-    description='TODO: Package description',
-    license='Apache-2.0',
+    description='A* 路徑規劃演算法實作，用於 AGV 導航',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

@@ -479,4 +479,4 @@ TAFL v1.1.2 **不支援**以下功能：
 ## 🔗 相關資源
 - [TAFL 系統概覽](./tafl-system.md)
 - [TAFL Editor 使用指南](./tafl-editor.md)
-- [TAFL 故障排除指南](./tafl-troubleshooting.md)
+- [TAFL WCS 整合](./tafl-wcs-integration.md)

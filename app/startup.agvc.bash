@@ -29,7 +29,7 @@ else
     export AGVC_ROLE="primary"
     export ROS_NAMESPACE="/agvc01"
     export DEVICE_CONFIG_FILE="/app/config/agvc/agvc01_config.yaml"
-    export AGVC_WORKSPACES="db_proxy_ws,web_api_ws,ecs_ws,rcs_ws,flow_wcs_ws"
+    export AGVC_WORKSPACES="db_proxy_ws,web_api_ws,ecs_ws,rcs_ws,tafl_ws,tafl_wcs_ws"
 fi
 
 # 檢查是否安裝 Node.js (command -v 查詢是否存在指定的命令)

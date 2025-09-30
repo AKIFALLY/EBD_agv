@@ -1,5 +1,7 @@
-from typing import Optional, ClassVar, Dict
+from typing import Optional, ClassVar, Dict, List
 from sqlmodel import SQLModel, Field
+from sqlalchemy import Column, ARRAY, Integer
+from sqlalchemy.ext.mutable import MutableList
 from pydantic import ConfigDict
 
 
@@ -13,6 +15,18 @@ class Machine(SQLModel, table=True):
     name: str
     description: Optional[str] = None
     enable: int = Field(default=1)
+
+    # 新增工作區陣列欄位 - 作業員1和作業員2的工作區location ID列表
+    workspace_1: Optional[List[int]] = Field(
+        default=None,
+        sa_column=Column(MutableList.as_mutable(ARRAY(Integer)), nullable=True),
+        description="作業員1(左側)的工作區location ID陣列"
+    )
+    workspace_2: Optional[List[int]] = Field(
+        default=None,
+        sa_column=Column(MutableList.as_mutable(ARRAY(Integer)), nullable=True),
+        description="作業員2(右側)的工作區location ID陣列"
+    )
 
     # 停車格狀態常數定義
     PARKING_AVAILABLE: ClassVar[int] = 0        # 可用 - 停車格空閒，可以叫車

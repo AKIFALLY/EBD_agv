@@ -27,7 +27,7 @@ APP_DIR="$PROJECT_ROOT/app"
 declare -A WORKSPACE_CATEGORIES=(
     ["base"]="keyence_plc_ws plc_proxy_ws path_algorithm"
     ["agv"]="agv_cmd_service_ws joystick_ws agv_ws sensorpart_ws uno_gpio_ws"
-    ["agvc"]="db_proxy_ws ecs_ws rcs_ws wcs_ws ai_wcs_ws web_api_ws kuka_fleet_ws"
+    ["agvc"]="db_proxy_ws ecs_ws rcs_ws tafl_ws tafl_wcs_ws web_api_ws kuka_fleet_ws"
     ["common"]="launch_ws"
 )
 
@@ -208,7 +208,7 @@ estimate_build_time() {
         "agv_ws"|"web_api_ws")
             echo 120  # 2分鐘
             ;;
-        "rcs_ws"|"wcs_ws"|"ecs_ws")
+        "rcs_ws"|"ecs_ws")
             echo 90   # 1.5分鐘
             ;;
         "db_proxy_ws"|"keyence_plc_ws")

@@ -23,9 +23,9 @@ RosAGV 使用 PostgreSQL 16 作為主要資料庫，透過 db_proxy_ws 提供統
 │       └── test_db (測試資料庫)
 ├── db_proxy_ws (資料庫代理服務)
 │   ├── ConnectionPoolManager (連線池管理)
-│   ├── SQLModel ORM (28個資料模型)
-│   ├── CRUD 操作層 (20個專用CRUD)
-│   └── ROS 2 服務介面 (12個服務)
+│   ├── SQLModel ORM (32個資料表)
+│   ├── CRUD 操作層 (21個專用CRUD)
+│   └── ROS 2 服務介面 (11個服務)
 └── pgAdmin4 (管理工具)
     ├── 連接埠: 5050
     └── Web 管理介面
@@ -65,8 +65,10 @@ cd /home/ct/RosAGV/app/db_proxy_ws/scripts
 
 #### 步驟2: 創建資料表和初始數據
 ```bash
-# 在 AGVC 容器內執行
+# [宿主機] 進入 AGVC 容器內執行
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
+
+# [容器內] 獲容器內執行
 cd /app/db_proxy_ws/src/db_proxy
 python3 -m db_proxy.sql.db_install
 ```
@@ -90,17 +92,17 @@ PGPASSWORD=password psql -h 192.168.100.254 -U agvc -d agvc -c "\dt"
 
 #### 常見問題1: PostgreSQL 容器未啟動
 ```bash
-# 解決方案
+# [宿主機] 解決方案
 docker compose -f docker-compose.agvc.yml up -d postgres
 # 等待 10 秒後重新執行 init_database.sh
 ```
 
 #### 常見問題2: 宿主機無法連接容器
 ```bash
-# 檢查容器網路
+# [宿主機] 檢查容器網路
 docker network inspect rosagv_agvc_network
 
-# 檢查端口映射
+# [宿主機] 檢查端口映射
 docker compose -f docker-compose.agvc.yml ps postgres
 ```
 
@@ -256,7 +258,7 @@ alembic init alembic
 alembic revision --autogenerate -m "Initial migration"
 alembic upgrade head
 
-# 在容器中執行遷移
+# [宿主機] 在容器中執行遷移
 docker compose -f docker-compose.agvc.yml exec agvc_server alembic upgrade head
 ```
 

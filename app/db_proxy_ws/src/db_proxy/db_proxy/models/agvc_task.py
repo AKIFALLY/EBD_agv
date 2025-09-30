@@ -130,47 +130,10 @@ class Task(SQLModel, table=True):
     model_config = ConfigDict(from_attributes=True)  # 告訴 Pydantic 這是 ORM 模型
     
     def generate_task_id(self, work_code: str = None) -> str:
-        """生成 task_id (for flow_wcs compatibility)"""
+        """生成 task_id (for tafl_wcs compatibility)"""
         from datetime import datetime
         if work_code:
             return f"TASK_{work_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         else:
             return f"TASK_{self.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-
-class FlowLog(SQLModel, table=True):
-    """Flow 執行日誌模型 - flow_wcs 整合"""
-    __tablename__ = "flow_log"
-    
-    id: Optional[int] = Field(default=None, primary_key=True)
-    flow_id: str
-    flow_name: Optional[str] = None
-    work_id: Optional[int] = Field(default=None, foreign_key="work.id")
-    section: Optional[str] = None
-    step_id: Optional[str] = None
-    function: Optional[str] = None
-    params: Optional[Dict[str, Any]] = Field(
-        default=None,
-        sa_column=Column(JSON(none_as_null=True))
-    )
-    result: Optional[Dict[str, Any]] = Field(
-        default=None,
-        sa_column=Column(JSON(none_as_null=True))
-    )
-    status: str  # success, failed, skipped
-    error_message: Optional[str] = None
-    duration: Optional[float] = None  # execution time in seconds
-    created_at: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-        default_factory=lambda: datetime.now(timezone.utc))
-    
-    # Legacy fields (for backward compatibility if needed)
-    step_index: Optional[int] = None
-    step_type: Optional[str] = None
-    message: Optional[str] = None
-    flow_metadata: Optional[Dict[str, Any]] = Field(
-        default=None,
-        sa_column=Column(JSON(none_as_null=True), name='metadata')  # 在資料庫中仍叫 metadata
-    )
-    
-    model_config = ConfigDict(from_attributes=True)  # 告訴 Pydantic 這是 ORM 模型

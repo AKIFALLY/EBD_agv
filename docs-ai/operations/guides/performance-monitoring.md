@@ -312,7 +312,7 @@ CROSS JOIN table_health th;
 echo "🗄️ PostgreSQL 效能監控報告 - $(date)"
 echo "========================================"
 
-# 執行健康檢查
+# [宿主機] 執行健康檢查
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 WITH performance_metrics AS (
     SELECT 
@@ -353,6 +353,7 @@ FROM performance_metrics;
 
 echo ""
 echo "📊 長時間運行查詢檢查:"
+# [宿主機] 長時間運行查詢檢查
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     'PID: ' || pid || 
@@ -378,7 +379,7 @@ MIN_CACHE_HIT_RATIO=90
 MAX_ROLLBACK_RATIO=15
 MAX_TEMP_FILES=5
 
-# 獲取當前效能指標
+# [宿主機] 獲取當前效能指標
 METRICS=$(docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -t -c "
 SELECT 
     numbackends,

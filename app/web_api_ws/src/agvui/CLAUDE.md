@@ -1,9 +1,14 @@
 # agvui - AGV車載監控界面
 
-## 專案概述
-agvui是RosAGV系統的AGV車載監控界面，為AGV設備提供簡化的Web界面，用於顯示AGV狀態、任務資訊和基本控制功能。基於FastAPI + Socket.IO技術，專為車載設備的有限資源環境設計。
+## 📚 Context Loading
+../CLAUDE.md  # 引用上層 web_api_ws 工作空間文檔
 
-## 核心模組
+## 📋 套件概述
+**agvui** 是 web_api_ws 工作空間中的 **AGV車載監控界面套件**，為AGV設備提供簡化的Web界面，用於顯示AGV狀態、任務資訊和基本控制功能。基於FastAPI + Socket.IO技術，專為車載設備的有限資源環境設計。
+
+**🎯 定位**: 車載監控界面，提供輕量級的AGV狀態監控和基本控制功能
+
+## 🔧 核心套件特色
 
 ### 後端架構
 - **AgvUiServer** (`agv_ui_server.py`): 主要FastAPI伺服器和Socket.IO整合
@@ -48,7 +53,7 @@ templates/
 └── navbar.html                 # 導航欄模板
 ```
 
-## 開發指令
+## 🚀 套件專用啟動
 
 ### 基本操作
 ```bash
@@ -145,7 +150,9 @@ socket.on('task_update', (data) => {
 });
 ```
 
-## 故障排除
+## 🚨 套件專項故障排除
+
+**⚠️ 通用故障排除請參考**: ../CLAUDE.md 故障排除章節
 
 ### 常見問題
 

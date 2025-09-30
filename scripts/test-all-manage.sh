@@ -77,8 +77,8 @@ test_service "rcs"
 echo "2️⃣ Web API Launch 服務"
 test_service "web_api_launch"
 
-echo "3️⃣ Flow WCS 服務"
-test_service "flow_wcs"
+echo "3️⃣ TAFL WCS 服務"
+test_service "tafl_wcs"
 
 echo "4️⃣ ECS Core 服務"
 test_service "ecs_core"

@@ -2,7 +2,7 @@
 """
 RCS 系統 pytest 測試
 符合 ROS 2 colcon pytest 框架的標準測試檔案
-參考 ai_wcs_ws 測試結構設計
+參考標準 pytest 測試結構設計
 """
 
 import pytest
@@ -44,7 +44,7 @@ except ImportError:
 RCS_AVAILABLE = CT_MANAGER_AVAILABLE or KUKA_MANAGER_AVAILABLE
 
 
-# 基本數據測試 (類似 ai_wcs_ws 的簡單函數測試)
+# 基本數據單元測試
 @pytest.mark.skipif(not WORK_IDS_AVAILABLE, reason="WorkIds 不可用")
 def test_work_id_categories():
     """測試工作 ID 分類數值"""

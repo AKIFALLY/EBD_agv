@@ -23,8 +23,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='yaze.lin.j303@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='AGV 車載監控介面，用於顯示車輛狀態',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

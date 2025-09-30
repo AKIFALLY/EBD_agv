@@ -3,11 +3,11 @@ TAFL Editor Router
 TAFL (Task Automation Flow Language) Visual Editor - Card-based UI for TAFL flow creation
 
 IMPORTANT: Main route is /tafl/editor (NOT /tafl-editor)
-- Base prefix: /tafl  
+- Base prefix: /tafl
 - Editor endpoint: /editor
 - Full path: /tafl/editor
 
-This is replacing the Linear Flow Designer and will be the primary flow editor.
+This is the primary visual flow editor for TAFL flow creation and management.
 """
 
 import json

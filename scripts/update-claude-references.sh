@@ -46,7 +46,7 @@ declare -A reference_map=(
     # Context Level 系列映射
     ["@docs-ai/context/level1/system-overview.md"]="@docs-ai/context/system/rosagv-overview.md"
     ["@docs-ai/context/level2/workspace-agv_ws.md"]="@docs-ai/context/workspaces/agv-workspaces.md"
-    ["@docs-ai/context/level2/workspace-ai_wcs_ws-design.md"]="@docs-ai/context/workspaces/agvc-workspaces.md"
+    ["@docs-ai/context/level2/workspace-tafl_wcs_ws-design.md"]="@docs-ai/context/workspaces/agvc-workspaces.md"
     ["@docs-ai/context/level3/package-agv_base.md"]="@docs-ai/context/workspaces/agv-workspaces.md"
 )
 

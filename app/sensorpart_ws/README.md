@@ -44,10 +44,6 @@ sensorpart_ws/
 │       │   ├── __init__.py       # 套件初始化
 │       │   ├── sensorpart.py     # TCP 感測器客戶端 (核心實作)
 │       │   └── test_sensorpart_node.py # ROS 2 測試節點 (完整實作)
-│       ├── test/                 # 測試檔案
-│       │   ├── test_copyright.py # 版權測試
-│       │   ├── test_flake8.py    # 程式碼風格測試
-│       │   └── test_pep257.py    # 文檔字串測試
 │       ├── resource/             # 資源檔案
 │       │   └── sensorpart        # 套件資源標記
 │       ├── package.xml           # 套件配置

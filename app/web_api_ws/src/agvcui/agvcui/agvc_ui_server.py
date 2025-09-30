@@ -2,8 +2,9 @@ import os
 import socketio
 import uvicorn
 import logging
+from datetime import datetime
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
@@ -80,6 +81,52 @@ class AgvcUiServer:
 
     def register_routes(self):
         from agvcui.middleware import get_current_user_from_request
+
+        @self.app.get("/health")
+        async def health_check():
+            """健康檢查端點"""
+            overall_status = "healthy"
+            http_status_code = 200
+            health_details = {
+                "service": "agvcui",
+                "port": 8001,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            try:
+                # 檢查資料庫連接（如果有的話）
+                db_status = "healthy"
+                try:
+                    from agvcui.database import connection_pool
+                    from sqlalchemy import text
+                    with connection_pool.get_session() as session:
+                        session.execute(text("SELECT 1"))
+                    db_status = "healthy"
+                except Exception as e:
+                    db_status = f"unhealthy: {str(e)}"
+                    overall_status = "degraded"  # 資料庫不健康時，服務狀態降級
+
+                health_details["database"] = db_status
+
+                # 檢查 Socket.IO 連接（如果需要）
+                # 可以在這裡添加其他組件的健康檢查
+
+                health_details["status"] = overall_status
+
+                return JSONResponse(
+                    status_code=http_status_code,
+                    content=health_details
+                )
+
+            except Exception as e:
+                # 發生未預期的錯誤時，回傳 503 Service Unavailable
+                health_details["status"] = "unhealthy"
+                health_details["error"] = str(e)
+
+                return JSONResponse(
+                    status_code=503,
+                    content=health_details
+                )
 
         @self.app.get("/", response_class=HTMLResponse)
         async def home(request: Request):

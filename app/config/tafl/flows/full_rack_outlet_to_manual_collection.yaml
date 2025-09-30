@@ -1,0 +1,196 @@
+metadata:
+  id: "full_rack_outlet_to_manual_collection"
+  name: "完成料架出口到人工收料區"
+  enabled: true
+  version: "2.0.0"
+  description: "當房間出口Rack滿載或尾批時，搬運到人工收料區供人工取出產品"
+  author: "TAFL System"
+  created_at: "2025-09-30"
+  tags: ["rack_move", "manual_collection", "room_outlet", "automation"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  work_id: 220001  # KUKA_RACK_MOVE
+  priority: 8  # Priority 80 對應到 1-10 範圍中的 8
+  model: "KUKA400i"
+
+flow:
+  # 查詢所有房間出口位置
+  - query:
+      target: locations
+      where:
+        type: "room_outlet"
+      as: outlet_locations
+      description: "查詢所有房間出口位置"
+
+  # 遍歷每個出口位置
+  - for:
+      in: "${outlet_locations}"
+      as: outlet_location
+      do:
+        # 查詢該出口位置的Rack
+        - query:
+            target: racks
+            where:
+              location_id: "${outlet_location.id}"
+            as: outlet_racks
+            description: "查詢出口位置的Rack"
+
+        # 如果出口有Rack
+        - if:
+            condition: "${outlet_racks.length > 0}"
+            then:
+              - set:
+                  outlet_rack: "${outlet_racks[0]}"
+
+              # 查詢Rack的產品資訊（獲取尺寸）
+              - query:
+                  target: products
+                  where:
+                    id: "${outlet_rack.product_id}"
+                  as: products
+                  description: "查詢產品尺寸資訊"
+
+              # 設置產品資訊
+              - set:
+                  product: "${products[0]}"
+                  product_size: "${product.size}"
+
+              # 根據產品尺寸設置容量（使用if判斷）
+              - if:
+                  condition: "${product_size == 'S'}"
+                  then:
+                    - set:
+                        max_per_side: 16
+                        max_total: 32
+                  else:
+                    - set:
+                        max_per_side: 8
+                        max_total: 16
+
+              # 查詢Rack的A面載具（1-16）
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${outlet_rack.id}"
+                    rack_index_min: 1
+                    rack_index_max: 16
+                  as: a_side_carriers
+                  description: "查詢A面載具"
+
+              # 查詢Rack的B面載具（17-32）
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${outlet_rack.id}"
+                    rack_index_min: 17
+                    rack_index_max: 32
+                  as: b_side_carriers
+                  description: "查詢B面載具"
+
+              # 計算載具數量和判斷是否滿載
+              - set:
+                  a_side_count: "${a_side_carriers.length}"
+                  b_side_count: "${b_side_carriers.length}"
+                  total_count: "${a_side_count + b_side_count}"
+                  # 判斷是否滿載（根據產品尺寸動態判斷）
+                  is_full: "${total_count >= max_total}"
+
+              # 查詢房間內已完成但未放入Rack的同產品載具（判斷尾批）
+              - query:
+                  target: carriers
+                  where:
+                    room_id: "${outlet_location.room_id}"
+                    rack_id: null  # 未放入Rack
+                    status_id: 8  # 已完成
+                  as: available_carriers
+                  description: "查詢房間內可放入的已完成載具"
+
+              # 判斷是否為尾批（房間內無可放carrier）
+              - set:
+                  is_last_batch: "${available_carriers.length == 0}"
+                  # 滿載或尾批都可以搬離
+                  should_move: "${is_full || is_last_batch}"
+
+              # 設定搬運原因（使用 if 替代三元運算符）
+              - if:
+                  condition: "${is_full}"
+                  then:
+                    - set:
+                        move_reason: "Rack滿載，製程完成送人工收料"
+                        move_description: "${product_size}尺寸 ${total_count}/${max_total}個載具，滿載送人工收料"
+                  else:
+                    - set:
+                        move_reason: "尾批，房間內無可放載具，送人工收料"
+                        move_description: "${product_size}尺寸 ${total_count}/${max_total}個載具，尾批送人工收料"
+
+              # 如果應該搬離（滿載或尾批）
+              - if:
+                  condition: "${should_move}"
+                  then:
+                    # 查詢人工收料區的空閒位置（51-55）
+                    - query:
+                        target: locations
+                        where:
+                          id_in: [51, 52, 53, 54, 55]
+                          location_status_id: 2  # unoccupied
+                        limit: 1
+                        as: free_collection_locations
+                        description: "查詢人工收料區空閒位置"
+
+                    # 如果找到空閒收料位置
+                    - if:
+                        condition: "${free_collection_locations.length > 0}"
+                        then:
+                          - set:
+                              collection_location: "${free_collection_locations[0]}"
+
+                          # 檢查是否已存在未完成的搬運任務
+                          - query:
+                              target: tasks
+                              where:
+                                work_id: "${work_id}"
+                                rack_id: "${outlet_rack.id}"
+                                status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                              as: existing_tasks
+                              description: "檢查是否已存在搬運任務"
+
+                          # 如果沒有重複任務，創建新任務
+                          - if:
+                              condition: "${existing_tasks.length == 0}"
+                              then:
+                                # 創建料架搬運任務
+                                - create:
+                                    target: task
+                                    with:
+                                      type: "rack_move"
+                                      name: "房間${outlet_location.room_id}完成料架到人工收料區"
+                                      description: "${move_description}"
+                                      work_id: "${work_id}"
+                                      rack_id: "${outlet_rack.id}"
+                                      room_id: "${outlet_location.room_id}"
+                                      priority: "${priority}"
+                                      status_id: 1  # PENDING
+                                      parameters:
+                                        rack_name: "${outlet_rack.name}"
+                                        rack_id: "${outlet_rack.id}"
+                                        from_location_name: "${outlet_location.name}"
+                                        from_location_id: "${outlet_location.id}"
+                                        to_location_name: "${collection_location.name}"
+                                        to_location_id: "${collection_location.id}"
+                                        room_id: "${outlet_location.room_id}"
+                                        product_size: "${product_size}"
+                                        carrier_count: "${total_count}"
+                                        max_capacity: "${max_total}"
+                                        reason: "${move_reason}"
+                                        is_full: "${is_full}"
+                                        is_last_batch: "${is_last_batch}"
+                                        model: "${model}"
+                                        nodes: ["${outlet_location.node_id}", "${collection_location.node_id}"]
+                                        a_side_count: "${a_side_count}"
+                                        b_side_count: "${b_side_count}"
+                                    description: "創建料架搬運任務（出口→人工收料區）"
+
+  # 流程完成

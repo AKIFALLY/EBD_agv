@@ -18,8 +18,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='yazelin@ching-tech.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='設備控制系統，用於 PLC 資料收集和門控制',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

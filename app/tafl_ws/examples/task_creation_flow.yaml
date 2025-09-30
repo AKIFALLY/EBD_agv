@@ -20,25 +20,25 @@ flow:
       where:
         room_id: "${room_id}"
         status: available
-      store_as: available_locations
+      as: available_locations
   
   # Check if we have locations
   - check:
       condition: "${available_locations.length} > 0"
-      store_as: has_locations
+      as: has_locations
   
   - if:
       condition: "${has_locations}"
       then:
         # Process each location
         - for:
-            each: location
+            as: location
             in: "${available_locations}"
             do:
               # Check if location has racks
               - check:
                   condition: "${location.racks.length} > 0"
-                  store_as: has_racks
+                  as: has_racks
               
               - if:
                   condition: "${has_racks}"
@@ -51,11 +51,11 @@ flow:
                           location_id: "${location.id}"
                           priority: 1
                           status: pending
-                        store_as: new_task
+                        as: new_task
                     
                     # Notify about task creation
                     - notify:
-                        channel: system
+                        level: info
                         message: "Created task ${new_task.id} for location ${location.id}"
                     
                     # Update location status
@@ -68,11 +68,10 @@ flow:
                           task_id: "${new_task.id}"
       else:
         - notify:
-            channel: warning
-            message: "No available locations found in room ${room_id}"
             level: warning
+            message: "No available locations found in room ${room_id}"
   
   # Final summary
   - notify:
-      channel: system
+      level: info
       message: "Task creation flow completed"

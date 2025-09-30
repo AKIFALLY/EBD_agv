@@ -264,13 +264,13 @@ rm -rf /tmp/log-analysis-cache/
 
 ### 日誌存取問題
 ```bash
-# 檢查日誌檔案權限
+# [宿主機] 檢查日誌檔案權限
 ls -la /var/log/
 
-# 檢查容器日誌
+# [宿主機] 檢查容器日誌
 docker compose -f docker-compose.agvc.yml logs --tail 10
 
-# 檢查磁碟空間
+# [宿主機] 檢查磁碟空間
 df -h /var/log/
 ```
 

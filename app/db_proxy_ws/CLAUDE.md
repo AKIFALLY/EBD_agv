@@ -38,13 +38,15 @@ db_proxy_ws/
 │   │   │   ├── crud/                     # CRUD 操作層
 │   │   │   ├── services/                 # 業務服務層
 │   │   │   ├── sql/                      # 資料庫初始化
+│   │   │   │   └── init_data/            # 初始化資料和條件定義
+│   │   │   ├── examples/                 # 使用範例
 │   │   │   └── ros_converter.py          # ROS 訊息轉換器
+│   │   ├── test/                        # 標準測試目錄
 │   │   └── setup.py                     # 套件安裝配置
 │   └── db_proxy_interfaces/             # ROS 2 介面定義
 │       ├── msg/                         # 訊息定義
 │       └── srv/                         # 服務定義
 ├── scripts/                             # 工具腳本
-├── docs/                                # 文檔目錄
 ├── CLAUDE.md                            # 模組文檔
 └── README.md                            # 基本說明
 ```
@@ -145,22 +147,21 @@ ros2 service call /rack_query db_proxy_interfaces/srv/RackQuery "query_type: 'ge
 /generic_query           # 通用查詢
 ```
 
-#### SQLModel 資料模型 (25個模型)
+#### SQLModel 資料模型 (32個模型)
 基於實際 models/ 目錄檔案：
 - **日誌模型**: log_level, rosout_log, runtime_log, modify_log, audit_log
 - **拓撲模型**: node, edge, node_type
 - **Kuka模型**: agvc_kuka (KukaNode, KukaEdge)
-- **系統模型**: client, machine, user, license
+- **系統模型**: client, machine (**2025-09 更新: 新增 workspace 陣列欄位**), user, license
 - **設備模型**: agvc_eqp (Eqp, EqpPort, EqpSignal)
 - **位置模型**: agvc_location (Location, LocationStatus)
 - **產品模型**: agvc_product (ProcessSettings, Product)
 - **RCS模型**: agvc_rcs (AGV, AGVContext, TrafficZone), agv_status
 - **WCS模型**: room, rack_status, rack, carrier, carrier_status
 - **任務模型**: agvc_task (Task, TaskStatus, Work)
-- **條件模型**: task_condition_history
 
-#### CRUD 操作層 (23個CRUD實作)
-基於 BaseCRUD 抽象類別，包含 __init__.py 在內的 23 個檔案，每個主要資料模型都有對應的 CRUD 操作類別
+#### CRUD 操作層 (21個CRUD實作)
+基於 BaseCRUD 抽象類別，包含 21 個具體 CRUD 實作，涵蓋主要資料模型的資料庫操作
 
 ## 🛠️ 實際使用範例
 
@@ -211,6 +212,57 @@ from db_proxy.sql.db_install import initialize_default_data
 pool_manager = ConnectionPoolManager("postgresql+psycopg2://agvc:password@192.168.100.254/agvc")
 # 初始化預設資料
 initialize_default_data(pool_manager)
+```
+
+#### 🆕 工作區配置範例 (06_machines.py)
+```python
+# 新增工作區配置 (2025-09 更新)
+default_machines = [
+    {"id": 1,
+     "parking_space_1": 95, "parking_space_2": 96,
+     "workspace_1": [101, 102, 103],  # 左側工作區: 3個位置
+     "workspace_2": [104, 105, 106],  # 右側工作區: 3個位置
+     "name": "射出機1", "enable": 1},
+    {"id": 2,
+     "parking_space_1": 97, "parking_space_2": 98,
+     "workspace_1": [201, 202, 203],  # 左側工作區: 3個位置
+     "workspace_2": [204, 205, 206],  # 右側工作區: 3個位置
+     "name": "射出機2", "enable": 1}
+]
+```
+
+#### Machine 模型更新 (models/machine.py)
+```python
+from sqlalchemy import Column, Integer, ARRAY
+from sqlalchemy.ext.mutable import MutableList
+from typing import Optional, List
+from sqlmodel import Field
+
+class Machine(SQLModel, table=True):
+    __tablename__ = "machine"
+
+    # 既有欄位
+    id: Optional[int] = Field(default=None, primary_key=True)
+    parking_space_1: Optional[int] = Field(default=None, foreign_key="node.id")
+    parking_space_2: Optional[int] = Field(default=None, foreign_key="node.id")
+    parking_space_1_status: Optional[int] = Field(default=0)
+    parking_space_2_status: Optional[int] = Field(default=0)
+
+    # 🆕 新增工作區陣列欄位 (2025-09)
+    workspace_1: Optional[List[int]] = Field(
+        default=None,
+        sa_column=Column(MutableList.as_mutable(ARRAY(Integer)), nullable=True),
+        description="作業員1(左側)的工作區location ID陣列"
+    )
+    workspace_2: Optional[List[int]] = Field(
+        default=None,
+        sa_column=Column(MutableList.as_mutable(ARRAY(Integer)), nullable=True),
+        description="作業員2(右側)的工作區location ID陣列"
+    )
+
+    name: str
+    description: Optional[str] = None
+    enable: int
 ```
 
 ## 🚨 資料庫代理服務專項故障排除

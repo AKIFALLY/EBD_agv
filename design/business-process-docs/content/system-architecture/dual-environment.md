@@ -185,7 +185,8 @@ AGVC 管理工作空間 - 專注於車隊管理和系統整合
 ├── db_proxy_ws/              # 資料庫代理服務
 ├── ecs_ws/                   # 設備控制系統
 ├── rcs_ws/                   # 機器人控制系統
-├── flow_wcs_ws/              # Flow WCS 系統 (唯一 WCS 實作)
+├── tafl_ws/                  # TAFL 語言核心實作
+├── tafl_wcs_ws/              # TAFL WCS 系統 (目前使用的 WCS 實作)
 ├── kuka_fleet_ws/            # KUKA Fleet 整合
 ├── launch_ws/                # 啟動編排服務
 └── [共用基礎設施工作空間]

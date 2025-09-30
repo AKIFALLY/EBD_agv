@@ -73,6 +73,7 @@ web_api_ws/
 │   │   │       ├── door.py       # 門控制 API (整合 ecs.door_logic)
 │   │   │       ├── kuka.py       # KUKA Fleet 整合 API
 │   │   │       ├── map_importer.py # 地圖匯入 API
+│   │   │       ├── nodes.py      # 節點管理 API (ROS 2 節點控制)
 │   │   │       ├── plc.py        # PLC 控制 API
 │   │   │       └── traffic.py    # 交通管理 API
 │   │   ├── package.xml           # 套件配置 (依賴 ecs)
@@ -89,6 +90,9 @@ web_api_ws/
 │   │   │   │   ├── map.py       # 地圖相關 API
 │   │   │   │   ├── tasks.py     # 任務相關 API
 │   │   │   │   ├── auth.py      # 認證相關 API
+│   │   │   │   ├── tafl_editor.py # TAFL 編輯器 API (路由: /tafl/editor)
+│   │   │   │   ├── tafl_editor_direct.py # TAFL 直接編輯 API
+│   │   │   │   ├── nodes.py     # 節點管理 API
 │   │   │   │   └── *.py         # 其他 API 路由
 │   │   │   ├── middleware/       # 中間件
 │   │   │   │   └── auth.py      # 認證中間件
@@ -107,10 +111,13 @@ web_api_ws/
 │       │   ├── core/             # 核心服務層
 │       │   │   ├── op_ui_server.py # FastAPI 伺服器主程式 (使用虛擬環境 fastapi, uvicorn)
 │       │   │   ├── op_ui_socket.py # Socket.IO 事件處理 (使用虛擬環境 socketio)
-│       │   │   ├── task_service.py # 任務業務邏輯服務
 │       │   │   └── device_auth.py # 設備授權驗證
 │       │   ├── database/         # 資料庫層
 │       │   │   └── operations.py # 資料庫操作 (使用 db_proxy)
+│       │   ├── monitoring/       # 監控服務層
+│       │   │   └── task_monitor.py # 任務狀態監控服務
+│       │   ├── services/         # 業務邏輯服務層
+│       │   │   └── opui_task_service.py # OPUI 任務業務邏輯
 │       │   ├── api/              # REST API 路由
 │       │   │   ├── product.py   # 產品相關 API
 │       │   │   ├── agv.py       # AGV 相關 API
@@ -144,6 +151,14 @@ web_api_ws/
 **重要**: 接管了原本 ecs_ws 中 MQTT 門控制的職責，提供 HTTP API 介面
 
 ### 2. AGVC 管理介面 (agvcui) - 使用虛擬環境 fastapi, uvicorn, jinja2, socketio
+**新增重要功能**:
+- **TAFL 編輯器**: 視覺化 TAFL 流程編輯器 (路由: /tafl/editor)
+  - 支援拖放式流程設計
+  - 即時驗證和預覽
+  - 與 tafl_wcs_ws 深度整合
+- **節點管理界面**: ROS 2 節點狀態監控和控制
+
+**原有功能保留**:
 **系統定位**: 完整的 AGV 車隊管理系統，提供全面的監控和管理功能
 **技術架構**: FastAPI + Socket.IO + ES6 模組化前端 + Bulma CSS 框架
 
@@ -164,6 +179,12 @@ web_api_ws/
 - **Material Design Icons**: 一致的圖示系統
 
 ### 3. 操作員介面 (opui) - 使用虛擬環境 fastapi, uvicorn, jinja2, socketio
+**系統架構更新**: 新增了分層式架構設計
+- **monitoring 層**: 任務狀態即時監控服務 (task_monitor.py)
+- **services 層**: 業務邏輯服務 (opui_task_service.py)
+- **分層優勢**: 更清晰的職責分離，易於維護和擴展
+
+**原有功能保留**:
 **系統定位**: 簡化的操作員專用介面，專注於日常 AGV 調度操作
 **技術架構**: FastAPI + Socket.IO + 模組化前端 + Bulma CSS 框架
 
@@ -187,7 +208,16 @@ web_api_ws/
 - **派車流程**: 選擇產品和料架 → 點擊派車 → 創建任務 → 更新機台狀態
 - **任務監控**: 任務創建 → 狀態監控 → 完成檢測 → 資料同步
 
-### 4. 門控制 API (routers/door.py) - 整合 ecs.door_logic
+### 4. 節點管理 API (routers/nodes.py) - ROS 2 節點控制
+**核心功能**:
+- **節點查詢**: 查詢本地和遠端 ROS 2 節點狀態
+- **節點控制**: 啟動、停止、重啟節點
+- **健康檢查**: 節點健康狀態監控
+- **批量操作**: 支援批量節點操作
+
+**重要**: 提供統一的 ROS 2 節點管理介面，支援 AGVC 系統和 AGV 車載節點的遠端控制
+
+### 5. 門控制 API (routers/door.py) - 整合 ecs.door_logic
 **核心功能**:
 - **門控制**: 控制工廠門的開啟和關閉 (使用 ecs_ws 的 DoorLogic)
 - **狀態查詢**: 查詢門的當前狀態
@@ -196,14 +226,14 @@ web_api_ws/
 
 **重要**: 此功能接管了原本 ecs_ws 中 MQTT 門控制的職責
 
-### 5. PLC 控制 API (routers/plc.py)
+### 6. PLC 控制 API (routers/plc.py)
 **核心功能**:
 - **PLC 通訊**: 透過 plc_proxy_ws 與 PLC 設備通訊
 - **記憶體讀寫**: 支援 PLC 記憶體的讀取和寫入操作
 - **狀態監控**: 即時監控 PLC 設備狀態
 - **批次操作**: 支援批次 PLC 操作
 
-### 6. KUKA Fleet 整合 (routers/kuka.py)
+### 7. KUKA Fleet 整合 (routers/kuka.py)
 **核心功能**:
 - **Fleet 管理**: 與 KUKA Fleet 系統整合
 - **任務同步**: 同步任務狀態和進度
@@ -340,7 +370,17 @@ POST   /plc/force_off                                       # 強制關閉 PLC �
                                                             # 參數: {"device_type": "string", "key": "string"}
 ```
 
-### 3. KUKA Fleet 整合 API (prefix: `/interfaces/api/amr`) - 與 KUKA 系統整合
+### 3. 節點管理 API (prefix: `/api/nodes`) - ROS 2 節點管理
+```
+GET    /api/nodes/list                                      # 列出所有節點狀態
+GET    /api/nodes/status/{node_name}                        # 查詢特定節點狀態
+POST   /api/nodes/start/{node_name}                         # 啟動節點
+POST   /api/nodes/stop/{node_name}                          # 停止節點
+POST   /api/nodes/restart/{node_name}                       # 重啟節點
+GET    /api/nodes/health                                    # 節點健康檢查
+```
+
+### 4. KUKA Fleet 整合 API (prefix: `/interfaces/api/amr`) - 與 KUKA 系統整合
 ```
 POST   /interfaces/api/amr/missionStateCallback             # 接收 KUKA 系統任務狀態回報
                                                             # 參數: {"missionCode": "string", "missionStatus": "string",
@@ -349,7 +389,7 @@ POST   /interfaces/api/amr/missionStateCallback             # 接收 KUKA 系統
                                                             #       "slotCode": "string", "message": "string", "missionData": {}}
 ```
 
-### 4. 交通管理 API (prefix: `/traffic`) - 交通區域控制
+### 5. 交通管理 API (prefix: `/traffic`) - 交通區域控制
 ```
 POST   /traffic/acquire                                     # 取得交管區使用權 (依 ID)
                                                             # 參數: {"trafficId": "string", "agvId": "string"}
@@ -361,7 +401,7 @@ POST   /traffic/release_by_name                             # 釋放交管區使
                                                             # 參數: {"trafficId": "string", "agvId": "string"}
 ```
 
-### 5. 地圖匯入 API (prefix: `/map_importer`) - 地圖資料管理
+### 6. 地圖匯入 API (prefix: `/map_importer`) - 地圖資料管理
 ```
 POST   /map_importer/upload-kuka-map/                       # 上傳 KUKA 地圖檔案
                                                             # 參數: file (UploadFile)
@@ -371,12 +411,12 @@ DELETE /map_importer/delete-kuka-map                        # 刪除 KUKA 地圖
 DELETE /map_importer/delete-ct-map                          # 刪除 CT 地圖資料
 ```
 
-### 6. 系統管理 API (根路徑) - 系統控制
+### 7. 系統管理 API (根路徑) - 系統控制
 ```
 GET    /shutdown                                            # 關閉 API 伺服器
 ```
 
-### 7. FastAPI 自動生成端點
+### 8. FastAPI 自動生成端點
 ```
 GET    /docs                                                # Swagger UI API 文檔
 GET    /redoc                                               # ReDoc API 文檔
@@ -1125,6 +1165,11 @@ ls -la /app/web_api_ws/src/opui/opui/frontend/templates/
   - [x] 新增 mission_code 欄位到資料庫模型
   - [x] 完成 UI 整合 (任務表單和列表)
   - [x] 建立完整的測試工具和文檔
+- [x] **TAFL 編輯器整合** ✅ **已完成** (2025-09-16)
+  - [x] 實現 TAFL 視覺化編輯器 (tafl_editor.py)
+  - [x] 直接編輯 API (tafl_editor_direct.py)
+  - [x] 與 tafl_wcs_ws 系統整合
+  - [x] 前端拖放式操作介面
 - [ ] **完善 AGVCUI Works 頁面** (1 週)
   - [x] 基本 Works 路由和模板已實現
   - [ ] 完善 Works 頁面 JavaScript 功能
@@ -1146,6 +1191,11 @@ ls -la /app/web_api_ws/src/opui/opui/frontend/templates/
   - [x] KUKA Fleet API (kuka.py) - 1 個端點
   - [x] 交通管理 API (traffic.py) - 4 個端點
   - [x] 地圖匯入 API (map_importer.py) - 4 個端點
+  - [x] 節點管理 API (nodes.py) - 6 個端點 (2025-09-19)
+- [x] **OPUI 架構升級** ✅ **已完成** (2025-07)
+  - [x] 新增 monitoring 層 (task_monitor.py)
+  - [x] 新增 services 層 (opui_task_service.py)
+  - [x] 分層式架構實現
 - [ ] **擴展 API 功能** (2 週)
   - [ ] 新增批次操作介面
   - [x] 檔案上傳功能已實現 (地圖匯入)

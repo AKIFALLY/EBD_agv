@@ -18,8 +18,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='yazelin@ching-tech.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Cargo 型 AGV 實作，專門用於物料搬運',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

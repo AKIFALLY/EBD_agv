@@ -5,16 +5,24 @@
 - 提供宿主機和容器內的工具整合方案
 - 簡化日常開發和維護操作
 
-## 📋 工具系統概覽
+## 🎯 核心原則
+- **環境分離**: 宿主機工具 vs 容器內工具完全分離
+- **前提條件**: 每個工具都有明確的執行環境要求
+- **統一入口**: 優先使用 `r` 命令系列
 
-RosAGV 提供完整的工具生態系統，分為宿主機統一工具和容器內專業工具集兩個層次。
+## 🖥️ 第一部分：宿主機工具（統一入口）
 
-### ⚠️ 工具使用前提條件
+### ⚠️ 執行前提
 **使用 `r` 工具集之前，必須將 RosAGV 目錄加入 PATH 環境變數**
 
+- **[宿主機]** 在 `~/RosAGV` 目錄執行
+- **[宿主機]** 確保 `/home/ct/RosAGV` 已加入 PATH
+- **[宿主機]** 對應容器必須已啟動
+
+#### PATH 配置
 在 `~/.bashrc` 中添加以下設定：
 ```bash
-# RosAGV 工具路徑配置
+# [宿主機] RosAGV 工具路徑配置
 export PATH="/home/ct/RosAGV:$PATH"
 
 # 或者根據您的實際安裝路徑調整
@@ -23,99 +31,202 @@ export PATH="/home/ct/RosAGV:$PATH"
 
 設定完成後，重新載入環境：
 ```bash
+# [宿主機] 重新載入環境
 source ~/.bashrc
 ```
 
 驗證配置是否正確：
 ```bash
+# [宿主機] 驗證配置
 which r                    # 應該顯示 /home/ct/RosAGV/r
 r menu                     # 應該顯示工具選單
 ```
 
-### 宿主機統一工具 (r 命令)
+### 系統診斷工具
 ```bash
-r                           # 顯示所有可用工具
-r agvc-check               # AGVC 系統健康檢查
-r agv-check                # AGV 系統健康檢查
-r containers-status        # 容器狀態檢查
-r network-check            # 網路連接檢查
-r zenoh-check              # Zenoh 連接檢查
-r zenoh-config             # Zenoh Router 配置管理
-r hardware-config          # 硬體映射配置管理
-r quick-diag               # 快速綜合診斷
-r tafl-validate [file]     # TAFL 檔案格式驗證
+# [宿主機] 統一診斷入口
+r                         # 顯示所有可用工具
+r quick-diag             # 快速綜合診斷
+r agvc-check             # AGVC 系統健康檢查
+r agv-check              # AGV 系統健康檢查
+r containers-status      # 容器狀態檢查
+r network-check          # 網路連接檢查
+r zenoh-check            # Zenoh 連接檢查
 ```
 
-### 容器內專業工具集
+### 配置管理工具
 ```bash
-# Docker 工具集
+# [宿主機] 配置管理
+r zenoh-config           # Zenoh Router 配置管理
+r hardware-config        # 硬體映射配置管理
+r tafl-validate [file]   # TAFL 檔案格式驗證
+```
+
+### 容器操作工具
+```bash
+# [宿主機] Docker Compose 操作
+docker compose -f docker-compose.yml up -d          # 啟動 AGV 容器
+docker compose -f docker-compose.agvc.yml up -d     # 啟動 AGVC 容器系統
+docker compose -f docker-compose.agvc.yml ps        # 檢查容器狀態
+docker compose -f docker-compose.agvc.yml logs [service]  # 查看日誌
+```
+
+## 🔧 第二部分：專業工具集（需要載入）
+
+### ⚠️ 載入前提
+**[宿主機]** 必須先載入工具集：
+```bash
+# [宿主機] 載入 Docker 管理工具
 source scripts/docker-tools/docker-tools.sh
-# 或載入完整的配置工具集
-source scripts/config-tools/config-tools.sh
+```
 
-# AGVC 系統管理
-agvc_start                 # 啟動 AGVC 系統 (所有服務)
-agvc_stop                  # 停止 AGVC 系統
-agvc_restart               # 重啟 AGVC 系統
-agvc_status                # 查看 AGVC 系統狀態
-agvc_logs                  # 查看 AGVC 系統日誌
-agvc_health                # AGVC 系統健康檢查
-agvc_services              # 檢查所有 AGVC 服務狀態
+### AGVC 系統管理工具
+載入後可用的專業工具：
+```bash
+# [宿主機] AGVC 系統生命週期管理
+agvc_start               # 啟動 AGVC 系統 (所有服務)
+agvc_stop                # 停止 AGVC 系統
+agvc_restart             # 重啟 AGVC 系統
+agvc_status              # 查看 AGVC 系統狀態
+agvc_logs                # 查看 AGVC 系統日誌
+agvc_health              # AGVC 系統健康檢查
+agvc_services            # 檢查所有 AGVC 服務狀態
+```
 
-# 容器進入和快速執行
-agv_enter                  # 進入 AGV 容器
-agvc_enter                 # 進入 AGVC 容器 (自動載入 agvc_source)
-quick_agvc "command"       # 快速執行 AGVC 容器內指令
+### 容器進入工具
+```bash
+# [宿主機] 快速進入容器
+agv_enter                # 進入 AGV 容器
+agvc_enter               # 進入 AGVC 容器 (自動載入 agvc_source)
+quick_agvc "command"     # 快速執行 AGVC 容器內指令
+```
 
-# 系統健康檢查
-all_health                 # 智能健康檢查
+### 專業診斷工具集
+```bash
+# [宿主機] 載入各專業工具集
+source scripts/system-tools/system-tools.sh   # 系統診斷工具
+source scripts/network-tools/network-tools.sh # 網路診斷工具
+source scripts/log-tools/log-tools.sh         # 日誌分析工具
+source scripts/dev-tools/dev-tools.sh         # 開發工具集
 
-# 系統診斷工具集
-source scripts/system-tools/system-tools.sh
+# 載入後可用的功能
 system_health              # 完整健康檢查
-system_quick_check         # 快速診斷
-
-# 系統健康監控
-scripts/system-tools/health-check.sh [component]    # 系統健康檢查
-
-# 網路診斷工具集
-source scripts/network-tools/network-tools.sh
-network_troubleshoot zenoh # Zenoh 通訊診斷
-network_test_connection    # 連接測試
-
-# 獨立網路工具
-scripts/network-tools/network-scan.sh [target]     # 網路掃描
-scripts/network-tools/zenoh-network.sh [action]    # Zenoh 網路診斷
-
-# 日誌分析工具集
-source scripts/log-tools/log-tools.sh
-log_analyze agv            # AGV 日誌分析
-log_quick_scan             # 快速錯誤掃描
-
-# 開發工具集
-source scripts/dev-tools/dev-tools.sh  
-dev_build                  # 智能建置
-dev_test                   # 執行測試
-dev_check                  # 代碼檢查
+network_troubleshoot       # 網路通訊診斷
+log_analyze agv           # AGV 日誌分析
+dev_build                 # 智能建置
 ```
 
-## 🔧 配置管理工具集
+## 📦 第三部分：容器內工具（進入容器後）
 
-### 統一配置管理 (r 命令)
+### ⚠️ 執行前提
+**必須先進入容器**：
 ```bash
-# 推薦使用統一入口
-r zenoh-config             # Zenoh Router 配置管理 (顯示概況)
-r hardware-config          # 硬體映射配置管理 (顯示概況)
+# [宿主機] 標準進入方式
+docker compose -f docker-compose.agvc.yml exec agvc_server bash
+
+# 或使用專業工具（需先載入 docker-tools.sh）
+agvc_enter
 ```
 
-### 詳細配置管理工具
-
-#### Zenoh 路由器配置管理
+### 環境載入工具
 ```bash
-# 統一工具入口 (推薦)
+# [容器內] 環境設置
+source /app/setup.bash    # 載入基本環境
+all_source                # 智能載入工作空間 (別名: sa)
+agv_source                # 載入 AGV 工作空間
+agvc_source               # 載入 AGVC 工作空間
+
+# [容器內] 常用別名
+ba                        # build_all - 建置所有工作空間
+sa                        # all_source - 載入所有工作空間
+```
+
+### 服務管理工具
+```bash
+# [容器內] 服務管理 (載入 setup.bash 後可用)
+manage_web_api_launch {start|stop|restart|status}  # Web API 服務群組
+manage_zenoh {start|stop|restart|status}           # Zenoh Router
+manage_ssh {start|stop|restart|status}             # SSH 服務
+```
+
+### 結構化資料處理
+```bash
+# [容器內] JSON5 配置處理 (Zenoh 配置)
+json5 /app/routerconfig.json5 | jq '.mode'
+json5 /app/routerconfig.json5 | jq '.listen.endpoints[]'
+
+# [容器內] YAML 配置處理
+yq '.services.agvc_server.ports' /path/to/compose.yml
+```
+
+## 🚀 第四部分：完整工作流示例
+
+### 系統診斷工作流
+```bash
+# 步驟1: [宿主機] 快速診斷
+cd ~/RosAGV
+r quick-diag
+
+# 步驟2: [宿主機] 檢查容器狀態
+r containers-status
+
+# 步驟3: [宿主機] 檢查具體問題
+r agvc-check              # 或 r network-check, r zenoh-check
+```
+
+### 服務重啟工作流
+```bash
+# 步驟1: [宿主機] 載入專業工具
+cd ~/RosAGV
+source scripts/docker-tools/docker-tools.sh
+
+# 步驟2: [宿主機] 停止和啟動服務
+agvc_stop
+agvc_start
+
+# 步驟3: [宿主機] 驗證健康狀態
+agvc_health
+```
+
+### 開發工作流
+```bash
+# 步驟1: [宿主機] 進入容器
+cd ~/RosAGV
+source scripts/docker-tools/docker-tools.sh
+agvc_enter
+
+# 步驟2: [容器內] 載入環境
+source /app/setup.bash
+agvc_source
+
+# 步驟3: [容器內] 建置和重啟
+ba                              # 建置所有工作空間
+sa                              # 重新載入環境
+manage_web_api_launch restart   # 重啟 Web 服務
+```
+
+### 複雜指令執行（bash -i 模式）
+```bash
+# [宿主機] 一次性執行複雜容器內指令
+cd ~/RosAGV
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
+source /app/setup.bash &&
+agvc_source &&
+manage_web_api_launch stop &&
+ba &&
+sa &&
+manage_web_api_launch start
+"
+```
+
+## 🔧 配置管理詳細說明
+
+### Zenoh 路由器配置管理
+```bash
+# [宿主機] 統一工具入口 (推薦)
 r zenoh-config             # 顯示配置概況和使用說明
 
-# 直接使用專業工具
+# [宿主機] 直接使用專業工具
 scripts/config-tools/zenoh-config.sh [action]
 ```
 **主要功能**：
@@ -128,34 +239,13 @@ scripts/config-tools/zenoh-config.sh [action]
 
 **配置檔案**: `/app/routerconfig.json5` (JSON5格式)
 
-**使用範例**：
+### 硬體映射配置管理
 ```bash
-# 快速查看配置概況
-r zenoh-config
-
-# 驗證配置檔案
-scripts/config-tools/zenoh-config.sh validate
-
-# 編輯配置檔案
-scripts/config-tools/zenoh-config.sh edit
-```
-
-#### 硬體映射配置管理
-```bash
-# 統一工具入口 (推薦)
+# [宿主機] 統一工具入口 (推薦)
 r hardware-config         # 顯示硬體映射概況和使用說明
 
-# 直接使用專業工具
+# [宿主機] 直接使用專業工具
 scripts/config-tools/hardware-mapping.sh [action] [device_id]
-```
-
-### 環境配置管理
-```bash
-# AGV 環境配置編輯
-scripts/config-tools/edit-agv-config.sh [config_type]
-
-# AGVC 環境配置編輯  
-scripts/config-tools/edit-agvc-config.sh [config_type]
 ```
 **主要功能**：
 - `validate/check` - 驗證硬體映射配置
@@ -167,251 +257,37 @@ scripts/config-tools/edit-agvc-config.sh [config_type]
 
 **配置檔案**: `/app/config/hardware_mapping.yaml`
 
-### 服務管理工具
-**⚠️ 統一服務管理：載入 setup.bash 後可用的專業服務管理介面**
+## 🛠️ TAFL 語言工具
 
+### TAFL 驗證
 ```bash
-# 統一服務管理 API (所有服務遵循相同介面)
-manage_zenoh {start|stop|restart|status}           # Zenoh Router 管理
-manage_web_api_launch {start|stop|restart|status}  # Web API Launch 群組管理
-manage_ssh {start|stop|restart|status}             # SSH 服務管理
-```
-
-#### Web API Launch 服務管理
-```bash
-# Web API Launch 服務群組管理 (定義在 setup.bash)
-manage_web_api_launch start     # 啟動 Web API Launch 服務群組
-manage_web_api_launch stop      # 停止所有相關進程
-manage_web_api_launch restart   # 重新啟動服務群組
-manage_web_api_launch status    # 詳細狀態檢查
-
-# 服務群組包含:
-# - ros2 launch web_api_launch launch.py (主進程)
-# - agvc_ui_server (Port 8001)
-# - op_ui_server (Port 8002)  
-# - api_server (Port 8000)
-
-# 自動啟動控制 (在 startup.agvc.bash)
-AUTO_START_WEB_API_LAUNCH=true   # 啟用自動啟動
-AUTO_START_WEB_API_LAUNCH=false  # 停用自動啟動 (測試用)
-```
-
-#### 服務管理最佳實踐
-```bash
-# 統一管理模式 - 所有服務都遵循相同 API
-manage_<service> start    # 啟動服務 (重複啟動檢查)
-manage_<service> stop     # 停止服務 (優雅清理)
-manage_<service> restart  # 重啟服務 (stop + start)
-manage_<service> status   # 狀態檢查 (詳細報告)
-
-# 服務狀態檢查
-manage_zenoh status              # Zenoh Router 狀態
-manage_web_api_launch status     # Web API 服務群組狀態  
-manage_ssh status                # SSH 服務狀態
-```
-
-### 結構化資料處理工具
-**⚠️ 現代工具：jq/yq 已安裝在容器內，提供專業的結構化資料處理**
-
-#### JSON5 配置處理 (json5 + jq)
-**⚠️ 注意：RosAGV 使用 JSON5 格式 (routerconfig.json5)，需要先轉換**
-
-```bash
-# Zenoh 配置分析 (JSON5 格式)
-json5 /app/routerconfig.json5 | jq '.mode'                    # 查看運行模式
-json5 /app/routerconfig.json5 | jq '.listen.endpoints[]'      # 查看監聽端點
-json5 /app/routerconfig.json5 | jq '.transport.unicast.lowlatency'  # 查看效能配置
-json5 /app/routerconfig.json5 | jq '.connect.endpoints[]'     # 查看連接端點
-
-# JSON5 格式驗證和處理
-json5 --validate /app/routerconfig.json5                      # 驗證 JSON5 語法
-json5 /app/routerconfig.json5 | jq . | head -20              # 預覽配置結構
-json5 /app/routerconfig.json5 | jq -C . | less               # 彩色分頁顯示
-
-# 配置查詢和分析
-json5 /app/routerconfig.json5 | jq 'keys'                     # 查看所有頂層配置項
-json5 /app/routerconfig.json5 | jq '.plugins | keys'          # 查看插件列表
-```
-
-#### YAML 配置處理 (yq)
-```bash
-# Docker Compose 配置分析
-yq '.services.agvc_server.ports' docker-compose.agvc.yml     # 查看服務端口
-yq '.networks' docker-compose.agvc.yml                       # 查看網路配置
-yq '.services.*.image' docker-compose.agvc.yml               # 查看所有映像
-
-# 硬體映射配置分析
-yq '.devices[] | select(.type == "agv")' /app/config/hardware_mapping.yaml
-yq '.devices[].mac_address' /app/config/hardware_mapping.yaml
-
-# 配置驗證和格式化
-yq . docker-compose.agvc.yml                             # 驗證 YAML 格式
-```
-
-#### 配置管理最佳實踐
-```bash
-# 備份配置檔案
-cp /app/routerconfig.json5 /app/routerconfig.json5.backup
-
-# JSON5 配置修改 (需要手動編輯或轉換)
-# ⚠️ 注意：JSON5 → JSON → 修改 → 手動還原為 JSON5
-json5 /app/routerconfig.json5 | jq '.listen.endpoints[0] = "tcp/0.0.0.0:7448"' > /tmp/config.json
-# 然後需要手動將 JSON 轉回 JSON5 格式 (加入註解等)
-
-# 推薦：直接編輯 JSON5 檔案 (保留註解和格式)
-vim /app/routerconfig.json5
-# 或使用配置工具
-scripts/config-tools/zenoh-config.sh edit
-
-# YAML 配置安全修改
-yq '.services.agvc_server.ports[0] = "8001:8000"' docker-compose.agvc.yml > /tmp/compose.yml && mv /tmp/compose.yml docker-compose.agvc.yml
-
-# 配置驗證流程
-json5 --validate /app/routerconfig.json5                      # 驗證語法
-json5 /app/routerconfig.json5 | jq empty                      # 驗證結構
-```
-
-### 連線測試最佳實踐
-```bash
-# 測試單一端點
-timeout 3 bash -c "echo > /dev/tcp/192.168.100.100/7447" 2>/dev/null && echo "✅ 可連接" || echo "❌ 無法連接"
-
-# 批量測試多個端點
-for endpoint in "192.168.100.100:7447" "192.168.10.3:7447"; do
-    ip=$(echo $endpoint | cut -d: -f1)
-    port=$(echo $endpoint | cut -d: -f2)
-    if timeout 3 bash -c "echo > /dev/tcp/$ip/$port" 2>/dev/null; then
-        echo "✅ tcp/$endpoint (可連接)"
-    else
-        echo "❌ tcp/$endpoint (無法連接)"
-    fi
-done
-```
-
-## 🔧 TAFL 語言工具
-
-### TAFL 格式驗證
-```bash
-# TAFL (Task Automation Flow Language) 驗證工具
+# [宿主機] TAFL (Task Automation Flow Language) 驗證工具
 r tafl-validate [file]      # 驗證單個 TAFL 檔案
-r tafl-validate all         # 驗證所有 TAFL 檔案 
+r tafl-validate all         # 驗證所有 TAFL 檔案
 r tafl-validate list        # 列出所有 TAFL 檔案
 r tafl-validate help        # 顯示使用說明
-
-# 使用範例
-r tafl-validate my_flow.yaml
-r tafl-validate migrated_flows/rack_rotation_room_outlet_tafl.yaml
 ```
 
-**TAFL 檔案位置** (優先順序):
-1. **正式配置**: `/home/ct/RosAGV/app/config/tafl/` ⭐ 優先查找
-2. **開發/測試**: `/home/ct/RosAGV/app/tafl_ws/migrated_flows/` 🔧 次要查找
+**TAFL 檔案位置**:
+- **正式配置**: `/home/ct/RosAGV/app/config/tafl/flows/` - TAFL 流程檔案存放位置
 
-工具會自動在這兩個位置尋找 TAFL 檔案，優先使用 config/tafl 中的正式配置。
+## 📊 問題診斷對照表
+| 問題類型 | 執行環境 | 使用工具 | 檔案位置 |
+|---------|---------|---------|---------|
+| 容器問題 | **[宿主機]** | `r containers-status` | - |
+| 網路問題 | **[宿主機]** | `r network-check` | - |
+| Zenoh 問題 | **[宿主機]** | `r zenoh-check` | `/app/routerconfig.json5` |
+| 服務問題 | **[宿主機]** | `r agvc-check` | - |
+| 狀態機問題 | **[容器內]** | ROS2 工具 | `agv_ws/src/agv_base/agv_states/` |
+| API錯誤 | **[容器內]** | 日誌分析 | `web_api_ws/src/web_api/routers/` |
+| 資料庫問題 | **[宿主機]** | Docker 工具 | `db_proxy_ws/src/db_proxy/crud/` |
 
-**驗證內容**:
-
-**錯誤檢查** (會導致驗證失敗):
-- ✅ YAML 語法正確性
-- ✅ TAFL 語法解析 (動詞識別)
-- ✅ Metadata 完整性 (id, name 必填)
-- ✅ 核心必要參數:
-  - `query`: 必須有 `target`
-  - `check`: 必須有 `condition`  
-  - `create`: 必須有 `target`
-  - `update`: 必須有 `target` 和 `id`
-  - `for`: 必須有 `each`, `in`, `do`
-
-**警告檢查** (不會導致失敗):
-- ⚠️ 未使用的變數
-- ⚠️ 未定義的變數引用
-- ⚠️ 空的 then/else 分支
-- ⚠️ 空的迴圈體
-- ⚠️ 缺少建議參數
-
-### Python 中使用 TAFL 驗證
-```python
-#!/usr/bin/env python3
-import sys
-import os
-sys.path.insert(0, '/home/ct/RosAGV/app/tafl_ws/src/tafl')
-
-from tafl.parser import TAFLParser
-from tafl.validator import TAFLValidator
-
-# 初始化
-parser = TAFLParser()
-validator = TAFLValidator()
-
-# 驗證 TAFL 檔案
-with open('your_flow.tafl.yaml', 'r') as f:
-    content = f.read()
-
-try:
-    ast = parser.parse_string(content)
-    if validator.validate(ast):
-        print('✅ TAFL 格式正確')
-    else:
-        print('❌ 驗證失敗:', validator.get_errors())
-except Exception as e:
-    print('❌ 解析錯誤:', e)
-```
-
-## 📊 智能導航提示
-根據問題類型自動定位相關模組：
-
-| 問題類型 | 主要檔案位置 | 相關工具 |
-|---------|-------------|---------|
-| 狀態機問題 | `agv_ws/src/agv_base/agv_states/` | `log_analyze agv` |
-| API錯誤 | `web_api_ws/src/web_api/routers/` | `r agvc-check` |
-| 資料庫問題 | `db_proxy_ws/src/db_proxy/crud/` | `start_db` |
-| PLC通訊故障 | `keyence_plc_ws/src/keyence_plc/` | `network_test_connection <PLC_IP>` |
-| 門控問題 | `ecs_ws/src/ecs/` | `r quick-diag` |
-| **配置管理** | `scripts/config-tools/` | **配置管理工具集** |
-| **容器管理** | `scripts/docker-tools/` | **Docker 管理工具集** |
-| **系統診斷** | `scripts/system-tools/` | **系統診斷工具集** |
-| **網路診斷** | `scripts/network-tools/` | **網路診斷工具集** |
-| **日誌分析** | `scripts/log-tools/` | **日誌分析工具集** |
-| **開發工作流** | `scripts/dev-tools/` | **開發工作流工具集** |
-| **TAFL 語言** | `scripts/tafl-tools/` | `r tafl-validate` |
-
-## 💡 使用策略
-- **統一入口優先**: 使用 `r` 命令處理日常操作
-- **專業工具深入**: 複雜問題使用對應的專業工具集
-- **便捷函數組合**: 載入工具集後使用便捷函數提高效率
-- **場景化選擇**: 根據具體問題類型選擇最適合的工具
-
-## 🛠️ 維護和驗證工具
-
-### 文檔引用檢查
-```bash
-# 檢查 CLAUDE.md 文件中的 docs-ai/ 引用是否存在
-scripts/check-claude-references.sh
-
-# 批量更新 CLAUDE.md 文件中的 docs-ai/ 引用路徑
-scripts/update-claude-references.sh
-```
-
-### Docker 配置驗證
-```bash
-# 驗證 Docker 容器配置的完整性和可用性
-scripts/validate-docker-config.sh
-```
-
-### 容器專用管理工具
-```bash
-# AGV 容器專用管理
-scripts/docker-tools/agv-container.sh [action]     # AGV 容器管理
-scripts/docker-tools/agvc-container.sh [action]    # AGVC 容器管理
-scripts/docker-tools/quick-exec.sh [command]       # 快速容器指令執行
-```
-
-**主要功能**：
-- `start/stop/restart` - 容器生命週期管理
-- `enter` - 進入容器環境
-- `status` - 檢查容器狀態
-- `logs` - 查看容器日誌
-- `health` - 健康檢查
+## 💡 使用技巧總結
+1. **統一入口優先**: 使用 `r` 命令處理日常操作
+2. **環境明確分離**: 清楚區分宿主機和容器內操作
+3. **前提條件檢查**: 執行前確認環境和載入狀態
+4. **工作流程化**: 使用完整工作流而非單一命令
+5. **專業工具深入**: 複雜問題使用對應的專業工具集
 
 ## 🔗 交叉引用
 - 系統診斷: docs-ai/operations/guides/system-diagnostics.md

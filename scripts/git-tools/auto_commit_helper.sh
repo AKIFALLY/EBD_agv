@@ -169,7 +169,7 @@ show_help() {
     echo -e "  ${GREEN}rollback_to_commit${NC} <commit_hash>"
     echo ""
     echo -e "${YELLOW}範例:${NC}"
-    echo -e "  ${BLUE}auto_commit_stage${NC} 'Flow Designer 節點修復' '修復節點連接問題和視覺渲染'"
+    echo -e "  ${BLUE}auto_commit_stage${NC} 'TAFL Editor 節點修復' '修復節點連接問題和視覺渲染'"
     echo -e "  ${BLUE}quick_commit${NC} '修復小錯誤'"
     echo -e "  ${BLUE}show_recent_commits${NC} 5"
     echo -e "  ${BLUE}compare_changes${NC} HEAD~2 HEAD"

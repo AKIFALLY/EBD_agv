@@ -14,7 +14,7 @@ RosAGV 專用 Docker 管理工具集，提供統一的容器操作介面，支�
 
 ### 🚀 超簡單使用方式 (推薦)
 ```bash
-# 使用統一工具入口 (最簡單)
+# [宿主機] 使用統一工具入口 (最簡單)
 r containers-status      # 檢查所有容器狀態
 r agvc-start            # 啟動 AGVC 系統
 r agvc-stop             # 停止 AGVC 系統
@@ -24,13 +24,14 @@ r agv-stop              # 停止 AGV 容器
 
 ### 載入專業工具集 (進階使用)
 ```bash
-# 載入所有Docker管理工具
+# [宿主機] 載入所有Docker管理工具
 source scripts/docker-tools/docker-tools.sh
 show_docker_tools_help
 ```
 
 ### AGV 容器管理 (專業工具集)
 ```bash
+# [宿主機] AGV 容器管理工具
 agv_start         # 啟動 AGV 容器
 agv_stop          # 停止 AGV 容器
 agv_enter         # 進入 AGV 容器 (自動載入 agv_source)
@@ -41,6 +42,7 @@ agv_status        # AGV 容器詳細狀態
 
 ### AGVC 容器管理 (專業工具集)
 ```bash
+# [宿主機] AGVC 容器管理工具
 agvc_start        # 啟動 AGVC 系統 (所有服務)
 agvc_stop         # 停止 AGVC 系統
 agvc_enter        # 進入 AGVC 容器 (自動載入 agvc_source)
@@ -52,6 +54,7 @@ agvc_status       # AGVC 容器詳細狀態
 
 ### 系統整體操作 (專業工具集)
 ```bash
+# [宿主機] 系統整體管理工具
 all_start         # 啟動所有系統 (AGVC + AGV)
 all_stop          # 停止所有系統
 all_restart       # 重啟所有系統
@@ -65,6 +68,7 @@ all_summary       # 系統狀態摘要
 
 ### 快速命令執行 (專業工具集)
 ```bash
+# [宿主機] 快速容器內指令執行
 quick_agv "ros2 node list"    # 在 AGV 容器執行 ROS 2 指令
 quick_agvc "check_agvc_status" # 在 AGVC 容器執行系統檢查
 ```
@@ -81,15 +85,15 @@ quick_agvc "check_agvc_status" # 在 AGVC 容器執行系統檢查
 
 ### 工作流程最佳實踐
 ```bash
-# 1. 系統啟動檢查
+# [宿主機] 1. 系統啟動檢查
 all_status                # 檢查容器運行狀態
 all_health                # 全面健康檢查
 
-# 2. 開發環境準備
+# [宿主機] 2. 開發環境準備
 agv_enter                 # 或 agvc_enter
 # 自動執行: source /app/setup.bash && agv_source
 
-# 3. 系統狀態驗證
+# [容器內] 3. 系統狀態驗證
 check_system_status       # 容器內環境檢查
 check_zenoh_status        # 通訊狀態確認
 ```
@@ -98,26 +102,26 @@ check_zenoh_status        # 通訊狀態確認
 
 ### 組合操作範例
 ```bash
-# 完整系統重啟和檢查
+# [宿主機] 完整系統重啟和檢查
 all_stop && sleep 5 && all_start && sleep 10 && all_health
 
-# 快速診斷問題
+# [宿主機] 快速診斷問題
 all_status && all_ports && quick_agv "ros2 node list" && quick_agvc "check_agvc_status"
 
-# 開發環境快速設置
+# [宿主機] 開發環境快速設置
 agvc_start && agvc_enter
 # 在容器內自動執行環境載入
 ```
 
 ### 狀態監控
 ```bash
-# 容器狀態詳情
+# [宿主機] 容器狀態詳情
 scripts/docker-tools/container-status.sh all --verbose
 
-# 端口衝突檢查
+# [宿主機] 端口衝突檢查
 scripts/docker-tools/container-status.sh ports --conflicts
 
-# 資源使用監控
+# [宿主機] 資源使用監控
 scripts/docker-tools/container-status.sh resources --monitoring
 ```
 
@@ -133,12 +137,12 @@ scripts/docker-tools/container-status.sh resources --monitoring
 
 ### 緊急操作
 ```bash
-# 強制重啟所有服務
+# [宿主機] 強制重啟所有服務
 docker compose -f docker-compose.agvc.yml down --remove-orphans
 docker compose -f docker-compose.yml down --remove-orphans
 all_start
 
-# 清理異常容器
+# [宿主機] 清理異常容器
 docker system prune -f
 docker volume prune -f
 ```

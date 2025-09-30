@@ -118,8 +118,11 @@ export const homePage = (() => {
         // 叫滿車按鈕
         document.querySelectorAll('[data-call-full]').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const side = e.target.getAttribute('data-call-full');
-                const buttonText = e.target.textContent.trim();
+                const button = e.target.closest('[data-call-full]');
+                if (!button) return;
+
+                const side = button.getAttribute('data-call-full');
+                const buttonText = button.textContent.trim();
 
 
 
@@ -134,8 +137,11 @@ export const homePage = (() => {
         // 派車按鈕
         document.querySelectorAll('[data-dispatch-full]').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const side = e.target.getAttribute('data-dispatch-full');
-                const buttonText = e.target.textContent.trim();
+                const button = e.target.closest('[data-dispatch-full]');
+                if (!button) return;
+
+                const side = button.getAttribute('data-dispatch-full');
+                const buttonText = button.textContent.trim();
 
 
 

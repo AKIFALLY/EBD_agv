@@ -429,42 +429,69 @@ class OpUiSocket:
         return False
 
     def get_parking_list_by_machineId(self, machine_id):
-        """根據機台ID獲取停車格列表"""
+        """根據機台ID獲取料架列表（包含工作區和停車格的所有料架）"""
         from opui.database.operations import connection_pool, rack_crud, machine_crud
-        parking_list = {"left": [], "right": []}
+        rack_list = {"left": [], "right": []}
 
-        print(f"🔍 獲取機台 {machine_id} 的停車格資料")
+        print(f"🔍 獲取機台 {machine_id} 的所有料架資料")
 
         with connection_pool.get_session() as session:
             machine = machine_crud.get_by_id(session, int(machine_id))
 
             if not machine:
                 print(f"❌ 找不到機台 {machine_id}")
-                return parking_list
+                return rack_list
 
             print(
-                f"🔍 機台配置: parking_space_1={machine.parking_space_1}, parking_space_2={machine.parking_space_2}")
+                f"🔍 機台配置: parking_space_1={machine.parking_space_1}, parking_space_2={machine.parking_space_2}, "
+                f"workspace_1={machine.workspace_1}, workspace_2={machine.workspace_2}")
 
+            # 左側（作業員1）: 工作區 + 停車格的料架
+            left_location_ids = []
+
+            # 加入工作區 location IDs
+            if getattr(machine, 'workspace_1', None):
+                left_location_ids.extend(machine.workspace_1)
+                print(f"📦 左側工作區: {machine.workspace_1}")
+
+            # 加入停車格 location ID
             if getattr(machine, 'parking_space_1', None):
-                left_racks = [r for r in rack_crud.get_all(
-                    session) if r.location_id == machine.parking_space_1]
-                parking_list["left"] = [
-                    {"id": r.id, "name": r.name} for r in left_racks]
-                print(f"🔍 左側停車格 {machine.parking_space_1} 找到 {len(left_racks)} 個 rack")
-            else:
-                print(f"❌ 機台 {machine_id} 沒有配置 parking_space_1")
+                left_location_ids.append(machine.parking_space_1)
+                print(f"🅿️ 左側停車格: {machine.parking_space_1}")
 
+            # 查詢所有左側location的料架
+            if left_location_ids:
+                left_racks = [r for r in rack_crud.get_all(session)
+                             if r.location_id in left_location_ids]
+                rack_list["left"] = [
+                    {"id": r.id, "name": r.name, "location_id": r.location_id}
+                    for r in left_racks]
+                print(f"🔍 左側共找到 {len(left_racks)} 個料架")
+
+            # 右側（作業員2）: 工作區 + 停車格的料架
+            right_location_ids = []
+
+            # 加入工作區 location IDs
+            if getattr(machine, 'workspace_2', None):
+                right_location_ids.extend(machine.workspace_2)
+                print(f"📦 右側工作區: {machine.workspace_2}")
+
+            # 加入停車格 location ID
             if getattr(machine, 'parking_space_2', None):
-                right_racks = [r for r in rack_crud.get_all(
-                    session) if r.location_id == machine.parking_space_2]
-                parking_list["right"] = [
-                    {"id": r.id, "name": r.name} for r in right_racks]
-                print(f"🔍 右側停車格 {machine.parking_space_2} 找到 {len(right_racks)} 個 rack")
-            else:
-                print(f"❌ 機台 {machine_id} 沒有配置 parking_space_2")
+                right_location_ids.append(machine.parking_space_2)
+                print(f"🅿️ 右側停車格: {machine.parking_space_2}")
 
-        print(f"🔍 停車格資料結果: {parking_list}")
-        return parking_list
+            # 查詢所有右側location的料架
+            if right_location_ids:
+                right_racks = [r for r in rack_crud.get_all(session)
+                              if r.location_id in right_location_ids]
+                rack_list["right"] = [
+                    {"id": r.id, "name": r.name, "location_id": r.location_id}
+                    for r in right_racks]
+                print(f"🔍 右側共找到 {len(right_racks)} 個料架")
+
+        print(f"🔍 料架資料結果: left={len(rack_list['left'])} racks, right={len(rack_list['right'])} racks")
+        return rack_list
 
     async def _sync_active_tasks_to_client(self, sid):
         """同步當前活躍任務狀態給前端客戶端"""
@@ -561,7 +588,7 @@ class OpUiSocket:
     # ==================== 料架管理 ====================
 
     async def add_rack(self, sid, data):
-        """新增料架到停車格"""
+        """新增料架到工作區（自動選擇第一個可用位置）"""
         try:
             clientId, machine_id, err = self._require_client_and_machine(sid)
             if err:
@@ -572,9 +599,9 @@ class OpUiSocket:
             side = data.get("side")  # "left" 或 "right"
 
             if not rack_name or not side:
-                return {"success": False, "message": "缺少料架名稱或停車格位置"}
+                return {"success": False, "message": "缺少料架名稱或作業位置"}
 
-            from opui.database.operations import connection_pool, rack_crud, machine_crud
+            from opui.database.operations import connection_pool, rack_crud, machine_crud, location_crud
 
             session = connection_pool.get_session()
             try:
@@ -584,39 +611,60 @@ class OpUiSocket:
 
                 print(f"🏭 找到機台: ID={machine_id}, Name={machine.name}")
 
-                # 根據 side 決定停車格位置
+                # 根據 side 選擇對應的工作區陣列
                 if side == "left":
-                    location_id = machine.parking_space_1
+                    workspace_locations = machine.workspace_1 or []
+                    side_name = "作業員1（左側）"
                 elif side == "right":
-                    location_id = machine.parking_space_2
+                    workspace_locations = machine.workspace_2 or []
+                    side_name = "作業員2（右側）"
                 else:
-                    return {"success": False, "message": "無效的停車格位置"}
+                    return {"success": False, "message": "無效的作業位置"}
 
-                if not location_id:
-                    return {"success": False, "message": f"機台 {machine_id} 沒有配置 {side} 停車格"}
+                # 檢查工作區是否配置
+                if not workspace_locations:
+                    return {"success": False, "message": f"機台 {machine_id} 的 {side_name} 工作區未配置"}
 
-                print(f"📍 停車格位置: {side} -> location_id={location_id}")
+                print(f"📍 工作區位置: {side} -> workspace_locations={workspace_locations}")
 
+                # 查詢可用的工作區（沒有料架的location）
+                available_location = None
+                for location_id in workspace_locations:
+                    # 檢查此location是否已有料架
+                    existing_rack = rack_crud.get_by_field(session, "location_id", location_id)
+                    if not existing_rack:  # 如果沒有料架，則此location可用
+                        available_location = location_id
+                        break
+                    else:
+                        print(f"  Location {location_id} 已被料架 {existing_rack.name} 佔用")
+
+                if not available_location:
+                    # 所有工作區都滿了，絕不使用停車格
+                    return {"success": False, "message": f"{side_name} 工作區已滿，請等待料架派送完成"}
+
+                print(f"✅ 找到可用工作區: location_id={available_location}")
+
+                # 檢查料架是否存在
                 exist_rack = rack_crud.get_by_field(session, "name", rack_name)
                 if exist_rack:
                     print(f"📦 找到現有料架: {rack_name}")
-                    # 檢查料架是否已經分配到其他停車格
-                    if exist_rack.location_id and exist_rack.location_id != location_id:
-                        return {"success": False, "message": f"料架 {rack_name} 已分配到其他停車格"}
+                    # 檢查料架是否已經分配到其他位置
+                    if exist_rack.location_id and exist_rack.location_id != available_location:
+                        return {"success": False, "message": f"料架 {rack_name} 已分配到其他位置"}
 
-                    # 更新料架的停車格位置
-                    exist_rack.location_id = location_id
+                    # 更新料架的工作區位置
+                    exist_rack.location_id = available_location
                     rack_crud.update(session, exist_rack.id, exist_rack)
                     rack_id = exist_rack.id
-                    action = "分配到停車格"
-                    print(f"✅ 更新現有料架成功: {rack_name}")
+                    action = "分配到工作區"
+                    print(f"✅ 更新現有料架成功: {rack_name} -> location {available_location}")
                 else:
                     # 料架不存在於資料表中，不允許新增
                     print(f"❌ 料架不存在: {rack_name}")
                     return {"success": False, "message": f"料架 {rack_name} 不存在於系統中，請先在料架管理中新增此料架"}
 
                 await self.notify_parking_list(sid)
-                return {"success": True, "message": f"料架 {rack_name} [{rack_id}] 已{action}成功"}
+                return {"success": True, "message": f"料架 {rack_name} [{rack_id}] 已{action}成功（位置：{available_location}）"}
             except Exception as e:
                 print(f"❌ 新增料架時發生錯誤: {e}")
                 raise e
@@ -741,9 +789,9 @@ class OpUiSocket:
             return {"success": False, "message": f"叫車失敗: {str(e)}"}
 
     async def dispatch_full(self, sid, data):
-        """派滿車任務"""
+        """派滿車任務（從工作區移動到停車格）"""
         try:
-            from opui.database.operations import create_task, get_dispatch_full_work_id
+            from opui.database.operations import create_task, get_dispatch_full_work_id, rack_crud, machine_crud, connection_pool
             from shared_constants.task_status import TaskStatus
 
             # 獲取任務參數
@@ -751,7 +799,7 @@ class OpUiSocket:
             # 支援兩種參數名稱：productName (新) 和 name (舊)，確保向後相容
             product_name = data.get("productName") or data.get("name")
             count = data.get("count")
-            rack_id = data.get("rackId")
+            rack_id = data.get("rackId")  # 使用者選擇的料架ID
             room = data.get("room")
 
             clientId, machine_id, err = self._require_client_and_machine(sid)
@@ -761,7 +809,44 @@ class OpUiSocket:
             if not all([side, product_name, count, rack_id, room]):
                 return {"success": False, "message": "缺少必要參數"}
 
-            # 根據機台和側邊獲取正確的 node_id
+            # 查詢有這個rack_id的料架資料
+            session = connection_pool.get_session()
+            try:
+                rack = rack_crud.get_by_id(session, rack_id)
+                if not rack:
+                    return {"success": False, "message": f"找不到料架 ID: {rack_id}"}
+
+                print(f"📦 找到料架: {rack.name} (ID: {rack_id}, Location: {rack.location_id})")
+
+                # 獲取機台資料以檢查工作區配置
+                machine = machine_crud.get_by_id(session, machine_id)
+                if not machine:
+                    return {"success": False, "message": f"找不到機台 {machine_id}"}
+
+                # 檢查料架是否在工作區中
+                if side == "left":
+                    workspace_locations = machine.workspace_1 or []
+                    parking_space = machine.parking_space_1
+                else:
+                    workspace_locations = machine.workspace_2 or []
+                    parking_space = machine.parking_space_2
+
+                # 確認料架在工作區中
+                if rack.location_id not in workspace_locations:
+                    print(f"⚠️ 料架 {rack.name} 不在工作區 {workspace_locations} 中，位置: {rack.location_id}")
+                    # 料架不在工作區，可能已經在停車格或其他位置
+                    # 為了向後相容，仍然允許創建任務
+
+                # 將料架移動到停車格
+                if parking_space:
+                    print(f"🚚 移動料架 {rack.name} 從location {rack.location_id} 到停車格 {parking_space}")
+                    rack.location_id = parking_space
+                    rack_crud.update(session, rack.id, rack)
+                    print(f"✅ 料架已移動到停車格")
+            finally:
+                session.close()
+
+            # 根據機台和側邊獲取正確的 node_id（停車格node_id）
             node_id = self._get_parking_space_node_id(machine_id, side)
             if not node_id:
                 return {"success": False, "message": f"找不到機台 {machine_id} 的 {side} 側停車格"}

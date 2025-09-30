@@ -6,47 +6,56 @@
 **運行環境**: 🚗🖥️ 共用 (AGV 車載系統 + AGVC 管理系統)
 **主要功能**: Keyence PLC 專用通訊和記憶體管理
 **依賴狀態**: 純系統套件，被 `plc_proxy_ws` 和 `agv_ws` 依賴
+**實作狀態**: 完整實作，提供穩定的工業通訊基礎設施
 
 ## 📋 專案概述
 
 Keyence PLC 工作空間提供與 Keyence PLC 設備的專用通訊功能，實現高效能的資料交換和控制操作。該工作空間針對 Keyence PLC 協定進行最佳化，提供記憶體管理、非同步通訊和錯誤處理功能。
 
-此工作空間是 RosAGV 系統中 PLC 通訊的核心基礎設施，採用純 Python 標準庫實作，無需額外的虛擬環境套件。它提供了完整的 Keyence PLC 通訊協定支援，包括連線池管理、記憶體映射、位元組操作和錯誤恢復機制。
+此工作空間是 RosAGV 系統中 PLC 通訊的核心基礎設施，採用純 Python 標準庫實作，無需額外的虛擬環境套件。系統提供完整的 Keyence PLC 通訊協定支援（TCP/IP Port 8501）、65536 words 記憶體映射管理、基於 Semaphore 的連線池（最大 5 個並發連線）、以及完整的錯誤恢復機制。工作空間支援 RD/WR 單一讀寫、RDS/WRS 連續讀寫、ST/RS 強制控制等完整指令集，確保與 Keyence PLC 設備的完美整合。
 
 ## 🔗 依賴關係
 
 ### 系統套件依賴
-- **Python 標準庫**: `struct`, `threading`, `time`, `socket`
-- **ROS 2**: `rclpy.logging` (用於日誌記錄)
+- **Python 標準庫**: `struct` (資料轉換)、`threading` (並發控制)、`time` (時間管理)、`socket` (網路通訊)
+- **ROS 2 Jazzy**: `rclpy.logging` (日誌記錄)
+- **並發控制**: `threading.Semaphore` (連線池管理)、`concurrent.futures` (非同步執行)
 
 ### 被依賴的工作空間
 - **plc_proxy_ws**: PLC 代理服務 - 使用 `KeyencePlcPool`、`KeyencePlcCommand`、`PlcMemory`、`PlcBytes`
-- **agv_ws**: AGV 核心系統 - 使用 `PlcMemory` 進行記憶體管理
+- **agv_ws**: AGV 核心系統 - 使用 `PlcMemory` 進行記憶體管理 (65536 words)
 
 ### 外部依賴
-- **Keyence PLC 設備**: 透過 TCP/IP (預設 port 8501) 進行通訊
+- **Keyence PLC 設備**: TCP/IP 通訊協定 (預設 Port 8501)
+- **網路設備**: 工業乙太網路連接
+- **PLC 韌體**: 相容 Keyence KV 系列 PLC
 
 ## 🏗️ 專案結構
 
 ```
 keyence_plc_ws/
-├── src/keyence_plc/keyence_plc/   # 核心 Keyence PLC 套件 (完整實作)
-│   ├── keyence_plc_memory.py      # PLC 記憶體管理類別 (PlcMemory)
-│   ├── keyence_plc_com.py         # 基礎 PLC 通訊類別 (KeyencePlcCom)
-│   ├── keyence_plc_pool.py        # PLC 連線池管理 (KeyencePlcPool)
-│   ├── keyence_plc_command.py     # PLC 指令封裝 (KeyencePlcCommand)
-│   ├── keyence_plc_bytes.py       # 位元組資料處理 (PlcBytes)
-│   └── __init__.py                # 套件初始化
-├── keyence_plc_com_async.py       # 非同步通訊實作 (ThreadPoolExecutor)
-├── keyence_plc_com_async_asyncio.py # 非同步通訊實作 (AsyncIO)
-├── keyence_plc_com_patch.py       # 通訊修補版本 (實驗性)
-├── keyence_plc_com_patch_asyncio.py # AsyncIO 修補版本 (實驗性)
-├── test/                          # 測試和範例檔案
-│   ├── keyence_plc_com_test.py    # 基礎通訊測試
-│   ├── plc_memory_test.py         # 記憶體管理測試
-│   └── read_write_test.py         # 讀寫功能測試
-├── package.xml                    # ROS 2 套件配置
-└── setup.py                       # Python 套件設定
+├── src/
+│   └── keyence_plc/                # Keyence PLC 通訊套件 (完整實作)
+│       ├── keyence_plc/            # 核心功能模組
+│       │   ├── __init__.py         # 套件初始化和導出
+│       │   ├── keyence_plc_memory.py   # PLC 記憶體管理 (PlcMemory - 131072 bytes)
+│       │   ├── keyence_plc_com.py      # 基礎通訊類別 (KeyencePlcCom - TCP/IP)
+│       │   ├── keyence_plc_pool.py     # 連線池管理 (KeyencePlcPool - Semaphore)
+│       │   ├── keyence_plc_command.py  # 指令封裝 (KeyencePlcCommand - 協定實作)
+│       │   ├── keyence_plc_bytes.py    # 位元組處理 (PlcBytes - 資料轉換)
+│       │   ├── keyence_plc_com_async.py # 非同步通訊 (ThreadPoolExecutor)
+│       │   ├── keyence_plc_com_async_asyncio.py # AsyncIO 非同步版本
+│       │   ├── keyence_plc_com_patch.py        # 通訊修補版本 (實驗性)
+│       │   └── keyence_plc_com_patch_asyncio.py # AsyncIO 修補版本
+│       ├── test/                   # 測試和範例檔案
+│       │   ├── keyence_plc_com_test.py  # 基礎通訊測試
+│       │   ├── plc_memory_test.py       # 記憶體管理測試
+│       │   └── read_write_test.py       # 讀寫功能測試
+│       ├── package.xml             # ROS 2 套件描述文件
+│       ├── setup.py                # Python 套件設定
+│       └── setup.cfg               # 套件安裝配置
+├── CLAUDE.md                       # AI Agent 專用指導文件
+└── README.md                       # 本檔案 (專案說明文件)
 ```
 
 ## ⚙️ 主要功能

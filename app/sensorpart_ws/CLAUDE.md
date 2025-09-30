@@ -59,7 +59,6 @@ sensorpart_ws/
 │           ├── __init__.py      # 套件初始化
 │           ├── sensorpart.py    # TCP 客戶端主程式
 │           └── test_sensorpart_node.py  # ROS 2 節點封裝
-└── CLAUDE.md                    # 模組文檔
 ```
 
 ### 核心組件關係

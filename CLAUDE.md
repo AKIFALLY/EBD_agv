@@ -45,7 +45,6 @@ docker compose -f docker-compose.agvc.yml logs -f agvc_server
 2. **用現成工具，不要造** - 檢查 scripts/ 和 r 命令
 3. **批量處理，不要重複** - MultiEdit > 多次 Edit
 4. **自動化，不要手動** - Git hooks, manage_* 命令
-5. **🔥 Linus Torvalds 思維** - @docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md
 6. **📊 保持索引同步** - 修改 docs-ai 後執行 generate-docs-ai-index.py
 
 ## 🔍 問題診斷決策樹
@@ -60,22 +59,30 @@ docker compose -f docker-compose.agvc.yml logs -f agvc_server
 
 
 ## 📚 核心系統文檔（必要載入）
-# 🔝 通用層級：系統架構、核心原則、通用工具（8個核心文檔）
+# 🔝 通用層級：AI Agent 核心規則與開發指導（6個強引用 + 8個參考文檔）
 # 所有 AI Agent 必須理解的基礎知識
 
-# 系統架構（必須理解）- 3個
-@docs-ai/context/system/rosagv-overview.md              # 系統概覽
-@docs-ai/context/system/dual-environment.md             # 雙環境架構
-@docs-ai/context/system/technology-stack.md             # 技術棧
+# AI Agent 核心規則與開發指導 - 6個
+@ai-agents/container-development-rules.md    # 容器開發規則
+@ai-agents/database-operations-rules.md      # 資料庫操作規則
+@ai-agents/ros2-development-rules.md         # ROS2 開發規則
+@ai-agents/tafl-language-rules.md           # TAFL 語言規則
+@ai-agents/unified-tools-usage.md           # 統一工具使用
+@ai-agents/web-api-development-rules.md     # Web API 開發規則
 
-# 核心開發原則（必須遵守）- 2個
-@docs-ai/operations/development/core/core-principles.md # 核心開發原則
-@docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md # Linus 思維
+# 系統架構（參考文檔）- 3個
+docs-ai/context/system/rosagv-overview.md              # 系統概覽
+docs-ai/context/system/dual-environment.md             # 雙環境架構
+docs-ai/context/system/technology-stack.md             # 技術棧
 
-# 通用工具與操作（日常使用）- 3個
-@docs-ai/operations/tools/unified-tools.md              # 統一工具系統
-@docs-ai/operations/development/docker-development.md   # Docker 開發
-@docs-ai/operations/guides/troubleshooting.md           # 故障排除與診斷
+# 核心開發原則（參考文檔）- 2個
+docs-ai/operations/development/core/core-principles.md # 核心開發原則
+docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md # Linus 思維
+
+# 通用工具與操作（參考文檔）- 3個
+docs-ai/operations/tools/unified-tools.md              # 統一工具系統
+docs-ai/operations/development/docker-development.md   # Docker 開發
+docs-ai/operations/guides/troubleshooting.md           # 故障排除與診斷
 
 ## 📖 分層架構說明
 # 🏗️ RosAGV 採用三層文檔引用架構：
@@ -134,35 +141,51 @@ docker compose -f docker-compose.agvc.yml logs -f agvc_server
 # 詳細配置: docs-ai/operations/deployment/nginx-configuration.md
 
 ## 📊 AI 知識庫索引維護
-**⚠️ 重要：當 docs-ai/ 文檔有更新或 CLAUDE.md 引用變動時，必須更新 AI 知識庫索引**
+**✅ 已啟用自動更新：透過 Git Pre-commit Hook 自動維護索引**
 
-### 何時需要更新索引
-- 新增或刪除 docs-ai/ 文檔時
-- 修改任何 CLAUDE.md 中的 @docs-ai 引用時
-- 調整文檔分類或結構時
+### 自動更新機制
+當提交以下文件變更時，系統會自動更新知識庫索引：
+- 📚 `docs-ai/**/*.md` - 知識文檔
+- 📋 `**/CLAUDE.md` - 架構文件
+- 🤖 `ai-agents/**/*.md` - AI Agent 規則
 
-### 更新步驟
+### 自動更新流程
 ```bash
-# 1. 執行索引生成腳本
-cd ~/RosAGV/design/business-process-docs
-python3 generate-docs-ai-index.py
+# 1. 正常修改和提交（無需手動操作）
+git add docs-ai/some-doc.md
+git commit -m "docs: 更新文檔"
 
-# 2. 確認索引已更新
-ls -la js/docs-ai-index.json
-
-# 3. 檢視更新統計（可選）
-cat js/docs-ai-index.json | jq '.stats'
+# 2. Pre-commit Hook 自動執行：
+#    ✅ 檢測文檔變更
+#    ✅ 執行 update-indexes.sh
+#    ✅ 更新 docs-ai-index.json
+#    ✅ 更新 claude-architecture.json
+#    ✅ 自動加入索引到 commit
 ```
 
-### 驗證更新效果
+### 手動更新（備用）
+如需手動更新索引（例如測試或疑難排解）：
+```bash
+cd ~/RosAGV/design/business-process-docs
+./update-indexes.sh
+
+# 檢視更新統計
+cat js/docs-ai-index.json | jq '.stats'
+cat js/claude-architecture.json | jq '.summary'
+```
+
+### 查看更新結果
 - 訪問 `http://agvc.ui/docs/index.html`
 - 切換到「🤖 AI 知識庫」頁籤
-- 確認文檔統計和引用次數已更新
+- 確認兩種統計資訊：
+  - 📋 **架構層統計**：CLAUDE.md 檔案分佈（27個檔案）
+  - 📚 **知識層統計**：docs-ai 文檔適用層級（67個文檔）
 
 ### 索引內容說明
-- **引用統計**: 自動掃描所有 CLAUDE.md 檔案中的 @docs-ai 引用
+- **引用統計**: 自動掃描所有 CLAUDE.md 檔案中的 docs-ai 引用
 - **重要性分類**: 根據引用次數自動分類（≥10次為關鍵，≥5次為重要）
 - **分類整理**: 自動將文檔分為核心原則、系統架構、操作指南等類別
+- **架構統計**: 統計三層架構中 CLAUDE.md 的分佈和引用關係
 
 ## 📦 工作空間專業知識指引
 **進入特定工作空間時，請務必查看該工作空間的 CLAUDE.md 檔案以載入專業知識：**
@@ -197,7 +220,7 @@ cat js/docs-ai-index.json | jq '.stats'
 每個工作空間 CLAUDE.md 都包含該領域的專業文檔引用和開發指導。
 
 ## 📊 分層引用架構總結
-# 本文件為第一層（通用層），包含 12 個核心文檔
+# 本文件為第一層（通用層），包含 6 個核心文檔 + 8 個參考文檔
 # 第二層（工作空間層）文檔請查看各 _ws/CLAUDE.md
 # 第三層（專業層）文檔請查看各 src/*/CLAUDE.md
-# 詳細分層架構說明: docs-ai/LAYERED-IMPORT-GUIDE.md
+# 詳細分層架構說明: docs-ai/README.md (三層架構設計章節)

@@ -209,19 +209,48 @@ WCS調度系統
 
 ## 🎯 WCS調度系統
 
-### 六級優先度任務系統 (配置驅動)
-1. **AGV旋轉檢查** (Priority: 100) - Rack 180度轉向
-2. **滿料架到人工收料區** (Priority: 80) - 製程完成處理
-3. **人工收料區搬運** (Priority: 80) - 內部流程最佳化
-4. **系統準備區到房間** (Priority: 60) - 投料調度
-5. **空料架搬運** (Priority: 40) - 房間內轉移
-6. **人工回收空料架** (Priority: 40) - 循環利用
+### 五級優先度任務系統 (配置驅動)
+
+1. **AGV旋轉檢查** (Priority: 100) - Rack 180度轉向（雙旋轉點）
+   - **房間入口旋轉** (A面空B面工作) ✅ 已啟用
+     - 流程: `rack_rotation_room_inlet_aempty_bwork.yaml`
+     - 測試: test_rack_rotation.py (場景1)
+   - **房間出口旋轉** (A面滿B面空) ✅ 已啟用
+     - 流程: `rack_rotation_room_outlet_afull_bempty.yaml`
+     - 測試: test_rack_rotation.py (場景2)
+2. **滿料架到人工收料區** (Priority: 80) - 製程完成處理 ✅ 已實作
+   - 流程: `full_rack_outlet_to_manual_collection.yaml`
+   - 功能: 滿載或尾批判斷，自動搬運到收料區（51-55）
+   - 測試: test_full_rack_to_collection.py (2個場景)
+3. **系統準備區到房間** (Priority: 60) - 投料調度 ✅ 已實作
+   - 流程: `room_dispatch_simple.yaml`
+   - 功能: 依房間優先級將準備區料架調度到對應房間入口
+   - 測試: test_room_dispatch.py (2個場景)
+4. **射出機停車格到系統準備區** (Priority: 50) - 料架準備 ✅ 已實作
+   - 流程: `machine_to_prepare.yaml`
+   - 功能: 將已派車料架從停車格調度到準備區
+   - 測試: test_machine_to_prepare.py (2個場景)
+5. **空料架搬運** (Priority: 40) - Rack 空置後搬運（三路徑流程）✅ 已實作
+   - **流程A：空料架入口→出口** (優先) ✅ 已實作
+     - 流程: `empty_rack_inlet_to_outlet.yaml`
+     - 測試: test_parking_flows.py (場景1)
+   - **流程B：空料架入口→停車區** (備選) ✅ 已實作
+     - 流程: `empty_rack_inlet_to_parking.yaml`
+     - 測試: test_parking_flows.py (場景2)
+   - **流程C：停車區→出口** (需求調度) ✅ 已實作
+     - 流程: `parking_to_outlet.yaml`
+     - 功能: 當房間有已完成carrier等待時，從停車區調配rack到出口
+     - 測試: test_parking_flows.py (場景3)
+
+~~**人工收料區搬運**~~ - 🛑 **已確認移除**：人工收料區後續全由人工處理，不需要 AGV 搬運
+
+~~**人工回收空料架**~~ - 🛑 **已棄用**：改為人工手動管理（OPUI-HMI 移出系統 + OPUI 加入料架）
 
 ### 資源管理區域
-- **系統準備區** (11-18)：等待送到房間的Rack暫存
-- **人工收料區** (51-55)：製程完成後的產品收集
-- **系統空料車停車區**：當房間出口已有Rack時，存放從房間入口清空的Rack
-- **空料架管理系統**：完整的空Rack循環利用機制，根據需求調度空Rack到房間出口
+- **系統準備區** (11-18)：等待送到房間的滿Rack暫存
+- **系統空車停放區** (31-34)：專門存放空料架的緩衝區，當房間出口已有Rack時使用
+- **人工收料區** (51-55)：製程完成後的產品收集，之後由人工處理
+- **空料架回收流程**：透過 OPUI-HMI「移出系統」(location_id = null) → 人工搬運到系統外倉儲 → 需要時人工搬運到射出機 → OPUI「加入料架」重新進入系統
 
 ## 🔧 技術整合亮點
 

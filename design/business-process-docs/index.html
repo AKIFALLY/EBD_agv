@@ -143,6 +143,32 @@
             100% { transform: rotate(360deg); }
         }
         
+        /* 錨點高亮效果 */
+        .highlight-anchor {
+            background: linear-gradient(120deg, #fef08a 0%, #facc15 100%) !important;
+            border-left: 4px solid #eab308 !important;
+            padding-left: 16px !important;
+            margin-left: -20px !important;
+            border-radius: 0 8px 8px 0 !important;
+            transition: all 0.6s ease-out !important;
+            animation: highlightPulse 2s ease-in-out !important;
+        }
+
+        @keyframes highlightPulse {
+            0% {
+                background: linear-gradient(120deg, #fef08a 0%, #facc15 100%);
+                box-shadow: 0 0 0 rgba(234, 179, 8, 0.4);
+            }
+            50% {
+                background: linear-gradient(120deg, #fde047 0%, #eab308 100%);
+                box-shadow: 0 0 20px rgba(234, 179, 8, 0.6);
+            }
+            100% {
+                background: linear-gradient(120deg, #fef08a 0%, #facc15 100%);
+                box-shadow: 0 0 0 rgba(234, 179, 8, 0.4);
+            }
+        }
+
         /* 載入文字動畫 */
         .loading-text {
             color: #64748b;
@@ -372,6 +398,7 @@
                             <li><a data-navigate="technical-details/tafl-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL WCS 整合</a></li>
                             <li><a data-navigate="technical-details/database-design.md" class="nav-link text-purple-700 hover:bg-purple-50">資料庫設計</a></li>
                             <li><a data-navigate="technical-details/quality-control.md" class="nav-link text-purple-700 hover:bg-purple-50">品質控制</a></li>
+                            <li><a data-navigate="technical-details/bash-command-reference.md" class="nav-link text-purple-700 hover:bg-purple-50">Bash 命令手冊</a></li>
                         </ul>
                     </div>
                 </div>
@@ -471,6 +498,7 @@
                             <li><a data-navigate="technical-details/tafl-wcs-integration.md" class="nav-link text-purple-700 hover:bg-purple-50">TAFL WCS 整合</a></li>
                             <li><a data-navigate="technical-details/database-design.md" class="nav-link text-purple-700 hover:bg-purple-50">資料庫設計</a></li>
                             <li><a data-navigate="technical-details/quality-control.md" class="nav-link text-purple-700 hover:bg-purple-50">品質控制</a></li>
+                            <li><a data-navigate="technical-details/bash-command-reference.md" class="nav-link text-purple-700 hover:bg-purple-50">Bash 命令手冊</a></li>
                         </ul>
                     </div>
                 </div>

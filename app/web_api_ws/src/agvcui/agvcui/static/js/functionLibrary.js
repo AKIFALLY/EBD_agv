@@ -1,5 +1,5 @@
 /**
- * Linear Flow Designer v2 - Function Library with Explicit Defaults
+ * TAFL Editor - Function Library with Explicit Defaults
  * 所有函數都有明確定義的預設值，不依賴推論
  */
 

@@ -45,7 +45,6 @@ show_main_menu() {
     echo -e "${YELLOW}⚙️ 配置管理工具:${NC}"
     echo -e "  ${GREEN}zenoh-config${NC}       # Zenoh Router 配置管理"
     echo -e "  ${GREEN}hardware-config${NC}    # 硬體映射配置管理"
-    echo -e "  ${GREEN}sync-fallback${NC}      # 同步 Linear Flow 靜態備援"
     echo ""
     echo -e "${YELLOW}📋 日誌分析工具:${NC}"
     echo -e "  ${GREEN}log-scan${NC}           # 日誌錯誤掃描"
@@ -233,10 +232,6 @@ run_tafl_validate() {
     fi
 }
 
-run_sync_fallback() {
-    echo -e "${BLUE}🔄 同步 Linear Flow 靜態備援...${NC}"
-    bash -c "cd '$SCRIPT_DIR' && scripts/sync-static-fallback.sh sync"
-}
 
 # 節點管理工具
 run_node_status() {
@@ -370,9 +365,6 @@ case "${1:-menu}" in
         ;;
     "hardware-config")
         run_hardware_config
-        ;;
-    "sync-fallback")
-        run_sync_fallback
         ;;
         
     # TAFL 工具

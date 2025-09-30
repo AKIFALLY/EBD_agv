@@ -25,29 +25,25 @@ TEST_TYPE=${1:-all}
 case $TEST_TYPE in
     unit)
         echo -e "${GREEN}執行單元測試...${NC}"
-        python3 -m pytest src/tafl_wcs/test/test_copyright.py -v
-        python3 -m pytest src/tafl_wcs/test/test_flake8.py -v
-        python3 -m pytest src/tafl_wcs/test/test_pep257.py -v
+        python3 -m pytest src/tafl_wcs/test/test_tafl_v11_compliance.py -v
         ;;
     db)
         echo -e "${GREEN}執行資料庫測試...${NC}"
-        python3 src/tafl_wcs/test/test_simple_db.py
-        python3 src/tafl_wcs/test/test_check_all_data.py
+        python3 -m pytest src/tafl_wcs/test/test_db_connection.py -v
         ;;
     integration)
         echo -e "${GREEN}執行整合測試...${NC}"
-        python3 src/tafl_wcs/test/test_tafl_system.py
+        python3 -m pytest src/tafl_wcs/test/test_all_tafl_flows.py -v
         ;;
     all)
         echo -e "${GREEN}執行所有測試...${NC}"
-        colcon test --packages-select tafl_wcs
-        colcon test-result --verbose
+        python3 -m pytest src/tafl_wcs/test/ -v
         ;;
     *)
         echo "使用方法: $0 [unit|db|integration|all]"
-        echo "  unit        - 執行單元測試"
+        echo "  unit        - 執行單元測試 (TAFL v1.1 合規性)"
         echo "  db          - 執行資料庫測試"
-        echo "  integration - 執行整合測試"
+        echo "  integration - 執行整合測試 (TAFL 流程測試)"
         echo "  all         - 執行所有測試 (預設)"
         exit 1
         ;;

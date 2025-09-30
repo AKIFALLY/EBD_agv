@@ -67,32 +67,67 @@ def dispatch(self):
 - **座標轉換**: KUKA mm 單位轉換為地圖像素 (12.5mm = 1px)
 - **資料同步**: 更新 AGV 位置和 Rack 狀態到資料庫
 
-## 📊 六級優先度任務系統
+## 📊 五級優先度任務系統
 
 ### 任務優先級結構（配置定義，非智能決策）
 ```
-Priority 100: AGV旋轉檢查
-├── Rack 需要 180 度轉向以處理 A/B 雙面
-├── 確保製程連續性的關鍵操作
-└── 最高優先級配置
+Priority 100: AGV旋轉檢查 (雙旋轉點) ✅ 已實作
+├── 房間入口旋轉 (A面空B面工作) ✅ 已啟用
+│   ├── 條件：A面載具已取走，B面有待作業載具
+│   ├── 用途：讓B面載具能被Cargo AGV卸載
+│   ├── 流程：rack_rotation_room_inlet_aempty_bwork.yaml (enabled: true)
+│   └── 測試：test_rack_rotation.py (場景1)
+├── 房間出口旋轉 (A面滿B面空) ✅ 已啟用
+│   ├── 條件：A面已滿16個載具，B面為空
+│   ├── 用途：讓B面繼續收集房間內處理完成的載具
+│   ├── 流程：rack_rotation_room_outlet_afull_bempty.yaml (enabled: true)
+│   └── 測試：test_rack_rotation.py (場景2)
+└── 最高優先級確保機器手臂對接
 
-Priority 80: 滿料架到人工收料區
+Priority 80: 滿料架到人工收料區 ✅ 已實作
 ├── 製程完成 Rack 的最終處理
 ├── 人工收料區 (位置 51-55)
-└── 標準優先級
+├── 流程：full_rack_outlet_to_manual_collection.yaml (enabled: true)
+├── 功能：滿載或尾批判斷，自動搬運到收料區
+└── 測試：test_full_rack_to_collection.py (2個場景)
 
-Priority 60: 系統準備區到房間
+Priority 60: 系統準備區到房間 ✅ 已實作
 ├── 投料調度和生產準備
 ├── 系統準備區 (位置 11-18)
-└── 中等優先級
+├── 流程：room_dispatch_simple.yaml (enabled: true)
+├── 功能：依房間優先級將準備區料架調度到對應房間入口
+└── 測試：test_room_dispatch.py (2個場景)
 
-Priority 40: 空料架搬運
-├── 房間內空 Rack 轉移
-├── 基礎維護優先級
-└── 低優先級任務
+Priority 50: 射出機停車格到系統準備區 ✅ 已實作
+├── 料架準備和調度
+├── 流程：machine_to_prepare.yaml (enabled: true)
+├── 功能：將已派車料架從停車格調度到準備區
+└── 測試：test_machine_to_prepare.py (2個場景)
+
+Priority 40: 空料架搬運（三路徑流程）✅ 已實作
+├── 流程A：空料架入口→出口（優先）✅ 已實作
+│   ├── 條件：A/B面都為空，房間出口位置空閒
+│   ├── 用途：準備收集處理完成的Carrier
+│   ├── 流程：empty_rack_inlet_to_outlet.yaml (enabled: true)
+│   └── 測試：test_parking_flows.py (場景1)
+├── 流程B：空料架入口→停車區（備選）✅ 已實作
+│   ├── 條件：A/B面都為空，房間出口位置已佔用
+│   ├── 目標：系統空車停放區 (31-34)
+│   ├── 用途：暫存空Rack，避免出口堵塞
+│   ├── 流程：empty_rack_inlet_to_parking.yaml (enabled: true)
+│   └── 測試：test_parking_flows.py (場景2)
+├── 流程C：停車區→出口（需求調度）✅ 已實作
+│   ├── 條件：房間有已完成carrier等待，出口缺rack
+│   ├── 用途：從停車區調配rack到出口
+│   ├── 流程：parking_to_outlet.yaml (enabled: true)
+│   └── 測試：test_parking_flows.py (場景3)
+└── 防衝突機制：所有流程都檢查未完成任務，避免重複創建
 ```
 
-注：所有OCR NG問題在房間入口由Cargo AGV即時處理，不需要NG料架回收任務
+注：
+- 所有OCR NG問題在房間入口由Cargo AGV即時處理，不需要NG料架回收任務
+- 空料架回收已改為人工手動管理（OPUI-HMI 移出系統 + OPUI 加入料架），不再使用 AGV 自動搬運
+- 人工收料區後續全由人工處理，不需要「人工收料區搬運」流程
 
 ### 基礎調度邏輯
 - **優先級排序**: 根據 task.priority 欄位簡單排序
@@ -114,26 +149,26 @@ Priority 40: 空料架搬運
 - **流程**:
   1. 滿載 Rack 送達
   2. 人工取出產品
-  3. 更新 Rack 狀態為空
-  4. 創建回收任務
+  3. OPUI-HMI「移出系統」(location_id = null)
+  4. 人工搬運到系統外倉儲
 
 
-## 🔄 空料架循環管理
+## 🔄 空料架循環管理（手動管理模式）
 
-### 基礎回收流程
+### 手動回收流程
 ```
 空料架循環流程：
-1. 人工收料完成 → 更新資料庫 Rack 狀態
-2. TAFL 流程檢查 → 創建回收運輸任務
-3. RCS 任務分派 → AGV 執行搬運
-4. 送回指定位置 → 更新位置資訊
-5. 等待下次使用 → 循環利用
+1. 人工收料完成 → OPUI-HMI「移出系統」(location_id = null)
+2. 人工搬運 → 到系統外倉儲空間（非系統管理區域）
+3. 需要時 → 人工搬運空 Rack 到射出機旁
+4. OPUI 加入料架 → 輸入 Rack 編號（如 "101"）
+5. 系統更新 → location_id 分配到停車格，重新進入系統循環
 ```
 
 ### 資源管理
-- **狀態追蹤**: 資料庫記錄每個 Rack 的狀態和位置
-- **定期檢查**: TAFL 流程週期性檢查需要處理的 Rack
-- **簡單分配**: 基於位置和狀態的基礎分配邏輯
+- **系統內活躍**: location_id = 具體位置（停車格、準備區、房間等）
+- **系統外儲存**: location_id = null（實體存在但系統不追蹤）
+- **手動介入**: 透過 OPUI-HMI 和 OPUI 管理 Rack 進出系統
 
 ## 🚦 交通管制系統
 

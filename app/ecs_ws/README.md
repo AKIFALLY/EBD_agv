@@ -42,19 +42,19 @@ ECS (Equipment Control System) 工作空間提供設備控制系統功能，主�
 
 ```
 ecs_ws/
-├── src/
-│   └── ecs/                       # ECS 主要套件
-│       ├── ecs/
-│       │   ├── __init__.py               # 套件初始化
-│       │   ├── ecs_core.py               # ECS 核心節點 (依賴 db_proxy, plc_proxy)
-│       │   ├── ~~door_controller_node_mqtt.py~~ # ❌ 已棄用：MQTT 門控制節點
-│       │   ├── door_logic.py             # 門控制邏輯 (供 web_api_ws 使用)
-│       │   └── ~~door_controller_config.py~~ # ❌ 已棄用：MQTT 門控制配置
-│       ├── package.xml                   # 套件描述文件 (依賴 plc_proxy, keyence_plc)
-│       └── setup.py                      # Python 套件設定 (entry_points: ecs_core, door_controller_node_mqtt)
-├── build/                        # 建置輸出目錄
-├── install/                      # 安裝目錄
-└── log/                         # 日誌目錄
+└── src/
+    └── ecs/                       # ECS 主要套件
+        ├── ecs/
+        │   ├── __init__.py               # 套件初始化
+        │   ├── ecs_core.py               # ECS 核心節點 (依賴 db_proxy, plc_proxy)
+        │   ├── ~~door_controller_node_mqtt.py~~ # ❌ 已棄用：MQTT 門控制節點
+        │   ├── door_logic.py             # 門控制邏輯 (供 web_api_ws 使用)
+        │   └── door_controller_config.py # 門控制配置
+        ├── resource/                     # ROS 2 資源檔案
+        │   └── ecs                       # 套件標記檔案
+        ├── package.xml                   # 套件描述文件 (依賴 plc_proxy, keyence_plc)
+        ├── setup.py                      # Python 套件設定 (entry_points: ecs_core, door_controller_node_mqtt)
+        └── setup.cfg                     # 建置配置
 ```
 
 ## ⚙️ 主要功能

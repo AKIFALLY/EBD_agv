@@ -206,24 +206,26 @@ class KeyencePlcCommunication:
 | `plc_proxy_ws` | PLC 代理服務 |
 | `path_algorithm` | 路徑規劃演算法 |
 
-### AGVC 管理工作空間 (10個專用)
+### AGVC 管理工作空間 (11個)
 | 工作空間 | 功能描述 |
 |---------|---------|
 | `web_api_ws` | Web API 和 Socket.IO 服務 |
 | `db_proxy_ws` | 資料庫代理和 ORM |
 | `ecs_ws` | 設備控制系統 (門控) |
 | `rcs_ws` | 機器人控制系統 |
+| `tafl_ws` | TAFL 語言核心實作 |
 | `tafl_wcs_ws` | TAFL WCS (現行 WCS 實作) |
-| `tafl_ws` | TAFL 語言解析器 |
 | `kuka_fleet_ws` | KUKA Fleet 系統整合 |
 | `launch_ws` | ROS 2 Launch 系統管理 |
-| `shared_constants_ws` | 共享常數定義 |
-| `uno_gpio_ws` | 研華 UNO-137 GPIO 控制 |
+| `agv_ws` | AGV 介面定義 (AGVC 監控需要) |
+| `shared_constants_ws` | 系統級常數定義 (跨環境共用) |
+| `keyence_plc_ws` | Keyence PLC 通訊 (共用) |
 
-### 共用基礎設施
-- `keyence_plc_ws` - AGV 和 AGVC 共用
-- `plc_proxy_ws` - AGV 和 AGVC 共用
-- `path_algorithm` - AGV 和 AGVC 共用
+**註**：以上工作空間包含 AGVC 專用、TAFL 系統和與 AGV 共用的基礎設施工作空間。
+
+### 額外共用基礎設施（未列入上表）
+- `plc_proxy_ws` - PLC 代理服務 (AGV 和 AGVC 共用)
+- `path_algorithm` - 路徑規劃演算法 (AGV 和 AGVC 共用)
 
 ## 🔧 開發工具鏈
 

@@ -1,0 +1,137 @@
+metadata:
+  id: "parking_to_outlet"
+  name: "停車區空料架到出口"
+  enabled: true
+  version: "1.0.0"
+  description: "當房間有已完成carrier但出口缺rack時，從停車區調配空rack到出口"
+  author: "TAFL System"
+  created_at: "2025-09-30"
+  tags: ["parking_area", "room_outlet", "rack_move", "automation"]
+
+settings:
+  execution_interval: 10  # Execute every 10 seconds
+
+variables:
+  work_id: 220001  # KUKA_RACK_MOVE
+  priority: 5  # Priority 50，比入口流程高
+  model: "KUKA400i"
+
+flow:
+  # 查詢所有房間
+  - query:
+      target: rooms
+      as: all_rooms
+      description: "查詢所有房間"
+
+  # 遍歷每個房間
+  - for:
+      in: "${all_rooms}"
+      as: room
+      do:
+        # 查詢房間內已完成但未放rack的carrier
+        - query:
+            target: carriers
+            where:
+              room_id: "${room.id}"
+              rack_id: null
+              status_id: 8  # 已完成
+            as: waiting_carriers
+            description: "查詢房間內已完成但未放rack的carrier"
+
+        # 如果有carrier等待
+        - if:
+            condition: "${waiting_carriers.length > 0}"
+            then:
+              # 查詢對應房間的出口
+              - query:
+                  target: locations
+                  where:
+                    type: "room_outlet"
+                    room_id: "${room.id}"
+                  as: outlets
+                  description: "查詢對應房間的出口"
+
+              # 如果找到出口
+              - if:
+                  condition: "${outlets.length > 0}"
+                  then:
+                    - set:
+                        outlet: "${outlets[0]}"
+
+                    # 檢查出口是否沒有rack（rack_id為null）
+                    - set:
+                        outlet_empty: "${outlet.rack_id == null}"
+
+                    # 如果出口沒有rack
+                    - if:
+                        condition: "${outlet_empty}"
+                        then:
+                          # 查詢停車區的空rack
+                          - query:
+                              target: racks
+                              where:
+                                location_id_in: [31, 32, 33, 34]
+                                is_carry: 0      # 未被搬運
+                              limit: 1
+                              as: parking_racks
+                              description: "查詢停車區的空rack"
+
+                          # 如果找到停車區的rack
+                          - if:
+                              condition: "${parking_racks.length > 0}"
+                              then:
+                                - set:
+                                    parking_rack: "${parking_racks[0]}"
+
+                                # 查詢停車位位置資訊
+                                - query:
+                                    target: locations
+                                    where:
+                                      id: "${parking_rack.location_id}"
+                                    as: parking_locations
+                                    description: "查詢停車位位置資訊"
+
+                                - set:
+                                    parking_location: "${parking_locations[0]}"
+
+                                # 檢查是否已有未完成任務
+                                - query:
+                                    target: tasks
+                                    where:
+                                      work_id: "${work_id}"
+                                      rack_id: "${parking_rack.id}"
+                                      status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                                    as: existing_tasks
+                                    description: "檢查是否已存在搬運任務"
+
+                                # 如果沒有重複任務，創建新任務
+                                - if:
+                                    condition: "${existing_tasks.length == 0}"
+                                    then:
+                                      # 創建搬運任務
+                                      - create:
+                                          target: task
+                                          with:
+                                            type: "rack_move"
+                                            name: "停車區空料架到房間${room.id}出口"
+                                            description: "房間有${waiting_carriers.length}個已完成carrier等待，調配空rack到出口"
+                                            work_id: "${work_id}"
+                                            rack_id: "${parking_rack.id}"
+                                            room_id: "${room.id}"
+                                            priority: "${priority}"
+                                            status_id: 1  # PENDING
+                                            parameters:
+                                              rack_name: "${parking_rack.name}"
+                                              rack_id: "${parking_rack.id}"
+                                              from_location_name: "${parking_location.name}"
+                                              from_location_id: "${parking_location.id}"
+                                              to_location_name: "${outlet.name}"
+                                              to_location_id: "${outlet.id}"
+                                              room_id: "${room.id}"
+                                              waiting_carriers: "${waiting_carriers.length}"
+                                              reason: "房間有已完成carrier等待，調配空rack到出口"
+                                              model: "${model}"
+                                              nodes: ["${parking_location.node_id}", "${outlet.node_id}"]
+                                          description: "創建搬運任務（停車區→出口）"
+
+  # 流程完成

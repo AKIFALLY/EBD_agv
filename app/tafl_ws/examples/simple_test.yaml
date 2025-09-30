@@ -30,7 +30,7 @@ flow:
         - set:
             result: "Counter is large"
         - notify:
-            channel: log
+            level: info
             message: "Counter value is ${counter}"
       else:
         - set:
@@ -38,13 +38,13 @@ flow:
   
   # Test 3: Simple for loop
   - for:
-      each: num
+      as: num
       in: "${test_list}"
       do:
         - set:
             loop_value: "${num}"
         - notify:
-            channel: log
+            level: info
             message: "Processing number ${num}"
   
   # Test 4: Nested for loops to test variable scoping
@@ -58,19 +58,19 @@ flow:
           items: [201, 202, 203]
   
   - for:
-      each: location
+      as: location
       in: "${locations}"
       do:
         - notify:
-            channel: log
+            level: info
             message: "Processing location ${location.name}"
         
         - for:
-            each: item
+            as: item
             in: "${location.items}"
             do:
               - notify:
-                  channel: log
+                  level: info
                   message: "Location ${location.id}, Item ${item}"
   
   # Test 5: Switch statement (v1.1.2 format)
@@ -80,15 +80,15 @@ flow:
         - when: 5
           do:
             - notify:
-                channel: log
+                level: info
                 message: "Counter is 5"
         - when: 10
           do:
             - notify:
-                channel: log
+                level: info
                 message: "Counter is 10"
         - when: "default"  # v1.1.2: default case in cases array
           do:
             - notify:
-                channel: log
+                level: info
                 message: "Counter is ${counter} (default case)"

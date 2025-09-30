@@ -69,8 +69,7 @@ plc_proxy_ws/
 │       │   ├── plc_service.py      # ROS 2 服務提供者節點
 │       │   ├── plc_client.py       # PLC 客戶端封裝類別
 │       │   └── plc_client_node.py  # 客戶端節點封裝
-│       ├── resource/
-│       └── test/
+│       └── resource/
 └── test/                       # 整合測試
     └── ros_batched_service_client.py
 ```

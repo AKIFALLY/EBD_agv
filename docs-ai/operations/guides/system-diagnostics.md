@@ -24,6 +24,7 @@ source ~/.bashrc
 
 驗證配置是否正確：
 ```bash
+# [宿主機] 驗證配置
 which r                    # 應該顯示 /home/ct/RosAGV/r
 r agvc-check              # 測試 AGVC 健康檢查功能
 ```
@@ -32,45 +33,45 @@ r agvc-check              # 測試 AGVC 健康檢查功能
 RosAGV 提供統一的診斷工具入口，簡化日常維護操作：
 
 ```bash
-# 🔍 核心診斷命令
+# [宿主機] 🔍 核心診斷命令
 r agvc-check         # AGVC 管理系統健康檢查
 r agv-check          # AGV 車載系統健康檢查
 r system-health      # 完整系統健康檢查
 r quick-diag         # 快速綜合診斷
 
-# 🐳 容器狀態檢查
+# [宿主機] 🐳 容器狀態檢查
 r containers-status  # 檢查所有容器狀態
 
-# 🌐 網路診斷
+# [宿主機] 🌐 網路診斷
 r network-check      # 系統端口檢查
 r zenoh-check        # Zenoh 連接檢查
 
-# 📋 日誌分析
+# [宿主機] 📋 日誌分析
 r log-scan           # 日誌錯誤掃描
 r log-errors         # 高級錯誤分析
 ```
 
 ### 專業診斷工具集
 ```bash
-# 載入系統診斷工具集
+# [宿主機] 載入系統診斷工具集
 source scripts/system-tools/system-tools.sh
 
-# 專業診斷函數
+# [宿主機] 專業診斷函數
 system_health_check     # 完整健康檢查
 quick_diagnose          # 快速診斷
 all_health              # 智能健康檢查
 all_status              # 容器狀態
 
-# Web 服務診斷工具 (宿主機執行)
+# [宿主機] Web 服務診斷工具
 scripts/system-tools/service-monitor.sh status    # 所有服務監控
 scripts/docker-tools/container-status.sh agvc     # AGVC 容器詳細狀態
 
-# 日誌分析工具
+# [宿主機] 日誌分析工具
 scripts/log-tools/log-analyzer.sh agvc --stats     # AGVC 日誌統計
 scripts/log-tools/log-analyzer.sh agvc --timeline  # 錯誤時間軸
 scripts/log-tools/log-analyzer.sh agvc --suggestions # 解決建議
 
-# 網路和端口診斷
+# [宿主機] 網路和端口診斷
 scripts/network-tools/port-check.sh system         # 系統端口檢查
 scripts/network-tools/connectivity-test.sh performance --target localhost
 scripts/network-tools/port-check.sh --port 8000-8002 # Web 服務端口檢查
@@ -80,33 +81,33 @@ scripts/network-tools/port-check.sh --port 8000-8002 # Web 服務端口檢查
 
 ### 每日例行檢查
 ```bash
-# 標準每日檢查流程
+# [宿主機] 標準每日檢查流程
 r agvc-check              # 1. AGVC 系統健康檢查
 r containers-status       # 2. 容器運行狀態
 r network-check          # 3. 網路連接檢查
 
-# 組合檢查 (一行執行)
+# [宿主機] 組合檢查 (一行執行)
 r agvc-check && r containers-status && r network-check
 ```
 
 ### 每週深度檢查
 ```bash
-# 深度系統檢查
+# [宿主機] 深度系統檢查
 r system-health          # 完整系統健康檢查
 r log-scan              # 日誌錯誤掃描
 
-# 組合深度檢查
+# [宿主機] 組合深度檢查
 r system-health && r log-scan
 ```
 
 ### 故障排除檢查
 ```bash
-# 遇到問題時的診斷流程
+# [宿主機] 遇到問題時的診斷流程
 r quick-diag             # 1. 快速綜合診斷
 r log-errors             # 2. 深度日誌分析
 r zenoh-check           # 3. Zenoh 連接專項檢查
 
-# 組合故障診斷
+# [宿主機] 組合故障診斷
 r quick-diag && r log-errors && r zenoh-check
 ```
 
@@ -114,19 +115,19 @@ r quick-diag && r log-errors && r zenoh-check
 
 ### 容器狀態檢查
 ```bash
-# 檢查容器運行狀態
+# [宿主機] 檢查容器運行狀態
 r containers-status
 
-# 詳細容器資訊
+# [宿主機] 詳細容器資訊
 # 前提：在 ~/RosAGV 目錄執行
 cd ~/RosAGV
 docker compose -f docker-compose.agvc.yml ps
 docker compose -f docker-compose.yml ps
 
-# 容器資源使用
+# [宿主機] 容器資源使用
 docker stats
 
-# 容器健康檢查
+# [宿主機] 執行容器內健康檢查
 # 前提：在 ~/RosAGV 目錄執行
 cd ~/RosAGV
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "check_system_status"
@@ -134,25 +135,25 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "check_system
 
 ### 容器日誌檢查
 ```bash
-# 前提：在 ~/RosAGV 目錄執行
+# [宿主機] 前提：在 ~/RosAGV 目錄執行
 cd ~/RosAGV
 
-# 查看容器日誌
+# [宿主機] 查看容器日誌
 docker compose -f docker-compose.agvc.yml logs -f agvc_server
 docker compose -f docker-compose.agvc.yml logs -f postgres
 docker compose -f docker-compose.agvc.yml logs -f nginx
 
-# 查看最近日誌
+# [宿主機] 查看最近日誌
 docker compose -f docker-compose.agvc.yml logs --tail=100 agvc_server
 ```
 
 ### 容器網路診斷
 ```bash
-# 檢查容器網路
+# [宿主機] 檢查容器網路
 docker network ls
 docker network inspect rosagv_agvc_network
 
-# 容器間連接測試
+# [宿主機] 容器間連接測試
 # 前提：在 ~/RosAGV 目錄執行
 cd ~/RosAGV
 docker compose -f docker-compose.agvc.yml exec agvc_server ping postgres
@@ -163,21 +164,21 @@ docker compose -f docker-compose.agvc.yml exec agvc_server ping nginx
 
 ### 基礎網路檢查
 ```bash
-# 端口連接檢查
+# [宿主機] 端口連接檢查
 r network-check
 
-# 專業網路診斷工具
+# [宿主機] 專業網路診斷工具
 scripts/network-tools/port-check.sh system           # 系統端口檢查
 scripts/network-tools/port-check.sh --port 8000-8002 # Web 服務端口
 scripts/network-tools/connectivity-test.sh performance --target localhost
 
-# 網路端口檢查 (推薦使用 ss)
+# [宿主機] 網路端口檢查 (推薦使用 ss)
 ss -tulpn | rg "(8000|8001|8002|5432|5050|80|7447)"
 
-# 備選：netstat (舊工具，但仍可用)
+# [宿主機] 備選：netstat (舊工具，但仍可用)
 netstat -tulpn | rg "(8000|8001|8002|5432|5050|80|7447)"
 
-# 端口可達性測試
+# [宿主機] 端口可達性測試
 telnet localhost 8000
 telnet localhost 5432
 telnet localhost 7447
@@ -185,21 +186,21 @@ telnet localhost 7447
 
 ### Zenoh 通訊診斷
 ```bash
-# Zenoh 連接檢查
+# [宿主機] Zenoh 連接檢查
 r zenoh-check
 
-# 手動 Zenoh 檢查
+# [宿主機] 手動 Zenoh 檢查
 ps aux | rg zenoh
 cat /tmp/zenoh_router.pid
 pgrep -f rmw_zenohd
 
-# Zenoh 配置檢查
+# [容器內] Zenoh 配置檢查
 cat /app/routerconfig.json5
 ```
 
 ### 跨環境通訊測試
 ```bash
-# AGV 和 AGVC 環境通訊測試
+# [容器內] AGV 和 AGVC 環境通訊測試
 # 在 AGV 容器中
 ros2 topic list
 ros2 topic echo /agv_status
@@ -213,39 +214,39 @@ ros2 topic echo /agv_status
 
 ### 系統資源監控
 ```bash
-# CPU 和記憶體使用
+# [宿主機/容器內] CPU 和記憶體使用
 top
 htop
 free -h
 
-# 磁碟使用
+# [宿主機/容器內] 磁碟使用
 df -h
 du -sh /app/*
 
-# 網路使用
+# [宿主機/容器內] 網路使用
 iftop
 nethogs
 ```
 
 ### 容器資源監控
 ```bash
-# 容器資源使用統計
+# [宿主機] 容器資源使用統計
 docker stats
 
-# 特定容器資源監控
+# [宿主機] 特定容器資源監控
 docker stats agvc_server postgres nginx
 
-# 容器內資源檢查
+# [宿主機] 執行容器內資源檢查
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "top -bn1 | head -20"
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "free -h"
 ```
 
 ### 服務效能監控
 ```bash
-# Web 服務效能
+# [宿主機] Web 服務效能
 curl -w "@curl-format.txt" -o /dev/null -s "http://localhost:8000/health"
 
-# 資料庫效能監控 (包含詳細欄位說明和健康分析)
+# [宿主機] 資料庫效能監控 (包含詳細欄位說明和健康分析)
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     datname,                                          -- 資料庫名稱
@@ -262,7 +263,7 @@ SELECT
 FROM pg_stat_database 
 WHERE datname = 'agvc';"
 
-# 一鍵健康檢查 (自動評估系統狀態)
+# [宿主機] 一鍵健康檢查 (自動評估系統狀態)
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 WITH health_metrics AS (
     SELECT 
@@ -301,7 +302,7 @@ SELECT
     END as memory_status
 FROM health_metrics;"
 
-# 資料庫活動連接詳細檢查
+# [宿主機] 資料庫活動連接詳細檢查
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     COUNT(*) as total_connections,
@@ -311,7 +312,7 @@ SELECT
 FROM pg_stat_activity 
 WHERE datname = 'agvc';"
 
-# ROS 2 主題效能
+# [容器內] ROS 2 主題效能
 ros2 topic hz /topic_name
 ros2 topic bw /topic_name
 ```
@@ -320,14 +321,14 @@ ros2 topic bw /topic_name
 
 ### Web 服務診斷
 ```bash
-# API 服務檢查
+# [宿主機] API 服務檢查
 curl http://localhost:8000/health    # 或 http://agvc.webapi/health
 curl http://localhost:8000/docs      # 或 http://agvc.webapi/docs
 
-# AGVCUI 檢查
+# [宿主機] AGVCUI 檢查
 curl http://localhost:8001/          # 或 http://agvc.ui/
 
-# OPUI 檢查
+# [宿主機] OPUI 檢查
 curl http://localhost:8002/          # 或 http://op.ui/
 ```
 
@@ -335,13 +336,13 @@ curl http://localhost:8002/          # 或 http://op.ui/
 
 #### 基礎連接測試
 ```bash
-# PostgreSQL 連接測試
+# [宿主機] PostgreSQL 連接測試
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT version();"
 
-# 資料庫狀態檢查
+# [宿主機] 資料庫狀態檢查
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT * FROM pg_stat_database;"
 
-# 資料庫大小檢查
+# [宿主機] 資料庫大小檢查
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "SELECT pg_size_pretty(pg_database_size('agvc'));"
 ```
 
@@ -396,7 +397,7 @@ docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c 
 **當發現異常指標時的標準診斷流程**：
 
 ```bash
-# 1. 高回滾率診斷 (rollback_ratio > 10%)
+# [宿主機] 1. 高回滾率診斷 (rollback_ratio > 10%)
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     datname, 
@@ -406,7 +407,7 @@ SELECT
 FROM pg_stat_database 
 WHERE datname = 'agvc';"
 
-# 檢查當前阻塞的查詢
+# [宿主機] 檢查當前阻塞的查詢
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     pid, 
@@ -420,7 +421,7 @@ FROM pg_stat_activity
 WHERE state = 'active' AND datname = 'agvc'
 ORDER BY query_start;"
 
-# 2. 低緩存命中率診斷 (cache_hit_ratio < 90%)
+# [宿主機] 2. 低緩存命中率診斷 (cache_hit_ratio < 90%)
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     shared_buffers, 
@@ -428,7 +429,7 @@ SELECT
 FROM pg_settings 
 WHERE name = 'shared_buffers';"
 
-# 3. 臨時檔案問題診斷 (temp_files > 0)
+# [宿主機] 3. 臨時檔案問題診斷 (temp_files > 0)
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     temp_files,
@@ -437,7 +438,7 @@ SELECT
 FROM pg_stat_database 
 WHERE datname = 'agvc';"
 
-# 檢查最耗費臨時空間的查詢
+# [宿主機] 檢查最耗費臨時空間的查詢
 docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc -c "
 SELECT 
     query,
@@ -476,16 +477,16 @@ LIMIT 5;"
 
 ### ROS 2 服務診斷
 ```bash
-# ROS 2 環境檢查
+# [容器內] ROS 2 環境檢查
 echo $ROS_DISTRO
 echo $RMW_IMPLEMENTATION
 
-# 節點和服務檢查
+# [容器內] 節點和服務檢查
 ros2 node list
 ros2 service list
 ros2 topic list
 
-# 服務可用性測試
+# [容器內] 服務可用性測試
 ros2 service call /service_name service_type
 ```
 
@@ -495,7 +496,7 @@ ros2 service call /service_name service_type
 
 #### 容器啟動失敗
 ```bash
-# 診斷步驟
+# [宿主機] 診斷步驟
 1. r containers-status    # 檢查容器狀態
 2. r log-errors          # 檢查錯誤日誌
 3. r agvc-stop           # 停止異常服務
@@ -504,7 +505,7 @@ ros2 service call /service_name service_type
 
 #### 網路連接問題
 ```bash
-# 診斷步驟
+# [宿主機] 診斷步驟
 1. r network-check       # 檢查端口狀態
 2. r zenoh-check        # 檢查 Zenoh 連接
 3. r quick-diag         # 綜合診斷
@@ -512,7 +513,7 @@ ros2 service call /service_name service_type
 
 #### 系統效能問題
 ```bash
-# 診斷步驟
+# [宿主機] 診斷步驟
 1. r agvc-check         # 系統健康狀態
 2. r quick-diag         # 快速診斷
 3. r log-scan           # 檢查系統日誌
@@ -532,13 +533,13 @@ ros2 service call /service_name service_type
 
 ### 自動報告生成
 ```bash
-# 生成系統健康報告
+# [宿主機] 生成系統健康報告
 r system-health > system-report-$(date +%Y%m%d).txt
 
-# 生成錯誤分析報告
+# [宿主機] 生成錯誤分析報告
 r log-errors > error-analysis-$(date +%Y%m%d).log
 
-# 生成網路診斷報告
+# [宿主機] 生成網路診斷報告
 r network-check > network-report-$(date +%Y%m%d).txt
 ```
 
@@ -569,7 +570,7 @@ r network-check > network-report-$(date +%Y%m%d).txt
 
 ### 監控自動化
 ```bash
-# 創建自動監控腳本
+# [宿主機] 創建自動監控腳本
 #!/bin/bash
 # daily-health-check.sh
 echo "開始每日健康檢查..."

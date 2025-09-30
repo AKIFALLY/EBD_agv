@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='yazelin@ching-tech.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='KUKA Fleet Manager API 適配器，用於 AGV 車隊整合',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

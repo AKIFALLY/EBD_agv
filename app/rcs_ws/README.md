@@ -27,7 +27,7 @@ RCS (Robot Control System) 工作空間是 RosAGV 系統的車隊控制核心，
 - **db_proxy_ws**: 提供 ConnectionPoolManager 用於資料庫連線池管理 (⚠️ 手動啟動)
 
 ### 被依賴的工作空間
-- **wcs_ws**: 可能使用 RCS 的車隊管理功能
+- **tafl_wcs_ws**: 使用 RCS 的車隊管理功能 (TAFL WCS 系統)
 - **web_api_ws**: 可能透過 API 調用 RCS 服務
 
 ### 外部依賴
@@ -43,15 +43,15 @@ rcs_ws/
 │   │   ├── rcs/
 │   │   │   ├── __init__.py       # 套件初始化
 │   │   │   ├── rcs_core.py       # RCS 核心節點 (主程式入口)
-│   │   │   ├── ct_manager.py     # CT 車隊管理器 (主要實作)
-│   │   │   └── kuka_manager.py   # KUKA 車隊管理器
-│   │   ├── docs/                 # 技術文檔
-│   │   │   ├── README.md         # 詳細說明文檔
-│   │   │   ├── summaries/        # 總結文件
-│   │   │   │   ├── CT_DISPATCH_IMPLEMENTATION_SUMMARY.md
-│   │   │   │   └── QUERY_CONDITION_UPDATE_SUMMARY.md
-│   │   │   └── testing/          # 測試相關文件
-│   │   ├── test_ct_dispatch.py   # CT 任務派發測試腳本
+│   │   │   ├── simple_ct_manager.py     # CT 車隊管理器 (簡化版本)
+│   │   │   └── simple_kuka_manager.py   # KUKA 車隊管理器 (簡化版本)
+│   │   ├── launch/                # Launch 檔案
+│   │   │   └── rcs_launch.py      # RCS Launch 配置
+│   │   ├── test/                  # 測試套件
+│   │   │   ├── __init__.py        # 套件初始化
+│   │   │   ├── conftest.py        # pytest fixtures 配置
+│   │   │   ├── pytest.ini         # pytest 配置檔案
+│   │   │   └── test_rcs_pytest.py # 主要測試檔案
 │   │   ├── package.xml           # 套件配置
 │   │   ├── setup.py              # Python 套件設定 (僅系統套件)
 │   │   └── setup.cfg             # 建置配置
@@ -67,9 +67,7 @@ rcs_ws/
 │       ├── package.xml           # 套件配置
 │       ├── setup.py              # Python 套件設定 (僅系統套件)
 │       └── setup.cfg             # 建置配置
-├── build/                         # 建置輸出目錄
-├── install/                       # 安裝目錄
-└── log/                          # 日誌目錄
+└── pytest.ini                     # 工作空間根目錄 pytest 配置
 ```
 
 ## ⚙️ 主要功能
@@ -81,7 +79,7 @@ rcs_ws/
 - **定時任務處理**: 1 秒週期的主迴圈，處理任務派發和狀態更新
 - **異常處理**: 完整的錯誤處理和優雅關閉機制
 
-### 2. CT 車隊管理器 (ct_manager.py)
+### 2. CT 車隊管理器 (simple_ct_manager.py)
 **智能任務分派機制**:
 - **支援車型**: Cargo、Loader、Unloader 三種車型
 - **分派邏輯**:
@@ -96,7 +94,7 @@ rcs_ws/
 - `_validate_task_parameters()`: 任務參數驗證
 - `_determine_target_agv_name()`: 目標 AGV 名稱決定邏輯
 
-### 3. KUKA 車隊管理器 (kuka_manager.py)
+### 3. KUKA 車隊管理器 (simple_kuka_manager.py)
 **KUKA 系統整合**:
 - **KUKA Fleet 整合**: 與 KUKA 車隊系統的橋接
 - **任務監控**: KUKA 任務狀態監控和同步
@@ -148,7 +146,7 @@ rclpy.spin(rcs_node)
 
 ### CT 車隊管理器使用
 ```python
-from rcs.ct_manager import CtManager
+from rcs.simple_ct_manager import CtManager
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 
 # 建立資料庫連線池
@@ -256,9 +254,9 @@ except Exception as e:
 
 ### 4. CT 派發功能測試
 ```bash
-# 執行 CT 派發測試腳本
-cd /app/rcs_ws/src/rcs
-python3 test_ct_dispatch.py
+# 執行 RCS 測試套件
+cd /app/rcs_ws
+python3 -m pytest src/rcs/test/test_rcs_pytest.py -v
 
 # 預期輸出：
 # ✅ CT 派發測試通過
@@ -378,9 +376,9 @@ tail -f /tmp/rcs.log
 
 ### 5. 執行測試腳本
 ```bash
-# 執行 CT 派發測試
-cd /app/rcs_ws/src/rcs
-python3 test_ct_dispatch.py
+# 執行 RCS 測試套件
+cd /app/rcs_ws
+python3 -m pytest src/rcs/test/test_rcs_pytest.py -v
 
 # 檢查測試結果
 echo $?  # 0 表示測試通過
@@ -461,7 +459,7 @@ python3 -m rcs.rcs_core
 ```
 
 #### 4. CT 派發測試失敗
-**症狀**: `test_ct_dispatch.py` 執行失敗或測試不通過
+**症狀**: `test_rcs_pytest.py` 執行失敗或測試不通過
 **解決方法**:
 ```bash
 # 檢查測試腳本位置
@@ -471,13 +469,13 @@ ls -la /app/rcs_ws/src/rcs/test_ct_dispatch.py
 python3 -c "
 import sys
 sys.path.append('/app/rcs_ws/src/rcs')
-from rcs.ct_manager import CtManager
+from rcs.simple_ct_manager import CtManager
 print('✅ CT Manager 模組可用')
 "
 
 # 執行詳細測試
-cd /app/rcs_ws/src/rcs
-python3 -v test_ct_dispatch.py
+cd /app/rcs_ws
+python3 -m pytest src/rcs/test/test_rcs_pytest.py -v
 ```
 
 
@@ -561,7 +559,7 @@ with db_pool.get_session() as session:
    - 調整 `_determine_target_agv_name()` 邏輯
 
 2. **更新測試腳本**
-   - 在 `test_ct_dispatch.py` 中新增新車型的測試案例
+   - 在 `test_rcs_pytest.py` 中新增新車型的測試案例
    - 驗證新車型的派發邏輯
    - 測試異常情況處理
 
@@ -601,16 +599,16 @@ with db_pool.get_session() as session:
 
 ### 工作空間文檔
 - **[db_proxy_ws README.md](../db_proxy_ws/README.md)** - 資料庫代理服務 (⚠️ 手動啟動)
-- **[wcs_ws README.md](../wcs_ws/README.md)** - 倉庫控制系統 (⚠️ 手動啟動)
+- **[tafl_wcs_ws README.md](../tafl_wcs_ws/README.md)** - TAFL 倉庫控制系統 (⚠️ 手動啟動)
 - **[web_api_ws README.md](../web_api_ws/README.md)** - Web API 服務 (⚠️ 手動啟動)
 
 ### 內部技術文檔
-- **[CT 派發測試腳本](src/rcs/test_ct_dispatch.py)** - CT 任務派發測試工具
+- **[RCS 測試套件](src/rcs/test/test_rcs_pytest.py)** - RCS 系統測試工具
 - **[交通控制器測試](src/traffic_manager/test/test_traffic_controller.py)** - 交通管理模組測試
 - **[RCS 核心模組](src/rcs/rcs/)** - RCS 核心實作程式碼
 
 ### 測試文檔
-- **CT 派發測試**: `python3 test_ct_dispatch.py` (位於 src/rcs/)
+- **RCS 測試**: `python3 -m pytest src/rcs/test/test_rcs_pytest.py`
 - **交通控制器測試**: `python3 -m pytest test/test_traffic_controller.py` (位於 src/traffic_manager/)
 - **整合測試**: RCS 核心節點與資料庫整合測試
 
@@ -683,7 +681,7 @@ with db_pool.get_session() as session:
   - [ ] 新增更完整的類型提示
   - [ ] 改善程式碼註解和文檔字串
 - [x] **測試覆蓋基礎建立** ✅ **已完成**
-  - [x] CT 派發測試已完成 (test_ct_dispatch.py)
+  - [x] RCS 測試套件已完成 (test_rcs_pytest.py)
   - [x] 交通管理模組測試已完成 (pytest 測試)
   - [x] 基本整合測試已實現
 - [ ] **測試覆蓋擴展** (2 週)

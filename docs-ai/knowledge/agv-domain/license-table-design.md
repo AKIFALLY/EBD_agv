@@ -436,7 +436,6 @@ GROUP BY device_type;
 
 ## 🔗 相關文檔
 - HMI 系統設計：docs-ai/knowledge/system/hmi-system-design.md
-- 設備授權操作：docs-ai/operations/guides/device-authorization-guide.md
 - Rack 管理操作：docs-ai/operations/guides/rack-management-guide.md
 - 資料庫操作：docs-ai/operations/development/database-operations.md
 

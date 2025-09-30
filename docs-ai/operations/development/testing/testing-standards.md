@@ -109,7 +109,73 @@ def test_work_id_mapping(work_id, expected_type):
     assert result['type'] == expected_type
 ```
 
+## 🚀 測試執行指令（ROS 2 專用）
+
+### 基本測試執行
+```bash
+# 切換到工作空間目錄
+cd /app/package_ws
+
+# 執行單一套件測試
+colcon test --packages-select package_name
+
+# 查看測試結果
+colcon test-result --verbose
+```
+
+### 即時輸出測試結果
+```bash
+# 執行測試並即時顯示輸出 (推薦)
+colcon test --packages-select package_name --event-handlers console_direct+
+```
+
+### 實際範例
+```bash
+# 測試 db_proxy 套件
+colcon test --packages-select db_proxy --event-handlers console_direct+
+
+# 測試 traffic_manager 套件
+colcon test --packages-select traffic_manager --event-handlers console_direct+
+
+# 測試多個套件
+colcon test --packages-select db_proxy traffic_manager --event-handlers console_direct+
+```
+
+### 進階選項
+```bash
+# 只執行特定測試檔案
+colcon test --packages-select package_name --pytest-args test/test_specific.py
+
+# 執行測試並產生覆蓋率報告
+colcon test --packages-select package_name --pytest-args --cov=package_name
+
+# 平行執行測試
+colcon test --packages-select package_name --pytest-args -n auto
+
+# 顯示詳細測試資訊
+colcon test --packages-select package_name --pytest-args -v
+```
+
 ## 🔧 測試檔案結構標準
+
+### 測試檔案位置
+```
+package_name/
+├── package_name/       # 源代碼
+├── test/              # 測試代碼目錄
+│   ├── test_*.py      # 測試檔案 (必須 test_ 開頭)
+│   └── conftest.py    # pytest 配置 (可選)
+├── setup.cfg          # 包含 pytest 配置
+└── setup.py
+```
+
+### setup.cfg 配置
+```ini
+# 在套件根目錄的 setup.cfg 中添加
+[tool:pytest]
+python_files = test_*.py
+testpaths = test
+```
 
 ### 推薦的測試檔案結構
 ```python

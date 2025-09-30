@@ -35,7 +35,7 @@
 - **🎯 TAFL WCS (目前系統)**: `app/tafl_wcs_ws/CLAUDE.md` - **TAFL WCS 目前使用的實作**
   - **WCS 統一架構**: docs-ai/knowledge/agv-domain/wcs-system-design.md - TAFL WCS 完整架構
   - **TAFL Editor**: 在 `app/web_api_ws/src/agvcui/` 中的新視覺化流程設計器，產生 TAFL 檔案
-  - **[DEPRECATED] Flow WCS**: `app/flow_wcs_ws_old/CLAUDE.md` - 舊的 Linear Flow v2 WCS 實作
+  - **TAFL 核心**: `app/tafl_ws/CLAUDE.md` - TAFL 語言核心實作（解析器、執行器、驗證器）
   - **資料庫設計**: docs-ai/knowledge/agv-domain/wcs-database-design.md - WCS 資料表架構
   - **Work ID 系統**: docs-ai/knowledge/agv-domain/wcs-workid-system.md - 任務分類管理
 - **機器人控制**: `app/rcs_ws/CLAUDE.md` - RCS和交通管理
@@ -67,7 +67,7 @@
 - **AGVUI 監控問題** → docs-ai/knowledge/system/agvui-monitoring-system.md + `app/web_api_ws/src/agvui/CLAUDE.md`
 - **資料庫錯誤** → `db_proxy_ws/CLAUDE.md` + docs-ai/operations/development/database-operations.md
 - **PLC 通訊故障** → `keyence_plc_ws/CLAUDE.md` + `plc_proxy_ws/CLAUDE.md` + docs-ai/knowledge/protocols/keyence-plc-protocol.md
-- **🎯 WCS 相關問題** → `flow_wcs_ws/CLAUDE.md` (**唯一的 WCS 系統**)
+- **🎯 WCS 相關問題** → `tafl_wcs_ws/CLAUDE.md` (**目前使用的 WCS 系統**)
   - **WCS 架構理解** → docs-ai/knowledge/agv-domain/wcs-system-design.md
   - **架台旋轉邏輯** → docs-ai/knowledge/system/rack-rotation-logic.md
   - **TAFL Editor 問題** → `app/web_api_ws/src/agvcui/CLAUDE.md` (視覺化流程設計，產生 TAFL 檔案)

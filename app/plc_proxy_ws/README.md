@@ -36,11 +36,14 @@ plc_proxy_ws/
 ├── src/
 │   ├── plc_proxy/                 # PLC 代理主套件
 │   │   ├── plc_proxy/
+│   │   │   ├── __init__.py
 │   │   │   ├── plc_service.py    # PLC 服務節點 (主要服務實作)
 │   │   │   ├── plc_client.py     # PLC 客戶端 (服務調用封裝)
-│   │   │   └── __init__.py
+│   │   │   └── plc_client_node.py # 客戶端節點封裝
+│   │   ├── resource/             # 資源檔案
 │   │   ├── package.xml           # 套件依賴配置
-│   │   └── setup.py              # Python 套件設定
+│   │   ├── setup.py              # Python 套件設定
+│   │   └── setup.cfg             # 建置配置
 │   └── plc_interfaces/            # PLC 服務介面定義
 │       ├── srv/                  # ROS 2 服務定義
 │       │   ├── ForceOn.srv       # 強制開啟 MR 位元

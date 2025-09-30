@@ -18,8 +18,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='akifally@gmail.com',
-    description='TODO: Package description',
-    license='Apache-2.0',
+    description='手動 AGV 指令服務介面，用於遠端控制',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

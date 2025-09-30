@@ -255,9 +255,8 @@ build_agvc() {
     local agvc_app_workspaces=(
         "ecs_ws"
         "rcs_ws"
-        # "flow_wcs_ws"  # 已移除 - 改用 TAFL 系統
         "tafl_ws"      # TAFL parser and executor (新一代 WCS 基礎)
-        "tafl_wcs_ws"  # TAFL WCS integration (未來的 WCS 實作)
+        "tafl_wcs_ws"  # TAFL WCS integration (目前使用的 WCS 實作)
         "web_api_ws"
         "kuka_fleet_ws"
         "launch_ws"
@@ -353,7 +352,7 @@ build_all_workspaces() {
         "path_algorithm"
         
         # 核心服務工作空間
-        "db_proxy_ws"          # 資料庫服務，被 flow_wcs_ws/tafl_wcs_ws 等依賴
+        "db_proxy_ws"          # 資料庫服務，被 tafl_wcs_ws 等依賴
         
         # AGV 相關工作空間
         "agv_ws"               # 核心 AGV 控制
@@ -364,9 +363,8 @@ build_all_workspaces() {
         # AGVC 應用工作空間 (依賴 db_proxy_ws)
         "ecs_ws"               # 設備控制系統
         "rcs_ws"               # 機器人控制系統
-        # "flow_wcs_ws"          # 已移除 - 改用 TAFL 系統
         "tafl_ws"              # TAFL parser and executor (新一代 WCS 基礎)
-        "tafl_wcs_ws"          # TAFL WCS integration (未來的 WCS 實作)
+        "tafl_wcs_ws"          # TAFL WCS integration (目前使用的 WCS 實作)
         "web_api_ws"           # Web API 服務
         "kuka_fleet_ws"        # KUKA Fleet 整合
         
@@ -773,13 +771,11 @@ agvc_source() {
     local agvc_app_workspaces=(
         "/app/ecs_ws/install"
         "/app/rcs_ws/install"
-        # "/app/flow_wcs_ws/install"  # 已移除 - 改用 TAFL 系統
         "/app/tafl_ws/install"       # TAFL parser and executor (新一代 WCS 基礎)
-        "/app/tafl_wcs_ws/install"   # TAFL WCS integration (未來的 WCS 實作)
+        "/app/tafl_wcs_ws/install"   # TAFL WCS integration (目前使用的 WCS 實作)
         "/app/web_api_ws/install"
         "/app/kuka_fleet_ws/install"
         "/app/launch_ws/install"
-        "/app/wcs_ws/install"
     )
 
     # 載入 AGVC 基礎工作空間
@@ -1552,200 +1548,6 @@ manage_agvui() {
     esac
 }
 
-# ===== Flow WCS 控制函式 (已停用 - 改用 TAFL 系統) =====
-: 'COMMENTED OUT - USE TAFL SYSTEM
-manage_flow_wcs() {
-    local FLOW_WCS_LOG_FILE="/tmp/flow_wcs.log"
-    local FLOW_WCS_PID_FILE="/tmp/flow_wcs.pid"
-
-    case "$1" in
-        start)
-            # 檢查 PID 檔案是否存在且進程仍在運行
-            if [ -f "$FLOW_WCS_PID_FILE" ]; then
-                # 檢查檔案中記錄的所有進程是否還在運行
-                local all_running=true
-                while read pid; do
-                    if ! kill -0 $pid 2>/dev/null; then
-                        all_running=false
-                        break
-                    fi
-                done < "$FLOW_WCS_PID_FILE"
-                
-                if [ "$all_running" = true ]; then
-                    echo "✅ Flow WCS 已經在運行中"
-                    echo "   PID: $(cat $FLOW_WCS_PID_FILE | tr '\n' ' ')"
-                    return 0
-                else
-                    # 清理過時的 PID 檔案
-                    rm -f "$FLOW_WCS_PID_FILE"
-                fi
-            fi
-            
-            echo "🚀 啟動 Flow WCS 節點..."
-            
-            # 確保工作空間已載入
-            if [ -z "$ROS_WORKSPACE" ]; then
-                echo "⚠️ 未載入 ROS 2 工作空間，嘗試載入 AGVC 工作空間..."
-                agvc_source
-            fi
-            
-            # 啟動 Flow WCS 節點
-            nohup ros2 run flow_wcs flow_wcs_node > "$FLOW_WCS_LOG_FILE" 2>&1 &
-            local PARENT_PID=$!
-            
-            # 記錄父進程
-            echo $PARENT_PID > "$FLOW_WCS_PID_FILE"
-            
-            # 等待子進程啟動
-            sleep 3
-            
-            # 找出所有子進程並記錄
-            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
-            if [ -n "$CHILD_PIDS" ]; then
-                for pid in $CHILD_PIDS; do
-                    echo $pid >> "$FLOW_WCS_PID_FILE"
-                done
-            fi
-            
-            # 確認啟動成功
-            if kill -0 $PARENT_PID 2>/dev/null; then
-                echo "✅ Flow WCS 節點已啟動"
-                echo "   記錄的 PID: $(cat $FLOW_WCS_PID_FILE | tr '\n' ' ')"
-                echo "📄 日誌檔案: $FLOW_WCS_LOG_FILE"
-                
-                # 顯示初始日誌
-                echo "📋 初始日誌："
-                tail -n 20 "$FLOW_WCS_LOG_FILE"
-            else
-                echo "❌ Flow WCS 節點啟動失敗"
-                rm -f "$FLOW_WCS_PID_FILE"
-                echo "查看日誌: cat $FLOW_WCS_LOG_FILE"
-                return 1
-            fi
-            ;;
-
-        stop)
-            if [ -f "$FLOW_WCS_PID_FILE" ]; then
-                echo "🛑 停止 Flow WCS 節點..."
-                
-                # 讀取並殺掉所有記錄的進程（反向順序：先子後父）
-                local PIDS=$(tac "$FLOW_WCS_PID_FILE")
-                for pid in $PIDS; do
-                    if kill -0 $pid 2>/dev/null; then
-                        echo "   停止進程 PID: $pid"
-                        kill -TERM $pid 2>/dev/null
-                    fi
-                done
-                
-                # 等待進程結束
-                sleep 3
-                
-                # 強制終止仍在運行的進程
-                for pid in $PIDS; do
-                    if kill -0 $pid 2>/dev/null; then
-                        echo "   強制終止 PID: $pid"
-                        kill -9 $pid 2>/dev/null
-                    fi
-                done
-                    
-                echo "✅ Flow WCS 節點已停止"
-                rm -f "$FLOW_WCS_PID_FILE"
-            fi
-            
-            # 檢查並清理所有 flow_wcs_node 進程（包括孤立進程）
-            local orphan_pids=$(pgrep -f "flow_wcs_node")
-            if [ -n "$orphan_pids" ]; then
-                echo "⚠️ 發現 Flow WCS 進程，正在清理..."
-                for pid in $orphan_pids; do
-                    echo "  停止進程 PID: $pid"
-                    kill -TERM $pid 2>/dev/null
-                    sleep 1
-                    # 如果還在運行，強制停止
-                    if kill -0 $pid 2>/dev/null; then
-                        kill -9 $pid 2>/dev/null
-                    fi
-                done
-                echo "✅ 已清理所有 Flow WCS 進程"
-            else
-                echo "ℹ️ 未發現運行中的 Flow WCS 進程"
-            fi
-            
-            # 清理殭屍進程（如果有的話）
-            local zombie_pids=$(ps aux | grep "[f]low_wcs_node.*<defunct>" | awk '{print $2}')
-            if [ -n "$zombie_pids" ]; then
-                echo "⚠️ 發現殭屍進程，嘗試清理..."
-                # 殭屍進程需要其父進程來清理，我們嘗試找到並通知父進程
-                for zpid in $zombie_pids; do
-                    local ppid=$(ps -o ppid= -p $zpid 2>/dev/null | tr -d ' ')
-                    if [ -n "$ppid" ] && [ "$ppid" != "1" ]; then
-                        echo "  通知父進程 $ppid 清理殭屍進程 $zpid"
-                        kill -CHLD $ppid 2>/dev/null || true
-                    fi
-                done
-                # 如果殭屍進程的父進程是 init (PID 1)，它們會自動被清理
-                echo "ℹ️ 殭屍進程將在系統清理週期中被移除"
-            fi
-            
-            # 清理 PID 檔案
-            rm -f "$FLOW_WCS_PID_FILE"
-            ;;
-
-        restart)
-            echo "🔄 重新啟動 Flow WCS..."
-            manage_flow_wcs stop
-            sleep 2
-            manage_flow_wcs start
-            ;;
-
-        status)
-            # 使用進程名稱檢查，而非 PID 檔案
-            if pgrep -f "flow_wcs_node" > /dev/null 2>&1; then
-                PIDS=$(pgrep -f "flow_wcs_node")
-                echo "✅ Flow WCS 正在運行 (PIDs: $PIDS)"
-                
-                # 檢查 ROS 2 節點狀態
-                echo "🔍 ROS 2 節點狀態："
-                if ros2 node list | grep -q "flow_wcs_node"; then
-                    echo "  ✅ flow_wcs_node 節點在線"
-                    
-                    # 顯示節點資訊
-                    echo "📊 節點資訊："
-                    ros2 node info /flow_wcs_node 2>/dev/null | head -n 10
-                else
-                    echo "  ⚠️ flow_wcs_node 節點未在 ROS 2 中註冊"
-                fi
-                
-                # 顯示最新日誌
-                if [ -f "$FLOW_WCS_LOG_FILE" ]; then
-                    echo ""
-                    echo "📋 最新日誌 (最後 10 行)："
-                    tail -n 10 "$FLOW_WCS_LOG_FILE"
-                fi
-                
-                return 0
-            else
-                echo "❌ Flow WCS 未運行"
-                return 1
-            fi
-            ;;
-
-        logs)
-            if [ -f "$FLOW_WCS_LOG_FILE" ]; then
-                echo "📋 Flow WCS 日誌："
-                tail -f "$FLOW_WCS_LOG_FILE"
-            else
-                echo "❌ 日誌檔案不存在: $FLOW_WCS_LOG_FILE"
-                return 1
-            fi
-            ;;
-
-        *)
-            echo "用法: manage_flow_wcs {start|stop|restart|status|logs}"
-            return 1
-            ;;
-    esac
-}
-COMMENTED OUT'
 
 # ===== TAFL WCS 控制函式 (新一代 WCS 系統) =====
 manage_tafl_wcs() {

@@ -14,7 +14,7 @@ KUKA 車隊工作空間是 RosAGV 系統與 KUKA AGV 車隊系統之間的核心
 
 作為 AGVC 管理系統的重要組件，KUKA Fleet Adapter 提供了完整的 KUKA 車隊控制邏輯，包括 API 客戶端、車隊適配器、任務管理等。系統採用模組化設計，支援多種任務類型（MOVE、RACK_MOVE、WORKFLOW），並提供完整的狀態監控和錯誤處理機制。
 
-**重要特點**: 實現了完整的 KUKA Fleet Adapter 和 KUKA API Client，支援即時任務派發和車隊狀態監控，並被 wcs_ws 和 rcs_ws 等系統依賴使用。
+**重要特點**: 實現了完整的 KUKA Fleet Adapter 和 KUKA API Client，支援即時任務派發和車隊狀態監控，並被 tafl_wcs_ws 和 rcs_ws 等系統依賴使用。
 
 ## 🔗 依賴關係
 
@@ -29,7 +29,7 @@ KUKA 車隊工作空間是 RosAGV 系統與 KUKA AGV 車隊系統之間的核心
 - **無**: 此工作空間為獨立模組，不依賴其他工作空間
 
 ### 被依賴的工作空間
-- **wcs_ws**: 使用 KukaFleetAdapter 進行 KUKA 車隊整合 (⚠️ 手動啟動)
+- **tafl_wcs_ws**: 使用 KukaFleetAdapter 進行 KUKA 車隊整合 (⚠️ 手動啟動)
 - **rcs_ws**: 使用 KukaFleetAdapter 進行 KUKA 車隊管理 (⚠️ 手動啟動)
 
 ### 外部依賴
@@ -50,9 +50,7 @@ kuka_fleet_ws/
 │       ├── package.xml            # 套件配置
 │       ├── setup.py               # Python 套件設定 (僅系統套件)
 │       └── setup.cfg              # 建置配置
-├── build/                         # 建置輸出目錄
-├── install/                       # 安裝目錄
-└── log/                          # 日誌目錄
+└── README.md                      # 本檔案
 ```
 
 ## ⚙️ 主要功能
@@ -595,4 +593,4 @@ netstat -tulpn | grep 10870
 - ✅ **ROS 2 節點架構**: 標準的節點架構和參數管理
 - ✅ **模組化設計**: API 客戶端和適配器清晰分離
 - ✅ **完整的錯誤處理**: 包含重試機制和異常處理
-- ✅ **被其他系統依賴**: wcs_ws 和 rcs_ws 的重要依賴組件
+- ✅ **被其他系統依賴**: tafl_wcs_ws 和 rcs_ws 的重要依賴組件

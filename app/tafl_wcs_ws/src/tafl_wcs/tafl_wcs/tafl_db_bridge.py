@@ -24,7 +24,9 @@ from db_proxy.models import (
     Rack, RackStatus,
     Carrier, CarrierStatus,
     Task, TaskStatus,
-    Work
+    Work,
+    Room,
+    Product, ProcessSettings
 )
 from sqlmodel import Session, select, and_, or_, desc, asc
 
@@ -174,6 +176,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         """Initialize database connection"""
         self.pool_manager = ConnectionPoolManager(database_url)
         self.change_log = []  # Store change history
+        self.logger = logger  # Add logger attribute
         logger.info("✅ Enhanced Database bridge initialized")
     
     # ========== Enhanced Query Functions ==========
@@ -183,7 +186,8 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         Query locations with unified enhanced filtering options
 
         Basic filters:
-        - id: Filter by location ID
+        - id: Filter by single location ID
+        - id_in: Filter by multiple location IDs (list)
         - room_id: Filter by room ID
         - node_id: Filter by node ID
         - type: Filter by location type (e.g., 'room_inlet', 'room_outlet')
@@ -223,12 +227,26 @@ class TAFLDatabaseBridge(BaseQueryMixin):
             # Basic filters
             if 'id' in kwargs:
                 conditions.append(Location.id == kwargs['id'])
+            if 'id_in' in kwargs:
+                id_list = kwargs['id_in']
+                if isinstance(id_list, (list, tuple)):
+                    conditions.append(Location.id.in_(id_list))
             if 'room_id' in kwargs:
-                conditions.append(Location.room_id == kwargs['room_id'])
+                if kwargs['room_id'] is None:
+                    conditions.append(Location.room_id.is_(None))
+                else:
+                    conditions.append(Location.room_id == kwargs['room_id'])
             if 'node_id' in kwargs:
-                conditions.append(Location.node_id == kwargs['node_id'])
+                if kwargs['node_id'] is None:
+                    conditions.append(Location.node_id.is_(None))
+                else:
+                    conditions.append(Location.node_id == kwargs['node_id'])
             if 'type' in kwargs:
                 conditions.append(Location.type == kwargs['type'])
+
+            # Direct location_status_id filter (for Location model)
+            if 'location_status_id' in kwargs:
+                conditions.append(Location.location_status_id == kwargs['location_status_id'])
 
             # Special filters
             if kwargs.get('available_only'):
@@ -280,7 +298,10 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         Query racks with unified enhanced filtering options
 
         Basic filters:
-        - location_id: Filter by location ID
+        - location_id: Filter by single location ID
+        - location_id_in: Filter by multiple location IDs (list)
+        - product_id: Filter by product ID
+        - room_id: Filter by room ID
         - is_carry: Filter by carry status
         - is_docked: Filter by docked status
         - needs_rotation: Only racks needing rotation
@@ -318,8 +339,27 @@ class TAFLDatabaseBridge(BaseQueryMixin):
             conditions = []
 
             # Basic filters
+            if 'id' in kwargs:
+                conditions.append(Rack.id == kwargs['id'])
             if 'location_id' in kwargs:
                 conditions.append(Rack.location_id == kwargs['location_id'])
+            if 'location_id_in' in kwargs:
+                location_ids = kwargs['location_id_in']
+                if isinstance(location_ids, list):
+                    conditions.append(Rack.location_id.in_(location_ids))
+            if 'product_id' in kwargs:
+                if kwargs['product_id'] is None:
+                    conditions.append(Rack.product_id.is_(None))
+                else:
+                    conditions.append(Rack.product_id == kwargs['product_id'])
+            if 'room_id' in kwargs:
+                self.logger.info(f"DEBUG query_racks: room_id filter = {kwargs['room_id']} (type: {type(kwargs['room_id'])})")
+                if kwargs['room_id'] is None:
+                    self.logger.info("DEBUG query_racks: Adding condition Rack.room_id IS NULL")
+                    conditions.append(Rack.room_id.is_(None))
+                else:
+                    self.logger.info(f"DEBUG query_racks: Adding condition Rack.room_id = {kwargs['room_id']}")
+                    conditions.append(Rack.room_id == kwargs['room_id'])
             if 'is_carry' in kwargs:
                 conditions.append(Rack.is_carry == kwargs['is_carry'])
             if 'is_docked' in kwargs:
@@ -351,7 +391,11 @@ class TAFLDatabaseBridge(BaseQueryMixin):
             query = self._apply_pagination_and_sorting(query, Rack, kwargs)
             
             results = session.exec(query).all()
-            
+
+            self.logger.info(f"DEBUG query_racks: Query returned {len(results)} results")
+            for rack, status in results[:3]:  # Log first 3 for debugging
+                self.logger.info(f"DEBUG query_racks: Result - Rack {rack.id}: room_id={rack.room_id}")
+
             # Get total count
             count_query = select(Rack, RackStatus).join(
                 RackStatus, Rack.status_id == RackStatus.id, isouter=True
@@ -834,15 +878,25 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 if not work:
                     return None, {'success': False, 'errors': ['Work ID not found']}
                 
+                # Prepare parameters to store extra fields
+                task_params = params.get('parameters', {})
+
+                # Store source and target location IDs in parameters if provided
+                if 'source_location_id' in params:
+                    task_params['source_location_id'] = params['source_location_id']
+                if 'target_location_id' in params:
+                    task_params['target_location_id'] = params['target_location_id']
+
                 # Create task
                 task = Task(
                     name=params.get('name', f"Task for Work {params['work_id']}"),
                     description=params.get('description'),  # Add description field
                     work_id=params['work_id'],
                     rack_id=params.get('rack_id'),  # Add rack_id from params
+                    location_id=params.get('target_location_id'),  # Use target as main location
                     priority=priority,
                     status_id=params.get('status_id', TaskStatus.PENDING),  # Use status_id from params, default to PENDING
-                    parameters=params.get('parameters', {}),  # Fixed: use 'parameters' not 'metadata'
+                    parameters=task_params,  # Store extended parameters including source/target locations
                     # deadline field not available in Task model
                     created_at=datetime.now()
                 )
@@ -850,7 +904,21 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 session.add(task)
                 session.commit()
                 session.refresh(task)
-                
+
+                # Auto-update location status for KUKA move rack tasks
+                # Work ID 210001 = KUKA move rack (room dispatch)
+                if params.get('work_id') == 210001 and params.get('target_location_id'):
+                    try:
+                        target_location = session.get(Location, params['target_location_id'])
+                        if target_location and target_location.location_status_id == 2:  # IDLE
+                            old_status_id = target_location.location_status_id
+                            target_location.location_status_id = 3  # OCCUPIED
+                            session.commit()
+                            logger.info(f"✅ Auto-updated location {params['target_location_id']} status from {old_status_id} to 3 (OCCUPIED) for KUKA move rack task")
+                    except Exception as e:
+                        logger.warning(f"Failed to auto-update location status: {e}")
+                        # Don't fail task creation if location update fails
+
                 # Log the creation
                 self._log_change('CREATE', 'Task', task.id, None, task.model_dump())
                 
@@ -1089,16 +1157,17 @@ class TAFLDatabaseBridge(BaseQueryMixin):
     def update_rack(self, **kwargs) -> bool:
         """
         Generic update rack function for TAFL
-        
+
         Args:
             where: Dict with conditions (e.g., {'id': 1})
-            set: Dict with fields to update (e.g., {'status_id': 3})
-        
+            set/data: Dict with fields to update (e.g., {'status_id': 3})
+
         Returns:
             bool: Success status
         """
         where = kwargs.get('where', {})
-        set_fields = kwargs.get('set', {})
+        # Support both 'set' and 'data' for TAFL compatibility
+        set_fields = kwargs.get('set', kwargs.get('data', {}))
         
         with self.pool_manager.get_session() as session:
             try:
@@ -1200,15 +1269,15 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 logger.error(f"Failed to update rack side: {e}")
                 return False, {'success': False, 'error': str(e)}
     
-    def update_location_status(self, location_id: int, status: str, reason: str = None) -> Tuple[bool, Dict]:
+    def update_location_status(self, location_id: int, status, reason: str = None) -> Tuple[bool, Dict]:
         """
         Update location status with logging
-        
+
         Args:
             location_id: Location ID
-            status: New status name
+            status: New status - can be status ID (int) or status name (str)
             reason: Optional reason for status change
-        
+
         Returns:
             Tuple[bool, Dict]: (success, details)
         """
@@ -1218,19 +1287,26 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 if not location:
                     logger.warning(f"Location {location_id} not found")
                     return False, {'success': False, 'error': 'Location not found'}
-                
+
                 # Get current status for logging
                 old_status = session.get(LocationStatus, location.location_status_id)
                 old_status_name = old_status.name if old_status else 'UNKNOWN'
-                
-                # Get new status ID
-                new_status = session.exec(
-                    select(LocationStatus).where(LocationStatus.name == status)
-                ).first()
-                
-                if not new_status:
-                    logger.warning(f"Status {status} not found")
-                    return False, {'success': False, 'error': f'Status {status} not found'}
+
+                # Get new status - support both ID (int) and name (str)
+                if isinstance(status, int):
+                    # If status is an integer, treat it as status ID
+                    new_status = session.get(LocationStatus, status)
+                    if not new_status:
+                        logger.warning(f"Status ID {status} not found")
+                        return False, {'success': False, 'error': f'Status ID {status} not found'}
+                else:
+                    # If status is a string, treat it as status name
+                    new_status = session.exec(
+                        select(LocationStatus).where(LocationStatus.name == str(status))
+                    ).first()
+                    if not new_status:
+                        logger.warning(f"Status name '{status}' not found")
+                        return False, {'success': False, 'error': f'Status name "{status}" not found'}
                 
                 # Store old values
                 old_values = {
@@ -1247,20 +1323,20 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 # Log the change
                 new_values = {
                     'status_id': location.location_status_id,
-                    'status_name': status,
+                    'status_name': new_status.name,  # Use the actual status name from database
                     'reason': reason
                 }
                 self._log_change('UPDATE', 'Location', location_id, old_values, new_values)
                 
-                logger.info(f"✅ Updated location {location_id} status from {old_status_name} to {status}")
+                logger.info(f"✅ Updated location {location_id} status from {old_status_name} to {new_status.name}")
                 if reason:
                     logger.info(f"   Reason: {reason}")
-                
+
                 return True, {
                     'success': True,
                     'location_id': location_id,
                     'old_status': old_status_name,
-                    'new_status': status,
+                    'new_status': new_status.name,  # Return actual status name
                     'reason': reason
                 }
                 
@@ -1313,9 +1389,15 @@ class TAFLDatabaseBridge(BaseQueryMixin):
 
             # Basic filters
             if 'rack_id' in kwargs:
-                conditions.append(Carrier.rack_id == kwargs['rack_id'])
+                if kwargs['rack_id'] is None:
+                    conditions.append(Carrier.rack_id.is_(None))
+                else:
+                    conditions.append(Carrier.rack_id == kwargs['rack_id'])
             if 'room_id' in kwargs:
-                conditions.append(Carrier.room_id == kwargs['room_id'])
+                if kwargs['room_id'] is None:
+                    conditions.append(Carrier.room_id.is_(None))
+                else:
+                    conditions.append(Carrier.room_id == kwargs['room_id'])
             if 'rack_index' in kwargs:
                 conditions.append(Carrier.rack_index == kwargs['rack_index'])
             if 'port_id' in kwargs:
@@ -1593,13 +1675,268 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         # Return most recent entries first
         return list(reversed(filtered_log))[:limit]
     
+    def query_rooms(self, **kwargs) -> Dict[str, Any]:
+        """
+        Query rooms with enhanced filtering options
+
+        Basic filters:
+        - id: Room ID
+        - enable: Filter by enabled status (0 or 1)
+        - process_settings_id: Filter by process settings ID
+        - name: Filter by room name
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
+        - limit: Maximum results
+        """
+        with self.pool_manager.get_session() as session:
+            query = select(Room)
+
+            # Apply filters
+            conditions = []
+
+            # Basic filters
+            if 'id' in kwargs:
+                conditions.append(Room.id == kwargs['id'])
+            if 'enable' in kwargs:
+                conditions.append(Room.enable == kwargs['enable'])
+            if 'process_settings_id' in kwargs:
+                conditions.append(Room.process_settings_id == kwargs['process_settings_id'])
+            if 'name' in kwargs:
+                conditions.append(Room.name == kwargs['name'])
+
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Apply sorting
+            sort_by = kwargs.get('sort_by', 'id')
+            sort_order = kwargs.get('sort_order', 'asc')
+
+            if hasattr(Room, sort_by):
+                order_column = getattr(Room, sort_by)
+                if sort_order.lower() == 'desc':
+                    query = query.order_by(desc(order_column))
+                else:
+                    query = query.order_by(asc(order_column))
+
+            # Apply pagination
+            if 'offset' in kwargs:
+                query = query.offset(kwargs['offset'])
+            if 'limit' in kwargs:
+                query = query.limit(kwargs['limit'])
+
+            # Execute query
+            results = session.exec(query).all()
+
+            # Get total count
+            count_query = select(Room)
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_count = len(session.exec(count_query).all())
+
+            # Convert to dict
+            rooms = [room.model_dump() for room in results]
+
+            return {
+                'data': rooms,
+                'total': total_count,
+                'offset': kwargs.get('offset', 0),
+                'limit': kwargs.get('limit', None),
+                'has_more': total_count > (kwargs.get('offset', 0) + len(rooms))
+            }
+
+    def query_machine(self, **kwargs) -> Dict[str, Any]:
+        """
+        Query machines with filtering options
+
+        Basic filters:
+        - id: Machine ID
+        - enable: Filter by enabled status (0 or 1)
+        - name: Filter by machine name
+        - parking_space_1: Filter by parking space 1 location ID
+        - parking_space_2: Filter by parking space 2 location ID
+
+        Array filters:
+        - id_in: List of machine IDs
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
+        - limit: Maximum results
+        """
+        # Import Machine model
+        from db_proxy.models.machine import Machine
+
+        with self.pool_manager.get_session() as session:
+            query = select(Machine)
+
+            # Apply filters
+            conditions = []
+
+            # Basic filters
+            if 'id' in kwargs:
+                conditions.append(Machine.id == kwargs['id'])
+            if 'enable' in kwargs:
+                conditions.append(Machine.enable == kwargs['enable'])
+            if 'name' in kwargs:
+                conditions.append(Machine.name == kwargs['name'])
+            if 'parking_space_1' in kwargs:
+                conditions.append(Machine.parking_space_1 == kwargs['parking_space_1'])
+            if 'parking_space_2' in kwargs:
+                conditions.append(Machine.parking_space_2 == kwargs['parking_space_2'])
+
+            # Array filters
+            if 'id_in' in kwargs:
+                id_list = kwargs['id_in']
+                if isinstance(id_list, (list, tuple)):
+                    conditions.append(Machine.id.in_(id_list))
+
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Sorting
+            sort_by = kwargs.get('sort_by', 'id')
+            sort_order = kwargs.get('sort_order', 'asc')
+            if hasattr(Machine, sort_by):
+                order_field = getattr(Machine, sort_by)
+                query = query.order_by(order_field if sort_order == 'asc' else order_field.desc())
+
+            # Apply limit and offset
+            if 'offset' in kwargs:
+                query = query.offset(kwargs['offset'])
+            if 'limit' in kwargs:
+                query = query.limit(kwargs['limit'])
+
+            # Execute query
+            results = session.exec(query).all()
+
+            # Get total count
+            count_query = select(Machine)
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_count = len(session.exec(count_query).all())
+
+            # Convert to dict
+            machines = [machine.model_dump() for machine in results]
+
+            return {
+                'data': machines,
+                'total': total_count,
+                'offset': kwargs.get('offset', 0),
+                'limit': kwargs.get('limit'),
+                'success': True
+            }
+
+    # Alias for TAFL compatibility
+    query_machines = query_machine  # Support both singular and plural forms
+
+    def query_products(self, **kwargs) -> Dict[str, Any]:
+        """
+        Query products with enhanced filtering options
+
+        Basic filters:
+        - id: Product ID
+        - process_settings_id: Filter by process settings ID
+        - name: Filter by product name
+        - size: Filter by product size
+
+        Date filters:
+        - created_after: Created after date
+        - created_before: Created before date
+        - updated_after: Updated after date
+        - updated_before: Updated before date
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
+        - limit: Maximum results
+        """
+        with self.pool_manager.get_session() as session:
+            query = select(Product, ProcessSettings).join(
+                ProcessSettings, Product.process_settings_id == ProcessSettings.id, isouter=True
+            )
+
+            # Apply filters
+            conditions = []
+
+            # Basic filters
+            if 'id' in kwargs:
+                conditions.append(Product.id == kwargs['id'])
+            if 'process_settings_id' in kwargs:
+                conditions.append(Product.process_settings_id == kwargs['process_settings_id'])
+            if 'name' in kwargs:
+                conditions.append(Product.name == kwargs['name'])
+            if 'size' in kwargs:
+                conditions.append(Product.size == kwargs['size'])
+
+            # Date filters
+            self._apply_date_filters(Product, conditions, kwargs)
+
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Apply sorting
+            sort_by = kwargs.get('sort_by', 'id')
+            sort_order = kwargs.get('sort_order', 'asc')
+
+            if hasattr(Product, sort_by):
+                order_column = getattr(Product, sort_by)
+                if sort_order.lower() == 'desc':
+                    query = query.order_by(desc(order_column))
+                else:
+                    query = query.order_by(asc(order_column))
+
+            # Apply pagination
+            if 'offset' in kwargs:
+                query = query.offset(kwargs['offset'])
+            if 'limit' in kwargs:
+                query = query.limit(kwargs['limit'])
+
+            # Execute query
+            results = session.exec(query).all()
+
+            # Get total count
+            count_query = select(Product, ProcessSettings).join(
+                ProcessSettings, Product.process_settings_id == ProcessSettings.id, isouter=True
+            )
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_count = len(session.exec(count_query).all())
+
+            # Convert to dict with process settings info
+            products = []
+            for product, process_settings in results:
+                product_dict = product.model_dump()
+                if process_settings:
+                    product_dict['process_settings'] = {
+                        'id': process_settings.id,
+                        'soaking_times': process_settings.soaking_times,
+                        'description': process_settings.description
+                    }
+                products.append(product_dict)
+
+            return {
+                'data': products,
+                'total': total_count,
+                'offset': kwargs.get('offset', 0),
+                'limit': kwargs.get('limit', None),
+                'has_more': total_count > (kwargs.get('offset', 0) + len(products))
+            }
+
     def close(self):
         """Close database connection and save change log"""
         # Optionally save change log to file or database
         if self.change_log:
             logger.info(f"Saving {len(self.change_log)} change log entries")
             # Could implement saving to file or database here
-        
+
         if hasattr(self, 'pool_manager'):
             self.pool_manager.shutdown()
             logger.info("Enhanced database bridge closed")

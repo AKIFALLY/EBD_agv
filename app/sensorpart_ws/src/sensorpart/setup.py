@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='yaze.lin.j303@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='感測器整合套件，支援 3D 相機和 OCR 系統',
+    license='Proprietary - © 2025 Ching Tech Industrial Co., Ltd. All rights reserved.',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

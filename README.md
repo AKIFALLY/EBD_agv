@@ -1,6 +1,5 @@
 # RosAGV - 企業級 AGV 控制系統
 
-<div align="center">
 
 **基於 ROS 2 Jazzy 和 Zenoh RMW 的現代化 AGV 車隊管理系統**
 
@@ -9,7 +8,6 @@
 [![Python](https://img.shields.io/badge/Python-3.12-green)](https://www.python.org/)
 [![Zenoh RMW](https://img.shields.io/badge/RMW-Zenoh-orange)](https://zenoh.io/)
 
-</div>
 
 ## 📋 專案概述
 
@@ -122,8 +120,7 @@ app/
 ├── db_proxy_ws/               # 資料庫代理服務
 ├── ecs_ws/                    # 設備控制系統
 ├── rcs_ws/                    # 機器人控制系統
-├── tafl_wcs_ws/               # TAFL 倉庫控制系統 (現行 WCS 實作)
-├── flow_wcs_ws_old/           # [已棄用] Linear Flow v2 WCS
+├── tafl_wcs_ws/               # TAFL 倉庫控制系統
 ├── tafl_ws/                   # TAFL 語言解析器
 ├── kuka_fleet_ws/             # KUKA Fleet 整合
 ├── keyence_plc_ws/            # Keyence PLC 通訊
@@ -254,12 +251,10 @@ r network-check
 - **Web API Launch**: [@docs-ai/operations/development/web/web-api-launch-management.md](docs-ai/operations/development/web/web-api-launch-management.md)
 - **資料庫操作**: [@docs-ai/operations/development/database-operations.md](docs-ai/operations/development/database-operations.md)
 - **PLC 通訊開發**: [@docs-ai/operations/development/ros2/plc-communication.md](docs-ai/operations/development/ros2/plc-communication.md)
-- **ROS 2 容器指令**: [@docs-ai/operations/development/ros2/ros2-container-commands.md](docs-ai/operations/development/ros2/ros2-container-commands.md)
 
 #### 測試相關
 - **測試程序**: [@docs-ai/operations/development/testing/testing-procedures.md](docs-ai/operations/development/testing/testing-procedures.md)
-- **測試標準**: [@docs-ai/operations/development/testing/testing-standards.md](docs-ai/operations/development/testing/testing-standards.md)
-- **Pytest 測試**: [@docs-ai/operations/development/testing/ros2-pytest-testing.md](docs-ai/operations/development/testing/ros2-pytest-testing.md)
+- **測試標準**: [@docs-ai/operations/development/testing/testing-standards.md](docs-ai/operations/development/testing/testing-standards.md) (含 ROS 2 pytest 執行指令)
 - **測試檔案管理**: [@docs-ai/operations/development/testing/test-file-management.md](docs-ai/operations/development/testing/test-file-management.md)
 - **建置和測試**: [@docs-ai/operations/development/build-and-test.md](docs-ai/operations/development/build-and-test.md)
 
@@ -269,7 +264,6 @@ r network-check
 - **系統診斷**: [@docs-ai/operations/guides/system-diagnostics.md](docs-ai/operations/guides/system-diagnostics.md)
 - **故障排除**: [@docs-ai/operations/guides/troubleshooting.md](docs-ai/operations/guides/troubleshooting.md)
 - **日誌分析**: [@docs-ai/operations/guides/log-analysis.md](docs-ai/operations/guides/log-analysis.md)
-- **節點管理修復**: [@docs-ai/operations/guides/node-management-status-fix.md](docs-ai/operations/guides/node-management-status-fix.md)
 - **Rack 管理操作**: [@docs-ai/operations/guides/rack-management-guide.md](docs-ai/operations/guides/rack-management-guide.md)
 
 #### 工具系統
@@ -281,7 +275,6 @@ r network-check
 - **容器管理**: [@docs-ai/operations/deployment/container-management.md](docs-ai/operations/deployment/container-management.md)
 - **Docker Compose 配置**: [@docs-ai/operations/deployment/docker-compose-configuration.md](docs-ai/operations/deployment/docker-compose-configuration.md)
 - **Nginx 配置**: [@docs-ai/operations/deployment/nginx-configuration.md](docs-ai/operations/deployment/nginx-configuration.md)
-- **套件清單**: [@docs-ai/operations/deployment/installed-packages-inventory.md](docs-ai/operations/deployment/installed-packages-inventory.md)
 
 ### 🧠 領域知識
 
@@ -292,7 +285,6 @@ r network-check
 - **WCS WorkID 系統**: [@docs-ai/knowledge/agv-domain/wcs-workid-system.md](docs-ai/knowledge/agv-domain/wcs-workid-system.md)
 - **Robot PGNO 規則**: [@docs-ai/knowledge/agv-domain/robot-pgno-rules.md](docs-ai/knowledge/agv-domain/robot-pgno-rules.md)
 - **狀態機設計**: [@docs-ai/knowledge/agv-domain/magic-value-analysis.md](docs-ai/knowledge/agv-domain/magic-value-analysis.md)
-- **ROS 2 節點生命週期**: [@docs-ai/knowledge/system/ros2-node-lifecycle.md](docs-ai/knowledge/system/ros2-node-lifecycle.md)
 
 #### 業務領域
 - **眼鏡生產流程（含系統現狀）**: [@docs-ai/knowledge/business/eyewear-production-process.md](docs-ai/knowledge/business/eyewear-production-process.md)
@@ -315,11 +307,9 @@ r network-check
 #### TAFL 語言
 - **TAFL 語言規格**: [@docs-ai/knowledge/system/tafl/tafl-language-specification.md](docs-ai/knowledge/system/tafl/tafl-language-specification.md)
 - **TAFL API 參考**: [@docs-ai/knowledge/system/tafl/tafl-api-reference.md](docs-ai/knowledge/system/tafl/tafl-api-reference.md)
-- **TAFL 快速入門**: [@docs-ai/knowledge/system/tafl/tafl-quick-start-guide.md](docs-ai/knowledge/system/tafl/tafl-quick-start-guide.md)
-- **TAFL 故障排除**: [@docs-ai/knowledge/system/tafl/tafl-troubleshooting-guide.md](docs-ai/knowledge/system/tafl/tafl-troubleshooting-guide.md)
+- **TAFL 使用者指南**: [@docs-ai/knowledge/system/tafl/tafl-user-guide.md](docs-ai/knowledge/system/tafl/tafl-user-guide.md)
 - **TAFL 編輯器規格**: [@docs-ai/knowledge/system/tafl/tafl-editor-specification.md](docs-ai/knowledge/system/tafl/tafl-editor-specification.md)
-- **TAFL 實作專案**: [@docs-ai/knowledge/system/tafl/tafl-implementation-project.md](docs-ai/knowledge/system/tafl/tafl-implementation-project.md)
-- **TAFL 實作計畫**: [@docs-ai/knowledge/system/tafl/tafl-implementation-plan.md](docs-ai/knowledge/system/tafl/tafl-implementation-plan.md)
+- **TAFL 開發歷史**: [@docs-ai/knowledge/system/tafl/tafl-development-history.md](docs-ai/knowledge/system/tafl/tafl-development-history.md)
 
 ### 📋 模組索引
 
@@ -377,7 +367,13 @@ r log-errors && r network-check && r zenoh-check
 
 ## 📄 授權
 
-本專案採用 [MIT License](LICENSE) 授權。
+本專案的原創代碼為擎添工業 (Ching Tech Industrial Co., Ltd.) 的專有軟體。
+© 2024 Ching Tech Industrial Co., Ltd. All rights reserved.
+
+詳細授權條款請參閱 [LICENSE](LICENSE) 檔案。
+
+本專案使用了多個開源元件，這些元件保留其原始授權。
+完整的第三方授權資訊請參閱 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。
 
 ## 📝 最新更新
 
@@ -391,7 +387,7 @@ r log-errors && r network-check && r zenoh-check
 - ✅ 更新 README.md 修正文檔路徑
   - 修正 51 個錯誤的 @docs-ai 引用路徑
   - 更新工作空間數量：AGV 7個專用、AGVC 10個專用
-  - 說明 tafl_wcs_ws 為現行 WCS、flow_wcs_ws_old 已棄用
+  - 說明 tafl_wcs_ws 為現行 WCS 實作
 - ✅ 更新 design/business-process-docs 網頁文檔
   - 新增 TAFL 編輯器使用指南
   - 新增統一工具系統 (r 命令) 文檔
@@ -401,10 +397,8 @@ r log-errors && r network-check && r zenoh-check
 
 ---
 
-<div align="center">
 
 **🚀 RosAGV - 推動工業自動化的未來**
 
-[📖 完整文檔](docs-ai/README.md) | [📚 文檔結構導航](docs-ai/STRUCTURE.md) | [🛠️ 工具指南](CLAUDE.md) | [🐛 問題回報](https://github.com/your-repo/issues)
+[📖 完整文檔](docs-ai/README.md) | [🛠️ 工具指南](CLAUDE.md) | [🐛 問題回報](https://github.com/your-repo/issues)
 
-</div>

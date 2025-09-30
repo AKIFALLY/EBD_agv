@@ -18,7 +18,7 @@
 │   ├── test_*.md             # 測試報告文檔
 │   ├── temp.sh               # 臨時 Shell 腳本
 │   ├── *.png                 # 測試截圖
-│   └── wcs-flow-designer/    # 特定功能測試子目錄
+│   └── wcs-tafl-editor/    # 特定功能測試子目錄
 ├── app/                      # 生產代碼目錄（禁止放置臨時檔案）
 └── docs-ai/                  # 文檔目錄（禁止放置臨時檔案）
 ```
@@ -33,8 +33,8 @@
 #### Python 測試檔案
 ```bash
 # ✅ 正確命名
-test_flow_designer.py
-test_linear_flow_interactions.py
+test_tafl_editor.py
+test_tafl_editor_interactions.py
 test_dsl_phase2_3.py
 
 # ❌ 避免命名
@@ -46,8 +46,8 @@ test.py
 #### HTML 測試頁面
 ```bash
 # ✅ 正確命名
-test_flow_designer_fix.html
-flow_designer_visual_fixes_test.html
+test_tafl_editor_fix.html
+tafl_editor_visual_fixes_test.html
 
 # ❌ 避免命名
 test.html
@@ -58,7 +58,7 @@ page.html
 ```bash
 # ✅ 正確命名
 test_report_final.md
-linear_flow_designer_test_summary.md
+tafl_editor_test_summary.md
 
 # ❌ 避免命名
 report.md
@@ -70,12 +70,12 @@ result.txt
 ### Python 測試腳本
 - **用途**: Playwright 自動化測試、功能驗證腳本
 - **位置**: `~/RosAGV/agents/test_*.py`
-- **範例**: `test_flow_designer_simple.py`
+- **範例**: `test_tafl_editor_simple.py`
 
 ### HTML 測試頁面
 - **用途**: 獨立的前端功能測試頁面
 - **位置**: `~/RosAGV/agents/*.html`
-- **範例**: `flow_designer_unified_dark_theme_fix.html`
+- **範例**: `tafl_editor_unified_dark_theme_fix.html`
 
 ### 測試截圖
 - **用途**: 自動化測試產生的截圖證據
@@ -85,7 +85,7 @@ result.txt
 ### 測試報告
 - **用途**: 測試結果記錄和分析報告
 - **位置**: `~/RosAGV/agents/*.md` 或 `*.json`
-- **範例**: `test_report_final.md`, `linear_flow_designer_interaction_report.json`
+- **範例**: `test_report_final.md`, `tafl_editor_interaction_report.json`
 
 ## ⚠️ 禁止事項
 
@@ -134,13 +134,13 @@ find ~/RosAGV/agents/ -type f -mtime +7 -name "test_*"
 
 ## 📊 現有測試檔案分類
 
-### Flow Designer 相關測試
+### TAFL Editor 相關測試
 ```bash
 agents/
-├── flow_designer_*.html              # Flow Designer UI 測試頁面
-├── test_flow_designer*.py            # 自動化測試腳本
-├── linear_flow_designer_*.md         # Linear Flow 測試報告
-└── wcs-flow-designer/                # Flow Designer 專用測試目錄
+├── tafl_editor_*.html              # TAFL Editor UI 測試頁面
+├── test_tafl_editor*.py            # 自動化測試腳本
+├── tafl_editor_tests_*.md          # TAFL Editor 測試報告
+└── wcs-tafl-editor/                # TAFL Editor 專用測試目錄
 ```
 
 ### DSL 相關測試
@@ -171,8 +171,8 @@ agents/
 ```python
 #!/usr/bin/env python3
 """
-測試檔案: test_flow_designer_connection.py
-用途: 測試 Flow Designer 連線渲染功能
+測試檔案: test_tafl_editor_connection.py
+用途: 測試 TAFL Editor 連線渲染功能
 創建日期: 2025-08-11
 AI Agent: Claude
 狀態: 臨時測試檔案，功能驗證後可刪除

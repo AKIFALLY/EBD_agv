@@ -29,7 +29,8 @@ class TAFLParser:
     
     # Regular expressions for parsing expressions
     VARIABLE_PATTERN = re.compile(r'\$\{([^}]+)\}')
-    OPERATOR_PATTERN = re.compile(r'(==|!=|<=|>=|<|>|\+|-|\*|/|and|or|not)')
+    # 支援 &&, ||, and, or 運算符
+    OPERATOR_PATTERN = re.compile(r'(==|!=|<=|>=|<|>|\+|-|\*|/|&&|\|\||and|or|not)')
     
     def __init__(self):
         self.current_file = ""
@@ -561,9 +562,9 @@ class TAFLParser:
                     return self._parse_index_access(inner_content)
                 
                 # Check if the content contains operators - if so, parse as complex expression
-                # Check for any operator presence
-                has_operator = any(op in inner_content for op in 
-                                 ['==', '!=', '<=', '>=', '<', '>', ' and ', ' or ', 
+                # Check for any operator presence (包含 &&, || 運算符)
+                has_operator = any(op in inner_content for op in
+                                 ['==', '!=', '<=', '>=', '<', '>', ' and ', ' or ', ' && ', ' || ',
                                   '+', '-', '*', '/', 'not '])
                 
                 if has_operator or '(' in inner_content:  # Also check for parentheses
@@ -574,8 +575,17 @@ class TAFLParser:
                     var_path = inner_content.split('.')
                     return Variable(name=var_path[0], path=var_path[1:])
             
-            # Check for function calls
-            if '(' in expr and ')' in expr and not '${' in expr:
+            # Check for function calls (including those wrapped in ${})
+            # First check if entire expression is ${func(...)}
+            if expr.startswith('${') and expr.endswith('}'):
+                inner = expr[2:-1].strip()
+                if '(' in inner and ')' in inner:
+                    # Try to parse as function call
+                    func_match = re.match(r'\w+\(.*\)', inner)
+                    if func_match:
+                        return self._parse_function_call(inner)
+            # Then check for plain function calls
+            elif '(' in expr and ')' in expr:
                 return self._parse_function_call(expr)
             
             # Check if it's a pure number (no ${} interpolation)
@@ -654,8 +664,8 @@ class TAFLParser:
         # This way higher precedence operators are nested deeper in the tree
         # Comparison operators have lower precedence than arithmetic
         operator_groups = [
-            [' or '],
-            [' and '],
+            [' or ', ' || '],  # 支援 or 和 ||
+            [' and ', ' && '],  # 支援 and 和 &&
             ['==', '!=', '<=', '>=', '<', '>'],
             ['+', '-'],
             ['*', '/']
@@ -690,9 +700,16 @@ class TAFLParser:
                     # Recursively parse operands
                     left = parse_operand(left_part)
                     right = parse_operand(right_part)
-                    
+
+                    # 規範化運算符：|| -> or, && -> and
+                    normalized_op = op.strip()
+                    if normalized_op == '||':
+                        normalized_op = 'or'
+                    elif normalized_op == '&&':
+                        normalized_op = 'and'
+
                     return BinaryOp(
-                        operator=op.strip(),
+                        operator=normalized_op,
                         left=left,
                         right=right
                     )
@@ -831,24 +848,137 @@ class TAFLParser:
     
     def _parse_function_call(self, expr: str) -> Expression:
         """
-        Parse function call expression
-        解析函數調用表達式
+        Parse function call expression with improved argument parsing
+        改進的函數調用表達式解析，支援 ${var} 變數引用
+
+        Supports:
+        - ${var} for variable references
+        - 'string' or "string" for string literals
+        - numbers for numeric literals
+        - backward compatibility with simple identifiers
         """
         match = re.match(r'(\w+)\((.*)\)', expr.strip())
         if match:
             func_name = match.group(1)
             args_str = match.group(2)
-            
-            # Parse arguments (simplified)
+
+            # Parse arguments with improved splitting
             args = []
             if args_str:
-                # Simple split by comma (doesn't handle nested commas)
-                for arg in args_str.split(','):
-                    args.append(self._parse_expression(arg.strip()))
-            
+                # Use intelligent splitting that respects nesting and quotes
+                arg_list = self._split_function_args(args_str)
+                for arg in arg_list:
+                    args.append(self._parse_function_arg(arg.strip()))
+
             return FunctionCall(name=func_name, arguments=args)
-        
+
         return Literal(value=expr, type='string')
+
+    def _split_function_args(self, args_str: str) -> list:
+        """
+        Intelligently split function arguments, handling nested parentheses and quotes
+        智能分割函數參數，處理嵌套括號和引號
+        """
+        args = []
+        current_arg = ""
+        depth = 0
+        in_quotes = False
+        quote_char = None
+
+        for i, char in enumerate(args_str):
+            # Handle quotes
+            if char in ('"', "'") and not in_quotes:
+                in_quotes = True
+                quote_char = char
+                current_arg += char
+            elif char == quote_char and in_quotes:
+                # Check for escaped quotes
+                if i > 0 and args_str[i-1] != '\\':
+                    in_quotes = False
+                    quote_char = None
+                current_arg += char
+            elif char == ',' and depth == 0 and not in_quotes:
+                # Found argument separator
+                if current_arg.strip():
+                    args.append(current_arg.strip())
+                current_arg = ""
+            else:
+                # Track parentheses depth
+                if char == '(' and not in_quotes:
+                    depth += 1
+                elif char == ')' and not in_quotes:
+                    depth -= 1
+                current_arg += char
+
+        # Add the last argument
+        if current_arg.strip():
+            args.append(current_arg.strip())
+
+        return args
+
+    def _parse_function_arg(self, arg: str) -> Expression:
+        """
+        Parse a single function argument
+        解析單個函數參數
+
+        Priority:
+        1. ${var} or ${var.path} or ${var[index].path} -> Variable or complex expression
+        2. 'string' or "string" -> Literal string
+        3. numbers -> Literal number
+        4. true/false -> Literal boolean
+        5. other identifiers -> Literal string (for backward compatibility)
+        """
+        arg = arg.strip()
+
+        # Check for ${var} format - parse as expression
+        if arg.startswith('${') and arg.endswith('}'):
+            var_content = arg[2:-1].strip()
+
+            # For complex expressions with array access, return as string literal for runtime interpolation
+            if '[' in var_content and ']' in var_content:
+                # This is an array access expression like available_locations[0].id
+                # Return as string literal so it gets interpolated at runtime
+                return Literal(value=arg, type='string')
+
+            # Simple variable paths (e.g., ${object.property}) - handle normally
+            var_parts = var_content.split('.')
+            return Variable(name=var_parts[0], path=var_parts[1:] if len(var_parts) > 1 else [])
+
+        # Check for quoted strings
+        if (arg.startswith('"') and arg.endswith('"')) or \
+           (arg.startswith("'") and arg.endswith("'")):
+            # Remove quotes and return as string literal
+            return Literal(value=arg[1:-1], type='string')
+
+        # Check for numbers
+        try:
+            # Try integer first
+            if '.' not in arg and 'e' not in arg.lower():
+                return Literal(value=int(arg), type='number')
+            else:
+                # Try float
+                return Literal(value=float(arg), type='number')
+        except ValueError:
+            pass
+
+        # Check for boolean literals
+        if arg.lower() == 'true':
+            return Literal(value=True, type='boolean')
+        elif arg.lower() == 'false':
+            return Literal(value=False, type='boolean')
+        elif arg.lower() == 'null' or arg.lower() == 'none':
+            return Literal(value=None, type='null')
+
+        # NEW: Check if it's a valid variable identifier (fixes math function bug)
+        # A valid identifier starts with letter or underscore, followed by alphanumeric or underscore
+        if re.match(r'^[a-zA-Z_]\w*$', arg):
+            # This is a variable reference (e.g., sum(items) where items is a variable)
+            # Parse it as Variable instead of string literal
+            return Variable(name=arg, path=[])
+
+        # For backward compatibility: treat unquoted identifiers as string literals
+        # This allows existing code like func(test_id) to work as before
+        return Literal(value=arg, type='string')
     
     def _parse_preload_statements(self, preload_data: Any) -> List[PreloadStatement]:
         """Parse preload statements / 解析預載入語句

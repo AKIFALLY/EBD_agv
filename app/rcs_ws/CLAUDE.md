@@ -79,15 +79,22 @@
 ```
 src/
 ├── rcs/                          # RCS 車隊控制系統 (簡化版本)
-│   ├── __init__.py              # Python 包初始化
-│   ├── rcs_core.py              # RCS 核心節點 - 1秒定時器協調中心
-│   ├── simple_ct_manager.py     # CT 車隊管理器 (簡化版本)
-│   ├── simple_kuka_manager.py   # KUKA 車隊管理器 (簡化版本)
-│   └── test/                    # 測試套件 (整理後)
-│       ├── __init__.py          # Python 包初始化
-│       ├── conftest.py          # pytest fixtures 配置
-│       ├── pytest.ini           # pytest 配置檔案
-│       └── test_rcs_pytest.py   # 主要測試檔案 (pytest 標準)
+│   ├── rcs/                     # 核心模組
+│   │   ├── __init__.py          # Python 包初始化
+│   │   ├── rcs_core.py          # RCS 核心節點 - 1秒定時器協調中心
+│   │   ├── simple_ct_manager.py # CT 車隊管理器 (簡化版本)
+│   │   └── simple_kuka_manager.py # KUKA 車隊管理器 (簡化版本)
+│   ├── launch/                  # Launch 檔案
+│   │   └── rcs_launch.py        # RCS Launch 配置
+│   ├── test/                    # 測試套件 (整理後)
+│   │   ├── __init__.py          # Python 包初始化
+│   │   ├── conftest.py          # pytest fixtures 配置
+│   │   ├── pytest.ini           # pytest 配置檔案
+│   │   └── test_rcs_pytest.py   # 主要測試檔案 (pytest 標準)
+│   ├── resource/                # 資源檔案
+│   ├── package.xml              # ROS 2 套件配置
+│   ├── setup.py                 # Python 套件設定
+│   └── setup.cfg                # 建置配置
 ├── rcs_interfaces/              # RCS 介面定義 (CMake 專案)
 └── traffic_manager/             # 交通管理模組
     └── traffic_controller.py   # 交通區域控制器
@@ -142,19 +149,16 @@ src/
 # 啟動 RCS 核心節點 (包含所有管理器)
 ros2 run rcs rcs_core
 
-# 啟動交通控制器 (獨立包)
-ros2 run traffic_manager traffic_controller
+# traffic_manager 套件目前沒有 entry_point
+# 如需使用，需直接匯入模組或修改 setup.py
 ```
 
 ### RCS 簡化版本測試
 ```bash
-# 使用完整測試套件 (推薦)
-bash /app/rcs_ws/run_rcs_tests.sh
-
-# 或執行個別測試
-python3 /app/rcs_ws/test_rcs_system.py           # 完整系統測試
-python3 /app/rcs_ws/test_database_integration.py # 資料庫整合測試
-python3 /app/rcs_ws/test_dispatch_logic.py       # 派發邏輯測試
+# 執行 pytest 測試
+# 在 RCS 工作空間中執行
+cd /app/rcs_ws
+python3 -m pytest src/rcs/test/test_rcs_pytest.py -v
 
 # 直接啟動 RCS 核心節點
 ros2 run rcs rcs_core

@@ -16,10 +16,10 @@ PostgreSQL 資料庫系統
 │   ├── 應用程式帳戶: agvc/password
 │   └── Docker Volume 持久化
 ├── db_proxy_ws (資料庫代理服務)
-│   ├── SQLModel ORM (28個資料模型)
+│   ├── SQLModel ORM (32個資料表)
 │   ├── ConnectionPoolManager (連線池管理)
-│   ├── CRUD 操作層 (20個專用CRUD)
-│   └── ROS 2 服務介面 (12個服務)
+│   ├── CRUD 操作層 (21個專用CRUD)
+│   └── ROS 2 服務介面 (11個服務)
 └── pgAdmin4 管理工具
     ├── Web 介面: http://localhost:5050
     ├── 登入: admin@admin.com / admin
@@ -182,14 +182,16 @@ class EquipmentPort(SQLModel, table=True):
 
 #### 射出機和作業員管理
 ```python
-# 射出機實體
+# 射出機實體 (2025-09 更新：新增工作區配置)
 class Machine(SQLModel, table=True):
     __tablename__ = "machine"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=50)
-    location_1: Optional[int] = None  # 停車格1的 node_id
-    location_2: Optional[int] = None  # 停車格2的 node_id
+    parking_space_1: Optional[int] = None  # 停車格1的 location_id
+    parking_space_2: Optional[int] = None  # 停車格2的 location_id
+    workspace_1: Optional[List[int]] = None  # 作業員1的工作區 location ID 陣列 (PostgreSQL INTEGER[])
+    workspace_2: Optional[List[int]] = None  # 作業員2的工作區 location ID 陣列 (PostgreSQL INTEGER[])
     status: str = Field(max_length=20, default="active")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None

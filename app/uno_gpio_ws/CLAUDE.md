@@ -54,7 +54,7 @@ uno_gpio_ws/
 ├── gpio_example.c               # C 語言完整實作
 ├── gpio_example.py              # Python 完整實作
 ├── gpio_example                 # 編譯後的 C 執行檔
-├── README.txt.txt               # 原始技術說明
+├── README.txt                   # 原始技術說明
 └── CLAUDE.md                    # 模組文檔
 ```
 

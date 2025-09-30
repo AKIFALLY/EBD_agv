@@ -32,8 +32,10 @@ agv_cmd_service_ws/
 ├── src/
 │   ├── agv_cmd_service/           # 主要服務套件
 │   │   ├── agv_cmd_service/
+│   │   │   ├── __init__.py                # 套件初始化
 │   │   │   ├── agv_cmd_service_node.py    # 主要服務節點
 │   │   │   ├── agv_cmd_client_node.py     # 客戶端封裝類別
+│   │   │   ├── agv_cmd_porxy.py           # AGV 指令代理類別
 │   │   │   └── cleint_test.py             # 客戶端測試腳本
 │   │   ├── config/
 │   │   │   └── agv_cmd_service.yaml       # PLC 位址配置文件

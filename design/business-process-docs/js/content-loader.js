@@ -67,12 +67,15 @@ class ContentLoader {
                 const validLanguage = language && language.trim() ? language.trim().toLowerCase() : 'text';
                 
                 // 生成 Prism.js 相容的 HTML
-                return `<pre class="language-${validLanguage}"><code class="language-${validLanguage}">${this.escapeHtml(cleanCode)}</code></pre>`;
+                // 對於代碼塊，保持原始內容不轉義，讓 Prism.js 處理
+                return `<pre class="language-${validLanguage}"><code class="language-${validLanguage}">${cleanCode}</code></pre>`;
             };
             
             // 自定義行內代碼渲染器
             renderer.codespan = function(code) {
-                return `<code class="inline-code">${this.escapeHtml(code)}</code>`;
+                // 對於代碼片段，通常不應該進行 HTML 轉義
+                // 因為代碼內容需要保持原樣顯示
+                return `<code class="inline-code">${code}</code>`;
             };
             
             // HTML 轉義函數

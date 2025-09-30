@@ -6,43 +6,54 @@
 **運行環境**: 🚗🖥️ 共用 (AGV 車載系統 + AGVC 管理系統)
 **主要功能**: USB 搖桿和遊戲手把控制介面 (ROS 2 joy_linux 版本)
 **依賴狀態**: 不使用虛擬環境套件，完全基於 ROS 2 系統套件
+**實作狀態**: 完整實作，已遷移至 ROS 2 joy_linux 標準版本
 
 ## 📋 專案概述
 
 搖桿控制工作空間提供 AGV 的手動控制功能，透過 USB 搖桿或遊戲手把實現對 AGV 的即時操控。該系統完全基於 ROS 2 的 joy_linux 套件，提供標準化的搖桿輸入處理和直觀的手動控制介面，適用於 AGV 的測試、調試和緊急操作。
 
-**⚠️ 重要說明**: 本工作空間已全面遷移至 ROS 2 joy_linux 版本，pygame 版本的 JoystickHandler 已棄用。
+此工作空間採用 ROS 2 標準的 joy_linux 實作，確保與所有 Linux HID 相容設備的完美整合。系統支援死人開關安全機制、多種控制器類型（Xbox、PlayStation、工業搖桿）、50Hz 即時控制回饋，以及完整的按鈕和軸映射配置。工作空間已全面遷移至 ROS 2 標準版本，棄用的 pygame 程式碼僅為向後相容性保留。
+
+**⚠️ 重要說明**: 本工作空間已全面遷移至 ROS 2 joy_linux 版本，pygame 版本的 JoystickHandler 已棄用。新開發請使用 `joy_handler.py` 中的 JoyHandler 類別。
 
 ## 🔗 依賴關係
 
-### 主要依賴 (ROS 2 系統套件)
-- **ros-jazzy-joy-linux**: ROS 2 Linux 搖桿驅動 (主要使用)
-- **sensor_msgs**: Joy 訊息定義
-- **rclpy**: ROS 2 Python 客戶端庫
+### 系統套件依賴
+- **ROS 2 Jazzy**: `rclpy`, `rclpy.node`, `rclpy.timer`
+- **ROS 2 套件**: `ros-jazzy-joy-linux` (Linux 搖桿驅動)
+- **訊息定義**: `sensor_msgs.msg.Joy`, `geometry_msgs.msg.Twist`
+- **Python 標準庫**: `time`, `threading`, `abc`
 
-### 已棄用依賴
-- **pygame**: ⚠️ 已棄用 - 雖然仍在虛擬環境中安裝，但本工作空間已不再使用
+### 被依賴的工作空間
+- **agv_ws**: AGV 核心系統 - 接收搖桿控制命令進行手動控制
+- **agv_cmd_service_ws**: AGV 命令服務 - 可能使用搖桿輸入進行控制操作
+- **loader_agv**: Launch 檔案中自動啟動 joy_linux_node
 
 ### 外部依賴
-- **Python 標準庫**: 無特殊依賴
+- **硬體設備**: USB 搖桿設備 (`/dev/input/js*`)
+- **系統工具**: `jstest` (搖桿測試工具，可選)
+- **已棄用**: pygame (雖然仍在虛擬環境中安裝，但已不再使用)
 
 ## 🏗️ 專案結構
 
 ```
 joystick_ws/
-├── src/joystick/                  # 搖桿控制套件
-│   ├── joystick/
-│   │   ├── joystick_handler.py    # ⚠️ 已棄用 - Pygame 搖桿處理器
-│   │   ├── joy_handler.py         # ROS 2 Joy 訊息處理器 (主要使用)
-│   │   └── joystick_test_node.py  # ⚠️ 已棄用 - Pygame 搖桿測試節點
-│   ├── test/                      # 測試檔案
-│   │   ├── test_copyright.py
-│   │   ├── test_flake8.py
-│   │   └── test_pep257.py
-│   ├── package.xml                # 套件描述文件
-│   ├── setup.py                   # Python 套件設定
-│   └── setup.cfg                  # 安裝配置
-└── README.md                      # 本檔案
+├── src/
+│   └── joystick/                   # 搖桿控制套件 (完整實作)
+│       ├── joystick/               # 核心功能模組
+│       │   ├── __init__.py         # 套件初始化
+│       │   ├── joy_handler.py     # ROS 2 Joy 訊息處理器 ✅ (主要使用)
+│       │   ├── joystick_handler.py# ⚠️ 已棄用 - Pygame 搖桿處理器
+│       │   └── joystick_test_node.py # ⚠️ 已棄用 - Pygame 搖桿測試節點
+│       ├── test/                   # 測試檔案目錄
+│       │   ├── test_copyright.py  # 版權資訊測試
+│       │   ├── test_flake8.py     # 程式碼風格檢查
+│       │   └── test_pep257.py     # 文檔字串檢查
+│       ├── package.xml             # ROS 2 套件描述文件
+│       ├── setup.py                # Python 套件設定
+│       └── setup.cfg               # 套件安裝配置
+├── CLAUDE.md                       # AI Agent 專用指導文件
+└── README.md                       # 本檔案 (專案說明文件)
 ```
 
 **遷移說明**: 本工作空間已全面遷移至 ROS 2 joy_linux 版本，所有新開發都應使用 `joy_handler.py` 中的 JoyHandler 類別。棄用的程式碼暫時保留以維持向後相容性，但不建議在新開發中使用。

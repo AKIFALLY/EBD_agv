@@ -195,7 +195,7 @@ class FlowsPageManager {
                 
                 if (hasEditPermission) {
                     actionsHtml += `
-                        <a href="/flow-designer?flow=${encodeURIComponent(flow.filename.replace('.yaml', ''))}&mode=edit" class="button is-info is-small">
+                        <a href="/tafl/editor?flow=${encodeURIComponent(flow.filename.replace('.yaml', ''))}&mode=edit" class="button is-info is-small">
                             <span class="icon">
                                 <i class="mdi mdi-pencil"></i>
                             </span>

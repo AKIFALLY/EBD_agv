@@ -36,6 +36,9 @@ class TAFLFunctions:
                 'query_tasks': self.db_bridge.query_tasks,
                 'query_works': self.db_bridge.query_works,
                 'query_carriers': self.db_bridge.query_carriers,  # Added carrier query support
+                'query_rooms': self.db_bridge.query_rooms,  # Added room query support
+                'query_products': self.db_bridge.query_products,  # Added product query support
+                'query_machine': self.db_bridge.query_machine,  # Added machine query support
                 'create_task': self._wrap_create_task,
                 'create_tasks': self._wrap_create_task,  # Plural alias for TAFL compatibility
                 'create_rack': self.db_bridge.create_rack,

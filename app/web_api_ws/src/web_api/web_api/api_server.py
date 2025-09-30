@@ -2,7 +2,9 @@ import os
 import signal
 import uvicorn
 import logging  # ✅ 加入 logging
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
@@ -16,7 +18,6 @@ from web_api.routers.traffic import create_traffic_router
 from web_api.routers.door import create_door_router
 from web_api.routers.map_importer import create_map_importer_router
 from web_api.routers.kuka import create_kuka_router
-from web_api.routers.flow_functions import router as flow_functions_router
 from web_api.routers.nodes import router as nodes_router
 
 # ✅ 設定 logging（可以放最上面）
@@ -62,13 +63,58 @@ class ApiServer:
         self.app.include_router(create_map_importer_router(self.db_pool))
         # 註冊 Kuka API 端點
         self.app.include_router(create_kuka_router(self.db_pool))
-        # 註冊 Flow Functions API 端點
-        self.app.include_router(flow_functions_router)
         # 註冊節點管理 API 端點
         self.app.include_router(nodes_router)
 
     def setup_routes(self):
         """定義 API 端點"""
+        @self.app.get("/health")
+        async def health_check():
+            """健康檢查端點"""
+            overall_status = "healthy"
+            http_status_code = 200
+            health_details = {
+                "service": "web_api",
+                "port": 8000,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            try:
+                # 檢查資料庫連接（如果有的話）
+                db_status = "healthy"
+                if self.db_pool:
+                    try:
+                        # 簡單測試資料庫連接
+                        from sqlalchemy import text
+                        with self.db_pool.get_session() as session:
+                            session.execute(text("SELECT 1"))
+                        db_status = "healthy"
+                    except Exception as e:
+                        db_status = f"unhealthy: {str(e)}"
+                        overall_status = "degraded"  # 資料庫不健康時，服務狀態降級
+
+                health_details["database"] = db_status
+
+                # 如果有其他關鍵組件需要檢查，可以在這裡添加
+                # 例如：PLC 連接、門控制器等
+
+                health_details["status"] = overall_status
+
+                return JSONResponse(
+                    status_code=http_status_code,
+                    content=health_details
+                )
+
+            except Exception as e:
+                # 發生未預期的錯誤時，回傳 503 Service Unavailable
+                health_details["status"] = "unhealthy"
+                health_details["error"] = str(e)
+
+                return JSONResponse(
+                    status_code=503,
+                    content=health_details
+                )
+
         @self.app.get("/shutdown")
         async def shutdown():
             """關閉伺服器"""

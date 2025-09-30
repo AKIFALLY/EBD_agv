@@ -36,8 +36,11 @@
 path_algorithm/
 ├── src/astar_algorithm/           # A* 演算法套件 (完整實作)
 │   ├── astar_algorithm/
+│   │   ├── __init__.py            # Python 套件初始化
 │   │   ├── astar_algorithm.py     # A* 演算法核心實作 (AStarAlgorithm 類別)
 │   │   └── data_tool.py           # 資料轉換工具 (PLC 資料處理)
+│   ├── resource/                  # ROS 2 資源檔案
+│   │   └── astar_algorithm        # 套件標記檔案
 │   ├── package.xml                # ROS 2 套件配置
 │   ├── setup.py                   # Python 套件設定
 │   └── setup.cfg                  # 安裝配置

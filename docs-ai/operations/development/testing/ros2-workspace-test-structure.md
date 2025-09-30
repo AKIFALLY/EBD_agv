@@ -46,12 +46,12 @@ app/<workspace_name>_ws/           # 工作空間根目錄
 
 #### ✅ 正確結構範例
 ```bash
-# flow_wcs_ws 的標準結構
-app/flow_wcs_ws/
-├── src/flow_wcs/
-│   ├── flow_wcs/              # 主程式碼
+# tafl_wcs_ws 的標準結構
+app/tafl_wcs_ws/
+├── src/tafl_wcs/
+│   ├── tafl_wcs/              # 主程式碼
 │   └── test/                  # 測試目錄
-│       └── test_flow_executor.py
+│       └── test_tafl_executor.py
 
 # db_proxy_ws 的標準結構
 app/db_proxy_ws/

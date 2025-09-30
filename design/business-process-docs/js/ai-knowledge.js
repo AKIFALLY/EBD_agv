@@ -5,6 +5,7 @@
 class AIKnowledgeNavigator {
     constructor() {
         this.indexData = null;
+        this.claudeArchData = null;
         this.currentFilter = 'all';
         this.currentSort = 'references';
         this.currentCategory = 'all';
@@ -15,9 +16,19 @@ class AIKnowledgeNavigator {
 
     async init() {
         try {
-            // 載入索引資料
+            // 載入 docs-ai 索引資料
             const response = await fetch('./js/docs-ai-index.json');
             this.indexData = await response.json();
+
+            // 載入 CLAUDE 架構統計
+            try {
+                const claudeResponse = await fetch('./js/claude-architecture.json');
+                this.claudeArchData = await claudeResponse.json();
+                console.log('🏗️ CLAUDE 架構統計載入成功');
+            } catch (claudeError) {
+                console.warn('⚠️ CLAUDE 架構統計載入失敗，將繼續使用 docs-ai 資料:', claudeError);
+            }
+
             this.initialized = true;
 
             console.log('📚 AI 知識庫索引載入成功:', this.indexData.stats);
@@ -59,6 +70,9 @@ class AIKnowledgeNavigator {
         const container = document.getElementById('ai-knowledge-content');
         if (!container || !this.indexData) return;
 
+        // 生成 CLAUDE 架構總覽（新增）
+        const claudeArchHtml = this.renderClaudeArchitecture();
+
         // 生成統計卡片
         const statsHtml = this.renderStats();
 
@@ -70,6 +84,8 @@ class AIKnowledgeNavigator {
 
         container.innerHTML = `
             <div class="ai-knowledge-container">
+                ${claudeArchHtml}
+
                 ${statsHtml}
 
                 ${this.renderLegend()}
@@ -109,35 +125,171 @@ class AIKnowledgeNavigator {
         this.attachCategoryListeners();
     }
 
+    renderClaudeArchitecture() {
+        if (!this.claudeArchData) {
+            return '';  // 如果沒有 CLAUDE 架構資料，返回空
+        }
+
+        const summary = this.claudeArchData.summary;
+        const layers = this.claudeArchData.architecture_layers;
+
+        return `
+            <div class="bg-blue-50 rounded-lg p-6 mb-6 border-2 border-blue-200 shadow-md">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                    <span>🏗️</span>
+                    <span>RosAGV 完整架構統計</span>
+                </h2>
+                <p class="text-sm text-gray-600 mb-6">
+                    <span class="font-semibold text-gray-700">📋 架構層統計</span>（CLAUDE.md 檔案分佈）+
+                    <span class="font-semibold text-blue-700">📚 知識層統計</span>（docs-ai 文檔適用層級）
+                    <br>生成時間: ${new Date(this.claudeArchData.generated_at).toLocaleString('zh-TW')}
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Layer 1: 通用層 -->
+                    <div class="bg-white rounded-lg p-5 border-l-4 border-red-500 shadow-md hover:shadow-lg transition-shadow">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">🌐</span>
+                            <h3 class="text-lg font-semibold text-gray-800">Layer 1: 通用層</h3>
+                        </div>
+
+                        <!-- 架構層統計 -->
+                        <div class="mb-3 pb-3 border-b border-gray-200">
+                            <div class="text-xs font-semibold text-gray-500 mb-2">📋 架構層（CLAUDE.md）</div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">AI Agent 規則:</span>
+                                    <span class="font-bold text-red-600">${summary.layer1_components.ai_agents} 個</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">根 CLAUDE.md:</span>
+                                    <span class="font-bold text-red-600">${summary.layer1_components.root_claude} 個</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">引用 docs-ai:</span>
+                                    <span class="font-bold text-red-600">${summary.layer1_components.docs_ai_refs} 個</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 知識層統計 -->
+                        <div>
+                            <div class="text-xs font-semibold text-blue-500 mb-2">📚 知識層（docs-ai）</div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">適用文檔數:</span>
+                                <span class="font-bold text-blue-600">${this.indexData.stats.layer_distribution.layer1.count} 個</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layer 2: 工作空間層 -->
+                    <div class="bg-white rounded-lg p-5 border-l-4 border-blue-500 shadow-md hover:shadow-lg transition-shadow">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">🔧</span>
+                            <h3 class="text-lg font-semibold text-gray-800">Layer 2: 工作空間層</h3>
+                        </div>
+
+                        <!-- 架構層統計 -->
+                        <div class="mb-3 pb-3 border-b border-gray-200">
+                            <div class="text-xs font-semibold text-gray-500 mb-2">📋 架構層（CLAUDE.md）</div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">工作空間數:</span>
+                                    <span class="font-bold text-blue-600">${summary.layer2_workspaces} 個</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 知識層統計 -->
+                        <div class="mb-3">
+                            <div class="text-xs font-semibold text-blue-500 mb-2">📚 知識層（docs-ai）</div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">適用文檔數:</span>
+                                <span class="font-bold text-blue-600">${this.indexData.stats.layer_distribution.layer2.count} 個</span>
+                            </div>
+                        </div>
+
+                        <details class="mt-3">
+                            <summary class="text-xs text-blue-600 hover:text-blue-800 cursor-pointer">查看工作空間列表</summary>
+                            <ul class="mt-2 text-xs text-gray-600 space-y-1 max-h-40 overflow-y-auto">
+                                ${layers.layer2.workspace_names.map(ws => `<li>• ${ws}</li>`).join('')}
+                            </ul>
+                        </details>
+                    </div>
+
+                    <!-- Layer 3: 專業層 -->
+                    <div class="bg-white rounded-lg p-5 border-l-4 border-green-500 shadow-md hover:shadow-lg transition-shadow">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">🔬</span>
+                            <h3 class="text-lg font-semibold text-gray-800">Layer 3: 專業層</h3>
+                        </div>
+
+                        <!-- 架構層統計 -->
+                        <div class="mb-3 pb-3 border-b border-gray-200">
+                            <div class="text-xs font-semibold text-gray-500 mb-2">📋 架構層（CLAUDE.md）</div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">專業模組數:</span>
+                                    <span class="font-bold text-green-600">${summary.layer3_modules} 個</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 知識層統計 -->
+                        <div class="mb-3">
+                            <div class="text-xs font-semibold text-blue-500 mb-2">📚 知識層（docs-ai）</div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">適用文檔數:</span>
+                                <span class="font-bold text-blue-600">${this.indexData.stats.layer_distribution.layer3.count} 個</span>
+                            </div>
+                        </div>
+
+                        <details class="mt-3">
+                            <summary class="text-xs text-green-600 hover:text-green-800 cursor-pointer">查看專業模組分組</summary>
+                            <div class="mt-2 text-xs text-gray-600 space-y-2 max-h-40 overflow-y-auto">
+                                ${Object.entries(layers.layer3.grouped_by_workspace).map(([ws, modules]) => `
+                                    <div>
+                                        <div class="font-semibold text-gray-700">${ws}</div>
+                                        <ul class="ml-2 space-y-1">
+                                            ${modules.map(mod => `<li>• ${mod}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- 總計區 -->
+                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-100 rounded-lg p-4 text-center border border-gray-300">
+                        <div class="text-3xl font-bold text-gray-800">${summary.total_claude_files}</div>
+                        <div class="text-sm text-gray-600 mt-1">CLAUDE.md 總數</div>
+                    </div>
+                    <div class="bg-red-100 rounded-lg p-4 text-center border border-red-300">
+                        <div class="text-3xl font-bold text-red-700">${summary.layer1_components.ai_agents}</div>
+                        <div class="text-sm text-red-600 mt-1">AI Agent 規則</div>
+                    </div>
+                    <div class="bg-blue-100 rounded-lg p-4 text-center border border-blue-300">
+                        <div class="text-3xl font-bold text-blue-700">${this.indexData.stats.total_docs}</div>
+                        <div class="text-sm text-blue-600 mt-1">docs-ai 文檔</div>
+                    </div>
+                    <div class="bg-purple-100 rounded-lg p-4 text-center border border-purple-300">
+                        <div class="text-3xl font-bold text-purple-700">${this.indexData.stats.total_strong_refs}</div>
+                        <div class="text-sm text-purple-600 mt-1">強引用總數</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     renderStats() {
         const stats = this.indexData.stats;
 
-        // 層級分佈統計（如果存在）
-        const layerStatsHtml = stats.layer_distribution ? `
-            <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 mb-6 border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800 mb-3">📚 三層架構分佈</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    ${Object.entries(stats.layer_distribution).map(([key, layer]) => {
-                        const icon = key === 'layer1' ? '🌐' : key === 'layer2' ? '🔧' : '🔬';
-                        // Remove icon from layer.name if it already contains it
-                        const layerName = layer.name.replace(icon, '').trim();
-                        return `
-                        <div class="bg-white rounded-lg p-3 border border-gray-300">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-xl">${icon}</span>
-                                <span class="font-semibold text-gray-700">${layerName}</span>
-                            </div>
-                            <div class="text-2xl font-bold ${key === 'layer1' ? 'text-red-600' : key === 'layer2' ? 'text-blue-600' : 'text-green-600'}">${layer.count}</div>
-                            <div class="text-xs text-gray-500 mt-1">${layer.description}</div>
-                        </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        ` : '';
+        // 層級分佈統計已整合到 renderClaudeArchitecture()，這裡不再顯示
+        // 避免資訊重複
 
         return `
-            ${layerStatsHtml}
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
                 <div class="bg-white rounded-lg shadow p-4 text-center border border-gray-200">
                     <div class="text-2xl font-bold text-gray-800">${stats.total_docs}</div>

@@ -3,7 +3,7 @@
 ## 📚 Context Loading
 @docs-ai/knowledge/system/tafl/tafl-language-specification.md
 @docs-ai/knowledge/system/tafl/tafl-api-reference.md
-@docs-ai/knowledge/system/tafl/tafl-troubleshooting-guide.md
+@docs-ai/knowledge/system/tafl/tafl-user-guide.md
 @docs-ai/knowledge/agv-domain/wcs-system-design.md
 @docs-ai/knowledge/agv-domain/wcs-workid-system.md
 @docs-ai/knowledge/agv-domain/wcs-database-design.md
@@ -11,7 +11,7 @@
 @docs-ai/operations/development/testing/testing-standards.md
 
 ## 🎯 Module Overview
-**TAFL WCS** (Task Automation Flow Language - Warehouse Control System) 是基於 TAFL v1.1 語言的倉庫控制系統實作，作為 Linear Flow v2 的替代方案，提供更結構化和標準化的流程定義和執行能力。
+**TAFL WCS** (Task Automation Flow Language - Warehouse Control System) 是基於 TAFL v1.1 語言的倉庫控制系統實作，是RosAGV系統的核心流程執行器，提供結構化和標準化的流程定義和執行能力。
 
 ## 🔧 Core Features
 - **TAFL v1.1 執行引擎**: 完整支援 6 段式結構（metadata, settings, preload, rules, variables, flow）
@@ -35,16 +35,24 @@ tafl_wcs_ws/
 │   │   └── tafl_wcs_node.py         # ROS 2 主節點
 │   ├── test/                        # 測試目錄（標準結構）
 │   │   ├── __init__.py
-│   │   ├── README.md
-│   │   ├── test_tafl_system.py      # 系統整合測試
-│   │   ├── test_simple_db.py        # 簡單資料庫測試
-│   │   ├── test_check_all_data.py   # 完整資料查詢測試
-│   │   ├── test_copyright.py        # ROS 2 標準測試
-│   │   ├── test_flake8.py
-│   │   └── test_pep257.py
+│   │   ├── README.md                # 完整測試說明文檔
+│   │   │
+│   │   ├── # 業務流程測試（完整執行驗證）
+│   │   ├── run_all_tests.py         # 統一測試套件入口
+│   │   ├── test_parking_flows.py    # 空料架停車區管理（3個流程）
+│   │   ├── test_machine_to_prepare.py    # 射出機停車格→系統準備區
+│   │   ├── test_full_rack_to_collection.py  # 完成料架→人工收料區
+│   │   ├── test_rack_rotation.py    # 架台翻轉（入口+出口）
+│   │   ├── test_room_dispatch.py    # 房間投料調度
+│   │   ├── test_duplicate_prevention.py  # 重複執行防護
+│   │   │
+│   │   ├── # 基礎設施與合規性測試
+│   │   ├── test_db_connection.py    # 資料庫連接測試
+│   │   ├── test_all_tafl_flows.py   # 自動掃描所有流程檔案（YAML語法+結構）
+│   │   └── test_tafl_v11_compliance.py   # TAFL v1.1 語言合規性測試
 │   ├── launch/
 │   │   └── tafl_wcs.launch.py       # ROS 2 Launch 檔案
-│   ├── config/                      # 配置目錄（待建立）
+│   ├── config/                      # 配置目錄
 │   ├── package.xml                  # ROS 2 套件描述
 │   └── setup.py                     # Python 套件設定
 ├── pytest.ini                        # pytest 配置
@@ -83,18 +91,19 @@ self.db_bridge = TAFLDatabaseBridge(DATABASE_URL)
 async def execute_flow(self, flow_content: str):
     # Phase 1: Settings - 執行設定
     await self._execute_settings(flow_data.get('settings', {}))
-    
-    # Phase 2: Preload - 資料預載與快取
-    await self._execute_preload(flow_data.get('preload', {}))
-    
+
+    # Phase 2: Preload - 由 TAFLExecutor 處理
+    # Preload 階段在 TAFLExecutor 中執行，確保正確的執行上下文
+    # TAFLExecutorWrapper 不直接執行 preload
+
     # Phase 3: Rules - 規則定義（唯讀）
     self._process_rules(flow_data.get('rules', {}))
-    
+
     # Phase 4: Variables - 變數初始化
     self._process_variables(flow_data.get('variables', {}))
-    
-    # Execute Flow - 執行主流程
-    await self._execute_flow(flow_data.get('flow', []))
+
+    # Execute Flow - 執行主流程（由 TAFLExecutor 處理）
+    # TAFLExecutor 會執行 preload 和 flow 段落
 
 # 5-Level 變數作用域解析（已實作）
 def _resolve_variable(self, var_ref: str):
@@ -108,16 +117,19 @@ def _resolve_variable(self, var_ref: str):
 
 ### ROS 2 Service Interface
 ```python
-# 發布者
-self.status_publisher = self.create_publisher(String, '/tafl_wcs/status', 10)
+# 訂閱者 - 接收流程執行請求
+self.flow_subscriber = self.create_subscription(
+    String, '/tafl/execute_flow', self._execute_flow_callback, 10)
 
-# 訂閱者
-self.trigger_subscriber = self.create_subscription(
-    String, '/tafl_wcs/trigger', self._handle_trigger, 10)
+# 發布者 - 發布執行結果和進度
+self.result_publisher = self.create_publisher(
+    String, '/tafl/execution_result', 10)
+self.progress_publisher = self.create_publisher(
+    String, '/tafl/execution_progress', 10)
 
-# 服務（待實作）
-self.execute_service = self.create_service(
-    ExecuteTAFL, '/tafl_wcs/execute', self._handle_execute_service)
+# 服務 - 查詢進度
+self.progress_service = self.create_service(
+    Trigger, '/tafl/get_progress', self._get_progress_callback)
 ```
 
 ## 🚀 Development Workflow
@@ -140,7 +152,20 @@ ros2 launch tafl_wcs tafl_wcs.launch.py
 
 ### Testing
 ```bash
-# 執行所有測試
+# 執行完整業務流程測試套件（推薦）
+cd /app/tafl_wcs_ws/src/tafl_wcs/test
+python3 run_all_tests.py
+
+# 執行單個業務流程測試
+python3 test_parking_flows.py
+python3 test_machine_to_prepare.py
+python3 test_full_rack_to_collection.py
+python3 test_rack_rotation.py
+python3 test_room_dispatch.py
+python3 test_duplicate_prevention.py
+
+# 執行所有測試（舊方式）
+cd /app/tafl_wcs_ws
 ./run_tests.sh all
 
 # 執行特定類型測試
@@ -211,7 +236,7 @@ SELECT t.id, t.status_id FROM task t;
 - **TAFL 查詢目標**：在 TAFL 流程中 `query:` 動詞的 `target:` 參數值（**統一使用複數形式**）
 - **查詢函數名**：TAFLDatabaseBridge 中的查詢方法名稱
 
-### 命名規範（2025-09-12 統一）
+### 命名規範（2025-09-16 統一）
 **🎯 統一原則：TAFL 和 Python 函數使用複數，資料庫保持單數**
 
 ```
@@ -230,29 +255,39 @@ Database Tables: 單數 (rack, task, location, work)
 
 ## 🔗 Related Documentation
 - TAFL 語言規格: @docs-ai/knowledge/system/tafl/tafl-language-specification.md
-- TAFL 實作計畫: @docs-ai/knowledge/system/tafl/tafl-implementation-plan.md
-- TAFL 快速入門: @docs-ai/knowledge/system/tafl/tafl-quick-start-guide.md
-- Flow WCS 系統: `app/flow_wcs_ws/CLAUDE.md`
+- TAFL 開發歷史: @docs-ai/knowledge/system/tafl/tafl-development-history.md
+- TAFL 使用者指南: @docs-ai/knowledge/system/tafl/tafl-user-guide.md
 - 資料庫代理: `app/db_proxy_ws/CLAUDE.md`
 - ROS 2 工作空間測試結構: @docs-ai/operations/development/testing/ros2-workspace-test-structure.md
 - 測試程序: @docs-ai/operations/development/testing/testing-procedures.md
 
 ## 📅 Development Timeline
-- **2024-12-22**: 初始建立，實現基本 TAFL v1.1 執行框架
-- **2025-01-11**: 更新以完全符合 TAFL v1.1 規格書
-  - 實作完整 6 段式結構驗證（metadata, settings, preload, rules, variables, flow）
-  - 統一術語使用（settings 取代 initialization）
+- **2025-08-28**: 初始 TAFL 系統整合 (flow-better-format branch)
+  - 建立基本 TAFL v1.1 執行框架
+  - 實作 6 段式結構（metadata, settings, preload, rules, variables, flow）
+  - 整合 TAFL editor 改進和系統增強
+- **2025-09-16**: 實作料架旋轉出口流程
+  - 完成 rack rotation at room outlets 功能
+  - 整合資料庫橋接模組
   - 實作 5-Level 變數作用域管理
-  - 增強執行器支援 v1.1 動詞格式（switch 範圍條件、set 多格式）
-  - 新增 TAFL v1.1 合規性測試套件
-- **2025-01-11**: 切換為同步執行模式，修正資料表名稱文檔
-  - 從 asyncio 改為同步執行（避免記憶體問題）
-  - 修正文檔中的資料表名稱錯誤（task 而非 agvc_task）
-  - 新增命名對照表避免混淆
-- **待實作**: ROS 2 服務介面完整實作、流程管理 UI
+- **2025-09-19**: 合併 main-yaze 分支改進
+  - 優化執行器效能
+  - 改進錯誤處理機制
+- **2025-09-22**: 更新文檔以反映實際程式碼
+  - 修正測試檔案名稱列表
+  - 更新 ROS 2 服務介面為實際路徑
+  - 修正執行流程描述（preload 由 TAFLExecutor 處理）
+  - 根據 git 歷史修正時間線
+- **2025-09-30**: 完成 8 個核心業務流程完整測試套件
+  - 實作並驗證 8 個核心 TAFL 業務流程測試（10 個測試場景）
+  - 強化所有測試驗證邏輯（驗證目的地正確性，非僅任務創建）
+  - 修復 TAFL 流程問題（room_id_not_null 語法、YAML 中文字串）
+  - 重組測試文件到標準位置（`src/tafl_wcs/test/`）
+  - 新增統一測試入口（`run_all_tests.py`）
+  - 完整測試覆蓋：8/8 流程、10/10 場景、6/6 關鍵機制
 
 ## 💡 Design Decisions
-1. **獨立工作空間**: 避免影響現有 flow_wcs_ws，便於平行開發和測試
+1. **獨立工作空間**: 提供 TAFL WCS 系統實作，便於平行開發和測試
 2. **直接資料庫連接**: 使用 db_proxy 的 ConnectionPoolManager，避免重複造輪子
 3. **標準測試結構**: 遵循 ROS 2 工作空間測試規範，測試檔案放在 `src/tafl_wcs/test/`
 4. **pytest 框架**: 遵循最新測試標準，使用 pytest 而非 unittest
