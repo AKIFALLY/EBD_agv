@@ -258,7 +258,8 @@ export const mapCarrierManager = (() => {
 
         carrierData.forEach(carrier => {
             // 統計狀態
-            const status = carrier.status_id || 0;
+            // 🔧 修復：使用 ?? 避免 0 被當作 falsy
+            const status = carrier.status_id ?? 0;
             statusCounts[status] = (statusCounts[status] || 0) + 1;
 
             // 統計位置類型

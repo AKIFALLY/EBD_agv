@@ -59,7 +59,7 @@ source scripts/system-tools/system-tools.sh
 # [宿主機] 專業診斷函數
 system_health_check     # 完整健康檢查
 quick_diagnose          # 快速診斷
-all_health              # 智能健康檢查
+all_health              # 健康檢查
 all_status              # 容器狀態
 
 # [宿主機] Web 服務診斷工具

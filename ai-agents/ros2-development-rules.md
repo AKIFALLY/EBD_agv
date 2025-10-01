@@ -133,4 +133,4 @@ colcon build
 2. **載入環境優先**: 執行前必須 `source /app/setup.bash`
 3. **工作目錄**: 在 ~/RosAGV 執行 docker compose
 4. **Zenoh 通訊**: 跨容器通訊依賴 Zenoh Router
-5. **智能載入**: 使用 `all_source` 自動檢測環境
+5. **自動載入**: 使用 `all_source` 自動檢測環境

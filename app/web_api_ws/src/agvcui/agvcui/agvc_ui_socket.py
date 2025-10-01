@@ -54,7 +54,14 @@ class AgvcUiSocket:
         await self.notify_carriers(sid)
         await self.notify_signals(sid)
         await self.notify_racks(sid)  # 依賴 map, agv 及 carrier 的資訊 最後載入
-        await self.notify_tasks(sid)
+        print(f"🔍 DEBUG connect: 即將調用 notify_tasks({sid})", flush=True)
+        try:
+            await self.notify_tasks(sid)
+            print(f"✅ DEBUG connect: notify_tasks 完成", flush=True)
+        except Exception as e:
+            print(f"❌ DEBUG connect: notify_tasks 失敗: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
         # await self.notify_client_data(sid)
 
     async def disconnect(self, sid):
@@ -208,9 +215,12 @@ class AgvcUiSocket:
         await self.sio.emit("rack_list", jsonable_encoder(payload), room=sid)
 
     async def notify_tasks(self, sid):
+        print(f"🔍 DEBUG notify_tasks: 開始執行 (sid={sid})", flush=True)
         tasks = task_all()
+        print(f"🔍 DEBUG notify_tasks: 準備發送 {len(tasks)} 個任務給 {sid}", flush=True)
         payload = {"tasks": tasks}
         await self.sio.emit("task_list", jsonable_encoder(payload), room=sid)
+        print(f"✅ DEBUG notify_tasks: 已發送 task_list 事件給 {sid}", flush=True)
 
     async def notify_map(self, sid):
         nodes = node_all()

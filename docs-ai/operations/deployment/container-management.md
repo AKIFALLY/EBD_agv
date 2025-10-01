@@ -59,7 +59,7 @@ all_start         # 啟動所有系統 (AGVC + AGV)
 all_stop          # 停止所有系統
 all_restart       # 重啟所有系統
 all_status        # 查看所有容器狀態
-all_health        # 智能健康狀態判斷
+all_health        # 健康狀態判斷
 all_ports         # 檢查端口狀態
 all_resources     # 檢查資源使用情況
 all_network       # 檢查網路配置

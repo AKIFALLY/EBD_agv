@@ -221,11 +221,11 @@ def initialize_kuka_map(session):
 
 def clear_kuka_map(session):
     """
-    智能清除 KUKA 地圖資料
+    自動清除 KUKA 地圖資料
     跳過有外鍵約束參考的節點，只刪除沒有外鍵約束的節點和邊
     """
     try:
-        print("🗑️ 開始智能清除 KUKA 地圖資料...")
+        print("🗑️ 開始自動清除 KUKA 地圖資料...")
 
         # 統計清除前的資料
         all_nodes = session.exec(select(KukaNode)).all()
@@ -253,8 +253,8 @@ def clear_kuka_map(session):
         session.commit()
         print(f"   ✅ 邊清除完成: 刪除 {edges_deleted} 個, 跳過 {edges_skipped} 個")
 
-        # 第二階段：智能清除節點
-        print("🔄 第二階段：智能清除節點資料...")
+        # 第二階段：自動清除節點
+        print("🔄 第二階段：自動清除節點資料...")
         nodes_deleted = 0
         nodes_skipped = 0
         skipped_reasons = {}
@@ -309,7 +309,7 @@ def clear_kuka_map(session):
         remaining_edges = session.exec(select(KukaEdge)).all()
 
         print("\n" + "=" * 50)
-        print("✅ KUKA 地圖智能清除完成！")
+        print("✅ KUKA 地圖自動清除完成！")
         print(f"📊 清除統計:")
         print(f"   - 節點: 刪除 {nodes_deleted} 個, 跳過 {nodes_skipped} 個, 剩餘 {len(remaining_nodes)} 個")
         print(f"   - 邊: 刪除 {edges_deleted} 個, 跳過 {edges_skipped} 個, 剩餘 {len(remaining_edges)} 個")

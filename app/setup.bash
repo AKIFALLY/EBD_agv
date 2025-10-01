@@ -313,9 +313,9 @@ build_agvc() {
     echo "📊 AGVC 建置完成: $success_count/$total_count 個工作空間建置成功"
 }
 
-# 智能建置函數 (根據環境自動選擇)
+# 自動建置函數 (根據環境自動選擇)
 build_all() {
-    echo "🔧 智能建置工作空間 (根據容器環境自動選擇)..."
+    echo "🔧 自動建置工作空間 (根據容器環境自動選擇)..."
 
     # 檢測當前環境並選擇對應的建置策略
     if [ "$CONTAINER_TYPE" = "agv" ]; then
@@ -404,9 +404,9 @@ build_all_workspaces() {
     echo "📊 建置完成: $success_count/$total_count 個工作空間建置成功"
 }
 
-# 使用 colcon 依賴解析的智能建置函數
+# 使用 colcon 依賴解析的建置函數
 build_all_smart() {
-    echo "🧠 開始智能建置所有工作空間 (使用 colcon 依賴解析)..."
+    echo "🧠 開始依賴解析建置所有工作空間 (使用 colcon 依賴解析)..."
 
     BASE_DIR="/app/"
     
@@ -467,8 +467,8 @@ build_all_smart() {
     # 清理臨時目錄
     cd "$BASE_DIR"
     rm -rf "$unified_build_dir"
-    
-    echo "🎉 智能建置完成"
+
+    echo "🎉 依賴解析建置完成"
 }
 
 # 複製建置結果回各工作空間的輔助函數
@@ -683,7 +683,7 @@ app_download() {
 # app_upload 192.168.0.5
 # app_download 192.168.0.5
 
-# ===== 智能工作空間載入函數 =====
+# ===== 自動工作空間載入函數 =====
 
 # AGV 專用工作空間載入函數
 agv_source() {
@@ -803,9 +803,9 @@ agvc_source() {
     echo "✅ AGVC 專用工作空間載入完成"
 }
 
-# 智能工作空間載入函數 (根據環境自動選擇)
+# 自動工作空間載入函數 (根據環境自動選擇)
 all_source() {
-    echo "🔧 智能載入工作空間 (根據容器環境自動選擇)..."
+    echo "🔧 自動載入工作空間 (根據容器環境自動選擇)..."
 
     # 檢測當前環境並選擇對應的載入策略
     if [ "$CONTAINER_TYPE" = "agv" ]; then
@@ -832,17 +832,17 @@ show_help() {
     log_header "RosAGV 開發環境 - 可用命令"
 
     echo -e "${CYAN}🔧 建置和測試:${NC}"
-    echo "  build_all/ba           - 智能建置工作空間 (根據容器類型自動選擇)"
+    echo "  build_all/ba           - 自動建置工作空間 (根據容器類型自動選擇)"
     echo "  build_agv              - 建置 AGV 車載系統專用工作空間"
     echo "  build_agvc             - 建置 AGVC 管理系統專用工作空間"
     echo "  build_all_workspaces   - 建置所有工作空間 (傳統方式)"
-    echo "  build_all_smart/bas    - 智能建置 (使用 colcon 依賴解析)"
+    echo "  build_all_smart/bas    - 依賴解析建置 (使用 colcon 依賴解析)"
     echo "  build_ws/build_single  - 建置指定的單一工作空間"
     echo "  test_all/ta            - 測試所有工作空間"
     echo "  test_ws/test_single    - 測試指定的單一工作空間"
     echo "  clean_all/ca           - 清理所有建置檔案"
     echo "  clean_ws/clean_single  - 清理指定的單一工作空間"
-    echo "  all_source/sa/load_all - 智能載入工作空間環境 (根據容器類型自動選擇)"
+    echo "  all_source/sa/load_all - 自動載入工作空間環境 (根據容器類型自動選擇)"
     echo "  agv_source             - 載入 AGV 車載系統專用工作空間"
     echo "  agvc_source            - 載入 AGVC 管理系統專用工作空間"
     echo ""
@@ -1865,7 +1865,7 @@ alias ri='ros2 interface list'
 
 # 工作空間管理別名
 alias ba='build_all'
-alias bas='build_all_smart'    # 智能建置 (使用 colcon 依賴解析)
+alias bas='build_all_smart'    # 依賴解析建置 (使用 colcon 依賴解析)
 alias ta='test_all'
 alias ca='clean_all'
 alias sa='all_source'
@@ -2688,17 +2688,17 @@ else
 fi
 
 echo "🔧 通用指令："
-echo "  build_all/ba         - 智能建置工作空間 (根據容器類型自動選擇)"
+echo "  build_all/ba         - 自動建置工作空間 (根據容器類型自動選擇)"
 echo "  build_agv            - 建置 AGV 車載系統專用工作空間"
 echo "  build_agvc           - 建置 AGVC 管理系統專用工作空間"
 echo "  build_all_workspaces - 建置所有工作空間 (傳統方式)"
-echo "  build_all_smart/bas  - 智能建置 (使用 colcon 依賴解析)"
+echo "  build_all_smart/bas  - 依賴解析建置 (使用 colcon 依賴解析)"
 echo "  build_ws <name>      - 建置指定工作空間"
 echo "  test_all/ta          - 測試所有工作空間"
 echo "  test_ws <name>       - 測試指定工作空間"
 echo "  clean_all/ca         - 清理所有工作空間"
 echo "  clean_ws <name>      - 清理指定工作空間"
-echo "  all_source/sa        - 智能載入工作空間 (根據環境自動選擇)"
+echo "  all_source/sa        - 自動載入工作空間 (根據環境自動選擇)"
 echo "  agv_source           - 載入 AGV 車載系統專用工作空間"  
 echo "  agvc_source          - 載入 AGVC 管理系統專用工作空間"
 echo "  check_system_status/status - 檢查系統狀態"

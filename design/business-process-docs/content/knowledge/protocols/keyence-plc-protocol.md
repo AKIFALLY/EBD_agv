@@ -605,7 +605,7 @@ class PlcConnectionMonitor:
 
 ### 批量操作最佳化
 
-#### 智能批量讀寫
+#### 批量讀寫
 ```python
 class BatchOperationOptimizer:
     def __init__(self, plc_communicator):
@@ -681,7 +681,7 @@ class BatchOperationOptimizer:
 
 ### 快取機制
 
-#### 智能快取策略
+#### 快取策略
 ```python
 import time
 from typing import Dict, Tuple, Optional

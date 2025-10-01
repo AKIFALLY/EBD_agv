@@ -1,4 +1,4 @@
-import { mapStore, signalsStore, roomsStore, machinesStore, racksStore, carriersStore, tasksStore } from '../store/index.js';
+import { mapStore, signalsStore, roomsStore, machinesStore, racksStore, carriersStore, tasksStore, locationsStore } from '../store/index.js';
 import { notify } from './notify.js';
 
 // AGV 動畫配置（優化版 - 提升旋轉速度和精度）
@@ -253,14 +253,14 @@ export const mapPage = (() => {
             if (!dockedRackObject) {
                 const latLng = L.latLng(node.y, node.x);
                 // 使用 locationsStore 獲取位置名稱，如果沒有則使用預設值
-                console.log("Debug - locationId:", locationId, "locationsStore:", window.locationsStore);
-                if (window.locationsStore) {
-                    const locationsState = window.locationsStore.getState();
+                console.log("Debug - locationId:", locationId, "locationsStore:", locationsStore);
+                if (locationsStore) {
+                    const locationsState = locationsStore.getState();
                     console.log("Debug - locationsStore 狀態:", locationsState);
                     console.log("Debug - 所有 locations:", locationsState.locations);
                 }
-                const locationName = window.locationsStore ?
-                    window.locationsStore.getLocationName(locationId) || "停靠區" :
+                const locationName = locationsStore ?
+                    locationsStore.getLocationName(locationId) || "停靠區" :
                     "停靠區";
                 console.log("Debug - 取得的 locationName:", locationName);
                 dockedRackObject = new DockedRackInfoObject(map, latLng, node.id, locationName);
@@ -360,26 +360,7 @@ export const mapPage = (() => {
 
         // 更新已存在的 DockedRackInfoObject 的標題
         dockedRackObjects.forEach((dockedRackObject, locationId) => {
-            const locationName = window.locationsStore.getLocationName(locationId);
-            if (locationName && locationName !== "停靠區") {
-                // 更新 DockedRackInfoObject 的標題
-                const titleElement = dockedRackObject.rackInfoDom.querySelector('.docked-rack-title');
-                if (titleElement) {
-                    titleElement.textContent = locationName;
-                    console.log(`更新 locationId ${locationId} 的標題為: ${locationName}`);
-                }
-            }
-        });
-    }
-
-    function handleLocationsChange(newState) {
-        if (!newState?.locations) return;
-
-        console.log('locations 資料更新:', newState.locations);
-
-        // 更新已存在的 DockedRackInfoObject 的標題
-        dockedRackObjects.forEach((dockedRackObject, locationId) => {
-            const locationName = window.locationsStore.getLocationName(locationId);
+            const locationName = locationsStore.getLocationName(locationId);
             if (locationName && locationName !== "停靠區") {
                 // 更新 DockedRackInfoObject 的標題
                 const titleElement = dockedRackObject.rackInfoDom.querySelector('.docked-rack-title');
@@ -665,7 +646,6 @@ export const mapPage = (() => {
         racksStore.on('change', handleRacksChange);
         carriersStore.on('change', handleCarriersChange);
         tasksStore.on('change', handleTasksChange);
-        locationsStore.on('change', handleLocationsChange);
         locationsStore.on('change', handleLocationsChange);
 
         // 檢查現有數據並渲染（必要的，因為Socket.IO可能不會再次推送）

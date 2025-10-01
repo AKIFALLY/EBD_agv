@@ -32,7 +32,7 @@ class ContentLoader {
             // 創建自定義渲染器
             const renderer = new marked.Renderer();
             
-            // 自定義代碼塊渲染器，智能處理縮排
+            // 自定義代碼塊渲染器，自動處理縮排
             renderer.code = function(code, language) {
                 // 分析代碼的最小縮排級別
                 const lines = code.split('\n');

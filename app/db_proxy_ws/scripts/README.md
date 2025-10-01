@@ -80,7 +80,7 @@ cd /app/db_proxy_ws/scripts
 |---------|---------|---------|--------|-------------|
 | 環境準備 | check_db_init.sh | ~1 秒 | 100% | 錯誤檢測、彩色輸出 |
 | 初始化 | init_database.sh | ~1 秒 | 100% | 自動化流程、權限設定 |
-| 連線測試 | test_connection.py | ~3-5 秒 | 100% | 多環境相容、智能降級 |
+| 連線測試 | test_connection.py | ~3-5 秒 | 100% | 多環境相容、自動降級 |
 | 狀態監控 | check_db_status.sh | ~2-3 秒 | 100% | 系統監控、資源統計 |
 | **總計** | **4 個腳本** | **~8 秒** | **100%** | **24 個驗證項目** |
 
@@ -104,7 +104,7 @@ cd /app/db_proxy_ws/scripts
 - ✅ psycopg2 連線：生產和測試資料庫連線成功
 - ✅ SQLModel 模型：5 個模型 (Task, Work, Rack, Carrier, AGV) 載入成功
 - ✅ 連線池管理：支援 ROS 2 和 SQLAlchemy 兩種模式
-- ✅ 智能降級：ROS 2 不可用時自動使用 SQLAlchemy 模式
+- ✅ 自動降級：ROS 2 不可用時自動使用 SQLAlchemy 模式
 - ✅ 資料表檢查：成功檢測 32 個資料表
 - ✅ 環境相容：宿主機和容器環境都能正確運行
 

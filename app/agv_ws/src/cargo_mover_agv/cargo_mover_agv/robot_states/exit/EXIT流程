@@ -195,7 +195,7 @@ def _check_take_transfer_continue(self, context):
 
 - **觸發機制**: 從 IdleState 根據 mission="exit" 自動觸發 EXIT 流程
 - **雙重循環**: 內層處理傳送箱貨物，外層處理 Rack Port 選擇
-- **智能判斷**: 根據相鄰 Port 狀態決定是否繼續處理傳送箱
+- **自動判斷**: 根據相鄰 Port 狀態決定是否繼續處理傳送箱
 - **遞減邏輯**: Rack Port 按遞減順序處理 (min_rack_index - 1)
 - **狀態追蹤**: 完整的狀態變數管理和重置機制
 - **優化機制**: 視覺定位 buffer、Hokuyo 更新標誌等避免重複操作
@@ -357,7 +357,7 @@ Rack 方向判斷
 ### 📈 重構效果
 1. **完整功能**: 恢復所有 Rack 檢查和旋轉功能
 2. **雙重循環**: 內層處理傳送箱，外層處理 Rack Port
-3. **智能路由**: CheckRackSideState 直接回到 TransferCheckHaveState
+3. **自動路由**: CheckRackSideState 直接回到 TransferCheckHaveState
 4. **高效循環**: 減少不必要的狀態重複
 
 ## 🔧 最新修復 (2025-07-01)

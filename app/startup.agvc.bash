@@ -42,7 +42,7 @@ echo "ROS_DISTRO=$ROS_DISTRO"
 echo "ZENOH_ROUTER_CONFIG_URI=$ZENOH_ROUTER_CONFIG_URI"
 echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
 
-# 載入完整的 setup.bash 環境 (包含智能 all_source 和所有工具)
+# 載入完整的 setup.bash 環境 (包含all_source 和所有工具)
 if [ -f "/app/setup.bash" ]; then
     echo "🔧 載入完整 setup.bash 環境..."
     source /app/setup.bash

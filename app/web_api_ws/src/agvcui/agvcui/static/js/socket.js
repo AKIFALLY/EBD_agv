@@ -1,4 +1,4 @@
-import { mapStore, signalsStore, carriersStore, machinesStore, roomsStore, racksStore, tasksStore, agvsStore, userStore } from '../store/index.js';
+import { mapStore, signalsStore, carriersStore, machinesStore, roomsStore, racksStore, tasksStore, agvsStore, userStore, locationsStore } from '../store/index.js';
 import { notify } from './notify.js';
 import { validateTaskStatus } from './taskStatus.js';
 
@@ -86,6 +86,8 @@ function setup() {
         racksStore.setState({ "racks": msg.racks });
     });
     socket.on("task_list", (msg) => {
+        console.log('🔍 DEBUG: 收到 task_list 事件 (原始)', msg);
+
         // 🔧 新增：資料格式驗證
         if (!msg || !Array.isArray(msg.tasks)) {
             console.error('任務資料格式錯誤:', msg);
@@ -108,11 +110,6 @@ function setup() {
 
         console.debug(`Socket.IO 接收任務資料: ${validatedTasks.length} 個任務`);
         tasksStore.setState({ "tasks": validatedTasks });
-    });
-    socket.on("location_list", (msg) => {
-        console.log("收到 location_list 事件:", msg);
-        locationsStore.updateLocations(msg.locations);
-        console.log("locationsStore 狀態:", locationsStore.getState());
     });
     socket.on("location_list", (msg) => {
         console.log("收到 location_list 事件:", msg);

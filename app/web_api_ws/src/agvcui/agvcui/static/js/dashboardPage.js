@@ -74,17 +74,6 @@ export const dashboardPage = (() => {
             }
         });
 
-        // 確保個別卡片容器存在
-        const agvContainer = document.getElementById('dashboard-agv-cards-container');
-        const rackContainer = document.getElementById('dashboard-rack-cards-container');
-
-        if (!agvContainer) {
-            console.warn('AGV 卡片容器未找到');
-        }
-        if (!rackContainer) {
-            console.warn('貨架卡片容器未找到');
-        }
-
         console.log('🏠 發現啟用的房間:', enabledRooms);
     }
 
@@ -156,8 +145,26 @@ export const dashboardPage = (() => {
         const tasks = newState.tasks || [];
         console.debug('Dashboard 收到 Task 更新:', tasks.length, '個任務');
 
+        // 🔍 調試：檢查各狀態的任務數量
+        const statusCounts = tasks.reduce((acc, task) => {
+            // 🔧 修復：使用 ?? 避免 0 被當作 falsy
+            const status = task.status_id ?? task.status;
+            acc[status] = (acc[status] || 0) + 1;
+            return acc;
+        }, {});
+        console.debug('📊 收到的任務狀態分佈:', statusCounts);
+
         // 處理任務資料
         const taskData = processTaskData(tasks);
+
+        // 🔍 調試：顯示統計結果
+        console.debug('📊 統計結果:', {
+            total: taskData.totalCount,
+            requesting: taskData.requestingCount,
+            pending: taskData.pendingCount,
+            ready: taskData.readyCount,
+            executing: taskData.executingCount
+        });
 
         // 更新 Task 卡片
         updateTaskStatusCard(taskData);
@@ -486,7 +493,8 @@ export const dashboardPage = (() => {
         const hasBattery = agv.battery !== null && agv.battery !== undefined;
 
         // 4. 檢查狀態ID（如果有的話）
-        const hasValidStatus = !agv.status_id || agv.status_id > 0;
+        // 🔧 修復：使用更清晰的邏輯（AGV status 範圍 1-10，null/undefined 也算有效）
+        const hasValidStatus = agv.status_id == null || agv.status_id > 0;
 
         // 綜合判斷：啟用 + (有位置 或 有電量) + 狀態正常
         return hasValidStatus && (hasPosition || hasBattery);
@@ -578,18 +586,33 @@ export const dashboardPage = (() => {
 
         // 只保留活躍狀態的任務（請求中、待處理、待執行、執行中）
         const activeTasks = tasks.filter(task => {
-            const status = task.status_id || task.status;
+            // 🔧 修復：使用 ?? 避免 0 被當作 falsy
+            const status = task.status_id ?? task.status;
             return isActiveStatus(status);
         });
 
-        // 按狀態和時間排序（執行中優先，然後按開始時間）
+        // 按狀態優先順序排序：執行中 > 待執行 > 待處理 > 請求中，同狀態按時間排序
         activeTasks.sort((a, b) => {
-            const statusA = a.status_id || a.status;
-            const statusB = b.status_id || b.status;
+            // 🔧 修復：使用 ?? 避免 0 被當作 falsy
+            const statusA = a.status_id ?? a.status;
+            const statusB = b.status_id ?? b.status;
 
-            // 執行中的任務優先 (status_id = 3)
-            if (isExecutingStatus(statusA) && !isExecutingStatus(statusB)) return -1;
-            if (!isExecutingStatus(statusA) && isExecutingStatus(statusB)) return 1;
+            // 定義狀態優先順序（數字越小優先級越高）
+            const getPriority = (status) => {
+                if (status === 3) return 1; // 執行中
+                if (status === 2) return 2; // 待執行
+                if (status === 1) return 3; // 待處理
+                if (status === 0) return 4; // 請求中
+                return 5; // 其他狀態
+            };
+
+            const priorityA = getPriority(statusA);
+            const priorityB = getPriority(statusB);
+
+            // 先按優先級排序
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+            }
 
             // 相同狀態按時間排序（最新的在前）
             const timeA = new Date(a.created_at || a.updated_at || 0);
@@ -600,21 +623,18 @@ export const dashboardPage = (() => {
         // 限制顯示數量（最多10個）
         const limitedTasks = activeTasks.slice(0, 10);
 
-        // 統計數量 - 根據新的狀態定義
-        // 待執行：狀態 1(待處理) + 2(待執行)
-        // 執行中：狀態 3(執行中)
-        const pendingCount = stats.pending + stats.ready; // 1 + 2
-        const runningCount = stats.executing; // 3
-
+        // 統計數量 - 分別統計 4 種活躍狀態
         return {
             activeTasks: limitedTasks,
             totalActive: stats.active,
             totalCount: stats.total,
-            pendingCount,
-            runningCount,
-            completedCount: stats.completed,
-            errorCount: stats.error,
-            cancelledCount: stats.cancelled
+            requestingCount: stats.requesting,  // 0: 請求中
+            pendingCount: stats.pending,        // 1: 待處理
+            readyCount: stats.ready,            // 2: 待執行
+            executingCount: stats.executing,    // 3: 執行中
+            completedCount: stats.completed,    // 4: 已完成
+            errorCount: stats.error,            // 6: 錯誤
+            cancelledCount: stats.cancelled     // 54: 已取消
         };
     }
 
@@ -971,13 +991,15 @@ export const dashboardPage = (() => {
         // 更新狀態指示器
         let statusType = 'info';
         let statusText = '系統正常';
+        const totalActive = (taskData.requestingCount || 0) + (taskData.pendingCount || 0) +
+                           (taskData.readyCount || 0) + (taskData.executingCount || 0);
 
-        if (taskData.runningCount > 0) {
+        if (taskData.executingCount > 0) {
             statusType = 'warning';
-            statusText = `${taskData.runningCount} 個任務執行中`;
-        } else if (taskData.pendingCount > 0) {
+            statusText = `${taskData.executingCount} 個任務執行中`;
+        } else if (totalActive > 0) {
             statusType = 'info';
-            statusText = `${taskData.pendingCount} 個任務待執行`;
+            statusText = `${totalActive} 個任務待處理`;
         } else {
             statusType = 'success';
             statusText = '無待處理任務';
@@ -1004,10 +1026,12 @@ export const dashboardPage = (() => {
      * @param {Object} taskData - 任務資料
      */
     function updateTaskSummary(taskData) {
-        // 更新摘要指標
+        // 更新摘要指標 - 5個獨立指標
         updateElement('task-summary-total', taskData.totalCount || 0);
+        updateElement('task-summary-requesting', taskData.requestingCount || 0);
         updateElement('task-summary-pending', taskData.pendingCount || 0);
-        updateElement('task-summary-executing', taskData.runningCount || 0);
+        updateElement('task-summary-ready', taskData.readyCount || 0);
+        updateElement('task-summary-executing', taskData.executingCount || 0);
 
         // 更新摘要狀態
         const summaryStatusElement = document.getElementById('task-summary-status');
@@ -1015,12 +1039,18 @@ export const dashboardPage = (() => {
             const statusDot = summaryStatusElement.querySelector('.dashboard-summary-status-dot');
             const statusText = summaryStatusElement.querySelector('span');
 
-            if (taskData.runningCount > 0) {
+            if (taskData.executingCount > 0) {
                 statusDot.style.backgroundColor = '#ff9800';
-                statusText.textContent = `${taskData.runningCount} 個執行中`;
-            } else if (taskData.pendingCount > 0) {
+                statusText.textContent = `${taskData.executingCount} 個執行中`;
+            } else if (taskData.readyCount > 0) {
                 statusDot.style.backgroundColor = '#2196f3';
-                statusText.textContent = `${taskData.pendingCount} 個待執行`;
+                statusText.textContent = `${taskData.readyCount} 個待執行`;
+            } else if (taskData.pendingCount > 0) {
+                statusDot.style.backgroundColor = '#03a9f4';
+                statusText.textContent = `${taskData.pendingCount} 個待處理`;
+            } else if (taskData.requestingCount > 0) {
+                statusDot.style.backgroundColor = '#00bcd4';
+                statusText.textContent = `${taskData.requestingCount} 個請求中`;
             } else {
                 statusDot.style.backgroundColor = '#4caf50';
                 statusText.textContent = '全部完成';
@@ -1106,7 +1136,8 @@ export const dashboardPage = (() => {
         node.className = `task-hierarchy-node level-${level}`;
 
         // 任務狀態
-        const status = task.status_id || task.status;
+        // 🔧 修復：使用 ?? 避免 0 被當作 falsy
+        const status = task.status_id ?? task.status;
         const statusInfo = getTaskStatusInfoLocal(status);
 
         // 時間格式化

@@ -8,13 +8,13 @@
 @docs-ai/knowledge/agv-domain/write-path-state-analysis.md  # 路徑狀態分析
 
 ## 📋 專案概述
-cargo_mover_agv 實現 Cargo Mover AGV 的完整控制邏輯，支援 Hokuyo 8bit 光通訊模組管理、架台搬運操作、入口/出口流程控制等。負責房間門口的 Rack ↔ 傳送箱轉移作業，並執行 SensorPart 3D 視覺定位 + OCR 產品識別的智能品質檢查。
+cargo_mover_agv 實現 Cargo Mover AGV 的完整控制邏輯，支援 Hokuyo 8bit 光通訊模組管理、架台搬運操作、入口/出口流程控制等。負責房間門口的 Rack ↔ 傳送箱轉移作業，並執行 SensorPart 3D 視覺定位 + OCR 產品識別的製程適配性檢查。
 
 ## 🏭 核心業務流程 (基於眼鏡生產系統)
 
 ### 主要職責
 - **工作區域**: 眼鏡房間門口
-- **核心任務**: Rack ↔ 傳送箱 轉移作業 + 品質檢查 + 製程適配性驗證
+- **核心任務**: Rack ↔ 傳送箱 轉移作業 + 製程適配性檢查
 - **關鍵設備**: SensorPart 相機 (3D視覺定位 + OCR識別)
 - **通訊整合**: Hokuyo 8bit 光通訊模組 (左右側)
 
@@ -57,7 +57,7 @@ For 每個 Carrier:
        • 錯誤產品：移除產品 → AGVCUI清除資料 → Alarm Reset
 ```
 
-### 智能品質管制特色
+### 製程適配性檢查特色
 - **製程適配性檢查**: Room1/Room2 只接受泡藥1次產品，泡藥2次產品需人工處理
 - **產品識別驗證**: OCR 確保產品正確性，防止混料誤送
 - **即時異常處理**: OCR NG 立即發出 Alarm，人員現場處理（非事後集中處理）

@@ -11,7 +11,7 @@
 ### 環境要求
 - **容器內開發**: 所有 ROS 2 開發必須在 Docker 容器內進行
 - **雙環境支援**: AGV 車載環境 (9個工作空間) 和 AGVC 管理環境 (11個工作空間)
-- **智能載入**: 使用 `all_source` 自動檢測並載入對應環境的工作空間
+- **自動載入**: 使用 `all_source` 自動檢測並載入對應環境的工作空間
 
 ### 基本開發流程
 ```bash
@@ -20,7 +20,7 @@ docker compose -f docker-compose.yml exec rosagv bash      # AGV 環境
 docker compose -f docker-compose.agvc.yml exec agvc_server bash  # AGVC 環境
 
 # [容器內] 2. 載入工作空間
-all_source              # 智能載入 (推薦)
+all_source              # 自動載入 (推薦)
 # 或
 agv_source             # 強制載入 AGV 工作空間
 agvc_source            # 強制載入 AGVC 工作空間
@@ -59,7 +59,7 @@ AGVC 管理工作空間 (11個):
 ### 建置管理
 ```bash
 # 建置所有工作空間
-build_all              # 智能建置腳本
+build_all              # 自動建置腳本
 
 # 建置特定工作空間
 colcon build --packages-select package_name
@@ -404,7 +404,7 @@ r dev-check
 source scripts/dev-tools/dev-tools.sh
 
 # 使用專業工具
-dev_build              # 智能建置
+dev_build              # 自動建置
 dev_test               # 執行測試
 dev_check_style        # 代碼風格檢查
 ```

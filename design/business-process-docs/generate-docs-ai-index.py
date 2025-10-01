@@ -43,6 +43,13 @@ CATEGORIES = {
             "context/workspaces/"
         ]
     },
+    "testing": {
+        "name": "🧪 測試標準",
+        "description": "測試相關文檔",
+        "patterns": [
+            "operations/development/testing/"
+        ]
+    },
     "operations": {
         "name": "📖 操作指南",
         "description": "開發和運維指導",
@@ -57,13 +64,6 @@ CATEGORIES = {
         "description": "業務和技術知識",
         "patterns": [
             "knowledge/"
-        ]
-    },
-    "testing": {
-        "name": "🧪 測試標準",
-        "description": "測試相關文檔",
-        "patterns": [
-            "operations/development/testing/"
         ]
     }
 }

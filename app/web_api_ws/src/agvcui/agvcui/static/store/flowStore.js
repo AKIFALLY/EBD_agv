@@ -422,7 +422,7 @@ class FlowStore {
     }
     
     /**
-     * 提取變數參考（使用智能表達式解析器）
+     * 提取變數參考（使用表達式解析器）
      */
     extractVariableReferences(step) {
         const refs = new Set();
@@ -445,7 +445,7 @@ class FlowStore {
                     matches.forEach(match => {
                         // 提取 ${} 內的表達式
                         const innerExpr = match.slice(2, -1);
-                        // 使用智能解析器提取變數
+                        // 使用解析器提取變數
                         const exprVars = this.expressionParser.parseExpression(innerExpr);
                         exprVars.forEach(v => refs.add(v));
                     });

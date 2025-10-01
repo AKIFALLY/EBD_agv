@@ -18,8 +18,8 @@ loader_agv 實現 Loader AGV 的完整控制邏輯，支援從傳送箱取料、
 - **關鍵設備**: Hokuyo 8bit 光通訊模組 (前方配置)
 - **工作模式**: 一次1格精密操作，確保製程精度
 
-### Work ID 智能路由系統
-Loader AGV 採用智能 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
+### Work ID 自動路由系統
+Loader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
 
 **設備類型編碼**：
 - `01` = TRANSFER (入口傳送箱)
@@ -98,7 +98,7 @@ Loader AGV 採用智能 work_id 路由系統，格式：`room_id + equipment_typ
 ### 技術實作特點
 - **3層狀態機**: Base → AGV → Robot 層級控制
 - **PGNO系統**: 使用程式編號(Program Number)控制機械臂精確動作
-- **智能端口管理**: 動態AGV端口狀態管理和分配
+- **自動端口管理**: 動態AGV端口狀態管理和分配
 - **參數化控制**: LoaderRobotParameter 提供靈活的設備配置
 - **完整測試覆蓋**: 具備完整的測試套件和測試報告
 

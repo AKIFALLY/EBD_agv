@@ -4,12 +4,12 @@
  */
 
 export const TASK_STATUS = {
-    // 基本任務流程狀態
-    REQUESTING: { id: 0, name: '請求中', description: 'UI-請求執行任務', color: 'is-info' },
-    PENDING: { id: 1, name: '待處理', description: 'WCS-任務已接受，待處理', color: 'is-warning' },
-    READY_TO_EXECUTE: { id: 2, name: '待執行', description: 'RCS-任務已派發，待執行', color: 'is-warning' },
-    EXECUTING: { id: 3, name: '執行中', description: 'AGV-任務正在執行', color: 'is-info' },
-    COMPLETED: { id: 4, name: '已完成', description: 'AGV-任務已完成', color: 'is-success' },
+    // 基本任務流程狀態（參考 AGV 狀態配色風格）
+    REQUESTING: { id: 0, name: '請求中', description: 'UI-請求執行任務', color: 'is-link' },        // 淺藍色 - 初始請求
+    PENDING: { id: 1, name: '待處理', description: 'WCS-任務已接受，待處理', color: 'is-warning' },    // 黃色 - 等待處理
+    READY_TO_EXECUTE: { id: 2, name: '待執行', description: 'RCS-任務已派發，待執行', color: 'is-primary' }, // 深藍色 - 準備執行
+    EXECUTING: { id: 3, name: '執行中', description: 'AGV-任務正在執行', color: 'is-info' },          // 藍色 - 執行中
+    COMPLETED: { id: 4, name: '已完成', description: 'AGV-任務已完成', color: 'is-success' },         // 綠色 - 完成
 
     // 取消相關狀態
     CANCELLING: { id: 5, name: '取消中', description: '任務取消', color: 'is-warning' },
@@ -154,7 +154,7 @@ export function isCancellingStatus(statusId) {
 export function isActiveStatus(statusId) {
     return statusId === TASK_STATUS.REQUESTING.id ||
         statusId === TASK_STATUS.PENDING.id ||
-        statusId === TASK_STATUS.READY.id ||
+        statusId === TASK_STATUS.READY_TO_EXECUTE.id ||
         statusId === TASK_STATUS.EXECUTING.id;
 }
 
@@ -165,7 +165,7 @@ export function isActiveStatus(statusId) {
  */
 export function isPendingStatus(statusId) {
     return statusId === TASK_STATUS.PENDING.id ||
-        statusId === TASK_STATUS.READY.id;
+        statusId === TASK_STATUS.READY_TO_EXECUTE.id;
 }
 
 /**
@@ -205,7 +205,8 @@ export function getTaskStatusStatistics(tasks) {
     };
 
     tasks.forEach(task => {
-        const statusId = task.status_id || task.status;
+        // 🔧 修復：使用 ?? 避免 0 被當作 falsy
+        const statusId = task.status_id ?? task.status;
 
         switch (statusId) {
             case TASK_STATUS.REQUESTING.id:
@@ -216,7 +217,7 @@ export function getTaskStatusStatistics(tasks) {
                 stats.pending++;
                 stats.active++;
                 break;
-            case TASK_STATUS.READY.id:
+            case TASK_STATUS.READY_TO_EXECUTE.id:
                 stats.ready++;
                 stats.active++;
                 break;

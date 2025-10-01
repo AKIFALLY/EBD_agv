@@ -56,23 +56,23 @@
         "description": "系統設計和架構",
         "count": 6
       },
+      "testing": {
+        "name": "🧪 測試標準",
+        "description": "測試相關文檔",
+        "count": 4
+      },
       "operations": {
         "name": "📖 操作指南",
         "description": "開發和運維指導",
-        "count": 19
+        "count": 15
       },
       "knowledge": {
         "name": "🏷️ 領域知識",
         "description": "業務和技術知識",
         "count": 27
-      },
-      "testing": {
-        "name": "🧪 測試標準",
-        "description": "測試相關文檔",
-        "count": 0
       }
     },
-    "generated_at": "2025-09-30T23:37:34.041422",
+    "generated_at": "2025-10-01T16:50:48.406687",
     "generated_by": "generate-docs-ai-index.py v3.0"
   },
   "categories": {
@@ -92,6 +92,13 @@
         "context/workspaces/"
       ]
     },
+    "testing": {
+      "name": "🧪 測試標準",
+      "description": "測試相關文檔",
+      "patterns": [
+        "operations/development/testing/"
+      ]
+    },
     "operations": {
       "name": "📖 操作指南",
       "description": "開發和運維指導",
@@ -106,13 +113,6 @@
       "description": "業務和技術知識",
       "patterns": [
         "knowledge/"
-      ]
-    },
-    "testing": {
-      "name": "🧪 測試標準",
-      "description": "測試相關文檔",
-      "patterns": [
-        "operations/development/testing/"
       ]
     }
   },
@@ -375,8 +375,8 @@
           "type": "weak"
         }
       ],
-      "size": 16796,
-      "modified": 1759246630.734758,
+      "size": 16790,
+      "modified": 1759308621.5221908,
       "importance": "referenced"
     },
     "operations/deployment/docker-compose-configuration.md": {
@@ -454,9 +454,9 @@
         "docs-ai/operations/deployment/docker-compose-configuration.md"
       ],
       "referenced_by": [
+        "docs-ai/operations/deployment/docker-compose-configuration.md",
         "README.md",
-        "CLAUDE.md",
-        "docs-ai/operations/deployment/docker-compose-configuration.md"
+        "CLAUDE.md"
       ],
       "layer_references": {
         "layer1": [],
@@ -520,17 +520,17 @@
       ],
       "referenced_by": [
         "docs-ai/context/system/dual-environment.md",
-        "docs-ai/operations/deployment/docker-compose-configuration.md",
-        "docs-ai/operations/deployment/nginx-configuration.md",
         "docs-ai/operations/development/docker-development.md",
         "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/operations/guides/system-diagnostics.md",
-        "docs-ai/context/system/technology-stack.md",
-        "docs-ai/README.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
         "docs-ai/operations/tools/unified-tools.md",
+        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/README.md",
+        "docs-ai/context/system/technology-stack.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md",
         "README.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md"
+        "docs-ai/operations/deployment/nginx-configuration.md"
       ],
       "layer_references": {
         "layer1": [],
@@ -538,8 +538,8 @@
         "layer3": []
       },
       "references_to": [],
-      "size": 5251,
-      "modified": 1759246630.7357578,
+      "size": 5245,
+      "modified": 1759308621.5229008,
       "importance": "important"
     },
     "operations/development/build-and-test.md": {
@@ -569,8 +569,8 @@
         ]
       },
       "references_to": [],
-      "size": 9365,
-      "modified": 1758181277.564731,
+      "size": 9356,
+      "modified": 1759308621.5229008,
       "importance": "common"
     },
     "operations/development/docker-development.md": {
@@ -611,21 +611,21 @@
         "docs-ai/knowledge/system/agvui-monitoring-system.md"
       ],
       "referenced_by": [
-        "CLAUDE.md",
-        ".github/copilot-instructions.md",
-        "app/path_algorithm/CLAUDE.md",
-        "docs-ai/knowledge/system/agvui-monitoring-system.md",
-        "app/rcs_ws/CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md",
-        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md",
+        "docs-ai/operations/development/testing/testing-standards.md",
+        "CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/tools/unified-tools.md",
+        "app/rcs_ws/CLAUDE.md",
         "docs-ai/README.md",
         "docs-ai/operations/development/web/web-api-launch-management.md",
-        "docs-ai/operations/tools/unified-tools.md",
+        "app/path_algorithm/CLAUDE.md",
+        ".github/copilot-instructions.md",
         "README.md",
-        "docs-ai/operations/development/core/core-principles.md",
-        "docs-ai/operations/development/testing/testing-standards.md",
-        "docs-ai/knowledge/agv-domain/vehicle-types.md",
         "docs-ai/operations/development/ros2/plc-communication.md"
       ],
       "layer_references": {
@@ -659,7 +659,7 @@
         }
       ],
       "size": 12472,
-      "modified": 1759246630.7357578,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     "operations/development/database-operations.md": {
@@ -701,21 +701,21 @@
         "docs-ai/knowledge/business/eyewear-production-process.md"
       ],
       "referenced_by": [
-        "app/web_api_ws/CLAUDE.md",
-        "docs-ai/knowledge/agv-domain/license-table-design.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md",
         "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
-        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/knowledge/agv-domain/license-table-design.md",
         "docs-ai/operations/development/testing/testing-procedures.md",
-        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
         "app/db_proxy_ws/CLAUDE.md",
         "docs-ai/README.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
-        "docs-ai/operations/development/web/web-development.md",
-        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "app/web_api_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/operations/development/web/web-development.md"
       ],
       "layer_references": {
         "layer2": [
@@ -778,14 +778,14 @@
         "docs-ai/operations/development/core/core-principles.md"
       ],
       "referenced_by": [
-        "CLAUDE.md",
-        ".github/copilot-instructions.md",
-        "app/rcs_ws/CLAUDE.md",
-        "app/launch_ws/CLAUDE.md",
-        "docs-ai/operations/development/web/web-api-launch-management.md",
         "docs-ai/operations/development/core/core-principles.md",
-        "README.md",
-        "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md"
+        "CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "app/launch_ws/CLAUDE.md",
+        ".github/copilot-instructions.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -814,7 +814,7 @@
         }
       ],
       "size": 9320,
-      "modified": 1759246630.736758,
+      "modified": 1759308621.5229008,
       "importance": "important"
     },
     "operations/guides/performance-monitoring.md": {
@@ -900,15 +900,15 @@
         "docs-ai/operations/development/core/documentation-standards.md"
       ],
       "referenced_by": [
+        "README.md",
         "CLAUDE.md",
-        "app/path_algorithm/CLAUDE.md",
+        "docs-ai/operations/tools/unified-tools.md",
         "app/rcs_ws/CLAUDE.md",
-        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
         "docs-ai/operations/guides/system-diagnostics.md",
         "docs-ai/README.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
-        "docs-ai/operations/tools/unified-tools.md",
-        "README.md"
+        "app/path_algorithm/CLAUDE.md",
+        "docs-ai/operations/development/core/documentation-standards.md"
       ],
       "layer_references": {
         "layer2": [
@@ -970,10 +970,10 @@
         "docs-ai/knowledge/system/manual-rack-management.md"
       ],
       "referenced_by": [
+        "docs-ai/knowledge/agv-domain/license-table-design.md",
+        "docs-ai/knowledge/system/manual-rack-management.md",
         "app/agv_ws/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
-        "docs-ai/knowledge/system/manual-rack-management.md",
-        "docs-ai/knowledge/agv-domain/license-table-design.md",
         "README.md"
       ],
       "layer_references": {
@@ -1053,33 +1053,33 @@
         "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
-        "app/launch_ws/CLAUDE.md",
-        "docs-ai/operations/development/testing/testing-procedures.md",
-        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
-        "docs-ai/knowledge/agv-domain/vehicle-types.md",
-        "docs-ai/operations/development/docker-development.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md",
-        "app/web_api_ws/CLAUDE.md",
-        "app/kuka_fleet_ws/CLAUDE.md",
-        "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/operations/development/web/web-development.md",
-        "docs-ai/operations/development/ros2/plc-communication.md",
-        "docs-ai/operations/deployment/docker-compose-configuration.md",
         "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
-        "docs-ai/operations/deployment/nginx-configuration.md",
-        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-        "app/rcs_ws/CLAUDE.md",
-        "docs-ai/operations/development/web/web-api-launch-management.md",
-        "README.md",
-        "docs-ai/knowledge/system/agvui-monitoring-system.md",
-        "app/keyence_plc_ws/CLAUDE.md",
+        "docs-ai/knowledge/system/tafl/tafl-user-guide.md",
+        "docs-ai/operations/guides/troubleshooting.md",
         "docs-ai/operations/development/database-operations.md",
-        "app/path_algorithm/CLAUDE.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
         "docs-ai/README.md",
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "docs-ai/operations/development/docker-development.md",
         "docs-ai/operations/tools/unified-tools.md",
-        "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+        "app/path_algorithm/CLAUDE.md",
+        "README.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md",
+        "docs-ai/operations/development/web/web-development.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1120,8 +1120,8 @@
           "type": "weak"
         }
       ],
-      "size": 18230,
-      "modified": 1759246630.736758,
+      "size": 18224,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     "operations/guides/log-analysis.md": {
@@ -1155,8 +1155,8 @@
         "layer3": []
       },
       "references_to": [],
-      "size": 8585,
-      "modified": 1759246630.736758,
+      "size": 8558,
+      "modified": 1759308621.5229008,
       "importance": "common"
     },
     "operations/development/web/web-development.md": {
@@ -1187,14 +1187,14 @@
         "docs-ai/knowledge/system/hmi-system-design.md"
       ],
       "referenced_by": [
-        "app/web_api_ws/CLAUDE.md",
-        "docs-ai/operations/deployment/nginx-configuration.md",
+        "docs-ai/operations/development/database-operations.md",
         "docs-ai/operations/development/testing/testing-procedures.md",
-        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "app/web_api_ws/CLAUDE.md",
         "docs-ai/README.md",
         "docs-ai/knowledge/system/hmi-system-design.md",
         "README.md",
-        "docs-ai/operations/development/database-operations.md"
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1245,9 +1245,9 @@
         "docs-ai/context/structure/module-index.md"
       ],
       "referenced_by": [
+        "app/web_api_ws/CLAUDE.md",
         "README.md",
-        "docs-ai/context/structure/module-index.md",
-        "app/web_api_ws/CLAUDE.md"
+        "docs-ai/context/structure/module-index.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1319,24 +1319,24 @@
         "docs-ai/knowledge/agv-domain/vehicle-types.md"
       ],
       "referenced_by": [
-        "app/agv_ws/CLAUDE.md",
-        "app/kuka_fleet_ws/CLAUDE.md",
-        "app/sensorpart_ws/CLAUDE.md",
-        "docs-ai/operations/development/docker-development.md",
-        "app/path_algorithm/CLAUDE.md",
-        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
         "docs-ai/context/workspaces/agv-workspaces.md",
-        "docs-ai/operations/development/testing/testing-procedures.md",
-        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
         "docs-ai/knowledge/protocols/ros2-interfaces.md",
-        "docs-ai/README.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/operations/development/docker-development.md",
         "docs-ai/knowledge/agv-domain/vehicle-types.md",
-        "README.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md",
         "docs-ai/operations/development/testing/testing-standards.md",
-        "app/keyence_plc_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/README.md",
+        "app/path_algorithm/CLAUDE.md",
         "app/plc_proxy_ws/CLAUDE.md",
-        "docs-ai/operations/development/ros2/plc-communication.md"
+        "app/sensorpart_ws/CLAUDE.md",
+        "README.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1371,7 +1371,7 @@
         }
       ],
       "size": 10278,
-      "modified": 1759246630.7357578,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     "operations/development/ros2/plc-communication.md": {
@@ -1406,13 +1406,13 @@
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
         "docs-ai/context/structure/module-index.md",
-        "README.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
-        "app/keyence_plc_ws/CLAUDE.md",
-        "app/plc_proxy_ws/CLAUDE.md"
+        "README.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1473,7 +1473,7 @@
       "path": "operations/development/testing/test-file-management.md",
       "title": "測試檔案管理規範",
       "description": "AI Agent 創建臨時測試檔案時的存放位置指導",
-      "category": "operations",
+      "category": "testing",
       "layer": "layer2",
       "strong_references": 1,
       "weak_references": 4,
@@ -1489,10 +1489,10 @@
         "docs-ai/operations/development/testing/ros2-workspace-test-structure.md"
       ],
       "referenced_by": [
+        "docs-ai/operations/development/testing/testing-standards.md",
         "README.md",
         "CLAUDE.md",
-        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
-        "docs-ai/operations/development/testing/testing-standards.md"
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md"
       ],
       "layer_references": {
         "layer1": [],
@@ -1525,7 +1525,7 @@
       "path": "operations/development/testing/testing-standards.md",
       "title": "RosAGV 測試標準規範",
       "description": "為所有 RosAGV 模組提供統一的測試框架標準",
-      "category": "operations",
+      "category": "testing",
       "layer": "layer2",
       "strong_references": 6,
       "weak_references": 5,
@@ -1547,15 +1547,15 @@
         "docs-ai/context/structure/module-index.md"
       ],
       "referenced_by": [
-        "app/web_api_ws/CLAUDE.md",
-        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
-        "app/rcs_ws/CLAUDE.md",
-        "app/tafl_wcs_ws/CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md",
         "app/tafl_ws/CLAUDE.md",
-        "README.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+        "app/web_api_ws/CLAUDE.md",
+        "docs-ai/operations/development/testing/test-file-management.md",
         "docs-ai/context/structure/module-index.md",
-        "docs-ai/operations/development/testing/test-file-management.md"
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1596,7 +1596,7 @@
       "path": "operations/development/testing/ros2-workspace-test-structure.md",
       "title": "ROS 2 工作空間測試結構規範",
       "description": "ROS 2 工作空間中測試檔案的標準組織結構",
-      "category": "operations",
+      "category": "testing",
       "layer": "layer2",
       "strong_references": 2,
       "weak_references": 2,
@@ -1611,9 +1611,9 @@
         "docs-ai/operations/development/testing/testing-standards.md"
       ],
       "referenced_by": [
-        "docs-ai/operations/development/testing/testing-standards.md",
         "app/tafl_wcs_ws/CLAUDE.md",
-        "docs-ai/operations/development/testing/test-file-management.md"
+        "docs-ai/operations/development/testing/test-file-management.md",
+        "docs-ai/operations/development/testing/testing-standards.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1647,7 +1647,7 @@
       "path": "operations/development/testing/testing-procedures.md",
       "title": "ROS 2 測試程序最佳實踐",
       "description": "ROS 2 套件的測試開發和執行",
-      "category": "operations",
+      "category": "testing",
       "layer": "layer2",
       "strong_references": 3,
       "weak_references": 9,
@@ -1673,9 +1673,9 @@
         "app/tafl_wcs_ws/CLAUDE.md",
         "docs-ai/operations/development/ros2/ros2-development.md",
         "docs-ai/README.md",
+        "docs-ai/operations/development/testing/test-file-management.md",
         "README.md",
-        "docs-ai/operations/development/ros2/plc-communication.md",
-        "docs-ai/operations/development/testing/test-file-management.md"
+        "docs-ai/operations/development/ros2/plc-communication.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1724,8 +1724,8 @@
       ],
       "referenced_by": [
         "README.md",
-        "docs-ai/README.md",
-        "docs-ai/operations/development/core/core-principles.md"
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/README.md"
       ],
       "layer_references": {
         "layer1": [],
@@ -1851,15 +1851,15 @@
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
       ],
       "referenced_by": [
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/development/testing/testing-standards.md",
         "CLAUDE.md",
         "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
-        "docs-ai/operations/development/core/documentation-standards.md",
-        "docs-ai/context/system/language-configuration.md",
+        "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md",
+        "docs-ai/operations/development/testing/test-file-management.md",
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
         "README.md",
-        "docs-ai/operations/development/testing/testing-standards.md",
-        "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md",
-        "docs-ai/operations/development/testing/test-file-management.md"
+        "docs-ai/context/system/language-configuration.md"
       ],
       "layer_references": {
         "layer1": [],
@@ -1921,8 +1921,8 @@
       ],
       "referenced_by": [
         "README.md",
-        "docs-ai/operations/development/ros2/plc-communication.md",
-        "docs-ai/context/system/language-configuration.md"
+        "docs-ai/context/system/language-configuration.md",
+        "docs-ai/operations/development/ros2/plc-communication.md"
       ],
       "layer_references": {
         "layer1": [],
@@ -2028,7 +2028,7 @@
         }
       ],
       "size": 8087,
-      "modified": 1759246630.734758,
+      "modified": 1759281825.381663,
       "importance": "common"
     },
     "context/system/dual-environment.md": {
@@ -2075,27 +2075,27 @@
         "docs-ai/knowledge/system/hmi-system-design.md"
       ],
       "referenced_by": [
-        "app/launch_ws/CLAUDE.md",
-        "docs-ai/knowledge/system/hmi-system-design.md",
-        "docs-ai/operations/development/docker-development.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md",
-        "CLAUDE.md",
         "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/context/system/technology-stack.md",
-        "app/shared_constants_ws/CLAUDE.md",
-        "docs-ai/context/structure/module-index.md",
-        "docs-ai/operations/deployment/docker-compose-configuration.md",
-        "docs-ai/operations/deployment/nginx-configuration.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
-        "docs-ai/operations/development/core/documentation-standards.md",
-        "docs-ai/operations/development/web/web-api-launch-management.md",
-        "docs-ai/operations/development/core/core-principles.md",
+        "CLAUDE.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
         "docs-ai/knowledge/agv-domain/wcs-system-design.md",
-        "README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "app/shared_constants_ws/CLAUDE.md",
+        "docs-ai/operations/development/docker-development.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/context/structure/module-index.md",
         "docs-ai/context/system/rosagv-overview.md",
+        "app/launch_ws/CLAUDE.md",
+        "docs-ai/context/system/technology-stack.md",
         ".github/copilot-instructions.md",
+        "README.md",
         "app/path_algorithm/CLAUDE.md",
-        "docs-ai/README.md"
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/knowledge/system/hmi-system-design.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2126,7 +2126,7 @@
         }
       ],
       "size": 8860,
-      "modified": 1758273184.330131,
+      "modified": 1759308621.5222685,
       "importance": "critical"
     },
     "context/system/language-configuration.md": {
@@ -2147,8 +2147,8 @@
         "docs-ai/operations/development/core/documentation-standards.md"
       ],
       "referenced_by": [
-        "README.md",
-        "docs-ai/operations/development/core/documentation-standards.md"
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "README.md"
       ],
       "layer_references": {
         "layer1": [],
@@ -2170,7 +2170,7 @@
         }
       ],
       "size": 2299,
-      "modified": 1758273184.330131,
+      "modified": 1759281825.3819444,
       "importance": "referenced"
     },
     "context/system/rosagv-overview.md": {
@@ -2201,15 +2201,15 @@
         "docs-ai/knowledge/business/eyewear-production-process.md"
       ],
       "referenced_by": [
-        "CLAUDE.md",
-        "app/path_algorithm/CLAUDE.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
         "docs-ai/operations/development/core/documentation-standards.md",
-        "docs-ai/context/system/language-configuration.md",
-        "docs-ai/README.md",
         "app/shared_constants_ws/CLAUDE.md",
+        "CLAUDE.md",
+        "docs-ai/README.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "app/path_algorithm/CLAUDE.md",
+        "docs-ai/context/structure/module-index.md",
         "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/context/system/language-configuration.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2239,7 +2239,7 @@
         }
       ],
       "size": 6093,
-      "modified": 1758273184.3311312,
+      "modified": 1759308621.5222685,
       "importance": "important"
     },
     "context/system/technology-stack.md": {
@@ -2275,22 +2275,22 @@
         "docs-ai/knowledge/agv-domain/vehicle-types.md"
       ],
       "referenced_by": [
-        "CLAUDE.md",
-        "docs-ai/operations/deployment/docker-compose-configuration.md",
+        "app/joystick_ws/CLAUDE.md",
+        "docs-ai/knowledge/protocols/ros2-interfaces.md",
         "docs-ai/context/system/dual-environment.md",
-        "docs-ai/operations/deployment/nginx-configuration.md",
         "docs-ai/operations/development/docker-development.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
-        "docs-ai/knowledge/protocols/ros2-interfaces.md",
-        "app/joystick_ws/CLAUDE.md",
-        "docs-ai/README.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
-        "docs-ai/operations/development/web/web-development.md",
         "docs-ai/knowledge/agv-domain/vehicle-types.md",
-        "README.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "CLAUDE.md",
+        "docs-ai/operations/development/database-operations.md",
         "docs-ai/context/system/rosagv-overview.md",
-        "docs-ai/operations/development/database-operations.md"
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md",
+        "README.md",
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "docs-ai/operations/development/web/web-development.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2312,7 +2312,7 @@
         }
       ],
       "size": 9615,
-      "modified": 1758273184.3311312,
+      "modified": 1759281825.3821294,
       "importance": "important"
     },
     "context/workspaces/agvc-workspaces.md": {
@@ -2346,20 +2346,20 @@
         "docs-ai/knowledge/system/agvui-monitoring-system.md"
       ],
       "referenced_by": [
-        "docs-ai/context/system/dual-environment.md",
-        "app/web_api_ws/CLAUDE.md",
-        "app/kuka_fleet_ws/CLAUDE.md",
         "docs-ai/context/workspaces/agv-workspaces.md",
-        "app/rcs_ws/CLAUDE.md",
-        "docs-ai/operations/development/ros2/ros2-development.md",
-        "docs-ai/README.md",
-        "docs-ai/operations/development/web/web-development.md",
         "app/shared_constants_ws/CLAUDE.md",
-        "README.md",
+        "docs-ai/context/system/dual-environment.md",
         "docs-ai/knowledge/system/agvui-monitoring-system.md",
-        "docs-ai/context/structure/module-index.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/development/database-operations.md",
+        "app/rcs_ws/CLAUDE.md",
         "docs-ai/context/system/rosagv-overview.md",
-        "docs-ai/operations/development/database-operations.md"
+        "app/web_api_ws/CLAUDE.md",
+        "docs-ai/README.md",
+        "docs-ai/context/structure/module-index.md",
+        "README.md",
+        "docs-ai/operations/development/web/web-development.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2389,7 +2389,7 @@
         }
       ],
       "size": 16163,
-      "modified": 1759246630.734758,
+      "modified": 1759308621.5222685,
       "importance": "important"
     },
     "context/workspaces/agv-workspaces.md": {
@@ -2424,19 +2424,19 @@
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
       ],
       "referenced_by": [
-        "app/agv_ws/CLAUDE.md",
-        "docs-ai/context/system/dual-environment.md",
-        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
-        "docs-ai/knowledge/protocols/ros2-interfaces.md",
-        "docs-ai/operations/development/ros2/ros2-development.md",
-        "docs-ai/context/workspaces/agvc-workspaces.md",
-        "docs-ai/README.md",
         "app/shared_constants_ws/CLAUDE.md",
+        "docs-ai/knowledge/protocols/ros2-interfaces.md",
+        "docs-ai/context/system/dual-environment.md",
         "docs-ai/knowledge/agv-domain/vehicle-types.md",
-        "README.md",
-        "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "app/agv_ws/CLAUDE.md",
+        "docs-ai/context/system/rosagv-overview.md",
+        "docs-ai/README.md",
         "docs-ai/context/structure/module-index.md",
-        "docs-ai/context/system/rosagv-overview.md"
+        "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
+        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+        "README.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2460,7 +2460,7 @@
         }
       ],
       "size": 9298,
-      "modified": 1758273184.3311312,
+      "modified": 1759308621.5222685,
       "importance": "important"
     },
     "knowledge/protocols/plc-ros2-interfaces.md": {
@@ -2546,13 +2546,13 @@
         "docs-ai/knowledge/system/rack-rotation-logic.md"
       ],
       "referenced_by": [
-        "app/web_api_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
-        "docs-ai/knowledge/protocols/kuka-fleet-api.md",
-        "docs-ai/knowledge/system/rack-rotation-logic.md",
+        "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/src/web_api/CLAUDE.md",
-        "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/system/rack-rotation-logic.md",
+        "docs-ai/knowledge/protocols/kuka-fleet-api.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2611,17 +2611,17 @@
         "docs-ai/knowledge/protocols/keyence-plc-protocol.md"
       ],
       "referenced_by": [
-        "app/agv_ws/CLAUDE.md",
-        "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
-        "app/web_api_ws/CLAUDE.md",
-        "app/ecs_ws/CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
         "docs-ai/operations/development/ros2/ros2-development.md",
         "app/db_proxy_ws/CLAUDE.md",
-        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
-        "README.md",
-        "app/agv_cmd_service_ws/CLAUDE.md"
+        "app/web_api_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2694,17 +2694,17 @@
         "docs-ai/knowledge/system/rack-rotation-logic.md"
       ],
       "referenced_by": [
-        "app/web_api_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
-        "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
         "docs-ai/knowledge/protocols/kuka-fleet-callback.md",
-        "docs-ai/knowledge/system/rack-rotation-logic.md",
-        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
+        "app/web_api_ws/CLAUDE.md",
         "docs-ai/README.md",
         "app/web_api_ws/src/web_api/CLAUDE.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/system/rack-rotation-logic.md",
         "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/context/workspaces/agvc-workspaces.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2756,11 +2756,11 @@
         "docs-ai/knowledge/protocols/ros2-interfaces.md"
       ],
       "referenced_by": [
-        "app/agv_ws/CLAUDE.md",
-        "app/ecs_ws/CLAUDE.md",
-        "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/operations/guides/system-diagnostics.md",
         "docs-ai/knowledge/protocols/ros2-interfaces.md",
+        "docs-ai/operations/guides/troubleshooting.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "docs-ai/operations/guides/system-diagnostics.md",
         "docs-ai/README.md",
         "README.md",
         "app/keyence_plc_ws/CLAUDE.md"
@@ -2872,18 +2872,18 @@
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
-        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
-        "app/ecs_ws/CLAUDE.md",
-        "app/keyence_plc_ws/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-        "docs-ai/context/structure/module-index.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "app/ecs_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
         "docs-ai/README.md",
-        "README.md",
         "app/agv_cmd_service_ws/CLAUDE.md",
         "app/plc_proxy_ws/CLAUDE.md",
-        "docs-ai/operations/development/ros2/plc-communication.md"
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+        "README.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2944,16 +2944,16 @@
         "docs-ai/knowledge/business/eyewear-production-process.md"
       ],
       "referenced_by": [
-        "app/agv_ws/CLAUDE.md",
-        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
-        "app/path_algorithm/CLAUDE.md",
-        "docs-ai/context/workspaces/agv-workspaces.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
         "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/context/workspaces/agv-workspaces.md",
+        "app/agv_ws/CLAUDE.md",
         "docs-ai/README.md",
-        "README.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
-        "app/agv_cmd_service_ws/CLAUDE.md"
+        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -2986,7 +2986,7 @@
         }
       ],
       "size": 11658,
-      "modified": 1758273184.3311312,
+      "modified": 1759308621.5222685,
       "importance": "important"
     },
     "knowledge/agv-domain/wcs-database-design.md": {
@@ -3016,16 +3016,16 @@
         "docs-ai/knowledge/system/hmi-system-design.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
-        "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
-        "docs-ai/knowledge/system/rack-rotation-logic.md",
         "app/tafl_wcs_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
+        "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
         "app/db_proxy_ws/CLAUDE.md",
-        "docs-ai/knowledge/system/hmi-system-design.md",
         "docs-ai/knowledge/agv-domain/wcs-system-design.md",
-        "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/knowledge/system/hmi-system-design.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/system/rack-rotation-logic.md",
+        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3049,8 +3049,8 @@
           "type": "weak"
         }
       ],
-      "size": 15708,
-      "modified": 1759246630.734758,
+      "size": 15746,
+      "modified": 1759308621.5222685,
       "importance": "important"
     },
     "knowledge/agv-domain/agv-state-machine.md": {
@@ -3072,10 +3072,10 @@
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "app/agv_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
-        "app/agv_cmd_service_ws/CLAUDE.md"
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3098,7 +3098,7 @@
         }
       ],
       "size": 12436,
-      "modified": 1758273184.3311312,
+      "modified": 1759308621.5222685,
       "importance": "common"
     },
     "knowledge/agv-domain/magic-value-analysis.md": {
@@ -3219,11 +3219,11 @@
       "referenced_by": [
         "app/tafl_wcs_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
-        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
-        "app/db_proxy_ws/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/wcs-system-design.md",
-        "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "app/db_proxy_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/context/structure/module-index.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3273,10 +3273,10 @@
         "docs-ai/knowledge/agv-domain/magic-value-analysis.md"
       ],
       "referenced_by": [
-        "app/agv_ws/src/loader_agv/CLAUDE.md",
-        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
         "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
-        "app/agv_ws/src/unloader_agv/CLAUDE.md"
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
+        "app/agv_ws/src/unloader_agv/CLAUDE.md",
+        "app/agv_ws/src/loader_agv/CLAUDE.md"
       ],
       "layer_references": {
         "layer3": [
@@ -3341,15 +3341,15 @@
         "docs-ai/knowledge/system/rack-management-architecture.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/system/rack-management-architecture.md",
-        "docs-ai/knowledge/system/manual-rack-management.md",
-        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
-        "docs-ai/operations/guides/rack-management-guide.md",
         "app/tafl_wcs_ws/CLAUDE.md",
         "docs-ai/knowledge/protocols/kuka-fleet-callback.md",
+        "docs-ai/knowledge/system/manual-rack-management.md",
         "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
         "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/knowledge/system/rack-management-architecture.md",
+        "docs-ai/operations/guides/rack-management-guide.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3459,16 +3459,16 @@
         "docs-ai/knowledge/system/rack-management-architecture.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/system/rack-management-architecture.md",
         "docs-ai/knowledge/system/manual-rack-management.md",
-        "app/sensorpart_ws/CLAUDE.md",
         "app/ecs_ws/CLAUDE.md",
-        "docs-ai/operations/guides/rack-management-guide.md",
+        "app/web_api_ws/src/opui/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/wcs-system-design.md",
+        "app/sensorpart_ws/CLAUDE.md",
+        "docs-ai/context/structure/module-index.md",
         "README.md",
-        "app/web_api_ws/src/opui/CLAUDE.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/knowledge/system/rack-management-architecture.md",
+        "docs-ai/operations/guides/rack-management-guide.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3511,8 +3511,8 @@
           "type": "weak"
         }
       ],
-      "size": 53599,
-      "modified": 1759246630.7357578,
+      "size": 53669,
+      "modified": 1759308621.5229008,
       "importance": "important"
     },
     "knowledge/business/workspace-configuration.md": {
@@ -3539,7 +3539,7 @@
       },
       "references_to": [],
       "size": 7938,
-      "modified": 1759246630.7357578,
+      "modified": 1759308621.5229008,
       "importance": "referenced"
     },
     "knowledge/system/rack-rotation-logic.md": {
@@ -3608,8 +3608,8 @@
         "docs-ai/knowledge/agv-domain/license-table-design.md"
       ],
       "referenced_by": [
-        "README.md",
         "app/web_api_ws/CLAUDE.md",
+        "README.md",
         "docs-ai/knowledge/agv-domain/license-table-design.md"
       ],
       "layer_references": {
@@ -3658,12 +3658,12 @@
         "docs-ai/knowledge/system/rack-management-architecture.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/system/rack-management-architecture.md",
         "app/agv_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
-        "docs-ai/operations/guides/rack-management-guide.md",
         "README.md",
-        "app/agv_cmd_service_ws/CLAUDE.md"
+        "docs-ai/knowledge/system/rack-management-architecture.md",
+        "docs-ai/operations/guides/rack-management-guide.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3715,10 +3715,10 @@
         "docs-ai/context/structure/module-index.md"
       ],
       "referenced_by": [
+        "app/web_api_ws/CLAUDE.md",
         "README.md",
         "app/web_api_ws/src/agvcui/CLAUDE.md",
-        "docs-ai/context/structure/module-index.md",
-        "app/web_api_ws/CLAUDE.md"
+        "docs-ai/context/structure/module-index.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3816,11 +3816,11 @@
         "docs-ai/knowledge/system/tafl/tafl-language-specification.md"
       ],
       "referenced_by": [
+        "app/tafl_ws/CLAUDE.md",
+        "docs-ai/knowledge/system/tafl/tafl-user-guide.md",
         "app/tafl_wcs_ws/CLAUDE.md",
         "docs-ai/knowledge/system/tafl/tafl-language-specification.md",
-        "app/tafl_ws/CLAUDE.md",
-        "README.md",
-        "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3869,10 +3869,10 @@
         "docs-ai/knowledge/system/tafl/tafl-language-specification.md"
       ],
       "referenced_by": [
-        "app/tafl_wcs_ws/CLAUDE.md",
-        "docs-ai/knowledge/system/tafl/tafl-language-specification.md",
         "docs-ai/knowledge/system/tafl/tafl-api-reference.md",
         "app/tafl_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "docs-ai/knowledge/system/tafl/tafl-language-specification.md",
         "README.md"
       ],
       "layer_references": {
@@ -3932,15 +3932,15 @@
         "docs-ai/knowledge/system/tafl/tafl-editor-specification.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/system/manual-rack-management.md",
-        "docs-ai/operations/guides/rack-management-guide.md",
-        "docs-ai/knowledge/system/tafl/tafl-editor-specification.md",
-        "app/tafl_wcs_ws/CLAUDE.md",
         "docs-ai/knowledge/system/tafl/tafl-api-reference.md",
         "app/tafl_ws/CLAUDE.md",
+        "docs-ai/knowledge/system/tafl/tafl-user-guide.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "docs-ai/knowledge/system/manual-rack-management.md",
         "docs-ai/knowledge/agv-domain/wcs-system-design.md",
         "README.md",
-        "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
+        "docs-ai/knowledge/system/tafl/tafl-editor-specification.md",
+        "docs-ai/operations/guides/rack-management-guide.md"
       ],
       "layer_references": {
         "layer2": [
@@ -3991,11 +3991,11 @@
       ],
       "referenced_by": [
         "docs-ai/knowledge/system/tafl/tafl-api-reference.md",
-        "docs-ai/knowledge/system/tafl/tafl-language-specification.md",
         "app/tafl_ws/CLAUDE.md",
-        "README.md",
         "app/web_api_ws/src/agvcui/CLAUDE.md",
-        "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
+        "docs-ai/knowledge/system/tafl/tafl-user-guide.md",
+        "docs-ai/knowledge/system/tafl/tafl-language-specification.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4012,7 +4012,7 @@
         }
       ],
       "size": 17599,
-      "modified": 1759246630.7357578,
+      "modified": 1759308621.5229008,
       "importance": "common"
     }
   },
@@ -4067,33 +4067,33 @@
         "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
-        "app/launch_ws/CLAUDE.md",
-        "docs-ai/operations/development/testing/testing-procedures.md",
-        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
-        "docs-ai/knowledge/agv-domain/vehicle-types.md",
-        "docs-ai/operations/development/docker-development.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md",
-        "app/web_api_ws/CLAUDE.md",
-        "app/kuka_fleet_ws/CLAUDE.md",
-        "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/operations/development/web/web-development.md",
-        "docs-ai/operations/development/ros2/plc-communication.md",
-        "docs-ai/operations/deployment/docker-compose-configuration.md",
         "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
-        "docs-ai/operations/deployment/nginx-configuration.md",
-        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-        "app/rcs_ws/CLAUDE.md",
-        "docs-ai/operations/development/web/web-api-launch-management.md",
-        "README.md",
-        "docs-ai/knowledge/system/agvui-monitoring-system.md",
-        "app/keyence_plc_ws/CLAUDE.md",
+        "docs-ai/knowledge/system/tafl/tafl-user-guide.md",
+        "docs-ai/operations/guides/troubleshooting.md",
         "docs-ai/operations/development/database-operations.md",
-        "app/path_algorithm/CLAUDE.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
         "docs-ai/README.md",
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "docs-ai/operations/development/docker-development.md",
         "docs-ai/operations/tools/unified-tools.md",
-        "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+        "app/path_algorithm/CLAUDE.md",
+        "README.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md",
+        "docs-ai/operations/development/web/web-development.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4134,8 +4134,8 @@
           "type": "weak"
         }
       ],
-      "size": 18230,
-      "modified": 1759246630.736758,
+      "size": 18224,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     {
@@ -4180,24 +4180,24 @@
         "docs-ai/knowledge/agv-domain/vehicle-types.md"
       ],
       "referenced_by": [
-        "app/agv_ws/CLAUDE.md",
-        "app/kuka_fleet_ws/CLAUDE.md",
-        "app/sensorpart_ws/CLAUDE.md",
-        "docs-ai/operations/development/docker-development.md",
-        "app/path_algorithm/CLAUDE.md",
-        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
         "docs-ai/context/workspaces/agv-workspaces.md",
-        "docs-ai/operations/development/testing/testing-procedures.md",
-        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
         "docs-ai/knowledge/protocols/ros2-interfaces.md",
-        "docs-ai/README.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/operations/development/docker-development.md",
         "docs-ai/knowledge/agv-domain/vehicle-types.md",
-        "README.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md",
         "docs-ai/operations/development/testing/testing-standards.md",
-        "app/keyence_plc_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/README.md",
+        "app/path_algorithm/CLAUDE.md",
         "app/plc_proxy_ws/CLAUDE.md",
-        "docs-ai/operations/development/ros2/plc-communication.md"
+        "app/sensorpart_ws/CLAUDE.md",
+        "README.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4232,7 +4232,7 @@
         }
       ],
       "size": 10278,
-      "modified": 1759246630.7357578,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     {
@@ -4270,18 +4270,18 @@
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
-        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
-        "app/ecs_ws/CLAUDE.md",
-        "app/keyence_plc_ws/CLAUDE.md",
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-        "docs-ai/context/structure/module-index.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "app/ecs_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
         "docs-ai/README.md",
-        "README.md",
         "app/agv_cmd_service_ws/CLAUDE.md",
         "app/plc_proxy_ws/CLAUDE.md",
-        "docs-ai/operations/development/ros2/plc-communication.md"
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+        "README.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4355,27 +4355,27 @@
         "docs-ai/knowledge/system/hmi-system-design.md"
       ],
       "referenced_by": [
-        "app/launch_ws/CLAUDE.md",
-        "docs-ai/knowledge/system/hmi-system-design.md",
-        "docs-ai/operations/development/docker-development.md",
-        "docs-ai/knowledge/protocols/zenoh-rmw.md",
-        "CLAUDE.md",
         "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/context/system/technology-stack.md",
-        "app/shared_constants_ws/CLAUDE.md",
-        "docs-ai/context/structure/module-index.md",
-        "docs-ai/operations/deployment/docker-compose-configuration.md",
-        "docs-ai/operations/deployment/nginx-configuration.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
-        "docs-ai/operations/development/core/documentation-standards.md",
-        "docs-ai/operations/development/web/web-api-launch-management.md",
-        "docs-ai/operations/development/core/core-principles.md",
+        "CLAUDE.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
         "docs-ai/knowledge/agv-domain/wcs-system-design.md",
-        "README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "app/shared_constants_ws/CLAUDE.md",
+        "docs-ai/operations/development/docker-development.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/context/structure/module-index.md",
         "docs-ai/context/system/rosagv-overview.md",
+        "app/launch_ws/CLAUDE.md",
+        "docs-ai/context/system/technology-stack.md",
         ".github/copilot-instructions.md",
+        "README.md",
         "app/path_algorithm/CLAUDE.md",
-        "docs-ai/README.md"
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/knowledge/system/hmi-system-design.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4406,7 +4406,7 @@
         }
       ],
       "size": 8860,
-      "modified": 1758273184.330131,
+      "modified": 1759308621.5222685,
       "importance": "critical"
     },
     {
@@ -4448,21 +4448,21 @@
         "docs-ai/knowledge/business/eyewear-production-process.md"
       ],
       "referenced_by": [
-        "app/web_api_ws/CLAUDE.md",
-        "docs-ai/knowledge/agv-domain/license-table-design.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md",
         "docs-ai/operations/guides/troubleshooting.md",
-        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
-        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/knowledge/agv-domain/license-table-design.md",
         "docs-ai/operations/development/testing/testing-procedures.md",
-        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
         "app/db_proxy_ws/CLAUDE.md",
         "docs-ai/README.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
-        "docs-ai/operations/development/web/web-development.md",
-        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "app/web_api_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/operations/development/web/web-development.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4528,13 +4528,13 @@
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
       ],
       "referenced_by": [
-        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
         "docs-ai/context/structure/module-index.md",
-        "README.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
-        "app/keyence_plc_ws/CLAUDE.md",
-        "app/plc_proxy_ws/CLAUDE.md"
+        "README.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4625,17 +4625,17 @@
         "docs-ai/knowledge/system/rack-rotation-logic.md"
       ],
       "referenced_by": [
-        "app/web_api_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
-        "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
-        "docs-ai/knowledge/business/eyewear-production-process.md",
         "docs-ai/knowledge/protocols/kuka-fleet-callback.md",
-        "docs-ai/knowledge/system/rack-rotation-logic.md",
-        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
+        "app/web_api_ws/CLAUDE.md",
         "docs-ai/README.md",
         "app/web_api_ws/src/web_api/CLAUDE.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/system/rack-rotation-logic.md",
         "README.md",
-        "docs-ai/context/structure/module-index.md"
+        "docs-ai/context/workspaces/agvc-workspaces.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4699,21 +4699,21 @@
         "docs-ai/knowledge/system/agvui-monitoring-system.md"
       ],
       "referenced_by": [
-        "CLAUDE.md",
-        ".github/copilot-instructions.md",
-        "app/path_algorithm/CLAUDE.md",
-        "docs-ai/knowledge/system/agvui-monitoring-system.md",
-        "app/rcs_ws/CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md",
-        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md",
+        "docs-ai/operations/development/testing/testing-standards.md",
+        "CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/tools/unified-tools.md",
+        "app/rcs_ws/CLAUDE.md",
         "docs-ai/README.md",
         "docs-ai/operations/development/web/web-api-launch-management.md",
-        "docs-ai/operations/tools/unified-tools.md",
+        "app/path_algorithm/CLAUDE.md",
+        ".github/copilot-instructions.md",
         "README.md",
-        "docs-ai/operations/development/core/core-principles.md",
-        "docs-ai/operations/development/testing/testing-standards.md",
-        "docs-ai/knowledge/agv-domain/vehicle-types.md",
         "docs-ai/operations/development/ros2/plc-communication.md"
       ],
       "layer_references": {
@@ -4747,7 +4747,7 @@
         }
       ],
       "size": 12472,
-      "modified": 1759246630.7357578,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     {
@@ -4780,17 +4780,17 @@
         "docs-ai/knowledge/protocols/keyence-plc-protocol.md"
       ],
       "referenced_by": [
-        "app/agv_ws/CLAUDE.md",
-        "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
-        "app/web_api_ws/CLAUDE.md",
-        "app/ecs_ws/CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
         "docs-ai/operations/development/ros2/ros2-development.md",
         "app/db_proxy_ws/CLAUDE.md",
-        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
-        "README.md",
-        "app/agv_cmd_service_ws/CLAUDE.md"
+        "app/web_api_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -4862,15 +4862,15 @@
         "docs-ai/operations/development/core/documentation-standards.md"
       ],
       "referenced_by": [
+        "README.md",
         "CLAUDE.md",
-        "app/path_algorithm/CLAUDE.md",
+        "docs-ai/operations/tools/unified-tools.md",
         "app/rcs_ws/CLAUDE.md",
-        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
         "docs-ai/operations/guides/system-diagnostics.md",
         "docs-ai/README.md",
-        "docs-ai/operations/guides/performance-monitoring.md",
-        "docs-ai/operations/tools/unified-tools.md",
-        "README.md"
+        "app/path_algorithm/CLAUDE.md",
+        "docs-ai/operations/development/core/documentation-standards.md"
       ],
       "layer_references": {
         "layer2": [
@@ -5206,8 +5206,8 @@
           "type": "weak"
         }
       ],
-      "size": 16796,
-      "modified": 1759246630.734758,
+      "size": 16790,
+      "modified": 1759308621.5221908,
       "importance": "referenced"
     },
     {
@@ -5284,7 +5284,7 @@
       },
       "references_to": [],
       "size": 7938,
-      "modified": 1759246630.7357578,
+      "modified": 1759308621.5229008,
       "importance": "referenced"
     }
   ],
@@ -5340,33 +5340,33 @@
           "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
         ],
         "referenced_by": [
-          "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
-          "app/launch_ws/CLAUDE.md",
-          "docs-ai/operations/development/testing/testing-procedures.md",
-          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
-          "docs-ai/operations/guides/performance-monitoring.md",
-          "docs-ai/knowledge/agv-domain/vehicle-types.md",
-          "docs-ai/operations/development/docker-development.md",
-          "docs-ai/knowledge/protocols/zenoh-rmw.md",
-          "app/web_api_ws/CLAUDE.md",
-          "app/kuka_fleet_ws/CLAUDE.md",
-          "docs-ai/operations/guides/troubleshooting.md",
-          "docs-ai/operations/development/web/web-development.md",
-          "docs-ai/operations/development/ros2/plc-communication.md",
-          "docs-ai/operations/deployment/docker-compose-configuration.md",
           "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
-          "docs-ai/operations/deployment/nginx-configuration.md",
-          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-          "app/rcs_ws/CLAUDE.md",
-          "docs-ai/operations/development/web/web-api-launch-management.md",
-          "README.md",
-          "docs-ai/knowledge/system/agvui-monitoring-system.md",
-          "app/keyence_plc_ws/CLAUDE.md",
+          "docs-ai/knowledge/system/tafl/tafl-user-guide.md",
+          "docs-ai/operations/guides/troubleshooting.md",
           "docs-ai/operations/development/database-operations.md",
-          "app/path_algorithm/CLAUDE.md",
+          "docs-ai/knowledge/protocols/zenoh-rmw.md",
           "docs-ai/README.md",
+          "docs-ai/operations/deployment/nginx-configuration.md",
+          "app/keyence_plc_ws/CLAUDE.md",
+          "docs-ai/operations/development/docker-development.md",
           "docs-ai/operations/tools/unified-tools.md",
-          "docs-ai/knowledge/system/tafl/tafl-user-guide.md"
+          "docs-ai/operations/development/ros2/plc-communication.md",
+          "docs-ai/knowledge/system/agvui-monitoring-system.md",
+          "app/rcs_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md",
+          "app/launch_ws/CLAUDE.md",
+          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+          "app/path_algorithm/CLAUDE.md",
+          "README.md",
+          "docs-ai/knowledge/agv-domain/vehicle-types.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "docs-ai/operations/development/testing/testing-procedures.md",
+          "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
+          "docs-ai/operations/guides/performance-monitoring.md",
+          "docs-ai/operations/development/web/web-api-launch-management.md",
+          "docs-ai/operations/deployment/docker-compose-configuration.md",
+          "docs-ai/operations/development/web/web-development.md"
         ],
         "layer_references": {
           "layer2": [
@@ -5407,8 +5407,8 @@
             "type": "weak"
           }
         ],
-        "size": 18230,
-        "modified": 1759246630.736758,
+        "size": 18224,
+        "modified": 1759308621.5229008,
         "importance": "critical"
       },
       {
@@ -5455,27 +5455,27 @@
           "docs-ai/knowledge/system/hmi-system-design.md"
         ],
         "referenced_by": [
-          "app/launch_ws/CLAUDE.md",
-          "docs-ai/knowledge/system/hmi-system-design.md",
-          "docs-ai/operations/development/docker-development.md",
-          "docs-ai/knowledge/protocols/zenoh-rmw.md",
-          "CLAUDE.md",
           "docs-ai/operations/guides/troubleshooting.md",
-          "docs-ai/context/system/technology-stack.md",
-          "app/shared_constants_ws/CLAUDE.md",
-          "docs-ai/context/structure/module-index.md",
-          "docs-ai/operations/deployment/docker-compose-configuration.md",
-          "docs-ai/operations/deployment/nginx-configuration.md",
-          "docs-ai/knowledge/business/eyewear-production-process.md",
-          "docs-ai/operations/development/core/documentation-standards.md",
-          "docs-ai/operations/development/web/web-api-launch-management.md",
-          "docs-ai/operations/development/core/core-principles.md",
+          "CLAUDE.md",
+          "docs-ai/knowledge/protocols/zenoh-rmw.md",
           "docs-ai/knowledge/agv-domain/wcs-system-design.md",
-          "README.md",
+          "docs-ai/README.md",
+          "docs-ai/operations/deployment/nginx-configuration.md",
+          "app/shared_constants_ws/CLAUDE.md",
+          "docs-ai/operations/development/docker-development.md",
+          "docs-ai/knowledge/business/eyewear-production-process.md",
+          "docs-ai/context/structure/module-index.md",
           "docs-ai/context/system/rosagv-overview.md",
+          "app/launch_ws/CLAUDE.md",
+          "docs-ai/context/system/technology-stack.md",
           ".github/copilot-instructions.md",
+          "README.md",
           "app/path_algorithm/CLAUDE.md",
-          "docs-ai/README.md"
+          "docs-ai/operations/development/core/documentation-standards.md",
+          "docs-ai/operations/development/core/core-principles.md",
+          "docs-ai/operations/development/web/web-api-launch-management.md",
+          "docs-ai/knowledge/system/hmi-system-design.md",
+          "docs-ai/operations/deployment/docker-compose-configuration.md"
         ],
         "layer_references": {
           "layer2": [
@@ -5506,7 +5506,7 @@
           }
         ],
         "size": 8860,
-        "modified": 1758273184.330131,
+        "modified": 1759308621.5222685,
         "importance": "critical"
       },
       {
@@ -5547,21 +5547,21 @@
           "docs-ai/knowledge/system/agvui-monitoring-system.md"
         ],
         "referenced_by": [
-          "CLAUDE.md",
-          ".github/copilot-instructions.md",
-          "app/path_algorithm/CLAUDE.md",
-          "docs-ai/knowledge/system/agvui-monitoring-system.md",
-          "app/rcs_ws/CLAUDE.md",
           "docs-ai/operations/development/core/documentation-standards.md",
-          "docs-ai/operations/development/ros2/ros2-development.md",
+          "docs-ai/knowledge/agv-domain/vehicle-types.md",
+          "docs-ai/operations/development/core/core-principles.md",
+          "docs-ai/knowledge/system/agvui-monitoring-system.md",
+          "docs-ai/operations/development/testing/testing-standards.md",
+          "CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "docs-ai/operations/development/ros2/ros2-development.md",
+          "docs-ai/operations/tools/unified-tools.md",
+          "app/rcs_ws/CLAUDE.md",
           "docs-ai/README.md",
           "docs-ai/operations/development/web/web-api-launch-management.md",
-          "docs-ai/operations/tools/unified-tools.md",
+          "app/path_algorithm/CLAUDE.md",
+          ".github/copilot-instructions.md",
           "README.md",
-          "docs-ai/operations/development/core/core-principles.md",
-          "docs-ai/operations/development/testing/testing-standards.md",
-          "docs-ai/knowledge/agv-domain/vehicle-types.md",
           "docs-ai/operations/development/ros2/plc-communication.md"
         ],
         "layer_references": {
@@ -5595,7 +5595,7 @@
           }
         ],
         "size": 12472,
-        "modified": 1759246630.7357578,
+        "modified": 1759308621.5229008,
         "importance": "critical"
       },
       {
@@ -5631,15 +5631,15 @@
           "docs-ai/operations/development/core/documentation-standards.md"
         ],
         "referenced_by": [
+          "README.md",
           "CLAUDE.md",
-          "app/path_algorithm/CLAUDE.md",
+          "docs-ai/operations/tools/unified-tools.md",
           "app/rcs_ws/CLAUDE.md",
-          "docs-ai/operations/development/core/documentation-standards.md",
+          "docs-ai/operations/guides/performance-monitoring.md",
           "docs-ai/operations/guides/system-diagnostics.md",
           "docs-ai/README.md",
-          "docs-ai/operations/guides/performance-monitoring.md",
-          "docs-ai/operations/tools/unified-tools.md",
-          "README.md"
+          "app/path_algorithm/CLAUDE.md",
+          "docs-ai/operations/development/core/documentation-standards.md"
         ],
         "layer_references": {
           "layer2": [
@@ -5709,14 +5709,14 @@
           "docs-ai/operations/development/core/core-principles.md"
         ],
         "referenced_by": [
-          "CLAUDE.md",
-          ".github/copilot-instructions.md",
-          "app/rcs_ws/CLAUDE.md",
-          "app/launch_ws/CLAUDE.md",
-          "docs-ai/operations/development/web/web-api-launch-management.md",
           "docs-ai/operations/development/core/core-principles.md",
-          "README.md",
-          "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md"
+          "CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
+          "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md",
+          "docs-ai/operations/development/web/web-api-launch-management.md",
+          "app/launch_ws/CLAUDE.md",
+          ".github/copilot-instructions.md",
+          "README.md"
         ],
         "layer_references": {
           "layer2": [
@@ -5745,7 +5745,7 @@
           }
         ],
         "size": 9320,
-        "modified": 1759246630.736758,
+        "modified": 1759308621.5229008,
         "importance": "important"
       }
     ],
@@ -5792,24 +5792,24 @@
           "docs-ai/knowledge/agv-domain/vehicle-types.md"
         ],
         "referenced_by": [
-          "app/agv_ws/CLAUDE.md",
-          "app/kuka_fleet_ws/CLAUDE.md",
-          "app/sensorpart_ws/CLAUDE.md",
-          "docs-ai/operations/development/docker-development.md",
-          "app/path_algorithm/CLAUDE.md",
-          "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
           "docs-ai/context/workspaces/agv-workspaces.md",
-          "docs-ai/operations/development/testing/testing-procedures.md",
-          "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
           "docs-ai/knowledge/protocols/ros2-interfaces.md",
-          "docs-ai/README.md",
+          "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+          "docs-ai/operations/development/docker-development.md",
           "docs-ai/knowledge/agv-domain/vehicle-types.md",
-          "README.md",
-          "docs-ai/knowledge/protocols/zenoh-rmw.md",
           "docs-ai/operations/development/testing/testing-standards.md",
-          "app/keyence_plc_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "docs-ai/operations/development/testing/testing-procedures.md",
+          "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+          "docs-ai/knowledge/protocols/zenoh-rmw.md",
+          "docs-ai/README.md",
+          "app/path_algorithm/CLAUDE.md",
           "app/plc_proxy_ws/CLAUDE.md",
-          "docs-ai/operations/development/ros2/plc-communication.md"
+          "app/sensorpart_ws/CLAUDE.md",
+          "README.md",
+          "docs-ai/operations/development/ros2/plc-communication.md",
+          "app/keyence_plc_ws/CLAUDE.md"
         ],
         "layer_references": {
           "layer2": [
@@ -5844,7 +5844,7 @@
           }
         ],
         "size": 10278,
-        "modified": 1759246630.7357578,
+        "modified": 1759308621.5229008,
         "importance": "critical"
       },
       {
@@ -5882,18 +5882,18 @@
           "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
         ],
         "referenced_by": [
-          "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
-          "docs-ai/knowledge/agv-domain/agv-state-machine.md",
-          "app/ecs_ws/CLAUDE.md",
-          "app/keyence_plc_ws/CLAUDE.md",
           "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-          "docs-ai/context/structure/module-index.md",
           "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+          "app/ecs_ws/CLAUDE.md",
+          "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
           "docs-ai/README.md",
-          "README.md",
           "app/agv_cmd_service_ws/CLAUDE.md",
           "app/plc_proxy_ws/CLAUDE.md",
-          "docs-ai/operations/development/ros2/plc-communication.md"
+          "docs-ai/context/structure/module-index.md",
+          "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+          "README.md",
+          "docs-ai/operations/development/ros2/plc-communication.md",
+          "app/keyence_plc_ws/CLAUDE.md"
         ],
         "layer_references": {
           "layer2": [
@@ -5962,21 +5962,21 @@
           "docs-ai/knowledge/business/eyewear-production-process.md"
         ],
         "referenced_by": [
-          "app/web_api_ws/CLAUDE.md",
-          "docs-ai/knowledge/agv-domain/license-table-design.md",
+          "docs-ai/context/workspaces/agvc-workspaces.md",
           "docs-ai/operations/guides/troubleshooting.md",
-          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
-          "docs-ai/knowledge/business/eyewear-production-process.md",
-          "docs-ai/operations/guides/system-diagnostics.md",
+          "docs-ai/knowledge/agv-domain/license-table-design.md",
           "docs-ai/operations/development/testing/testing-procedures.md",
-          "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+          "docs-ai/operations/guides/system-diagnostics.md",
+          "docs-ai/operations/guides/performance-monitoring.md",
           "app/db_proxy_ws/CLAUDE.md",
           "docs-ai/README.md",
-          "docs-ai/operations/guides/performance-monitoring.md",
-          "docs-ai/operations/development/web/web-development.md",
-          "docs-ai/context/workspaces/agvc-workspaces.md",
+          "app/web_api_ws/CLAUDE.md",
+          "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+          "docs-ai/knowledge/business/eyewear-production-process.md",
+          "docs-ai/context/structure/module-index.md",
+          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
           "README.md",
-          "docs-ai/context/structure/module-index.md"
+          "docs-ai/operations/development/web/web-development.md"
         ],
         "layer_references": {
           "layer2": [
@@ -6042,13 +6042,13 @@
           "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
         ],
         "referenced_by": [
-          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
           "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
           "docs-ai/context/structure/module-index.md",
-          "README.md",
+          "app/plc_proxy_ws/CLAUDE.md",
+          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
           "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
-          "app/keyence_plc_ws/CLAUDE.md",
-          "app/plc_proxy_ws/CLAUDE.md"
+          "README.md",
+          "app/keyence_plc_ws/CLAUDE.md"
         ],
         "layer_references": {
           "layer2": [
@@ -6139,17 +6139,17 @@
           "docs-ai/knowledge/system/rack-rotation-logic.md"
         ],
         "referenced_by": [
-          "app/web_api_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
-          "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
-          "docs-ai/knowledge/business/eyewear-production-process.md",
           "docs-ai/knowledge/protocols/kuka-fleet-callback.md",
-          "docs-ai/knowledge/system/rack-rotation-logic.md",
-          "docs-ai/context/workspaces/agvc-workspaces.md",
+          "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
+          "app/web_api_ws/CLAUDE.md",
           "docs-ai/README.md",
           "app/web_api_ws/src/web_api/CLAUDE.md",
+          "docs-ai/knowledge/business/eyewear-production-process.md",
+          "docs-ai/context/structure/module-index.md",
+          "docs-ai/knowledge/system/rack-rotation-logic.md",
           "README.md",
-          "docs-ai/context/structure/module-index.md"
+          "docs-ai/context/workspaces/agvc-workspaces.md"
         ],
         "layer_references": {
           "layer2": [

@@ -4,6 +4,7 @@
 - **API 服務**: Port 8000 (FastAPI + Socket.IO)
 - **AGVCUI**: Port 8001 (管理員界面)
 - **OPUI**: Port 8002 (操作員界面)
+- **AGVUI**: Port 8003 (AGV 車載監控)
 - **反向代理**: Nginx (Port 80)
 
 ## 服務管理
@@ -154,6 +155,7 @@ curl -X POST http://localhost:8000/api/v1/agvs \
 # 界面訪問
 http://localhost:8001  # AGVCUI
 http://localhost:8002  # OPUI
+http://localhost:8003  # AGVUI
 ```
 
 ## Nginx 配置
@@ -191,7 +193,7 @@ docker compose -f docker-compose.agvc.yml logs agvc_server
 ### 端口衝突
 ```bash
 # 檢查端口
-ss -tulpn | grep -E "(8000|8001|8002)"
+ss -tulpn | grep -E "(8000|8001|8002|8003)"
 
 # 停止衝突服務
 sudo kill -9 <PID>
@@ -208,7 +210,7 @@ sio = socketio.AsyncServer(
 
 ## 關鍵規則
 1. **統一管理**: 使用 manage_web_api_launch 管理服務
-2. **端口分配**: 8000=API, 8001=AGVCUI, 8002=OPUI
+2. **端口分配**: 8000=API, 8001=AGVCUI, 8002=OPUI, 8003=AGVUI
 3. **CORS 設定**: 開發環境可用 "*"，生產需指定
 4. **資料驗證**: 使用 Pydantic/SQLModel
 5. **重啟優先**: 修改後用 restart 而非 stop+start

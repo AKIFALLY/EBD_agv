@@ -46,7 +46,7 @@ show_help() {
     echo -e "  ${GREEN}ports${NC}     - 檢查端口佔用情況"
     echo -e "  ${GREEN}resources${NC} - 檢查容器資源使用"
     echo -e "  ${GREEN}network${NC}   - 檢查網路配置"
-    echo -e "  ${GREEN}health${NC}    - 智能健康狀態判斷"
+    echo -e "  ${GREEN}health${NC}    - 健康狀態判斷"
     echo -e "  ${GREEN}summary${NC}   - 簡要狀態摘要"
     echo ""
     echo -e "${YELLOW}範例:${NC}"
@@ -339,7 +339,7 @@ check_network_config() {
 # ============================================================================
 
 check_intelligent_health() {
-    echo -e "${CYAN}🏥 智能健康狀態判斷${NC}"
+    echo -e "${CYAN}🏥 健康狀態判斷${NC}"
     echo -e "${CYAN}==================${NC}"
     
     local total_score=0

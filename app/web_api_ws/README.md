@@ -1256,7 +1256,7 @@ ls -la /app/web_api_ws/src/opui/opui/frontend/templates/
   - [ ] 實現 Works 搜尋和分頁功能
 - [ ] **優化 Socket.IO 效能** (1 週)
   - [ ] 優化 AGVCUI 定期通知頻率 (目前 5-15 秒間隔)
-  - [ ] 實現更智能的資料更新策略
+  - [ ] 實現更好的資料更新策略
   - [ ] 新增連線狀態監控和自動重連
 - [ ] **擴展測試覆蓋** (2 週)
   - [ ] 新增 PLC API 測試

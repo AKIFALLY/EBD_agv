@@ -116,7 +116,7 @@ class IndustrialAGVNode(Node):
 
 ### 工作空間管理最佳實踐
 
-#### 智能載入系統
+#### 自動載入系統
 ```bash
 # 自動檢測並載入對應工作空間
 all_source                    # 或別名: sa
@@ -132,8 +132,8 @@ printenv | rg ROS            # 檢查 ROS 2 環境變數
 
 #### 建置管理策略
 ```bash
-# 智能建置系統
-build_all                    # 智能建置腳本
+# 自動建置系統
+build_all                    # 自動建置腳本
 
 # 增量建置最佳化
 colcon build --packages-select-modified

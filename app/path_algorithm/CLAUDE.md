@@ -225,7 +225,7 @@ StationID:
 ### 快速開始
 ```bash
 # 進入容器並載入工作空間
-all_source  # 智能載入
+all_source  # 自動載入
 cd /app/path_algorithm
 
 # 建置與執行 (注意：需直接執行 Python 檔案)

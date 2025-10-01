@@ -86,7 +86,7 @@ agvc_enter
 ```bash
 # [容器內] 環境設置
 source /app/setup.bash      # 載入基本環境
-all_source                  # 智能載入工作空間 (別名: sa)
+all_source                  # 自動載入工作空間 (別名: sa)
 agv_source                  # 載入 AGV 工作空間
 agvc_source                 # 載入 AGVC 工作空間
 

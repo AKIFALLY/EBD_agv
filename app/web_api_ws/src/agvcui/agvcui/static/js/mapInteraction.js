@@ -522,7 +522,7 @@ export const mapInteraction = (() => {
                                     <div>
                                         <p class="title is-6">${task.name || `任務 ${task.id}`}</p>
                                         <p class="subtitle is-7">
-                                            <span class="tag is-small is-info">狀態 ${task.status_id || 'N/A'}</span>
+                                            <span class="tag is-small is-info">狀態 ${task.status_id ?? 'N/A'}</span>
                                             ${task.agv_id ? `<span class="tag is-small is-light">AGV ${task.agv_id}</span>` : ''}
                                         </p>
                                     </div>

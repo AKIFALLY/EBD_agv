@@ -124,7 +124,7 @@ Loader AGV 結構 (基於 loader_agv 代碼)
 ### 實際技術特點
 - **完整實作**: 具備完整的測試套件和實作
 - **多工位支援**: 支援 4 種不同工位的載料操作
-- **端口管理**: 智能 AGV 端口狀態管理和分配
+- **端口管理**: 自動 AGV 端口狀態管理和分配
 - **參數化控制**: LoaderRobotParameter 提供靈活配置
 
 ### 實際控制邏輯特性
@@ -175,7 +175,7 @@ class RobotContext(BaseContext):
 - **機械臂**: Robot 控制系統 (共用 agv_base.robot.Robot)
 - **工作流程**: Take/Put Pre Dryer, Take/Put Oven, Take/Put Boxout Transfer
 - **完整度**: 40% 實作，基礎架構完整
-- **分揀功能**: 智能分揀和處理邏輯
+- **分揀功能**: 自動分揀和處理邏輯
 
 ### 實際機械結構
 ```
@@ -207,7 +207,7 @@ Unloader AGV 結構 (基於 unloader_agv 代碼)
 - **Take/Put Pre Dryer**: 預乾燥機的雙向卸料操作
 - **Take/Put Oven**: 烘乾機的雙向卸料操作
 - **Take/Put Boxout Transfer**: 出口傳送箱的雙向操作
-- **分揀功能**: 智能分揀和處理邏輯
+- **分揀功能**: 自動分揀和處理邏輯
 - **工作 ID 範圍**: 1-40 (4個主要流程)
 
 ### 實際技術特點

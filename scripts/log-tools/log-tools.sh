@@ -35,11 +35,11 @@ show_log_tools_header() {
 
 show_log_tools_help() {
     show_log_tools_header
-    
+
     echo -e "${YELLOW}📦 已載入的工具:${NC}"
-    echo -e "  • log-analyzer.sh    - 智能日誌分析"
+    echo -e "  • log-analyzer.sh    - 日誌分析"
     echo ""
-    
+
     echo -e "${YELLOW}🚀 快速操作命令:${NC}"
     echo -e "  ${GREEN}log_analyze${NC}         - 分析指定來源日誌"
     echo -e "  ${GREEN}log_quick_scan${NC}      - 快速掃描所有容器錯誤"

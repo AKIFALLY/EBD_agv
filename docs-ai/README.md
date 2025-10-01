@@ -237,7 +237,7 @@ docs-ai/operations/guides/system-diagnostics.md
 docs-ai/operations/guides/troubleshooting.md
 ```
 
-## 🎯 智能選擇指南
+## 🎯 選擇指南
 
 ### 根據任務類型選擇文檔組合
 

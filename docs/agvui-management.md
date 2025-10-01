@@ -52,7 +52,7 @@ AUTO_START_AGVUI=true  # 設定為 true 啟用自動啟動，false 停用
 
 ### 即時更新
 - 每秒自動更新狀態資料
-- 智能 DOM 更新策略，不影響捲動位置
+- DOM 更新策略，不影響捲動位置
 - Socket.IO 即時通訊
 
 ### 視覺化顯示

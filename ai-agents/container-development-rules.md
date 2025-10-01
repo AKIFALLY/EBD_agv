@@ -22,7 +22,7 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash
 ## 環境載入
 ```bash
 # [容器內] 環境載入
-all_source    # 或 sa (智能載入)
+all_source    # 或 sa (自動載入)
 agv_source    # AGV 工作空間
 agvc_source   # AGVC 工作空間
 ```
@@ -65,7 +65,11 @@ check_zenoh_status
 
 ## 網路配置
 - **Zenoh Router**: Port 7447
-- **Web API**: Port 8000-8002
+- **Web 服務**: Port 8000-8003
+  - 8000: API Gateway (FastAPI + Socket.IO)
+  - 8001: AGVCUI (管理員界面)
+  - 8002: OPUI (操作員界面)
+  - 8003: AGVUI (AGV 車載監控)
 - **PostgreSQL**: Port 5432
 - **跨容器通訊**: 透過 Zenoh RMW
 

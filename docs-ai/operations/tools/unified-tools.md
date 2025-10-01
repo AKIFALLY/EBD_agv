@@ -113,7 +113,7 @@ source scripts/dev-tools/dev-tools.sh         # 開發工具集
 system_health              # 完整健康檢查
 network_troubleshoot       # 網路通訊診斷
 log_analyze agv           # AGV 日誌分析
-dev_build                 # 智能建置
+dev_build                 # 自動建置
 ```
 
 ## 📦 第三部分：容器內工具（進入容器後）
@@ -132,7 +132,7 @@ agvc_enter
 ```bash
 # [容器內] 環境設置
 source /app/setup.bash    # 載入基本環境
-all_source                # 智能載入工作空間 (別名: sa)
+all_source                # 自動載入工作空間 (別名: sa)
 agv_source                # 載入 AGV 工作空間
 agvc_source               # 載入 AGVC 工作空間
 

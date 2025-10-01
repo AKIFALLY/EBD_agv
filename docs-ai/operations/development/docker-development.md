@@ -71,7 +71,7 @@ quick_agvc "check_agvc_status"        # 檢查 AGVC 狀態
 
 ### 環境載入
 ```bash
-# 智能載入 (自動檢測環境)
+# 自動載入 (自動檢測環境)
 all_source              # 或別名: sa
 
 # 強制載入特定環境
@@ -194,7 +194,7 @@ r dev-build            # 在容器內執行
 source scripts/dev-tools/dev-tools.sh
 
 # [容器內] 使用專業工具
-dev_build              # 智能建置
+dev_build              # 自動建置
 dev_test               # 執行測試
 dev_check_style        # 代碼風格檢查
 dev_check_lint         # 靜態分析

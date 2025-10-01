@@ -563,7 +563,7 @@ validate_rosagv_configs
 
 ### 4.3 日誌處理模式
 
-#### 智能日誌分析
+#### 日誌分析
 ```bash
 #!/bin/bash
 # 日誌分析腳本
@@ -616,10 +616,10 @@ batch_analyze
 
 ### 4.4 自動重啟模式
 
-#### 智能服務重啟
+#### 服務重啟
 ```bash
 #!/bin/bash
-# 智能服務重啟腳本
+# 服務重啟腳本
 
 restart_service_if_needed() {
     local service_name=$1

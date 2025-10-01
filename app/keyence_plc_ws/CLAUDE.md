@@ -191,7 +191,7 @@ docker compose -f docker-compose.yml exec rosagv bash
 # 進入 AGVC 容器  
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
 
-# 智能載入工作空間
+# 自動載入工作空間
 all_source  # 自動檢測並載入對應環境的工作空間
 
 cd /app/keyence_plc_ws

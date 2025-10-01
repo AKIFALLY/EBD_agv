@@ -8,7 +8,7 @@
 - 故障排除和問題追蹤
 
 ## 📋 核心工具概述
-RosAGV 日誌分析工具集，提供智能的日誌掃描、錯誤分析、異常檢測和故障診斷功能，支援多容器環境的統一日誌管理。
+RosAGV 日誌分析工具集，提供日誌掃描、錯誤分析、異常檢測和故障診斷功能，支援多容器環境的統一日誌管理。
 
 ## 🔧 日誌分析指導
 
@@ -30,8 +30,8 @@ show_log_tools_help
 
 ## 🔧 主要工具說明
 
-### 1. 智能日誌分析器 (log-analyzer.sh)
-核心日誌分析工具，提供智能錯誤識別和解決建議。
+### 1. 日誌分析器 (log-analyzer.sh)
+核心日誌分析工具，提供錯誤識別和解決建議。
 
 ```bash
 scripts/log-tools/log-analyzer.sh [source] [options]
@@ -225,7 +225,7 @@ scripts/log-tools/log-analyzer.sh all --correlate --timeline
 scripts/log-tools/log-analyzer.sh agv --group-by error_type --stats
 ```
 
-## 🔍 智能解決建議
+## 🔍 解決建議
 
 ### 建議系統功能
 日誌分析器提供針對常見問題的解決建議：

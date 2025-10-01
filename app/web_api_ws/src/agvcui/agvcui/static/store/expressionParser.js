@@ -1,6 +1,6 @@
 /**
  * Expression Parser for TAFL Editor
- * 智能表達式解析器 - 正確識別變數、運算符、常量
+ * 表達式解析器 - 正確識別變數、運算符、常量
  */
 
 class ExpressionParser {

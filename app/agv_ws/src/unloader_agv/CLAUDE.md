@@ -18,8 +18,8 @@ unloader_agv 實現 Unloader AGV 的完整控制邏輯，支援從烘箱取料�
 - **關鍵設備**: Hokuyo 8bit 光通訊模組 (前方配置)
 - **工作模式**: 一次2格批量操作，提高後段製程效率
 
-### Work ID 智能路由系統
-Unloader AGV 採用智能 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
+### Work ID 自動路由系統
+Unloader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
 
 **設備類型編碼**：
 - `02` = BOX_OUT_TRANSFER (出口傳送箱)

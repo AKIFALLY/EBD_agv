@@ -303,7 +303,7 @@ tafl_wcs_ws/src/
 
 ### 環境載入
 ```bash
-# 智能載入 (自動檢測 AGVC 環境)
+# 自動載入 (自動檢測 AGVC 環境)
 all_source             # 或別名: sa
 
 # 強制載入 AGVC 工作空間
@@ -335,7 +335,7 @@ echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
 ### 建置管理
 ```bash
 # 建置所有 AGVC 工作空間
-build_all             # 智能建置腳本 (包含共用基礎設施)
+build_all             # 自動建置腳本 (包含共用基礎設施)
 
 # 建置特定工作空間
 colcon build --packages-select web_api

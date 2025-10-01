@@ -76,7 +76,7 @@ joystick_ws/
 docker compose -f docker-compose.yml exec rosagv bash
 
 # 2. 載入 AGV 工作空間
-all_source  # 智能載入，或使用 agv_source
+all_source  # 自動載入，或使用 agv_source
 
 # 3. 進入工作空間目錄
 cd /app/joystick_ws

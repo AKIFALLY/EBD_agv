@@ -24,7 +24,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # 工具定義
 declare -A DEV_TOOLS=(
-    ["build-helper"]="智能建置輔助工具"
+    ["build-helper"]="建置輔助工具"
     ["test-runner"]="測試執行和報告工具"
     ["code-analyzer"]="代碼分析和檢查工具"
     ["deploy-helper"]="部署輔助工具"

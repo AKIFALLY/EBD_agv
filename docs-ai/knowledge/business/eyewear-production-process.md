@@ -393,7 +393,7 @@ For 每個 Carrier:
 └── 有Rack → 將空Rack搬到系統空料車停車區
 ```
 
-##### 智能製程防錯
+##### 自動製程防錯
 - **製程適配性檢查**: Room1/Room2 只接受泡藥1次產品，泡藥2次產品標記NG
 - **產品識別驗證**: OCR 確保產品正確性，防止混料誤送
 - **即時異常處理**: OCR NG 立即發出 Alarm，人員現場處理（非事後集中處理）
@@ -403,10 +403,10 @@ For 每個 Carrier:
 #### Loader AGV (裝載車)  
 - **工作區域**: 房間內部
 - **主要職責**: 入口傳送箱 → 製程設備 送料作業
-- **詳細業務流程**: 7大工作流程，基於 work_id 智能路由系統
+- **詳細業務流程**: 7大工作流程，基於 work_id 自動路由系統
 
 ##### Work ID 路由系統 (基於實際程式碼分析)
-Loader AGV 採用智能 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
+Loader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
 
 **設備類型編碼**：
 - `01` = TRANSFER (傳送箱)
@@ -452,17 +452,17 @@ Loader AGV 採用智能 work_id 路由系統，格式：`room_id + equipment_typ
 ##### 技術特性
 - **Hokuyo 8-bit 光通訊模組**: 前方配備 `hokuyo_dms_8bit_1`，提供 PLC 8-bit 資料通訊
 - **Work ID 動態計算**: 自動計算工作 ID 範圍，支援不同房間的動態配置
-- **狀態機架構**: Idle State → Vision Position State 的智能狀態轉換
+- **狀態機架構**: Idle State → Vision Position State 的自動狀態轉換
 - **車載料架管理**: 支援 S/L 產品的不同料架配置需求
 - **完整測試覆蓋**: 具備完整的測試套件和測試報告
 
 #### Unloader AGV (卸載車)
 - **工作區域**: 房間內部  
 - **主要職責**: 製程設備 → 出口傳送箱 取料作業
-- **詳細業務流程**: 4大工作流程，基於 work_id 智能路由系統
+- **詳細業務流程**: 4大工作流程，基於 work_id 自動路由系統
 
 ##### Work ID 路由系統 (基於實際程式碼分析)
-Unloader AGV 採用智能 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
+Unloader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_type + station_number + action_type`
 
 **設備類型編碼**：
 - `02` = BOX_OUT_TRANSFER (出口傳送箱)
@@ -649,8 +649,9 @@ Unloader AGV 採用智能 work_id 路由系統，格式：`room_id + equipment_t
 基於實際業務需求，WCS系統設計了多種任務類型：
 - **正常搬運任務**: 射出機 → 房間 → 下一製程
 - **Rack轉向任務**: 180度轉向，確保A/B雙面都能處理
-- **NG處理任務**: NG Rack → NG處理區，空Rack → 回放格
 - **異常處理任務**: 設備故障、路徑阻塞等特殊情況
+
+⚠️ **注意**: OCR NG 在房間入口即時處理，不需要專門的搬運任務。人員現場處理後透過 Alarm Reset 恢復流程。
 
 ## 🏭 房間外 Rack 流程系統 (基於 AI WCS 七大業務流程)
 
@@ -809,7 +810,7 @@ Rack 生命週期流程（手動管理模式）
 5. OPUI-HMI 移出系統 → location_id = null，回到系統外倉儲
 ```
 
-#### WCS 智能調度機制
+#### WCS 調度機制
 - **四級優先度系統**: Priority 100(旋轉) → 80(滿料架到人工收料區) → 60(系統投料) → 40(空料架雙決策)
 - **Work ID 分類管理**: 220001(移動貨架主流程)，230001(已棄用)
 - **衝突避免邏輯**: 檢查位置佔用和重複任務執行
@@ -826,7 +827,7 @@ Rack 生命週期流程（手動管理模式）
 #### 資源循環利用系統
 - **Rack 重複使用**: 完整的清空、重置、回收循環
 - **區域彈性配置**: 多個區域可共用空間，提高利用率
-- **智能資源分配**: 根據實際需求動態分配 Rack 和位置資源
+- **自動資源分配**: 根據實際需求動態分配 Rack 和位置資源
 - **異常即時處理**: OCR NG 當下處理完畢，Alarm Reset 後系統恢復
 
 ## 📊 資料表對應關係
@@ -1039,7 +1040,7 @@ DELETE /map_importer/delete-kuka-map
 ```
 
 ### 座標轉換機制
-系統具備智能座標轉換，將不同單位的座標統一轉換為像素：
+系統具備自動座標轉換，將不同單位的座標統一轉換為像素：
 
 ```python
 # KUKA 座標轉換 (公尺 → 像素)
@@ -1142,7 +1143,7 @@ curl -X DELETE http://localhost:8000/map_importer/delete-kuka-map
 在眼鏡生產的房間內，Loader AGV 負責前段製程的精密載料操作，包含 4 種設備類型共 7 種業務流程。
 
 #### 🔧 Work ID 路由系統
-Loader AGV 使用智能 work_id 路由系統，格式為：`room_id + equipment_type + station_number + action_type`
+Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_type + station_number + action_type`
 
 **設備類型編碼**：
 - `01` = TRANSFER (入口傳送箱)
@@ -1204,7 +1205,7 @@ Loader AGV 使用智能 work_id 路由系統，格式為：`room_id + equipment_
 - **3層狀態機**: Base → AGV → Robot 層級控制
 - **PGNO系統**: 使用程式編號(Program Number)控制機械臂精確動作
 - **Hokuyo光通訊**: 前方8bit光通訊模組提供PLC資料通訊
-- **智能端口管理**: 動態AGV端口狀態管理和分配
+- **自動端口管理**: 動態AGV端口狀態管理和分配
 - **參數化控制**: LoaderRobotParameter 提供靈活的設備配置
 
 #### 🔄 典型業務流程範例
