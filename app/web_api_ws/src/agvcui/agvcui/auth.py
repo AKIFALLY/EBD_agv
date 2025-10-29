@@ -111,17 +111,24 @@ def verify_token(token: str) -> Optional[TokenData]:
 
 
 def authenticate_user(username: str, password: str):
-    """驗證用戶登入"""
+    """驗證用戶登入
+
+    返回值：
+    - (True, user): 登入成功
+    - (False, "user_not_found"): 用戶不存在
+    - (False, "invalid_password"): 密碼錯誤
+    - (False, "user_inactive"): 用戶已被停用
+    """
     from agvcui.db import get_user_by_username
 
     user = get_user_by_username(username)
     if not user:
-        return False
+        return (False, "user_not_found")
     if not verify_password(password, user.password_hash):
-        return False
+        return (False, "invalid_password")
     if not user.is_active:
-        return False
-    return user
+        return (False, "user_inactive")
+    return (True, user)
 
 
 def get_current_user_from_token(token: str):
@@ -161,8 +168,11 @@ def get_current_user_from_token_strict(token: str):
 
 
 def create_default_admin():
-    """創建默認管理員用戶"""
-    from agvcui.db import get_user_by_username, create_user
+    """創建默認管理員用戶
+
+    如果 admin 用戶已存在但被停用，會自動修復為啟用狀態
+    """
+    from agvcui.db import get_user_by_username, create_user, connection_pool
 
     admin_username = "admin"
     admin_password = "admin123"  # 在生產環境中應該使用更強的密碼
@@ -170,7 +180,17 @@ def create_default_admin():
     # 檢查是否已存在管理員用戶
     existing_admin = get_user_by_username(admin_username)
     if existing_admin:
-        print(f"管理員用戶 '{admin_username}' 已存在")
+        # 檢查並修復 is_active 狀態
+        if not existing_admin.is_active:
+            print(f"⚠️ 管理員用戶 '{admin_username}' 已被停用，正在修復...")
+            with connection_pool.get_session() as session:
+                existing_admin.is_active = True
+                session.add(existing_admin)
+                session.commit()
+                session.refresh(existing_admin)
+            print(f"✅ 已修復管理員用戶 '{admin_username}' 的啟用狀態")
+        else:
+            print(f"✅ 管理員用戶 '{admin_username}' 已存在且狀態正常")
         return existing_admin
 
     # 創建管理員用戶
@@ -183,5 +203,5 @@ def create_default_admin():
         role="admin"
     )
 
-    print(f"已創建默認管理員用戶: {admin_username} / {admin_password}")
+    print(f"✅ 已創建默認管理員用戶: {admin_username} / {admin_password}")
     return admin_user

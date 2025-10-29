@@ -667,9 +667,9 @@ def initialize_default_data(pool_agvc):
                 "heading": 0.0, "description": "房間2Loader(取入口傳送箱、清洗、泡藥、放預烘)"},
             {"name": "unloader02", "model": "Unloader", "x": 0.0, "y": 0.0,
                 "heading": 0.0, "description": "房間2Unloader(取預烘、烤箱、放出口傳送箱)"},
-            {"id": 8506941, "name": "KUKA001", "model": "KUKA400i", "x": 3116,
+            {"id": 101, "name": "KUKA001", "model": "KUKA400i", "x": 3116,
                 "y": 1852, "heading": 0.0, "description": "在房間外負責料架搬運"},
-            {"id": 8506995, "name": "KUKA002", "model": "KUKA400i", "x": 2860,
+            {"id": 102, "name": "KUKA002", "model": "KUKA400i", "x": 2860,
                 "y": 1680, "heading": 0.0, "description": "在房間外負責料架搬運"},
             {"id": 123, "name": "KUKA003", "model": "KUKA400i", "x": 0.0,
                 "y": 0.0, "heading": 0.0, "description": "(SimCar)在房間外負責料架搬運"}

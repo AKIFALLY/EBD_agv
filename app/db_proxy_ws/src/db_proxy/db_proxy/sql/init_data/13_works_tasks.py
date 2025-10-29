@@ -58,12 +58,15 @@ def initialize_works(session):
         # kuka-相關的工作
         # 移動貨架和移動指令無需預定義流程 給指定的nodes(uuid)即可
         {"id": 210001, "name": "kuka-移動",
-         "description": "執行指定的from,to(nodes)移動至指定置", "parameters": {"function": "move", "api": "submit_mission", "missionType": "MOVE"}},
+         "description": "執行指定的from,to(nodes)移動至指定置",
+         "parameters": {"model": "KUKA400i", "function": "move", "api": "submit_mission", "missionType": "MOVE", "nodes": []}},
         {"id": 220001, "name": "kuka-移動貨架",
-         "description": "執行指定的from,to(nodes)將貨架搬至指定位置", "parameters": {"function": "rack_move", "api": "submit_mission", "missionType": "RACK_MOVE"}},
+         "description": "執行指定的from,to(nodes)將貨架搬至指定位置",
+         "parameters": {"model": "KUKA400i", "function": "rack_move", "api": "submit_mission", "missionType": "RACK_MOVE", "nodes": []}},
         # kuka的workflow流程任務觸發
         {"id": 230001, "name": "kuka-流程觸發",
-         "description": "執行指定的workflow流程觸發", "parameters": {"function": "workflow", "api": "submit_mission", "missionType": "MOVE", "templateCode": "W000000001"}},
+         "description": "執行指定的workflow流程觸發",
+         "parameters": {"model": "KUKA400i", "function": "workflow", "api": "submit_mission", "missionType": "MOVE", "templateCode": ""}},
 
 
         # 房間2 相關 旋轉貨架指令合併至 CargoAGV放入口傳送箱 , CargoAGV拿出口傳送箱

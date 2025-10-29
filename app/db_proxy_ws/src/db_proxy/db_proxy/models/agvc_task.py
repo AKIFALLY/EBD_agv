@@ -97,7 +97,6 @@ class TaskStatus(SQLModel, table=True):
 class Task(SQLModel, table=True):
     __tablename__ = "task"
     id: Optional[int] = Field(default=None, primary_key=True)
-    task_id: Optional[str] = None  # Flow WCS 需要的 task_id 欄位
     type: Optional[str] = None  # Flow WCS 需要的 type 欄位
     parent_task_id: Optional[int] = Field(default=None, foreign_key="task.id")
     work_id: Optional[int] = Field(default=None, foreign_key="work.id")
@@ -128,12 +127,4 @@ class Task(SQLModel, table=True):
     agv: Optional["AGV"] = Relationship()
 
     model_config = ConfigDict(from_attributes=True)  # 告訴 Pydantic 這是 ORM 模型
-    
-    def generate_task_id(self, work_code: str = None) -> str:
-        """生成 task_id (for tafl_wcs compatibility)"""
-        from datetime import datetime
-        if work_code:
-            return f"TASK_{work_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        else:
-            return f"TASK_{self.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 

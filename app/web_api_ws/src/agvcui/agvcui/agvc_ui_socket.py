@@ -70,58 +70,85 @@ class AgvcUiSocket:
 
     async def user_login(self, sid, data):
         """處理用戶登入"""
-        from agvcui.auth import authenticate_user
-        from fastapi.encoders import jsonable_encoder
+        try:
+            print(f"🔐 Socket 登入請求 (sid: {sid}), data: {data.get('username', 'N/A')}")
 
-        username = data.get('username')
-        password = data.get('password')
+            from agvcui.auth import authenticate_user
+            from fastapi.encoders import jsonable_encoder
 
-        if not username or not password:
-            return {
-                "success": False,
-                "message": "用戶名和密碼不能為空"
+            username = data.get('username')
+            password = data.get('password')
+
+            if not username or not password:
+                print(f"❌ 登入失敗：缺少用戶名或密碼")
+                return {
+                    "success": False,
+                    "message": "用戶名和密碼不能為空"
+                }
+
+            # 驗證用戶
+            print(f"🔍 開始驗證用戶: {username}")
+            success, result = authenticate_user(username, password)
+
+            if not success:
+                print(f"❌ 用戶驗證失敗: {result}")
+                # 根據不同的錯誤原因提供具體的錯誤訊息
+                error_messages = {
+                    "user_not_found": "用戶不存在，請檢查用戶名",
+                    "invalid_password": "密碼錯誤，請重新輸入",
+                    "user_inactive": "此帳號已被停用，請聯繫管理員"
+                }
+                return {
+                    "success": False,
+                    "message": error_messages.get(result, "登入失敗，請稍後再試")
+                }
+
+            user = result  # 登入成功，result 是 user object
+            print(f"✅ 用戶驗證成功: {user.username}")
+
+            # 更新最後登入時間
+            from agvcui.db import update_user_last_login
+            update_user_last_login(user.id)
+
+            # 創建 JWT token
+            from agvcui.auth import create_access_token
+            from datetime import timedelta
+
+            access_token_expires = timedelta(days=7)  # 7天有效期
+            access_token = create_access_token(
+                data={"sub": user.username}, expires_delta=access_token_expires
+            )
+            print(f"🔑 JWT token 已創建")
+
+            # 登入成功，回傳用戶資訊
+            user_data = {
+                "id": user.id,
+                "username": user.username,
+                "role": user.role,
+                "full_name": user.full_name,
+                "is_active": user.is_active,
+                "isLoggedIn": True,
+                "isConnected": True
             }
 
-        # 驗證用戶
-        user = authenticate_user(username, password)
-        if not user:
-            return {
-                "success": False,
-                "message": "用戶名或密碼錯誤"
+            result = {
+                "success": True,
+                "message": f"登入成功，歡迎 {user.full_name or user.username}",
+                "user": jsonable_encoder(user_data),
+                "access_token": access_token
             }
 
-        # 更新最後登入時間
-        from agvcui.db import update_user_last_login
-        update_user_last_login(user.id)
+            print(f"✅ Socket 登入成功: {user.username} (sid: {sid}), 準備返回")
+            return result
 
-        # 創建 JWT token
-        from agvcui.auth import create_access_token
-        from datetime import timedelta
-
-        access_token_expires = timedelta(days=7)  # 7天有效期
-        access_token = create_access_token(
-            data={"sub": user.username}, expires_delta=access_token_expires
-        )
-
-        # 登入成功，回傳用戶資訊
-        user_data = {
-            "id": user.id,
-            "username": user.username,
-            "role": user.role,
-            "full_name": user.full_name,
-            "is_active": user.is_active,
-            "isLoggedIn": True,
-            "isConnected": True
-        }
-
-        print(f"✅ Socket 登入成功: {user.username} (sid: {sid})")
-
-        return {
-            "success": True,
-            "message": f"登入成功，歡迎 {user.full_name or user.username}",
-            "user": jsonable_encoder(user_data),
-            "access_token": access_token
-        }
+        except Exception as e:
+            print(f"❌ Socket 登入異常: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "success": False,
+                "message": f"登入過程發生錯誤: {str(e)}"
+            }
 
     async def user_logout(self, sid, data):
         """處理用戶登出"""

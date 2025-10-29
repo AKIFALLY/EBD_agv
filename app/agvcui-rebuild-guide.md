@@ -1074,7 +1074,7 @@ export const mapPage = (() => {
         });
 
         // 載入地圖圖片
-        const mapBounds = [[0, 0], [3010, 5720]];
+        const mapBounds = [[0, 0], [3010, 6320]];
         L.imageOverlay('/static/alan-demo-map.drawio.svg', mapBounds)
             .addTo(map);
 

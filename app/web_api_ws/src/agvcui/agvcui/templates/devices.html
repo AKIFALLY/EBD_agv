@@ -22,6 +22,14 @@
             <div class="level-right">
                 <div class="level-item">
                     {% if current_user and current_user.role in ['operator', 'admin'] %}
+                    <!-- 自動門控制按鈕 -->
+                    <button class="button is-info mr-2" id="doorControlBtn">
+                        <span class="icon">
+                            <i class="mdi mdi-door"></i>
+                        </span>
+                        <span>自動門控制</span>
+                    </button>
+                    <!-- 新增設備按鈕 -->
                     <a class="button is-primary" href="/devices/create">
                         <span class="icon">
                             <i class="mdi mdi-plus"></i>
@@ -191,5 +199,101 @@
 </div>
 
 <!-- JavaScript 功能已移至 /static/js/deleteModal.js -->
+{% endif %}
+
+<!-- 自動門控制模態框 -->
+{% if current_user and current_user.role in ['operator', 'admin'] %}
+<div class="modal" id="doorControlModal">
+    <div class="modal-background"></div>
+    <div class="modal-card" style="width: 600px;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">
+                <span class="icon-text">
+                    <span class="icon"><i class="mdi mdi-door"></i></span>
+                    <span>自動門控制</span>
+                </span>
+            </p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+            <!-- 雙列網格布局 -->
+            <div class="columns is-multiline">
+                <!-- 門1 -->
+                <div class="column is-half">
+                    <div class="box">
+                        <h5 class="title is-5">門 1</h5>
+                        <div class="buttons">
+                            <button class="button is-success is-fullwidth" data-door-action="open" data-door-id="1">
+                                <span class="icon"><i class="mdi mdi-door-open"></i></span>
+                                <span>開門</span>
+                            </button>
+                            <button class="button is-danger is-fullwidth" data-door-action="close" data-door-id="1">
+                                <span class="icon"><i class="mdi mdi-door-closed"></i></span>
+                                <span>關門</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 門2 -->
+                <div class="column is-half">
+                    <div class="box">
+                        <h5 class="title is-5">門 2</h5>
+                        <div class="buttons">
+                            <button class="button is-success is-fullwidth" data-door-action="open" data-door-id="2">
+                                <span class="icon"><i class="mdi mdi-door-open"></i></span>
+                                <span>開門</span>
+                            </button>
+                            <button class="button is-danger is-fullwidth" data-door-action="close" data-door-id="2">
+                                <span class="icon"><i class="mdi mdi-door-closed"></i></span>
+                                <span>關門</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 門3 -->
+                <div class="column is-half">
+                    <div class="box">
+                        <h5 class="title is-5">門 3</h5>
+                        <div class="buttons">
+                            <button class="button is-success is-fullwidth" data-door-action="open" data-door-id="3">
+                                <span class="icon"><i class="mdi mdi-door-open"></i></span>
+                                <span>開門</span>
+                            </button>
+                            <button class="button is-danger is-fullwidth" data-door-action="close" data-door-id="3">
+                                <span class="icon"><i class="mdi mdi-door-closed"></i></span>
+                                <span>關門</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 門4 -->
+                <div class="column is-half">
+                    <div class="box">
+                        <h5 class="title is-5">門 4</h5>
+                        <div class="buttons">
+                            <button class="button is-success is-fullwidth" data-door-action="open" data-door-id="4">
+                                <span class="icon"><i class="mdi mdi-door-open"></i></span>
+                                <span>開門</span>
+                            </button>
+                            <button class="button is-danger is-fullwidth" data-door-action="close" data-door-id="4">
+                                <span class="icon"><i class="mdi mdi-door-closed"></i></span>
+                                <span>關門</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button" type="button" id="closeDoorModal">關閉</button>
+        </footer>
+    </div>
+</div>
+
+<!-- 引入門控制 JavaScript -->
+<script type="module">
+    import { doorControlModal } from '/static/js/doorControlModal.js';
+    doorControlModal.setup();
+</script>
 {% endif %}
 {% endblock %}

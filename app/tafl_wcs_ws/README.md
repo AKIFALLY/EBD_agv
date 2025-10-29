@@ -349,7 +349,7 @@ flow:
       as: rotation_task
 
   - log:
-      message: "Created rotation task ${rotation_task.task_id}"
+      message: "Created rotation task ${rotation_task.id}"
 ```
 
 ## 🎯 里程碑和開發歷程

@@ -30,13 +30,24 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
         redirect: str = Form(default="/")
     ):
         """處理登入請求"""
-        user = authenticate_user(username, password)
-        if not user:
+        success, result = authenticate_user(username, password)
+
+        if not success:
+            # 根據不同的錯誤原因提供具體的錯誤訊息
+            error_messages = {
+                "user_not_found": "用戶不存在，請檢查用戶名",
+                "invalid_password": "密碼錯誤，請重新輸入",
+                "user_inactive": "此帳號已被停用，請聯繫管理員"
+            }
+            error_msg = error_messages.get(result, "登入失敗，請稍後再試")
+
             return templates.TemplateResponse("login.html", {
                 "request": request,
                 "redirect": redirect,
-                "error": "用戶名或密碼錯誤"
+                "error": error_msg
             })
+
+        user = result
 
         # 更新最後登入時間
         update_user_last_login(user.id)
@@ -50,12 +61,12 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
         print(f"✅ 登入成功: {user.username}, 重定向到: {redirect}")
         print(f"🔑 Token: {access_token[:50]}...")
 
-        # 重定向到目標頁面並設置 cookie（永不過期）
+        # 重定向到目標頁面並設置 cookie（24小時有效期）
         response = RedirectResponse(url=redirect, status_code=302)
         response.set_cookie(
             key="access_token",
             value=access_token,
-            # max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # 移除過期時間
+            max_age=24 * 60 * 60,  # 24小時有效期
             path="/",  # 明確設置路徑為根路徑
             httponly=True,
             secure=False,  # 在生產環境中應該設為 True

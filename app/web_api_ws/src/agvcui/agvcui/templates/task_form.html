@@ -44,8 +44,8 @@
                                 </span>
                             </label>
                             <div class="control">
-                                <input class="input" type="text" name="name" value="{{ task.name if task else '' }}"
-                                    placeholder="請輸入任務名稱" required>
+                                <input class="input" type="text" name="name" id="task-name" value="{{ task.name if task else '' }}"
+                                    placeholder="請輸入任務名稱或選擇工作類型自動填入" required>
                             </div>
                         </div>
 
@@ -60,8 +60,8 @@
                                 </span>
                             </label>
                             <div class="control">
-                                <textarea class="textarea" name="description"
-                                    placeholder="請輸入任務描述">{{ task.description if task else '' }}</textarea>
+                                <textarea class="textarea" name="description" id="task-description"
+                                    placeholder="請輸入任務描述或選擇工作類型自動填入">{{ task.description if task else '' }}</textarea>
                             </div>
                         </div>
 
@@ -121,17 +121,28 @@
                             </label>
                             <div class="control">
                                 <div class="select is-fullwidth">
-                                    <select name="work_id">
+                                    <select name="work_id" id="work-type-select">
                                         <option value="">請選擇工作類型</option>
                                         {% for work in works %}
-                                        <option value="{{ work.id }}" {% if task and task.work_id==work.id %}selected{%
-                                            endif %}>
+                                        <option value="{{ work.id }}"
+                                                data-work-id="{{ work.id }}"
+                                                data-work-code="{{ work.work_code or '' }}"
+                                                data-work-name="{{ work.name }}"
+                                                data-work-description="{{ work.description or '' }}"
+                                                data-work-parameters='{{ work.parameters | tojson if work.parameters else "{}" }}'
+                                                {% if task and task.work_id==work.id %}selected{% endif %}>
                                             {{ work.name }}
                                         </option>
                                         {% endfor %}
                                     </select>
                                 </div>
                             </div>
+                            <p class="help">選擇工作類型後會自動填入任務名稱和描述</p>
+                        </div>
+
+                        <!-- 工作類型詳細資訊顯示 -->
+                        <div id="work-info-display" class="notification is-info is-light" style="display: none;">
+                            Work ID: <span id="display-work-id">-</span>
                         </div>
 
                         <!-- 任務狀態 -->
@@ -264,7 +275,7 @@
                                 </span>
                             </label>
                             <div class="control">
-                                <textarea class="textarea" name="parameters" rows="6"
+                                <textarea class="textarea" id="task-parameters" name="parameters" rows="6"
                                     placeholder='{"room_id": 2, "rack_id": 1, "eqp_id": 1}'>{{ task.parameters | tojson_chinese(indent=2) if task and task.parameters else '' }}</textarea>
                             </div>
                             <p class="help">請輸入有效的 JSON 格式參數，例如：{"room_id": 2, "rack_id": 1}</p>
@@ -295,4 +306,134 @@
         </div>
     </div>
 </section>
+
+<script>
+// 工作類型選擇變更時自動填入任務名稱和描述，並顯示詳細資訊
+document.addEventListener('DOMContentLoaded', function() {
+    const workTypeSelect = document.getElementById('work-type-select');
+    const taskNameInput = document.getElementById('task-name');
+    const taskDescriptionTextarea = document.getElementById('task-description');
+    const taskParametersTextarea = document.getElementById('task-parameters');
+    const workInfoDisplay = document.getElementById('work-info-display');
+
+    if (workTypeSelect && taskNameInput && taskDescriptionTextarea && taskParametersTextarea && workInfoDisplay) {
+        // 如果頁面載入時已有選擇的工作類型（編輯模式），顯示資訊
+        if (workTypeSelect.value) {
+            displayWorkInfo(workTypeSelect.options[workTypeSelect.selectedIndex]);
+        }
+
+        workTypeSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+
+            // 只在新增任務時自動填入（編輯時不覆蓋）
+            const isEditMode = taskNameInput.value !== '' && {{ 'true' if task else 'false' }};
+
+            if (selectedOption.value) {
+                const workId = parseInt(selectedOption.getAttribute('data-work-id'));
+                const workName = selectedOption.getAttribute('data-work-name');
+                const workDescription = selectedOption.getAttribute('data-work-description');
+                const workParametersStr = selectedOption.getAttribute('data-work-parameters');
+
+                // 填入任務名稱（如果是新增模式或欄位為空）
+                if (!isEditMode || taskNameInput.value === '') {
+                    taskNameInput.value = workName || '';
+                }
+
+                // 填入任務描述（如果是新增模式或欄位為空）
+                if (!isEditMode || taskDescriptionTextarea.value === '') {
+                    taskDescriptionTextarea.value = workDescription || '';
+                }
+
+                // 🔥 智能填充參數（新功能）
+                if (!isEditMode || taskParametersTextarea.value.trim() === '') {
+                    try {
+                        // 解析 Work 表中的參數模板
+                        let workParameters = {};
+                        if (workParametersStr && workParametersStr !== '{}') {
+                            workParameters = JSON.parse(workParametersStr);
+                        }
+
+                        // KUKA 支援的工作 ID
+                        const KUKA_WORK_IDS = [210001, 220001, 230001];
+
+                        // 如果是 KUKA 任務，自動添加 model 字段
+                        if (KUKA_WORK_IDS.includes(workId)) {
+                            let taskParameters = {
+                                model: "KUKA400i",  // 自動添加 KUKA 型號
+                                ...workParameters    // 合併 Work 表參數
+                            };
+
+                            // 根據不同的 work_id 添加對應的參數結構
+                            if (workId === 210001 || workId === 220001) {
+                                // KUKA 移動和移動貨架任務
+                                if (!taskParameters.nodes) {
+                                    taskParameters.nodes = [];  // 預設空的節點列表
+                                }
+                            } else if (workId === 230001) {
+                                // KUKA 工作流任務
+                                if (!taskParameters.templateCode) {
+                                    taskParameters.templateCode = "";  // 預設空的模板代碼
+                                }
+                            }
+
+                            // 格式化並填充到 textarea
+                            taskParametersTextarea.value = JSON.stringify(taskParameters, null, 2);
+                        } else if (Object.keys(workParameters).length > 0) {
+                            // 非 KUKA 任務，但有參數模板
+                            taskParametersTextarea.value = JSON.stringify(workParameters, null, 2);
+                        }
+
+                        // 視覺反饋
+                        if (taskParametersTextarea.value.trim() !== '') {
+                            taskParametersTextarea.classList.add('is-success');
+                            setTimeout(function() {
+                                taskParametersTextarea.classList.remove('is-success');
+                            }, 1500);
+                        }
+                    } catch (error) {
+                        console.error('解析參數模板失敗:', error);
+                    }
+                }
+
+                // 添加視覺反饋
+                taskNameInput.classList.add('is-success');
+                taskDescriptionTextarea.classList.add('is-success');
+
+                setTimeout(function() {
+                    taskNameInput.classList.remove('is-success');
+                    taskDescriptionTextarea.classList.remove('is-success');
+                }, 1500);
+
+                // 顯示工作類型詳細資訊
+                displayWorkInfo(selectedOption);
+            } else {
+                // 如果取消選擇工作類型，清空欄位（僅在新增模式）
+                if (!isEditMode) {
+                    taskNameInput.value = '';
+                    taskDescriptionTextarea.value = '';
+                    taskParametersTextarea.value = '';
+                }
+                // 隱藏工作類型資訊
+                workInfoDisplay.style.display = 'none';
+            }
+        });
+    }
+
+    // 顯示工作類型詳細資訊的函數
+    function displayWorkInfo(option) {
+        if (!option || !option.value) {
+            workInfoDisplay.style.display = 'none';
+            return;
+        }
+
+        const workId = option.getAttribute('data-work-id');
+
+        // 更新顯示內容
+        document.getElementById('display-work-id').textContent = workId || '-';
+
+        // 顯示資訊卡片
+        workInfoDisplay.style.display = 'block';
+    }
+});
+</script>
 {% endblock %}

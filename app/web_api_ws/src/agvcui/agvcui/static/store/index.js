@@ -3,8 +3,9 @@ import { createStore } from './miniStore.js';
 
 const mapStore = createStore('mapState', {
     mapFile: '/static/alan-demo-map.drawio.svg',
-    mapFileBounds: [[0, 0], [3010, 5720]],//原圖(1505,2860)縮放比是 5cm = 1px , 圖放大2倍(3010,5720) (2.5cm = 1px)
-    mapInitBounds: [[1005, 2660], [1805, 3260]],//Room2 [[1005, 2660], [1805, 3260]]
+    //mapFileBounds: [[0, 0], [3010, 5720]],//原圖(1505,2860)縮放比是 5cm = 1px , 圖放大2倍(3010,5720) (2.5cm = 1px)
+    mapFileBounds: [[0, 0], [4488, 6968]],//實際地圖範圍(6968,4488)
+    mapInitBounds: [[1150, 2800], [2950, 6000]],//Room2 [[1005, 2660], [1805, 3260]]
     nodes: [],//CtNode
     edges: [],//CtEdge
     kukaNodes: [],//KukaNode節點

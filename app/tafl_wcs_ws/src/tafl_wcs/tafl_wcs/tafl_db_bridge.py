@@ -816,7 +816,10 @@ class TAFLDatabaseBridge(BaseQueryMixin):
     def check_task_exists(self, task_id: str) -> Tuple[bool, Dict]:
         """
         Check if a task exists with detailed info
-        
+
+        Args:
+            task_id: Task primary key ID (as string)
+
         Returns:
             Tuple[bool, Dict]: (exists, details)
         """
@@ -844,10 +847,10 @@ class TAFLDatabaseBridge(BaseQueryMixin):
     def create_task(self, **params) -> Tuple[str, Dict]:
         """
         Create a new task with validation
-        
+
         Required params:
         - work_id: Work ID
-        
+
         Optional params:
         - name: Task name (default: "Task for Work {work_id}")
         - description: Task description
@@ -858,9 +861,9 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - metadata: Additional metadata
         - assigned_to: Assignee
         - deadline: Task deadline
-        
+
         Returns:
-            Tuple[str, Dict]: (task_id, details)
+            Tuple[str, Dict]: (task.id as string, details)
         """
         # Validate required parameters
         errors = []
@@ -1095,12 +1098,12 @@ class TAFLDatabaseBridge(BaseQueryMixin):
     def update_task_status(self, task_id: str, status: str, reason: str = None) -> Tuple[bool, Dict]:
         """
         Update task status with change logging
-        
+
         Args:
-            task_id: Task ID
+            task_id: Task primary key ID (as string)
             status: New status name
             reason: Optional reason for status change
-        
+
         Returns:
             Tuple[bool, Dict]: (success, details)
         """

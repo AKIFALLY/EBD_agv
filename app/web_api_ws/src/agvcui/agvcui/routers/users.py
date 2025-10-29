@@ -175,6 +175,12 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
                 print(
                     f"📝 編輯前用戶信息: username={edit_user.username}, email={edit_user.email}, role={edit_user.role}, is_active={edit_user.is_active}")
 
+                # 保護 admin 用戶：禁止停用
+                if edit_user.username == "admin" and not bool(is_active):
+                    print(f"⚠️ 禁止停用 admin 用戶")
+                    # 返回錯誤訊息（這裡簡化處理，實際可以添加 flash message）
+                    return RedirectResponse(url="/users?error=cannot_disable_admin", status_code=302)
+
                 # 更新用戶信息
                 edit_user.username = username
                 edit_user.email = email if email else None
@@ -222,6 +228,11 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
             with connection_pool.get_session() as session:
                 delete_user = user_crud.get_by_id(session, user_id)
                 if delete_user:
+                    # 保護 admin 用戶：禁止刪除
+                    if delete_user.username == "admin":
+                        print(f"⚠️ 禁止刪除 admin 用戶")
+                        return RedirectResponse(url="/users?error=cannot_delete_admin", status_code=302)
+
                     session.delete(delete_user)
                     session.commit()
                     print(

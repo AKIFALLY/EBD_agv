@@ -101,14 +101,14 @@ class TAFLFunctions:
     def _wrap_create_task(self, **kwargs):
         """Wrapper for create_task to handle return format
 
-        The db_bridge.create_task returns (task_id, details_dict),
+        The db_bridge.create_task returns (task.id as string, details_dict),
         but TAFL expects a dict with accessible properties like 'id'.
         """
         task_id, details = self.db_bridge.create_task(**kwargs)
         if task_id:
             # Success case: ensure the dict has 'id' property for ${new_task.id} interpolation
             details['id'] = task_id
-            details['task_id'] = task_id  # Keep both for compatibility
+            details['task_id'] = task_id  # Keep 'task_id' key for backward compatibility (both refer to primary key id)
             return details
         else:
             # Error case: log the error and return error details

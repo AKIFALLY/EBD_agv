@@ -20,7 +20,8 @@ class KukaFleetAdapter:
     MISSION_MOVE = "MOVE"  # 移動
     MISSION_RACK_MOVE = "RACK_MOVE"  # 搬運
 
-    MAP_LAYOUT_DISTRICT = "test-test1"
+    #MAP_LAYOUT_DISTRICT = "test-test1"
+    MAP_LAYOUT_DISTRICT = "AlanACT-AlanSec1"
 
     def __init__(self, node: Node):
         """

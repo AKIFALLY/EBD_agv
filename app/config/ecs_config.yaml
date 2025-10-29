@@ -39,15 +39,19 @@ agvc:
     ros__parameters:
       plc_ip: "192.168.10.4"
       read_ranges:
-        - "DM,7600,20"
-        - "DM,11000,20"
-        - "DM,5000,10"  # Added for door state readings
+        - "DM,7600,200"  # 修正：100 words = 200 bytes
+        - "DM,11000,20"   # 正確：10 words = 20 bytes
+        - "DM,12000,200"  # 修正：100 words = 200 bytes
+        - "DM,12100,200"  # 修正：100 words = 200 bytes
+        - "DM,5000,10"    # 正確：5 words = 10 bytes
 
-  ecs_core: 
+  ecs_core:
     ros__parameters:
       read_ranges:
-        - "DM,7600,200"
-        - "DM,11000,20"
+        - "DM,7600,200"   # 正確：100 words = 200 bytes
+        - "DM,11000,20"   # 正確：10 words = 20 bytes
+        - "DM,12000,200"  # 修正：100 words = 200 bytes
+        - "DM,12100,200"  # 修正：100 words = 200 bytes
   #門控設定PLC的MR DM 位置在door_config.yaml中設定
 
   door_controller_node_mqtt: #MQTT版的門控已不再使用 ,以下設定可略過

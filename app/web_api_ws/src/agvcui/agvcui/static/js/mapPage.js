@@ -670,21 +670,20 @@ export const mapPage = (() => {
         //const kuka_agv002 = new RotatingMovingObject(map, L.latLng(1740, 2880), "agv_kuka001", "kuka-agv");
         //kuka_agv002.setTargetPosition(L.latLng(1740, 2860));
 
-        const agv = new RotatingMovingObject(map, L.latLng(1680, 2640), "agv_cargo01", "agv-cargo");
+        //測試用的agv
+        //const agv = new RotatingMovingObject(map, L.latLng(1680, 2640), "agv_cargo01", "agv-cargo");
+        //// 設定動畫模式
+        //agv.setAnimationMode(
+        //    AGV_ANIMATION_CONFIG.mode,
+        //    AGV_ANIMATION_CONFIG.lerpSpeed
+        //);
+        //// 設定目標點平滑
+        //agv.setTargetSmoothing(
+        //    AGV_ANIMATION_CONFIG.useTargetSmoothing,
+        //    AGV_ANIMATION_CONFIG.targetSmoothSpeed
+        //);
+        //agv.setTargetPosition(L.latLng(1680, 2660));
 
-        // 設定動畫模式
-        agv.setAnimationMode(
-            AGV_ANIMATION_CONFIG.mode,
-            AGV_ANIMATION_CONFIG.lerpSpeed
-        );
-
-        // 設定目標點平滑
-        agv.setTargetSmoothing(
-            AGV_ANIMATION_CONFIG.useTargetSmoothing,
-            AGV_ANIMATION_CONFIG.targetSmoothSpeed
-        );
-
-        agv.setTargetPosition(L.latLng(1680, 2660));
 
         //const agv_cargo02 = new RotatingMovingObject(map, L.latLng(1680, 3270), "agv_cargo02", "agv-cargo");
         //agv_cargo02.setTargetPosition(L.latLng(1680, 3260));
@@ -693,12 +692,12 @@ export const mapPage = (() => {
         //const agv_unloader02 = new RotatingMovingObject(map, L.latLng(1320, 2660), "agv_unloader02", "agv-unloader");
         //agv_unloader02.setTargetPosition(L.latLng(1120, 2660));
 
-        const room2TransferboxIn = new TransferBoxObject(map, L.latLng(1600, 3260), "201");
-        const room2TransferboxOut = new TransferBoxObject(map, L.latLng(1600, 2660), "202");
-        const room2Cleaner = new CleanerPortsObject(map, L.latLng(1060, 3260), "203");
-        const room2Soaking = new SoakingPortsObject(map, L.latLng(1460, 2960), "204");
-        const room2Dryer = new DryerPortsObject(map, L.latLng(1200, 2960), "205");
-        const room2Oven = new OvenPortsObject(map, L.latLng(1060, 2740), "206");
+        const room2TransferboxIn = new TransferBoxObject(map, L.latLng(1920, 3620), "201");
+        const room2TransferboxOut = new TransferBoxObject(map, L.latLng(1920, 3020), "202");
+        const room2Cleaner = new CleanerPortsObject(map, L.latLng(1380, 3620), "203");
+        const room2Soaking = new SoakingPortsObject(map, L.latLng(1780, 3320), "204");
+        const room2Dryer = new DryerPortsObject(map, L.latLng(1520, 3380), "205");
+        const room2Oven = new OvenPortsObject(map, L.latLng(1380, 3100), "206");
 
         eqpObjects.push(room2TransferboxIn);
         eqpObjects.push(room2TransferboxOut);
@@ -707,12 +706,12 @@ export const mapPage = (() => {
         eqpObjects.push(room2Dryer);
         eqpObjects.push(room2Oven);
 
-        const room2TransferboxInInfo = new EqpInfoObject(map, L.latLng(1600, 3380), "201", "TransferboxIn");
-        const room2TransferboxOutInfo = new EqpInfoObject(map, L.latLng(1600, 2540), "202", "TransferboxOut");
-        const room2SoakingInfo = new EqpInfoObject(map, L.latLng(1500, 2960), "204", "Soaking");
-        const room2DryerInfo = new EqpInfoObject(map, L.latLng(1080, 2960), "205", "Dryer");
-        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(960, 3260), "203", "Cleaner", true);//with counter
-        const room2OvenInfo = new EqpInfoObject(map, L.latLng(960, 2740), "206", "Oven", true);//with counter
+        const room2TransferboxInInfo = new EqpInfoObject(map, L.latLng(1920, 3740), "201", "TransferboxIn");
+        const room2TransferboxOutInfo = new EqpInfoObject(map, L.latLng(1920, 2900), "202", "TransferboxOut");
+        const room2SoakingInfo = new EqpInfoObject(map, L.latLng(1820, 3320), "204", "Soaking");
+        const room2DryerInfo = new EqpInfoObject(map, L.latLng(1400, 3380), "205", "Dryer");
+        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(1280, 3620), "203", "Cleaner", true);//with counter
+        const room2OvenInfo = new EqpInfoObject(map, L.latLng(1280, 3100), "206", "Oven", true);//with counter
 
         eqpInfoCountObjects.push(room2CleanerInfo);
         eqpInfoCountObjects.push(room2OvenInfo);

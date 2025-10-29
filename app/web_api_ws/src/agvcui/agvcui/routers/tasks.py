@@ -138,11 +138,36 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
                     raise HTTPException(
                         status_code=400, detail="參數格式錯誤，請輸入有效的 JSON")
 
+            # 🔥 智能補充 KUKA 任務參數（新功能）
+            work_id_int = int(work_id) if work_id and work_id.isdigit() else None
+            if work_id_int:
+                # KUKA 支援的工作 ID
+                KUKA_WORK_IDS = [210001, 220001, 230001]
+
+                if work_id_int in KUKA_WORK_IDS:
+                    # 如果是 KUKA 任務，確保有 parameters
+                    if parsed_parameters is None:
+                        parsed_parameters = {}
+
+                    # 自動添加 model 字段（如果缺少）
+                    if "model" not in parsed_parameters:
+                        parsed_parameters["model"] = "KUKA400i"
+
+                    # 驗證必要的參數結構
+                    if work_id_int == 210001 or work_id_int == 220001:
+                        # KUKA 移動和移動貨架任務需要 nodes 列表
+                        if "nodes" not in parsed_parameters:
+                            parsed_parameters["nodes"] = []
+                    elif work_id_int == 230001:
+                        # KUKA 工作流任務需要 templateCode
+                        if "templateCode" not in parsed_parameters:
+                            parsed_parameters["templateCode"] = ""
+
             task_data = {
                 "name": name,
                 "description": description if description else None,
                 "mission_code": mission_code if mission_code else None,
-                "work_id": int(work_id) if work_id and work_id.isdigit() else None,
+                "work_id": work_id_int,
                 "status_id": int(status_id) if status_id and status_id.isdigit() else None,
                 "room_id": int(room_id) if room_id and room_id.isdigit() else None,
                 "node_id": int(node_id) if node_id and node_id.isdigit() else None,
