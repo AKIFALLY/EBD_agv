@@ -4,6 +4,7 @@ from rclpy.node import Node
 from unloader_agv.robot_context import RobotContext
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 from unloader_agv.robot_states.base_robot_state import BaseRobotState
+from shared_constants.equipment_stations import EquipmentStations
 
 
 class OvenCheckEmptyState(BaseRobotState):
@@ -15,8 +16,6 @@ class OvenCheckEmptyState(BaseRobotState):
     WRITE_TR_REQ = 4
     WAIT_READY = 5
 
-    SELECT_PORT01, SELECT_PORT02, SELECT_PORT03, SELECT_PORT04, SELECT_PORT05, SELECT_PORT06, SELECT_PORT07, SELECT_PORT08, SELECT_NONE = 1, 2, 3, 4, 5, 6, 7, 8, 0
-
     def __init__(self, node: Node):
         super().__init__(node)
         self.hokuyo_dms_8bit_1: HokuyoDMS8Bit = self.node.hokuyo_dms_8bit_1
@@ -26,18 +25,6 @@ class OvenCheckEmptyState(BaseRobotState):
         # 動態計算 port_address 和 eqp_id (烤箱)
         self.port_address = self.node.room_id * 1000 + 60  # OVEN port address
         self.eqp_id = self.node.room_id * 100 + 6  # OVEN eqp_id
-
-        # 烤箱port選擇表 (8個port，選擇空的)
-        self.select_oven_port_table = {
-            (0, 1, 1, 1, 1, 1, 1, 1): self.SELECT_PORT01,
-            (1, 0, 1, 1, 1, 1, 1, 1): self.SELECT_PORT02,
-            (1, 1, 0, 1, 1, 1, 1, 1): self.SELECT_PORT03,
-            (1, 1, 1, 0, 1, 1, 1, 1): self.SELECT_PORT04,
-            (1, 1, 1, 1, 0, 1, 1, 1): self.SELECT_PORT05,
-            (1, 1, 1, 1, 1, 0, 1, 1): self.SELECT_PORT06,
-            (1, 1, 1, 1, 1, 1, 0, 1): self.SELECT_PORT07,
-            (1, 1, 1, 1, 1, 1, 1, 0): self.SELECT_PORT08,
-        }
 
         self._reset_state()
 
@@ -50,7 +37,9 @@ class OvenCheckEmptyState(BaseRobotState):
         self.carrier_query_sended = False
         self.carrier_query_success = False
         self.port_carriers = [True] * 8  # 烤箱八個port的狀態 (True表示有貨物)
-        self.select_oven_port = self.SELECT_NONE
+        self.select_oven_port = None  # 選定的 port_start (1, 3, 5, 7)
+        self.selected_port_pair = None  # 選定的 port pair，例如 [5, 6]
+        self.selected_pair_name = None  # 選定組合的名稱，例如 "port5+6"
         self.carrier_id = None
 
     def enter(self):
@@ -118,18 +107,77 @@ class OvenCheckEmptyState(BaseRobotState):
 
         return validation_passed, validation_errors
 
-    def _handle_port_selection(self, context: RobotContext):
-        """處理port選擇邏輯"""
-        if self.search_eqp_signal_ok and not self.check_ok:
-            port_tuple = tuple(self.port_carriers)
-            self.select_oven_port = self.select_oven_port_table.get(port_tuple, self.SELECT_NONE)
+    def _extract_station_from_work_id(self, context: RobotContext):
+        """從 work_id 中提取 station 並映射到 port pair (使用 EquipmentStations 模組)
 
-            if self.select_oven_port != self.SELECT_NONE:
+        Returns:
+            tuple: (station, port_pair)
+            例如: (5, [5, 6]) 或 (7, [7, 8])
+        """
+        # 調用基類通用方法（通過 context.work_id 訪問，符合狀態模式）
+        station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+        if station is None:
+            return None, None
+        return station, ports
+
+    def _check_port_pair_empty(self, port_pair):
+        """檢查 port pair 是否兩個都空（PUT 操作的條件）
+
+        Args:
+            port_pair: [port1, port2]，例如 [5, 6] 或 [7, 8]
+
+        Returns:
+            bool: True 表示兩個 port 都空，False 表示至少一個有貨
+        """
+        port1, port2 = port_pair
+        port1_has_cargo = self.port_carriers[port1 - 1]  # port 1-8 對應 index 0-7
+        port2_has_cargo = self.port_carriers[port2 - 1]
+
+        port1_empty = not port1_has_cargo
+        port2_empty = not port2_has_cargo
+
+        self.node.get_logger().debug(
+            f"檢查 port pair [{port1}, {port2}]: "
+            f"port{port1}={'空' if port1_empty else '有貨'}, "
+            f"port{port2}={'空' if port2_empty else '有貨'}")
+
+        # 核心邏輯：兩個都空才返回 True
+        both_empty = port1_empty and port2_empty
+
+        if both_empty:
+            self.node.get_logger().info(
+                f"✅ Port pair [{port1}, {port2}] 兩個都空，可以執行 PUT 操作")
+        else:
+            self.node.get_logger().warn(
+                f"❌ Port pair [{port1}, {port2}] 未同時為空，無法執行 PUT 操作")
+
+        return both_empty
+
+    def _handle_port_selection(self, context: RobotContext):
+        """處理 port 選擇邏輯 - 使用統一的 station-based 檢查"""
+        if self.search_eqp_signal_ok and not self.check_ok:
+            # 從 work_id 解析 station 和 port pair
+            station, port_pair = self._extract_station_from_work_id(context)
+            if port_pair is None:
+                self.node.get_logger().error("無法從 work_id 解析 station，重置狀態")
+                self._reset_state()
+                return
+
+            # 檢查 port pair 是否兩個都空
+            if self._check_port_pair_empty(port_pair):
+                # 保存選定的 port pair 資訊
+                self.selected_port_pair = port_pair
+                self.selected_pair_name = f"Station{station:02d}(port{port_pair[0]}+{port_pair[1]})"
+                self.select_oven_port = station  # select_port 就是 station 編號
                 context.oven_number = self.select_oven_port
-                self.node.get_logger().info(f"✅ 選擇烤箱空位 Port {self.select_oven_port}")
                 self.check_ok = True
+
+                self.node.get_logger().info(
+                    f"✅ 選擇 {self.selected_pair_name} (select_port={self.select_oven_port})，準備查詢 Carrier")
             else:
-                self.node.get_logger().warn("⚠️ 沒有可用的烤箱空位")
+                self.node.get_logger().warn(
+                    f"❌ Station{station:02d} port pair {port_pair} 未同時為空，無法執行 PUT 操作")
+                # 沒有可用空位，進入完成狀態
                 from unloader_agv.robot_states.complete_state import CompleteState
                 context.set_state(CompleteState(self.node))
 

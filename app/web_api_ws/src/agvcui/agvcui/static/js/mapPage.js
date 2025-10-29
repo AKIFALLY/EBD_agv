@@ -251,6 +251,7 @@ export const mapPage = (() => {
 
             let dockedRackObject = dockedRackObjects.get(locationId);
             if (!dockedRackObject) {
+                // x, y 已經是像素座標 (px)
                 const latLng = L.latLng(node.y, node.x);
                 // 使用 locationsStore 獲取位置名稱，如果沒有則使用預設值
                 console.log("Debug - locationId:", locationId, "locationsStore:", locationsStore);
@@ -302,9 +303,21 @@ export const mapPage = (() => {
         const kukaNodesMap = new Map(kukaNodes.map(node => [node.id, node]));
         const receivedRackIds = new Set(allRacks.map(r => r.id));
 
-        const carriedRacks = allRacks.filter(r => r.is_carry === 1);
+        // 🔧 修復：加強資料完整性驗證，避免處理不完整的資料
+        const carriedRacks = allRacks.filter(r => r.is_carry === 1 && r.agv_id != null);
         const dockedRacks = allRacks.filter(r => r.is_docked === 1);
-        const stationaryRacks = allRacks.filter(r => r.is_carry !== 1 && r.is_docked !== 1);
+        const stationaryRacks = allRacks.filter(r => r.is_carry !== 1 && r.is_docked !== 1 && r.location_id != null);
+
+        // 🔧 記錄無效資料，方便追蹤後端問題
+        const invalidCarriedRacks = allRacks.filter(r => r.is_carry === 1 && r.agv_id == null);
+        const invalidStationaryRacks = allRacks.filter(r => r.is_carry !== 1 && r.is_docked !== 1 && r.location_id == null);
+
+        if (invalidCarriedRacks.length > 0) {
+            console.warn('發現無效的 carried racks (is_carry=1 但 agv_id=null):', invalidCarriedRacks.map(r => r.id));
+        }
+        if (invalidStationaryRacks.length > 0) {
+            console.warn('發現無效的 stationary racks (非 carry/docked 但 location_id=null):', invalidStationaryRacks.map(r => r.id));
+        }
 
         // 1. 處理在 AGV 上的 Racks
         carriedRacks.forEach(rack => {
@@ -318,6 +331,7 @@ export const mapPage = (() => {
         stationaryRacks.forEach(rack => {
             const node = kukaNodesMap.get(rack.location_id);
             if (node) {
+                // x, y 已經是像素座標 (px)
                 const latLng = L.latLng(node.y, node.x);
                 updateRackObject(rack, latLng);
             } else {
@@ -393,6 +407,156 @@ export const mapPage = (() => {
     }
 
     let map = {};
+
+    // 座標顯示功能
+    function setupCoordinateDisplay() {
+        const coordinateValues = document.getElementById('coordinate-values');
+        const unitToggle = document.getElementById('coordinate-unit-toggle');
+        const unitLabel = document.getElementById('coordinate-unit-label');
+        const followToggle = document.getElementById('coordinate-follow-toggle');
+        const floatingDisplay = document.getElementById('floating-coordinate-display');
+
+        if (!coordinateValues || !unitToggle || !unitLabel || !followToggle || !floatingDisplay) {
+            console.warn('Coordinate display elements not found');
+            return;
+        }
+
+        // 獲取 X 和 Y 的子元素
+        const coordX = coordinateValues.querySelector('.coord-x');
+        const coordY = coordinateValues.querySelector('.coord-y');
+        const floatingCoordX = floatingDisplay.querySelector('.floating-coord-x');
+        const floatingCoordY = floatingDisplay.querySelector('.floating-coord-y');
+
+        // 獲取浮動座標框的子元素
+        const floatingValueX = floatingCoordX.querySelector('.floating-value');
+        const floatingValueY = floatingCoordY.querySelector('.floating-value');
+        const floatingUnits = floatingDisplay.querySelectorAll('.floating-unit');
+
+        if (!coordX || !coordY || !floatingCoordX || !floatingCoordY) {
+            console.warn('Coordinate X/Y elements not found');
+            return;
+        }
+
+        // 當前座標單位 ('px' 或 'mm')
+        let currentUnit = 'px';
+        // 設置初始單位狀態
+        unitToggle.setAttribute('data-unit', currentUnit);
+        unitLabel.setAttribute('data-unit', currentUnit);
+        floatingUnits.forEach(unit => {
+            unit.setAttribute('data-unit', currentUnit);
+            unit.textContent = currentUnit;
+        });
+        // 轉換比例：1mm = 0.08px，即 1px = 12.5mm
+        const PX_TO_MM = 12.5;
+        // 跟隨模式
+        let followMode = false;
+
+        // 當前滑鼠座標（像素）
+        let currentLat = null;
+        let currentLng = null;
+
+        // 更新座標顯示
+        function updateCoordinateDisplay() {
+            if (currentLat === null || currentLng === null) {
+                coordX.textContent = 'X: --';
+                coordY.textContent = 'Y: --';
+                if (followMode) {
+                    floatingValueX.textContent = '--';
+                    floatingValueY.textContent = '--';
+                }
+                return;
+            }
+
+            let displayLat, displayLng;
+            if (currentUnit === 'px') {
+                displayLat = currentLat.toFixed(2);
+                displayLng = currentLng.toFixed(2);
+            } else { // mm
+                displayLat = (currentLat * PX_TO_MM).toFixed(2);
+                displayLng = (currentLng * PX_TO_MM).toFixed(2);
+            }
+            coordX.textContent = `X: ${displayLng}`;
+            coordY.textContent = `Y: ${displayLat}`;
+
+            // 同步更新浮動框（只更新數值，單位已在切換時同步）
+            if (followMode) {
+                floatingValueX.textContent = displayLng;
+                floatingValueY.textContent = displayLat;
+            }
+        }
+
+        // 監聽滑鼠移動事件
+        map.on('mousemove', (e) => {
+            currentLat = e.latlng.lat;
+            currentLng = e.latlng.lng;
+            updateCoordinateDisplay();
+
+            // 更新浮動框位置（跟隨模式）
+            if (followMode) {
+                const offsetX = 15;  // 右偏移
+                const offsetY = 15;  // 下偏移
+                const mouseX = e.originalEvent.clientX;
+                const mouseY = e.originalEvent.clientY;
+
+                // 邊界檢查
+                const maxX = window.innerWidth - floatingDisplay.offsetWidth - 10;
+                const maxY = window.innerHeight - floatingDisplay.offsetHeight - 10;
+
+                const finalX = Math.min(mouseX + offsetX, maxX);
+                const finalY = Math.min(mouseY + offsetY, maxY);
+
+                floatingDisplay.style.left = `${finalX}px`;
+                floatingDisplay.style.top = `${finalY}px`;
+            }
+        });
+
+        // 滑鼠離開地圖時清除座標
+        map.on('mouseout', () => {
+            currentLat = null;
+            currentLng = null;
+            coordX.textContent = 'X: --';
+            coordY.textContent = 'Y: --';
+            if (followMode) {
+                floatingValueX.textContent = '--';
+                floatingValueY.textContent = '--';
+            }
+        });
+
+        // 單位切換按鈕點擊事件
+        unitToggle.addEventListener('click', () => {
+            currentUnit = currentUnit === 'px' ? 'mm' : 'px';
+            // 同步更新按鈕和標籤
+            unitToggle.textContent = currentUnit;
+            unitToggle.setAttribute('data-unit', currentUnit);
+            unitLabel.textContent = `(${currentUnit})`;
+            unitLabel.setAttribute('data-unit', currentUnit); // 同步 label 的 data-unit
+            // 同步更新浮動座標框的單位
+            floatingUnits.forEach(unit => {
+                unit.setAttribute('data-unit', currentUnit);
+                unit.textContent = currentUnit;
+            });
+            updateCoordinateDisplay();
+            console.log(`Coordinate unit switched to: ${currentUnit}`);
+        });
+
+        // 跟隨模式切換按鈕點擊事件
+        followToggle.addEventListener('click', () => {
+            followMode = !followMode;
+            if (followMode) {
+                followToggle.classList.add('active');
+                floatingDisplay.style.display = 'block';
+                updateCoordinateDisplay(); // 立即更新浮動框座標
+                console.log('Follow mode enabled');
+            } else {
+                followToggle.classList.remove('active');
+                floatingDisplay.style.display = 'none';
+                console.log('Follow mode disabled');
+            }
+        });
+
+        console.log('Map coordinate display initialized');
+    }
+
     // mapSetup 裡新增點擊事件：
     function mapSetup() {
         const mapState = mapStore.getState();
@@ -427,7 +591,15 @@ export const mapPage = (() => {
             console.log(zoom);
             const newWeight = 3 + zoom;         // 你可以改成更合適的計算
             const newArrowSize = 3 * (3 + zoom);  // 箭頭大小也跟著縮放
+
+            // 更新 CT 边线
             edgeObjects.forEach(edge => {
+                edge.updateWeight(newWeight);
+                edge.updateArrowSize(newArrowSize);
+            });
+
+            // 更新 KUKA 边线
+            kukaEdgeObjects.forEach(edge => {
                 edge.updateWeight(newWeight);
                 edge.updateArrowSize(newArrowSize);
             });
@@ -521,12 +693,12 @@ export const mapPage = (() => {
         //const agv_unloader02 = new RotatingMovingObject(map, L.latLng(1320, 2660), "agv_unloader02", "agv-unloader");
         //agv_unloader02.setTargetPosition(L.latLng(1120, 2660));
 
-        const room2TransferboxIn = new TransferBoxObject(map, L.latLng(1560, 3260), "201");
-        const room2TransferboxOut = new TransferBoxObject(map, L.latLng(1560, 2660), "202");
-        const room2Cleaner = new CleanerPortsObject(map, L.latLng(1020, 3260), "203");
-        const room2Soaking = new SoakingPortsObject(map, L.latLng(1540, 2960), "204");
-        const room2Dryer = new DryerPortsObject(map, L.latLng(1240, 2960), "205");
-        const room2Oven = new OvenPortsObject(map, L.latLng(1020, 2660), "206");
+        const room2TransferboxIn = new TransferBoxObject(map, L.latLng(1600, 3260), "201");
+        const room2TransferboxOut = new TransferBoxObject(map, L.latLng(1600, 2660), "202");
+        const room2Cleaner = new CleanerPortsObject(map, L.latLng(1060, 3260), "203");
+        const room2Soaking = new SoakingPortsObject(map, L.latLng(1460, 2960), "204");
+        const room2Dryer = new DryerPortsObject(map, L.latLng(1200, 2960), "205");
+        const room2Oven = new OvenPortsObject(map, L.latLng(1060, 2740), "206");
 
         eqpObjects.push(room2TransferboxIn);
         eqpObjects.push(room2TransferboxOut);
@@ -535,12 +707,12 @@ export const mapPage = (() => {
         eqpObjects.push(room2Dryer);
         eqpObjects.push(room2Oven);
 
-        const room2TransferboxInInfo = new EqpInfoObject(map, L.latLng(1560, 3380), "201", "TransferboxIn");
-        const room2TransferboxOutInfo = new EqpInfoObject(map, L.latLng(1560, 2540), "202", "TransferboxOut");
-        const room2SoakingInfo = new EqpInfoObject(map, L.latLng(1580, 2960), "204", "Soaking");
-        const room2DryerInfo = new EqpInfoObject(map, L.latLng(1120, 2960), "205", "Dryer");
-        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(920, 3260), "203", "Cleaner", true);//with counter
-        const room2OvenInfo = new EqpInfoObject(map, L.latLng(920, 2660), "206", "Oven", true);//with counter
+        const room2TransferboxInInfo = new EqpInfoObject(map, L.latLng(1600, 3380), "201", "TransferboxIn");
+        const room2TransferboxOutInfo = new EqpInfoObject(map, L.latLng(1600, 2540), "202", "TransferboxOut");
+        const room2SoakingInfo = new EqpInfoObject(map, L.latLng(1500, 2960), "204", "Soaking");
+        const room2DryerInfo = new EqpInfoObject(map, L.latLng(1080, 2960), "205", "Dryer");
+        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(960, 3260), "203", "Cleaner", true);//with counter
+        const room2OvenInfo = new EqpInfoObject(map, L.latLng(960, 2740), "206", "Oven", true);//with counter
 
         eqpInfoCountObjects.push(room2CleanerInfo);
         eqpInfoCountObjects.push(room2OvenInfo);
@@ -570,6 +742,9 @@ export const mapPage = (() => {
         // 簡單修正初始化時的尺寸問題
         map.invalidateSize();
 
+        // 初始化座標顯示功能
+        setupCoordinateDisplay();
+
     }
 
     function updateAgvs(map, agvData) {
@@ -597,6 +772,11 @@ export const mapPage = (() => {
         // 初始化地圖互動功能
         mapInteraction.init(map);
         mapObjectManager.init();
+
+        // 初始化 4狀態節點切換控制
+        if (mapInteraction.initializeNodeToggleControl) {
+            mapInteraction.initializeNodeToggleControl();
+        }
 
         // 確保管理器在全域可用
         window.mapObjectManager = mapObjectManager;

@@ -58,12 +58,12 @@ def dynamic_query(pool: ConnectionPoolManager, table_name: str, columns: List[st
 #    #pool_agvc,
 #    #table_name="task",
 #    #columns=["id", "work_id", "status_id","room_id", "node_id", "name", "description", "agv_id", "priority", "parameters", "created_at", "updated_at"],
-#    #data=[3, 2051201,2,2,1004,"測試測試NAME","測試測試DES",1,2,json.dumps({"a": 1, "b": 2}),"2025-06-09 12:00:00","2025-06-09 12:00:00"],
+#    #data=[3, 2051701,2,2,1004,"測試測試NAME","測試測試DES",1,2,json.dumps({"a": 1, "b": 2}),"2025-06-09 12:00:00","2025-06-09 12:00:00"],
 #    #mode="insert")
 #
-#  
-#    
-#    result = dynamic_query(pool_agvc, "task", columns=["*"], condition= "work_id = 2051201 AND room_id = 2", mode="select")
+#
+#
+#    result = dynamic_query(pool_agvc, "task", columns=["*"], condition= "work_id = 2051701 AND room_id = 2", mode="select")
 #    print(result)
 #
 #

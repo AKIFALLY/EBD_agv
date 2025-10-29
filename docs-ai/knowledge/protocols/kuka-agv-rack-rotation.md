@@ -21,12 +21,12 @@ KUKA AGV systems require specific parameters for executing rack rotation tasks, 
 
 ### KUKA Navigation Parameters
 ```yaml
-# Required parameters for KUKA AGV rack rotation
+# Required parameters for KUKA AGV rack rotation (2025-10-01 更新)
 metadata:
   model: "KUKA400i"              # KUKA AGV model identifier
   nodes:                         # 3-point rotation pattern
     - "${start_node}"           # Entry point (inlet)
-    - "${turning_node}"         # Rotation point (typically node_id + 1)
+    - "${turning_node}"         # Rotation point (from location.rotation_node_id)
     - "${end_node}"             # Exit point (same as entry for rotation)
 ```
 
@@ -49,12 +49,12 @@ Where: Point 1 == Point 3 (same physical location)
 ```python
 def create_rack_rotation_task(location, rack, work):
     """Create a rack rotation task with KUKA parameters"""
-    
-    # Calculate navigation nodes
+
+    # Calculate navigation nodes (2025-10-01 更新)
     start_node = location.node_id
-    turning_node = location.node_id + 1  # Typically next sequential node
-    end_node = location.node_id          # Return to start point
-    
+    turning_node = location.rotation_node_id  # 使用 Location 表配置的旋轉點
+    end_node = location.node_id               # Return to start point
+
     # Prepare KUKA-specific metadata
     metadata = {
         "model": "KUKA400i",
@@ -84,11 +84,14 @@ def create_rack_rotation_task(location, rack, work):
 
 ## 💡 Best Practices
 
-### Parameter Configuration
+### Parameter Configuration (2025-10-01 更新)
 1. **Always Include Model**: The `model` field is mandatory for KUKA system recognition
 2. **Validate Node Sequence**: Ensure nodes array has exactly 3 elements
 3. **Match Start and End**: First and third nodes must be identical
-4. **Calculate Turn Point**: Turn point should be reachable from start point
+4. **Use Configured Rotation Point**: Use `location.rotation_node_id` from Location table configuration
+   - Rotation points are pre-configured in initialization data (08_locations.py)
+   - Each room inlet/outlet has a dedicated rotation point
+   - Avoid calculating rotation points dynamically (deprecated: `node_id + 1`)
 
 ### Room Assignment
 1. **Identify Room Context**: Each task should know its room association
@@ -104,7 +107,7 @@ def create_rack_rotation_task(location, rack, work):
 
 ## 📊 Real Examples
 
-### Complete YAML Configuration
+### Complete YAML Configuration (2025-10-01 更新)
 ```yaml
 - id: "create_rotation_task"
   exec: "task.create_task"
@@ -122,9 +125,9 @@ def create_rack_rotation_task(location, rack, work):
       rotation_angle: 180
       reason: "A面完成，B面待作業"
       model: "KUKA400i"                  # KUKA model
-      nodes: [                           # 3-point pattern
+      nodes: [                           # 3-point pattern (使用配置的旋轉點)
         "${location.node_id}",
-        "${location.node_id + 1}",
+        "${location.rotation_node_id}",  # 從 Location 表配置獲取
         "${location.node_id}"
       ]
 ```

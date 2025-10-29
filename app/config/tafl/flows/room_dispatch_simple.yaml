@@ -1,7 +1,7 @@
 metadata:
   id: room_dispatch_simple
   name: 房間投料調度（簡化版）
-  enabled: true
+  enabled: false
   version: 1.0.0
   description: 依房間優先級將系統準備區料架調度到對應房間入口
   author: TAFL System
@@ -41,7 +41,7 @@ preload:
 rules: {}
 variables:
   dispatched_count: 0
-  work_id: 210001
+  work_id: 220001  # KUKA 移動貨架 work ID (RACK_MOVE)
 flow:
 - for:
     in: ${prepare_racks}
@@ -94,6 +94,17 @@ flow:
                         then:
                         - set:
                             product_process_id: ${product.process_settings_id}
+                # 查詢起始位置資訊
+                - query:
+                    target: locations
+                    where:
+                      id: ${rack.location_id}
+                    as: source_locations
+                    description: 查詢準備區位置資訊
+
+                - set:
+                    source_location: ${source_locations[0]}
+
                 - if:
                     condition: ${product_process_id == target_room.process_settings_id}
                     then:
@@ -118,6 +129,8 @@ flow:
                             room_id: ${target_room.id}
                             product_id: ${rack.product_id}
                             process_settings_id: ${product_process_id}
+                            nodes: ["${source_location.node_id}", "${target_inlet.node_id}"]
+                            model: "KUKA400i"
                         as: created_task
                         description: 創建搬運任務：料架${rack.id}到房間${target_room.id}入口
                     - set:

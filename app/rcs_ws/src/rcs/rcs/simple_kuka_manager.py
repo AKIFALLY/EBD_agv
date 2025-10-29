@@ -119,7 +119,7 @@ class KukaManager:
                     self.get_logger().debug(f"已更新 {updated_count} 台 KUKA 機器人狀態")
 
         except Exception as e:
-            self.get_logger().error(f"更新 KUKA 機器人狀態時發生錯誤: {e}", exc_info=True)
+            self.get_logger().error(f"更新 KUKA 機器人狀態時發生錯誤: {e}")
 
     def _update_single_robot(self, session, robot_data: dict) -> bool:
         """
@@ -280,7 +280,7 @@ class KukaManager:
                 session.commit()
 
         except Exception as e:
-            self.get_logger().error(f"KUKA 任務派發時發生錯誤: {e}", exc_info=True)
+            self.get_logger().error(f"KUKA 任務派發時發生錯誤: {e}")
 
     def _dispatch_task_to_agv(self, session, task, agv_id: int) -> bool:
         """
@@ -449,7 +449,7 @@ class KukaManager:
                     self.get_logger().debug(f"已更新 {updated_count} 個 KUKA 容器狀態")
 
         except Exception as e:
-            self.get_logger().error(f"更新 KUKA 容器狀態時發生錯誤: {e}", exc_info=True)
+            self.get_logger().error(f"更新 KUKA 容器狀態時發生錯誤: {e}")
 
     def _update_single_container(self, session, container_data: dict) -> bool:
         """

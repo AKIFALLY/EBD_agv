@@ -10,7 +10,6 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import httpx
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +160,7 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
         """控制遠端 AGV (代理到 Web API)"""
         if action not in ["start", "stop", "restart"]:
             raise HTTPException(status_code=400, detail=f"Invalid action: {action}")
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(f"{API_BASE_URL}/api/nodes/agv/{agv_name}/{action}")
@@ -169,5 +168,5 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
         except Exception as e:
             logger.error(f"Failed to {action} AGV {agv_name}: {e}")
             raise HTTPException(status_code=500, detail=str(e))
-    
+
     return router

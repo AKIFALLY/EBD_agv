@@ -39,6 +39,9 @@ class TAFLFunctions:
                 'query_rooms': self.db_bridge.query_rooms,  # Added room query support
                 'query_products': self.db_bridge.query_products,  # Added product query support
                 'query_machine': self.db_bridge.query_machine,  # Added machine query support
+                'query_eqps': self.db_bridge.query_eqps,  # Added equipment query support
+                'query_eqp_ports': self.db_bridge.query_eqp_ports,  # Added equipment port query support
+                'query_eqp_signals': self.db_bridge.query_eqp_signals,  # Added equipment signal query support
                 'create_task': self._wrap_create_task,
                 'create_tasks': self._wrap_create_task,  # Plural alias for TAFL compatibility
                 'create_rack': self.db_bridge.create_rack,
@@ -97,17 +100,25 @@ class TAFLFunctions:
     
     def _wrap_create_task(self, **kwargs):
         """Wrapper for create_task to handle return format
-        
+
         The db_bridge.create_task returns (task_id, details_dict),
         but TAFL expects a dict with accessible properties like 'id'.
         """
         task_id, details = self.db_bridge.create_task(**kwargs)
-        if task_id and details:
-            # Ensure the dict has 'id' property for ${new_task.id} interpolation
+        if task_id:
+            # Success case: ensure the dict has 'id' property for ${new_task.id} interpolation
             details['id'] = task_id
             details['task_id'] = task_id  # Keep both for compatibility
             return details
-        return None
+        else:
+            # Error case: log the error and return error details
+            if details and not details.get('success'):
+                import logging
+                logger = logging.getLogger(__name__)
+                errors = details.get('errors', ['Unknown error'])
+                logger.error(f"❌ Task creation failed: {errors}")
+                logger.error(f"   Parameters: {kwargs}")
+            return None  # Return None so TAFL knows creation failed
     
     # ========== Utility Functions ==========
     

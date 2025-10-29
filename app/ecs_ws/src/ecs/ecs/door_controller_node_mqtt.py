@@ -16,7 +16,7 @@ class DoorControllerNodeMQTT(Node):
         namespace = self.get_namespace()
         self.get_logger().info(f"🔧 服務命名空間: {namespace}")
 
-        self.declare_parameter('broker_host', '192.168.11.206')
+        self.declare_parameter('broker_host', '192.168.10.3')
         self.declare_parameter('broker_port', 2883)
         self.declare_parameter('username', 'DsH8vSx2uhTao1hlc9vx')
         self.declare_parameter('sub_topic', 'request/to/agvc/door')

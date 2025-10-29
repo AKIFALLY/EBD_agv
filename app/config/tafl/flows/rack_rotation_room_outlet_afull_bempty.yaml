@@ -1,7 +1,7 @@
 metadata:
   id: "rack_rotation_room_outlet_afull_bempty"
   name: "房間出口架台翻轉（A面滿B面空）"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查所有房間出口架台，當A面已滿、B面為空且房間內還有載具待處理時創建180度翻轉任務"
   author: "TAFL System"
@@ -103,7 +103,7 @@ flow:
                     - if:
                         condition: "${existing_tasks.length == 0}"
                         then:
-                          # 創建架台翻轉任務
+                          # 創建架台翻轉任務（直接使用 location.rotation_node_id 作為旋轉點）
                           - create:
                               target: task
                               with:
@@ -124,7 +124,8 @@ flow:
                                   rotation_angle: "${rotation_angle}"
                                   reason: "A面已滿載B面為空房間內有載具待處理"
                                   model: "${model}"
-                                  nodes: ["${location.node_id}", "${location.node_id + 1}", "${location.node_id}"]
+                                  # nodes: [起點, 轉向點, 終點] - 使用 location 配置的旋轉點
+                                  nodes: ["${location.node_id}", "${location.rotation_node_id}", "${location.node_id}"]
                                   a_side_count: "${a_side_count}"
                                   b_side_count: "${b_side_count}"
                                   room_carriers: "${room_carrier_count}"

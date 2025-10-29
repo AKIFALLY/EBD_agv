@@ -33,7 +33,7 @@ KUKA 車隊工作空間是 RosAGV 系統與 KUKA AGV 車隊系統之間的核心
 - **rcs_ws**: 使用 KukaFleetAdapter 進行 KUKA 車隊管理 (⚠️ 手動啟動)
 
 ### 外部依賴
-- **KUKA Fleet 系統**: 連線到 KUKA Fleet API (預設: http://192.168.11.206:10870)
+- **KUKA Fleet 系統**: 連線到 KUKA Fleet API (預設: http://192.168.10.3:10870)
 
 ## 🏗️ 專案結構
 
@@ -135,7 +135,7 @@ from kuka_fleet_adapter.kuka_api_client import KukaApiClient
 
 # 建立 API 客戶端 (自動登入)
 client = KukaApiClient(
-    base_url="http://192.168.11.206:10870",
+    base_url="http://192.168.10.3:10870",
     username="admin",
     password="Admin"
 )
@@ -173,7 +173,7 @@ ros2 run kuka_fleet_adapter kuka_fleet_adapter
 # 使用自訂參數啟動
 ros2 run kuka_fleet_adapter kuka_fleet_adapter \
   --ros-args \
-  -p base_url:="http://192.168.11.206:10870" \
+  -p base_url:="http://192.168.10.3:10870" \
   -p username:="admin" \
   -p password:="Admin" \
   -p timer_period:=1.0
@@ -228,7 +228,7 @@ print('✅ KUKA Fleet Adapter 模組載入成功')
 # 測試 API 客戶端初始化
 python3 -c "
 from kuka_fleet_adapter.kuka_api_client import KukaApiClient
-client = KukaApiClient(base_url='http://192.168.11.206:10870')
+client = KukaApiClient(base_url='http://192.168.10.3:10870')
 print('✅ KUKA API Client 初始化成功')
 "
 ```
@@ -256,7 +256,7 @@ python3 -c "
 from kuka_fleet_adapter.kuka_api_client import KukaApiClient
 try:
     client = KukaApiClient(
-        base_url='http://192.168.11.206:10870',
+        base_url='http://192.168.10.3:10870',
         username='admin',
         password='Admin'
     )
@@ -289,7 +289,7 @@ ros2 run kuka_fleet_adapter kuka_fleet_adapter
 # 方法 2: 使用自訂參數啟動
 ros2 run kuka_fleet_adapter kuka_fleet_adapter \
   --ros-args \
-  -p base_url:="http://192.168.11.206:10870" \
+  -p base_url:="http://192.168.10.3:10870" \
   -p username:="admin" \
   -p password:="Admin" \
   -p timer_period:=1.0
@@ -338,7 +338,7 @@ ps aux | grep kuka_fleet_adapter
 ### ROS 2 節點參數
 ```bash
 # 預設參數值
-base_url: "http://192.168.11.206:10870"  # KUKA Fleet API 基礎 URL
+base_url: "http://192.168.10.3:10870"  # KUKA Fleet API 基礎 URL
 username: "admin"                        # KUKA API 使用者名稱
 password: "Admin"                        # KUKA API 密碼
 timer_period: 1.0                        # 定時查詢週期 (秒)
@@ -348,7 +348,7 @@ timer_period: 1.0                        # 定時查詢週期 (秒)
 ```python
 # API 客戶端配置
 KUKA_API_CONFIG = {
-    "base_url": "http://192.168.11.206:10870",
+    "base_url": "http://192.168.10.3:10870",
     "username": "admin",
     "password": "Admin",
     "timeout": 30.0,
@@ -416,10 +416,10 @@ python3 -m kuka_fleet_adapter.kuka_fleet_adapter
 **解決方法**:
 ```bash
 # 檢查 KUKA Fleet 系統連線
-ping 192.168.11.206
+ping 192.168.10.3
 
 # 測試 API 端點
-curl -X POST http://192.168.11.206:10870/api/auth/login \
+curl -X POST http://192.168.10.3:10870/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"Admin"}'
 
@@ -427,7 +427,7 @@ curl -X POST http://192.168.11.206:10870/api/auth/login \
 python3 -c "
 from kuka_fleet_adapter.kuka_api_client import KukaApiClient
 client = KukaApiClient(
-    base_url='http://192.168.11.206:10870',
+    base_url='http://192.168.10.3:10870',
     username='admin',
     password='Admin'
 )
@@ -468,7 +468,7 @@ ros2 param get /kuka_fleet_adapter base_url
 ros2 param get /kuka_fleet_adapter username
 
 # 設定參數
-ros2 param set /kuka_fleet_adapter base_url "http://192.168.11.206:10870"
+ros2 param set /kuka_fleet_adapter base_url "http://192.168.10.3:10870"
 ros2 param set /kuka_fleet_adapter username "admin"
 
 # 重新啟動節點

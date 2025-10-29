@@ -1,0 +1,144 @@
+metadata:
+  id: "unloader_take_pre_dryer"
+  name: "Unloader AGV 從預烘機取料"
+  enabled: true
+  version: "1.0.0"
+  description: "檢查預烘機預烘完成載具，創建 Unloader AGV 取料任務（批量4格）"
+  author: "TAFL System"
+  created_at: "2025-10-16"
+  tags: ["unloader", "pre_dryer", "take", "automation"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  priority: 4  # 修正：priority 必須在 1-10 範圍內
+  model: "Unloader"  # 修正：資料庫使用首字母大寫
+  pre_dryer_equipment_id: 205
+  unloader_eqp_id: 211  # UnloaderAGV 設備 ID
+  unloader_ports: [2111, 2112, 2113, 2114]  # UnloaderAGV 的 4 個 Port
+  # 2個 Station 配置（Unloader 自定義映射，批量4格）
+  stations:
+    - station: 1
+      work_id: 2051101
+      ports: [2051, 2052, 2055, 2056]  # B1256門 (生產環境 Port ID)
+      batch_size: 4
+      name: "預烘機B1256門"
+    - station: 3
+      work_id: 2051301
+      ports: [2053, 2054, 2057, 2058]  # B3478門 (生產環境 Port ID)
+      batch_size: 4
+      name: "預烘機B3478門"
+
+flow:
+  # 查詢所有房間
+  - query:
+      target: rooms
+      where:
+        enable: 1
+      as: active_rooms
+      description: "查詢所有啟用的房間"
+
+  # 遍歷每個房間
+  - for:
+      in: "${active_rooms}"
+      as: room
+      do:
+        # 查詢 Unloader AGV (AGV表無room_id欄位，使用model過濾)
+        - query:
+            target: agvs
+            where:
+              model: "Unloader"
+              enable: 1
+            as: unloader_agvs
+            description: "查詢所有 Unloader AGV"
+
+        # 遍歷每個 Unloader AGV
+        - for:
+            in: "${unloader_agvs}"
+            as: agv
+            do:
+              # 查詢 UnloaderAGV 的 Port 上的載具
+              - query:
+                  target: carriers
+                  where:
+                    port_in: "${unloader_ports}"
+                  as: agv_carriers
+                  description: "查詢 UnloaderAGV Port 上的載具"
+
+              # 計算 AGV 空位
+              - set:
+                  agv_carrier_count: "${agv_carriers.length}"
+              - set:
+                  max_capacity: 4
+                  required_space: 4  # 批量4格
+              - set:
+                  available_space: "${max_capacity - agv_carrier_count}"
+              - set:
+                  agv_has_space: "${available_space >= required_space}"
+
+              # 如果 AGV 有足夠空位，檢查預烘機
+              - if:
+                  condition: "${agv_has_space}"
+                  then:
+                    # 遍歷2個 Station
+                    - for:
+                        in: "${stations}"
+                        as: station
+                        do:
+                          # 查詢該 Station 的預烘完成載具（4個 Port，透過port過濾）
+                          - query:
+                              target: carriers
+                              where:
+                                room_id: "${room.id}"
+                                port_in: "${station.ports}"
+                                status_id: 503  # 預烘完成
+                              as: ready_carriers
+                              description: "查詢預烘機 Station ${station.station} 預烘完成載具"
+
+                          # 檢查載具數量是否足夠（需要4個）
+                          - set:
+                              carrier_count: "${ready_carriers.length}"
+                              required_count: "${station.batch_size}"
+                              has_enough_carriers: "${carrier_count >= required_count}"
+
+                          # 如果載具數量足夠，檢查是否有重複任務
+                          - if:
+                              condition: "${has_enough_carriers}"
+                              then:
+                                # 檢查是否已存在未完成的取料任務
+                                - query:
+                                    target: tasks
+                                    where:
+                                      work_id: "${station.work_id}"
+                                      room_id: "${room.id}"
+                                      status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                                    as: existing_tasks
+                                    description: "檢查是否已存在取料任務"
+
+                                # 如果沒有重複任務，創建新任務
+                                - if:
+                                    condition: "${existing_tasks.length == 0}"
+                                    then:
+                                      # 創建 Unloader AGV 取料任務
+                                      - create:
+                                          target: task
+                                          with:
+                                            type: "unloader_take"
+                                            name: "房間${room.id}預烘機 Station${station.station} 取料"
+                                            description: "預烘機 ${station.name} 有${carrier_count}個預烘完成載具（批量4格）"
+                                            work_id: "${station.work_id}"
+                                            room_id: "${room.id}"
+                                            priority: "${priority}"
+                                            status_id: 1  # PENDING
+                                            parameters:
+                                              station: "${station.station}"
+                                              work_id: "${station.work_id}"
+                                              room_id: "${room.id}"
+                                              equipment_id: "${pre_dryer_equipment_id}"
+                                              ports: "${station.ports}"
+                                              batch_size: "${station.batch_size}"
+                                              model: "${model}"
+                                              carrier_count: "${carrier_count}"
+                                              reason: "預烘機有預烘完成載具，AGV 有空位"
+                                          description: "創建 Unloader AGV 取料任務（批量4格）"

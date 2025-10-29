@@ -1,0 +1,234 @@
+metadata:
+  id: "loader_take_soaker"
+  name: "Loader AGV 從泡藥機取料"
+  enabled: true
+  version: "1.0.0"
+  description: "檢查泡藥機泡藥完成載具，創建 Loader AGV 取料任務（特殊設備：1格處理）"
+  author: "TAFL System"
+  created_at: "2025-10-16"
+  tags: ["loader", "soaker", "take", "automation", "special-equipment"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  priority: 4  # 修正：priority 必須在 1-10 範圍內
+  model: "Loader"
+  soaker_equipment_id: 204
+  # 6個 Station 配置（特殊設備，全部1格處理）
+  stations:
+    - station: 1
+      work_id: 2040101
+      ports: [2041]
+      batch_size: 1
+      name: "泡藥機A"
+    - station: 2
+      work_id: 2040201
+      ports: [2042]
+      batch_size: 1
+      name: "泡藥機B"
+    - station: 3
+      work_id: 2040301
+      ports: [2043]
+      batch_size: 1
+      name: "泡藥機C"
+    - station: 4
+      work_id: 2040401
+      ports: [2044]
+      batch_size: 1
+      name: "泡藥機D"
+    - station: 5
+      work_id: 2040501
+      ports: [2045]
+      batch_size: 1
+      name: "泡藥機E"
+    - station: 6
+      work_id: 2040601
+      ports: [2046]
+      batch_size: 1
+      name: "泡藥機F"
+
+flow:
+  # 調試：流程開始
+  - notify:
+      message: "🔍 開始執行 loader_take_soaker 流程"
+
+  # 查詢所有房間
+  - query:
+      target: rooms
+      where:
+        enable: 1
+      as: active_rooms
+      description: "查詢所有啟用的房間"
+
+  # 調試：房間數量
+  - notify:
+      message: "找到 ${active_rooms.length} 個啟用的房間"
+
+  # 遍歷每個房間
+  - for:
+      in: "${active_rooms}"
+      as: room
+      do:
+        # 調試：進入房間迴圈
+        - notify:
+            message: "📍 處理房間 ${room.id} (${room.name})"
+        # 查詢 Loader AGV (AGV表無room_id欄位，使用model過濾)
+        - query:
+            target: agvs
+            where:
+              model: "Loader"
+              enable: 1
+            as: loader_agvs
+            description: "查詢所有 Loader AGV"
+
+        # 遍歷每個 Loader AGV
+        - for:
+            in: "${loader_agvs}"
+            as: agv
+            do:
+              # 查詢 AGV Port 1、3 的 Presence 信號（確認位置為空）
+              - query:
+                  target: eqp_signals
+                  where:
+                    eqp_port_id_in: [2101, 2103]  # AGV Port 1、3
+                    name_like: "%Presence"
+                    value: "0"  # 0 = 無載具在席（空位）
+                  as: agv_port13_empty_signals
+                  description: "確認 AGV Port 1、3 感測器無載具在席"
+
+              # 檢查 AGV Port 1、3 是否都是空位（Presence = 0）
+              - set:
+                  agv_port13_empty_count: "${agv_port13_empty_signals.length}"
+                  required_port13_empty: 2  # Port 1 和 Port 3 都要空
+                  agv_port13_verified: "${agv_port13_empty_count >= required_port13_empty}"
+
+              # 查詢 AGV Port 2、4 的 Presence 信號（至少一個為空）
+              - query:
+                  target: eqp_signals
+                  where:
+                    eqp_port_id_in: [2102, 2104]  # AGV Port 2、4
+                    name_like: "%Presence"
+                    value: "0"  # 0 = 無載具在席（空位）
+                  as: agv_port24_empty_signals
+                  description: "確認 AGV Port 2、4 至少一個感測器無載具在席"
+
+              # 檢查 AGV Port 2、4 是否至少一個為空（Presence = 0）
+              - set:
+                  agv_port24_empty_count: "${agv_port24_empty_signals.length}"
+                  required_port24_empty: 1  # Port 2 或 Port 4 至少一個要空
+                  agv_port24_verified: "${agv_port24_empty_count >= required_port24_empty}"
+
+              # 調試：記錄 AGV Presence 檢查結果
+              - notify:
+                  message: "Room ${room.id}: AGV ${agv.name} port13_empty=${agv_port13_empty_count}, port24_empty=${agv_port24_empty_count}, verified=${agv_port13_verified && agv_port24_verified}"
+
+              # 如果 AGV Port 1、3 都為空且 Port 2、4 至少一個為空，遍歷6個泡藥機 Station
+              - if:
+                  condition: "${agv_port13_verified && agv_port24_verified}"
+                  then:
+                    # 遍歷6個 Station（泡藥機 A-F）
+                    - for:
+                        in: "${stations}"
+                        as: station
+                        do:
+                          # 查詢該 Station 的泡藥完成載具（1個 Port，透過port過濾）
+                          - query:
+                              target: carriers
+                              where:
+                                room_id: "${room.id}"
+                                port_in: "${station.ports}"
+                                status_id: 403  # 泡藥完成
+                              as: ready_carriers
+                              description: "查詢泡藥機 Station ${station.station} 泡藥完成載具"
+
+                          # 檢查是否有完成載具（特殊設備：1格處理）
+                          - set:
+                              carrier_count: "${ready_carriers.length}"
+                              required_count: 1
+                              has_enough_carriers: "${carrier_count >= required_count}"
+
+                          # 如果載具數量足夠，檢查實際感測器在席信號
+                          - if:
+                              condition: "${has_enough_carriers}"
+                              then:
+                                # 查詢泡藥機 Port 的 Presence 信號（在席）
+                                - query:
+                                    target: eqp_signals
+                                    where:
+                                      eqp_port_id_in: "${station.ports}"
+                                      name_like: "%Presence"
+                                      value: "1"  # 1 = 有載具在席
+                                    as: soaker_presence_signals
+                                    description: "確認泡藥機 ${station.name} 感測器有載具在席"
+
+                                # 檢查泡藥機 Presence 是否為 1
+                                - set:
+                                    soaker_presence_count: "${soaker_presence_signals.length}"
+                                    soaker_presence_verified: "${soaker_presence_count >= required_count}"
+
+                                # 查詢泡藥機 Port 的允許/出料信號
+                                - query:
+                                    target: eqp_signals
+                                    where:
+                                      eqp_port_id_in: "${station.ports}"
+                                      name_like: "%Allow%"
+                                      value: "1"  # 1 = 允許出料
+                                    as: soaker_allow_signals
+                                    description: "確認泡藥機 ${station.name} 允許出料信號"
+
+                                # 檢查允許/出料信號是否為 1
+                                - set:
+                                    soaker_allow_count: "${soaker_allow_signals.length}"
+                                    soaker_allow_verified: "${soaker_allow_count >= required_count}"
+
+                                # 調試：記錄泡藥機信號檢查結果
+                                - notify:
+                                    message: "Room ${room.id}: ${station.name} presence=${soaker_presence_count}, allow=${soaker_allow_count}, verified=${soaker_presence_verified && soaker_allow_verified}"
+
+                                # 如果所有條件都滿足，檢查重複任務
+                                - if:
+                                    condition: "${has_enough_carriers && soaker_presence_verified && soaker_allow_verified}"
+                                    then:
+                                      # 檢查是否已存在未完成的取料任務
+                                      - query:
+                                          target: tasks
+                                          where:
+                                            work_id: "${station.work_id}"
+                                            room_id: "${room.id}"
+                                            status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                                          as: existing_tasks
+                                          description: "檢查是否已存在取料任務"
+
+                                      # 如果沒有重複任務，創建新任務
+                                      - if:
+                                          condition: "${existing_tasks.length == 0}"
+                                          then:
+                                            # 創建 Loader AGV 取料任務
+                                            - create:
+                                                target: task
+                                                with:
+                                                  type: "loader_take"
+                                                  name: "房間${room.id}泡藥機 Station${station.station} 取料"
+                                                  description: "${station.name}泡藥完成，AGV Port 1、3 都為空，Port 2、4 至少一個為空，泡藥機 Presence 和允許出料信號都為 1（六重驗證）"
+                                                  work_id: "${station.work_id}"
+                                                  room_id: "${room.id}"
+                                                  priority: "${priority}"
+                                                  status_id: 1  # PENDING
+                                                  parameters:
+                                                    station: "${station.station}"
+                                                    work_id: "${station.work_id}"
+                                                    room_id: "${room.id}"
+                                                    equipment_id: "${soaker_equipment_id}"
+                                                    ports: "${station.ports}"
+                                                    batch_size: "${station.batch_size}"
+                                                    model: "${model}"
+                                                    target_agv_ports: [2101, 2103]  # Port 1、3（前段流程端口）
+                                                    carrier_count: 1
+                                                    carrier_status: 403  # 泡藥完成
+                                                    agv_port13_verified: true  # AGV Port 1、3 都為空位
+                                                    agv_port24_verified: true  # AGV Port 2、4 至少一個為空位
+                                                    soaker_presence_verified: true  # 泡藥機 Presence = 1
+                                                    soaker_allow_verified: true  # 泡藥機允許出料 = 1
+                                                    reason: "泡藥機有泡藥完成載具且允許出料，AGV Port 1、3 都為空位，Port 2、4 至少一個為空位（六重驗證：軟體 + AGV Port1 + AGV Port3 + AGV Port2或4 + 泡藥機 Presence + 泡藥機允許出料）"
+                                                description: "創建 Loader AGV 取料任務（特殊設備，含六重驗證）"

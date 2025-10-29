@@ -1,0 +1,59 @@
+metadata:
+  id: "test_minimal_simple"
+  name: "最簡化測試流程"
+  enabled: false
+  version: "1.0.0"
+  description: "測試基本查詢和任務創建功能"
+
+settings:
+  execution_interval: 60
+
+variables:
+  test_room_id: 991
+  test_work_id: 9999901
+  priority: 5
+
+flow:
+  # 步驟 1: 查詢特定房間
+  - query:
+      target: rooms
+      where:
+        id: "${test_room_id}"
+        enable: 1
+      as: test_rooms
+      description: "查詢測試房間"
+
+  # 步驟 2: 查詢 LOADER AGV
+  - query:
+      target: agvs
+      where:
+        model: "Loader"
+        enable: 1
+      as: loader_agvs
+      description: "查詢 LOADER AGV"
+
+  # 步驟 3: 查詢測試房間的 carriers
+  - query:
+      target: carriers
+      where:
+        room_id: "${test_room_id}"
+      as: test_carriers
+      description: "查詢測試房間的 carriers"
+
+  # 步驟 4: 創建一個簡單任務（無條件）
+  - create:
+      target: task
+      with:
+        type: "test"
+        name: "測試任務"
+        description: "簡化測試流程創建的任務"
+        work_id: "${test_work_id}"
+        room_id: "${test_room_id}"
+        priority: "${priority}"
+        status_id: 1
+        parameters:
+          test_mode: true
+          rooms_found: "${test_rooms.length}"
+          agvs_found: "${loader_agvs.length}"
+          carriers_found: "${test_carriers.length}"
+      description: "創建測試任務"

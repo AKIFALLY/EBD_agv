@@ -1,0 +1,253 @@
+# CT 任务分配配置文件
+# 用于 simple_ct_manager.py 根据 work_id 分配任务到指定的 AGV
+# 版本: 1.0
+# 最后更新: 2025-10-21
+
+version: "1.0"
+enabled: true
+
+# ============================================================================
+# AGV 能力定义
+# 定义每台 AGV 的能力、限制和配置
+# ============================================================================
+agv_capabilities:
+  cargo02:
+    model: "Cargo"                   # AGV 型号
+    rooms: [1, 2]                    # 可运行的房间列表 (空列表 = 所有房间)
+    max_concurrent_tasks: 1          # 最大并发任务数
+    enabled: true                    # 是否启用此 AGV
+    description: "Cargo AGV 负责入口/出口传送箱搬运"
+
+  loader02:
+    model: "Loader"
+    rooms: [1, 2]
+    max_concurrent_tasks: 1
+    enabled: true
+    description: "Loader AGV 负责清洗机、泡药机等设备上下料"
+
+  unloader02:
+    model: "Unloader"
+    rooms: [1, 2]
+    max_concurrent_tasks: 1
+    enabled: true
+    description: "Unloader AGV 负责预烘机、烘箱取料和出口传送箱"
+
+# ============================================================================
+# work_id → AGV 直接映射
+# 每个 work_id 指定分配给哪台 AGV
+# ============================================================================
+work_id_allocations:
+  # -------------------------------------------------------------------------
+  # Cargo AGV 任务 (2000xxx)
+  # -------------------------------------------------------------------------
+  2000102:                           # CargoAGV放入口传送箱
+    agv_name: "cargo02"
+    priority_override: null          # null = 使用任务原始优先级
+    room_override: null              # null = 使用任务指定的房间
+    description: "Cargo AGV 放料到入口传送箱"
+
+  2000201:                           # CargoAGV拿出口传送箱
+    agv_name: "cargo02"
+    priority_override: null
+    room_override: null
+    description: "Cargo AGV 从出口传送箱取料"
+
+  # -------------------------------------------------------------------------
+  # Loader AGV 任务 (2010xxx, 2030xxx, 2040xxx)
+  # -------------------------------------------------------------------------
+  2010101:                           # LoaderAGV取入口传送箱
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 从入口传送箱取料"
+
+  2010301:                           # LoaderAGV取入口传送箱
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 从入口传送箱取料"
+
+  2030101:                           # LoaderAGV取清洗机上层
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 从清洗机上层取料"
+
+  2030102:                           # LoaderAGV放清洗机
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到清洗机"
+
+  2030201:                           # LoaderAGV取清洗机
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 从清洗机取料"
+
+  2030302:                           # LoaderAGV放清洗机下层
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到清洗机下层 Station 03"
+
+  2040101:                           # LoaderAGV拿泡药机A
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 从泡药机A取料"
+
+  2040102:                           # LoaderAGV放泡药机A
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到泡药机A"
+
+  2040201:                           # LoaderAGV拿泡药机B
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+
+  2040202:                           # LoaderAGV放泡药机B
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+
+  2040301:                           # LoaderAGV拿泡药机C
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+
+  2040302:                           # LoaderAGV放泡药机C
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+
+  2040401:                           # LoaderAGV拿泡药机D
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+
+  2040402:                           # LoaderAGV放泡药机D
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+
+  2040501:                           # LoaderAGV拿泡药机E
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 从泡药机E取料"
+
+  2040502:                           # LoaderAGV放泡药机E
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到泡药机E"
+
+  2040601:                           # LoaderAGV拿泡药机F
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 从泡药机F取料"
+
+  2040602:                           # LoaderAGV放泡药机F
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到泡药机F"
+
+  2050101:                           # LoaderAGV放预烘机B1256门
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到预烘机 B1256门"
+
+  2050102:                           # LoaderAGV放预烘机 Station 01
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到预烘机 Station 01"
+
+  2050301:                           # LoaderAGV放预烘机B3478门
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到预烘机 B3478门"
+
+  2050302:                           # LoaderAGV放预烘机 Station 03
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到预烘机 Station 03"
+
+  2050502:                           # LoaderAGV放预烘机 Station 05
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到预烘机 Station 05"
+
+  2050702:                           # LoaderAGV放预烘机 Station 07
+    agv_name: "loader02"
+    priority_override: null
+    room_override: null
+    description: "Loader AGV 放料到预烘机 Station 07"
+
+  # -------------------------------------------------------------------------
+  # Unloader AGV 任务 (2020xxx, 2051xxx, 2060xxx)
+  # -------------------------------------------------------------------------
+  2020102:                           # UnloaderAGV放出口传送箱
+    agv_name: "unloader02"
+    priority_override: null
+    room_override: null
+    description: "Unloader AGV 放料到出口传送箱"
+
+  2051101:                           # UnloaderAGV取预烘B1256门
+    agv_name: "unloader02"
+    priority_override: 3             # 预烘机任务优先级较高
+    room_override: null
+    description: "Unloader AGV 从预烘机 B1256门 取料"
+
+  2051301:                           # UnloaderAGV取预烘B3478门
+    agv_name: "unloader02"
+    priority_override: 3
+    room_override: null
+    description: "Unloader AGV 从预烘机 B3478门 取料"
+
+  2060101:                           # UnloaderAGV取烘箱上排
+    agv_name: "unloader02"
+    priority_override: null
+    room_override: null
+    description: "Unloader AGV 从烘箱上排取料"
+
+  2060502:                           # UnloaderAGV放烘箱下排
+    agv_name: "unloader02"
+    priority_override: null
+    room_override: null
+    description: "Unloader AGV 放料到烘箱下排"
+
+# ============================================================================
+# 默认分配策略
+# 当 work_id 不在映射表中时的处理方式
+# ============================================================================
+default_allocation:
+  enabled: false                     # 是否启用默认分配 (false = 不分配未配置的任务)
+  fallback_agv: null                 # 默认分配的 AGV (null = 不分配)
+  log_unmapped: true                 # 是否记录未映射的 work_id
+
+# ============================================================================
+# 热重载配置
+# 配置文件变更检测和自动重载
+# ============================================================================
+reload_config:
+  enabled: true                      # 是否启用热重载
+  check_interval: 10.0               # 检查间隔（秒）
+  log_on_reload: true                # 重载时是否记录日志
+
+# ============================================================================
+# 调试选项
+# ============================================================================
+debug:
+  verbose_logging: false             # 是否启用详细日志
+  log_allocation_decisions: true     # 是否记录每次分配决策
+  log_skipped_tasks: true            # 是否记录跳过的任务

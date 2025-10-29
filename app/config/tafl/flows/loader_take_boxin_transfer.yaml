@@ -1,0 +1,205 @@
+metadata:
+  id: "loader_take_boxin_transfer"
+  name: "Loader AGV 從入口傳送箱取料"
+  enabled: true
+  version: "1.0.0"
+  description: "檢查入口傳送箱待處理載具，創建 Loader AGV 取料任務（標準設備）"
+  author: "TAFL System"
+  created_at: "2025-10-16"
+  tags: ["loader", "transfer", "take", "automation"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  priority: 5  # 修正：priority 必須在 1-10 範圍內
+  model: "Loader"
+  entrance_equipment_id: 201
+  # 2個 Station 配置（標準設備，Loader 一次操作1格）
+  stations:
+    - station: 1
+      work_id: 2010101
+      ports: [2011, 2012]
+      batch_size: 1  # Loader: 1格操作
+      name: "入口箱01"
+    - station: 3
+      work_id: 2010301
+      ports: [2013, 2014]
+      batch_size: 1  # Loader: 1格操作
+      name: "入口箱03"
+
+flow:
+  # 調試：流程開始
+  - notify:
+      message: "🔍 開始執行 loader_take_boxin_transfer 流程"
+
+  # 查詢所有房間
+  - query:
+      target: rooms
+      where:
+        enable: 1
+      as: active_rooms
+      description: "查詢所有啟用的房間"
+
+  # 調試：房間數量
+  - notify:
+      message: "找到 ${active_rooms.length} 個啟用的房間"
+
+  # 遍歷每個房間
+  - for:
+      in: "${active_rooms}"
+      as: room
+      do:
+        # 調試：進入房間迴圈
+        - notify:
+            message: "📍 處理房間 ${room.id} (${room.name})"
+        # 查詢 Loader AGV (AGV表無room_id欄位，使用model過濾)
+        - query:
+            target: agvs
+            where:
+              model: "Loader"
+              enable: 1
+            as: loader_agvs
+            description: "查詢所有 Loader AGV"
+
+        # 遍歷每個 Loader AGV
+        - for:
+            in: "${loader_agvs}"
+            as: agv
+            do:
+              # 查詢 AGV Port 1、3 的載具數量（前段流程端口）
+              - query:
+                  target: carriers
+                  where:
+                    port_in: [2101, 2103]  # Port 1、3（Carrier 沒有 agv_id，用 port_id 查詢）
+                    room_id: "${room.id}"  # 過濾當前房間的載具
+                  as: port13_carriers
+                  description: "查詢 AGV Port 1、3 載具（當前房間）"
+
+              # 計算 Port 1、3 空位
+              - set:
+                  port13_carrier_count: "${port13_carriers.length}"
+                  port13_capacity: 2  # Port 1、3 總容量
+                  required_space: 1  # Loader: 1格操作
+                  required_agv_empty_ports: 2  # Port 1 和 Port 3 都要空
+              - set:
+                  available_space_port13: "${port13_capacity - port13_carrier_count}"
+              - set:
+                  agv_has_space: "${available_space_port13 >= required_space}"
+
+              # 調試：記錄空位情況
+              - notify:
+                  message: "Room ${room.id}: AGV ${agv.name} port13_carriers=${port13_carrier_count}, available=${available_space_port13}, has_space=${agv_has_space}"
+
+              # 如果 AGV 軟體狀態有空位，檢查硬體 Presence 信號
+              - if:
+                  condition: "${agv_has_space}"
+                  then:
+                    # 查詢 AGV Port 1、3 的 Presence 信號（確認位置為空）
+                    - query:
+                        target: eqp_signals
+                        where:
+                          eqp_port_id_in: [2101, 2103]  # AGV Port 1、3
+                          name_like: "%Presence"
+                          value: "0"  # 0 = 無載具在席（空位）
+                        as: agv_empty_presence_signals
+                        description: "確認 AGV Port 1、3 感測器無載具在席"
+
+                    # 檢查 AGV Port 1、3 是否都是空位（Presence = 0）
+                    - set:
+                        agv_presence_empty_count: "${agv_empty_presence_signals.length}"
+                        agv_presence_verified: "${agv_presence_empty_count >= required_agv_empty_ports}"  # 必須兩個都空
+
+                    # 調試：記錄 AGV Presence 檢查結果
+                    - notify:
+                        message: "Room ${room.id}: AGV ${agv.name} presence_empty_count=${agv_presence_empty_count}, presence_verified=${agv_presence_verified}"
+
+                    # 如果 AGV Port 1、3 硬體確認有空位，才檢查入口傳送箱
+                    - if:
+                        condition: "${agv_presence_verified}"
+                        then:
+                          # 遍歷2個 Station
+                          - for:
+                              in: "${stations}"
+                              as: station
+                              do:
+                                # 查詢該 Station 的待處理載具（2個 Port，透過port_in過濾）
+                                - query:
+                                    target: carriers
+                                    where:
+                                      room_id: "${room.id}"
+                                      port_in: "${station.ports}"
+                                      status_id: 102  # 進入入口傳送箱完成
+                                    as: ready_carriers
+                                    description: "查詢入口箱 Station ${station.station} 待處理載具"
+
+                                # 檢查載具數量是否足夠（需要至少1個）
+                                - set:
+                                    carrier_count: "${ready_carriers.length}"
+                                    required_count: "${station.batch_size}"
+                                    required_boxin_ports: 2  # 每個 Station 的兩個 Port 都要有載具
+                                    has_enough_carriers: "${carrier_count >= required_count}"
+
+                                # 如果載具數量足夠，檢查實際感測器在席信號
+                                - if:
+                                    condition: "${has_enough_carriers}"
+                                    then:
+                                      # 查詢這些 Port 的 Presence 信號（兩個 Port 都要有載具）
+                                      - query:
+                                          target: eqp_signals
+                                          where:
+                                            eqp_port_id_in: "${station.ports}"
+                                            name_like: "%Presence"
+                                            value: "1"  # 1 = 有載具在席
+                                          as: occupied_presence_signals
+                                          description: "確認入口箱感測器有載具在席"
+
+                                      # 檢查兩個 Port 的 Presence 是否都是 1
+                                      - set:
+                                          presence_check_count: "${occupied_presence_signals.length}"
+                                          presence_all_occupied: "${presence_check_count >= required_boxin_ports}"  # 必須兩個都有載具
+
+                                      # 如果入口箱軟體狀態和硬體感測器都確認有載具，檢查重複任務
+                                      - if:
+                                          condition: "${has_enough_carriers && presence_all_occupied}"
+                                          then:
+                                            # 檢查是否已存在未完成的取料任務
+                                            - query:
+                                                target: tasks
+                                                where:
+                                                  work_id: "${station.work_id}"
+                                                  room_id: "${room.id}"
+                                                  status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                                                as: existing_tasks
+                                                description: "檢查是否已存在取料任務"
+
+                                            # 如果沒有重複任務，創建新任務
+                                            - if:
+                                                condition: "${existing_tasks.length == 0}"
+                                                then:
+                                                  # 創建 Loader AGV 取料任務
+                                                  - create:
+                                                      target: task
+                                                      with:
+                                                        type: "loader_take"
+                                                        name: "房間${room.id}入口箱 Station${station.station} 取料"
+                                                        description: "入口箱 ${station.name} 兩個 Port 都有載具（${carrier_count}個），AGV Port 1、3 都為空位，雙重感測器確認（入口箱兩個 Port + AGV 兩個 Port）"
+                                                        work_id: "${station.work_id}"
+                                                        room_id: "${room.id}"
+                                                        priority: "${priority}"
+                                                        status_id: 1  # PENDING
+                                                        parameters:
+                                                          station: "${station.station}"
+                                                          work_id: "${station.work_id}"
+                                                          room_id: "${room.id}"
+                                                          equipment_id: "${entrance_equipment_id}"
+                                                          ports: "${station.ports}"
+                                                          batch_size: "${station.batch_size}"
+                                                          model: "${model}"
+                                                          carrier_count: "${carrier_count}"
+                                                          target_agv_ports: [2101, 2103]  # Port 1、3（前段流程端口）
+                                                          port13_available: "${available_space_port13}"
+                                                          agv_presence_verified: true  # AGV Port 1、3 Presence 確認都為空位
+                                                          boxin_presence_verified: true  # 入口箱兩個 Port Presence 確認都有載具
+                                                          reason: "入口箱兩個 Port 都有待處理載具，AGV Port 1、3 都為空位，四重感測器確認（軟體 + AGV Port1 Presence + AGV Port3 Presence + 入口箱兩個 Port Presence）"
+                                                      description: "創建 Loader AGV 取料任務（標準設備，含雙重感測器驗證）"

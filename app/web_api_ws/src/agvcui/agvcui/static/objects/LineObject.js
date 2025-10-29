@@ -13,11 +13,16 @@ export class LineObject {
         this.hoverWeight = options.hoverWeight || 5;
 
         this.opacity = options.opacity !== undefined ? options.opacity : 0.5; // 0~1 透明度
+
+        // 處理 CSS 類別名稱
+        this.className = options.className || '';
+
         this.polyline = L.polyline([start, end], {
             color: options.color || '#AAA',
             weight: options.weight || 3,
             opacity: this.opacity, // 0~1 透明度
-            dashArray: options.dashArray || null
+            dashArray: options.dashArray || null,
+            className: this.className // 添加 CSS 類別支援
         }).addTo(map);
 
         // 創建一個透明的、更寬的覆蓋層來捕獲點擊事件
@@ -25,12 +30,14 @@ export class LineObject {
             color: 'transparent',
             weight: Math.max(15, (options.weight || 3) * 3), // 至少15px寬，或原線條的3倍
             opacity: 0,
-            interactive: true
+            interactive: true,
+            className: this.className // 添加 CSS 類別支援
         }).addTo(map);
 
         this.arrowColor = options.arrowColor || options.color || '#AAA';
         this.arrowSize = options.arrowSize || 10;
 
+        // 為 arrow decorator 也添加 CSS 類別（通過設定到容器）
         this.arrow = L.polylineDecorator(this.polyline, {
             patterns: [
                 {

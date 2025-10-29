@@ -1,0 +1,373 @@
+# Flow 1: unloader_take_pre_dryer.yaml
+
+## 🎯 业务目的
+从预烘机批量取料，启动 Unloader AGV 的后段制程流程
+
+## 📋 基本信息
+
+| 项目 | 值 |
+|------|-----|
+| 文件名 | `unloader_take_pre_dryer.yaml` |
+| Flow ID | `unloader_take_pre_dryer` |
+| 优先级 | 45 |
+| 执行间隔 | 12 秒 |
+| Work ID | **2050101, 2050301**（Station-based，只有2个）|
+
+## 🏭 业务场景
+
+### 前置条件
+1. Loader AGV 已经将载具放入预烘机（PUT_PRE_DRYER）
+2. 预烘机完成预烘干制程
+3. 载具状态更新为"预烘干完成"（status_id: 503）
+4. Unloader AGV 处于空闲或有空余车位
+
+### 触发条件（三重验证）
+1. **Carrier Status 过滤**: 预烘机有 status_id=503（预烘完成）的载具（≥4个）
+2. **AGV 空位**: Unloader AGV 车上有空位（≥4格）
+3. **重复检查**: 没有重复的未完成任务
+
+### 执行结果
+- 创建 Unloader AGV 取料任务
+- 任务进入待分派队列（status_id = 1 PENDING）
+- RCS 系统分派给空闲的 Unloader AGV
+
+## 🔧 技术规格
+
+### 预烘机配置（Station-based）
+
+**物理结构**：
+- Equipment 205（预烘机）
+- 8个 Port（Port 1-8）
+- **2个 Station**（**Station 01, 03**）
+
+**Station-Port 映射**（UnloaderAGV 自定义）：
+- **Station 01**: Port 1-2-5-6（**批量4格**）
+- **Station 03**: Port 3-4-7-8（**批量4格**）
+
+**Work ID 对应**（Station-based 编码）：
+- `2050101`: Station 01 取预烘（Port 1-2-5-6，**批量4格**）
+- `2050301`: Station 03 取预烘（Port 3-4-7-8，**批量4格**）
+
+**关键特点**：
+- ✅ **只有2个 Work ID**（全部4格批量处理）
+- ✅ **统一批量处理**（不再有2格标准处理）
+- ✅ **UnloaderAGV 特定映射**（Station 跨上下排，提升效率）
+
+### Station-based 设计说明
+
+**编码规则**：`room_id + equipment_type + station + action_type`
+- work_id 中的 "01/03" 代表 Station 编号（非 Port 起始号）
+- 示例：`2050101` = room2 + pre_dryer(05) + station01(01) + take(01)
+
+**UnloaderAGV 自定义映射**：
+- 在 `equipment_stations.py` 中实作
+- **所有 Station 统一批量4格处理**（UnloaderAGV 特有）
+- Station 01/03 都跨上下排（Port 1-2-5-6 和 Port 3-4-7-8）
+
+### Unloader AGV 车载配置
+
+**S尺寸产品**：
+- 4格可用（上2格 + 下2格）
+- 最大容量：4个 Carrier
+
+**L尺寸产品**：
+- 2格可用（仅上2格）
+- 最大容量：2个 Carrier
+
+### 批量处理逻辑
+
+**统一4格批量处理**（**所有 Station 01/03**）：
+- **每个 Station 包含4格**（跨上下排）
+- **一次任务取出4格**（统一批量处理）
+- **需要检查 AGV 至少有4格空位**（车上需全空）
+- **不支持部分取料**（要么取满4格，要么不取）
+
+**效率提升**：
+- 取消2格标准处理，统一为4格批量
+- 减少任务次数，提升整体产能
+- 简化逻辑，降低复杂度
+
+## 📝 TAFL Flow 设计
+
+### Metadata
+```yaml
+metadata:
+  id: "unloader_take_pre_dryer"
+  name: "Unloader AGV 从预烘机取料"
+  enabled: true
+  version: "1.0.0"
+  description: "检查预烘机完成预烘干的载具，创建 Unloader AGV 取料任务"
+  author: "TAFL System"
+  created_at: "2025-10-03"
+  tags: ["unloader", "pre_dryer", "take", "automation"]
+```
+
+### Settings
+```yaml
+settings:
+  execution_interval: 12  # 每12秒执行一次
+```
+
+### Variables
+```yaml
+variables:
+  priority: 45        # 高优先级（启动后段制程）
+  model: "UNLOADER"   # AGV 型号
+  stations:           # 2个 Station 配置（Station-based，全部4格批量）
+    - station: 1      # Station 01
+      work_id: 2050101
+      ports: [1, 2, 5, 6]
+      batch_size: 4   # 批量4格
+    - station: 3      # Station 03
+      work_id: 2050301
+      ports: [3, 4, 7, 8]
+      batch_size: 4   # 批量4格
+```
+
+## 🔄 流程逻辑
+
+### 主要步骤
+
+#### 1. 查询所有房间
+```yaml
+- query:
+    target: rooms
+    where:
+      enabled: true
+    as: active_rooms
+    description: "查询所有启用的房间"
+```
+
+#### 2. 遍历每个房间
+```yaml
+- for:
+    in: "${active_rooms}"
+    as: room
+    do:
+      # 处理该房间的预烘机
+```
+
+#### 3. 遍历每个 Station
+```yaml
+- for:
+    in: "${stations}"
+    as: station
+    do:
+      # 检查该 Station 的载具状态
+```
+
+#### 4. 查询 Station 的载具
+```yaml
+- query:
+    target: carriers
+    where:
+      room_id: "${room.id}"
+      equipment_type: "PRE_DRYER"
+      port_in: "${station.ports}"    # Station-based Port 映射
+      status_id: 503                 # 预烘乾机处理完成
+    as: ready_carriers
+    description: "查询 Station ${station.station} 预烘干完成的载具"
+```
+
+#### 5. 检查载具数量（批量处理）
+```yaml
+- set:
+    carrier_count: "${ready_carriers.length}"
+    required_count: "${station.batch_size}"   # 2格或4格
+    has_enough_carriers: "${carrier_count >= required_count}"
+```
+
+#### 6. 查询 Unloader AGV 状态
+```yaml
+- query:
+    target: agvs
+    where:
+      agv_type: "unloader"
+      room_id: "${room.id}"
+      status: "idle"
+    as: available_agvs
+    description: "查询空闲的 Unloader AGV"
+```
+
+#### 7. 检查 AGV 车上空位（批量处理）
+```yaml
+- query:
+    target: carriers
+    where:
+      agv_id: "${agv.id}"
+    as: agv_carriers
+    description: "查询 AGV 车上载具"
+
+- set:
+    agv_carrier_count: "${agv_carriers.length}"
+    max_capacity: 4                            # AGV 最大容量4格
+    required_space: "${station.batch_size}"    # 需要的空位（2格或4格）
+    available_space: "${max_capacity - agv_carrier_count}"
+    agv_has_space: "${available_space >= required_space}"
+```
+
+#### 8. 检查重复任务
+```yaml
+- query:
+    target: tasks
+    where:
+      work_id: "${station.work_id}"
+      room_id: "${room.id}"
+      status_id_in: [0, 1, 2, 3]  # 未完成的状态
+    as: existing_tasks
+    description: "检查是否已存在取料任务"
+```
+
+#### 9. 创建取料任务
+```yaml
+- if:
+    condition: "${has_enough_carriers} && ${agv_has_space} && ${existing_tasks.length == 0}"
+    then:
+      - create:
+          target: task
+          with:
+            type: "unloader_take"
+            name: "房间${room.id}预烘机 Station${station.station} 取料"
+            description: "从预烘机 Station ${station.station} 取出${carrier_count}个载具（${station.batch_size}格批量）"
+            work_id: "${station.work_id}"
+            room_id: "${room.id}"
+            priority: "${priority}"
+            status_id: 1  # PENDING
+            parameters:
+              station: "${station.station}"
+              work_id: "${station.work_id}"
+              room_id: "${room.id}"
+              ports: "${station.ports}"
+              batch_size: "${station.batch_size}"
+              model: "${model}"
+              carrier_count: "${carrier_count}"
+              reason: "预烘机完成预烘干，载具就绪"
+          description: "创建 Unloader AGV 取料任务（Station-based）"
+```
+
+## 🔍 查询条件详解
+
+### 1. Carrier Status 过滤（制程阶段控制）
+
+**预烘机载具 status_id 过滤**：
+- `room_id`: 特定房间
+- `port_in`: Station-based Port 映射
+  - **Station 01**: [2051, 2052, 2055, 2056]（B1256门，批量4格）
+  - **Station 03**: [2053, 2054, 2057, 2058]（B3478门，批量4格）
+- `status_id: 503`（预烘完成）
+  - Loader AGV PUT_PRE_DRYER 完成后的状态
+  - 表示载具已完成预烘干制程，可以被 Unloader AGV 取走
+  - **确保不会处理未完成预烘的载具**
+
+**制程流控制**：
+```
+Loader PUT_PRE_DRYER → status_id=503（预烘完成）→ TAKE_PRE_DRYER → AGV车上
+```
+
+### AGV 查询条件
+
+**Unloader AGV 条件**：
+- `agv_type`: "unloader"
+- `room_id`: 特定房间
+- `status`: "idle"（空闲状态）
+
+**车载空位计算**（**统一4格批量处理**）：
+- 查询 AGV 车上现有载具数量
+- **所有 Station 01/03**: 需要 ≥ 4格空位（**车上需全空**）
+- 最大容量：4格（S尺寸产品）
+- **不支持部分取料**：必须有完整4格空位才创建任务
+
+### Task 重复检查
+
+**防止重复创建**：
+- 检查相同 `work_id` 和 `room_id`
+- 状态为未完成（0=创建, 1=待分派, 2=执行中, 3=暂停）
+- 如果存在未完成任务，不创建新任务
+
+## ⚠️ 注意事项
+
+### 三重验证机制（测试完成✅）
+1. **Carrier Status 过滤**: status_id=503（预烘完成）
+2. **AGV 空位**: AGV 车上有 ≥4格空位
+3. **重复检查**: 无未完成任务
+
+**注**: 本流程未包含 Presence 信号验证（与其他 3 个流程不同）
+
+### Station-based 设计重点
+- **编码规则**: work_id 使用 Station 编号（**01/03**），非 Port 起始号
+- **UnloaderAGV 自定义映射**: **所有 Station 统一批量4格**（UnloaderAGV 特有）
+- **设计简化**: 从4个 Station 简化为2个，从混合批量简化为统一4格
+- **完整 Port ID**: 使用 2051-2052-2055-2056（Station 01）和 2053-2054-2057-2058（Station 03）
+
+### 批量处理逻辑
+- **所有 Station 01/03**: 必须有 ≥ 4个 status_id=503 的载具，AGV 需 ≥ 4格空位（**车上全空**）
+- **不支持部分取料**（要么取满4格，要么不取）
+- **效率提升**: 统一批量处理，减少任务次数
+
+### 状态码映射
+Carrier status_id 定义：
+- `503`: 预烘乾机处理完成（TAKE_PRE_DRYER 触发条件）
+- Loader PUT_PRE_DRYER 完成后更新为此状态
+- 表示载具已完成预烘干制程，可以被 Unloader AGV 取走
+
+### Station-Port 映射（UnloaderAGV）
+- **Station 01**: Port 1-2-5-6（**批量4格**，跨上下排）
+- **Station 03**: Port 3-4-7-8（**批量4格**，跨上下排）
+
+### 产品尺寸考量
+- **S尺寸**: 最多4格容量，**全部使用批量4格处理**
+- **L尺寸**: 最多2格容量，**不支持本 Flow**（需要完整4格空位）
+- 本 Flow 专为 S尺寸产品设计
+
+## 🧪 测试要点
+
+### 单元测试
+1. ✅ 查询逻辑正确性
+   - 正确查询预烘干完成的载具
+   - 正确过滤房间和端口
+
+2. ✅ 数量判断
+   - 载具数量 >= 2
+   - AGV 空位 >= 2
+
+3. ✅ 重复检查
+   - 存在未完成任务时不创建
+   - 任务参数正确传递
+
+### 整合测试
+1. ✅ 与 Loader AGV 衔接
+   - Loader PUT_PRE_DRYER 完成
+   - 状态更新为可取走
+
+2. ✅ RCS 调度
+   - 任务正确创建
+   - RCS 分派给 Unloader AGV
+
+3. ✅ 完整流程
+   - Unloader 执行取料
+   - 载具状态更新
+   - 任务状态更新为完成
+
+## 📊 成功指标
+
+### 功能指标
+- ✅ 正确检测预烘干完成的载具
+- ✅ 正确创建取料任务
+- ✅ 不产生重复任务
+- ✅ 任务参数完整准确
+
+### 性能指标
+- 执行间隔：12秒
+- 响应时间：< 2秒
+- 任务创建延迟：< 30秒（从载具就绪到任务创建）
+
+### 可靠性指标
+- 零漏检：所有就绪载具都能被检测
+- 零误创建：不创建重复或错误任务
+- 容错性：数据库查询失败时优雅降级
+
+## 🔗 相关文档
+
+- **Unloader AGV 代码**: `/app/agv_ws/src/unloader_agv/unloader_agv/robot_states/take_pre_dryer/`
+- **Work ID 定义**: 数据库 `agvc.work` 表
+- **Cargo Flow 参考**: `cargo_entrance_unload.yaml`

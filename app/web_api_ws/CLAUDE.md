@@ -296,6 +296,65 @@ def handle_agv_connect():
 - **硬體映射**: `/app/config/hardware_mapping.yaml`
 - **Zenoh配置**: `/app/routerconfig.json5`
 
+## 🗄️ 資料庫管理 (pgAdmin)
+
+### pgAdmin 服務配置
+- **容器名稱**: `pgadmin` (192.168.100.101)
+- **端口映射**: 5050:80 (宿主機:容器)
+- **Nginx 反向代理**: `http://agvc.ui/pgadmin/`
+- **登入資訊**:
+  - Email: `yazelin@ching-tech.com`
+  - Password: `password`
+
+### 訪問方式
+
+#### 方式 1: 透過 AGVCUI 界面 (推薦)
+1. 訪問 AGVCUI: `http://agvc.ui/` 或 `http://localhost:8001/`
+2. 使用管理員帳號登入系統
+3. 點擊右上角用戶選單 → 「資料庫管理」
+4. pgAdmin 自動在新分頁開啟 (`http://agvc.ui/pgadmin/`)
+5. 使用 pgAdmin 登入資訊進入資料庫管理界面
+
+#### 方式 2: 直接訪問
+```bash
+# 透過 Nginx 反向代理 (推薦)
+http://agvc.ui/pgadmin/
+
+# 直接端口訪問 (開發測試用)
+http://localhost:5050/
+```
+
+### PostgreSQL 連接配置
+在 pgAdmin 中新增伺服器連接：
+- **主機名稱**: `192.168.100.254` 或 `postgres`
+- **端口**: `5432`
+- **維護資料庫**: `agvc`
+- **用戶名稱**: `agvc`
+- **密碼**: `password`
+
+### 常用資料庫操作
+```bash
+# 檢查資料庫連接
+PGPASSWORD=password psql -h 192.168.100.254 -U agvc -d agvc -c "\dt"
+
+# 查看資料表統計
+PGPASSWORD=password psql -h 192.168.100.254 -U agvc -d agvc -c "
+SELECT
+  schemaname,
+  tablename,
+  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+"
+```
+
+### 架構優勢
+✅ **統一入口**: 透過 Nginx 反向代理整合到 AGVCUI 界面
+✅ **權限控制**: 只有管理員用戶可見資料庫管理選單
+✅ **新分頁開啟**: 不影響 AGVCUI 主界面操作
+✅ **標準化訪問**: 與其他 Web 服務保持一致的訪問模式
+
 ## 🔍 Web 服務專項測試
 
 **⚠️ 通用測試指導請參考**: ../../CLAUDE.md 測試章節

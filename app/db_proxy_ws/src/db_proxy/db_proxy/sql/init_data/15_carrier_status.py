@@ -61,8 +61,14 @@ def initialize_carrier_status(session):
         },
         {
             "id": 101,
-            "name": "進入入口傳送箱",
-            "description": "載具正在處理製程",
+            "name": "準備進入入口傳送箱",
+            "description": "載具準備進入入口傳送箱",
+            "color": "is-primary"
+        },
+        {
+            "id": 102,
+            "name": "進入入口傳送箱完成",
+            "description": "載具已進入入口傳送箱，等待 Loader AGV 取料",
             "color": "is-primary"
         },
         {
@@ -103,50 +109,50 @@ def initialize_carrier_status(session):
         },
         {
             "id": 501,
-            "name": "準備進入預烘乾機處理中",
+            "name": "準備進入預烘機處理中",
             "description": "載具正在處理製程",
             "color": "is-primary"
         },
         {
             "id": 502,
-            "name": "進入預烘乾機處理中",
+            "name": "進入預烘機處理中",
             "description": "載具正在處理製程",
             "color": "is-primary"
         },
         {
             "id": 503,
-            "name": "預烘乾機處理完成",
+            "name": "預烘機處理完成",
             "description": "載具正在處理製程",
             "color": "is-primary"
         },
         {
             "id": 601,
-            "name": "準備進入烘乾機處理中",
+            "name": "準備進入烤箱處理中",
             "description": "載具正在處理製程",
             "color": "is-primary"
         },
         {
             "id": 602,
-            "name": "進入烘乾機處理中",
+            "name": "進入烤箱處理中",
             "description": "載具正在處理製程",
             "color": "is-primary"
         },
         {
             "id": 603,
-            "name": "烘乾機處理完成",
+            "name": "烤箱處理完成",
             "description": "載具正在處理製程",
             "color": "is-primary"
         },
         {
             "id": 201,
-            "name": "準備進入出入口傳送箱",
-            "description": "載具正在處理製程",
+            "name": "準備進入出口傳送箱",
+            "description": "載具準備進入出口傳送箱",
             "color": "is-primary"
         },
         {
             "id": 202,
-            "name": "進入出入口傳送箱",
-            "description": "載具正在處理製程",
+            "name": "進入出口傳送箱完成",
+            "description": "載具已進入出口傳送箱，等待 Cargo AGV 裝載回 Rack",
             "color": "is-primary"
         },
 

@@ -69,13 +69,21 @@ class Location(SQLModel, table=True):
         foreign_key="location_status.id")
     # 不設外鍵約束避免與 room 表的循環依賴
     room_id: Optional[int] = Field(default=None)
-    node_id: Optional[int] = Field(default=None, foreign_key="node.id")  # 關聯到 node 表
+    # node_id 可能對應 node.id 或 kuka_node.id，不設外鍵約束以保持靈活性
+    node_id: Optional[int] = Field(default=None)
     name: str
     description: Optional[str] = None
     # tafl_wcs 需要的欄位
     type: Optional[str] = Field(default="enter_or_exit")  # 位置類型
     rack_id: Optional[int] = Field(default=None, foreign_key="rack.id")  # 關聯的架台 ID
-    
+
+    # 架台旋轉點配置 (2025-10-01 新增)
+    # 不設外鍵約束，因為 kuka_node 表由外部軟體管理和匯入
+    rotation_node_id: Optional[int] = Field(
+        default=None,
+        description="架台在此位置旋轉時使用的中間轉向點 (參考 kuka_node.id，用於 room_inlet/room_outlet 類型)"
+    )
+
     # 關聯關係（用於 JOIN 查詢）
     # location_status: Optional["LocationStatus"] = Relationship()
     # node: Optional["Node"] = Relationship()

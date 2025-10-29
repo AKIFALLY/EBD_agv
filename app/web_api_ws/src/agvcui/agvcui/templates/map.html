@@ -15,6 +15,10 @@
         <div class="grid-overlay"></div>
     </div>
 
+    <!-- 底部中間檢視控制按鈕組（已移至左下角座標框內） -->
+    <div class="map-view-controls" style="display: none;">
+    </div>
+
     <!-- 地圖工具列 -->
     <div class="map-toolbar">
         <button class="button" id="map-tool-tasks" title="任務管理">
@@ -37,9 +41,9 @@
                 <i class="mdi mdi-robot"></i>
             </span>
         </button>
-        <button class="button" id="map-tool-legend" title="圖例">
+        <button class="button" id="map-tool-nodes" title="路徑節點管理">
             <span class="icon">
-                <i class="mdi mdi-information"></i>
+                <i class="mdi mdi-map-marker"></i>
             </span>
         </button>
     </div>
@@ -128,6 +132,29 @@
                     <!-- 動態載入 AGV 列表 -->
                 </div>
             </div>
+
+            <!-- 路徑節點管理模板 -->
+            <div id="nodes-template" style="display: none;">
+                <div class="map-info-card">
+                    <div class="map-info-card-header">
+                        <span class="map-info-card-title">路徑節點管理</span>
+                    </div>
+                    <p>管理地圖上的路徑節點，設定座標和行為參數</p>
+                    <div class="map-quick-actions" id="nodes-actions">
+                        <button class="button is-info" onclick="mapInteraction.importLabVIEWPaths()">
+                            <span class="icon"><i class="mdi mdi-upload"></i></span>
+                            <span>匯入路徑檔</span>
+                        </button>
+                        <button class="button is-primary" onclick="mapInteraction.createNode()">
+                            <span class="icon"><i class="mdi mdi-plus"></i></span>
+                            <span>新增節點</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="nodes-list">
+                    <!-- 動態載入節點列表 -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -169,22 +196,316 @@
     <!-- 地圖圖例 -->
     <div id="map-legend" class="map-legend" style="display: none;">
         <div class="map-legend-title">圖例</div>
-        <div class="map-legend-item">
-            <div class="map-legend-icon" style="background: #48c774;"></div>
-            <span>正常運行</span>
+
+        <!-- 節點類型圖例 (KUKA Fleet) -->
+        <div class="map-legend-section">
+            <div class="map-legend-subtitle">節點類型</div>
+            <div class="map-legend-item">
+                <div class="map-legend-node-icon" style="background: transparent; border: 2px solid blue; border-radius: 25%; font-family: 'Material Design Icons'; color: rgba(0, 0, 255, 0.5); font-size: 20px; display: flex; align-items: center; justify-content: center;">&#xF0B17;</div>
+                <span>貨架點</span>
+            </div>
+            <div class="map-legend-item">
+                <div class="map-legend-node-icon" style="background: transparent; border: 2px solid green; border-radius: 25%; font-family: 'Material Design Icons'; color: rgba(0, 128, 0, 0.5); font-size: 20px; display: flex; align-items: center; justify-content: center;">&#xF05FC;</div>
+                <span>充電入口</span>
+            </div>
+            <div class="map-legend-item">
+                <div class="map-legend-node-icon" style="background: transparent; border: 2px solid orange; border-radius: 25%; font-family: 'Material Design Icons'; color: rgba(255, 166, 0, 0.5); font-size: 20px; display: flex; align-items: center; justify-content: center;">&#xF0BCD;</div>
+                <span>避讓點</span>
+            </div>
+            <div class="map-legend-item">
+                <div class="map-legend-node-icon" style="background: transparent; border: 2px solid green; border-radius: 25%; font-family: 'Material Design Icons'; color: rgba(0, 128, 0, 0.5); font-size: 20px; display: flex; align-items: center; justify-content: center;">&#xF0084;</div>
+                <span>充電站</span>
+            </div>
         </div>
-        <div class="map-legend-item">
-            <div class="map-legend-icon" style="background: #ffcc00;"></div>
-            <span>警告狀態</span>
+    </div>
+
+    <!-- 地圖座標顯示器 -->
+    <div id="map-coordinate-display" class="map-coordinate-display">
+        <div class="coordinate-header">
+            <span class="coordinate-label">座標</span>
+            <span class="coordinate-unit-label" id="coordinate-unit-label">(px)</span>
+            <button class="coordinate-unit-toggle-inline" id="coordinate-unit-toggle" title="點擊切換座標單位">px</button>
+            <button class="coordinate-follow-toggle-inline" id="coordinate-follow-toggle" title="點擊開啟/關閉跟隨模式">
+                <i class="mdi mdi-cursor-default-outline"></i>
+            </button>
         </div>
-        <div class="map-legend-item">
-            <div class="map-legend-icon" style="background: #f14668;"></div>
-            <span>錯誤狀態</span>
+        <div class="coordinate-content">
+            <svg class="coordinate-axis-svg" width="28" height="28" viewBox="0 0 28 28">
+                <!-- Y 軸 (綠色) - 垂直向上，交叉點在1/4位置 -->
+                <line x1="7" y1="24" x2="7" y2="6" stroke="#48c774" stroke-width="2" stroke-linecap="round"/>
+                <polygon points="7,4 4,8 10,8" fill="#48c774"/>
+
+                <!-- X 軸 (紅色) - 水平向右，交叉點在1/4位置 -->
+                <line x1="4" y1="21" x2="24" y2="21" stroke="#f14668" stroke-width="2" stroke-linecap="round"/>
+                <polygon points="26,21 22,18 22,24" fill="#f14668"/>
+            </svg>
+            <div class="coordinate-values" id="coordinate-values">
+                <div class="coord-x">X: --</div>
+                <div class="coord-y">Y: --</div>
+            </div>
         </div>
-        <div class="map-legend-item">
-            <div class="map-legend-icon" style="background: #3273dc;"></div>
-            <span>處理中</span>
+        <!-- 視圖控制區 -->
+        <div class="coordinate-view-controls">
+            <!-- CT 節點切換按鈕 -->
+            <button class="coordinate-toggle-btn" id="ct-nodes-toggle" data-show="true" title="切換 CT 節點顯示">
+                <span class="icon">
+                    <i class="mdi mdi-map-marker"></i>
+                </span>
+            </button>
+            <!-- KUKA 節點切換按鈕 -->
+            <button class="coordinate-toggle-btn" id="kuka-nodes-toggle" data-show="true" title="切換 KUKA 節點顯示">
+                <span class="icon">
+                    <i class="mdi mdi-map-marker"></i>
+                </span>
+            </button>
+            <!-- 圖例按鈕 -->
+            <button class="coordinate-toggle-btn" id="map-tool-legend" data-show="false" title="圖例">
+                <span class="icon">
+                    <i class="mdi mdi-information"></i>
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 浮動座標顯示器（跟隨滑鼠） -->
+    <div id="floating-coordinate-display" class="floating-coordinate-display" style="display: none;">
+        <div class="floating-coord-x">
+            <span class="floating-axis-label">X:</span>
+            <span class="floating-value">--</span>
+            <span class="floating-unit" data-unit="px">px</span>
+        </div>
+        <div class="floating-coord-y">
+            <span class="floating-axis-label">Y:</span>
+            <span class="floating-value">--</span>
+            <span class="floating-unit" data-unit="px">px</span>
+        </div>
+    </div>
+
+    <!-- 節點參數設定模態視窗 -->
+    <div id="node-settings-modal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">節點參數設定</p>
+                <button class="delete" aria-label="close" id="close-node-modal"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="node-settings-form">
+                    <!-- 節點ID設定 -->
+                    <div class="field">
+                        <label class="label">節點ID</label>
+                        <div class="control">
+                            <input class="input" type="number" id="node-id" placeholder="輸入節點ID（選填）" min="1">
+                            <p class="help">指定資料庫ID，留空則自動分配。如果ID已存在會顯示錯誤。</p>
+                        </div>
+                    </div>
+
+                    <!-- 基本座標設定 -->
+                    <div class="field">
+                        <label class="label">座標設定</label>
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <label class="label">X 座標</label>
+                                <input class="input" type="number" id="node-x" step="0.1" placeholder="0.0" required>
+                            </div>
+                            <div class="control">
+                                <label class="label">Y 座標</label>
+                                <input class="input" type="number" id="node-y" step="0.1" placeholder="0.0" required>
+                            </div>
+                            <div class="control">
+                                <label class="label">角度 (Θ)</label>
+                                <input class="input" type="number" id="node-theta" step="0.1" placeholder="0.0" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 節點類型設定 -->
+                    <div class="field">
+                        <label class="label">節點類型</label>
+                        <div class="control">
+                            <div class="select">
+                                <select id="node-type" required>
+                                    <option value="NONE">NONE</option>
+                                    <option value="REST_AREA">休息區</option>
+                                    <option value="CHARGING_AREA">充電區</option>
+                                    <option value="TRANSPORT_POINT">搬運點</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PGV 設定 -->
+                    <div class="field">
+                        <label class="label">PGV 設定</label>
+                        <div class="control">
+                            <div class="select">
+                                <select id="node-pgv" required>
+                                    <option value="FRONT">前</option>
+                                    <option value="REAR">後</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 群組設定標籤頁 -->
+                    <div class="field">
+                        <label class="label">群組設定</label>
+                        <div class="tabs">
+                            <ul id="group-tabs">
+                                <li class="is-active"><a onclick="switchGroupTab(1)">群組 1</a></li>
+                                <li><a onclick="switchGroupTab(2)">群組 2</a></li>
+                                <li><a onclick="switchGroupTab(3)">群組 3</a></li>
+                                <li><a onclick="switchGroupTab(4)">群組 4</a></li>
+                                <li><a onclick="switchGroupTab(5)">群組 5</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- 群組設定內容 -->
+                        <div id="group-settings">
+                            <!-- 群組 1-5 設定會動態生成 -->
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" id="save-node">儲存</button>
+                <button class="button" id="cancel-node">取消</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- LabVIEW 匯入差異預覽 Modal -->
+    <div id="labview-diff-modal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card labview-diff-modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">LabVIEW 匯入預覽</p>
+                <button class="delete" aria-label="close" id="close-diff-modal"></button>
+            </header>
+            <section class="modal-card-body">
+                <!-- 標籤頁 -->
+                <div class="tabs is-boxed">
+                    <ul id="diff-tabs">
+                        <li class="is-active" data-tab="new">
+                            <a>
+                                <span class="icon is-small"><i class="fas fa-plus"></i></span>
+                                <span>新增節點 (<span id="new-count">0</span>)</span>
+                            </a>
+                        </li>
+                        <li data-tab="modified">
+                            <a>
+                                <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                                <span>修改節點 (<span id="modified-count">0</span>)</span>
+                            </a>
+                        </li>
+                        <li data-tab="deleted">
+                            <a>
+                                <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                                <span>刪除節點 (<span id="deleted-count">0</span>)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 新增節點列表 -->
+                <div id="new-nodes-panel" class="diff-panel is-active">
+                    <div class="field">
+                        <button class="button is-small" id="select-all-new">全選</button>
+                        <button class="button is-small" id="deselect-all-new">全不選</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="table is-fullwidth is-striped is-hoverable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;"><input type="checkbox" id="check-all-new"></th>
+                                    <th>ID</th>
+                                    <th>X (mm)</th>
+                                    <th>Y (mm)</th>
+                                    <th>X (px)</th>
+                                    <th>Y (px)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="new-nodes-list">
+                                <!-- 動態填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 修改節點列表 -->
+                <div id="modified-nodes-panel" class="diff-panel" style="display: none;">
+                    <div class="field">
+                        <button class="button is-small" id="select-all-modified">全選</button>
+                        <button class="button is-small" id="deselect-all-modified">全不選</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="table is-fullwidth is-striped is-hoverable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;"><input type="checkbox" id="check-all-modified"></th>
+                                    <th>ID</th>
+                                    <th>欄位</th>
+                                    <th>舊值</th>
+                                    <th>→</th>
+                                    <th>新值</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modified-nodes-list">
+                                <!-- 動態填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 刪除節點列表 -->
+                <div id="deleted-nodes-panel" class="diff-panel" style="display: none;">
+                    <div class="field">
+                        <button class="button is-small" id="select-all-deleted">全選</button>
+                        <button class="button is-small" id="deselect-all-deleted">全不選</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="table is-fullwidth is-striped is-hoverable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;"><input type="checkbox" id="check-all-deleted"></th>
+                                    <th>ID</th>
+                                    <th>名稱</th>
+                                    <th>X (mm)</th>
+                                    <th>Y (mm)</th>
+                                    <th>描述</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deleted-nodes-list">
+                                <!-- 動態填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" id="execute-import">確認執行</button>
+                <button class="button" id="cancel-diff">取消</button>
+            </footer>
         </div>
     </div>
 </section>
+
+<script>
+// 群組標籤頁切換函數
+function switchGroupTab(groupNumber) {
+    // 更新標籤狀態
+    const tabs = document.querySelectorAll('#group-tabs li');
+    tabs.forEach((tab, index) => {
+        tab.classList.toggle('is-active', index + 1 === groupNumber);
+    });
+
+    // 顯示對應的群組面板
+    for (let i = 1; i <= 5; i++) {
+        const panel = document.getElementById(`group-${i}-panel`);
+        if (panel) {
+            panel.style.display = i === groupNumber ? 'block' : 'none';
+        }
+    }
+}
+</script>
 {% endblock %}

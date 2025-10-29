@@ -8,7 +8,7 @@
 @docs-ai/knowledge/agv-domain/write-path-state-analysis.md  # 路徑狀態分析
 
 ## 📋 專案概述
-unloader_agv 實現 Unloader AGV 的完整控制邏輯，支援從烘箱取料、預乾燥機操作、出料傳送帶操作、數量計算等複雜卸載流程。負責眼鏡生產房間內後段製程的批量卸載操作，包含 3 種設備類型共 4 種業務流程，採用一次2格的高效批量處理方式。
+unloader_agv 實現 Unloader AGV 的完整控制邏輯，支援從烘箱取料、預烘機操作、出料傳送帶操作、數量計算等複雜卸載流程。負責眼鏡生產房間內後段製程的批量卸載操作，包含 3 種設備類型共 4 種業務流程，採用一次2格的高效批量處理方式。
 
 ## 🏭 核心業務流程 (基於眼鏡生產系統)
 
@@ -121,7 +121,7 @@ unloader_agv/
 ```
 test/
 ├─ README.md                           # 測試說明文檔
-├─ test_pre_dryer_calculation.py       # 預乾燥機計算邏輯測試
+├─ test_pre_dryer_calculation.py       # 預烘機計算邏輯測試
 └─ test_take_quantity.py               # 取料數量計算測試
 ```
 
@@ -142,7 +142,7 @@ python3 -m pytest test/ -v
 ### 批量處理邏輯測試
 ```bash
 # 一次2格批量處理測試
-python3 -m pytest test/test_pre_dryer_calculation.py -v    # 預乾燥機計算邏輯
+python3 -m pytest test/test_pre_dryer_calculation.py -v    # 預烘機計算邏輯
 python3 -m pytest test/test_take_quantity.py -v           # 取料數量計算
 
 # 直接執行測試
@@ -204,6 +204,6 @@ test_params:
 
 ### Unloader AGV 特有問題
 - **批量處理邏輯異常**: 檢查一次2格的批量操作邏輯和計算
-- **預乾燥機端口計算錯誤**: 驗證 Port 1-8 的 row 計算邏輯
+- **預烘機端口計算錯誤**: 驗證 Port 1-8 的 row 計算邏輯
 - **後段工位整合問題**: 檢查 Pre-dryer、Oven、Boxout Transfer 整合
 - **批量數量計算異常**: 驗證 Take Quantity 邏輯和參數轉換

@@ -1,7 +1,7 @@
 metadata:
   id: "machine_to_prepare"
   name: "射出機停車格到系統準備區調度"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "將射出機停車格已準備好的料架搬運到系統準備區空位"
   author: "TAFL System"
@@ -17,7 +17,7 @@ settings:
 
 variables:
   dispatched_count: 0
-  work_id: 210001  # KUKA 移動貨架 work ID
+  work_id: 220001  # KUKA 移動貨架 work ID (RACK_MOVE)
 
 flow:
   # 查詢啟用的機台
@@ -87,6 +87,17 @@ flow:
                           - set:
                               target_location: "${available_prepare_locations[0]}"
 
+                          # 查詢起始位置資訊
+                          - query:
+                              target: locations
+                              where:
+                                id: "${rack.location_id}"
+                              as: source_locations
+                              description: "查詢停車格位置資訊"
+
+                          - set:
+                              source_location: "${source_locations[0]}"
+
                           # 檢查是否已有相同的任務存在（避免重複）
                           - query:
                               target: tasks
@@ -115,6 +126,8 @@ flow:
                                       parameters:
                                         source_location_id: "${rack.location_id}"
                                         target_location_id: "${target_location.id}"
+                                        nodes: ["${source_location.node_id}", "${target_location.node_id}"]
+                                        model: "KUKA400i"
                                     as: created_task
                                     description: "創建搬運任務：料架${rack.id}從機台${machine.id}停車格到系統準備區"
 

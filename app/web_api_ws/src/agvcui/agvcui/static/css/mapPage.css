@@ -942,20 +942,25 @@
     height: 40px;
     padding: 0;
     border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(5px);
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: background 0.2s ease;
 }
 
 .map-toolbar .button:hover {
-    background-color: rgba(255, 255, 255, 1);
+    background-color: rgba(255, 255, 255, 1.0);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .map-toolbar .button.is-active {
-    background-color: #3273dc;
-    color: white;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.map-toolbar .button.is-active .icon {
+    color: #3273dc;
 }
 
 /* 側邊面板 */
@@ -1199,14 +1204,17 @@
 /* 地圖圖例 */
 .map-legend {
     position: absolute;
-    bottom: 20px;
+    bottom: 200px;
     left: 20px;
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(5px);
+    right: auto;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     border-radius: 6px;
     padding: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: background 0.2s ease;
     max-width: 250px;
 }
 
@@ -1229,6 +1237,37 @@
     height: 16px;
     border-radius: 2px;
     flex-shrink: 0;
+}
+
+/* 節點類型圖例樣式 */
+.map-legend-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(219, 219, 219, 0.5);
+}
+
+.map-legend-section:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.map-legend-subtitle {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #4a4a4a;
+    font-size: 0.875rem;
+}
+
+.map-legend-node-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
 }
 
 /* ==================== 載具格位視覺化 ==================== */
@@ -1390,4 +1429,520 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     z-index: 1002;
     text-align: center;
+}
+
+/* 節點參數設定視窗 - 確保在最上層顯示 */
+#node-settings-modal.modal.is-active {
+    z-index: 9999 !important;
+}
+
+#node-settings-modal .modal-background {
+    z-index: 9998 !important;
+}
+
+#node-settings-modal .modal-card {
+    z-index: 10000 !important;
+    position: relative;
+    width: 900px !important;
+    max-width: 95vw !important;
+}
+
+/* ===== 底部中間檢視控制按鈕 ===== */
+.map-view-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    display: flex;
+    gap: 8px;
+}
+
+.map-view-controls .view-toggle-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.map-view-controls .view-toggle-btn:hover {
+    filter: brightness(1.2);
+}
+
+.map-view-controls .view-toggle-btn[data-state="visible"] {
+    background-color: #3273dc;
+    color: white;
+}
+
+.map-view-controls .view-toggle-btn[data-state="visible"]:hover {
+    background-color: #2366d1;
+}
+
+.map-view-controls .view-toggle-btn[data-state="hidden"] {
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #7a7a7a;
+}
+
+.map-view-controls .view-toggle-btn .icon {
+    font-size: 1.25rem;
+}
+
+/* === 獨立節點切換按鈕樣式（已移除，改用座標框內統一樣式） === */
+
+/* 座標單位切換按鈕 - 內嵌在標題的小按鈕 */
+.coordinate-unit-toggle-inline {
+    margin-left: auto;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    text-align: center;
+}
+
+/* px 單位 - 深藍色 */
+.coordinate-unit-toggle-inline[data-unit="px"] {
+    background-color: #2366d1;
+    color: white;
+}
+
+.coordinate-unit-toggle-inline[data-unit="px"]:hover {
+    background-color: #1e5bb8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(50, 115, 220, 0.3);
+}
+
+.coordinate-unit-toggle-inline[data-unit="px"]:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(50, 115, 220, 0.3);
+}
+
+/* mm 單位 - 深橘色 */
+.coordinate-unit-toggle-inline[data-unit="mm"] {
+    background-color: #f57c00;
+    color: white;
+}
+
+.coordinate-unit-toggle-inline[data-unit="mm"]:hover {
+    background-color: #e67300;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+.coordinate-unit-toggle-inline[data-unit="mm"]:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(255, 152, 0, 0.3);
+}
+
+/* 座標跟隨模式切換按鈕 */
+.coordinate-follow-toggle-inline {
+    margin-left: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    background-color: rgba(0, 0, 0, 0.15);
+    color: #7a7a7a;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.coordinate-follow-toggle-inline:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+.coordinate-follow-toggle-inline:active {
+    transform: translateY(0);
+}
+
+/* Active 狀態 - 綠色背景 */
+.coordinate-follow-toggle-inline.active {
+    background-color: #48c774;
+    color: white;
+}
+
+.coordinate-follow-toggle-inline.active:hover {
+    background-color: #3ec46d;
+    box-shadow: 0 2px 4px rgba(72, 199, 116, 0.3);
+}
+
+/* 確保模態視窗內的所有元素都有適當的層級 */
+#node-settings-modal .modal-card-head,
+#node-settings-modal .modal-card-body,
+#node-settings-modal .modal-card-foot {
+    position: relative;
+    z-index: 10001 !important;
+}
+
+/* 地圖座標顯示器 */
+.map-coordinate-display {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 10px 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    z-index: 1000;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8px);
+    transition: background 0.2s ease;
+    user-select: none;
+    min-width: 140px;
+}
+
+.map-coordinate-display:hover {
+    background: rgba(255, 255, 255, 1.0);
+}
+
+.coordinate-header {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.coordinate-label {
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.coordinate-unit-label {
+    font-size: 11px;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+/* px 單位 - 藍色 */
+.coordinate-unit-label[data-unit="px"] {
+    color: #2366d1;
+}
+
+/* mm 單位 - 橘色 */
+.coordinate-unit-label[data-unit="mm"] {
+    color: #f57c00;
+}
+
+.coordinate-content {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.coordinate-axis-svg {
+    flex-shrink: 0;
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+}
+
+.coordinate-axis-svg:hover {
+    opacity: 1;
+}
+
+.coordinate-values {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.coord-x {
+    color: #f14668;  /* 紅色，對應X軸 */
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+.coord-y {
+    color: #23d160;  /* 深綠色，對應Y軸 */
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+/* 浮動座標顯示器（跟隨滑鼠） */
+.floating-coordinate-display {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+    z-index: 10000;
+    pointer-events: none;
+    user-select: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+.floating-coord-x,
+.floating-coord-y {
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* X/Y 軸標籤 - 對應軸向顏色 */
+.floating-coord-x .floating-axis-label {
+    color: #f14668;  /* 紅色，對應X軸 */
+}
+
+.floating-coord-y .floating-axis-label {
+    color: #23d160;  /* 深綠色，對應Y軸 */
+}
+
+/* 數值 - 白色 */
+.floating-value {
+    color: white;
+    font-weight: 700;
+}
+
+/* 單位標籤 - 跟著單位變色 */
+.floating-unit {
+    font-size: 10px;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.floating-unit[data-unit="px"] {
+    color: #64b5f6; /* 淺藍色 */
+}
+
+.floating-unit[data-unit="mm"] {
+    color: #ffb74d; /* 淺橘色 */
+}
+
+/* 座標框內的視圖控制區 */
+.coordinate-view-controls {
+    display: flex;
+    gap: 6px;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    justify-content: center;
+}
+
+.coordinate-toggle-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+.coordinate-toggle-btn .icon {
+    font-size: 1rem;
+    transition: color 0.2s ease;
+}
+
+.coordinate-toggle-btn:hover {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* 顯示狀態：半透明白背景 + 有顏色icon */
+.coordinate-toggle-btn[data-show="true"] {
+    background-color: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.coordinate-toggle-btn[data-show="true"]:hover {
+    background-color: rgba(255, 255, 255, 1.0);
+}
+
+/* 隱藏狀態：icon變灰 */
+.coordinate-toggle-btn[data-show="false"] .icon {
+    color: #b5b5b5;  /* 灰色icon */
+}
+
+/* CT 節點按鈕 - 顯示時藍色icon */
+#ct-nodes-toggle[data-show="true"] .icon {
+    color: rgba(100, 200, 255, 1);
+}
+
+/* KUKA 節點按鈕 - 顯示時橘色icon */
+#kuka-nodes-toggle[data-show="true"] .icon {
+    color: rgba(255, 140, 60, 1);
+}
+
+/* 圖例按鈕 - 顯示時藍色icon */
+#map-tool-legend[data-show="true"] .icon {
+    color: #3273dc;
+}
+
+/* 響應式設計：在小螢幕上調整位置 */
+@media (max-width: 768px) {
+    .map-coordinate-display {
+        bottom: 10px;
+        left: 10px; /* 改回左下角 */
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .coordinate-label {
+        font-size: 11px;
+    }
+
+    .coordinate-values {
+        font-size: 12px;
+    }
+}
+
+/* ========================================
+   LabVIEW 匯入差異預覽 Modal 樣式
+   ======================================== */
+
+/* 差異面板 - 桌面優化版 */
+.diff-panel {
+    height: calc(90vh - 280px);
+    overflow-y: auto;
+}
+
+.diff-panel.is-active {
+    display: block;
+}
+
+/* 標籤頁點擊效果 */
+#diff-tabs li {
+    cursor: pointer;
+}
+
+#diff-tabs li:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 新增節點樣式 - 綠色（桌面優化版，增強對比度） */
+#new-nodes-panel .table tbody tr {
+    background-color: rgba(72, 199, 116, 0.12);
+}
+
+#new-nodes-panel .table tbody tr:hover {
+    background-color: rgba(72, 199, 116, 0.25);
+}
+
+/* 修改節點樣式 - 黃色（桌面優化版，增強對比度） */
+#modified-nodes-panel .table tbody tr {
+    background-color: rgba(255, 224, 138, 0.25);
+}
+
+#modified-nodes-panel .table tbody tr:hover {
+    background-color: rgba(255, 224, 138, 0.4);
+}
+
+/* 刪除節點樣式 - 紅色（桌面優化版，增強對比度） */
+#deleted-nodes-panel .table tbody tr {
+    background-color: rgba(241, 70, 104, 0.12);
+}
+
+#deleted-nodes-panel .table tbody tr:hover {
+    background-color: rgba(241, 70, 104, 0.25);
+}
+
+/* 值變化高亮（桌面優化版，增強可讀性） */
+.diff-old-value {
+    color: #f14668;
+    text-decoration: line-through;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.diff-new-value {
+    color: #48c774;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+/* 全選按鈕組 */
+.diff-panel .field {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* 表格樣式調整 - 桌面優化版 */
+.diff-panel .table {
+    font-size: 0.95rem;
+}
+
+.diff-panel .table th {
+    background-color: #f5f5f5;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.75rem;
+}
+
+.diff-panel .table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+/* Checkbox 欄位寬度優化 */
+.diff-panel .table th:first-child,
+.diff-panel .table td:first-child {
+    width: 60px;
+    text-align: center;
+}
+
+/* Checkbox 樣式 */
+.diff-panel input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* Modal 寬度調整和 z-index - 桌面優化版 */
+#labview-diff-modal {
+    z-index: 10000 !important; /* 確保顯示在地圖上方 */
+}
+
+#labview-diff-modal .modal-background {
+    z-index: 9999;
+}
+
+.labview-diff-modal-card {
+    width: 1600px !important;
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    z-index: 10001;
+}
+
+#labview-diff-modal .modal-card-body {
+    max-height: calc(95vh - 180px);
+    overflow-y: hidden; /* 外層不需要滾動，交給 diff-panel 處理 */
+    padding: 1.5rem;
+}
+
+/* 表格容器優化 */
+#labview-diff-modal .table-container {
+    max-height: 100%;
+    overflow-y: auto;
 }

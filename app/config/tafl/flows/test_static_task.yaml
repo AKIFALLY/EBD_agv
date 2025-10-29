@@ -1,0 +1,20 @@
+metadata:
+  id: "test_static_task"
+  name: "完全靜態測試"
+  enabled: false
+  version: "1.0.0"
+  description: "只創建一個任務，不做任何查詢"
+
+flow:
+  # 直接創建任務，不做任何查詢或條件判斷
+  - create:
+      target: task
+      with:
+        type: "test"
+        name: "靜態測試任務"
+        description: "測試任務創建功能"
+        work_id: 9999902
+        room_id: 991
+        priority: 5
+        status_id: 1
+      description: "創建靜態測試任務"

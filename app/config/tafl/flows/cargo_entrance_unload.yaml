@@ -1,0 +1,114 @@
+metadata:
+  id: "cargo_entrance_unload"
+  name: "Cargo AGV 房間入口卸載作業"
+  enabled: false
+  version: "1.0.0"
+  description: "檢查所有房間入口的 Rack，當有待作業 Carrier 時創建 Cargo AGV 卸載任務"
+  author: "TAFL System"
+  created_at: "2025-10-01"
+  tags: ["cargo", "entrance", "unload", "automation"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  work_id: 2000102  # CargoAGV放入口傳送箱
+  priority: 7       # 高優先級（在旋轉之後）
+  model: "Cargo"
+
+flow:
+  # 查詢所有房間入口位置
+  - query:
+      target: locations
+      where:
+        type: "room_inlet"
+      as: inlet_locations
+      description: "查詢所有房間入口位置"
+
+  # 遍歷每個入口位置
+  - for:
+      in: "${inlet_locations}"
+      as: location
+      do:
+        # 查詢該位置的架台
+        - query:
+            target: racks
+            where:
+              location_id: "${location.id}"
+            as: racks_at_location
+            description: "查詢位置 ${location.id} 的架台"
+
+        # 如果該位置有架台
+        - if:
+            condition: "${racks_at_location}"
+            then:
+              # 取得第一個架台
+              - set:
+                  rack: "${racks_at_location[0]}"
+
+              # 查詢架台上的所有載具
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${rack.id}"
+                  as: all_carriers
+                  description: "查詢架台 ${rack.id} 上的所有載具"
+
+              # 查詢待作業載具（排除已完成的）
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${rack.id}"
+                    status_id_not: 8  # 排除已完成的載具
+                  as: work_carriers
+                  description: "查詢架台 ${rack.id} 待作業載具"
+
+              # 計算載具狀態
+              - set:
+                  total_count: "${all_carriers.length}"
+                  work_count: "${work_carriers.length}"
+                  has_work: "${work_count > 0}"
+
+              # 檢查是否有待作業載具
+              - if:
+                  condition: "${has_work}"
+                  then:
+                    # 檢查是否已存在未完成的卸載任務
+                    - query:
+                        target: tasks
+                        where:
+                          work_id: "${work_id}"
+                          rack_id: "${rack.id}"
+                          status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                        as: existing_tasks
+                        description: "檢查是否已存在卸載任務"
+
+                    # 如果沒有重複任務，創建新任務
+                    - if:
+                        condition: "${existing_tasks.length == 0}"
+                        then:
+                          # 創建 Cargo AGV 卸載任務
+                          - create:
+                              target: task
+                              with:
+                                type: "cargo_unload"
+                                name: "房間${location.room_id}入口卸載作業"
+                                description: "Rack ${rack.name} 有 ${work_count} 個待作業載具需卸載"
+                                work_id: "${work_id}"
+                                rack_id: "${rack.id}"
+                                room_id: "${location.room_id}"
+                                priority: "${priority}"
+                                status_id: 1  # PENDING
+                                parameters:
+                                  rack_name: "${rack.name}"
+                                  rack_id: "${rack.id}"
+                                  location_name: "${location.name}"
+                                  location_id: "${location.id}"
+                                  room_id: "${location.room_id}"
+                                  model: "${model}"
+                                  total_carriers: "${total_count}"
+                                  work_carriers: "${work_count}"
+                                  reason: "房間入口有待作業載具需卸載"
+                              description: "創建 Cargo AGV 卸載任務"
+
+  # 流程完成

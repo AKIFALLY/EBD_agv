@@ -1,7 +1,7 @@
 metadata:
   id: "empty_rack_inlet_to_parking"
   name: "空料架入口到停車區（備選）"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "當A/B面都為空但房間出口已佔用時，將空Rack搬到系統空車停放區"
   author: "TAFL System"

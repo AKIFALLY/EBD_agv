@@ -1,0 +1,152 @@
+metadata:
+  id: "unloader_put_oven"
+  name: "Unloader AGV 放料到烤箱下排"
+  enabled: true
+  version: "1.0.0"
+  description: "檢查 Unloader AGV 車上載具和烤箱下排空位，創建放料任務（批量4格，固定方向）"
+  author: "TAFL System"
+  created_at: "2025-10-16"
+  tags: ["unloader", "oven", "put", "automation"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  priority: 4  # 修正：priority 必須在 1-10 範圍內
+  model: "Unloader"
+  target_room_id: 2  # 烤箱 206 (Room2_Oven) 所屬房間
+  oven_equipment_id: 206
+  unloader_eqp_id: 211  # UnloaderAGV 設備 ID
+  unloader_ports: [2111, 2112, 2113, 2114]  # UnloaderAGV 的 4 個 Port
+  # 固定 Station 配置（只有 Station 05，下排進料）
+  station: 5
+  work_id: 2060502
+  ports: [2065, 2066, 2067, 2068]  # 下排4個 Port (完整 Port ID: 設備206 + Port號5-8)
+  batch_size: 4
+  row: "lower"
+
+flow:
+  # 只查詢目標房間（烤箱所在房間）
+  - query:
+      target: rooms
+      where:
+        id: "${target_room_id}"
+        enable: 1
+      as: target_rooms
+      description: "查詢烤箱所在房間"
+
+  # 遍歷目標房間（實際上只會有一個）
+  - for:
+      in: "${target_rooms}"
+      as: room
+      do:
+        # 查詢 Unloader AGV (AGV表無room_id欄位，使用model過濾)
+        - query:
+            target: agvs
+            where:
+              model: "Unloader"
+              enable: 1
+            as: unloader_agvs
+            description: "查詢所有 Unloader AGV"
+
+        # 遍歷每個 Unloader AGV
+        - for:
+            in: "${unloader_agvs}"
+            as: agv
+            do:
+              # 查詢 UnloaderAGV Port 上的載具（需要至少4個，且為烤箱上排完成狀態）
+              - query:
+                  target: carriers
+                  where:
+                    port_in: "${unloader_ports}"
+                    status_id: 601  # 烤箱上排完成
+                  as: agv_carriers
+                  description: "查詢 UnloaderAGV Port 上烤箱上排完成的載具"
+
+              # 檢查載具數量
+              - set:
+                  agv_carrier_count: "${agv_carriers.length}"
+                  required_count: "${batch_size}"
+                  has_enough_carriers: "${agv_carrier_count >= required_count}"
+
+              # 如果 AGV 有足夠載具，檢查烤箱空位
+              - if:
+                  condition: "${has_enough_carriers}"
+                  then:
+                    # 查詢烤箱下排 Station 05 空位（4個 Port）
+                    - query:
+                        target: eqp_ports
+                        where:
+                          equipment_id: "${oven_equipment_id}"
+                          port_in: "${ports}"
+                          status: "empty"
+                        as: empty_ports
+                        description: "查詢烤箱下排 Station 05 空位"
+
+                    # 檢查空位數量（需要4格全空）
+                    - set:
+                        empty_count: "${empty_ports.length}"
+                        required_space: "${batch_size}"
+                        has_enough_space: "${empty_count >= required_space}"
+
+                    # 檢查實際感測器在席信號（確保硬體也確認無載具）
+                    - if:
+                        condition: "${has_enough_space}"
+                        then:
+                          # 查詢這些 Port 的 Presence 信號
+                          - query:
+                              target: eqp_signals
+                              where:
+                                eqp_port_id_in: "${ports}"
+                                name_like: "%Presence"
+                                value: "0"  # 0 = 無載具在席
+                              as: empty_presence_signals
+                              description: "確認感測器無載具在席"
+
+                          # 檢查是否所有 Port 的 Presence 都是 0
+                          - set:
+                              presence_check_count: "${empty_presence_signals.length}"
+                              presence_all_clear: "${presence_check_count >= required_space}"
+
+                          # 如果軟體狀態和硬體感測器都確認空位，檢查重複任務
+                          - if:
+                              condition: "${has_enough_space && presence_all_clear}"
+                              then:
+                                # 檢查是否已存在未完成的放料任務
+                                - query:
+                                    target: tasks
+                                    where:
+                                      work_id: "${work_id}"
+                                      room_id: "${room.id}"
+                                      status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                                    as: existing_tasks
+                                    description: "檢查是否已存在放料任務"
+
+                                # 如果沒有重複任務，創建新任務
+                                - if:
+                                    condition: "${existing_tasks.length == 0}"
+                                    then:
+                                      # 創建 Unloader AGV 放料任務
+                                      - create:
+                                          target: task
+                                          with:
+                                            type: "unloader_put"
+                                            name: "房間${room.id}烤箱下排 Station${station} 放料"
+                                            description: "AGV 有${agv_carrier_count}個載具，烤箱下排有${empty_count}格空位，感測器確認無載具（批量4格）"
+                                            work_id: "${work_id}"
+                                            room_id: "${room.id}"
+                                            priority: "${priority}"
+                                            status_id: 1  # PENDING
+                                            parameters:
+                                              station: "${station}"
+                                              work_id: "${work_id}"
+                                              room_id: "${room.id}"
+                                              equipment_id: "${oven_equipment_id}"
+                                              ports: "${ports}"
+                                              batch_size: "${batch_size}"
+                                              row: "${row}"
+                                              model: "${model}"
+                                              carrier_count: "${agv_carrier_count}"
+                                              presence_verified: true
+                                              reason: "AGV 有載具，烤箱下排有空位，感測器確認無載具（雙重驗證）"
+                                          description: "創建 Unloader AGV 放料任務（批量4格，含感測器驗證）"

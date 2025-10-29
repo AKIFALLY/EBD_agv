@@ -9,8 +9,9 @@ class Carrier(SQLModel, table=True):
     __tablename__ = "carrier"
     id: Optional[int] = Field(default=None, primary_key=True)
     room_id: Optional[int] = None  # FK room.id 不強綁定
-    rack_id: Optional[int] = None  # FK rack.id 不強綁定
-    port_id: Optional[int] = None  # FK eqp_port.id 不強綁定
+    rack_id: Optional[int] = None  # FK rack.id 不強綁定 (Cargo AGV: carrier on rack)
+    port_id: Optional[int] = None  # FK eqp_port.id 不強綁定 (carrier at equipment port)
+    # agv_id: Optional[int] = None   # 已註釋：資料庫表中無此欄位，carrier透過port_id或rack_id關聯AGV
     rack_index: Optional[int] = None
     status_id: Optional[int] = None
     created_at: datetime = Field(

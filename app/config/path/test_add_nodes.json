@@ -1,0 +1,292 @@
+[
+  {
+    "TagNo": 200,
+    "Tag_X": 18000,
+    "Tag_Y": 12000,
+    "Station": 0,
+    "CanToMoveSet": [
+      {
+        "CanToMoveTag": 201,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [0, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      }
+    ]
+  },
+  {
+    "TagNo": 201,
+    "Tag_X": 19000,
+    "Tag_Y": 12000,
+    "Station": 0,
+    "CanToMoveSet": [
+      {
+        "CanToMoveTag": 200,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 202,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [0, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      }
+    ]
+  },
+  {
+    "TagNo": 202,
+    "Tag_X": 20000,
+    "Tag_Y": 12000,
+    "Station": 0,
+    "CanToMoveSet": [
+      {
+        "CanToMoveTag": 201,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 203,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [0, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      }
+    ]
+  },
+  {
+    "TagNo": 203,
+    "Tag_X": 21000,
+    "Tag_Y": 12000,
+    "Station": 0,
+    "CanToMoveSet": [
+      {
+        "CanToMoveTag": 202,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 204,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [0, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      }
+    ]
+  },
+  {
+    "TagNo": 204,
+    "Tag_X": 22000,
+    "Tag_Y": 12000,
+    "Station": 0,
+    "CanToMoveSet": [
+      {
+        "CanToMoveTag": 203,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [12, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      },
+      {
+        "CanToMoveTag": 0,
+        "PGV": 0,
+        "加權": 0,
+        "Act": [0, 12, 12],
+        "Speed": [],
+        "SHIFT": [0, 0, 0],
+        "Inposition": [],
+        "SafeSensorSetting": []
+      }
+    ]
+  }
+]

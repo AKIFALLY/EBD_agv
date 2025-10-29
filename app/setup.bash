@@ -47,7 +47,7 @@ log_header() {
 ping_all() { 
     # 定義要測試的 host
     local hosts=(
-        "192.168.11.206"
+        "192.168.10.3"
         "192.168.11.152"
         "agvc.ui"
         "op.ui"
@@ -2646,7 +2646,7 @@ manage_agv_launch() {
     echo "🚗 管理 AGV: $agv_name ($agv_ip)"
     
     # 使用 SSH 連接並執行命令
-    local ssh_cmd="sshpass -p '36274806' ssh -p 2222 -o StrictHostKeyChecking=no ct@$agv_ip"
+    local ssh_cmd="sshpass -p 36274806 ssh -p 2200 -o StrictHostKeyChecking=no ct@$agv_ip"
     
     case "$action" in
         status)

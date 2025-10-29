@@ -1,0 +1,197 @@
+metadata:
+  id: "loader_put_cleaner"
+  name: "Loader AGV 放料到清洗機下層"
+  enabled: true
+  version: "1.0.0"
+  description: "檢查 Loader AGV 車上載具和清洗機下層空位，創建放料任務（固定方向）"
+  author: "TAFL System"
+  created_at: "2025-10-16"
+  tags: ["loader", "cleaner", "put", "automation"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  priority: 5  # 修正：priority 必須在 1-10 範圍內
+  model: "Loader"
+  cleaner_equipment_id: 203
+  # 固定 Station 配置（只有 Station 03，下層進料）
+  station: 3
+  work_id: 2030302
+  ports: [2033, 2034]  # 下層2個 Port
+  batch_size: 1  # Loader: 1格操作
+  row: "lower"
+
+flow:
+  # 調試：流程開始
+  - notify:
+      message: "🔍 開始執行 loader_put_cleaner 流程"
+
+  # 查詢所有房間
+  - query:
+      target: rooms
+      where:
+        enable: 1
+      as: active_rooms
+      description: "查詢所有啟用的房間"
+
+  # 調試：房間數量
+  - notify:
+      message: "找到 ${active_rooms.length} 個啟用的房間"
+
+  # 遍歷每個房間
+  - for:
+      in: "${active_rooms}"
+      as: room
+      do:
+        # 調試：進入房間迴圈
+        - notify:
+            message: "📍 處理房間 ${room.id} (${room.name})"
+        # 查詢 Loader AGV (AGV表無room_id欄位，使用model過濾)
+        - query:
+            target: agvs
+            where:
+              model: "Loader"
+              enable: 1
+            as: loader_agvs
+            description: "查詢所有 Loader AGV"
+
+        # 遍歷每個 Loader AGV
+        - for:
+            in: "${loader_agvs}"
+            as: agv
+            do:
+              # 查詢 AGV Port 1、3 的載具（前段流程端口，status_id=301）
+              - query:
+                  target: carriers
+                  where:
+                    port_in: [2101, 2103]  # Port 1、3（Carrier 沒有 agv_id，用 port_id 查詢）
+                    status_id: 301  # 清洗中的 carrier
+                    room_id: "${room.id}"  # 過濾當前房間的載具
+                  as: port13_carriers
+                  description: "查詢 AGV Port 1、3 的清洗中載具（當前房間）"
+
+              # 檢查載具數量
+              - set:
+                  port13_carrier_count: "${port13_carriers.length}"
+                  required_count: "${batch_size}"
+                  has_enough_carriers: "${port13_carrier_count >= required_count}"
+
+              # 調試：記錄載具情況
+              - notify:
+                  message: "Room ${room.id}: AGV ${agv.name} port13_carriers=${port13_carrier_count}, required=${required_count}, has_carriers=${has_enough_carriers}"
+
+              # 如果 AGV 軟體狀態有載具，檢查硬體 Presence 信號
+              - if:
+                  condition: "${has_enough_carriers}"
+                  then:
+                    # 查詢 AGV Port 1、3 的 Presence 信號（確認有載具在席）
+                    - query:
+                        target: eqp_signals
+                        where:
+                          eqp_port_id_in: [2101, 2103]  # AGV Port 1、3
+                          name_like: "%Presence"
+                          value: "1"  # 1 = 有載具在席
+                        as: agv_occupied_presence_signals
+                        description: "確認 AGV Port 1、3 感測器有載具在席"
+
+                    # 檢查 AGV Port 1、3 是否都有載具（Presence = 1）
+                    - set:
+                        agv_presence_occupied_count: "${agv_occupied_presence_signals.length}"
+                        required_agv_occupied_ports: 2  # Port 1 和 Port 3 都要有載具
+                        agv_presence_verified: "${agv_presence_occupied_count >= required_agv_occupied_ports}"
+
+                    # 調試：記錄 AGV Presence 檢查結果
+                    - notify:
+                        message: "Room ${room.id}: AGV ${agv.name} presence_occupied_count=${agv_presence_occupied_count}, presence_verified=${agv_presence_verified}"
+
+                    # 如果 AGV Port 1、3 硬體確認有載具，才檢查清洗機空位
+                    - if:
+                        condition: "${agv_presence_verified}"
+                        then:
+                          # 查詢清洗機下層 Station 03 空位（2個 Port）
+                          - query:
+                              target: eqp_ports
+                              where:
+                                equipment_id: "${cleaner_equipment_id}"
+                                port_in: "${ports}"
+                                status: "empty"
+                              as: empty_ports
+                              description: "查詢清洗機下層 Station 03 空位"
+
+                          # 檢查空位數量（需要至少1格）
+                          - set:
+                              empty_count: "${empty_ports.length}"
+                              required_space: "${batch_size}"
+                              has_enough_space: "${empty_count >= required_space}"
+
+                          # 如果軟體狀態顯示有空位，檢查實際感測器在席信號
+                          - if:
+                              condition: "${has_enough_space}"
+                              then:
+                                # 查詢這些 Port 的 Presence 信號（清洗機 Port 3、4）
+                                - query:
+                                    target: eqp_signals
+                                    where:
+                                      eqp_port_id_in: "${ports}"
+                                      name_like: "%Presence"
+                                      value: "0"  # 0 = 無載具在席（空位）
+                                    as: cleaner_empty_presence_signals
+                                    description: "確認清洗機 Port 3、4 感測器無載具在席"
+
+                                # 檢查清洗機 Port 3、4 是否都是空位（Presence = 0）
+                                - set:
+                                    presence_check_count: "${cleaner_empty_presence_signals.length}"
+                                    required_cleaner_empty_ports: 2  # Port 3 和 Port 4 都要空
+                                    cleaner_presence_verified: "${presence_check_count >= required_cleaner_empty_ports}"
+
+                                # 調試：記錄清洗機 Presence 檢查結果
+                                - notify:
+                                    message: "Room ${room.id}: 清洗機下層 presence_empty_count=${presence_check_count}, presence_verified=${cleaner_presence_verified}"
+
+                                # 如果軟體狀態和硬體感測器都確認有空位，檢查重複任務
+                                - if:
+                                    condition: "${has_enough_space && cleaner_presence_verified}"
+                                    then:
+                                      # 檢查是否已存在未完成的放料任務
+                                      - query:
+                                          target: tasks
+                                          where:
+                                            work_id: "${work_id}"
+                                            room_id: "${room.id}"
+                                            status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                                          as: existing_tasks
+                                          description: "檢查是否已存在放料任務"
+
+                                      # 如果沒有重複任務，創建新任務
+                                      - if:
+                                          condition: "${existing_tasks.length == 0}"
+                                          then:
+                                            # 創建 Loader AGV 放料任務
+                                            - create:
+                                                target: task
+                                                with:
+                                                  type: "loader_put"
+                                                  name: "房間${room.id}清洗機下層 Station${station} 放料"
+                                                  description: "AGV Port 1、3 都有載具，清洗機下層 Port 3、4 都為空位（五重驗證：軟體 + AGV Port1 + AGV Port3 + 清洗機 Port3 + 清洗機 Port4）"
+                                                  work_id: "${work_id}"
+                                                  room_id: "${room.id}"
+                                                  priority: "${priority}"
+                                                  status_id: 1  # PENDING
+                                                  parameters:
+                                                    station: "${station}"
+                                                    work_id: "${work_id}"
+                                                    room_id: "${room.id}"
+                                                    equipment_id: "${cleaner_equipment_id}"
+                                                    ports: "${ports}"
+                                                    batch_size: "${batch_size}"
+                                                    row: "${row}"
+                                                    model: "${model}"
+                                                    source_agv_ports: [2101, 2103]  # 從 Port 1、3 取出
+                                                    carrier_count: "${port13_carrier_count}"
+                                                    carrier_status: 301  # 清洗中 carrier
+                                                    empty_space_count: "${empty_count}"
+                                                    agv_presence_verified: true  # AGV Port 1、3 Presence 都有載具
+                                                    cleaner_presence_verified: true  # 清洗機 Port 3、4 Presence 都為空位
+                                                    reason: "AGV Port 1、3 都有載具，清洗機下層 Port 3、4 都為空位（五重驗證：軟體 + AGV Port1 Presence + AGV Port3 Presence + 清洗機 Port3 Presence + 清洗機 Port4 Presence）"
+                                                description: "創建 Loader AGV 放料任務（固定方向，含五重感測器驗證）"

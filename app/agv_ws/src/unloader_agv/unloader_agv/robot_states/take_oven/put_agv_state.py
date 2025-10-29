@@ -51,7 +51,7 @@ class PutAgvState(BaseRobotState):
             carrier_min.rack_id = 0
             carrier_min.port_id = self.port_id_address + context.get_unloader_agv_port_back
             carrier_min.rack_index = 0
-            carrier_min.status_id = Robot.CARRIER_STATUS_OVEN_COMPLETED  # 烘乾機處理完成
+            carrier_min.status_id = Robot.CARRIER_STATUS_OVEN_COMPLETED  # 烤箱處理完成
 
             self.agvc_client.async_update_carrier(
                 carrier_min, lambda result: self.update_carrier_min_callback(result))
@@ -68,7 +68,7 @@ class PutAgvState(BaseRobotState):
             carrier_max.rack_id = 0
             carrier_max.port_id = self.port_id_address + context.get_unloader_agv_port_back + 1  # 第二個 port
             carrier_max.rack_index = 0
-            carrier_max.status_id = Robot.CARRIER_STATUS_OVEN_COMPLETED  # 烘乾機處理完成
+            carrier_max.status_id = Robot.CARRIER_STATUS_OVEN_COMPLETED  # 烤箱處理完成
 
             self.agvc_client.async_update_carrier(
                 carrier_max, lambda result: self.update_carrier_max_callback(result))

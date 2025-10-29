@@ -248,6 +248,14 @@ export const mapObjectManager = (() => {
             const actions = [];
 
             actions.push({
+                text: '編輯節點',
+                icon: 'mdi-pencil',
+                class: 'is-info',
+                onclick: `mapObjectManager.editNode(${obj.nodeId})`,
+                permission: 'edit_node'
+            });
+
+            actions.push({
                 text: '創建任務',
                 icon: 'mdi-plus',
                 class: 'is-primary',
@@ -575,6 +583,12 @@ export const mapObjectManager = (() => {
         });
     }
 
+    function editNode(nodeId) {
+        console.log('editNode called with ID:', nodeId);
+        // 呼叫 mapInteraction 的編輯功能
+        mapInteraction.editNode(nodeId);
+    }
+
     // 公開方法
     const publicMethods = {
         init,
@@ -599,6 +613,7 @@ export const mapObjectManager = (() => {
 
         // 節點相關操作
         createTaskAtNode,
+        editNode,
 
         // 邊線相關操作
         handleEdgeClick

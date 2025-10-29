@@ -100,19 +100,47 @@ async def test_inlet_rotation_aempty_bwork():
                 print(f"✅ 成功創建翻轉任務")
                 print(f"   任務 ID: {task.id}")
                 print(f"   任務名稱: {task.name}")
+
+                # 取得 Location 資訊來驗證 nodes
+                location = session.exec(select(Location).where(Location.id == inlet_id)).first()
+
                 if task.parameters:
                     rotation_angle = task.parameters.get('rotation_angle')
+                    nodes = task.parameters.get('nodes')
                     print(f"   翻轉角度: {rotation_angle}")
                     print(f"   原因: {task.parameters.get('reason')}")
                     print(f"   B面待作業數: {task.parameters.get('b_side_work_count')}")
+                    print(f"   Nodes 陣列: {nodes}")
+
                     # 驗證翻轉角度是否為180度
-                    if rotation_angle == 180:
-                        print(f"   ✅ 正確翻轉角度（180度）")
-                        return True
-                    else:
+                    if rotation_angle != 180:
                         print(f"   ❌ 錯誤：翻轉角度不是180度")
                         return False
-                return True
+                    print(f"   ✅ 正確翻轉角度（180度）")
+
+                    # 驗證 nodes 陣列結構
+                    if not nodes or len(nodes) != 3:
+                        print(f"   ❌ 錯誤：nodes 陣列應包含 3 個節點")
+                        return False
+
+                    # 驗證 nodes[0] 和 nodes[2] 應該是 location.node_id
+                    if nodes[0] != location.node_id or nodes[2] != location.node_id:
+                        print(f"   ❌ 錯誤：起點和終點應該是 location.node_id ({location.node_id})")
+                        print(f"      實際: nodes[0]={nodes[0]}, nodes[2]={nodes[2]}")
+                        return False
+                    print(f"   ✅ 起點和終點正確 (location.node_id={location.node_id})")
+
+                    # 驗證 nodes[1] 應該是 location.rotation_node_id (2025-10-01 更新)
+                    if nodes[1] != location.rotation_node_id:
+                        print(f"   ❌ 錯誤：中間旋轉點應該是 location.rotation_node_id ({location.rotation_node_id})")
+                        print(f"      實際: nodes[1]={nodes[1]}")
+                        return False
+                    print(f"   ✅ 旋轉點正確 (location.rotation_node_id={location.rotation_node_id})")
+
+                    return True
+                else:
+                    print("   ❌ 錯誤：任務缺少 parameters")
+                    return False
             else:
                 print("❌ 未創建任務")
                 return False
@@ -231,20 +259,48 @@ async def test_outlet_rotation_afull_bempty():
                 print(f"✅ 成功創建翻轉任務")
                 print(f"   任務 ID: {task.id}")
                 print(f"   任務名稱: {task.name}")
+
+                # 取得 Location 資訊來驗證 nodes
+                location = session.exec(select(Location).where(Location.id == outlet_id)).first()
+
                 if task.parameters:
                     rotation_angle = task.parameters.get('rotation_angle')
+                    nodes = task.parameters.get('nodes')
                     print(f"   翻轉角度: {rotation_angle}")
                     print(f"   原因: {task.parameters.get('reason')}")
                     print(f"   A面載具數: {task.parameters.get('a_side_count')}")
                     print(f"   房間載具數: {task.parameters.get('room_carriers')}")
+                    print(f"   Nodes 陣列: {nodes}")
+
                     # 驗證翻轉角度是否為180度
-                    if rotation_angle == 180:
-                        print(f"   ✅ 正確翻轉角度（180度）")
-                        return True
-                    else:
+                    if rotation_angle != 180:
                         print(f"   ❌ 錯誤：翻轉角度不是180度")
                         return False
-                return True
+                    print(f"   ✅ 正確翻轉角度（180度）")
+
+                    # 驗證 nodes 陣列結構
+                    if not nodes or len(nodes) != 3:
+                        print(f"   ❌ 錯誤：nodes 陣列應包含 3 個節點")
+                        return False
+
+                    # 驗證 nodes[0] 和 nodes[2] 應該是 location.node_id
+                    if nodes[0] != location.node_id or nodes[2] != location.node_id:
+                        print(f"   ❌ 錯誤：起點和終點應該是 location.node_id ({location.node_id})")
+                        print(f"      實際: nodes[0]={nodes[0]}, nodes[2]={nodes[2]}")
+                        return False
+                    print(f"   ✅ 起點和終點正確 (location.node_id={location.node_id})")
+
+                    # 驗證 nodes[1] 應該是 location.rotation_node_id (2025-10-01 更新)
+                    if nodes[1] != location.rotation_node_id:
+                        print(f"   ❌ 錯誤：中間旋轉點應該是 location.rotation_node_id ({location.rotation_node_id})")
+                        print(f"      實際: nodes[1]={nodes[1]}")
+                        return False
+                    print(f"   ✅ 旋轉點正確 (location.rotation_node_id={location.rotation_node_id})")
+
+                    return True
+                else:
+                    print("   ❌ 錯誤：任務缺少 parameters")
+                    return False
             else:
                 print("❌ 未創建任務")
                 return False

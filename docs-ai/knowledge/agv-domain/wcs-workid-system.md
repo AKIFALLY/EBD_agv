@@ -24,10 +24,12 @@ Work ID 分類體系
 ├── 210xxx: KUKA 基礎移動任務
 ├── 220xxx: KUKA 貨架搬運任務
 ├── 230xxx: KUKA 流程觸發任務
-├── 2000xxx: CargoAGV 專用任務
-├── 2010xxx: LoaderAGV 專用任務
-├── 2050xxx: UnloaderAGV 專用任務
-└── 2060xxx: 烤箱相關任務
+└── 2xxxxxx: CT AGV 專用任務（房間2製程設備）
+    ├── 200xxxx: 傳送箱操作（CargoAGV/LoaderAGV/UnloaderAGV）
+    ├── 203xxxx: 清洗機操作（LoaderAGV）
+    ├── 204xxxx: 泡藥機操作（LoaderAGV，A-F 6台）
+    ├── 205xxxx: 預烘機操作（LoaderAGV A面 + UnloaderAGV B面）
+    └── 206xxxx: 烤箱操作（UnloaderAGV 上下排）
 ```
 
 ## 🔧 核心 Work ID 定義
@@ -194,7 +196,88 @@ Work ID 分類體系
 }
 ```
 
-### CargoAGV 專用任務 (2000xxx)
+### CT AGV 專用任務 (2xxxxxx 系列)
+
+CT AGV 專用任務採用 7 位數編碼系統，針對房間2的各種製程設備操作。
+
+#### 📋 編碼結構總覽
+
+```
+格式: [Room ID] + [設備代碼] + [Station編號] + [操作類型]
+      └─1位數    └─2位數      └─2位數        └─2位數
+
+範例: 2060502
+      2 = 房間2
+      06 = 烤箱
+      05 = Station 05
+      02 = PUT（放料）
+
+Station-Port 映射規則:
+- 標準設備（1 station = 2 ports）: Station N → Port [N, N+1]
+  例如: Station 05 → Port 5-6
+- 特殊設備（1 station = 1 port）: Station N → Port [N]
+  例如: Station 03 → Port 3
+- ⭐ UnloaderAGV 自定義映射（1 station = 4 ports）: 批量處理模式
+  - 預烘機: Station 1 → [1,2,5,6], Station 3 → [3,4,7,8]
+  - 烤箱: Station 1 → [1,2,3,4], Station 5 → [5,6,7,8]
+```
+
+#### 🚀 AGV 特定 Station-Port 映射規則
+
+**重要說明**：UnloaderAGV 採用批量處理模式，與 LoaderAGV 的單格操作不同，因此需要自定義映射規則。
+
+**LoaderAGV（標準映射）**：
+- 使用標準 1:2 映射
+- 一次操作 **1 個 port**（單格精密操作）
+- 範例：
+  - 預烘機 Station 01 → Port [1, 2] → 實際使用 Port 1
+  - 預烘機 Station 03 → Port [3, 4] → 實際使用 Port 3
+
+**UnloaderAGV（自定義映射）**：
+- 使用自定義 1:4 映射
+- 一次操作 **4 個 port**（批量處理模式）
+
+**預烘機 (205) 自定義映射**：
+- Work ID 2050101 (Station 01) → Ports [1, 2, 5, 6] (批量4格)
+- Work ID 2050301 (Station 03) → Ports [3, 4, 7, 8] (批量4格)
+
+**出口傳送箱 (202) 自定義映射**：
+- Work ID 2020102 (Station 01) → Ports [1, 2, 3, 4] (批量4格)
+
+**烤箱 (206) 自定義映射**：
+- Work ID 2060101 (Station 01) → Ports [1, 2, 3, 4] (批量4格/上排/只拿)
+- Work ID 2060502 (Station 05) → Ports [5, 6, 7, 8] (批量4格/下排/只放)
+
+**實施細節**：
+- 映射邏輯位於 `shared_constants.equipment_stations.UNLOADER_CUSTOM_MAPPING`
+- UnloaderAGV 狀態機自動使用 `agv_type="unloader"` 參數
+- LoaderAGV 仍使用標準映射（`agv_type="loader"`，預設值）
+
+**設計原因**：
+- UnloaderAGV 採用批量處理模式，提高後段製程效率
+- 硬體接口配置不同：UnloaderAGV 同時控制多個 port
+- LoaderAGV 和 UnloaderAGV 可共用相同 Work ID 編碼，但映射不同
+
+---
+
+#### 🔢 設備代碼對照表
+
+| 設備代碼 | 設備名稱 | Station配置 | AGV類型 | Work ID範圍 |
+|---------|---------|------------|---------|------------|
+| `01` | 入口傳送箱 | 2 stations (01, 03) | LoaderAGV | 2010101, 2010301 |
+| `02` | 出口傳送箱 | 1 station (01) | UnloaderAGV | 2020102 |
+| `03` | 清洗機 | 2 stations (01, 03) | LoaderAGV | 2030102, 2030302 |
+| `04` | 泡藥機（A-F） | 6 stations (01-06) | LoaderAGV | 2040101-2040602 |
+| `05` | 預烘機 | 4 stations (01, 03, 05, 07) | LoaderAGV, UnloaderAGV | 2050102-2050702 |
+| `06` | 烤箱 | 2 stations (01, 05) | UnloaderAGV | 2060101, 2060502 |
+
+**Station 映射規則**:
+- **標準設備** (傳送箱、清洗機、預烘機、烤箱): 1 station = 2 ports (奇數 station: 01, 03, 05, 07)
+- **特殊設備** (泡藥機): 1 station = 1 port (連續 station: 01-06)
+
+---
+
+### 200xxxx: 傳送箱操作
 
 #### 2000102: CargoAGV放入口傳送箱
 **用途**: 從料架拿 carrier 到入口傳送箱放
@@ -231,6 +314,237 @@ Work ID 分類體系
   "description": "從出口傳送箱拿carrier到料架放"
 }
 ```
+
+#### 2010101: LoaderAGV取入口傳送箱Station01
+**用途**: LoaderAGV 從入口傳送箱 Station 01（Port 1-2）取料到車上（2格）
+
+#### 2010301: LoaderAGV取入口傳送箱Station03
+**用途**: LoaderAGV 從入口傳送箱 Station 03（Port 3-4）取料到車上（2格）
+
+#### 2020102: UnloaderAGV放出口傳送箱Station01
+**用途**: UnloaderAGV 將完成品放入出口傳送箱 Station 01（Port 1-2-3-4）批量放料（4格）
+
+---
+
+### 203xxxx: 清洗機操作（LoaderAGV）
+
+**編碼規則**: `203` + `[Station編號01/03]` + `[操作類型01/02]`
+
+**物理結構**: 清洗機有 4 個 Port，配置為 2 個 Station（LoaderAGV 2格為單位）
+- Station 01 → Port 1-2（上層）
+- Station 03 → Port 3-4（下層）
+
+**業務規則**:
+- **上層 Station 01**: 只能取料（TAKE）
+- **下層 Station 03**: 只能放料（PUT）
+
+| Work ID | 名稱 | Station | Port範圍 | 操作 | 說明 |
+|---------|------|---------|---------|------|------|
+| 2030101 | LoaderAGV取清洗機Station01 | 01 | 1-2 | 取料 | 從清洗機上層Station01取到車上（2格） |
+| 2030302 | LoaderAGV放清洗機Station03 | 03 | 3-4 | 放料 | 從車上放到清洗機下層Station03（2格） |
+
+**操作類型編碼**:
+- `01` = TAKE（取料）
+- `02` = PUT（放料）
+
+**編碼解析範例**:
+```
+範例: 2030302
+├── 2 = 房間2
+├── 03 = 清洗機
+├── 03 = Station 03（下層）
+└── 02 = PUT（放料）
+→ LoaderAGV放清洗機Station03（下層Port 3-4，2格）
+```
+
+---
+
+### 204xxxx: 泡藥機操作（LoaderAGV）
+
+**編碼規則**: `204` + `[Station編號01-06]` + `[操作類型01/02]`
+
+**物理結構**: 泡藥機為特殊設備，採用 **1 station = 1 port** 映射
+- 6 台泡藥機（A-F）= 6 個 Station = 6 個 Port
+- Station N → Port N (1:1 映射)
+
+#### 泡藥機 Work ID 清單
+
+| Work ID | 名稱 | Station | Port | 泡藥機 | 說明 |
+|---------|------|---------|------|--------|------|
+| 2040101 | LoaderAGV取泡藥機A | 01 | 1 | A | 從泡藥機A取到車上 |
+| 2040102 | LoaderAGV放泡藥機A | 01 | 1 | A | 從車上放到泡藥機A |
+| 2040201 | LoaderAGV取泡藥機B | 02 | 2 | B | 從泡藥機B取到車上 |
+| 2040202 | LoaderAGV放泡藥機B | 02 | 2 | B | 從車上放到泡藥機B |
+| 2040301 | LoaderAGV取泡藥機C | 03 | 3 | C | 從泡藥機C取到車上 |
+| 2040302 | LoaderAGV放泡藥機C | 03 | 3 | C | 從車上放到泡藥機C |
+| 2040401 | LoaderAGV取泡藥機D | 04 | 4 | D | 從泡藥機D取到車上 |
+| 2040402 | LoaderAGV放泡藥機D | 04 | 4 | D | 從車上放到泡藥機D |
+| 2040501 | LoaderAGV取泡藥機E | 05 | 5 | E | 從泡藥機E取到車上 |
+| 2040502 | LoaderAGV放泡藥機E | 05 | 5 | E | 從車上放到泡藥機E |
+| 2040601 | LoaderAGV取泡藥機F | 06 | 6 | F | 從泡藥機F取到車上 |
+| 2040602 | LoaderAGV放泡藥機F | 06 | 6 | F | 從車上放到泡藥機F |
+
+**操作類型編碼**:
+- `01` = TAKE（從泡藥機拿到車上）
+- `02` = PUT（從車上放到泡藥機）
+
+#### 編碼解析範例
+
+```
+範例1: 2040102
+├── 2 = 房間2
+├── 04 = 泡藥機
+├── 01 = Station 01
+└── 02 = PUT（放料）
+→ LoaderAGV放泡藥機A（Station 01 → Port 1）
+
+範例2: 2040601
+├── 2 = 房間2
+├── 04 = 泡藥機
+├── 06 = Station 06
+└── 01 = TAKE（取料）
+→ LoaderAGV拿泡藥機F（Station 06 → Port 6）
+```
+
+**特殊設備特點**：
+- 泡藥機為**特殊設備**，採用 1:1 映射（Station N → Port N）
+- 與標準設備不同：標準設備採用 1:2 映射（Station N → Port [N, N+1]）
+- Station 編號連續（01-06），不同於標準設備的奇數編號（01, 03, 05, 07）
+
+---
+
+### 205xxxx: 預烘機操作（LoaderAGV + UnloaderAGV）
+
+**編碼規則**: `205` + `[Station編號01/03/05/07]` + `[操作類型01/02]`
+
+**物理結構**: 預烘機有 8 個 Port，配置為 4 個 Station（標準設備 1:2 映射）
+- Station 01 → Port 1-2
+- Station 03 → Port 3-4
+- Station 05 → Port 5-6
+- Station 07 → Port 7-8
+
+#### 🏗️ 預烘機 Station 配置
+
+```
+預烘機結構（8 Port → 4 Stations）
+Station 01 (Port 1-2)  ←→  LoaderAGV 放料 / UnloaderAGV 取料
+Station 03 (Port 3-4)  ←→  LoaderAGV 放料 / UnloaderAGV 取料
+Station 05 (Port 5-6)  ←→  LoaderAGV 放料 / UnloaderAGV 取料
+Station 07 (Port 7-8)  ←→  LoaderAGV 放料 / UnloaderAGV 取料
+```
+
+#### 預烘機 Work ID 清單
+
+| Work ID | 名稱 | Station | Port範圍 | 操作 | AGV類型 | 說明 |
+|---------|------|---------|---------|------|---------|------|
+| 2050101 | UnloaderAGV取預烘Station01 | 01 | 1-2-5-6 | 取料 | UnloaderAGV | 從預烘機Station01取到車上（批量4格） |
+| 2050102 | LoaderAGV放預烘Station01 | 01 | 1-2 | 放料 | LoaderAGV | 從車上放到預烘機Station01（單格） |
+| 2050301 | UnloaderAGV取預烘Station03 | 03 | 3-4-7-8 | 取料 | UnloaderAGV | 從預烘機Station03取到車上（批量4格） |
+| 2050302 | LoaderAGV放預烘Station03 | 03 | 3-4 | 放料 | LoaderAGV | 從車上放到預烘機Station03（單格） |
+| 2050502 | LoaderAGV放預烘Station05 | 05 | 5-6 | 放料 | LoaderAGV | 從車上放到預烘機Station05（單格） |
+| 2050702 | LoaderAGV放預烘Station07 | 07 | 7-8 | 放料 | LoaderAGV | 從車上放到預烘機Station07（單格） |
+
+**操作類型編碼**:
+- `01` = TAKE（取料）
+- `02` = PUT（放料）
+
+#### 編碼解析範例
+
+```
+範例1: 2050102
+├── 2 = 房間2
+├── 05 = 預烘機
+├── 01 = Station 01
+└── 02 = PUT（放料）
+→ LoaderAGV放預烘Station01（操作Port 1-2）
+
+範例2: 2050501
+├── 2 = 房間2
+├── 05 = 預烘機
+├── 05 = Station 05
+└── 01 = TAKE（取料）
+→ UnloaderAGV取預烘Station05（操作Port 5-6）
+```
+
+**🔄 變更說明**:
+- **舊系統**: A面單 Port 操作（2050102-2050802 共8個），B面雙 Port 操作（2051101-2051701 共4個）
+- **新系統**: 統一為 Station-based 操作，每個 Station 對應 2 個 Port（共8個 Work ID）
+- **優勢**: 簡化編碼邏輯，LoaderAGV 和 UnloaderAGV 使用相同的 Station 編碼規則
+
+---
+
+### 206xxxx: 烤箱操作（UnloaderAGV）
+
+**編碼規則**: `206` + `[Station編號01/03/05/07]` + `[操作類型01/02]`
+
+**物理結構**: 烤箱有 8 個 Port，配置為 4 個 Station（標準設備 1:2 映射）
+- Station 01 → Port 1-2（上排取料位置）
+- Station 03 → Port 3-4（上排取料位置）
+- Station 05 → Port 5-6（下排放料位置）
+- Station 07 → Port 7-8（下排放料位置）
+
+#### 🏗️ 烤箱 Station 配置
+
+```
+烤箱結構（8 Port → 4 Stations）
+上排（取料位置）          下排（放料位置）
+Station 01 (Port 1-2)    Station 05 (Port 5-6)
+Station 03 (Port 3-4)    Station 07 (Port 7-8)
+        ↓                        ↑
+   TAKE (01)                 PUT (02)
+
+製程流程：
+下排進料（PUT）→ 烘乾制程 → 上排出料（TAKE）
+```
+
+#### 烤箱 Work ID 清單
+
+| Work ID | 名稱 | Station | Port範圍 | 排別 | 操作 | 說明 |
+|---------|------|---------|---------|------|------|------|
+| 2060101 | UnloaderAGV取烤箱Station01 | 01 | 1-2-3-4 | 上排 | 取料 | 從烤箱Station01取到車上（批量4格，只拿） |
+| 2060502 | UnloaderAGV放烤箱Station05 | 05 | 5-6-7-8 | 下排 | 放料 | 從車上放到烤箱Station05（批量4格，只放） |
+
+**操作類型編碼**:
+- `01` = TAKE（取料）
+- `02` = PUT（放料）
+
+#### 烤箱製程流程
+
+```
+1. 放料階段（PUT_OVEN）:
+   UnloaderAGV → 下排 Station 05 或 07
+   Work ID: 2060502 或 2060702
+
+2. 烘乾階段:
+   下排 → 烘乾制程 → 自動移到上排
+
+3. 取料階段（TAKE_OVEN）:
+   上排 Station 01 或 03 → UnloaderAGV
+   Work ID: 2060101 或 2060301
+```
+
+#### 編碼解析範例
+
+```
+範例1: 2060101
+├── 2 = 房間2
+├── 06 = 烤箱
+├── 01 = Station 01
+└── 01 = TAKE（取料）
+→ UnloaderAGV取烤箱Station01（上排Port 1-2）
+
+範例2: 2060502
+├── 2 = 房間2
+├── 06 = 烤箱
+├── 05 = Station 05
+└── 02 = PUT（放料）
+→ UnloaderAGV放烤箱Station05（下排Port 5-6）
+```
+
+**📋 烤箱業務規則**:
+- **上排（Port 1-2-3-4）**: 只能取料（TAKE），Work ID 2060101
+- **下排（Port 5-6-7-8）**: 只能放料（PUT），Work ID 2060502
+- **批量操作**: UnloaderAGV 一次操作 4 個 port，不支援部分操作
 
 ## 🔄 Work ID 實際使用方式
 
@@ -562,6 +876,244 @@ def create_dispatch_full_task(self, rack_id: int, room_id: int, machine_id: int,
     "target_area": "system_prep_area"
   }
 }
+```
+
+## 🔧 Equipment Stations 模組使用
+
+### 模組概述
+
+`shared_constants.equipment_stations` 提供 Station-Port 映射和 Work ID 解析功能，是實現 station-based 編碼系統的核心模組。
+
+**模組位置**: `/app/shared_constants_ws/src/shared_constants/shared_constants/equipment_stations.py`
+
+### 核心功能
+
+#### 1. Station 到 Port 映射
+
+```python
+from shared_constants.equipment_stations import EquipmentStations
+
+# 標準設備：1 station = 2 ports
+ports = EquipmentStations.station_to_ports(206, 5)  # 烤箱 Station 05
+# 返回: [5, 6]
+
+# 特殊設備：1 station = 1 port
+ports = EquipmentStations.station_to_ports(204, 3)  # 泡藥機 Station 03
+# 返回: [3]
+```
+
+#### 2. Work ID 解析
+
+```python
+# 解析 Work ID 取得 station 資訊
+room_id, eqp_id, station, action_type = \
+    EquipmentStations.extract_station_from_work_id(2060502)
+
+# 返回:
+# room_id = 2
+# eqp_id = 206 (烤箱)
+# station = 5
+# action_type = 2 (PUT)
+```
+
+#### 3. Work ID 到 Port 映射（一步完成）
+
+```python
+# LoaderAGV: 直接從 Work ID 解析出對應的 ports (使用預設 agv_type="loader")
+room_id, eqp_id, ports, action_type = \
+    EquipmentStations.work_id_to_ports(2060502)
+
+# 返回:
+# room_id = 2
+# eqp_id = 206 (烤箱)
+# ports = [5, 6]  (LoaderAGV 標準 1:2 映射)
+# action_type = 2 (PUT)
+
+# UnloaderAGV: 指定 agv_type="unloader" 使用自定義映射
+room_id, eqp_id, ports, action_type = \
+    EquipmentStations.work_id_to_ports(2060501, agv_type="unloader")
+
+# 返回:
+# room_id = 2
+# eqp_id = 206 (烤箱)
+# ports = [5, 6, 7, 8]  (UnloaderAGV 自定義 1:4 批量映射)
+# action_type = 1 (TAKE)
+```
+
+#### 4. 設備資訊查詢
+
+```python
+# 取得設備名稱
+name_zh = EquipmentStations.get_equipment_name(206, 'zh')  # "烤箱"
+name_en = EquipmentStations.get_equipment_name(206, 'en')  # "Oven"
+
+# 檢查設備類型
+is_standard = EquipmentStations.is_standard_equipment(206)  # True
+is_special = EquipmentStations.is_special_equipment(204)    # True
+
+# 取得有效 station 列表
+stations = EquipmentStations.get_valid_stations(206)
+# 返回: [1, 3, 5, 7]
+```
+
+#### 5. EqpPort ID 計算
+
+```python
+# 計算實際的 EqpPort ID
+port_ids = EquipmentStations.calculate_eqp_port_ids(2, 206, [5, 6])
+# 返回: [2065, 2066]
+# 格式: room_id(2) * 1000 + equipment_type(06) * 10 + port
+```
+
+### 設備配置定義
+
+#### 標準設備 (1 station = 2 ports)
+
+```python
+STANDARD_EQUIPMENT = {
+    203: {
+        "name": "清洗機",
+        "name_en": "Cleaner",
+        "stations": [1, 3],
+        "ports_per_station": 2,
+    },
+    205: {
+        "name": "預烘機",
+        "name_en": "Pre-dryer",
+        "stations": [1, 3, 5, 7],
+        "ports_per_station": 2,
+    },
+    206: {
+        "name": "烤箱",
+        "name_en": "Oven",
+        "stations": [1, 3, 5, 7],
+        "ports_per_station": 2,
+    },
+    201: {
+        "name": "入口傳送箱",
+        "name_en": "Box-in Transfer",
+        "stations": [1, 3],
+        "ports_per_station": 2,
+    },
+    202: {
+        "name": "出口傳送箱",
+        "name_en": "Box-out Transfer",
+        "stations": [1, 3],
+        "ports_per_station": 2,
+    },
+}
+```
+
+#### 特殊設備 (1 station = 1 port)
+
+```python
+SPECIAL_EQUIPMENT = {
+    204: {
+        "name": "泡藥機",
+        "name_en": "Soaker",
+        "stations": [1, 2, 3, 4, 5, 6],
+        "ports_per_station": 1,
+    },
+}
+```
+
+### 實際使用範例
+
+#### AGV 狀態機中使用
+
+```python
+# UnloaderAGV 烤箱狀態機範例
+from shared_constants.equipment_stations import EquipmentStations
+
+def _process_work_id(self, work_id: int):
+    """處理 work_id 並取得對應的 ports"""
+
+    # 解析 work_id
+    room_id, eqp_id, ports, action_type = \
+        EquipmentStations.work_id_to_ports(work_id)
+
+    # 取得設備名稱
+    eqp_name = EquipmentStations.get_equipment_name(eqp_id, 'zh')
+
+    self.get_logger().info(
+        f"處理 {eqp_name} 任務: "
+        f"Ports={ports}, Action={'TAKE' if action_type == 1 else 'PUT'}"
+    )
+
+    return ports
+```
+
+#### TAFL WCS 流程中使用
+
+```python
+# TAFL DB Bridge 中使用
+from shared_constants.equipment_stations import EquipmentStations
+
+def create_ct_agv_task(self, work_id: int, rack_id: int):
+    """創建 CT AGV 任務"""
+
+    # 解析 work_id 取得 ports
+    room_id, eqp_id, ports, action_type = \
+        EquipmentStations.work_id_to_ports(work_id)
+
+    # 計算 EqpPort IDs
+    eqp_port_ids = EquipmentStations.calculate_eqp_port_ids(
+        room_id, eqp_id, ports
+    )
+
+    # 創建任務時使用這些資訊
+    task = Task(
+        work_id=work_id,
+        room_id=room_id,
+        target_ports=eqp_port_ids,
+        rack_id=rack_id
+    )
+
+    return task
+```
+
+### 便利函數
+
+模組也提供了頂層便利函數，無需透過類別即可使用：
+
+```python
+from shared_constants.equipment_stations import (
+    station_to_ports,
+    extract_station_from_work_id,
+    work_id_to_ports
+)
+
+# 直接使用函數
+ports = station_to_ports(206, 5)
+room_id, eqp_id, station, action = extract_station_from_work_id(2060502)
+room_id, eqp_id, ports, action = work_id_to_ports(2060502)
+```
+
+### 錯誤處理
+
+模組提供完整的錯誤驗證：
+
+```python
+try:
+    # 錯誤的 station 編號（標準設備必須是奇數）
+    ports = EquipmentStations.station_to_ports(206, 2)
+except ValueError as e:
+    # "Standard equipment requires odd station number (1, 3, 5, 7)"
+    print(e)
+
+try:
+    # 無效的 work_id 格式（必須是 7 位數）
+    result = EquipmentStations.extract_station_from_work_id(123)
+except ValueError as e:
+    # "Invalid work_id format: 123. Expected 7-digit format"
+    print(e)
+
+try:
+    # 未知的設備 ID
+    ports = EquipmentStations.station_to_ports(999, 1)
+except ValueError as e:
+    # "Unknown equipment ID: 999"
+    print(e)
 ```
 
 ## 📝 文檔說明總結

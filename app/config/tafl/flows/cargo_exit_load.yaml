@@ -1,0 +1,116 @@
+metadata:
+  id: "cargo_exit_load"
+  name: "Cargo AGV 房間出口裝載作業"
+  enabled: false
+  version: "1.0.0"
+  description: "檢查房間出口的 Rack 和房間內已完成的 Carrier，創建 Cargo AGV 裝載任務"
+  author: "TAFL System"
+  created_at: "2025-10-01"
+  tags: ["cargo", "exit", "load", "automation"]
+
+settings:
+  execution_interval: 12  # Execute every 12 seconds
+
+variables:
+  work_id: 2000201  # CargoAGV拿出口傳送箱
+  priority: 7       # 高優先級
+  model: "Cargo"
+
+flow:
+  # 查詢所有房間出口位置
+  - query:
+      target: locations
+      where:
+        type: "room_outlet"
+      as: outlet_locations
+      description: "查詢所有房間出口位置"
+
+  # 遍歷每個出口位置
+  - for:
+      in: "${outlet_locations}"
+      as: location
+      do:
+        # 查詢該位置的架台
+        - query:
+            target: racks
+            where:
+              location_id: "${location.id}"
+            as: racks_at_location
+            description: "查詢位置 ${location.id} 的架台"
+
+        # 如果該位置有架台
+        - if:
+            condition: "${racks_at_location}"
+            then:
+              # 取得第一個架台
+              - set:
+                  rack: "${racks_at_location[0]}"
+
+              # 查詢架台上的載具
+              - query:
+                  target: carriers
+                  where:
+                    rack_id: "${rack.id}"
+                  as: rack_carriers
+                  description: "查詢架台 ${rack.id} 上的載具"
+
+              # 查詢出口傳送箱中的載具（等待裝載回 Rack）
+              - query:
+                  target: carriers
+                  where:
+                    room_id: "${location.room_id}"
+                    status_id: 202  # 進入出口傳送箱完成
+                  as: boxout_carriers
+                  description: "查詢房間 ${location.room_id} 出口傳送箱載具"
+
+              # 計算狀態
+              - set:
+                  rack_carrier_count: "${rack_carriers.length}"
+                  rack_has_space: "${rack_carrier_count < 32}"
+                  boxout_count: "${boxout_carriers.length}"
+                  has_boxout: "${boxout_count > 0}"
+                  need_load: "${rack_has_space} && ${has_boxout}"
+
+              # 檢查是否需要裝載
+              - if:
+                  condition: "${need_load}"
+                  then:
+                    # 檢查是否已存在未完成的裝載任務
+                    - query:
+                        target: tasks
+                        where:
+                          work_id: "${work_id}"
+                          rack_id: "${rack.id}"
+                          status_id_in: [0, 1, 2, 3]  # 未完成的狀態
+                        as: existing_tasks
+                        description: "檢查是否已存在裝載任務"
+
+                    # 如果沒有重複任務，創建新任務
+                    - if:
+                        condition: "${existing_tasks.length == 0}"
+                        then:
+                          # 創建 Cargo AGV 裝載任務
+                          - create:
+                              target: task
+                              with:
+                                type: "cargo_load"
+                                name: "房間${location.room_id}出口裝載作業"
+                                description: "房間有 ${boxout_count} 個出口傳送箱載具，Rack 有 ${rack_carrier_count}/32 載具"
+                                work_id: "${work_id}"
+                                rack_id: "${rack.id}"
+                                room_id: "${location.room_id}"
+                                priority: "${priority}"
+                                status_id: 1  # PENDING
+                                parameters:
+                                  rack_name: "${rack.name}"
+                                  rack_id: "${rack.id}"
+                                  location_name: "${location.name}"
+                                  location_id: "${location.id}"
+                                  room_id: "${location.room_id}"
+                                  model: "${model}"
+                                  rack_carriers: "${rack_carrier_count}"
+                                  boxout_carriers: "${boxout_count}"
+                                  reason: "房間出口傳送箱有載具需裝載到 Rack"
+                              description: "創建 Cargo AGV 裝載任務"
+
+  # 流程完成

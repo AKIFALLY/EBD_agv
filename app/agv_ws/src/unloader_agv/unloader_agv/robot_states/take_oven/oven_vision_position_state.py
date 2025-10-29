@@ -16,7 +16,7 @@ class OvenVisionPositionState(BaseVisionPositionState):
         self._reset_state()
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Unloader Robot Take Oven 烘乾機視覺定位中 狀態")
+        self.node.get_logger().info("Unloader Robot Take Oven 烤箱視覺定位中 狀態")
 
         from unloader_agv.robot_states.take_oven.oven_check_have_state import OvenCheckHaveState
         self._handle_vision_steps(

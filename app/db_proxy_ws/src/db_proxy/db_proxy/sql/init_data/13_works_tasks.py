@@ -80,13 +80,18 @@ def initialize_works(session):
          "description": "從出口傳送箱拿carrier到料架放", "parameters": {"function": "rack_move", "api": "submit_mission", "missionType": "RACK_MOVE", "nodes": []}},
         # 房間2的出口傳送箱Rack轉180度 (用RackMove)
 
-        {"id": 2010101, "name": "LoaderAGV取入口傳送箱",
-         "description": "從LoaderAGV取入口傳送箱拿到車上放", "parameters": {}},
+        # 入口傳送箱 - Station-based 編碼 (LoaderAGV 2格為單位)
+        {"id": 2010101, "name": "LoaderAGV取入口傳送箱Station01",
+         "description": "從入口傳送箱Station01(Port1-2/2格)取到LoaderAGV車上", "parameters": {}},
+        {"id": 2010301, "name": "LoaderAGV取入口傳送箱Station03",
+         "description": "從入口傳送箱Station03(Port3-4/2格)取到LoaderAGV車上", "parameters": {}},
 
-        {"id": 2030102, "name": "LoaderAGV放清洗機",
-         "description": "從LoaderAGV車上放到清洗機", "parameters": {}},
-        {"id": 2030201, "name": "LoaderAGV取清洗機",
-         "description": "從LoaderAGV取清洗機到車上放", "parameters": {}},
+        # 清洗機 - Station-based 編碼 (LoaderAGV 2格為單位)
+        # 上層 Station 01 (Port 1,2) - 只拿, 下層 Station 03 (Port 3,4) - 只放
+        {"id": 2030101, "name": "LoaderAGV取清洗機Station01",
+         "description": "從清洗機上層Station01(Port1-2/2格)取到LoaderAGV車上", "parameters": {}},
+        {"id": 2030302, "name": "LoaderAGV放清洗機Station03",
+         "description": "從LoaderAGV車上放到清洗機下層Station03(Port3-4/2格)", "parameters": {}},
 
         {"id": 2040102, "name": "LoaderAGV放泡藥機A",
          "description": "從LoaderAGV車上放到泡藥機A", "parameters": {}},
@@ -114,43 +119,34 @@ def initialize_works(session):
         {"id": 2040601, "name": "LoaderAGV拿泡藥機F",
          "description": "從泡藥機F拿到LoaderAGV車上放", "parameters": {}},
 
-        {"id": 2050102, "name": "LoaderAGV放預烘機1",
-         "description": "從LoaderAGV車上放到預烘機1", "parameters": {}},
-        {"id": 2050202, "name": "LoaderAGV放預烘機2",
-         "description": "從LoaderAGV車上放到預烘機2", "parameters": {}},
-        {"id": 2050302, "name": "LoaderAGV放預烘機3",
-         "description": "從LoaderAGV車上放到預烘機3", "parameters": {}},
-        {"id": 2050402, "name": "LoaderAGV放預烘機4",
-         "description": "從LoaderAGV車上放到預烘機4", "parameters": {}},
-        {"id": 2050502, "name": "LoaderAGV放預烘機5",
-         "description": "從LoaderAGV車上放到預烘機5", "parameters": {}},
-        {"id": 2050602, "name": "LoaderAGV放預烘機6",
-         "description": "從LoaderAGV車上放到預烘機6", "parameters": {}},
-        {"id": 2050702, "name": "LoaderAGV放預烘機7",
-         "description": "從LoaderAGV車上放到預烘機7", "parameters": {}},
-        {"id": 2050802, "name": "LoaderAGV放預烘機8",
-         "description": "從LoaderAGV車上放到預烘機8", "parameters": {}},
+        # 預烘機 - Station-based 編碼 (4 個 Station)
+        # LoaderAGV: 標準映射 1 station = 2 ports (單格精密操作) - Station 01/03/05/07
+        # UnloaderAGV: 自定義映射 1 station = 4 ports (批量處理) - Station 01/03
+        {"id": 2050101, "name": "UnloaderAGV取預烘Station01",
+         "description": "UnloaderAGV從預烘機Station01(Port1-2-5-6/批量4格)取到車上", "parameters": {}},
+        {"id": 2050102, "name": "LoaderAGV放預烘Station01",
+         "description": "LoaderAGV從車上放到預烘機Station01(Port1-2/單格)", "parameters": {}},
+        {"id": 2050301, "name": "UnloaderAGV取預烘Station03",
+         "description": "UnloaderAGV從預烘機Station03(Port3-4-7-8/批量4格)取到車上", "parameters": {}},
+        {"id": 2050302, "name": "LoaderAGV放預烘Station03",
+         "description": "LoaderAGV從車上放到預烘機Station03(Port3-4/單格)", "parameters": {}},
+        {"id": 2050502, "name": "LoaderAGV放預烘Station05",
+         "description": "LoaderAGV從車上放到預烘機Station05(Port5-6/單格)", "parameters": {}},
+        {"id": 2050702, "name": "LoaderAGV放預烘Station07",
+         "description": "LoaderAGV從車上放到預烘機Station07(Port7-8/單格)", "parameters": {}},
 
-        {"id": 2050901, "name": "UnloaderAGV取預烘A",
-         "description": "從預烘機A拿到UnloaderAGV車上放", "parameters": {}},
-        {"id": 2051001, "name": "UnloaderAGV取預烘B",
-         "description": "從預烘機B拿到UnloaderAGV車上放", "parameters": {}},
-        {"id": 2051101, "name": "UnloaderAGV取預烘C",
-         "description": "從預烘機C拿到UnloaderAGV車上放", "parameters": {}},
-        {"id": 2051201, "name": "UnloaderAGV取預烘D",
-         "description": "從預烘機D拿到UnloaderAGV車上放", "parameters": {}},
+        # 烤箱 - Station-based 編碼
+        # UnloaderAGV: 自定義映射 1 station = 4 ports (批量處理)
+        # Station 01: Port 1-2-3-4 (批量4格/上排/只拿), Station 05: Port 5-6-7-8 (批量4格/下排/只放)
+        {"id": 2060101, "name": "UnloaderAGV取烤箱Station01",
+         "description": "UnloaderAGV從烤箱Station01(Port1-2-3-4/批量4格/上排)取到車上", "parameters": {}},
+        {"id": 2060502, "name": "UnloaderAGV放烤箱Station05",
+         "description": "UnloaderAGV從車上放到烤箱Station05(Port5-6-7-8/批量4格/下排)", "parameters": {}},
 
-        {"id": 2060102, "name": "UnloaderAGV放烤箱A",
-         "description": "從UnloaderAGV車上放到烤箱A", "parameters": {}},
-        {"id": 2060202, "name": "UnloaderAGV放烤箱B",
-         "description": "從UnloaderAGV車上放到烤箱B", "parameters": {}},
-        {"id": 2060101, "name": "UnloaderAGV取烤箱A",
-         "description": "從烤箱A拿到UnloaderAGV車上放", "parameters": {}},
-        {"id": 2060201, "name": "UnloaderAGV取烤箱B",
-         "description": "從烤箱B拿到UnloaderAGV車上放", "parameters": {}},
-
-        {"id": 2020102, "name": "UnloaderAGV放出口傳送箱",
-         "description": "從UnloaderAGV車上到出口傳送箱放", "parameters": {}},
+        # 出口傳送箱 - Station-based 編碼
+        # UnloaderAGV: 自定義映射 1 station = 4 ports (批量處理)
+        {"id": 2020102, "name": "UnloaderAGV放出口傳送箱Station01",
+         "description": "從UnloaderAGV車上放到出口傳送箱Station01(Port1-2-3-4/批量4格)", "parameters": {}},
     ]
 
     # 改進：逐個檢查並插入，避免批量插入失敗

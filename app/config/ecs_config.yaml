@@ -52,7 +52,7 @@ agvc:
 
   door_controller_node_mqtt: #MQTT版的門控已不再使用 ,以下設定可略過
     ros__parameters:
-      broker_host: "192.168.11.206"
+      broker_host: "192.168.10.3"
       broker_port: 2883
       username: "DsH8vSx2uhTao1hlc9vx"
       sub_topic: "request/to/agvc/door"

@@ -87,6 +87,49 @@ class BaseRobotState(State):
         """列印分隔線 - 已移除以減少日誌洪水"""
         pass
 
+    def _extract_station_and_ports_from_work_id(self, work_id=None):
+        """提取 station 和 ports (通用方法)
+
+        從 work_id 中解析 station 並取得對應的 port 映射。
+        此方法統一了所有 work_id 解析邏輯，減少代碼重複。
+
+        Args:
+            work_id: 可選，Work ID 字串。如未提供則從 self.node.work_id 獲取
+
+        Returns:
+            tuple: (station, ports)
+                   失敗時返回 (None, None)
+
+        Example:
+            # 在子類中使用
+            station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+            if station is None:
+                return None  # 或其他錯誤處理
+            port_number = ports[0]  # 選擇需要的 port
+        """
+        from shared_constants.equipment_stations import EquipmentStations
+
+        try:
+            # 如果沒有提供 work_id，從 node 獲取
+            if work_id is None:
+                work_id = self.node.work_id
+
+            # 使用 EquipmentStations 解析 work_id
+            room_id, eqp_id, station, action_type = \
+                EquipmentStations.extract_station_from_work_id(work_id)
+
+            # 使用 EquipmentStations 取得 port 映射
+            ports = EquipmentStations.station_to_ports(eqp_id, station)
+
+            self.node.get_logger().info(
+                f"從 work_id {work_id} 解析: station={station}, ports={ports} "
+                f"(room_id={room_id}, eqp_id={eqp_id}, action_type={action_type})")
+
+            return station, ports
+        except ValueError as e:
+            self.node.get_logger().error(f"解析 work_id 時發生錯誤: {e}")
+            return None, None
+
 
 class BaseVisionPositionState(BaseRobotState):
     """視覺定位狀態的基礎類別"""

@@ -28,6 +28,7 @@ from db_proxy.models import (
     Room,
     Product, ProcessSettings
 )
+from db_proxy.models.agvc_eqp import Eqp, EqpPort, EqpSignal
 from sqlmodel import Session, select, and_, or_, desc, asc
 
 logger = logging.getLogger(__name__)
@@ -429,6 +430,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         Basic filters:
         - rack_id: Filter by rack ID
         - work_id: Filter by work ID
+        - room_id: Filter by room ID
         - priority: Filter by priority
         - assigned_to: Filter by assignee
 
@@ -475,6 +477,11 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 conditions.append(Task.rack_id == kwargs['rack_id'])
             if 'work_id' in kwargs:
                 conditions.append(Task.work_id == kwargs['work_id'])
+            if 'room_id' in kwargs:
+                if kwargs['room_id'] is None:
+                    conditions.append(Task.room_id.is_(None))
+                else:
+                    conditions.append(Task.room_id == kwargs['room_id'])
             if 'priority' in kwargs:
                 conditions.append(Task.priority == kwargs['priority'])
             if 'assigned_to' in kwargs:
@@ -846,6 +853,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - description: Task description
         - priority: Task priority (1-10, default: 5)
         - rack_id: Associated rack ID
+        - room_id: Associated room ID
         - status_id: Initial status (default: PENDING)
         - metadata: Additional metadata
         - assigned_to: Assignee
@@ -891,8 +899,10 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 task = Task(
                     name=params.get('name', f"Task for Work {params['work_id']}"),
                     description=params.get('description'),  # Add description field
+                    type=params.get('type'),  # Add type field for task categorization
                     work_id=params['work_id'],
                     rack_id=params.get('rack_id'),  # Add rack_id from params
+                    room_id=params.get('room_id'),  # Add room_id from params
                     location_id=params.get('target_location_id'),  # Use target as main location
                     priority=priority,
                     status_id=params.get('status_id', TaskStatus.PENDING),  # Use status_id from params, default to PENDING
@@ -1354,7 +1364,9 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - rack_index: Filter by specific rack index
         - rack_index_min: Minimum rack index (for side filtering)
         - rack_index_max: Maximum rack index (for side filtering)
-        - port_id: Filter by port ID
+        - port_id: Filter by single port ID
+        - port_in: Filter by multiple port IDs (list)
+        - agv_id: Filter by AGV ID (carrier on AGV)
         - product_name: Filter by associated product name (requires JOIN)
 
         Enhanced status filters (NEW - unified standard):
@@ -1380,6 +1392,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - limit: Maximum results
         """
         with self.pool_manager.get_session() as session:
+            # Simple query without unnecessary joins
             query = select(Carrier, CarrierStatus).join(
                 CarrierStatus, Carrier.status_id == CarrierStatus.id, isouter=True
             )
@@ -1402,6 +1415,16 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 conditions.append(Carrier.rack_index == kwargs['rack_index'])
             if 'port_id' in kwargs:
                 conditions.append(Carrier.port_id == kwargs['port_id'])
+            if 'port_in' in kwargs:
+                port_list = kwargs['port_in']
+                if isinstance(port_list, (list, tuple)):
+                    conditions.append(Carrier.port_id.in_(port_list))
+            if 'agv_id' in kwargs:
+                # Filter by Carrier.agv_id directly (not through Rack)
+                if kwargs['agv_id'] is None:
+                    conditions.append(Carrier.agv_id.is_(None))
+                else:
+                    conditions.append(Carrier.agv_id == kwargs['agv_id'])
 
             # Rack index range filters (for A-side/B-side filtering)
             self._apply_numeric_range_filters(Carrier, 'rack_index', conditions, kwargs)
@@ -1420,7 +1443,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
 
             results = session.exec(query).all()
 
-            # Get total count
+            # Get total count - use same simple query structure
             count_query = select(Carrier, CarrierStatus).join(
                 CarrierStatus, Carrier.status_id == CarrierStatus.id, isouter=True
             )
@@ -1928,6 +1951,335 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 'offset': kwargs.get('offset', 0),
                 'limit': kwargs.get('limit', None),
                 'has_more': total_count > (kwargs.get('offset', 0) + len(products))
+            }
+
+    def query_eqps(self, **kwargs) -> Dict[str, Any]:
+        """
+        Query equipment (eqp) with filtering options
+
+        Basic filters:
+        - id: Equipment ID
+        - name: Equipment name
+        - location_id: Filter by location ID
+        - id_in: List of equipment IDs
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
+        - limit: Maximum results
+        """
+        with self.pool_manager.get_session() as session:
+            query = select(Eqp)
+
+            # Apply filters
+            conditions = []
+
+            # Basic filters
+            if 'id' in kwargs:
+                conditions.append(Eqp.id == kwargs['id'])
+            if 'name' in kwargs:
+                conditions.append(Eqp.name == kwargs['name'])
+            if 'location_id' in kwargs:
+                if kwargs['location_id'] is None:
+                    conditions.append(Eqp.location_id.is_(None))
+                else:
+                    conditions.append(Eqp.location_id == kwargs['location_id'])
+
+            # Array filters
+            if 'id_in' in kwargs:
+                id_list = kwargs['id_in']
+                if isinstance(id_list, (list, tuple)):
+                    conditions.append(Eqp.id.in_(id_list))
+
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, Eqp, kwargs)
+
+            # Execute query
+            results = session.exec(query).all()
+
+            # Get total count
+            count_query = select(Eqp)
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_count = len(session.exec(count_query).all())
+
+            # Convert to dict
+            eqps = [eqp.model_dump() for eqp in results]
+
+            return {
+                'data': eqps,
+                'total': total_count,
+                'offset': kwargs.get('offset', 0),
+                'limit': kwargs.get('limit', None),
+                'has_more': total_count > (kwargs.get('offset', 0) + len(eqps))
+            }
+
+    def query_eqp_ports(self, **kwargs) -> Dict[str, Any]:
+        """
+        Query equipment ports (eqp_port) with filtering options
+
+        Basic filters:
+        - equipment_id: Filter by equipment ID (eqp_id)
+        - port: Single port ID
+        - port_in: List of port IDs
+        - eqp_id: Alias for equipment_id
+        - id: Filter by port ID
+        - id_in: List of port IDs
+        - name: Filter by port name
+
+        Status filters (requires JOIN with carrier table):
+        - status: 'empty' or 'occupied'
+          - 'empty': Ports with no carriers (LEFT JOIN carrier WHERE carrier.id IS NULL)
+          - 'occupied': Ports with carriers (INNER JOIN carrier)
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
+        - limit: Maximum results
+        """
+        with self.pool_manager.get_session() as session:
+            # Base query - start with EqpPort only
+            query = select(EqpPort)
+
+            # Apply filters
+            conditions = []
+
+            # Equipment ID filter (support both equipment_id and eqp_id)
+            eqp_id_value = kwargs.get('equipment_id') or kwargs.get('eqp_id')
+            if eqp_id_value is not None:
+                conditions.append(EqpPort.eqp_id == eqp_id_value)
+
+            # Port ID filters
+            if 'id' in kwargs:
+                conditions.append(EqpPort.id == kwargs['id'])
+            if 'port' in kwargs:
+                conditions.append(EqpPort.id == kwargs['port'])
+            if 'id_in' in kwargs:
+                id_list = kwargs['id_in']
+                if isinstance(id_list, (list, tuple)):
+                    conditions.append(EqpPort.id.in_(id_list))
+            if 'port_in' in kwargs:
+                port_list = kwargs['port_in']
+                if isinstance(port_list, (list, tuple)):
+                    conditions.append(EqpPort.id.in_(port_list))
+
+            # Name filter
+            if 'name' in kwargs:
+                conditions.append(EqpPort.name == kwargs['name'])
+
+            # Status filter - requires JOIN with carrier table
+            status = kwargs.get('status')
+            if status:
+                if status == 'empty':
+                    # LEFT JOIN carrier and filter where carrier is NULL
+                    query = select(EqpPort, Carrier).outerjoin(
+                        Carrier, EqpPort.id == Carrier.port_id
+                    )
+                    conditions.append(Carrier.id.is_(None))
+                elif status == 'occupied':
+                    # INNER JOIN carrier to get only occupied ports
+                    query = select(EqpPort, Carrier).join(
+                        Carrier, EqpPort.id == Carrier.port_id
+                    )
+                else:
+                    logger.warning(f"Unknown status filter: {status}. Valid values: 'empty', 'occupied'")
+
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, EqpPort, kwargs)
+
+            # Execute query
+            results = session.exec(query).all()
+
+            # Get total count
+            if status:
+                if status == 'empty':
+                    count_query = select(EqpPort, Carrier).outerjoin(
+                        Carrier, EqpPort.id == Carrier.port_id
+                    )
+                elif status == 'occupied':
+                    count_query = select(EqpPort, Carrier).join(
+                        Carrier, EqpPort.id == Carrier.port_id
+                    )
+            else:
+                count_query = select(EqpPort)
+
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_count = len(session.exec(count_query).all())
+
+            # Convert to dict
+            eqp_ports = []
+            for result in results:
+                # Handle both single EqpPort and (EqpPort, Carrier) tuple
+                # Also handle SQLAlchemy Row objects
+                if isinstance(result, tuple):
+                    # Tuple: (EqpPort, Carrier) or Row-like object
+                    port = result[0]
+                    carrier = result[1] if len(result) > 1 else None
+                elif hasattr(result, '_mapping'):
+                    # SQLAlchemy Row object - extract first entity
+                    port = result[0]
+                    carrier = result[1] if len(result) > 1 else None
+                else:
+                    # Single EqpPort object
+                    port = result
+                    carrier = None
+
+                # Ensure port is a model object, not a proxy
+                if hasattr(port, 'model_dump'):
+                    port_dict = port.model_dump()
+                else:
+                    # Fallback: manually create dict from Row object
+                    port_dict = {
+                        'id': port.id,
+                        'eqp_id': port.eqp_id,
+                        'name': port.name if hasattr(port, 'name') else None,
+                        'description': port.description if hasattr(port, 'description') else None
+                    }
+
+                # Add status information
+                if status:
+                    port_dict['status'] = status
+                else:
+                    # Determine status by checking if carrier exists
+                    port_dict['status'] = 'occupied' if carrier else 'empty'
+
+                # Add carrier info if available
+                if carrier:
+                    port_dict['carrier_id'] = carrier.id
+
+                eqp_ports.append(port_dict)
+
+            return {
+                'data': eqp_ports,
+                'total': total_count,
+                'offset': kwargs.get('offset', 0),
+                'limit': kwargs.get('limit', None),
+                'has_more': total_count > (kwargs.get('offset', 0) + len(eqp_ports))
+            }
+
+    def query_eqp_signals(self, **kwargs) -> Dict[str, Any]:
+        """
+        Query equipment signals (eqp_signal) with filtering options
+
+        Basic filters:
+        - eqp_id: Filter by equipment ID
+        - eqp_port_id: Filter by port ID
+        - eqp_port_id_in: List of port IDs
+        - id: Filter by signal ID
+        - id_in: List of signal IDs
+        - name: Exact name match
+        - name_like: Pattern match (e.g., "%Presence")
+        - value: Exact value match
+        - type_of_value: Filter by value type (e.g., "bool", "int", "float", "string")
+        - dm_address: Filter by DM address
+
+        Pagination and sorting:
+        - sort_by: Field to sort by (default: id)
+        - sort_order: 'asc' or 'desc'
+        - offset: Pagination offset
+        - limit: Maximum results
+        """
+        with self.pool_manager.get_session() as session:
+            # Base query
+            query = select(EqpSignal)
+
+            # Apply filters
+            conditions = []
+
+            # Equipment ID filter
+            if 'eqp_id' in kwargs:
+                conditions.append(EqpSignal.eqp_id == kwargs['eqp_id'])
+
+            # Port ID filters
+            if 'eqp_port_id' in kwargs:
+                conditions.append(EqpSignal.eqp_port_id == kwargs['eqp_port_id'])
+            if 'eqp_port_id_in' in kwargs:
+                port_list = kwargs['eqp_port_id_in']
+                if isinstance(port_list, (list, tuple)):
+                    conditions.append(EqpSignal.eqp_port_id.in_(port_list))
+
+            # Signal ID filters
+            if 'id' in kwargs:
+                conditions.append(EqpSignal.id == kwargs['id'])
+            if 'id_in' in kwargs:
+                id_list = kwargs['id_in']
+                if isinstance(id_list, (list, tuple)):
+                    conditions.append(EqpSignal.id.in_(id_list))
+
+            # Name filters
+            if 'name' in kwargs:
+                conditions.append(EqpSignal.name == kwargs['name'])
+            if 'name_like' in kwargs:
+                pattern = kwargs['name_like']
+                # Convert TAFL pattern to SQL LIKE pattern
+                # TAFL uses % wildcards, same as SQL
+                conditions.append(EqpSignal.name.like(pattern))
+
+            # Value filter
+            if 'value' in kwargs:
+                conditions.append(EqpSignal.value == str(kwargs['value']))
+
+            # Type of value filter
+            if 'type_of_value' in kwargs:
+                conditions.append(EqpSignal.type_of_value == kwargs['type_of_value'])
+
+            # DM address filter
+            if 'dm_address' in kwargs:
+                conditions.append(EqpSignal.dm_address == kwargs['dm_address'])
+
+            # Apply conditions
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Apply unified pagination and sorting
+            query = self._apply_pagination_and_sorting(query, EqpSignal, kwargs)
+
+            # Execute query
+            results = session.exec(query).all()
+
+            # Get total count
+            count_query = select(EqpSignal)
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+            total_count = len(session.exec(count_query).all())
+
+            # Convert to dict
+            eqp_signals = []
+            for signal in results:
+                if hasattr(signal, 'model_dump'):
+                    signal_dict = signal.model_dump()
+                else:
+                    # Fallback: manually create dict
+                    signal_dict = {
+                        'id': signal.id,
+                        'eqp_id': signal.eqp_id,
+                        'eqp_port_id': signal.eqp_port_id,
+                        'name': signal.name if hasattr(signal, 'name') else None,
+                        'description': signal.description if hasattr(signal, 'description') else None,
+                        'value': signal.value if hasattr(signal, 'value') else None,
+                        'type_of_value': signal.type_of_value if hasattr(signal, 'type_of_value') else None,
+                        'dm_address': signal.dm_address if hasattr(signal, 'dm_address') else None
+                    }
+
+                eqp_signals.append(signal_dict)
+
+            return {
+                'data': eqp_signals,
+                'total': total_count,
+                'offset': kwargs.get('offset', 0),
+                'limit': kwargs.get('limit', None),
+                'has_more': total_count > (kwargs.get('offset', 0) + len(eqp_signals))
             }
 
     def close(self):

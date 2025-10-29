@@ -1,7 +1,7 @@
 metadata:
   id: "full_rack_outlet_to_manual_collection"
   name: "完成料架出口到人工收料區"
-  enabled: true
+  enabled: false
   version: "2.0.0"
   description: "當房間出口Rack滿載或尾批時，搬運到人工收料區供人工取出產品"
   author: "TAFL System"

@@ -361,23 +361,23 @@ def initialize_default_data(pool_agvc):
             {"id": 2046, "eqp_id": 204, "name": "Room2_Soaking_6",
                 "description": "房間2 泡樂機 6 Port"},
 
-            # 房間2 預烘乾機 Ports
+            # 房間2 預烘機 Ports
             {"id": 2051, "eqp_id": 205, "name": "Room2_Dryer_Port01",
-                "description": "房間2 預烘乾機 Port01"},
+                "description": "房間2 預烘機 Port01"},
             {"id": 2052, "eqp_id": 205, "name": "Room2_Dryer_Port02",
-                "description": "房間2 預烘乾機 Port02"},
+                "description": "房間2 預烘機 Port02"},
             {"id": 2053, "eqp_id": 205, "name": "Room2_Dryer_Port03",
-                "description": "房間2 預烘乾機 Port03"},
+                "description": "房間2 預烘機 Port03"},
             {"id": 2054, "eqp_id": 205, "name": "Room2_Dryer_Port04",
-                "description": "房間2 預烘乾機 Port04"},
+                "description": "房間2 預烘機 Port04"},
             {"id": 2055, "eqp_id": 205, "name": "Room2_Dryer_Port05",
-                "description": "房間2 預烘乾機 Port05"},
+                "description": "房間2 預烘機 Port05"},
             {"id": 2056, "eqp_id": 205, "name": "Room2_Dryer_Port06",
-                "description": "房間2 預烘乾機 Port06"},
+                "description": "房間2 預烘機 Port06"},
             {"id": 2057, "eqp_id": 205, "name": "Room2_Dryer_Port07",
-                "description": "房間2 預烘乾機 Port07"},
+                "description": "房間2 預烘機 Port07"},
             {"id": 2058, "eqp_id": 205, "name": "Room2_Dryer_Port08",
-                "description": "房間2 預烘乾機 Port08"},
+                "description": "房間2 預烘機 Port08"},
 
             # 房間2 烤箱 Ports
             {"id": 2061, "eqp_id": 206, "name": "Room2_Oven_Port01",

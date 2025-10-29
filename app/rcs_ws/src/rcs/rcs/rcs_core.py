@@ -37,7 +37,7 @@ class RcsCore(Node):
                 'postgresql+psycopg2://agvc:password@192.168.100.254/agvc')
             self.get_logger().info("資料庫連線池已建立。")
         except Exception as e:
-            self.get_logger().fatal(f"建立資料庫連線池失敗: {e}", exc_info=True)
+            self.get_logger().fatal(f"建立資料庫連線池失敗: {e}")
             # 如果資料庫連線失敗，可能需要決定是否要讓節點繼續執行
             self.db_pool = None
 

@@ -91,7 +91,7 @@ async def test_room_dispatch_success():
             tasks = session.exec(
                 select(Task).where(
                     Task.rack_id == test_rack_id,
-                    Task.work_id == 210001
+                    Task.work_id == 220001  # KUKA_RACK_MOVE
                 )
             ).all()
 
@@ -100,12 +100,32 @@ async def test_room_dispatch_success():
                 print(f"✅ 成功創建任務")
                 print(f"   任務 ID: {task.id}")
                 print(f"   Work ID: {task.work_id}")
+
+                # 驗證 work_id 正確性
+                if task.work_id != 220001:
+                    print(f"   ❌ 錯誤：work_id 應為 220001 (RACK_MOVE)，實際為 {task.work_id}")
+                    return False
+                print(f"   ✅ Work ID 正確 (220001 - RACK_MOVE)")
                 print(f"   房間 ID: {task.room_id}")
                 print(f"   優先級: {task.priority}")
                 if task.parameters:
                     to_loc_name = task.parameters.get('to_location_name')
                     to_loc_id = task.parameters.get('to_location_id')
+                    nodes = task.parameters.get('nodes')
+                    model = task.parameters.get('model')
                     print(f"   目的地: {to_loc_name}")
+                    print(f"   nodes: {nodes}")
+                    print(f"   model: {model}")
+
+                    # 驗證 KUKA 必要參數
+                    if not nodes or not isinstance(nodes, list) or len(nodes) != 2:
+                        print(f"   ❌ 錯誤：缺少 nodes 參數或格式不正確")
+                        return False
+                    if model != "KUKA400i":
+                        print(f"   ❌ 錯誤：model 應為 KUKA400i，實際為 {model}")
+                        return False
+                    print(f"   ✅ KUKA 參數完整 (nodes: 2個節點, model: KUKA400i)")
+
                     # 驗證目的地是否為房間入口 (Loader Box)
                     if to_loc_name and 'Loader Box' in to_loc_name:
                         print(f"   ✅ 正確路由到房間入口")
@@ -200,7 +220,7 @@ async def test_room_dispatch_no_room_id():
             tasks = session.exec(
                 select(Task).where(
                     Task.rack_id == test_rack_id,
-                    Task.work_id == 210001
+                    Task.work_id == 220001  # KUKA_RACK_MOVE
                 )
             ).all()
 

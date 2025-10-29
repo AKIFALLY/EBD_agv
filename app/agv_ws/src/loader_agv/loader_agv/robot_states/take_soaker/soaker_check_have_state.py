@@ -4,6 +4,7 @@ from rclpy.node import Node
 from loader_agv.robot_context import RobotContext
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 from loader_agv.robot_states.base_robot_state import BaseRobotState
+from shared_constants.equipment_stations import EquipmentStations
 
 
 class SoakerCheckHaveState(BaseRobotState):
@@ -80,26 +81,19 @@ class SoakerCheckHaveState(BaseRobotState):
         context.soaker_port5 = self.port_carriers[4]
         context.soaker_port6 = self.port_carriers[5]
 
-    def _extract_port_from_work_id(self, context: RobotContext):
-        """從 work_id 中提取端口號碼"""
-        try:
-            work_id = context.work_id
-            work_id_str = str(work_id)
+    def _extract_station_from_work_id(self, context: RobotContext):
+        """從 work_id 中提取 station 並映射到 port (使用 EquipmentStations 模組)
 
-            # work_id 格式: room_id + SOAKER + port_number + TAKE
-            # 例如: room_id=1, SOAKER="04", port="01", TAKE="01" -> 1040101
-            # 提取倒數第4和第3位數字作為端口號碼
-            if len(work_id_str) >= 4:
-                port_str = work_id_str[-4:-2]  # 提取端口號碼部分
-                port_number = int(port_str)
-                self.node.get_logger().info(f"從 work_id {work_id} 解析出端口號碼: {port_number}")
-                return port_number
-            else:
-                self.node.get_logger().error(f"work_id {work_id} 格式不正確，無法解析端口號碼")
-                return None
-        except Exception as e:
-            self.node.get_logger().error(f"解析 work_id 時發生錯誤: {e}")
+        注意：浸泡機是特殊設備（1 station = 1 port）
+        """
+        # 調用基類通用方法
+        station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+        if station is None:
             return None
+
+        # 浸泡機是特殊設備，一個 station 對應一個 port
+        port_number = ports[0]
+        return port_number
 
     def _handle_step_operation(self, step_name: str, operation_func, success_attr: str, failed_attr: str, next_step: int):
         """統一處理步驟操作的邏輯"""
@@ -133,12 +127,12 @@ class SoakerCheckHaveState(BaseRobotState):
 
         print("🔶=========================================================================🔶")
 
-        # 直接從 work_id 解析端口號碼並進行驗證
+        # 直接從 work_id 解析 station 並映射到 port，然後進行驗證
         if self.search_eqp_signal_ok and not self.check_ok:
-            # 從 work_id 中解析端口號碼
-            self.soaker_number = self._extract_port_from_work_id(context)
+            # 從 work_id 中解析 station 並取得對應的 port
+            self.soaker_number = self._extract_station_from_work_id(context)
             if self.soaker_number is None:
-                self.node.get_logger().error("無法從 work_id 解析端口號碼，重置狀態")
+                self.node.get_logger().error("無法從 work_id 解析 station，重置狀態")
                 self._reset_state()
                 return
 

@@ -245,9 +245,48 @@ class Location(SQLModel, table=True):
     location_status_id: Optional[int] = Field(
         default=None, foreign_key="location_status.id")
     room_id: Optional[int] = Field(default=None)
-    node_id: Optional[int] = None
+    node_id: Optional[int] = None  # 可能參考 node.id 或 kuka_node.id，無外鍵約束
     name: str  # 系統空料車停車區, 系統準備派車區, 人工收料區, NG料車區等
     description: Optional[str] = None
+    type: Optional[str] = Field(default="enter_or_exit")  # 位置類型
+    rack_id: Optional[int] = Field(default=None, foreign_key="rack.id")
+
+    # 架台旋轉點配置 (2025-10-01 新增)
+    rotation_node_id: Optional[int] = Field(
+        default=None,
+        description="架台在此位置旋轉時使用的中間轉向點 (參考 kuka_node.id，用於 room_inlet/room_outlet 類型)"
+    )
+```
+
+**用途**: 管理系統中所有位置的狀態和配置，包括架台旋轉點設定
+
+**關鍵欄位**:
+- `node_id`: 位置對應的導航節點
+  - 可能參考 `node.id` (通用節點) 或 `kuka_node.id` (KUKA 專用節點)
+  - **無外鍵約束**：保持靈活性，支援兩種不同的 node 表
+- `rotation_node_id`: 架台旋轉使用的中間轉向點 (2025-10-01 新增)
+  - 實際參考 `kuka_node.id` 表
+  - **無外鍵約束**：kuka_node 表由外部 KUKA Fleet Manager 軟體管理和匯入
+  - 用於房間入口 (room_inlet) 和出口 (room_outlet) 的架台旋轉任務
+  - 每個房間的入口和出口各有專屬的旋轉點配置
+
+**外鍵設計考量** (2025-10-01 更新):
+1. **為何不綁定外鍵**:
+   - `kuka_node` 表由外部 KUKA Fleet Manager 軟體編輯後匯入
+   - 設置外鍵約束會限制外部資料匯入的靈活性
+   - `node_id` 需要同時支援 `node` 和 `kuka_node` 兩個不同的表
+2. **資料完整性保證**:
+   - 透過初始化腳本統一設定 (08_locations.py)
+   - 應用層驗證 node_id 和 rotation_node_id 的有效性
+   - TAFL 流程執行前檢查節點存在性
+
+**架台旋轉點配置範例**:
+```python
+# 房間 1 的入口和出口配置 (來自 08_locations.py)
+{"id": 10001, "room_id": 1, "node_id": 10001, "rotation_node_id": 10003,
+    "name": "room01 Loader Box", "type": "room_inlet"},
+{"id": 10002, "room_id": 1, "node_id": 10002, "rotation_node_id": 10004,
+    "name": "room01 Unloader Box", "type": "room_outlet"}
 ```
 
 ### LocationStatus 表

@@ -14,6 +14,7 @@ TEST_SCRIPTS = [
     ("架台翻轉（入口+出口）", "test_rack_rotation.py"),
     ("房間投料調度", "test_room_dispatch.py"),
     ("重複執行防護", "test_duplicate_prevention.py"),
+    ("Loader AGV 端口使用規則", "test_loader_port_rules.py"),
 ]
 
 def run_test(script_name):

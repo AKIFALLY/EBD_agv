@@ -2,7 +2,7 @@
 
 ## 🏭 Unloader AGV 概述
 
-Unloader AGV 是 RosAGV 系統中專門負責後段卸料操作的自動導引車，主要處理預乾燥機、烘乾機、出口箱之間的卸料作業。採用與其他 AGV 一致的麥克納姆輪技術和機械臂系統，具備自動分揀和處理邏輯。
+Unloader AGV 是 RosAGV 系統中專門負責後段卸料操作的自動導引車，主要處理預、烤箱、出口箱之間的卸料作業。採用與其他 AGV 一致的麥克納姆輪技術和機械臂系統，具備自動分揀和處理邏輯。
 
 ## ⚙️ 核心特性
 
@@ -39,31 +39,34 @@ Unloader AGV 結構組成
 
 ### 主要卸料操作
 
-#### 1. Take/Put Pre Dryer - 預乾燥機操作
+#### 1. Take/Put Pre Dryer - 預烘機操作
 ```python
-# 預乾燥機的雙向卸料操作
+# 預烘機的雙向卸料操作
 Take Pre Dryer:
-1. 檢查預乾燥機完成狀態
-2. 從預乾燥機取出乾燥物料
+1. 檢查預烘機完成狀態
+2. 從預烘機取出乾燥物料
 3. 運送到下一個處理站
 
 Put Pre Dryer:
-1. 將待處理物料放入預乾燥機
-2. 啟動預乾燥程序
+1. 將待處理物料放入預烘機
+2. 啟動預烘乾程序
 3. 記錄處理開始時間
 ```
 
-#### 2. Take/Put Oven - 烘乾機操作
+#### 2. Take/Put Oven - 烤箱操作
 ```python
-# 烘乾機的雙向卸料操作
+# 烤箱的雙向卸料操作
 Take Oven:
-1. 等待烘乾機完成信號
-2. 取出烘乾完成的物料
+1. 等待烤箱完成信號
+2. 從烤箱上排 (port 1-4) 取出烘乾完成的物料
 
 Put Oven:
-1. 將預乾燥完成的物料放入烘乾機
-2. 設定烘乾參數
-3. 啟動烘乾程序
+1. 將預烘乾完成的物料放入烤箱下排 (port 5-8)
+2. 自動進行烘乾制程 (下排 → 上排)
+3. 烘乾完成後載具自動移到上排
+
+**烘乾制程流程**:
+下排進料 (PUT_OVEN, port 5-8) → 烘乾制程 → 上排出料 (TAKE_OVEN, port 1-4)
 ```
 
 #### 3. Take/Put Boxout Transfer - 出口傳送箱
@@ -88,6 +91,46 @@ Put Boxout Transfer:
 - 目標工位分配
 - 異常品處理
 ```
+
+## 📋 Work ID 清單
+
+### Unloader AGV 工作定義
+
+#### 預烘機取料（批量 4 格操作）
+- **2050101**: UnloaderAGV取預烘Station01 - 從預烘機 Station 01（Port 1-2-5-6）批量取料
+- **2050301**: UnloaderAGV取預烘Station03 - 從預烘機 Station 03（Port 3-4-7-8）批量取料
+
+#### 烤箱操作（批量 4 格操作）
+**取料 (TAKE_OVEN - 上排出料位置)**:
+- **2060101**: UnloaderAGV取烤箱Station01 - 從烤箱上排 Station 01（Port 1-2-3-4）批量取料
+
+**放料 (PUT_OVEN - 下排進料位置)**:
+- **2060502**: UnloaderAGV放烤箱Station05 - 放入烤箱下排 Station 05（Port 5-6-7-8）批量放料
+
+#### 出口傳送箱（批量 4 格操作）
+- **2020102**: UnloaderAGV放出口傳送箱Station01 - 放入出口箱 Station 01（Port 1-2-3-4）批量放料
+
+### Work ID 編碼規則
+格式：`room_id + equipment_type + port_start + action_type`
+
+**設備類型編碼**:
+- `02` = BOX_OUT_TRANSFER（出口傳送箱）
+- `05` = PRE_DRYER（預烘機）
+- `06` = OVEN（烤箱）
+
+**Station 編碼**（UnloaderAGV 批量操作）:
+- 預烘機:
+  - `01` = Station 01（Port 1-2-5-6，批量 4 格）
+  - `03` = Station 03（Port 3-4-7-8，批量 4 格）
+- 烤箱:
+  - `01` = Station 01（Port 1-2-3-4，上排，批量 4 格）
+  - `05` = Station 05（Port 5-6-7-8，下排，批量 4 格）
+
+**動作類型編碼**:
+- `01` = TAKE（取料）
+- `02` = PUT（放料）
+
+**重要**: UnloaderAGV 所有操作都是 **4 個 port 為單位** 的批量處理模式
 
 ## 🔧 技術實作 (開發中)
 
@@ -114,8 +157,8 @@ class UnloaderRobotContext:
 ```python
 # Unloader 專用工位管理
 class UnloaderWorkstationManager:
-    pre_dryer_ports: dict       # 預乾燥機端口狀態
-    oven_ports: dict           # 烘乾機端口狀態
+    pre_dryer_ports: dict       # 預烘機端口狀態
+    oven_ports: dict           # 烤箱端口狀態
     boxout_ports: dict         # 出口箱端口狀態
     sorting_logic: object      # 分揀邏輯控制
 ```
@@ -147,7 +190,7 @@ class SortingSystem:
 - ✅ **測試框架**: 基礎測試環境
 
 ### 開發中功能 (60%)
-- 🔄 **工位特化邏輯**: 預乾燥機、烘乾機、出口箱專用邏輯
+- 🔄 **工位特化邏輯**: 預烘機、烤箱、出口箱專用邏輯
 - 🔄 **分揀系統**: 自動分揀和品質分類
 - 🔄 **狀態追蹤**: 完整的作業狀態管理
 - 🔄 **錯誤處理**: 異常情況處理機制
@@ -186,7 +229,7 @@ Unloader AGV → 後段卸料作業
 
 ### PLC 整合 (開發中)
 - **PGNO 指令**: 標準化的機械臂控制
-- **設備通訊**: 與預乾燥機、烘乾機的通訊
+- **設備通訊**: 與預烘機、烤箱的通訊
 - **狀態回報**: 即時的操作狀態回報
 
 ## 💡 未來發展
@@ -209,7 +252,7 @@ Unloader AGV → 後段卸料作業
 ## 🛠️ 開發指導
 
 ### 當前開發重點
-- **工位邏輯實作**: 專注於預乾燥機和烘乾機的邏輯
+- **工位邏輯實作**: 專注於預烘機和烤箱的邏輯
 - **狀態管理**: 完善的狀態追蹤和管理
 - **測試覆蓋**: 擴展測試覆蓋範圍
 

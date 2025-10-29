@@ -163,6 +163,12 @@ def create_map_importer_router(pool_agvc: ConnectionPoolManager):
 
         with pool_agvc.get_session() as session:
             try:
+                # === 第零段：清除舊的 CT Edge 資料（不刪除 Node，因為有外鍵依賴）===
+                print("清除舊的 CT Edge 資料...")
+                deleted_edges = session.exec(delete(Edge)).rowcount
+                session.commit()
+                print(f"已刪除 {deleted_edges} 個邊")
+
                 # === 第一段：建立或更新所有節點 ===
                 for node in json_data:
                     tag_no = node["TagNo"]
@@ -171,11 +177,16 @@ def create_map_importer_router(pool_agvc: ConnectionPoolManager):
 
                     now = datetime.now(ZoneInfo("Asia/Taipei"))
 
+                    # 轉換為像素座標
                     y_px, x_px = ct_unit_2_px(tag_y, tag_x)
+
                     session.merge(Node(
                         id=tag_no,
-                        x=y_px,
-                        y=x_px,
+                        x=x_px,          # 像素座標 (px)
+                        y=y_px,          # 像素座標 (px)
+                        x_mm=tag_x,      # 原始座標 (mm)
+                        y_mm=tag_y,      # 原始座標 (mm)
+                        theta=0.0,       # 預設角度
                         created_at=now,
                         updated_at=now
                     ))
@@ -226,6 +237,7 @@ def create_map_importer_router(pool_agvc: ConnectionPoolManager):
                 session.commit()
                 return {
                     "message": "Upload successful",
+                    "deleted_edges": deleted_edges,
                     "nodes_saved": total_nodes,
                     "edges_saved": total_edges
                 }

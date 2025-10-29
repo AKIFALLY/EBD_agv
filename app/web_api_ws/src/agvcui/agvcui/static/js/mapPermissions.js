@@ -34,18 +34,22 @@ export const mapPermissions = (() => {
         'view_equipment': PERMISSION_LEVELS.VIEW,
         'view_agvs': PERMISSION_LEVELS.VIEW,
         'view_agv_status': PERMISSION_LEVELS.VIEW,
+        'view_nodes': PERMISSION_LEVELS.VIEW,
+        'view_kuka_nodes': PERMISSION_LEVELS.VIEW,
 
         // 創建操作
         'create_task': PERMISSION_LEVELS.OPERATE,
         'create_rack': PERMISSION_LEVELS.OPERATE,
         'create_carrier': PERMISSION_LEVELS.OPERATE,
         'create_agv': PERMISSION_LEVELS.ADMIN,
+        'create_node': PERMISSION_LEVELS.OPERATE,
         'assign_task': PERMISSION_LEVELS.OPERATE,
 
         // 編輯操作
         'edit_task': PERMISSION_LEVELS.OPERATE,
         'edit_rack': PERMISSION_LEVELS.OPERATE,
         'edit_carrier': PERMISSION_LEVELS.OPERATE,
+        'edit_node': PERMISSION_LEVELS.OPERATE,
         'control_equipment': PERMISSION_LEVELS.OPERATE,
         'move_agv': PERMISSION_LEVELS.OPERATE,
 
@@ -53,6 +57,7 @@ export const mapPermissions = (() => {
         'delete_task': PERMISSION_LEVELS.ADMIN,
         'delete_rack': PERMISSION_LEVELS.ADMIN,
         'delete_carrier': PERMISSION_LEVELS.ADMIN,
+        'delete_node': PERMISSION_LEVELS.ADMIN,
         'emergency_stop': PERMISSION_LEVELS.ADMIN,
 
         // 系統管理

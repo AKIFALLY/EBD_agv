@@ -12,7 +12,7 @@ from agvcui.agvc_ui_socket import AgvcUiSocket
 from agvcui.routers import map, tasks, works, devices, signals
 from agvcui.routers import rosout_logs, runtime_logs, audit_logs
 from agvcui.routers import clients, racks, products, carriers, agvs, auth, users
-from agvcui.routers import nodes, tafl_editor, tafl_editor_direct
+from agvcui.routers import nodes, path_nodes, tafl_editor, tafl_editor_direct
 from agvcui.middleware import AuthMiddleware
 from contextlib import asynccontextmanager
 
@@ -199,7 +199,11 @@ class AgvcUiServer:
         self.app.include_router(auth.get_router(self.templates))
         self.app.include_router(users.get_router(self.templates))
         self.app.include_router(nodes.get_router(self.templates))
-        
+
+        # Add Path Nodes router (路徑節點管理)
+        # 傳遞 socket 實例以支援地圖更新廣播
+        self.app.include_router(path_nodes.create_path_nodes_router(self.sio))
+
         # Add TAFL Editor routers
         # tafl_editor provides the page route (/tafl/editor) and basic API
         self.app.include_router(tafl_editor.get_router(self.templates))

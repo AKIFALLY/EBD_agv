@@ -35,7 +35,7 @@ ECS (Equipment Control System) 工作空間提供設備控制系統功能，主�
 
 ### 外部依賴
 - **ROS 2**: `rclpy`, `rclpy.node`
-- ~~**MQTT Broker**: 192.168.11.206:2883 (用於門控制通訊)~~ ❌ **已棄用**
+- ~~**MQTT Broker**: 192.168.10.3:2883 (用於門控制通訊)~~ ❌ **已棄用**
 - **PostgreSQL**: 資料庫系統 (192.168.100.254:5432)
 
 ## 🏗️ 專案結構
@@ -356,7 +356,7 @@ db_url_agvc: "postgresql+psycopg2://agvc:password@192.168.100.254/agvc"
 ### MQTT 門控制配置
 ```yaml
 # MQTT 伺服器設定
-broker_host: "192.168.11.206"
+broker_host: "192.168.10.3"
 broker_port: 2883
 username: "DsH8vSx2uhTao1hlc9vx"
 
@@ -387,10 +387,10 @@ ros2 service call /plc_service/status
 ### MQTT 除錯
 ```bash
 # 監聽 MQTT 訊息
-mosquitto_sub -h 192.168.11.206 -p 2883 -u DsH8vSx2uhTao1hlc9vx -t "response/to/kukaecs/door"
+mosquitto_sub -h 192.168.10.3 -p 2883 -u DsH8vSx2uhTao1hlc9vx -t "response/to/kukaecs/door"
 
 # 發送測試訊息
-mosquitto_pub -h 192.168.11.206 -p 2883 -u DsH8vSx2uhTao1hlc9vx -t "request/to/agvc/door" -m '{"doorId":"1","isOpen":"true"}'
+mosquitto_pub -h 192.168.10.3 -p 2883 -u DsH8vSx2uhTao1hlc9vx -t "request/to/agvc/door" -m '{"doorId":"1","isOpen":"true"}'
 ```
 
 ### 日誌檢查
@@ -451,7 +451,7 @@ ros2 service call /agvc/sql_query db_proxy_interfaces/srv/SqlQuery "{query_strin
 ```bash
 # ❌ 已棄用：MQTT 門控制測試
 # ros2 run ecs door_controller_node_mqtt
-# mosquitto_pub -h 192.168.11.206 -p 2883 ...
+# mosquitto_pub -h 192.168.10.3 -p 2883 ...
 
 # ✅ 新架構：Web API 門控制測試
 # 確保 web_api_ws 服務運行
@@ -635,7 +635,7 @@ curl -X GET http://localhost:8000/docs  # FastAPI 文檔
 ```bash
 # ❌ 已棄用：MQTT 門控制測試
 # import paho.mqtt.client as mqtt
-# client.connect("192.168.11.206", 2883, 60)
+# client.connect("192.168.10.3", 2883, 60)
 
 # ✅ 新架構：Web API 門控制測試
 # 開門測試
@@ -709,7 +709,7 @@ ros2 service call /plc_service/force_on plc_interfaces/srv/ForceOn "{device_type
 
 ### MQTT → Web API 遷移
 **舊架構** (已棄用):
-- KUKA ECS 系統 → MQTT Broker (192.168.11.206:2883) → door_controller_node_mqtt.py → PLC
+- KUKA ECS 系統 → MQTT Broker (192.168.10.3:2883) → door_controller_node_mqtt.py → PLC
 
 **新架構** (目前):
 - KUKA ECS 系統 → HTTP API (web_api_ws) → door_logic.py → PLC

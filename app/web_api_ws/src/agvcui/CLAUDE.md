@@ -359,3 +359,89 @@ curl -X GET http://localhost:8001/auth/me \
 - **🚗 AGV 監控**: 即時位置、狀態、電池電量、工作狀態
 - **📊 設備管理**: 架台、載具、設備狀態監控和控制
 - **👥 用戶管理**: 多用戶權限、認證、審計日誌追蹤
+- **🗄️ 資料庫管理**: 整合 pgAdmin 提供完整的資料庫管理功能
+
+## 🗄️ 資料庫管理 (pgAdmin)
+
+### 從 AGVCUI 訪問 pgAdmin
+
+AGVCUI 整合了 pgAdmin 資料庫管理工具，管理員可以透過界面直接訪問。
+
+#### 訪問步驟
+1. **登入 AGVCUI**:
+   - 訪問 `http://agvc.ui/` 或 `http://localhost:8001/`
+   - 使用管理員帳號登入
+
+2. **打開資料庫管理**:
+   - 點擊右上角用戶選單（顯示用戶名稱的下拉選單）
+   - 選擇「資料庫管理」選項
+   - pgAdmin 自動在新分頁開啟
+
+3. **登入 pgAdmin**:
+   - **Email**: `yazelin@ching-tech.com`
+   - **Password**: `password`
+
+4. **連接 PostgreSQL 資料庫**:
+   首次使用需要新增伺服器連接：
+   - **主機名稱**: `192.168.100.254` 或 `postgres`
+   - **端口**: `5432`
+   - **維護資料庫**: `agvc`
+   - **用戶名稱**: `agvc`
+   - **密碼**: `password`
+
+### 導航欄權限控制
+
+資料庫管理選單只對管理員用戶可見，相關配置在 `templates/navbar.html:126`:
+
+```html
+<a class="navbar-item" href="http://agvc.ui/pgadmin/"
+   id="database-management-link"
+   style="display: none;"
+   target="_blank">
+    <span class="icon">
+        <i class="mdi mdi-database"></i>
+    </span>
+    <span>資料庫管理</span>
+</a>
+```
+
+**權限控制邏輯**:
+- 選單項目預設隱藏 (`style="display: none;"`)
+- JavaScript 根據用戶角色動態顯示/隱藏
+- 只有管理員角色可見此選單項目
+- 使用 `target="_blank"` 在新分頁開啟，不影響主界面
+
+### 反向代理配置
+
+pgAdmin 透過 Nginx 反向代理整合：
+- **URL**: `http://agvc.ui/pgadmin/`
+- **配置檔案**: `/home/ct/RosAGV/nginx/default.conf`
+- **代理目標**: `http://192.168.100.101:80/` (pgAdmin 容器)
+
+### 架構優勢
+✅ **統一界面**: 從 AGVCUI 統一入口訪問資料庫管理
+✅ **權限整合**: 利用 AGVCUI 的用戶權限系統控制訪問
+✅ **獨立分頁**: 在新分頁開啟，保持 AGVCUI 主界面操作流暢
+✅ **專業工具**: 使用業界標準的 pgAdmin 提供完整功能
+
+### 常用資料庫查詢
+```sql
+-- 查看所有資料表
+SELECT schemaname, tablename
+FROM pg_tables
+WHERE schemaname = 'public';
+
+-- 查看資料表大小
+SELECT
+  schemaname,
+  tablename,
+  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+
+-- 查看活動連接
+SELECT * FROM pg_stat_activity WHERE datname = 'agvc';
+```
+
+**完整資料庫管理文檔請參考**: `../../CLAUDE.md` → 資料庫管理章節

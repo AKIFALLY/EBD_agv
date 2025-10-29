@@ -4,6 +4,7 @@ from rclpy.node import Node
 from unloader_agv.robot_context import RobotContext
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 from unloader_agv.robot_states.base_robot_state import BaseRobotState
+from shared_constants.equipment_stations import EquipmentStations
 
 
 class PreDryerCheckHaveState(BaseRobotState):
@@ -108,49 +109,14 @@ class PreDryerCheckHaveState(BaseRobotState):
         for i in range(8):
             setattr(context, f'pre_dryer_port{i+1}', self.port_carriers[i])
 
-    def _extract_workstation_and_ports_from_work_id(self, _: RobotContext):
-        """從 work_id 中提取工作站編號並推算對應的 PORT 範圍"""
-        try:
-            work_id = self.node.work_id
-            work_id_str = str(work_id)
-
-            # work_id 格式: room_id + PRE_DRYER + workstation_number + TAKE
-            # 例如: room_id=1, PRE_DRYER="05", workstation="09", TAKE="01" -> 1050901
-            # 提取倒數第4和第3位數字作為工作站編號
-            if len(work_id_str) >= 4:
-                workstation_str = work_id_str[-4:-2]  # 提取工作站編號部分
-                workstation_number = int(workstation_str)
-
-                # 根據工作站編號推算對應的 PORT 範圍
-                # 工作站 9：PORT 1+2
-                # 工作站 10：PORT 3+4
-                # 工作站 11：PORT 5+6
-                # 工作站 12：PORT 7+8
-                if workstation_number == 9:
-                    ports = [1, 2]
-                    select_port = 1
-                elif workstation_number == 10:
-                    ports = [3, 4]
-                    select_port = 3
-                elif workstation_number == 11:
-                    ports = [5, 6]
-                    select_port = 5
-                elif workstation_number == 12:
-                    ports = [7, 8]
-                    select_port = 7
-                else:
-                    self.node.get_logger().error(f"工作站編號 {workstation_number} 超出範圍 (9-12)")
-                    return None, None, None
-
-                self.node.get_logger().info(
-                    f"從 work_id {work_id} 解析出工作站 {workstation_number}，對應 PORT {ports[0]}+{ports[1]} (select_port={select_port})")
-                return workstation_number, ports, select_port
-            else:
-                self.node.get_logger().error(f"work_id {work_id} 格式不正確，無法解析工作站編號")
-                return None, None, None
-        except Exception as e:
-            self.node.get_logger().error(f"解析 work_id 時發生錯誤: {e}")
+    def _extract_station_from_work_id(self, context: RobotContext):
+        """從 work_id 中提取 station 並映射到 PORT 範圍 (使用 EquipmentStations 模組)"""
+        # 調用基類通用方法（通過 context.work_id 訪問，符合狀態模式）
+        station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+        if station is None:
             return None, None, None
+        # station 就是 select_port
+        return station, ports, station
 
     def _calculate_port_ids(self, selected_port_pair):
         """計算選定 port 組合的兩個 PORT ID"""
@@ -200,25 +166,24 @@ class PreDryerCheckHaveState(BaseRobotState):
             return self.workstation_ports[1], self.carrier_id_max
 
     def _handle_port_selection(self, context: RobotContext):
-        """處理port選擇邏輯 - 從 work_id 解析工作站編號並選擇有貨物的 PORT 組合"""
+        """處理port選擇邏輯 - 從 work_id 解析 station 並選擇有貨物的 PORT 組合"""
         if self.search_eqp_signal_ok and not self.check_ok:
-            # 從 work_id 中解析工作站編號和對應的 PORT 範圍
-            workstation_number, available_ports, select_port = self._extract_workstation_and_ports_from_work_id(
-                context)
-            if workstation_number is None or available_ports is None or select_port is None:
-                self.node.get_logger().error("無法從 work_id 解析工作站編號，重置狀態")
+            # 從 work_id 中解析 station 和對應的 PORT 範圍
+            station, available_ports, select_port = self._extract_station_from_work_id(context)
+            if station is None or available_ports is None or select_port is None:
+                self.node.get_logger().error("無法從 work_id 解析 station，重置狀態")
                 self._reset_state()
                 return
 
-            # 每個工作站只管理一組 port，直接檢查該組合
+            # 每個 station 只管理一組 port，直接檢查該組合
             port1, port2 = available_ports[0], available_ports[1]
             port1_has_cargo = self.port_carriers[port1 - 1]  # port 1-8 對應 index 0-7
             port2_has_cargo = self.port_carriers[port2 - 1]
 
-            pair_name = f"port{port1}+{port2}"
+            pair_name = f"Station{station:02d}(port{port1}+{port2})"
 
             self.node.get_logger().debug(
-                f"檢查工作站{workstation_number} {pair_name}: PORT{port1}={port1_has_cargo}, PORT{port2}={port2_has_cargo}")
+                f"檢查 {pair_name}: PORT{port1}={port1_has_cargo}, PORT{port2}={port2_has_cargo}")
 
             # 檢查選擇優先順序
             selected = False
@@ -240,10 +205,10 @@ class PreDryerCheckHaveState(BaseRobotState):
                 self.selected_port = select_port
                 self.check_ok = True
                 self.node.get_logger().info(
-                    f"✅ 工作站{workstation_number} {priority_msg} - {pair_name} (select_port={select_port})，準備查詢 Carrier 驗證")
+                    f"✅ {priority_msg} - {pair_name} (select_port={select_port})，準備查詢 Carrier 驗證")
             else:
                 self.node.get_logger().warn(
-                    f"❌ 工作站{workstation_number} 的 {pair_name} 都沒有貨物，無法執行 TAKE 操作")
+                    f"❌ {pair_name} 都沒有貨物，無法執行 TAKE 操作")
                 self._reset_state()
                 return
 

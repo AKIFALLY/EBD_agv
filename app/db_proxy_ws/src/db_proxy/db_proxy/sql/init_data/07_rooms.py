@@ -24,6 +24,7 @@ def initialize_rooms(session):
     process_settings_id = process_setting.id
     print(f"📌 使用 process_settings_id: {process_settings_id}")
     
+    # 旋轉點使用 kuka_node IDs (KUKA AGV 導航系統)
     default_rooms = [
         {"id": 1, "process_settings_id": process_settings_id, "name": "Room1",
             "description": "第一間房間", "enable": 1},

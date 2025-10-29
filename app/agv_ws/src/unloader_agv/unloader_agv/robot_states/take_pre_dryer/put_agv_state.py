@@ -68,7 +68,7 @@ class PutAgvState(BaseRobotState):
             carrier_max.rack_id = 0
             carrier_max.port_id = self.port_id_address + context.get_unloader_agv_port_back + 1  # 第二個 port
             carrier_max.rack_index = 0
-            carrier_max.status_id = Robot.CARRIER_STATUS_PREPARE_ENTER_OVEN  # 準備進入烘乾機
+            carrier_max.status_id = Robot.CARRIER_STATUS_PREPARE_ENTER_OVEN  # 準備進入烤箱
 
             self.agvc_client.async_update_carrier(
                 carrier_max, lambda result: self.update_carrier_max_callback(result))

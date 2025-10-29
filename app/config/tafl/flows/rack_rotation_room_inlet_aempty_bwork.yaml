@@ -1,7 +1,7 @@
 metadata:
   id: "rack_rotation_room_inlet_aempty_bwork"
   name: "房間入口架台翻轉（A面空B面待作業）"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查所有房間入口架台，當A面為空（載具已取走）、B面有待作業載具時創建180度翻轉任務"
   author: "TAFL System"
@@ -103,11 +103,11 @@ flow:
                     - if:
                         condition: "${existing_tasks.length == 0}"
                         then:
-                          # 創建架台翻轉任務
+                          # 創建架台翻轉任務（直接使用 location.rotation_node_id 作為旋轉點）
                           - create:
                               target: task
                               with:
-                                type: "rack_rotation"  # 添加缺少的任務類型
+                                type: "rack_rotation"
                                 name: "房間${location.room_id}入口架台翻轉"
                                 description: "A面為空（載具已取走），B面有${b_side_work_count}個載具待作業"
                                 work_id: "${work_id}"
@@ -124,13 +124,11 @@ flow:
                                   rotation_angle: "${rotation_angle}"
                                   reason: "A面為空（載具已取走），B面有待作業載具"
                                   model: "${model}"
-                                  # nodes: [起點, 轉向點, 終點] - 起點和終點相同（入口位置）
-                                  nodes: ["${location.node_id}", "${location.node_id + 1}", "${location.node_id}"]
+                                  # nodes: [起點, 轉向點, 終點] - 使用 location 配置的旋轉點
+                                  nodes: ["${location.node_id}", "${location.rotation_node_id}", "${location.node_id}"]
                                   a_side_count: "${a_side_count}"
                                   b_side_count: "${b_side_count}"
                                   b_side_work_count: "${b_side_work_count}"
                               description: "創建架台翻轉任務"
-
-                          # 記錄任務創建成功（移除 log 動詞）
 
   # 流程完成

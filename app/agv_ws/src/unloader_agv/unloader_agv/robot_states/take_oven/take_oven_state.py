@@ -140,7 +140,7 @@ class TakeOvenState(BaseRobotState):
                     self.node.get_logger().debug("⏳等待讀取PGNO回應...")
                     return
                 if read_pgno.value == Robot.IDLE:
-                    self.node.get_logger().info("✅從烘乾機取貨完成")
+                    self.node.get_logger().info("✅從烤箱取貨完成")
 
                     # 直接進入下一個狀態，TAKE 操作不需要更新資料庫
                     self.node.get_logger().info("✅ Take Oven 完成: 進入放置到AGV狀態")
@@ -149,7 +149,7 @@ class TakeOvenState(BaseRobotState):
 
                     self.step = RobotContext.IDLE
                 else:
-                    self.node.get_logger().info("❌從烘乾機取貨失敗")
+                    self.node.get_logger().info("❌從烤箱取貨失敗")
 
     def handle(self, context: RobotContext):
         self.node.get_logger().info("Unloader Robot Take Oven TakeOven 狀態")

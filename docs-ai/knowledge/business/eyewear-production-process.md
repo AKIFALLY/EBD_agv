@@ -412,7 +412,7 @@ Loader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_typ
 - `01` = TRANSFER (傳送箱)
 - `03` = CLEANER (清潔機) 
 - `04` = SOAKER (浸潤機)
-- `05` = PRE_DRYER (預乾燥機)
+- `05` = PRE_DRYER (預烘機)
 
 **動作類型編碼**：
 - `01` = TAKE (取料)
@@ -424,12 +424,12 @@ Loader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_typ
 1. **TAKE_TRANSFER**: `room_id + "01" + "01" + "01"` - 從入口傳送箱取得 Cargo AGV 送來的載具
 2. **TAKE_CLEANER**: `room_id + "03" + "01-02" + "01"` - 從清潔機取回完成清潔的載具 (2工位)
 3. **TAKE_SOAKER**: `room_id + "04" + "01-06" + "01"` - 從浸潤機取回完成泡藥的載具 (6工位)
-4. **TAKE_PRE_DRYER**: `room_id + "05" + "01-08" + "01"` - 從預乾燥機取回完成預乾燥的載具 (8工位)
+4. **TAKE_PRE_DRYER**: `room_id + "05" + "01-08" + "01"` - 從預烘機取回完成預乾燥的載具 (8工位)
 
 **放料流程 (PUT Operations)**：
 5. **PUT_CLEANER**: `room_id + "03" + "01-02" + "02"` - 將載具放入清潔機進行清潔製程 (2工位)
 6. **PUT_SOAKER**: `room_id + "04" + "01-06" + "02"` - 將載具放入浸潤機進行泡藥製程 (6工位)
-7. **PUT_PRE_DRYER**: `room_id + "05" + "01-08" + "02"` - 將載具放入預乾燥機進行預乾燥製程 (8工位)
+7. **PUT_PRE_DRYER**: `room_id + "05" + "01-08" + "02"` - 將載具放入預烘機進行預乾燥製程 (8工位)
 
 ##### 製程流程順序
 **製程1 (泡藥1次)**: TAKE_TRANSFER → PUT_CLEANER → TAKE_CLEANER → PUT_SOAKER → TAKE_SOAKER → PUT_PRE_DRYER
@@ -438,7 +438,7 @@ Loader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_typ
 **製程2 (泡藥2次)**: TAKE_TRANSFER → PUT_CLEANER → TAKE_CLEANER → PUT_SOAKER → TAKE_SOAKER → PUT_SOAKER → TAKE_SOAKER → PUT_PRE_DRYER
 - 注意：PUT_PRE_DRYER 後由 Unloader AGV 負責取出
 
-##### 預乾燥機 (PRE_DRYER) 設備特性
+##### 預烘機 (PRE_DRYER) 設備特性
 - **工位配置**: 總共8格 (上排4格 + 下排4格)
 - **作業分工**: Loader AGV 負責放入 (PUT_PRE_DRYER)，Unloader AGV 負責取出
 - **Unloader 取料方式**: 一次取2格的批量處理方式
@@ -1149,7 +1149,7 @@ Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_
 - `01` = TRANSFER (入口傳送箱)
 - `03` = CLEANER (清潔機) 
 - `04` = SOAKER (浸潤機)
-- `05` = PRE_DRYER (預乾燥機)
+- `05` = PRE_DRYER (預烘機)
 
 **動作類型編碼**：
 - `01` = TAKE (取料)
@@ -1172,10 +1172,10 @@ Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_
 - 功能: 從2台清潔機取得清潔完成的產品
 - 設備: 清潔機站點1-2 (2個工位)
 
-**4. TAKE_PRE_DRYER - 從預乾燥機取料**
+**4. TAKE_PRE_DRYER - 從預烘機取料**
 - Work ID 範圍: `room_id + "05" + "01-08" + "01"`
-- 功能: 從8台預乾燥機取得預乾完成的產品  
-- 設備: 預乾燥機站點1-8 (8個工位)
+- 功能: 從8台預烘機取得預乾完成的產品  
+- 設備: 預烘機站點1-8 (8個工位)
 
 **5. PUT_SOAKER - 放料到浸潤機**
 - Work ID 範圍: `room_id + "04" + "01-06" + "02"`
@@ -1187,10 +1187,10 @@ Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_
 - 功能: 將產品放入2台清潔機進行清潔處理
 - 設備: 清潔機站點1-2 (2個工位)
 
-**7. PUT_PRE_DRYER - 放料到預乾燥機**
+**7. PUT_PRE_DRYER - 放料到預烘機**
 - Work ID 範圍: `room_id + "05" + "01-08" + "02"`
-- 功能: 將產品放入8台預乾燥機進行預乾處理
-- 設備: 預乾燥機站點1-8 (8個工位)
+- 功能: 將產品放入8台預烘機進行預乾處理
+- 設備: 預烘機站點1-8 (8個工位)
 
 #### 🎯 製程設備配置 (實際驗證)
 ```
@@ -1198,7 +1198,7 @@ Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_
 ├── 入口傳送箱 (TRANSFER): 4格 (上2下2)
 ├── 清潔機 (CLEANER): 2台工位  
 ├── 浸潤機 (SOAKER): 6台工位
-└── 預乾燥機 (PRE_DRYER): 8台工位
+└── 預烘機 (PRE_DRYER): 8台工位
 ```
 
 #### 🤖 技術實作特點
@@ -1215,7 +1215,7 @@ Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_
 3. TAKE_CLEANER → 從清潔機取出
 4. PUT_SOAKER → 放入浸潤機泡藥
 5. TAKE_SOAKER → 從浸潤機取出
-6. PUT_PRE_DRYER → 放入預乾燥機預乾
+6. PUT_PRE_DRYER → 放入預烘機預乾
 
 **製程2 (泡藥2次) 流程**:
 1. TAKE_TRANSFER → 從入口傳送箱取料
@@ -1225,7 +1225,7 @@ Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_
 5. TAKE_SOAKER → 第1次從浸潤機取出
 6. PUT_SOAKER → 第2次放入浸潤機泡藥 
 7. TAKE_SOAKER → 第2次從浸潤機取出
-8. PUT_PRE_DRYER → 放入預乾燥機預乾
+8. PUT_PRE_DRYER → 放入預烘機預乾
 
 #### 🏗️ Loader AGV 車載料架配置
 - **物理結構**: 4層垂直排列 (第1層到第4層)
@@ -1250,7 +1250,7 @@ Loader AGV 使用自動 work_id 路由系統，格式為：`room_id + equipment_
 - Loader作業: PUT_SOAKER (放入) + TAKE_SOAKER (取出)
 - 製程特色: 支援泡藥1次/2次的靈活配置
 
-**預乾燥機 (PRE_DRYER)**:
+**預烘機 (PRE_DRYER)**:
 - Work ID站點: `01-08` (8個工位)
 - 物理配置: 8格 (上排4格 + 下排4格)
 - Loader作業: 僅負責 PUT_PRE_DRYER (放入)

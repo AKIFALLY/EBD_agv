@@ -125,20 +125,69 @@ class AGVResponse(AGVBase):
     id: int
 ```
 
-## 開發工作流程
+## ⚠️ ROS2 檔案複製機制（重要）
+
+**所有修改都必須重建（ba && sa），包括靜態檔案！**
+
+### 為什麼靜態檔案也需要重建？
+ROS2 的 `colcon build` 會將 `src/` 目錄的檔案複製到 `install/` 目錄：
+- **開發目錄**: `/app/web_api_ws/src/agvcui/agvcui/static/js/mapInteraction.js`
+- **實際執行**: `/app/web_api_ws/install/agvcui/lib/python3.12/site-packages/agvcui/static/js/mapInteraction.js`
+
+服務啟動時載入的是 `install/` 目錄的檔案，不是 `src/` 目錄。
+
+### 需要重建的檔案類型（全部）
 ```bash
-# 1. 修改代碼
-vim /app/web_api_ws/src/web_api/main.py
+✅ Python 程式碼 (.py)        → 需要 ba && sa
+✅ JavaScript 檔案 (.js)      → 需要 ba && sa
+✅ CSS 樣式表 (.css)          → 需要 ba && sa
+✅ HTML 模板 (.html)          → 需要 ba && sa
+✅ 配置檔案 (package.xml)    → 需要 ba && sa
+✅ YAML/JSON 配置            → 需要 ba && sa
+```
 
-# 2. 重建工作空間
+## 開發工作流程（強制）
+
+### 標準流程（所有修改）
+```bash
+# [容器內] 完整流程
+manage_web_api_launch stop    # 1. 停止服務
+ba                           # 2. 重建所有工作空間
+sa                           # 3. 重新載入環境
+manage_web_api_launch start  # 4. 啟動服務
+
+# [宿主機] 一鍵執行（推薦）
+docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
+source /app/setup.bash &&
+agvc_source &&
+manage_web_api_launch stop &&
+ba &&
+sa &&
+manage_web_api_launch start
+"
+```
+
+### 特定套件重建
+```bash
+# [容器內] 只重建 agvcui
+manage_web_api_launch stop
 cd /app/web_api_ws
-colcon build --packages-select web_api
+colcon build --packages-select agvcui
+sa
+manage_web_api_launch start
+```
 
-# 3. 重啟服務
-manage_web_api_launch restart
+### 驗證變更
+```bash
+# 1. 檢查服務狀態
+manage_web_api_launch status
 
-# 4. 測試 API
-curl http://localhost:8000/health
+# 2. 測試 API
+curl http://localhost:8001/health
+
+# 3. 瀏覽器測試
+# 開啟 http://localhost:8001
+# 強制重新載入（Ctrl+Shift+R）清除瀏覽器快取
 ```
 
 ## 測試端點
@@ -213,4 +262,4 @@ sio = socketio.AsyncServer(
 2. **端口分配**: 8000=API, 8001=AGVCUI, 8002=OPUI, 8003=AGVUI
 3. **CORS 設定**: 開發環境可用 "*"，生產需指定
 4. **資料驗證**: 使用 Pydantic/SQLModel
-5. **重啟優先**: 修改後用 restart 而非 stop+start
+5. **🚨 必須重建**: 任何檔案修改後都必須執行 `ba && sa`，ROS2 需要複製檔案到 install/ 目錄

@@ -26,6 +26,11 @@ from db_proxy.models.carrier_status import CarrierStatus
 from db_proxy.models.agvc_kuka import KukaNode, KukaEdge
 from db_proxy.models.license import License
 
+# Coordinate utilities
+from db_proxy.models.coordinate_utils import (
+    unit_to_px, px_to_unit, calculate_pixel_coordinates, CoordinateConverter
+)
+
 __all__ = [
     # Base models
     "LogLevel", "RosoutLog", "RuntimeLog", "ModifyLog", "AuditLog",
@@ -56,5 +61,8 @@ __all__ = [
     "License",
 
     # WCS models
-    "Room", "RackStatus", "Rack", "Carrier", "CarrierStatus"
+    "Room", "RackStatus", "Rack", "Carrier", "CarrierStatus",
+
+    # Coordinate utilities
+    "unit_to_px", "px_to_unit", "calculate_pixel_coordinates", "CoordinateConverter"
 ]

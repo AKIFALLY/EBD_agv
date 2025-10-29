@@ -1,7 +1,7 @@
 metadata:
   id: "empty_rack_inlet_to_outlet"
   name: "空料架入口到出口（優先）"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "當A/B面都為空且房間出口位置空閒時，將空Rack直接搬到出口準備收集"
   author: "TAFL System"

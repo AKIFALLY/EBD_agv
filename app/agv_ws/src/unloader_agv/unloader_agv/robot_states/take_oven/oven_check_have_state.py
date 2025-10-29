@@ -4,6 +4,7 @@ from rclpy.node import Node
 from unloader_agv.robot_context import RobotContext
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 from unloader_agv.robot_states.base_robot_state import BaseRobotState
+from shared_constants.equipment_stations import EquipmentStations
 
 
 class OvenCheckHaveState(BaseRobotState):
@@ -21,7 +22,7 @@ class OvenCheckHaveState(BaseRobotState):
         self.eqp_signal_query_client = EqpSignalQueryClient(node)
         self.carrier_query_client = CarrierQueryClient(node)
 
-        # 動態計算 port_address 和 eqp_id (烘乾機)
+        # 動態計算 port_address 和 eqp_id (烤箱)
         self.port_address = self.node.room_id * 1000 + 60  # OVEN port address
         self.eqp_id = self.node.room_id * 100 + 6  # OVEN eqp_id
 
@@ -35,7 +36,7 @@ class OvenCheckHaveState(BaseRobotState):
         self.search_eqp_signal_ok = False
         self.carrier_query_sended = False
         self.carrier_query_success = False
-        self.port_carriers = [False] * 8  # 烘乾機八個port的狀態
+        self.port_carriers = [False] * 8  # 烤箱八個port的狀態
         self.carrier_id_min = None  # 存儲選定組合第一個 port 的 carrier_id
         self.carrier_id_max = None  # 存儲選定組合第二個 port 的 carrier_id
         self.workstation_ports = None  # 存儲選定的 PORT 組合 (port1, port2)
@@ -54,7 +55,7 @@ class OvenCheckHaveState(BaseRobotState):
         """EQP信號查詢回調"""
         if response.success:
             self.node.get_logger().info("✅ EQP信號查詢成功")
-            # 解析烘乾機port狀態 (port 1-8) - 使用迴圈簡化
+            # 解析烤箱port狀態 (port 1-8) - 使用迴圈簡化
             for i in range(8):
                 self.port_carriers[i] = getattr(response, f'oven_port{i+1}')
 
@@ -67,7 +68,7 @@ class OvenCheckHaveState(BaseRobotState):
         """Carrier查詢回調 - 處理選定 PORT 組合查詢結果"""
         self.carrier_query_success = response.success
         if response.success:
-            self.node.get_logger().info(f"✅ 烘乾機 {self.selected_pair_name} Carrier查詢成功")
+            self.node.get_logger().info(f"✅ 烤箱 {self.selected_pair_name} Carrier查詢成功")
 
             # 計算選定 port 組合的兩個 PORT ID
             if self.workstation_ports:
@@ -97,7 +98,7 @@ class OvenCheckHaveState(BaseRobotState):
                 self.carrier_id = self.carrier_id_min if self.carrier_id_min is not None else self.carrier_id_max
         else:
             self.node.get_logger().error(
-                f"❌ 烘乾機 {self.selected_pair_name} Carrier查詢失敗: {response.message}")
+                f"❌ 烤箱 {self.selected_pair_name} Carrier查詢失敗: {response.message}")
 
     def _update_context_states(self, context: RobotContext):
         """更新context中的狀態"""
@@ -108,45 +109,52 @@ class OvenCheckHaveState(BaseRobotState):
         for i in range(8):
             setattr(context, f'oven_port{i+1}', self.port_carriers[i])
 
-    def _extract_workstation_and_ports_from_work_id(self, _: RobotContext):
-        """從 work_id 中提取工作站編號並推算對應的 PORT 範圍"""
-        try:
-            work_id = self.node.work_id
-            work_id_str = str(work_id)
+    def _extract_station_from_work_id(self, context: RobotContext):
+        """從 work_id 中提取 station 並映射到 port pair (使用 EquipmentStations 模組)
 
-            # work_id 格式: room_id + OVEN + workstation_number + TAKE
-            # 例如: room_id=1, OVEN="06", workstation="01", TAKE="01" -> 1060101
-            # 提取倒數第4和第3位數字作為工作站編號
-            if len(work_id_str) >= 4:
-                workstation_str = work_id_str[-4:-2]  # 提取工作站編號部分
-                workstation_number = int(workstation_str)
-
-                # 根據工作站編號推算對應的 PORT 範圍
-                # 工作站 1：PORT 1+2 (上層), PORT 5+6 (下層)
-                # 工作站 2：PORT 3+4 (上層), PORT 7+8 (下層)
-                if workstation_number == 1:
-                    ports = [1, 2, 5, 6]  # 工作站 1 管理的所有 port
-                    self.node.get_logger().info(
-                        f"從 work_id {work_id} 解析出工作站 {workstation_number}，對應 PORT {ports}")
-                    return workstation_number, ports
-                elif workstation_number == 2:
-                    ports = [3, 4, 7, 8]  # 工作站 2 管理的所有 port
-                    self.node.get_logger().info(
-                        f"從 work_id {work_id} 解析出工作站 {workstation_number}，對應 PORT {ports}")
-                    return workstation_number, ports
-                else:
-                    self.node.get_logger().error(f"工作站編號 {workstation_number} 超出範圍 (1-2)")
-                    return None, None
-            else:
-                self.node.get_logger().error(f"work_id {work_id} 格式不正確，無法解析工作站編號")
-                return None, None
-        except Exception as e:
-            self.node.get_logger().error(f"解析 work_id 時發生錯誤: {e}")
+        Returns:
+            tuple: (station, port_pair)
+            例如: (1, [1, 2]) 或 (5, [5, 6])
+        """
+        # 調用基類通用方法（通過 context.work_id 訪問，符合狀態模式）
+        station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+        if station is None:
             return None, None
+        return station, ports
+
+    def _check_port_pair_have_cargo(self, port_pair):
+        """檢查 port pair 是否兩個都有貨（TAKE 操作的條件）
+
+        Args:
+            port_pair: [port1, port2]，例如 [1, 2] 或 [3, 4]
+
+        Returns:
+            bool: True 表示兩個 port 都有貨，False 表示至少一個沒貨
+        """
+        port1, port2 = port_pair
+        port1_has_cargo = self.port_carriers[port1 - 1]  # port 1-8 對應 index 0-7
+        port2_has_cargo = self.port_carriers[port2 - 1]
+
+        self.node.get_logger().debug(
+            f"檢查 port pair [{port1}, {port2}]: "
+            f"port{port1}={'有貨' if port1_has_cargo else '無貨'}, "
+            f"port{port2}={'有貨' if port2_has_cargo else '無貨'}")
+
+        # 核心邏輯：兩個都有貨才返回 True
+        both_have_cargo = port1_has_cargo and port2_has_cargo
+
+        if both_have_cargo:
+            self.node.get_logger().info(
+                f"✅ Port pair [{port1}, {port2}] 兩個都有貨，可以執行 TAKE 操作")
+        else:
+            self.node.get_logger().warn(
+                f"❌ Port pair [{port1}, {port2}] 未同時有貨，無法執行 TAKE 操作")
+
+        return both_have_cargo
 
     def _get_select_port_from_physical_port(self, port_number):
         """根據實際 PORT 號碼獲取對應的 select_port 值"""
-        # 烘乾機 port 到 select_port 的對應關係：
+        # 烤箱 port 到 select_port 的對應關係：
         # port1+2 → select_port = 1
         # port3+4 → select_port = 3
         # port5+6 → select_port = 5
@@ -210,74 +218,29 @@ class OvenCheckHaveState(BaseRobotState):
             return self.workstation_ports[1], self.carrier_id_max
 
     def _handle_port_selection(self, context: RobotContext):
-        """處理port選擇邏輯 - 從 work_id 解析工作站編號並選擇有貨物的 PORT 組合"""
+        """處理 port 選擇邏輯 - 使用 Station-based 檢查"""
         if self.search_eqp_signal_ok and not self.check_ok:
-            # 從 work_id 中解析工作站編號和對應的 PORT 範圍
-            workstation_number, available_ports = self._extract_workstation_and_ports_from_work_id(
-                context)
-            if workstation_number is None or available_ports is None:
-                self.node.get_logger().error("無法從 work_id 解析工作站編號，重置狀態")
+            # 從 work_id 解析 station 和 port pair
+            station, port_pair = self._extract_station_from_work_id(context)
+            if port_pair is None:
+                self.node.get_logger().error("無法從 work_id 解析 station/port pair，重置狀態")
                 self._reset_state()
                 return
 
-            # 根據工作站編號定義 port 組合和對應的 select_port 值
-            if workstation_number == 1:
-                # 工作站 1：port1+2, port5+6
-                port_pairs = [(1, 2), (5, 6)]
-                select_ports = [1, 5]  # 對應的 select_port 值
-                pair_names = ["port1+2", "port5+6"]
-            elif workstation_number == 2:
-                # 工作站 2：port3+4, port7+8
-                port_pairs = [(3, 4), (7, 8)]
-                select_ports = [3, 7]  # 對應的 select_port 值
-                pair_names = ["port3+4", "port7+8"]
-            else:
-                self.node.get_logger().error(f"不支援的工作站編號: {workstation_number}")
-                self._reset_state()
-                return
-
-            # 第一優先：找出兩個 port 都有貨物的組合
-            selected_index = None
-            for i, (port1, port2) in enumerate(port_pairs):
-                port1_has_cargo = self.port_carriers[port1 - 1]  # port 1-8 對應 index 0-7
-                port2_has_cargo = self.port_carriers[port2 - 1]
-
-                self.node.get_logger().debug(
-                    f"檢查工作站{workstation_number} {pair_names[i]}: PORT{port1}={port1_has_cargo}, PORT{port2}={port2_has_cargo}")
-
-                # 第一優先：兩個 port 都有貨物
-                if port1_has_cargo and port2_has_cargo:
-                    selected_index = i
-                    self.node.get_logger().info(
-                        f"✅ 第一優先選擇工作站{workstation_number} {pair_names[i]}，兩個 port 都有貨物")
-                    break
-
-            # 第二優先：找出至少有一個 port 有貨物的組合
-            if selected_index is None:
-                for i, (port1, port2) in enumerate(port_pairs):
-                    port1_has_cargo = self.port_carriers[port1 - 1]
-                    port2_has_cargo = self.port_carriers[port2 - 1]
-
-                    # 第二優先：至少有一個 port 有貨物
-                    if port1_has_cargo or port2_has_cargo:
-                        selected_index = i
-                        self.node.get_logger().info(
-                            f"✅ 第二優先選擇工作站{workstation_number} {pair_names[i]}，至少有一個 port 有貨物")
-                        break
-
-            if selected_index is not None:
-                # 保存選定的 port 組合和相關資訊
-                self.workstation_ports = port_pairs[selected_index]
-                self.selected_pair_name = pair_names[selected_index]
-                self.selected_port = select_ports[selected_index]
+            # 檢查 port pair 是否兩個都有貨
+            if self._check_port_pair_have_cargo(port_pair):
+                # 保存選定的 station 和 port pair 資訊
+                self.workstation_ports = port_pair
+                self.selected_pair_name = f"Station{station:02d}(port{port_pair[0]}+{port_pair[1]})"
+                self.selected_port = station  # select_port 就是 station 編號
                 self.check_ok = True
+
                 self.node.get_logger().info(
-                    f"✅ 工作站{workstation_number} 選擇 {self.selected_pair_name} (select_port={self.selected_port})，準備查詢 Carrier 驗證")
+                    f"✅ 選擇 {self.selected_pair_name} (select_port={self.selected_port})，準備查詢 Carrier")
             else:
                 self.node.get_logger().warn(
-                    f"❌ 工作站{workstation_number} 的所有 port 組合都沒有貨物，無法執行 TAKE 操作")
+                    f"❌ Station{station:02d} Port pair {port_pair} 未同時有貨，無法執行 TAKE 操作")
                 self._reset_state()
-                return
 
     def handle(self, context: RobotContext):
         self._update_context_states(context)
@@ -297,7 +260,7 @@ class OvenCheckHaveState(BaseRobotState):
         if self.check_ok and not self.carrier_query_sended and self.workstation_ports:
             port_id_min, port_id_max = self._calculate_port_ids(self.workstation_ports)
             self.node.get_logger().info(
-                f"查詢烘乾機 {self.selected_pair_name} Carrier：PORT {self.workstation_ports[0]}-{self.workstation_ports[1]} (ID: {port_id_min}-{port_id_max})")
+                f"查詢烤箱 {self.selected_pair_name} Carrier：PORT {self.workstation_ports[0]}-{self.workstation_ports[1]} (ID: {port_id_min}-{port_id_max})")
             self.carrier_query_client.search_carrier_port_id(
                 port_id_min=port_id_min, port_id_max=port_id_max, callback=self.carrier_callback)
             self.carrier_query_sended = True
@@ -318,12 +281,12 @@ class OvenCheckHaveState(BaseRobotState):
                 if validation_passed:
                     # EQP 狀態驗證通過，可以執行 TAKE 操作
                     self.node.get_logger().info(
-                        f"✅ {self.selected_pair_name} EQP 狀態驗證通過，可以執行烘乾機操作")
+                        f"✅ {self.selected_pair_name} EQP 狀態驗證通過，可以執行烤箱操作")
 
                     # 獲取選定的 carrier 資訊
                     selected_physical_port, selected_carrier_id = self._get_selected_carrier_info()
                     self.node.get_logger().info(
-                        f"選擇烘乾機 PORT {selected_physical_port}，Carrier ID: {selected_carrier_id}")
+                        f"選擇烤箱 PORT {selected_physical_port}，Carrier ID: {selected_carrier_id}")
 
                     # 設定 context 變數
                     context.get_oven_port = self.selected_port
@@ -331,7 +294,7 @@ class OvenCheckHaveState(BaseRobotState):
                     context.carrier_id[1] = self.carrier_id_max
 
                     self.node.get_logger().info(
-                        f"烘乾機 {self.selected_pair_name} 檢查完成 (select_port={self.selected_port})，進入下一個狀態")
+                        f"烤箱 {self.selected_pair_name} 檢查完成 (select_port={self.selected_port})，進入下一個狀態")
                     self._handle_8bit_steps(context)
                 else:
                     # EQP 狀態驗證失敗，重置狀態
@@ -345,7 +308,7 @@ class OvenCheckHaveState(BaseRobotState):
                 self.node.get_logger().error(
                     f"Carrier 查詢成功，{self.selected_pair_name} 兩個 Port 都沒有貨物")
                 self.node.get_logger().error(
-                    f"{self.selected_pair_name} 組合 {port_id_min}-{port_id_max} 都沒有貨物，無法執行烘乾機操作。")
+                    f"{self.selected_pair_name} 組合 {port_id_min}-{port_id_max} 都沒有貨物，無法執行烤箱操作。")
                 self._reset_state()
 
     def _handle_8bit_steps(self, context: RobotContext):

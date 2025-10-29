@@ -1,7 +1,7 @@
 metadata:
   id: "parking_to_outlet"
   name: "停車區空料架到出口"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "當房間有已完成carrier但出口缺rack時，從停車區調配空rack到出口"
   author: "TAFL System"

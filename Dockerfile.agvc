@@ -52,6 +52,7 @@ RUN apt-get update && apt-get install -y \
     telnet \
     python3-debugpy \
     openssh-server \
+    sshpass \
     gpiod \
     python3-libgpiod \
     rsync \
