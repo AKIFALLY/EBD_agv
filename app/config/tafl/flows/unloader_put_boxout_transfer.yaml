@@ -1,7 +1,7 @@
 metadata:
   id: "unloader_put_boxout_transfer"
   name: "Unloader AGV 放料到出口傳送箱"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查 Unloader AGV 車上載具和出口傳送箱空位，創建放料任務（批量4格）"
   author: "TAFL System"

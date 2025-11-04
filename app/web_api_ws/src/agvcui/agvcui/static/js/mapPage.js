@@ -37,12 +37,21 @@ import {
     NodeObject,
     LineObject
 } from '../objects/index.js';
+import { DoorStatusObject } from '../objects/DoorStatusObject.js';
 import { MapChangehandler } from './mapUpdater.js';
 import { mapInteraction } from './mapInteraction.js';
 import { mapObjectManager } from './mapObjectManager.js';
 import { mapTaskManager } from './mapTaskManager.js';
 import { mapDataSync } from './mapDataSync.js';
 import { mapPerformanceMonitor } from './mapPerformanceMonitor.js';
+
+// 门信号映射 (门ID -> 信号ID)
+const DOOR_SIGNAL_MAP = {
+    1: 99901,  // 门1 → Door_1_Status (DM5000)
+    2: 99902,  // 门2 → Door_2_Status (DM5001)
+    3: 99903,  // 门3 → Door_3_Status (DM5002)
+    4: 99904   // 门4 → Door_4_Status (DM5003)
+};
 
 export const mapPage = (() => {
 
@@ -55,6 +64,7 @@ export const mapPage = (() => {
     const kukaNodeObjects = new Map();//所有地圖上的 KUKA node 物件
     const kukaEdgeObjects = new Map();//所有地圖上的 KUKA node 物件
     const eqpInfoCountObjects = [];//所有地圖上的 eqpInfoCount 物件
+    const doorStatusObjects = new Map(); // 所有地圖上的門狀態物件
     // nodePositions 預設你已經在別處定義了，是 Map，裡面存 node id => { latlng: L.LatLng, ... }
 
 
@@ -156,6 +166,15 @@ export const mapPage = (() => {
         console.log('signalMap:', signalMap);
 
         eqpObjects.forEach(eqp => eqp.updateSignals(signalMap));
+
+        // 更新门状态显示
+        doorStatusObjects.forEach((doorObj, doorId) => {
+            const signalId = DOOR_SIGNAL_MAP[doorId];
+            const signal = signals.find(s => s.id === signalId);
+            if (signal) {
+                doorObj.updateStatus(signal.value);
+            }
+        });
     }
 
     function updateCarriedRack(rack) {
@@ -692,12 +711,12 @@ export const mapPage = (() => {
         //const agv_unloader02 = new RotatingMovingObject(map, L.latLng(1320, 2660), "agv_unloader02", "agv-unloader");
         //agv_unloader02.setTargetPosition(L.latLng(1120, 2660));
 
-        const room2TransferboxIn = new TransferBoxObject(map, L.latLng(1920, 3620), "201");
-        const room2TransferboxOut = new TransferBoxObject(map, L.latLng(1920, 3020), "202");
-        const room2Cleaner = new CleanerPortsObject(map, L.latLng(1380, 3620), "203");
+        const room2TransferboxIn = new TransferBoxObject(map, L.latLng(1900, 3620), "201");
+        const room2TransferboxOut = new TransferBoxObject(map, L.latLng(1900, 3040), "202");
+        const room2Cleaner = new CleanerPortsObject(map, L.latLng(1360, 3620), "203");
         const room2Soaking = new SoakingPortsObject(map, L.latLng(1780, 3320), "204");
-        const room2Dryer = new DryerPortsObject(map, L.latLng(1520, 3380), "205");
-        const room2Oven = new OvenPortsObject(map, L.latLng(1380, 3100), "206");
+        const room2Dryer = new DryerPortsObject(map, L.latLng(1480, 3380), "205");
+        const room2Oven = new OvenPortsObject(map, L.latLng(1360, 3100), "206");
 
         eqpObjects.push(room2TransferboxIn);
         eqpObjects.push(room2TransferboxOut);
@@ -706,16 +725,27 @@ export const mapPage = (() => {
         eqpObjects.push(room2Dryer);
         eqpObjects.push(room2Oven);
 
-        const room2TransferboxInInfo = new EqpInfoObject(map, L.latLng(1920, 3740), "201", "TransferboxIn");
-        const room2TransferboxOutInfo = new EqpInfoObject(map, L.latLng(1920, 2900), "202", "TransferboxOut");
+        const room2TransferboxInInfo = new EqpInfoObject(map, L.latLng(1900, 3740), "201", "TransferboxIn");
+        const room2TransferboxOutInfo = new EqpInfoObject(map, L.latLng(1900, 2920), "202", "TransferboxOut");
         const room2SoakingInfo = new EqpInfoObject(map, L.latLng(1820, 3320), "204", "Soaking");
-        const room2DryerInfo = new EqpInfoObject(map, L.latLng(1400, 3380), "205", "Dryer");
-        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(1280, 3620), "203", "Cleaner", true);//with counter
-        const room2OvenInfo = new EqpInfoObject(map, L.latLng(1280, 3100), "206", "Oven", true);//with counter
+        const room2DryerInfo = new EqpInfoObject(map, L.latLng(1360, 3380), "205", "Dryer");
+        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(1260, 3620), "203", "Cleaner", true);//with counter
+        const room2OvenInfo = new EqpInfoObject(map, L.latLng(1260, 3100), "206", "Oven", true);//with counter
 
         eqpInfoCountObjects.push(room2CleanerInfo);
         eqpInfoCountObjects.push(room2OvenInfo);
 
+        // 创建门状态显示物件（固定位置 - 可根据实际地图调整）
+        const door1Status = new DoorStatusObject(map, L.latLng(1850, 5120), 1, "Door 1");
+        const door2Status = new DoorStatusObject(map, L.latLng(2220, 5120), 2, "Door 2");
+        const door3Status = new DoorStatusObject(map, L.latLng(2220, 4330), 3, "Door 3");
+        const door4Status = new DoorStatusObject(map, L.latLng(2220, 3340), 4, "Door 4");
+
+        // 将门状态物件存入 Map 中
+        doorStatusObjects.set(1, door1Status);
+        doorStatusObjects.set(2, door2Status);
+        doorStatusObjects.set(3, door3Status);
+        doorStatusObjects.set(4, door4Status);
 
         // 點擊地圖時，移動並旋轉物件
         map.on("click", e => {

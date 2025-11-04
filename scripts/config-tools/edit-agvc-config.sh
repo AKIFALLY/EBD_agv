@@ -295,7 +295,7 @@ show_post_edit_suggestions() {
             echo "   docker compose -f docker-compose.agvc.yml exec agvc_server bash"
             echo "   # 在容器內執行:"
             echo "   source /app/setup.bash && agvc_source"
-            echo "   check_agvc_status"
+            echo "   manage status"
             ;;
         "web_api"|"api")
             echo "1. 重啟 Web API 服務:"
@@ -311,10 +311,10 @@ show_post_edit_suggestions() {
             echo "1. 重啟 ECS 服務:"
             echo "   docker compose -f docker-compose.agvc.yml exec agvc_server bash"
             echo "   # 在容器內重啟 ECS 服務:"
-            echo "   pkill -f ecs_core && start_ecs"
+            echo "   manage_ecs_core restart"
             echo ""
             echo "2. 檢查 ECS 狀態:"
-            echo "   check_agvc_status"
+            echo "   manage_ecs_core status"
             ;;
         *)
             echo "1. 重啟相關 AGVC 服務:"

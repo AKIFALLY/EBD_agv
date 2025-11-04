@@ -20,36 +20,40 @@ class MissionSelectState(State):
         self.count = 0  # 計數器，用於執行次數
         self.localMission = False  # 觸發Local端任務旗標
         self.latest_tasks = []  # 儲存最新的任務資料
+        self.status_log_count = 0  # 狀態日誌計數器（每5秒輸出一次）
 
     def enter(self):
-        self.node.get_logger().info("🎯 AGV 進入: Mission Select")
         self.node.get_logger().info("🎯 AGV 進入: Mission Select")
 
         # 訂閱 task_table topic
         # self.create_subscription(String,'/task_table',self.task_table_callback)
-        # 訂閱 task_table topic - 使用更高的 QoS 隊列大小來加快訂閱速度
+        # 訂閱 task_table topic - QoS 必須與 Publisher 匹配
         from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
-        
-        # 設定高效能的 QoS 配置
+
+        # ⚠️ 重要：QoS 必須與 agvc_database_node 的 Publisher 匹配
+        # Publisher 使用：RELIABLE + VOLATILE + depth=10
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
-            depth=50  # 增加隊列深度以提高訂閱效能
+            durability=DurabilityPolicy.VOLATILE,  # 修正：改為 VOLATILE 以匹配 Publisher
+            depth=10  # 匹配 Publisher 的 depth
         )
-        
+
         # 直接使用 node.create_subscription() 並手動管理訂閱
         subscription = self.node.create_subscription(Tasks, '/agvc/tasks', self.tasks_callback, qos_profile)
         self.subscriptions.append(subscription)
+        self.node.get_logger().info("📡 已訂閱 /agvc/tasks (QoS: RELIABLE + VOLATILE)")
         self.locamissiontimer = self.node.create_timer(1.0, self.local_mission)
 
     def leave(self):
-        self.node.get_logger().info("🚪 AGV 離開 Mission Select 狀態")
         self.node.get_logger().info("🚪 AGV 離開 Mission Select 狀態")
         self.remove_subscription()  # 移除訂閱
         self.locamissiontimer.cancel()  # 取消timer
 
     def handle(self, context):
-        # self.node.get_logger().info("AGV Mission Select 狀態")
+        #self.node.get_logger().info("AGV Mission Select 狀態")
+        #self.node.get_logger().info(f"Task列表:{self.latest_tasks}")
+        
+        
 
         if self.count > 30:
             self.count = 0
@@ -93,7 +97,6 @@ class MissionSelectState(State):
         self.latest_tasks = tasks  # 儲存最新的任務資料
 
         self.node.get_logger().info(f"📦 收到 {len(tasks)} 個任務")
-        self.node.get_logger().info(f"📦 收到 {len(tasks)} 個任務")
 
         # 處理任務篩選
         self._process_tasks(tasks)
@@ -105,9 +108,9 @@ class MissionSelectState(State):
         from shared_constants.task_status import TaskStatus
         running_tasks = [
             t for t in tasks
-            if (t.status_id == TaskStatus.READY_TO_EXECUTE or 
-                t.status_id == TaskStatus.EXECUTING or 
-                t.status_id == TaskStatus.PENDING) and t.agv_id == self.node.AGV_id
+            if (t.status_id == TaskStatus.READY_TO_EXECUTE or
+                t.status_id == TaskStatus.EXECUTING or
+                t.status_id == TaskStatus.PENDING) and t.agv_id == self.node.agv_id
         ]
 
         if len(running_tasks) > 0:
@@ -125,30 +128,10 @@ class MissionSelectState(State):
             return True  # 找到任務
 
         else:
-            # ✅ 篩選符合未執行條件的任務
-            filtered_tasks = [
-                t for t in tasks
-                if t.status_id == TaskStatus.PENDING and t.work_id >= 2000 and t.work_id < 3000 and t.agv_id == 0 and t.room_id == self.node.room_id
-            ]
-
-            if not filtered_tasks:
-                # self.node.get_logger().warn("⚠️ 沒有符合條件的任務 (status_id=PENDING 且 work_id 在 2000-3000 範圍)")
-                return False  # 沒找到任務
-
-            # ✅ 找出 priority 最大的那一筆
-            self.highest_priority_task = max(filtered_tasks, key=lambda t: t.priority)
-            self.node.mission_id = self.highest_priority_task.id
-            self.node.node_id = self.highest_priority_task.node_id
-            self.node.task = self.highest_priority_task
-            self.node.get_logger().info(
-                f"✅ 優先級最高任務: ID={self.highest_priority_task.id}, "
-                f"WORK ID={self.highest_priority_task.work_id}, "
-                f"Status={self.highest_priority_task.status_id}, "
-                f"優先級={self.highest_priority_task.priority}, "
-                f"名稱={self.highest_priority_task.name}"
-                f"目標節點={self.highest_priority_task.node_id}"
-            )
-            return True  # 找到任務
+            # ⚠️ 沒有找到已分配給此 AGV 的任務
+            # 任務分配應由 RCS 負責，AGV 只接收已分配的任務
+            self.node.get_logger().debug("📭 未查詢到已分配給此 AGV 的任務，等待 RCS 派發")
+            return False  # 沒找到任務
 
     def local_mission(self):
         # self.node.get_logger().info(f"(magic={self.node.agv_status.MAGIC}) dest.={self.node.agv_status.AGV_END_POINT}")

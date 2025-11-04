@@ -209,7 +209,7 @@ async def test_inlet_to_parking():
             session.exec(delete(Task).where(Task.rack_id.in_([rack_id, blocking_rack_id])))
             session.exec(
                 update(Location)
-                .where(Location.id.in_([inlet_id, outlet_id, 31, 32, 33, 34]))
+                .where(Location.id.in_([inlet_id, outlet_id, 13, 12, 11]))
                 .values(rack_id=None, location_status_id=2)
             )
             session.exec(delete(Rack).where(Rack.id.in_([rack_id, blocking_rack_id])))
@@ -227,7 +227,7 @@ async def test_parking_to_outlet():
     flow_executor = TAFLExecutorWrapper(database_url=db_url)
 
     rack_id = 504
-    parking_location_id = 31  # 停車區第1位
+    parking_location_id = 13  # 停車區第1位
     outlet_id = 10002
 
     try:
@@ -287,7 +287,7 @@ async def test_parking_to_outlet():
             # 查詢所有停車區rack（只檢查未被搬運）
             parking_racks = session.exec(
                 select(Rack).where(
-                    Rack.location_id.in_([31, 32, 33, 34]),
+                    Rack.location_id.in_([13, 12, 11]),
                     Rack.is_carry == 0
                 )
             ).all()

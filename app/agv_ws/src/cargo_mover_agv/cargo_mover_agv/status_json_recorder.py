@@ -333,8 +333,10 @@ class CargoAgvStatusJsonRecorder:
         snapshot = self.create_complete_status_snapshot(agv_core_node)
         
         if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"cargo_agv_status_{timestamp}.json"
+            # 從 ROS namespace 提取 AGV 名稱（字符串），而不是使用 agv_id（可能是整數）
+            ns = agv_core_node.get_namespace() if hasattr(agv_core_node, 'get_namespace') else None
+            agv_name = ns.strip("/") if ns else "cargo01"
+            filename = f"agv_status_{agv_name}.json"
             
         filepath = os.path.join(self.output_dir, filename)
         
@@ -529,7 +531,7 @@ class CargoAgvStatusJsonRecorder:
             'pathdata',        # 路徑資料
             'mission_id',      # 任務ID
             'node_id',         # 任務目標節點
-            'AGV_id',          # AGV ID
+            'agv_id',          # AGV ID (数据库 agv 表主键)
             'task',            # 任務訊息
             'robot_finished'   # 機器人完成狀態
         ]

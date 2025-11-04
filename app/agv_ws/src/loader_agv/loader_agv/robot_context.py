@@ -13,6 +13,7 @@ class RobotContext(BaseContext):
     CHECK_IDLE_CALLBACK = 11
     WRITE_CHG_PARA = 2
     WRITE_CHG_PARAMTER = 21
+    CHECK_CHG_PARAMETER = 22
     CHECK_CHG_PARA = 3
     WRITE_PGNO = 4
     CHECK_PGNO = 5

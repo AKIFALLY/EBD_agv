@@ -1,9 +1,9 @@
 from db_proxy.carrier_query_client import CarrierQueryClient
-from db_proxy.eqp_signal_query_client import EqpSignalQueryClient
 from rclpy.node import Node
 from loader_agv.robot_context import RobotContext
 from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 from loader_agv.robot_states.base_robot_state import BaseRobotState
+from shared_constants.equipment_stations import EquipmentStations
 
 
 class TransferCheckHaveState(BaseRobotState):
@@ -21,43 +21,33 @@ class TransferCheckHaveState(BaseRobotState):
         super().__init__(node)
         self.hokuyo_dms_8bit_1: HokuyoDMS8Bit = self.node.hokuyo_dms_8bit_1
         self.step = self.IDLE
-        self.eqp_signal_query_client = EqpSignalQueryClient(node)
         self.carrier_query_client = CarrierQueryClient(node)
 
-        # 動態計算 port_address 和 eqp_id
-        self.port_address = self.node.room_id * 1000 + 10
-        self.eqp_id = self.node.room_id * 100 + 1
+        # 動態計算基礎地址
+        self.base_port_id = self.node.room_id * 1000 + 10  # 例如: 2010
+
+        # Station 相關變數
+        self.current_station = None  # 當前 station (1 or 3)
+        self.current_ports = []      # 當前 ports ([1, 2] or [3, 4])
 
         # 狀態標誌
         self.check_ok = False
         self.sent = False
-        self.queries_completed = {
-            'carrier': False,
-            'eqp_signal': False
-            # 'hokuyo_input' 移除，因為需要持續更新，不追蹤完成狀態
-        }
+        self.carrier_queried = False
 
-        # 查詢結果
-        self.earliest_carrier = None
-        self.select_boxin_port = 0
-        self.port_have_carrier = False
-        self.search_eqp_signal_ok = False
-        self.port_carriers = [False, False, False, False]  # Port 1-4 的狀態
+        # Carrier 查詢結果
+        self.carrier_ids = [None, None]  # 記錄 2 個 port 的 carrier_id
+        self.carriers_data = []          # 完整的 carrier 資料
 
     def _reset_state(self):
         """重置所有狀態變數"""
         self.check_ok = False
         self.sent = False
-        self.queries_completed = {
-            'carrier': False,
-            'eqp_signal': False
-            # 'hokuyo_input' 移除，因為需要持續更新，不追蹤完成狀態
-        }
-        self.earliest_carrier = None
-        self.select_boxin_port = 0
-        self.port_have_carrier = False
-        self.search_eqp_signal_ok = False
-        self.port_carriers = [False, False, False, False]  # Port 1-4 的狀態
+        self.carrier_queried = False
+        self.carrier_ids = [None, None]
+        self.carriers_data = []
+        self.current_station = None
+        self.current_ports = []
 
     def enter(self):
         self.node.get_logger().info("Robot Take Transfer 目前狀態: TranferCheckHave")
@@ -68,39 +58,36 @@ class TransferCheckHaveState(BaseRobotState):
         self._reset_state()
 
     def carrier_query_callback(self, response):
-        """處理 carrier 查詢回應"""
+        """處理 carrier 查詢回應 - 記錄當前 station 2個port的carrier_id"""
         if not (response and response.success and response.datas):
             self.node.get_logger().error("❌ Carrier 查詢失敗或沒有資料")
+            self.carrier_queried = True
             return
 
-        # 找出最早的 carrier
-        self.earliest_carrier = min(response.datas, key=lambda c: c.updated_at)
-        self.select_boxin_port = self.earliest_carrier.port_id - self.port_address
-        self.queries_completed['carrier'] = True
+        # 保存完整資料
+        self.carriers_data = response.datas
 
+        # 計算當前 station 的實際 port_id
+        actual_port_ids = [
+            self.base_port_id + self.current_ports[0],  # 例如: 2011 或 2013
+            self.base_port_id + self.current_ports[1]   # 例如: 2012 或 2014
+        ]
+
+        # 記錄這 2 個 port 的 carrier_id
+        for carrier in response.datas:
+            if carrier.port_id == actual_port_ids[0]:
+                self.carrier_ids[0] = carrier.id
+                self.node.get_logger().info(
+                    f"✅ Port {self.current_ports[0]} carrier_id = {carrier.id}")
+            elif carrier.port_id == actual_port_ids[1]:
+                self.carrier_ids[1] = carrier.id
+                self.node.get_logger().info(
+                    f"✅ Port {self.current_ports[1]} carrier_id = {carrier.id}")
+
+        self.carrier_queried = True
         self.node.get_logger().info(
-            f"✅ 找到最早的 Carrier: port_id={self.earliest_carrier.port_id}, "
-            f"carrier_id={self.earliest_carrier.id}")
-
-    def eqp_signal_query_callback(self, response):
-        """處理設備訊號查詢回應"""
-        if response and response.success:
-            self.port_have_carrier = EqpSignalQueryClient.eqp_signal_port(
-                response, self.earliest_carrier.port_id)
-            self.queries_completed['eqp_signal'] = True
-            self.search_eqp_signal_ok = True
-
-            # 更新所有 port 的狀態
-            for i in range(4):
-                port_id = self.port_address + i + 1
-                self.port_carriers[i] = EqpSignalQueryClient.eqp_signal_port(response, port_id)
-
-            self.node.get_logger().debug(
-                f"Port {self.earliest_carrier.port_id} 有無貨: {self.port_have_carrier}")
-            self.node.get_logger().debug(
-                f"所有 Port 狀態: {self.port_carriers}")
-        else:
-            self.node.get_logger().info("❌ EqpSignal 查詢失敗")
+            f"Carrier IDs: Port{self.current_ports[0]}={self.carrier_ids[0]}, "
+            f"Port{self.current_ports[1]}={self.carrier_ids[1]}")
 
     def _handle_hokuyo_write(self, operation, value, success_flag, failed_flag, next_step):
         """處理 Hokuyo 寫入操作的通用方法"""
@@ -120,79 +107,85 @@ class TransferCheckHaveState(BaseRobotState):
         else:
             self.node.get_logger().info(f"⏳等待{operation}寫入")
 
-    def _update_context_states(self, context: RobotContext):
-        """更新context中的狀態 - 參考agv_port_check_empty_state.py"""
-        if not self.search_eqp_signal_ok:
-            return
-        # 更新BOXIN_PORT層狀態
-        context.boxin_port1 = self.port_carriers[0]
-        context.boxin_port2 = self.port_carriers[1]
-        context.boxin_port3 = self.port_carriers[2]
-        context.boxin_port4 = self.port_carriers[3]
-
-    def _check_take_transfer_continue(self, context: RobotContext):
-        """檢查take transfer是否可以繼續的條件"""
-        # 確保有足夠的資料進行判斷
-        if not self.search_eqp_signal_ok or self.select_boxin_port == 0:
-            context.take_transfer_continue = False
-            return
-
-        # 當select_boxin_port = 1 且 boxin_port2 = true 時，可以繼續
-        if self.select_boxin_port == 1 and context.boxin_port2:
-            context.take_transfer_continue = True
-            self.node.get_logger().info("✅ Take Transfer 可以繼續: select_boxin_port=1, boxin_port2=True")
-        # 當select_boxin_port = 3 且 boxin_port4 = true 時，可以繼續
-        elif self.select_boxin_port == 3 and context.boxin_port4:
-            context.take_transfer_continue = True
-            self.node.get_logger().info("✅ Take Transfer 可以繼續: select_boxin_port=3, boxin_port4=True")
-        # 其他情況不能繼續
-        else:
-            context.take_transfer_continue = False
-            self.node.get_logger().info(
-                f"❌ Take Transfer 不能繼續: select_boxin_port={self.select_boxin_port}, "
-                f"boxin_port2={context.boxin_port2}, boxin_port4={context.boxin_port4}")
-
     def handle(self, context: RobotContext):
-        # 執行查詢
-        if not self.queries_completed['carrier']:
+        # 1. 首次執行：從 work_id 解析 station 和 ports
+        # Work ID 格式（7位數 Station-based）：
+        # - 2010101: Station 01 取入口箱（Port 1-2，2格批量）
+        # - 2010301: Station 03 取入口箱（Port 3-4，2格批量）
+        if self.current_station is None:
+            # 驗證 Work ID 格式（必須是7位數）
+            work_id_str = str(context.work_id)
+            if len(work_id_str) != 7:
+                self.node.get_logger().error(
+                    f"❌ Work ID 格式錯誤: {context.work_id}，必須是7位數格式（REESSAA）")
+                return
+
+            station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+            if station is None:
+                self.node.get_logger().error(
+                    f"❌ 無法從 work_id 解析 station: {context.work_id}")
+                return
+
+            self.current_station = station
+            self.current_ports = ports
+            self.node.get_logger().info(
+                f"✅ [Station-based] Work ID {context.work_id} → Station {station:02d}, Ports {ports} (批量{len(ports)}格)")
+
+        # 2. 查詢 Carrier（只執行一次）
+        if not self.carrier_queried and not self.sent:
+            # 計算當前 station 的 port_id 範圍
+            # Equipment 201（入口傳送箱）格式：room_id * 1000 + 10 + port
+            # 例如：room_id=2, Station 01 → Port 1-2 → port_id 2011-2012
+            port_id_min = self.base_port_id + self.current_ports[0]
+            port_id_max = self.base_port_id + self.current_ports[1]
+
+            self.node.get_logger().info(
+                f"查詢 Carrier: Station {self.current_station:02d}, "
+                f"port_id 範圍 {port_id_min}-{port_id_max} (Equipment 201 入口傳送箱)")
+
             self.carrier_query_client.search_carrier_port_id(
-                port_id_min=self.port_address + 1,
-                port_id_max=self.port_address + 4,
+                port_id_min=port_id_min,
+                port_id_max=port_id_max,
                 callback=self.carrier_query_callback
             )
+            self.sent = True
 
-        if self.queries_completed['carrier'] and not self.queries_completed['eqp_signal']:
-            self.eqp_signal_query_client.search_eqp_signal_eqp_id(
-                self.eqp_id, self.eqp_signal_query_callback)
-
-        # 更新 Hokuyo Input - 使用統一方法
+        # 3. 更新 Hokuyo Input
         self._handle_hokuyo_input()
 
-        # 更新 context 狀態
-        self._update_context_states(context)
+        # 4. 檢查：2個carrier_id都有值（標準設備批量處理）
+        if self.carrier_queried and not self.check_ok:
+            if self.carrier_ids[0] and self.carrier_ids[1]:
+                self.node.get_logger().info(
+                    f"✅ [批量檢查] Station {self.current_station:02d} 檢查成功: "
+                    f"carrier_ids={self.carrier_ids} (2格批量)")
 
-        # 檢查是否可以繼續
-        if not self.check_ok and self.queries_completed['eqp_signal']:
-            if self.port_have_carrier and 1 <= self.select_boxin_port <= 4:
-                context.boxin_number = self.select_boxin_port
-                context.get_boxin_port = self.select_boxin_port
-                context.carrier_id = self.earliest_carrier.id
+                # 設置 context（批量取料配置）
+                # 第1次取料使用第1個 port
+                context.boxin_number = self.current_ports[0]
+                context.get_boxin_port = self.current_ports[0]
+                context.carrier_id = self.carrier_ids[0]
 
-                # 檢查 take_transfer_continue 條件
-                self._check_take_transfer_continue(context)
+                # 批量取料所需變數（新的 Station-based 設計）
+                context.transfer_take_count = 0  # 批量計數器 (0=第1次, 1=第2次)
+                context.transfer_carrier_ids = self.carrier_ids  # [carrier_id1, carrier_id2]
+                context.transfer_ports = self.current_ports  # Station-based ports (例如: [1, 2] 或 [3, 4])
+
+                self.node.get_logger().info(
+                    f"[批量配置] Work ID {context.work_id}: "
+                    f"Station {self.current_station:02d} → Ports {self.current_ports}, "
+                    f"Carriers {self.carrier_ids}")
 
                 self.check_ok = True
-                self.node.get_logger().info(
-                    f"Robot Take Transfer TranferCheckHave 狀態: 選定 PORT{self.select_boxin_port}")
-                self.node.get_logger().info(
-                    f"Take Transfer Continue: {context.take_transfer_continue}")
             else:
-                self.node.get_logger().info("Robot Take Transfer TranferCheckHave 狀態: 選定的 port 沒有貨物或無效")
-                # 重新查詢
-                self.queries_completed['carrier'] = False
-                self.queries_completed['eqp_signal'] = False
+                self.node.get_logger().warn(
+                    f"❌ [批量檢查] Station {self.current_station:02d} 檢查失敗: "
+                    f"carrier_ids={self.carrier_ids}（需要2個carrier才能批量取料）")
+                # 重置並等待下次檢查
+                self._reset_state()
+                return
 
-        # 執行 8-bit 步驟
+        # 5. 執行 8-bit 步驟
         if self.check_ok:
             match self.step:
                 case self.IDLE:

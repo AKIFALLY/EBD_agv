@@ -72,7 +72,7 @@ def generate_launch_description():
 
         Node(
            package='unloader_agv',
-           executable='agv_core_node',
+           executable='unloader_agv_node',
            name='agv_core_node',
            namespace=agv_id,
            parameters=[{"room_id": room_id}],

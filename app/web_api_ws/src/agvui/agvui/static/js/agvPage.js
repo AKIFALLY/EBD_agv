@@ -32,31 +32,53 @@ export const agvPage = (() => {
             console.warn('Invalid AGV status data:', agvStatus);
             return;
         }
-        
+
+        // ✅ 前端驗證：過濾非本機 AGV 的數據
+        const localAgvId = getLocalAgvId();
+        const receivedAgvId = agvStatus.agv_id || agvStatus.AGV_ID || agvStatus.metadata?.AGV_ID;
+
+        if (localAgvId && receivedAgvId && receivedAgvId !== localAgvId) {
+            console.debug(`跳過非本機 AGV 數據: ${receivedAgvId} (本機: ${localAgvId})`);
+            return; // 過濾掉其他 AGV 的數據
+        }
+
+        // 提取來源資訊（新舊格式整合）
+        const sourceMap = agvStatus.source_map || {};
+        const sourceStats = agvStatus.source_stats || { new_format_fields: 0, legacy_format_fields: 0, total_fields: 0 };
+
+        // 更新來源圖例顯示
+        const sourceLegend = document.getElementById('source-legend');
+        if (sourceLegend && (sourceStats.new_format_fields > 0 || sourceStats.legacy_format_fields > 0)) {
+            sourceLegend.style.display = 'block';
+            document.getElementById('source-stats-new').textContent = sourceStats.new_format_fields;
+            document.getElementById('source-stats-legacy').textContent = sourceStats.legacy_format_fields;
+            console.debug('資料來源統計:', sourceStats);
+        }
+
         // 處理嵌套的 JSON 結構，將其扁平化
         let flattenedStatus = {};
-        
+
         // 如果有 metadata，提取它
         if (agvStatus.metadata) {
             Object.assign(flattenedStatus, agvStatus.metadata);
         }
-        
+
         // 如果有 agv_status，提取它（這是主要的狀態資料）
         if (agvStatus.agv_status) {
             Object.assign(flattenedStatus, agvStatus.agv_status);
         }
-        
+
         // 如果有 contexts，扁平化它 (base_context, agv_context, robot_context)
         if (agvStatus.contexts) {
             for (const [contextName, contextData] of Object.entries(agvStatus.contexts)) {
-                if (typeof contextData === 'object' && contextData !== null) {
+                if (contextData && typeof contextData === 'object') {
                     for (const [key, value] of Object.entries(contextData)) {
-                        flattenedStatus[`${contextName}_${key}`] = value;
+                        flattenedStatus[`${contextName}.${key}`] = value;
                     }
                 }
             }
         }
-        
+
         // 如果有 type_specific，扁平化它 (agv_ports, work_id, task_progress 等)
         if (agvStatus.type_specific) {
             for (const [key, value] of Object.entries(agvStatus.type_specific)) {
@@ -71,36 +93,29 @@ export const agvPage = (() => {
                 }
             }
         }
-        
+
         // 如果有 door_status，直接合併（保持原始鍵名）
         if (agvStatus.door_status) {
             Object.assign(flattenedStatus, agvStatus.door_status);
         }
-        
+
         // 如果有 alarms，直接合併
         if (agvStatus.alarms) {
             Object.assign(flattenedStatus, agvStatus.alarms);
         }
-        
+
         // 如果有 io_data，直接合併
         if (agvStatus.io_data) {
             Object.assign(flattenedStatus, agvStatus.io_data);
         }
-        
+
         // 如果沒有嵌套結構，直接使用原始資料
         if (Object.keys(flattenedStatus).length === 0) {
             flattenedStatus = agvStatus;
         }
-        
-        // 使用本機 AGV ID 進行過濾
-        const localAgvId = getLocalAgvId();
-        const agvIdFromServer = flattenedStatus.AGV_ID || flattenedStatus.agv_id || flattenedStatus.agv_id;//server傳回的AGVID的訊息
 
-        console.debug("Local AGV ID:", localAgvId)
-        console.debug("AGV ID from server:", agvIdFromServer)
-        console.debug("Total attributes:", Object.keys(flattenedStatus).length); // 顯示屬性總數
-        // 顯示各類別的資料筆數（除錯用）
-        const categorySummary = {
+        // 除錯資訊
+        console.debug("📊 資料來源統計:", {
             metadata: Object.keys(agvStatus.metadata || {}).length,
             agv_status: Object.keys(agvStatus.agv_status || {}).length,
             contexts: Object.keys(agvStatus.contexts || {}).length,
@@ -108,31 +123,26 @@ export const agvPage = (() => {
             io_data: Object.keys(agvStatus.io_data || {}).length,
             door_status: Object.keys(agvStatus.door_status || {}).length,
             alarms: Object.keys(agvStatus.alarms || {}).length
-        };
-        console.debug("Category summary:", categorySummary);
-        
-        // 如果有本機 AGV ID，只顯示本機的狀態
-        if (localAgvId && agvIdFromServer && agvIdFromServer !== localAgvId) {
-            console.debug(`跳過非本機 AGV 狀態: ${agvIdFromServer} (本機: ${localAgvId})`);
-            return;
+        });
+
+        // 更新摘要區域（使用 agv_status）
+        if (agvStatus.agv_status) {
+            updateStatusSummary(agvStatus.agv_status);
         }
-        
-        // 更新摘要區域（使用扁平化的資料）
-        updateStatusSummary(flattenedStatus);
 
         // 更新多欄位網格顯示
         const categoriesContainer = document.getElementById('status-categories');
         if (!categoriesContainer) return;
 
-        // 分類顯示狀態（使用扁平化的資料）
-        const categorizedStatus = categorizeStatus(flattenedStatus);
-        
+        // 分類顯示狀態（使用扁平化的資料，並傳遞來源對應表）
+        const categorizedStatus = categorizeStatus(flattenedStatus, sourceMap);
+
         // 如果是第一次或結構改變，建立 DOM
         if (!domCache.initialized || Object.keys(categorizedStatus).length !== Object.keys(domCache.categories).length) {
             createCategoryDOM(categoriesContainer, categorizedStatus);
             domCache.initialized = true;
         } else {
-            // 只更新數值，不重建 DOM
+            // 分類相同，只更新數值
             updateCategoryValues(categorizedStatus);
         }
     }
@@ -140,21 +150,16 @@ export const agvPage = (() => {
     function createCategoryDOM(container, categorizedStatus) {
         container.innerHTML = ''; // 只在初始化時清空
         domCache.categories = {};
-        
-        // 定義分類的顯示順序 - 其他放在最前面
+
+        // ✅ 新的分類順序（按資料來源）
         const categoryOrder = [
-            '其他',           // 最先顯示
-            '基本資訊',
-            '位置狀態',
-            '運動狀態',
-            '控制狀態',
-            '狀態機',
-            '任務資訊',
-            '門控狀態',
-            '輸入狀態',
-            '輸出狀態',
-            '警報狀態',
-            'PLC記憶體'
+            '📋 基本資訊 (metadata)',
+            '🚗 車輛狀態 (agv_status)',
+            '🔄 狀態機 (contexts)',
+            '🎯 類型特定 (type_specific)',
+            '🚪 門控狀態 (door_status)',
+            '⚠️ 警報 (alarms)',
+            '🔌 IO資料 (io_data)'
         ];
         
         // 根據定義的順序排序分類
@@ -177,18 +182,20 @@ export const agvPage = (() => {
             // 決定欄位寬度
             const itemCount = Object.keys(items).length;
             let columnClass = 'column is-4'; // 預設 3 欄
-            
-            // 根據項目數量調整欄位寬度
-            if (category === '輸入狀態' || category === '輸出狀態') {
-                columnClass = 'column is-6'; // IO 狀態使用半寬
-            } else if (category === '警報狀態') {
+
+            // ✅ 根據新的分類名稱調整欄位寬度
+            if (category === '🔌 IO資料 (io_data)') {
+                columnClass = 'column is-12'; // IO 使用全寬
+            } else if (category === '⚠️ 警報 (alarms)') {
                 columnClass = 'column is-12'; // 警報使用全寬
-            } else if (category === '門控狀態') {
-                columnClass = 'column is-12'; // 門控狀態使用全寬
-            } else if (category === '狀態機') {
+            } else if (category === '🚪 門控狀態 (door_status)') {
+                columnClass = 'column is-12'; // 門控使用全寬
+            } else if (category === '🔄 狀態機 (contexts)') {
                 columnClass = 'column is-6'; // 狀態機使用半寬
-            } else if (category === '其他' || itemCount <= 10) {
-                columnClass = 'column is-3'; // 其他和小分類用 4 欄
+            } else if (category === '🎯 類型特定 (type_specific)') {
+                columnClass = 'column is-6'; // 類型特定使用半寬
+            } else if (itemCount <= 10) {
+                columnClass = 'column is-3'; // 小分類用 4 欄
             }
             
             // 建立分類區塊
@@ -217,8 +224,8 @@ export const agvPage = (() => {
             // 移除固定高度和捲軸，讓內容自動調整高度
             cardContent.style.padding = '0.75rem';
             
-            // 對於門控狀態，使用特殊的橫向顯示
-            if (category === '門控狀態') {
+            // ✅ 對於門控狀態，使用特殊的橫向顯示
+            if (category === '🚪 門控狀態 (door_status)') {
                 // 建立門控顯示容器
                 const doorContainer = document.createElement('div');
                 doorContainer.style.padding = '10px';
@@ -405,8 +412,8 @@ export const agvPage = (() => {
                 doorContainer.appendChild(doorsGrid);
                 cardContent.appendChild(doorContainer);
             }
-            // 對於 IO 和警報狀態，使用特殊的網格顯示
-            else if (category === '輸入狀態' || category === '輸出狀態' || category === '警報狀態') {
+            // ✅ 對於 IO 和警報狀態，使用特殊的網格顯示
+            else if (category === '🔌 IO資料 (io_data)' || category === '⚠️ 警報 (alarms)') {
                 // 建立網格容器
                 const gridContainer = document.createElement('div');
                 gridContainer.style.padding = '10px';
@@ -581,28 +588,32 @@ export const agvPage = (() => {
                 };
                 
                 // 顯示該分類的項目
-                for (const [key, value] of Object.entries(items)) {
+                for (const [key, valueWithSource] of Object.entries(items)) {
                     const row = document.createElement('tr');
                     row.setAttribute('data-key', key);
-                    
+
                     const keyCell = document.createElement('td');
                     keyCell.style.width = '60%';
                     keyCell.style.padding = '0.25rem';
                     keyCell.innerHTML = `<small>${key}</small>`;
-                    
+
                     const valueCell = document.createElement('td');
                     valueCell.style.width = '40%';
                     valueCell.style.padding = '0.25rem';
                     valueCell.style.textAlign = 'right';
                     valueCell.setAttribute('data-value-cell', key);
-                    
-                    // 格式化顯示
-                    formatValueCell(valueCell, value, key);
-                    
+
+                    // 提取值和來源
+                    const actualValue = valueWithSource?.value !== undefined ? valueWithSource.value : valueWithSource;
+                    const source = valueWithSource?.source || null;
+
+                    // 格式化顯示（傳遞來源資訊）
+                    formatValueCell(valueCell, actualValue, key, source);
+
                     row.appendChild(keyCell);
                     row.appendChild(valueCell);
                     tbody.appendChild(row);
-                    
+
                     // 儲存參考
                     domCache.categories[category].cells[key] = valueCell;
                 }
@@ -626,12 +637,16 @@ export const agvPage = (() => {
             
             if (cached.type === 'grid') {
                 // 更新 IO 網格
-                for (const [key, value] of Object.entries(items)) {
+                for (const [key, valueWithSource] of Object.entries(items)) {
                     const indicator = cached.indicators[key];
                     if (indicator) {
+                        // 提取值和來源
+                        const actualValue = valueWithSource?.value !== undefined ? valueWithSource.value : valueWithSource;
+                        const source = valueWithSource?.source || null;
+
                         // 判斷是否為開啟狀態
-                        const isOn = value === 1 || value === '1' || value === true || value === 'true' || value > 0;
-                        
+                        const isOn = actualValue === 1 || actualValue === '1' || actualValue === true || actualValue === 'true' || actualValue > 0;
+
                         // 根據類別設定不同的顏色
                         if (category === '警報狀態') {
                             // 警報狀態特殊處理
@@ -660,8 +675,15 @@ export const agvPage = (() => {
                                 indicator.querySelector('div').style.color = '#aaa';
                             }
                         }
-                        // 更新 tooltip
-                        indicator.title = `${key}: ${value}`;
+
+                        // 更新 tooltip（包含來源資訊）
+                        let tooltipText = `${key}: ${actualValue}`;
+                        if (source === 'N') {
+                            tooltipText += ' [新格式]';
+                        } else if (source === 'L') {
+                            tooltipText += ' [舊格式]';
+                        }
+                        indicator.title = tooltipText;
                     }
                 }
             } else if (cached.type === 'doors') {
@@ -726,24 +748,38 @@ export const agvPage = (() => {
                 }
             } else if (cached.type === 'table') {
                 // 更新表格數值
-                for (const [key, value] of Object.entries(items)) {
+                for (const [key, valueWithSource] of Object.entries(items)) {
                     const cell = cached.cells[key];
                     if (cell) {
-                        formatValueCell(cell, value, key);
+                        // 提取值和來源
+                        const actualValue = valueWithSource?.value !== undefined ? valueWithSource.value : valueWithSource;
+                        const source = valueWithSource?.source || null;
+
+                        // 格式化顯示（傳遞來源資訊）
+                        formatValueCell(cell, actualValue, key, source);
                     }
                 }
             }
         }
     }
     
-    function formatValueCell(cell, value, key) {
+    function formatValueCell(cell, value, key, source = null) {
+        // 建立來源標籤
+        let sourceTag = '';
+        if (source === 'N') {
+            sourceTag = '<span class="tag is-info is-light is-small ml-1" title="新格式 (Recorder Class v2.0)">[N]</span>';
+        } else if (source === 'L') {
+            sourceTag = '<span class="tag is-warning is-light is-small ml-1" title="舊格式 (Base Class v1.0)">[L]</span>';
+        }
+
         // 格式化顯示
         if (value === null || value === undefined) {
-            cell.innerHTML = '<small class="has-text-grey">-</small>';
+            cell.innerHTML = `<small class="has-text-grey">-</small>${sourceTag}`;
         } else if (typeof value === 'boolean') {
-            cell.innerHTML = value 
-                ? '<span class="has-text-success">✓</span>' 
+            const checkmark = value
+                ? '<span class="has-text-success">✓</span>'
                 : '<span class="has-text-grey-light">✗</span>';
+            cell.innerHTML = `${checkmark}${sourceTag}`;
         } else if (typeof value === 'number') {
             // 數值格式化
             let displayValue = value;
@@ -752,9 +788,9 @@ export const agvPage = (() => {
             } else if (key.includes('POWER')) {
                 displayValue = value.toFixed(1) + '%';
             }
-            cell.innerHTML = `<small class="has-text-info has-text-weight-semibold">${displayValue}</small>`;
+            cell.innerHTML = `<small class="has-text-info has-text-weight-semibold">${displayValue}</small>${sourceTag}`;
         } else {
-            cell.innerHTML = `<small>${value}</small>`;
+            cell.innerHTML = `<small>${value}</small>${sourceTag}`;
         }
     }
     
@@ -808,8 +844,9 @@ export const agvPage = (() => {
         }
     }
     
-    function categorizeStatus(status) {
+    function categorizeStatus(status, sourceMap = {}) {
         // 將狀態分類以便更好地顯示
+        // sourceMap: 記錄每個欄位的來源 (N=新格式, L=舊格式)
         const categories = {
             '基本資訊': {},
             '位置狀態': {},
@@ -824,61 +861,81 @@ export const agvPage = (() => {
             'PLC記憶體': {},
             '其他': {}
         };
-        
+
+        // 輔助函數：查找欄位在 sourceMap 中的來源
+        function findSource(key) {
+            // 嘗試直接匹配
+            if (sourceMap[key]) return sourceMap[key];
+
+            // 嘗試匹配嵌套路徑（如 metadata.AGV_ID, contexts.base_context_state）
+            for (const [mapKey, source] of Object.entries(sourceMap)) {
+                if (mapKey.endsWith('.' + key) || mapKey.includes('.' + key + '.')) {
+                    return source;
+                }
+            }
+            return null;
+        }
+
         for (const [key, value] of Object.entries(status)) {
+            // 獲取欄位來源
+            const source = findSource(key);
+
+            // 儲存值和來源
+            const valueWithSource = { value: value, source: source };
+
             // 基本資訊
-            if (key.includes('agv_id') || key.includes('AGV_ID') || key.includes('MAGIC') || 
+            if (key.includes('agv_id') || key.includes('AGV_ID') || key.includes('MAGIC') ||
                 key.includes('timestamp') || key.includes('namespace') || key.includes('version') ||
                 key.includes('agv_type') || key.includes('node_name')) {
-                categories['基本資訊'][key] = value;
-            } 
+                categories['基本資訊'][key] = valueWithSource;
+            }
             // 位置狀態
-            else if (key.includes('SLAM') || key.includes('PGV') || key.includes('POINT') || 
+            else if (key.includes('SLAM') || key.includes('PGV') || key.includes('POINT') ||
                      key.includes('ZONE') || key.includes('X_DIST') || key.includes('Y_DIST') ||
                      key.includes('THETA')) {
-                categories['位置狀態'][key] = value;
-            } 
+                categories['位置狀態'][key] = valueWithSource;
+            }
             // 運動狀態
             else if (key.includes('SPEED') || key.includes('POWER') || key.includes('MOVING')) {
-                categories['運動狀態'][key] = value;
-            } 
+                categories['運動狀態'][key] = valueWithSource;
+            }
             // 狀態機相關
             else if (key.includes('context') || key.includes('current_state') || key.includes('_state')) {
-                categories['狀態機'][key] = value;
+                categories['狀態機'][key] = valueWithSource;
             }
             // 控制狀態
             else if (key.includes('AGV_Auto') || key.includes('AGV_MANUAL') || key.includes('AGV_IDLE') ||
                      key.includes('AGV_ALARM') || key.includes('TURN')) {
-                categories['控制狀態'][key] = value;
-            } 
+                categories['控制狀態'][key] = valueWithSource;
+            }
             // 門控狀態
             else if (key.includes('DOOR')) {
-                categories['門控狀態'][key] = value;
-            } 
+                categories['門控狀態'][key] = valueWithSource;
+            }
             // 輸入狀態 (支援多種格式: Input1, AGV_INPUT_1_1, IN_1, DI_01 等)
             else if (key.includes('INPUT') || key.includes('Input') || (key.startsWith('IN_') && !key.includes('MISSION')) || key.startsWith('DI_')) {
-                categories['輸入狀態'][key] = value;
-            } 
+                categories['輸入狀態'][key] = valueWithSource;
+            }
             // 輸出狀態 (支援多種格式: Output1, AGV_OUTPUT_1_1, DO_01 等)
             else if (key.includes('OUTPUT') || key.includes('Output') || key.startsWith('DO_')) {
-                categories['輸出狀態'][key] = value;
-            } 
+                categories['輸出狀態'][key] = valueWithSource;
+            }
             // 警報狀態
             else if (key.includes('Alarm') || key.includes('ALARM')) {
-                categories['警報狀態'][key] = value;
-            } 
+                categories['警報狀態'][key] = valueWithSource;
+            }
             // 任務相關
             else if (key.includes('work_id') || key.includes('task') || key.includes('action') ||
                      key.includes('equipment') || key.includes('port')) {
-                categories['任務資訊'][key] = value;
+                categories['任務資訊'][key] = valueWithSource;
             }
             // PLC 記憶體
             else if (key.includes('PLC') || key.includes('MR') || key.includes('DM')) {
-                categories['PLC記憶體'][key] = value;
-            } 
+                categories['PLC記憶體'][key] = valueWithSource;
+            }
             // 其他
             else {
-                categories['其他'][key] = value;
+                categories['其他'][key] = valueWithSource;
             }
         }
         

@@ -31,9 +31,14 @@ class PutAgvState(BaseRobotState):
         carrier.id = context.carrier_id
         carrier.room_id = self.node.room_id
         carrier.rack_id = 0
-        carrier.port_id = self.port_id_address+context.get_loader_agv_port_front
+        carrier.port_id = self.port_id_address + context.get_loader_agv_port_front
         carrier.rack_index = 0
         carrier.status_id = Robot.CARRIER_STATUS_PREPARE_ENTER_CLEANER  # 使用中
+
+        self.node.get_logger().info(
+            f"更新 Carrier 資料庫: carrier_id={carrier.id}, "
+            f"port_id={carrier.port_id}, status_id={carrier.status_id}")
+
         self.agvc_client.async_update_carrier(
             carrier, self.update_carrier_database_callback)
 
@@ -47,7 +52,21 @@ class PutAgvState(BaseRobotState):
             self.update_carrier_success = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Robot Take Transfer PutAgv 狀態")
+        # 批量放料 AGV port 映射：根據計數器決定目標 AGV port
+        # Station-based 設計 + L尺寸配置：
+        # - 第1次從傳送箱取料 → 放到 AGV port1 (第1層)
+        # - 第2次從傳送箱取料 → 放到 AGV port3 (第3層)
+        # L尺寸產品配置固定使用 port1 和 port3（第2層和第4層掛勾已解下）
+        agv_port_mapping = [1, 3]  # 第1次→port1, 第2次→port3
+        target_agv_port = agv_port_mapping[context.transfer_take_count]
+        context.get_loader_agv_port_front = target_agv_port
+
+        self.node.get_logger().info(
+            f"[Station-based 批量] 放料第 {context.transfer_take_count + 1}/2 次 "
+            f"(Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: 機械臂 → 目標: AGV Port {target_agv_port} (L尺寸第{target_agv_port}層), "
+            f"carrier_id={context.carrier_id}")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -90,13 +109,34 @@ class PutAgvState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Put AGV CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 只檢查 W112（Layer Front 的 Z 軸）
+                # W112 應該等於 get_loader_agv_port_front
+                expected_params['w112'] = context.get_loader_agv_port_front
+
+                self.node.get_logger().info(
+                    f"預期檢查: loader_agv_port_front={context.get_loader_agv_port_front} → "
+                    f"W112={context.get_loader_agv_port_front}"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Robot Take Transfer PUT LOADER AGV WRITE CHG PARA")
@@ -190,13 +230,23 @@ class PutAgvState(BaseRobotState):
                     self.node.get_logger().info("✅更新 Carrier 資料庫成功")
                     self.sent = False
 
-                    # 根據take_transfer_continue決定下一個狀態
-                    if context.take_transfer_continue:
-                        self.node.get_logger().info("🔄 Take Transfer 繼續: 進入 TransferCheckHaveState")
-                        from loader_agv.robot_states.take_transfer.transfer_check_have_state import TransferCheckHaveState
-                        context.set_state(TransferCheckHaveState(self.node))
+                    # 批量取料邏輯：檢查是否完成 2 次取料
+                    # Station-based 設計：每個 Station 包含2個 port，批量處理2格
+                    if context.transfer_take_count == 0:
+                        # 第 1 次完成 → 繼續第 2 次
+                        context.transfer_take_count = 1
+                        self.node.get_logger().info(
+                            f"🔄 [Station-based 批量] 第 1/2 次完成，繼續第 2 次取料 "
+                            f"(Work ID {context.work_id})")
+                        self.node.get_logger().info(
+                            f"下一次取料: 傳送箱 Port {context.transfer_ports[1]} → AGV Port 3")
+                        from loader_agv.robot_states.take_transfer.take_transfer_state import TakeTransferState
+                        context.set_state(TakeTransferState(self.node))
                     else:
-                        self.node.get_logger().info("✅ Take Transfer 完成: 進入 CompleteState")
+                        # 第 2 次完成 → 任務完成
+                        self.node.get_logger().info(
+                            f"✅ [Station-based 批量] 批量取料完成 (2/2 次): 進入 CompleteState "
+                            f"(Work ID {context.work_id})")
                         from loader_agv.robot_states.complete_state import CompleteState
                         context.set_state(CompleteState(self.node))
 

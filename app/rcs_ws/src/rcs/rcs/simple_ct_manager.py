@@ -10,7 +10,7 @@ from rclpy.node import Node
 from agv_interfaces.msg import AgvStateChange
 from agv_interfaces.msg import AgvStatus
 from db_proxy.connection_pool_manager import ConnectionPoolManager
-from db_proxy.models import AGV, AGVContext
+from db_proxy.models import AGV, AGVContext, ModifyLog
 from sqlmodel import select
 from rcs.ct_task_allocator import CtTaskAllocator
 
@@ -62,24 +62,107 @@ class CtManager:
         self.logger.info("CT AGV Monitor 訂閱 /agv/status 啟動")
 
     def agv_status_monitor_callback(self, msg: AgvStatus):
-        """處理 AGV 狀態監控回調"""
+        """處理 AGV 狀態監控回調並更新資料庫"""
         try:
-            self.logger.info(
-                f"[CT AGV監控] AGV: {msg.agv_id}, Power: {msg.power}, "
-                f"slam_x: {msg.slam_x}, slam_y: {msg.slam_y}, slam_theta: {msg.slam_theta}, "
-                f"x_speed: {msg.x_speed}, y_speed: {msg.y_speed}, theta_speed: {msg.theta_speed}, "
-                f"front_pgv: {msg.front_pgv}, back_pgv: {msg.back_pgv}, "
-                f"start_point: {msg.start_point}, end_point: {msg.end_point}, "
-                f"action: {msg.action}, zone: {msg.zone}, "
-                f"status1: {msg.status1}, status2: {msg.status2}, status3: {msg.status3}, "
-                f"alarm1: {msg.alarm1}, alarm2: {msg.alarm2}, alarm3: {msg.alarm3}, "
-                f"alarm4: {msg.alarm4}, alarm5: {msg.alarm5}, alarm6: {msg.alarm6}, "
-                f"layer: {msg.layer}, magic: {msg.magic}"
+            # 記錄接收到的狀態 (改為 debug 級別避免刷屏)
+            self.logger.debug(
+                f"[CT AGV監控] AGV: {msg.agv_id}, "
+                f"Position: ({msg.slam_x:.2f}, {msg.slam_y:.2f}, {msg.slam_theta:.2f}), "
+                f"Power: {msg.power:.1f}%"
             )
-            # 更新資料進資料庫 (可根據需要實作)
-            
+
+            # 更新資料庫
+            self._update_agv_position(msg)
+
         except Exception as e:
             self.logger.error(f"處理 AGV 狀態監控失敗: {e}")
+
+    def ct_unit_2_px(self, y, x):
+        """
+        將 CT AGV 單位轉換為像素座標
+        CT AGV 使用 mm 單位，地圖使用像素，轉換比例: 12.5mm = 1px
+
+        Args:
+            y: CT AGV y 座標 (mm)
+            x: CT AGV x 座標 (mm)
+
+        Returns:
+            tuple: (px_y, px_x) 像素座標
+        """
+        return y / 12.5, x / 12.5
+
+    def ct_angle_2_map_angle(self, angle):
+        """
+        將 CT AGV 角度轉換為地圖角度
+
+        轉換邏輯參考 simple_kuka_manager.py 的 kuka_angle_2_map_angle 方法：
+        - 反向旋轉：-1 * angle（如果方向相反）
+        - 座標系偏移：- 90（匹配地圖東方(css px 座標)）
+        - 範圍歸一化：-180 到 180 度
+
+        Args:
+            angle: CT AGV 角度（已除以10，0-360度）
+
+        Returns:
+            float: 地圖角度（-180 到 180 度）
+        """
+        # 座標系轉換公式（與 KUKA 一致）
+        #angle = ((-1 * angle + 90) + 540 % 360) - 180
+        angle =  (-1 * (angle - 90) + 540 % 360) - 180
+        return angle
+
+    def _update_agv_position(self, msg: AgvStatus):
+        """
+        更新 CT AGV 位置到資料庫
+
+        根據 AgvStatus 訊息更新 AGV 表中的位置、航向角和電量資訊。
+        參考 simple_kuka_manager.py 的實現模式。
+
+        Args:
+            msg: AgvStatus 訊息，包含 AGV 的即時狀態資訊
+        """
+        if not self.db_pool:
+            self.logger.error("資料庫連線池不可用，無法更新 CT AGV 位置")
+            return
+
+        try:
+            with self.db_pool.get_session() as session:
+                # 根據 agv_id (name) 查詢 AGV
+                agv = session.exec(
+                    select(AGV).where(AGV.name == msg.agv_id)
+                ).first()
+
+                if not agv:
+                    self.logger.warning(
+                        f"找不到 AGV 名稱為 {msg.agv_id} 的資料，無法更新位置"
+                    )
+                    return
+
+                # 更新 AGV 位置和狀態
+                # 使用 ct_unit_2_px 轉換座標 (mm → px)
+                px_y, px_x = self.ct_unit_2_px(msg.slam_y, msg.slam_x)
+                agv.x = px_x
+                agv.y = px_y
+                # 使用 ct_angle_2_map_angle 轉換角度（單位轉換 + 座標系轉換）
+                agv.heading = self.ct_angle_2_map_angle(msg.slam_theta / 10)
+                agv.battery = msg.power
+
+                # 🔴 關鍵：標記 AGV 資料已更新，觸發前端更新
+                # 前端 agvc_ui_socket.py 監聽此事件進行即時更新
+                # 絕對不可移除！(參考 rcs_ws/CLAUDE.md 警告)
+                ModifyLog.mark(session, "agv")
+
+                # 提交變更
+                session.commit()
+
+                self.logger.debug(
+                    f"已更新 CT AGV {msg.agv_id} 位置: "
+                    f"({agv.x:.2f}, {agv.y:.2f}, {agv.heading:.2f}°), "
+                    f"電量: {agv.battery:.1f}%"
+                )
+
+        except Exception as e:
+            self.logger.error(f"更新 CT AGV {msg.agv_id} 位置時發生錯誤: {e}")
 
     def handle_state_change(self, msg: AgvStateChange):
         """處理 AGV 狀態變更並更新資料庫"""

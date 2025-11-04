@@ -42,6 +42,51 @@ echo "ROS_DISTRO=$ROS_DISTRO"
 echo "ZENOH_ROUTER_CONFIG_URI=$ZENOH_ROUTER_CONFIG_URI"
 echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
 
+# =============================================================================
+# 🧹 啟動時自動清理臨時文件
+# =============================================================================
+echo "🧹 清理過期的臨時文件..."
+
+# 清理 7 天前的 launch_params_* 目錄
+LAUNCH_PARAMS_CLEANED=$(find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime +7 2>/dev/null | wc -l)
+if [ "$LAUNCH_PARAMS_CLEANED" -gt 0 ]; then
+    find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime +7 -exec rm -rf {} + 2>/dev/null
+    echo "  ✅ 清理 $LAUNCH_PARAMS_CLEANED 個過期的 launch_params 目錄"
+fi
+
+# 清理孤立的 PID 文件 (進程不存在的 PID 文件)
+# 正確處理多行 PID 文件（如 zenoh_router.pid 包含多個 PID）
+for pid_file in /tmp/*.pid; do
+    if [ -f "$pid_file" ]; then
+        all_dead=true
+        # 逐行讀取 PID 文件
+        while read -r pid; do
+            # 跳過空行
+            [ -z "$pid" ] && continue
+            # 如果任何一個 PID 還在運行，保留文件
+            if kill -0 "$pid" 2>/dev/null; then
+                all_dead=false
+                break
+            fi
+        done < "$pid_file"
+
+        # 只有當所有 PID 都不運行時才刪除文件
+        if [ "$all_dead" = true ]; then
+            rm -f "$pid_file"
+            echo "  ✅ 清理孤立的 PID 文件: $(basename $pid_file)"
+        fi
+    fi
+done
+
+# 清理 7 天前的日誌文件 (保留最近的日誌)
+OLD_LOGS=$(find /tmp -maxdepth 1 -name '*.log' -type f -mtime +7 2>/dev/null | wc -l)
+if [ "$OLD_LOGS" -gt 0 ]; then
+    find /tmp -maxdepth 1 -name '*.log' -type f -mtime +7 -delete 2>/dev/null
+    echo "  ✅ 清理 $OLD_LOGS 個過期的日誌文件"
+fi
+
+echo "✅ 臨時文件清理完成"
+
 # 載入完整的 setup.bash 環境 (包含all_source 和所有工具)
 if [ -f "/app/setup.bash" ]; then
     echo "🔧 載入完整 setup.bash 環境..."
@@ -62,13 +107,9 @@ else
 fi
 
 #啟動時自動執行的腳本，可以在這裡定義各種函式，並在啟動時自動執行。
-#啟動SSH
-echo "🚀 啟動 SSH 服務..."
-service ssh start
 
-# Zenoh Router 會在 source /app/setup.bash 時自動啟動 (setup.bash 第 1918 行)
-# 使用統一的 manage_zenoh 函式管理，確保 PID 檔案格式一致
-# 如需手動管理，可使用: manage_zenoh {start|stop|restart|status}
+# ⚠️ SSH 和 Zenoh Router 的啟動已移至後續的 AUTO_START 控制區塊
+# 請參考下方的「服務自動啟動配置」區段
 
 #if [ $NODE_INSTALLED -eq 0 ]; then
 #    # Node.js 服務 agvc.ui
@@ -102,28 +143,163 @@ service ssh start
 #    fi
 #fi
 
-#檢查服務是否都已經啟動
-# 檢查 SSH 是否已經運行
-if pgrep -f "sshd" > /dev/null; then
-    echo "✅ SSH 服務已經在運行中"
-else
-    echo "❌ SSH 服務 啟動失敗"
-fi
-
-# 檢查 Zenoh Router 是否已經運行 (由 manage_zenoh 管理)
-# 使用 manage_zenoh status 或直接檢查進程
-if pgrep -f "rmw_zenohd" > /dev/null; then
-    echo "✅ Zenoh Router 已經在運行中"
-else
-    echo "⚠️ Zenoh Router 尚未啟動 (將在載入 setup.bash 時自動啟動)"
-fi
+# ⚠️ 服務啟動檢查已整合至 AUTO_START 控制區塊
+# 每個服務啟動時會自動檢查狀態並回報結果
 
 # =============================================================================
-# 🔧 Web API Launch 啟動控制
+# 🔧 服務自動啟動配置 (所有服務默認啟用)
 # =============================================================================
 
-# 設定自動啟動開關 (true=啟動, false=跳過)
-AUTO_START_WEB_API_LAUNCH=true
+# 設定各服務的自動啟動開關 (true=啟動, false=跳過)
+AUTO_START_SSH=true                    # SSH 服務（基礎設施）
+AUTO_START_ZENOH=true                  # Zenoh Router（通訊層）
+AUTO_START_AGVC_DATABASE_NODE=true     # AGVC 資料庫代理節點（資料層）
+AUTO_START_PLC_SERVICE_AGVC=true       # PLC 服務（硬體接口層）
+AUTO_START_ECS_CORE=true               # ECS 核心服務（設備控制層）
+AUTO_START_RCS_CORE=true               # RCS 核心服務（機器人控制層）
+AUTO_START_TAFL_WCS=true               # TAFL WCS 節點（流程控制層）
+AUTO_START_ROOM_TASK_BUILD=true        # 房間任務構建節點（任務構建層）
+AUTO_START_WEB_API_LAUNCH=true         # Web API Launch 服務群組（用戶界面層）
+
+# =============================================================================
+# 🔧 SSH 服務啟動控制（基礎設施層）
+# =============================================================================
+if [ "$AUTO_START_SSH" = "true" ]; then
+    echo "🔐 啟動 SSH 服務..."
+    if manage_ssh start; then
+        echo "✅ SSH 服務啟動成功"
+    else
+        echo "⚠️ SSH 服務啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_ssh status"
+    fi
+else
+    echo "⏸️ SSH 服務自動啟動已停用 (AUTO_START_SSH=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 Zenoh Router 啟動控制（通訊層）
+# =============================================================================
+if [ "$AUTO_START_ZENOH" = "true" ]; then
+    echo "🌐 啟動 Zenoh Router..."
+    if manage_zenoh start; then
+        echo "✅ Zenoh Router 啟動成功"
+    else
+        echo "⚠️ Zenoh Router 啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_zenoh status"
+    fi
+else
+    echo "⏸️ Zenoh Router 自動啟動已停用 (AUTO_START_ZENOH=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 AGVC 資料庫代理節點啟動控制（資料層）
+# =============================================================================
+if [ "$AUTO_START_AGVC_DATABASE_NODE" = "true" ]; then
+    echo "🗄️ 啟動 AGVC 資料庫代理節點..."
+    if manage_agvc_database_node start; then
+        echo "✅ AGVC 資料庫代理節點啟動成功"
+    else
+        echo "⚠️ AGVC 資料庫代理節點啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_agvc_database_node status"
+    fi
+else
+    echo "⏸️ AGVC 資料庫代理節點自動啟動已停用 (AUTO_START_AGVC_DATABASE_NODE=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 PLC 服務啟動控制（硬體接口層）
+# =============================================================================
+if [ "$AUTO_START_PLC_SERVICE_AGVC" = "true" ]; then
+    echo "🔌 啟動 PLC 服務 (AGVC)..."
+    if manage_plc_service_agvc start; then
+        echo "✅ PLC 服務啟動成功"
+    else
+        echo "⚠️ PLC 服務啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_plc_service_agvc status"
+    fi
+else
+    echo "⏸️ PLC 服務自動啟動已停用 (AUTO_START_PLC_SERVICE_AGVC=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 ECS 核心服務啟動控制（設備控制層）
+# =============================================================================
+if [ "$AUTO_START_ECS_CORE" = "true" ]; then
+    echo "🚪 啟動 ECS 核心服務..."
+    if manage_ecs_core start; then
+        echo "✅ ECS 核心服務啟動成功"
+    else
+        echo "⚠️ ECS 核心服務啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_ecs_core status"
+    fi
+else
+    echo "⏸️ ECS 核心服務自動啟動已停用 (AUTO_START_ECS_CORE=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 RCS 核心服務啟動控制（機器人控制層）
+# =============================================================================
+if [ "$AUTO_START_RCS_CORE" = "true" ]; then
+    echo "🤖 啟動 RCS 核心服務..."
+    if manage_rcs_core start; then
+        echo "✅ RCS 核心服務啟動成功"
+    else
+        echo "⚠️ RCS 核心服務啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_rcs_core status"
+    fi
+else
+    echo "⏸️ RCS 核心服務自動啟動已停用 (AUTO_START_RCS_CORE=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 TAFL WCS 節點啟動控制（流程控制層）
+# =============================================================================
+if [ "$AUTO_START_TAFL_WCS" = "true" ]; then
+    echo "⚙️ 啟動 TAFL WCS 節點..."
+    if manage_tafl_wcs start; then
+        echo "✅ TAFL WCS 節點啟動成功"
+    else
+        echo "⚠️ TAFL WCS 節點啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_tafl_wcs status"
+    fi
+else
+    echo "⏸️ TAFL WCS 節點自動啟動已停用 (AUTO_START_TAFL_WCS=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 房間任務構建節點啟動控制（任務構建層）
+# =============================================================================
+if [ "$AUTO_START_ROOM_TASK_BUILD" = "true" ]; then
+    echo "🏗️ 啟動房間任務構建節點..."
+    if manage_room_task_build start; then
+        echo "✅ 房間任務構建節點啟動成功"
+    else
+        echo "⚠️ 房間任務構建節點啟動失敗"
+        echo "📝 請使用以下指令查看詳情: manage_room_task_build status"
+    fi
+else
+    echo "⏸️ 房間任務構建節點自動啟動已停用 (AUTO_START_ROOM_TASK_BUILD=false)"
+fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 Web API Launch 啟動控制（用戶界面層）
+# =============================================================================
 
 # 根據開關決定是否啟動 Web API Launch
 if [ "$AUTO_START_WEB_API_LAUNCH" = "true" ]; then

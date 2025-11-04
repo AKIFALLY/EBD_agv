@@ -19,14 +19,14 @@ preload:
       target: racks
       where:
         location_id_in:
-        - 11
-        - 12
-        - 13
-        - 14
-        - 15
-        - 16
-        - 17
-        - 18
+        - 9
+        - 8
+        - 7
+        - 6
+        - 5
+        - 4
+        - 3
+        - 2
       description: 查詢所有在系統準備區的料架
   enabled_rooms:
     query:
@@ -129,7 +129,8 @@ flow:
                             room_id: ${target_room.id}
                             product_id: ${rack.product_id}
                             process_settings_id: ${product_process_id}
-                            nodes: ["${source_location.node_id}", "${target_inlet.node_id}"]
+                            # nodes: [起點, 途經點, 終點] - 經過房間入口途經點 (waypoint_node_id)
+                            nodes: ["${source_location.node_id}", "${target_inlet.waypoint_node_id}", "${target_inlet.node_id}"]
                             model: "KUKA400i"
                         as: created_task
                         description: 創建搬運任務：料架${rack.id}到房間${target_room.id}入口

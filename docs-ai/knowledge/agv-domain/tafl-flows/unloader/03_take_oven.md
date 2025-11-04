@@ -21,11 +21,10 @@
 3. 载具移动到**上排**并更新为"烘干完成"（status_id: 603）
 4. Unloader AGV 处于空闲或有空余车位
 
-### 触发条件（四重验证）
-1. **Carrier Status 过滤**: 烤箱上排有 status_id=603（烘干完成）的载具（≥4个）
-2. **Presence 信号**: 硬件传感器确认有载具在席（value="1"，4个 Port 全部确认）
-3. **AGV 空位**: Unloader AGV 车上有空位（**至少4格空位**）
-4. **重复检查**: 没有重复的未完成任务
+### 触发条件
+- **烤箱上排 Station 01 有烘干完成的载具**（status_id: 603，至少4个）
+- Unloader AGV 车上有空位（**至少4格空位**）
+- 没有重复的未完成任务
 
 ### 执行结果
 - 创建 Unloader AGV 取料任务
@@ -111,25 +110,15 @@ settings:
 ### Variables
 ```yaml
 variables:
-  priority: 4              # 优先级 1-10 范围
-  model: "Unloader"        # AGV 型号（首字母大写）
+  priority: 43             # 高优先级（烘干完成取出）
+  model: "UNLOADER"        # AGV 型号
   oven_equipment_id: 206   # 固定的烤箱设备 ID
-  unloader_eqp_id: 211     # UnloaderAGV 设备 ID
-  unloader_ports: [2111, 2112, 2113, 2114]  # UnloaderAGV 的 4 个 Port
-  # 2个 Station 配置（上排和下排）
-  stations:
-    - station: 1
-      work_id: 2060101
-      ports: [2061, 2062, 2063, 2064]  # 上排4个 Port
-      batch_size: 4
-      row: "upper"
-      name: "烤箱上排(Port01-04)"
-    - station: 3
-      work_id: 2060301
-      ports: [2065, 2066, 2067, 2068]  # 下排4个 Port
-      batch_size: 4
-      row: "lower"
-      name: "烤箱下排(Port05-08)"
+  # 固定 Station 配置（只有 Station 01，无需遍历）
+  station: 1               # Station 01（上排出料）
+  work_id: 2060101         # 唯一的 Work ID
+  ports: [1, 2, 3, 4]      # Port 1-4（上排）
+  batch_size: 4            # 批量4格
+  row: "upper"             # 上排
 ```
 
 ## 🔄 流程逻辑
@@ -155,54 +144,25 @@ variables:
       # 处理该房间的烤箱 Station 01
 ```
 
-#### 3. 遍历每个 Station（2个 Station）
-```yaml
-- for:
-    in: "${stations}"
-    as: station
-    do:
-      # 处理该 Station 的取料逻辑
-```
-
-#### 4. 查询 Station 的烘干完成载具（含 status_id 过滤）
+#### 3. 查询烤箱上排 Station 01 载具（固定配置）
 ```yaml
 - query:
     target: carriers
     where:
       room_id: "${room.id}"
-      port_in: "${station.ports}"
-      status_id: 603  # 烘干完成
+      equipment_id: "${oven_equipment_id}"  # 固定 206
+      port_in: "${ports}"                   # [1, 2, 3, 4] 固定上排
+      status_id: 603  # 烘乾机处理完成
     as: ready_carriers
-    description: "查询烤箱 Station ${station.station} 烘干完成载具"
+    description: "查询烤箱 Station 01 上排烘干完成的载具（Port 1-4）"
 ```
 
-#### 5. 检查载具数量
+#### 4. 检查载具数量（固定4格批量）
 ```yaml
 - set:
     carrier_count: "${ready_carriers.length}"
-    required_count: "${station.batch_size}"
+    required_count: "${batch_size}"        # 固定4格
     has_enough_carriers: "${carrier_count >= required_count}"
-```
-
-#### 6. 检查 Presence 信号（硬件传感器验证）
-```yaml
-- if:
-    condition: "${has_enough_carriers}"
-    then:
-      # 查询这些 Port 的 Presence 信号
-      - query:
-          target: eqp_signals
-          where:
-            eqp_port_id_in: "${station.ports}"
-            name_like: "%Presence"
-            value: "1"  # 1 = 有载具在席
-          as: occupied_presence_signals
-          description: "确认传感器有载具在席"
-
-      # 检查是否所有 Port 的 Presence 都是 1
-      - set:
-          presence_check_count: "${occupied_presence_signals.length}"
-          presence_all_occupied: "${presence_check_count >= required_count}"
 ```
 
 #### 5. 查询 Unloader AGV 状态
@@ -277,50 +237,24 @@ variables:
 
 ## 🔍 查询条件详解
 
-### 1. Carrier Status 过滤（制程阶段控制）
+### Carrier 查询条件（固定 Station 01）
 
-**烤箱载具 status_id 过滤**：
+**烤箱上排 Station 01 载具**：
 - `room_id`: 特定房间
-- `port_in`: Station-based Port 映射
-  - **Station 1**: [2061, 2062, 2063, 2064]（上排）
-  - **Station 3**: [2065, 2066, 2067, 2068]（下排）
-- `status_id: 603` (烘干完成)
+- `equipment_id: 206` (固定的烤箱设备ID)
+- `port_in: [1, 2, 3, 4]` (固定 Station 01 上排端口)
+- `status_id: 603` (烘乾机处理完成)
   - 烤箱制程完成后的状态
-  - 表示载具已完成烘干，准备被 Unloader AGV 取走
-  - **确保不会处理未完成烘干的载具**
+  - 表示载具已完成烘干，在上排准备被 Unloader AGV 取走
 
 **数量要求**（固定4格批量）：
 - **至少4个载具**（一次取4格）
-- Port 全部有载具才创建任务
+- Port 1-4 全部有载具才创建任务
 - 不支持部分取料
 
-**制程流控制**：
-```
-status_id=603（烘干完成）→ TAKE_OVEN → AGV车上（准备送出口）
-```
-
-### 2. Presence 信号验证（硬件传感器检查）
-
-**双重验证机制**：
-```yaml
-- query:
-    target: eqp_signals
-    where:
-      eqp_port_id_in: "${station.ports}"
-      name_like: "%Presence"
-      value: "1"  # 1 = 有载具在席
-    as: occupied_presence_signals
-```
-
-**验证逻辑**：
-- **软件状态**: carriers.status_id = 603（烘干完成）
-- **硬件状态**: eqp_signals.value = "1"（Presence 传感器有载具）
-- **双重确认**: 两者都必须确认有载具才创建任务
-
-**重要性**：
-- 防止软件状态与硬件实际不一致
-- 避免空取或碰撞
-- 提高任务执行可靠性
+**Station 01 Port 映射**：
+- **Station 01**: Port 1-2-3-4（**批量4格**/上排/**只 TAKE**）
+- TAKE_OVEN 只查询上排 Station 01（Port 1-4）
 
 ### AGV 查询条件
 
@@ -344,32 +278,20 @@ status_id=603（烘干完成）→ TAKE_OVEN → AGV车上（准备送出口）
 
 ## ⚠️ 注意事项
 
-### 四重验证机制（测试完成✅）
-1. **Carrier Status 过滤**: status_id=603（烘干完成）
-2. **Presence 信号**: eqp_signals.value = "1"（硬件传感器有载具）
-3. **AGV 空位**: AGV 车上有 ≥4格空位
-4. **重复检查**: 无未完成任务
-
 ### Station-based 设计重点
-- **编码规则**: work_id 使用 Station 编号（**01, 03**），非 Port 起始号
-- **UnloaderAGV 自定义映射**: **2个 Station 统一批量4格**（UnloaderAGV 特有）
-- **Station 分离**: Station 1（上排）和 Station 3（下排）
-- **完整 Port ID**: 使用 2061-2064（上排）和 2065-2068（下排）
+- **编码规则**: work_id 使用 Station 编号（**只有 01**），非 Port 起始号
+- **UnloaderAGV 自定义映射**: **Station 01 固定批量4格**（UnloaderAGV 特有）
+- **单向操作**: **Station 01 只支持 TAKE 操作**（固定上排出料）
 
 ### 烤箱固定方向设计
-- **上排 Station 01（本 Flow）**: Port 2061-2064，**只 TAKE**（出料）
-- **下排 Station 05（Flow 2）**: Port 2065-2068，**只 PUT**（进料）
+- **上排 Station 01（本 Flow）**: Port 1-4，**只 TAKE**（出料）
+- **下排 Station 05（Flow 2）**: Port 5-8，**只 PUT**（进料）
 - **固定单向流程**: 下排进料 → 烘干制程 → 上排出料
 
 ### 批量处理逻辑
 - **固定4格批量**: 必须有 ≥ 4个载具，AGV 需 ≥ 4格空位（车上全空）
 - **不支持部分取料**（要么取满4格，要么不取）
-- **Port 全部就绪**: 所有端口都有 status_id=603 的载具才创建任务
-
-### 双重验证的重要性
-- **软件 vs 硬件**: 防止数据库状态与实际硬件不一致
-- **安全性**: 避免空取或设备碰撞
-- **可靠性**: 确保任务执行前条件完全满足
+- **Port 1-4 全部就绪**: 所有端口都有载具才创建任务
 
 ### 烘干制程衔接（固定方向）
 - **Flow 2（PUT_OVEN）**: 只放入下排 Station 05

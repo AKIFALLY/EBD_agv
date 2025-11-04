@@ -154,9 +154,7 @@ main() {
         test_manage_function "manage_web_api_launch" "/tmp/web_api_launch.pid"
         test_manage_function "manage_tafl_wcs" "/tmp/tafl_wcs.pid"
         test_manage_function "manage_ecs_core" "/tmp/ecs.pid"
-        test_manage_function "manage_db_proxy" "/tmp/db_proxy.pid"
         test_manage_function "manage_rcs_core" "/tmp/rcs_launch.pid"
-        test_manage_function "manage_kuka_fleet" "/tmp/kuka_fleet.pid"
         
     elif is_agv_environment; then
         echo -e "${GREEN}✅ 在 AGV 環境中${NC}"

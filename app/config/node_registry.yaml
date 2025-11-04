@@ -26,18 +26,61 @@ nodes:
     launch_file: tafl_wcs_launch.py
     log_file: /tmp/tafl_wcs.log
     status_check: "ros2 node list | grep tafl_wcs_node"
-    
+
+  # ===== AGVC Database Node =====
+  agvc_database_node:
+    type: node
+    description: "AGVC PostgreSQL 資料庫代理節點"
+    package: db_proxy
+    executable: agvc_database_node
+    workspace: db_proxy_ws
+    namespace: agvc
+    log_file: /tmp/agvc_database_node.log
+    pid_file: /tmp/agvc_database_node.pid
+    status_check: "ros2 node list | grep agvc_database_node"
+    services:
+      - sql_query
+      - carrier_query
+      - rack_query
+      - agv_query
+      - task_query
+      - location_query
+      - room_query
+      - alarm_query
+      - path_query
+      - system_config_query
+      - traffic_zone_query
+    dependencies:
+      - zenoh
+      - postgresql
+
+  # ===== Room Task Build Node =====
+  room_task_build:
+    type: node
+    description: "WCS 房間任務自動建立節點"
+    package: alan_room_task_build
+    executable: room_task_build_node
+    workspace: wcs_ws
+    namespace: agvc
+    log_file: /tmp/room_task_build_node.log
+    pid_file: /tmp/room_task_build_node.pid
+    status_check: "ros2 node list | grep /agvc/room_task_build_node"
+    dependencies:
+      - zenoh
+      - agvc_database_node
+      - plc_service_agvc
+
   # ===== ECS 設備控制系統 =====
   # 注意: 在 setup.bash 中對應的函數是 manage_ecs_core
   ecs_core:
-    type: launch
+    type: node
     description: "ECS 設備控制核心"
     package: ecs
     executable: ecs_core
-    params:
-      db_url_agvc: "postgresql+psycopg2://agvc:password@postgres/agvc"
-    log_file: /tmp/ecs.log
-    status_check: "ros2 node list | grep ecs_core"
+    namespace: agvc
+    params_file: /app/config/ecs_config.yaml
+    log_file: /tmp/ecs_core.log
+    status_check: "ros2 node list | grep /agvc/ecs_core"
     
   # ===== RCS 機器人控制系統 =====
   rcs_core:
@@ -47,33 +90,16 @@ nodes:
     launch_file: rcs_launch.py
     log_file: /tmp/rcs_launch.log
     status_check: "ros2 node list | grep rcs_core"
-    
-  # ===== 資料庫代理服務 =====
-  db_proxy:
-    type: launch
-    description: "資料庫代理服務"
-    package: db_proxy
-    executable: agvc_database_node
-    log_file: /tmp/db_proxy.log
-    status_check: "ros2 node list | grep agvc_database_node"
-    
-  # ===== KUKA Fleet 整合 =====
-  kuka_fleet:
-    type: launch
-    description: "KUKA Fleet 整合服務"
-    package: kuka_fleet_adapter
-    executable: kuka_fleet_adapter
-    log_file: /tmp/kuka_fleet.log
-    status_check: "ros2 node list | grep kuka_fleet_adapter"
-    
+
   # ===== PLC 代理服務 (AGVC) =====
-  # 注意: 此節點沒有對應的 manage_* 函數，設為 node 類型
+  # 注意: 在 setup.bash 中對應的函數是 manage_plc_service_agvc
   plc_service_agvc:
     type: node
     description: "PLC 服務 (AGVC)"
     package: plc_proxy
     executable: plc_service
     namespace: agvc
+    params_file: /app/config/ecs_config.yaml
     log_file: /tmp/plc_service_agvc.log
     status_check: "ros2 node list | grep /agvc/plc_service"
     
@@ -167,12 +193,13 @@ node_groups:
     nodes:
       - zenoh
       - ssh
-      - db_proxy
+      - agvc_database_node
       - web_api_launch
+      - plc_service_agvc
       - ecs_core
       - rcs_core
-      - kuka_fleet
-      # - plc_service_agvc  # 此函數在 setup.bash 中不存在
+      - tafl_wcs
+      - room_task_build
       - agvui
       
   web_services:
@@ -185,15 +212,8 @@ node_groups:
     description: "核心服務"
     nodes:
       - zenoh
-      - db_proxy
       - ecs_core
       - rcs_core
-      
-  integration:
-    description: "外部整合服務"
-    nodes:
-      - kuka_fleet
-      # - plc_service_agvc  # 此函數在 setup.bash 中不存在
 
 # ===== 遠端 AGV 配置 =====
 remote_agvs:

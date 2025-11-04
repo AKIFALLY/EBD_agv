@@ -244,7 +244,7 @@ log_analyze postgres --suggestions
 # 輸出範例：
 # [建議] 連接被拒絕錯誤:
 # 1. 檢查 PostgreSQL 服務狀態: systemctl status postgresql
-# 2. 驗證連接配置: check_agvc_status
+# 2. 驗證連接配置: manage status
 # 3. 測試網路連通性: nc -zv postgres 5432
 ```
 

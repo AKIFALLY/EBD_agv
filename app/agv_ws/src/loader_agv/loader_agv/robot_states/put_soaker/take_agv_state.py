@@ -18,15 +18,26 @@ class TakeAgvState(BaseRobotState):
         self.sent = False
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Put Soaker 目前狀態: TakeAgv")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Put Soaker 目前狀態: TakeAgv")
         self.sent = False
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Put Soaker 離開 TakeAgv 狀態")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Put Soaker 離開 TakeAgv 狀態")
         self.sent = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Loader Robot Put Soaker TakeAgv 狀態")
+        # 單格處理：從 AGV 取1格 → 機械臂
+        source_agv_port = context.get_loader_agv_port_side
+        target_soaker_port = context.get_soaker_port
+
+        self.node.get_logger().info(
+            f"[Station-based 1格] 取料 (Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: AGV Port {source_agv_port} (第{source_agv_port}層) → 目標: 機械臂")
+        self.node.get_logger().info(
+            f"最終目標: 泡藥機 Port {target_soaker_port}")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -46,13 +57,15 @@ class TakeAgvState(BaseRobotState):
             self._execute_robot_logic(context, TAKE_LOADER_AGV_PGNO, read_pgno)
 
     def _execute_robot_logic(self, context: RobotContext, TAKE_LOADER_AGV_PGNO, read_pgno):
-        """執行機器人邏輯"""
+        """執行機器人邏輯 - 單格處理"""
         match self.step:
             case RobotContext.IDLE:
-                self.node.get_logger().info("Loader Robot Put Soaker TAKE LOADER AGV IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Put Soaker TAKE LOADER AGV IDLE")
                 self.step = RobotContext.CHECK_IDLE
             case RobotContext.CHECK_IDLE:
-                self.node.get_logger().info("Loader Robot Put Soaker TAKE LOADER AGV CHECK_IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Put Soaker TAKE LOADER AGV CHECK_IDLE")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
@@ -70,13 +83,34 @@ class TakeAgvState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Put Soaker TAKE AGV CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 只檢查 W110（Layer Side 的 Z 軸）
+                # W110 應該等於 get_loader_agv_port_side
+                expected_params['w110'] = context.get_loader_agv_port_side
+
+                self.node.get_logger().info(
+                    f"預期檢查: loader_agv_port_side={context.get_loader_agv_port_side} → "
+                    f"W110={context.get_loader_agv_port_side}"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Loader Robot Put Soaker TAKE LOADER AGV WRITE CHG PARA")
@@ -149,15 +183,20 @@ class TakeAgvState(BaseRobotState):
                 else:
                     self.node.get_logger().info("❌手臂動作失敗")
             case RobotContext.FINISH:
-                self.node.get_logger().info("Loader Robot Put Soaker TAKE LOADER AGV Finish")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Put Soaker TAKE LOADER AGV Finish")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
                 if read_pgno.value == Robot.IDLE:
                     self.node.get_logger().info("✅取AGV箱完成")
 
-                    # 直接進入下一個狀態 - 轉換到 PutSoakerState
-                    self.node.get_logger().info("✅ Take AGV 完成: 進入 PutSoakerState")
+                    # 單格處理：直接進入 PutSoakerState（無批量循環）
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 1格] Take AGV 完成: 進入 PutSoakerState")
+                    self.node.get_logger().info(
+                        f"完整路徑: AGV Port {context.get_loader_agv_port_side} → 機械臂 → "
+                        f"泡藥機 Port {context.get_soaker_port}")
                     from loader_agv.robot_states.put_soaker.put_soaker_state import PutSoakerState
                     context.set_state(PutSoakerState(self.node))
 

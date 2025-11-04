@@ -25,7 +25,7 @@ async def test_room_dispatch_success():
     flow_executor = TAFLExecutorWrapper(database_url=db_url)
 
     test_rack_id = 901
-    prepare_location_id = 11  # 系統準備區第一位
+    prepare_location_id = 2  # 系統準備區第一位
     inlet_id = 10001  # 房間1入口
 
     try:
@@ -92,6 +92,7 @@ async def test_room_dispatch_success():
                 select(Task).where(
                     Task.rack_id == test_rack_id,
                     Task.work_id == 220001  # KUKA_RACK_MOVE
+                    Task.work_id == 220001  # KUKA_RACK_MOVE
                 )
             ).all()
 
@@ -106,6 +107,12 @@ async def test_room_dispatch_success():
                     print(f"   ❌ 錯誤：work_id 應為 220001 (RACK_MOVE)，實際為 {task.work_id}")
                     return False
                 print(f"   ✅ Work ID 正確 (220001 - RACK_MOVE)")
+
+                # 驗證 work_id 正確性
+                if task.work_id != 220001:
+                    print(f"   ❌ 錯誤：work_id 應為 220001 (RACK_MOVE)，實際為 {task.work_id}")
+                    return False
+                print(f"   ✅ Work ID 正確 (220001 - RACK_MOVE)")
                 print(f"   房間 ID: {task.room_id}")
                 print(f"   優先級: {task.priority}")
                 if task.parameters:
@@ -113,18 +120,21 @@ async def test_room_dispatch_success():
                     to_loc_id = task.parameters.get('to_location_id')
                     nodes = task.parameters.get('nodes')
                     model = task.parameters.get('model')
+                    nodes = task.parameters.get('nodes')
+                    model = task.parameters.get('model')
                     print(f"   目的地: {to_loc_name}")
                     print(f"   nodes: {nodes}")
                     print(f"   model: {model}")
 
                     # 驗證 KUKA 必要參數
-                    if not nodes or not isinstance(nodes, list) or len(nodes) != 2:
-                        print(f"   ❌ 錯誤：缺少 nodes 參數或格式不正確")
+                    if not nodes or not isinstance(nodes, list) or len(nodes) != 3:
+                        print(f"   ❌ 錯誤：缺少 nodes 參數或格式不正確（期望3個節點：起點→途經點→終點）")
+                        print(f"   實際 nodes: {nodes}, 長度: {len(nodes) if nodes else 0}")
                         return False
                     if model != "KUKA400i":
                         print(f"   ❌ 錯誤：model 應為 KUKA400i，實際為 {model}")
                         return False
-                    print(f"   ✅ KUKA 參數完整 (nodes: 2個節點, model: KUKA400i)")
+                    print(f"   ✅ KUKA 參數完整 (nodes: {len(nodes)}個節點 [起點→途經點→終點], model: {model})")
 
                     # 驗證目的地是否為房間入口 (Loader Box)
                     if to_loc_name and 'Loader Box' in to_loc_name:
@@ -166,7 +176,7 @@ async def test_room_dispatch_no_room_id():
     flow_executor = TAFLExecutorWrapper(database_url=db_url)
 
     test_rack_id = 902
-    prepare_location_id = 12
+    prepare_location_id = 3
 
     try:
         # 清理舊資料
@@ -220,6 +230,7 @@ async def test_room_dispatch_no_room_id():
             tasks = session.exec(
                 select(Task).where(
                     Task.rack_id == test_rack_id,
+                    Task.work_id == 220001  # KUKA_RACK_MOVE
                     Task.work_id == 220001  # KUKA_RACK_MOVE
                 )
             ).all()

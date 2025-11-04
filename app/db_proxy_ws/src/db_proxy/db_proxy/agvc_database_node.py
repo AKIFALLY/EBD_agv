@@ -56,7 +56,7 @@ class AGVCDatabaseNode(Node):
         self.pool_agvc = ConnectionPoolManager(
             db_url_agvc)  # SQLModel.metadata.create_all
 
-        # self.logger = AgvcLogger(self, self.pool_agvc)
+        self.logger = AgvcLogger(self, self.pool_agvc)
 
         # 初始化預設資料 (加入錯誤處理，避免重複初始化導致節點失敗)
         try:

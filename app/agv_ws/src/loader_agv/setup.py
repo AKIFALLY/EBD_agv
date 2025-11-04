@@ -24,8 +24,8 @@ setup(
     test_suite='test',
     entry_points={
         'console_scripts': [
-            'agv_core_node = loader_agv.agv_core_node:main',  # ROS node's entry point
-            'test_agv_core_node = loader_agv.test_agv_core_node:main',  # Test ROS node's entry point
+            'loader_agv_node = loader_agv.agv_core_node:main',  # Loader AGV specific entry point
+            'test_loader_agv_node = loader_agv.test_agv_core_node:main',  # Test ROS node's entry point
         ],
     },
 )

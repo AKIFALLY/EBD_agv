@@ -23,10 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'agv_core_node = cargo_mover_agv.agv_core_node:main',  # ROS node's entry point
-            # ROS node's entry point
-            'test_agv_core_node = cargo_mover_agv.test_agv_core_node:main',
-            # ROS node's entry point
+            'cargo_agv_node = cargo_mover_agv.agv_core_node:main',  # Cargo AGV specific entry point
+            'test_cargo_agv_node = cargo_mover_agv.test_agv_core_node:main',  # Test ROS node's entry point
             'agv_robot = cargo_mover_agv.robot_states.robot:main',
             'test_hokuyo_publisher = cargo_mover_agv.test_hokuyo:main',
         ],

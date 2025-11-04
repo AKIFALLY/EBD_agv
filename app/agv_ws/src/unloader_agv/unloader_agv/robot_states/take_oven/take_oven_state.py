@@ -49,19 +49,40 @@ class TakeOvenState(BaseRobotState):
             case RobotContext.WRITE_CHG_PARAMTER:
                 self.node.get_logger().info("Unloader Robot Take Oven TAKE OVEN WRITE CHG PARAMTER")
                 if not self.sent:
-                    context.robot.update_pgno(Robot.CHG_PARA)
+                    context.update_port_parameters()
                     self.sent = True
-                if context.robot.update_pgno_success:
-                    self.node.get_logger().info("✅傳送參數成功")
+                if context.robot.update_parameter_success:
+                    self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
-                    context.robot.update_pgno_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
-                elif context.robot.update_pgno_failed:
-                    self.node.get_logger().info("❌傳送參數失敗")
+                    context.robot.update_parameter_success = False
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
+                elif context.robot.update_parameter_failed:
+                    self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
-                    context.robot.update_pgno_failed = False
+                    context.robot.update_parameter_failed = False
                 else:
-                    self.node.get_logger().info("🕒傳送參數中")
+                    self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Unloader Robot Take Oven CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 oven_port → W116
+                # layer_z = ((port-1) // 4) + 1
+                # layer_y = ((port-1) // 2) % 2 + 1
+                layer_z_oven = ((context.get_oven_port - 1) // 4) + 1
+                layer_y_oven = ((context.get_oven_port - 1) // 2) % 2 + 1
+                expected_params['w116'] = (layer_z_oven | (layer_y_oven << 16))
+
+                self.node.get_logger().info(
+                    f"預期檢查: oven_port={context.get_oven_port} → "
+                    f"W116 (z={layer_z_oven}, y={layer_y_oven})")
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    self.step = RobotContext.WRITE_CHG_PARA
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Unloader Robot Take Oven TAKE OVEN WRITE CHG PARA")
@@ -152,7 +173,17 @@ class TakeOvenState(BaseRobotState):
                     self.node.get_logger().info("❌從烤箱取貨失敗")
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Unloader Robot Take Oven TakeOven 狀態")
+        # 根據當前循環次數獲取對應的 oven ports
+        if hasattr(context, 'take_put_current_batch') and context.take_put_current_batch:
+            current_ports = context.take_put_current_batch
+            context.get_oven_port = current_ports[0]  # 使用當前批次的第一個port
+
+            cycle_num = context.take_put_cycle_count + 1
+            self.node.get_logger().info(
+                f"Unloader Robot Take Oven 狀態 (第{cycle_num}次) - "
+                f"從 oven ports {current_ports} 取貨")
+        else:
+            self.node.get_logger().info("Unloader Robot Take Oven TakeOven 狀態")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()

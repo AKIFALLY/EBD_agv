@@ -1,17 +1,11 @@
 from agv_base.states.state import State
 from rclpy.node import Node
-from unloader_agv.robot_context import RobotContext  # 新增的匯入
+from unloader_agv.robot_context import RobotContext
+from shared_constants.equipment_stations import EquipmentStations
 
 
 class IdleState(State):
-    # 位置類型常數
-    BOX_OUT_TRANSFER = "02"
-    PRE_DRYER = "05"
-    OVEN = "06"
-
-    # 動作類型常數
-    TAKE = "01"
-    PUT = "02"
+    """Unloader AGV Idle 狀態 - 使用新 Work ID 系統進行自動路由"""
 
     def __init__(self, node: Node):
         super().__init__(node)
@@ -19,31 +13,10 @@ class IdleState(State):
 
         # Hokuyo 初始化狀態
         self.hokuyo_write_completed = False
-        
+
+        # 從 task 獲取 room_id 和 work_id
         self.node.room_id = self.node.task.room_id
         self.node.work_id = self.node.task.work_id
-
-        # 動態計算工作 ID 範圍
-        self.room_id_str = str(self.node.room_id)
-
-        # 計算各流程的工作 ID 範圍
-        # take_pre_dryer: 4個工作站 (01-04)，每個工作站包含2個PORT，總計8個PORT
-        self.take_pre_dryer_start = int(self.room_id_str + self.PRE_DRYER + "01" + self.TAKE)
-        self.take_pre_dryer_end = int(self.room_id_str + self.PRE_DRYER + "04" + self.TAKE)
-
-        # take_oven: 2個工作站 (01-02)
-        self.take_oven_start = int(self.room_id_str + self.OVEN + "01" + self.TAKE)
-        self.take_oven_end = int(self.room_id_str + self.OVEN + "02" + self.TAKE)
-
-        # put_boxout_transfer: 2個工作站 (01-02)
-        self.put_boxout_transfer_start = int(
-            self.room_id_str + self.BOX_OUT_TRANSFER + "01" + self.PUT)
-        self.put_boxout_transfer_end = int(
-            self.room_id_str + self.BOX_OUT_TRANSFER + "02" + self.PUT)
-
-        # put_oven: 2個工作站 (01-02)
-        self.put_oven_start = int(self.room_id_str + self.OVEN + "01" + self.PUT)
-        self.put_oven_end = int(self.room_id_str + self.OVEN + "02" + self.PUT)
 
     def enter(self):
         self.node.get_logger().info("🤖Unloader Robot 目前狀態: Idle")
@@ -77,56 +50,73 @@ class IdleState(State):
                 self.hokuyo_write_completed = True
 
     def handle(self, context: RobotContext):
+        """處理 Idle 狀態並根據 work_id 路由到對應的流程"""
         self.node.get_logger().info("Unloader Robot Idle 狀態")
 
         # 執行 Hokuyo 參數初始化
         self._initialize_hokuyo_parameters()
 
-        # 只有在 Hokuyo 參數初始化完成後，才進行任務處理和狀態切換
-        if self.hokuyo_write_completed:
-            self.node.get_logger().info("✅ Hokuyo 初始化完成，開始處理任務")
+        # 只有在 Hokuyo 參數初始化完成後，才進行工作 ID 檢查和狀態切換
+        if not self.hokuyo_write_completed:
+            self.node.get_logger().debug("⏳ 等待 Hokuyo 參數初始化完成...")
+            return
 
-            # 檢查是否有任務
-            if not hasattr(self.node, 'task') or self.node.task is None:
-                self.node.get_logger().debug("等待任務分配...")
-                return
+        self.node.get_logger().info("✅ Hokuyo 初始化完成，開始檢查工作 ID")
 
-            # 解析 work_id
-            work_id = self.node.work_id
-            self.node.get_logger().info(f"處理工作 ID: {work_id}")
+        # 獲取 work_id
+        work_id = self.node.work_id
+        self.node.get_logger().info(f"檢查工作 ID: {work_id}")
 
-            # 根據 work_id 範圍決定流程
-            if self.take_pre_dryer_start <= work_id <= self.take_pre_dryer_end:
-                self.node.get_logger().info(f"切換到 TAKE_PRE_DRYER 流程 (work_id: {work_id})")
-                from unloader_agv.robot_states.take_pre_dryer.pre_dryer_vision_position_state import PreDryerVisionPositionState
-                context.set_state(PreDryerVisionPositionState(self.node))
-            elif self.take_oven_start <= work_id <= self.take_oven_end:
-                self.node.get_logger().info(f"切換到 TAKE_OVEN 流程 (work_id: {work_id})")
-                from unloader_agv.robot_states.take_oven.oven_vision_position_state import OvenVisionPositionState
-                context.set_state(OvenVisionPositionState(self.node))
-            elif self.put_boxout_transfer_start <= work_id <= self.put_boxout_transfer_end:
-                self.node.get_logger().info(f"切換到 PUT_BOXOUT_TRANSFER 流程 (work_id: {work_id})")
+        # 使用 EquipmentStations 解析 work_id
+        try:
+            room_id, eqp_id, station, action_type = \
+                EquipmentStations.extract_station_from_work_id(work_id)
+            ports = EquipmentStations.station_to_ports(eqp_id, station, agv_type="unloader")
+
+            # 輸出解析結果
+            self.node.get_logger().info(
+                f"✅ Work ID {work_id} 解析成功: "
+                f"Room={room_id}, Equipment={eqp_id}, Station={station:02d}, "
+                f"Action={action_type}, Ports={ports}")
+
+        except ValueError as e:
+            self.node.get_logger().error(f"❌ Work ID 解析失敗: {e}")
+            return
+
+        # 根據設備類型和動作類型路由到對應狀態
+        equipment_type = eqp_id % 100
+
+        if equipment_type == 2:  # Box-out Transfer (202)
+            if action_type == 2:  # PUT
                 from unloader_agv.robot_states.put_boxout_transfer.boxout_transfer_vision_position_state import BoxoutTransferVisionPositionState
+                self.node.get_logger().info("🎯 路由到: PUT_BOXOUT_TRANSFER 流程")
                 context.set_state(BoxoutTransferVisionPositionState(self.node))
-            elif self.put_oven_start <= work_id <= self.put_oven_end:
-                self.node.get_logger().info(f"切換到 PUT_OVEN 流程 (work_id: {work_id})")
+            else:
+                self.node.get_logger().error(
+                    f"❌ Box-out Transfer 不支援 action_type={action_type}")
+
+        elif equipment_type == 5:  # Pre-dryer (205)
+            if action_type == 1:  # TAKE
+                from unloader_agv.robot_states.take_pre_dryer.pre_dryer_vision_position_state import PreDryerVisionPositionState
+                self.node.get_logger().info("🎯 路由到: TAKE_PRE_DRYER 流程")
+                context.set_state(PreDryerVisionPositionState(self.node))
+            else:
+                self.node.get_logger().error(
+                    f"❌ Pre-dryer 不支援 action_type={action_type} (Unloader 只支援 TAKE)")
+
+        elif equipment_type == 6:  # Oven (206)
+            if action_type == 1:  # TAKE
+                from unloader_agv.robot_states.take_oven.oven_vision_position_state import OvenVisionPositionState
+                self.node.get_logger().info("🎯 路由到: TAKE_OVEN 流程")
+                context.set_state(OvenVisionPositionState(self.node))
+            elif action_type == 2:  # PUT
                 from unloader_agv.robot_states.put_oven.oven_vision_position_state import OvenVisionPositionState
+                self.node.get_logger().info("🎯 路由到: PUT_OVEN 流程")
                 context.set_state(OvenVisionPositionState(self.node))
             else:
-                self.node.get_logger().warn(f"未知的工作 ID: {work_id}")
-                # 提供詳細的範圍資訊以便調試
-                self.node.get_logger().debug(f"工作 ID 範圍資訊:")
-                self.node.get_logger().debug(
-                    f"  TAKE_PRE_DRYER: {self.take_pre_dryer_start}-{self.take_pre_dryer_end}")
-                self.node.get_logger().debug(
-                    f"  TAKE_OVEN: {self.take_oven_start}-{self.take_oven_end}")
-                self.node.get_logger().debug(
-                    f"  PUT_BOXOUT_TRANSFER: {self.put_boxout_transfer_start}-{self.put_boxout_transfer_end}")
-                self.node.get_logger().debug(
-                    f"  PUT_OVEN: {self.put_oven_start}-{self.put_oven_end}")
+                self.node.get_logger().error(
+                    f"❌ Oven 不支援 action_type={action_type}")
 
-                # 轉換到完成狀態
-                from unloader_agv.robot_states.complete_state import CompleteState
-                context.set_state(CompleteState(self.node))
         else:
-            self.node.get_logger().debug("⏳ 等待 Hokuyo 參數初始化完成...")
+            self.node.get_logger().error(
+                f"❌ 未知設備類型: {equipment_type} (eqp_id={eqp_id})")

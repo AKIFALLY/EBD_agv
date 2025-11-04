@@ -13,8 +13,10 @@ class PutOvenState(BaseRobotState):
         self.step = RobotContext.IDLE
         self.sent = False
         self.update_carrier_success = False
-        self.update_carrier_min_success = False
-        self.update_carrier_max_success = False
+        self.update_carrier_1_success = False
+        self.update_carrier_2_success = False
+        self.update_carrier_3_success = False
+        self.update_carrier_4_success = False
         self.carrier_updates_pending = 0
 
         # 動態計算 port_id_address
@@ -24,91 +26,168 @@ class PutOvenState(BaseRobotState):
     def enter(self):
         self.node.get_logger().info("Unloader Robot Put Oven 目前狀態: PutOven")
         self.update_carrier_success = False
-        self.update_carrier_min_success = False
-        self.update_carrier_max_success = False
+        self.update_carrier_1_success = False
+        self.update_carrier_2_success = False
+        self.update_carrier_3_success = False
+        self.update_carrier_4_success = False
         self.carrier_updates_pending = 0
         self.sent = False
 
     def leave(self):
         self.node.get_logger().info("Unloader Robot Put Oven 離開 PutOven 狀態")
         self.update_carrier_success = False
-        self.update_carrier_min_success = False
-        self.update_carrier_max_success = False
+        self.update_carrier_1_success = False
+        self.update_carrier_2_success = False
+        self.update_carrier_3_success = False
+        self.update_carrier_4_success = False
         self.carrier_updates_pending = 0
         self.sent = False
 
     def update_carrier_database(self, context: RobotContext):
-        """更新雙 carrier 資料庫"""
+        """更新所有4個 carrier 資料庫（第2次循環時調用）"""
         self.carrier_updates_pending = 0
-        self.update_carrier_min_success = False
-        self.update_carrier_max_success = False
+        self.update_carrier_1_success = False
+        self.update_carrier_2_success = False
+        self.update_carrier_3_success = False
+        self.update_carrier_4_success = False
 
-        # 檢查並更新第一個 carrier (carrier_id[0])
+        # 從 context 獲取 oven port 分組
+        # 第1次循環：oven_port_groups[0]，第2次循環：oven_port_groups[1]
+        if hasattr(context, 'oven_port_groups') and len(context.oven_port_groups) == 2:
+            oven_ports_batch1 = context.oven_port_groups[0]  # 第1次的2個oven ports
+            oven_ports_batch2 = context.oven_port_groups[1]  # 第2次的2個oven ports
+        else:
+            # 兼容舊邏輯（如果沒有分組，使用 oven_number）
+            oven_ports_batch1 = [context.oven_number, context.oven_number + 1]
+            oven_ports_batch2 = [context.oven_number + 2, context.oven_number + 3]
+
+        # 更新第1個 carrier (AGV port 1 → oven port batch1[0])
         if context.carrier_id[0] is not None:
-            carrier_min = CarrierMsg()
-            carrier_min.id = context.carrier_id[0]
-            carrier_min.room_id = self.node.room_id
-            carrier_min.rack_id = 0
-            carrier_min.port_id = self.port_id_address + context.oven_number  # 第一個烤箱 port
-            carrier_min.rack_index = 0
+            carrier_1 = CarrierMsg()
+            carrier_1.id = context.carrier_id[0]
+            carrier_1.room_id = self.node.room_id
+            carrier_1.rack_id = 0
+            carrier_1.port_id = self.port_id_address + oven_ports_batch1[0]
+            carrier_1.rack_index = 0
 
             self.agvc_client.async_update_carrier(
-                carrier_min, lambda result: self.update_carrier_min_callback(result))
+                carrier_1, lambda result: self.update_carrier_1_callback(result))
             self.carrier_updates_pending += 1
-            self.node.get_logger().info(f"🔄 開始更新第一個 Carrier: {context.carrier_id[0]}")
+            self.node.get_logger().info(
+                f"🔄 開始更新第1個 Carrier: {context.carrier_id[0]} "
+                f"→ Oven Port {oven_ports_batch1[0]} (ID={carrier_1.port_id})")
         else:
-            self.update_carrier_min_success = True  # 沒有需要更新的，視為成功
+            self.update_carrier_1_success = True
 
-        # 檢查並更新第二個 carrier (carrier_id[1])
+        # 更新第2個 carrier (AGV port 2 → oven port batch1[1])
         if context.carrier_id[1] is not None:
-            carrier_max = CarrierMsg()
-            carrier_max.id = context.carrier_id[1]
-            carrier_max.room_id = self.node.room_id
-            carrier_max.rack_id = 0
-            carrier_max.port_id = self.port_id_address + context.oven_number + 1  # 第二個烤箱 port
-            carrier_max.rack_index = 0
+            carrier_2 = CarrierMsg()
+            carrier_2.id = context.carrier_id[1]
+            carrier_2.room_id = self.node.room_id
+            carrier_2.rack_id = 0
+            carrier_2.port_id = self.port_id_address + oven_ports_batch1[1]
+            carrier_2.rack_index = 0
 
             self.agvc_client.async_update_carrier(
-                carrier_max, lambda result: self.update_carrier_max_callback(result))
+                carrier_2, lambda result: self.update_carrier_2_callback(result))
             self.carrier_updates_pending += 1
-            self.node.get_logger().info(f"🔄 開始更新第二個 Carrier: {context.carrier_id[1]}")
+            self.node.get_logger().info(
+                f"🔄 開始更新第2個 Carrier: {context.carrier_id[1]} "
+                f"→ Oven Port {oven_ports_batch1[1]} (ID={carrier_2.port_id})")
         else:
-            self.update_carrier_max_success = True  # 沒有需要更新的，視為成功
+            self.update_carrier_2_success = True
+
+        # 更新第3個 carrier (AGV port 3 → oven port batch2[0])
+        if context.carrier_id[2] is not None:
+            carrier_3 = CarrierMsg()
+            carrier_3.id = context.carrier_id[2]
+            carrier_3.room_id = self.node.room_id
+            carrier_3.rack_id = 0
+            carrier_3.port_id = self.port_id_address + oven_ports_batch2[0]
+            carrier_3.rack_index = 0
+
+            self.agvc_client.async_update_carrier(
+                carrier_3, lambda result: self.update_carrier_3_callback(result))
+            self.carrier_updates_pending += 1
+            self.node.get_logger().info(
+                f"🔄 開始更新第3個 Carrier: {context.carrier_id[2]} "
+                f"→ Oven Port {oven_ports_batch2[0]} (ID={carrier_3.port_id})")
+        else:
+            self.update_carrier_3_success = True
+
+        # 更新第4個 carrier (AGV port 4 → oven port batch2[1])
+        if context.carrier_id[3] is not None:
+            carrier_4 = CarrierMsg()
+            carrier_4.id = context.carrier_id[3]
+            carrier_4.room_id = self.node.room_id
+            carrier_4.rack_id = 0
+            carrier_4.port_id = self.port_id_address + oven_ports_batch2[1]
+            carrier_4.rack_index = 0
+
+            self.agvc_client.async_update_carrier(
+                carrier_4, lambda result: self.update_carrier_4_callback(result))
+            self.carrier_updates_pending += 1
+            self.node.get_logger().info(
+                f"🔄 開始更新第4個 Carrier: {context.carrier_id[3]} "
+                f"→ Oven Port {oven_ports_batch2[1]} (ID={carrier_4.port_id})")
+        else:
+            self.update_carrier_4_success = True
 
         # 如果沒有需要更新的 carrier，直接設為成功
         if self.carrier_updates_pending == 0:
             self.update_carrier_success = True
             self.node.get_logger().info("ℹ️ 沒有需要更新的 Carrier")
 
-    def update_carrier_min_callback(self, result):
-        """第一個 carrier 更新回調"""
+    def update_carrier_1_callback(self, result):
+        """第1個 carrier 更新回調"""
         if result is not None and result.success:
-            self.node.get_logger().info(f"✅ 第一個 Carrier 更新成功: {result.message}")
-            self.update_carrier_min_success = True
+            self.node.get_logger().info(f"✅ 第1個 Carrier 更新成功: {result.message}")
+            self.update_carrier_1_success = True
         else:
             error_msg = result.message if result is not None else "無回應"
-            self.node.get_logger().error(f"❌ 第一個 Carrier 更新失敗: {error_msg}")
-            self.update_carrier_min_success = False
-
+            self.node.get_logger().error(f"❌ 第1個 Carrier 更新失敗: {error_msg}")
+            self.update_carrier_1_success = False
         self._check_all_carriers_updated()
 
-    def update_carrier_max_callback(self, result):
-        """第二個 carrier 更新回調"""
+    def update_carrier_2_callback(self, result):
+        """第2個 carrier 更新回調"""
         if result is not None and result.success:
-            self.node.get_logger().info(f"✅ 第二個 Carrier 更新成功: {result.message}")
-            self.update_carrier_max_success = True
+            self.node.get_logger().info(f"✅ 第2個 Carrier 更新成功: {result.message}")
+            self.update_carrier_2_success = True
         else:
             error_msg = result.message if result is not None else "無回應"
-            self.node.get_logger().error(f"❌ 第二個 Carrier 更新失敗: {error_msg}")
-            self.update_carrier_max_success = False
+            self.node.get_logger().error(f"❌ 第2個 Carrier 更新失敗: {error_msg}")
+            self.update_carrier_2_success = False
+        self._check_all_carriers_updated()
 
+    def update_carrier_3_callback(self, result):
+        """第3個 carrier 更新回調"""
+        if result is not None and result.success:
+            self.node.get_logger().info(f"✅ 第3個 Carrier 更新成功: {result.message}")
+            self.update_carrier_3_success = True
+        else:
+            error_msg = result.message if result is not None else "無回應"
+            self.node.get_logger().error(f"❌ 第3個 Carrier 更新失敗: {error_msg}")
+            self.update_carrier_3_success = False
+        self._check_all_carriers_updated()
+
+    def update_carrier_4_callback(self, result):
+        """第4個 carrier 更新回調"""
+        if result is not None and result.success:
+            self.node.get_logger().info(f"✅ 第4個 Carrier 更新成功: {result.message}")
+            self.update_carrier_4_success = True
+        else:
+            error_msg = result.message if result is not None else "無回應"
+            self.node.get_logger().error(f"❌ 第4個 Carrier 更新失敗: {error_msg}")
+            self.update_carrier_4_success = False
         self._check_all_carriers_updated()
 
     def _check_all_carriers_updated(self):
-        """檢查所有 carrier 是否都已更新完成"""
-        if self.update_carrier_min_success and self.update_carrier_max_success:
+        """檢查所有4個 carrier 是否都已更新完成"""
+        if (self.update_carrier_1_success and self.update_carrier_2_success and
+            self.update_carrier_3_success and self.update_carrier_4_success):
             self.update_carrier_success = True
-            self.node.get_logger().info("✅ 所有 Carrier 更新完成")
+            self.node.get_logger().info("✅ 所有4個 Carrier 更新完成")
 
     def _set_hokuyo_busy(self):
         """設定 Hokuyo write_busy"""
@@ -140,19 +219,40 @@ class PutOvenState(BaseRobotState):
             case RobotContext.WRITE_CHG_PARAMTER:
                 self.node.get_logger().info("Unloader Robot Put Oven PUT OVEN WRITE CHG PARAMTER")
                 if not self.sent:
-                    context.robot.update_pgno(Robot.CHG_PARA)
+                    context.update_port_parameters()
                     self.sent = True
-                if context.robot.update_pgno_success:
-                    self.node.get_logger().info("✅傳送參數成功")
+                if context.robot.update_parameter_success:
+                    self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
-                    context.robot.update_pgno_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
-                elif context.robot.update_pgno_failed:
-                    self.node.get_logger().info("❌傳送參數失敗")
+                    context.robot.update_parameter_success = False
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
+                elif context.robot.update_parameter_failed:
+                    self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
-                    context.robot.update_pgno_failed = False
+                    context.robot.update_parameter_failed = False
                 else:
-                    self.node.get_logger().info("🕒傳送參數中")
+                    self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Unloader Robot Put Oven PUT OVEN CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 oven_port → W116
+                # layer_z = ((port-1) // 4) + 1
+                # layer_y = ((port-1) // 2) % 2 + 1
+                layer_z_oven = ((context.get_oven_port - 1) // 4) + 1
+                layer_y_oven = ((context.get_oven_port - 1) // 2) % 2 + 1
+                expected_params['w116'] = (layer_z_oven | (layer_y_oven << 16))
+
+                self.node.get_logger().info(
+                    f"預期檢查: oven_port={context.get_oven_port} → "
+                    f"W116 (z={layer_z_oven}, y={layer_y_oven})")
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    self.step = RobotContext.WRITE_CHG_PARA
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Unloader Robot Put Oven PUT OVEN WRITE CHG PARA")
@@ -237,19 +337,50 @@ class PutOvenState(BaseRobotState):
                     self.node.get_logger().info("❌放置到烤箱失敗")
             case RobotContext.UPDATE_DATABASE:
                 self.node.get_logger().info("Unloader Robot Put Oven PUT OVEN UPDATE_DATABASE")
+
                 if not self.sent:
-                    self.update_carrier_database(context)
-                    self.sent = True
-                elif self.sent and self.update_carrier_success:
-                    self.node.get_logger().info("✅更新 Carrier 資料庫成功")
-                    self.sent = False
+                    cycle_num = context.take_put_cycle_count + 1
 
-                    # 完成 PUT_OVEN 流程，進入完成狀態
-                    self.node.get_logger().info("✅ Put Oven 完成: 進入 CompleteState")
-                    from unloader_agv.robot_states.complete_state import CompleteState
-                    context.set_state(CompleteState(self.node))
+                    if context.take_put_cycle_count == 0:
+                        # ====== 第1次：不更新數據庫 ======
+                        self.node.get_logger().info(f"✅ 第{cycle_num}次放料完成，暫不更新數據庫")
+                        self.sent = True
+                    else:
+                        # ====== 第2次：更新所有4個carrier ======
+                        self.node.get_logger().info(f"✅ 第{cycle_num}次放料完成，開始更新所有4個Carrier")
+                        self.update_carrier_database(context)
+                        self.sent = True
 
-                    self.step = RobotContext.IDLE
+                elif self.sent:
+                    if context.take_put_cycle_count < context.take_put_max_cycles - 1:
+                        # ====== 第1次完成，準備第2次 ======
+                        context.take_put_cycle_count += 1
+                        context.take_put_current_batch = [3, 4]  # AGV port numbers
+
+                        self.node.get_logger().info(
+                            f"準備第{context.take_put_cycle_count + 1}次循環："
+                            f"\n  AGV批次: {context.take_put_current_batch}"
+                            f"\n  Oven批次: {context.take_put_port_groups[context.take_put_cycle_count]}")
+
+                        # 重置狀態
+                        self.sent = False
+                        self.step = RobotContext.IDLE
+                        self.update_carrier_success = False
+
+                        # 返回 TakeAgvState 進行第2次循環
+                        from unloader_agv.robot_states.put_oven.take_agv_state import TakeAgvState
+                        context.set_state(TakeAgvState(self.node))
+                    else:
+                        # ====== 第2次完成 ======
+                        if self.update_carrier_success:
+                            self.node.get_logger().info("✅ 更新所有4個 Carrier 資料庫成功")
+                            self.sent = False
+                            self.update_carrier_success = False
+
+                            # 完成 PUT_OVEN 流程，進入完成狀態
+                            self.step = RobotContext.IDLE
+                            from unloader_agv.robot_states.complete_state import CompleteState
+                            context.set_state(CompleteState(self.node))
 
     def handle(self, context: RobotContext):
         self.node.get_logger().info("Unloader Robot Put Oven PutOven 狀態")

@@ -45,19 +45,29 @@ class PreDryerCheckHaveState(BaseRobotState):
         self.carrier_id = None
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Put PreDryer 目前狀態: PreDryerCheckHave")
+        self.node.get_logger().info(
+            "[Station-based 2格] Loader Robot Put PreDryer 目前狀態: PreDryerCheckHave")
         self._reset_state()
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Put PreDryer 離開 PreDryerCheckHave 狀態")
+        self.node.get_logger().info(
+            "[Station-based 2格] Loader Robot Put PreDryer 離開 PreDryerCheckHave 狀態")
         self._reset_state()
 
     def eqp_signal_query_callback(self, response):
+        """處理 EqpSignal 查詢回應 - 檢查預乾燥機 8 個端口狀態
+
+        說明：Put Pre-dryer 設備配置
+        - 標準設備：4 個 Station，每個 Station 有 2 個 port
+        - Station 配置：01(Port 1-2), 03(Port 3-4), 05(Port 5-6), 07(Port 7-8)
+        - PUT 操作：需要檢查指定 station 的兩個 port 是否為空
+        - 批量處理：一次任務處理2格（1 station = 2 ports）
+        """
         for i in range(8):
             self.port_carriers[i] = EqpSignalQueryClient.eqp_signal_port(
                 response, self.port_address + i + 1)
             self.node.get_logger().info(
-                f"PreDryer Port {i+1:02d} 有無貨: {self.port_carriers[i]}")
+                f"[Station-based 2格] PreDryer Port {i+1:02d} 有無貨: {self.port_carriers[i]}")
 
         self.search_eqp_signal_ok = True
 
@@ -85,14 +95,23 @@ class PreDryerCheckHaveState(BaseRobotState):
     def _extract_station_from_work_id(self, context: RobotContext):
         """從 work_id 中提取 station 並映射到 port (使用 EquipmentStations 模組)
 
-        注意：Loader AGV 一次只操作一個 port，選擇 station 對應的第一個 port
+        說明：標準設備的 Station-based 設計
+        - 標準設備：1 station = 2 ports（Pre-dryer 是標準設備）
+        - 4 個 Station：Station 01, 03, 05, 07
+        - Station 到 Port 映射：
+          * Station 01 → Port 1, 2
+          * Station 03 → Port 3, 4
+          * Station 05 → Port 5, 6
+          * Station 07 → Port 7, 8
+        - Work ID 範圍：2050102, 2050302, 2050502, 2050702（PUT 操作）
+        - 此方法返回第一個 port 用於初始驗證，完整的 ports 列表用於批量配置
         """
         # 調用基類通用方法
         station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
         if station is None:
             return None
 
-        # Loader AGV 一次只操作一個 port，選擇第一個 port（較小的那個）
+        # 返回第一個 port 用於初始 EQP 驗證
         port_number = ports[0]
         return port_number
 
@@ -115,83 +134,130 @@ class PreDryerCheckHaveState(BaseRobotState):
             self.node.get_logger().info(f"⏳等待{step_name}")
 
     def handle(self, context: RobotContext):
+        # 1. 驗證 Work ID 格式（7位數）
+        work_id_str = str(context.work_id)
+        if len(work_id_str) != 7:
+            self.node.get_logger().error(
+                f"❌ [Station-based 2格] Work ID 格式錯誤: {context.work_id}，"
+                f"必須是7位數格式（REESSAA）")
+            return
+
         self._update_context_states(context)
 
-        # 查詢EQP信號
+        # 2. 查詢 EQP 信號（只執行一次）
         if not self.search_eqp_signal_ok and not self.sent:
+            self.node.get_logger().info(
+                f"[Station-based 2格] 查詢預乾燥機端口狀態 (eqp_id={self.eqp_id}), "
+                f"Work ID {context.work_id}")
             self.eqp_signal_query_client.search_eqp_signal_eqp_id(
                 self.eqp_id, self.eqp_signal_query_callback)
             self.sent = True
 
-        # 更新 Hokuyo Input - 使用統一方法
+        # 3. 更新 Hokuyo Input - 使用統一方法
         self._handle_hokuyo_input()
 
         print("🔶=========================================================================🔶")
 
-        # 直接從 work_id 解析 station 並映射到 port，然後進行驗證
+        # 4. 從 work_id 解析 station 並映射到 port，然後進行驗證
         if self.search_eqp_signal_ok and not self.check_ok:
             # 從 work_id 中解析 station 並取得對應的 port
             self.pre_dryer_number = self._extract_station_from_work_id(context)
             if self.pre_dryer_number is None:
-                self.node.get_logger().error("無法從 work_id 解析 station，重置狀態")
+                self.node.get_logger().error(
+                    f"❌ [Station-based 2格] 無法從 work_id {context.work_id} 解析 station，重置狀態")
                 self._reset_state()
                 return
 
-            # 檢查解析出的端口號碼是否有效
+            # 檢查解析出的端口號碼是否有效（預乾燥機有8個port）
             if not (1 <= self.pre_dryer_number <= 8):
-                self.node.get_logger().error(f"❌ 無效的端口號碼: {self.pre_dryer_number}")
+                self.node.get_logger().error(
+                    f"❌ [Station-based 2格] 無效的端口號碼: {self.pre_dryer_number}，"
+                    f"有效範圍: 1-8")
                 self._reset_state()
                 return
+
+            # 重新解析以獲取完整 station 和 ports 資訊
+            station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+            self.node.get_logger().info(
+                f"✅ [Station-based 2格] Work ID {context.work_id} → "
+                f"Pre-dryer Station {station:02d}, Ports {ports} (批量2格)")
 
             # 使用 EQP 狀態進行驗證：檢查對應的 context.pre_dryer_portX 狀態
             port_eqp_empty = not self.port_carriers[self.pre_dryer_number - 1]
 
             if port_eqp_empty:
                 self.node.get_logger().info(
-                    f"✅ work_id 指定的預乾燥端口 {self.pre_dryer_number} EQP 狀態顯示為空，準備查詢 Carrier")
+                    f"✅ [Station-based 2格] 預乾燥端口 {self.pre_dryer_number} EQP 狀態顯示為空，"
+                    f"準備查詢 Carrier")
                 self.check_ok = True
             else:
                 self.node.get_logger().warn(
-                    f"❌ work_id 指定的預乾燥端口 {self.pre_dryer_number} EQP 狀態顯示有貨物，無法執行操作")
+                    f"❌ [Station-based 2格] 預乾燥端口 {self.pre_dryer_number} EQP 狀態顯示有貨物，"
+                    f"無法執行 PUT 操作")
                 self._reset_state()
                 return
 
-        # 查詢Carrier
+        # 5. 查詢 Carrier（只執行一次）
         if self.check_ok and not self.carrier_query_sended:
             port_id_target = self.port_address + self.pre_dryer_number
             self.node.get_logger().info(
-                f"查詢預乾燥端口 {self.pre_dryer_number} (port_id: {port_id_target}) 的 Carrier")
+                f"[Station-based 2格] 查詢預乾燥端口 {self.pre_dryer_number} "
+                f"(port_id: {port_id_target}) 的 Carrier")
             self.carrier_query_client.search_carrier_port_id(
                 port_id_min=port_id_target, port_id_max=port_id_target, callback=self.carrier_callback)
             self.carrier_query_sended = True
 
-        # 處理Carrier查詢結果
+        # 6. 處理 Carrier 查詢結果（雙重驗證）
         if self.check_ok and self.carrier_query_success:
             port_id_target = self.port_address + self.pre_dryer_number
             port_eqp_empty = not self.port_carriers[self.pre_dryer_number - 1]
 
-            # 與 Carrier 查詢結果比較：檢查 EQP 狀態與 carrier 查詢結果是否一致
+            # 與 Carrier 查詢結果比較：檢查 EQP 狀態與 carrier 查詢結果是否一致（PUT 操作：都應該為空）
             if self.carrier_id is None and port_eqp_empty:
                 # 雙重驗證成功：EQP 狀態顯示空，carrier 查詢也顯示空
                 self.node.get_logger().info(
-                    f"✅ 雙重驗證成功：預乾燥端口 {self.pre_dryer_number} EQP 狀態和 Carrier 查詢都顯示為空")
-                context.get_pre_dryer_port = self.pre_dryer_number
-                self.node.get_logger().info(
-                    f"設定 context.get_pre_dryer_port = {self.pre_dryer_number}")
+                    f"✅ [Station-based 2格] 雙重驗證成功：預乾燥端口 {self.pre_dryer_number} "
+                    f"EQP 狀態和 Carrier 查詢都顯示為空")
+
+                # 從 work_id 重新解析以獲取完整的 ports 列表（用於批量配置）
+                station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
+                if station and len(ports) == 2:
+                    # Station-based 批量配置（標準設備：1 station = 2 ports）
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 2格] 批量放料配置: Station {station:02d}, "
+                        f"Ports {ports} (Work ID {context.work_id})")
+
+                    # 設置批量配置變數
+                    context.pre_dryer_take_count = 0           # 批量計數器 (0=第1次, 1=第2次)
+                    context.pre_dryer_device_ports = ports     # [port1, port2] for station
+
+                    # 設置第一次的初始值
+                    context.get_pre_dryer_port = ports[0]
+                    self.node.get_logger().info(
+                        f"[Station-based 2格] 設定第1次放料: Pre-dryer Port {ports[0]}")
+                else:
+                    # 單次執行（回退邏輯）
+                    context.get_pre_dryer_port = self.pre_dryer_number
+                    self.node.get_logger().info(
+                        f"[Station-based 2格] 設定 context.get_pre_dryer_port = {self.pre_dryer_number}")
+
                 self._handle_8bit_steps(context)
             elif self.carrier_id is not None:
                 # Carrier 查詢顯示有貨物
                 self.node.get_logger().warn(
-                    f"❌ 預乾燥端口 {self.pre_dryer_number} 有 carrier (ID: {self.carrier_id})，無法執行操作")
+                    f"❌ [Station-based 2格] 預乾燥端口 {self.pre_dryer_number} 有 carrier "
+                    f"(ID: {self.carrier_id})，無法執行 PUT 操作")
                 self._reset_state()
             elif not port_eqp_empty:
                 # EQP 狀態與 carrier 查詢結果不一致
                 self.node.get_logger().warn(
-                    f"❌ 數據不一致：預乾燥端口 {self.pre_dryer_number} EQP 狀態顯示有貨，但 carrier 查詢顯示空")
+                    f"❌ [Station-based 2格] 數據不一致：預乾燥端口 {self.pre_dryer_number} "
+                    f"EQP 狀態顯示有貨，但 carrier 查詢顯示空")
                 self._reset_state()
             else:
                 # 其他未預期的情況
-                self.node.get_logger().error(f"❌ 未預期的驗證結果：端口 {self.pre_dryer_number}")
+                self.node.get_logger().error(
+                    f"❌ [Station-based 2格] 未預期的驗證結果：端口 {self.pre_dryer_number}")
                 self._reset_state()
 
     def _handle_8bit_steps(self, context: RobotContext):
@@ -228,7 +294,11 @@ class PreDryerCheckHaveState(BaseRobotState):
                 if self.hokuyo_dms_8bit_1.ready:
                     self.node.get_logger().info("✅收到ready")
                     self.step = self.IDLE
-                    # 預乾燥檢查完成，轉換到AGV端口檢查狀態
+                    # 預乾燥檢查完成，轉換到 AGV 端口檢查狀態
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 2格] 預乾燥機檢查完成: 進入 AgvPortCheckHaveState")
+                    self.node.get_logger().info(
+                        f"檢查 AGV Port 2 和 4 是否有貨（Put Pre-dryer 使用偶數層）")
                     from loader_agv.robot_states.put_pre_dryer.agv_port_check_have_state import AgvPortCheckHaveState
                     context.set_state(AgvPortCheckHaveState(self.node))
                 else:

@@ -132,6 +132,63 @@ class BaseRobotState(State):
             self.node.get_logger().error(f"解析 work_id 時發生錯誤: {e}")
             return None, None
 
+    def _handle_check_chg_parameter(self, context: RobotContext, expected_params: dict) -> bool:
+        """
+        通用的 CHECK_CHG_PARAMETER 處理邏輯
+
+        Args:
+            context: Robot Context
+            expected_params: 預期的參數值字典
+                            例如 {'w110': 65536, 'w114': 65536}
+
+        Returns:
+            是否檢查通過（True 表示可以進入下一步驟）
+
+        使用範例:
+            expected = {'w110': 65536, 'w114': 65536}
+            if self._handle_check_chg_parameter(context, expected):
+                self.step = RobotContext.WRITE_CHG_PARA
+        """
+        # 步驟 0: 發起讀取請求
+        if context.robot.read_robot_parameter_step == 0:
+            self.node.get_logger().info("📖 發起讀取 Robot Parameter (W110-W12F)")
+            context.robot.read_robot_parameter()
+            return False
+
+        # 步驟 1: 等待讀取完成
+        if context.robot.read_robot_parameter_step == 1:
+            # self.node.get_logger().info("⏳ 等待 Robot Parameter 讀取完成")
+            return False
+
+        # 讀取完成後檢查結果
+        if context.robot.read_robot_parameter_success:
+            # 檢查參數是否匹配
+            match, msg = context.robot.check_parameter_match(expected_params)
+
+            if match:
+                self.node.get_logger().info(f"✅ CHECK_CHG_PARAMETER 檢查通過: {msg}")
+                # 重置讀取狀態，準備下次使用
+                context.robot.read_robot_parameter_step = 0
+                context.robot.read_robot_parameter_success = False
+                return True  # 檢查通過，可以進入下一步驟
+            else:
+                # 檢查失敗，記錄錯誤並重新讀取
+                self.node.get_logger().warn(f"⚠️ CHECK_CHG_PARAMETER 檢查失敗: {msg}")
+                self.node.get_logger().info("🔄 重新讀取參數...")
+                # 重置讀取步驟，下次循環重新讀取
+                context.robot.read_robot_parameter_step = 0
+                context.robot.read_robot_parameter_success = False
+                return False  # 繼續停留在此步驟
+
+        elif context.robot.read_robot_parameter_failed:
+            # 讀取失敗，重新嘗試
+            self.node.get_logger().error("❌ Robot Parameter 讀取失敗，重新嘗試")
+            context.robot.read_robot_parameter_step = 0
+            context.robot.read_robot_parameter_failed = False
+            return False
+
+        return False
+
 
 class BaseVisionPositionState(BaseRobotState):
     """視覺定位狀態的基礎類別"""

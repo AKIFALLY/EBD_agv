@@ -64,7 +64,7 @@ agvc_services                # 檢查所有 AGVC 服務狀態
 # 快速執行容器內指令
 quick_agvc "command"         # 快速執行 AGVC 容器內指令
 quick_agvc "build_ws web_api_ws"      # 建置 Web API 工作空間
-quick_agvc "check_agvc_status"        # 檢查 AGVC 狀態
+quick_agvc "manage status"            # 檢查 AGVC 狀態
 ```
 
 ## 🔧 容器內開發環境
@@ -206,7 +206,7 @@ dev_check_lint         # 靜態分析
 check_system_status    # 整體系統狀態
 check_zenoh_status     # Zenoh 通訊狀態
 check_ros_env          # ROS 2 環境驗證
-check_agvc_status      # AGVC 系統狀態 (僅 AGVC 容器)
+manage status          # 所有節點狀態 (統一管理)
 
 # [容器內] 網路診斷
 ping 192.168.100.254   # 測試資料庫連接 (AGVC 容器)

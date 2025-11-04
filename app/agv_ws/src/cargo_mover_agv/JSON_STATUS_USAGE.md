@@ -78,7 +78,7 @@ thread = node.start_continuous_logging(interval_seconds=5.0, max_files=100)
     },
     "variables": {
       "mission_id": "MISSION_001",
-      "AGV_id": 1,
+      "agv_id": 1,
       "pathdata": null,
       "robot_finished": false,
       "plc_heartbeat": 123,

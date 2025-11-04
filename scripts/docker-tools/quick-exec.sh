@@ -52,7 +52,7 @@ show_help() {
     echo -e "  ${GREEN}node-info${NC}      - ros2 node info <node>"
     echo -e "  ${GREEN}check-status${NC}   - check_system_status"
     echo -e "  ${GREEN}check-zenoh${NC}    - check_zenoh_status"
-    echo -e "  ${GREEN}check-agvc${NC}     - check_agvc_status (僅 AGVC)"
+    echo -e "  ${GREEN}check-agvc${NC}     - manage status (統一節點狀態)"
     echo -e "  ${GREEN}build-all${NC}      - build_all"
     echo -e "  ${GREEN}build-ws${NC}       - build_ws <workspace>"
     echo -e "  ${GREEN}test-all${NC}       - test_all"
@@ -161,7 +161,7 @@ translate_shortcut() {
             echo "check_zenoh_status"
             ;;
         "check-agvc")
-            echo "check_agvc_status"
+            echo "manage status"
             ;;
         # 構建命令
         "build-all")

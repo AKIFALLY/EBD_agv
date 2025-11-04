@@ -239,7 +239,7 @@
                                         {% for agv in agvs %}
                                         <option value="{{ agv.id }}" {% if task and task.agv_id==agv.id %}selected{%
                                             endif %}>
-                                            {{ agv.name }}
+                                            [{{ agv.id }}]{{ agv.name }}
                                         </option>
                                         {% endfor %}
                                     </select>

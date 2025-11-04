@@ -8,6 +8,9 @@ from plc_proxy.plc_client import PlcClient
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 from db_proxy.crud.eqp_crud import eqp_crud, eqp_port_crud, eqp_signal_crud
 from db_proxy.crud.carrier_crud import carrier_crud
+from db_proxy.models import EqpSignal
+from sqlmodel import select
+from ecs.door_controller_config import DoorControllerConfig
 import re
 import time
 
@@ -45,6 +48,9 @@ class EcsCore(Node):
         }
 
         self.read_signals_from_db()
+
+        # 🆕 自動同步 door_config.yaml 中的門信號到資料庫
+        self.sync_door_signals_from_config()
 
         self.plc_client = PlcClient(self)
         self.memory = PlcMemory(65536 * 2)  # word-based，實際是 byte array
@@ -92,34 +98,150 @@ class EcsCore(Node):
                 callback=lambda res, sa=start_address: self.handle_plc_response(
                     res, sa)
             )
-    def read_signals_from_db(self):        
+    def read_signals_from_db(self):
         self.available_signals.clear()
         with self.pool_agvc.get_session() as session:
             all_signals = eqp_signal_crud.get_signals_with_dm(session)
             for signal in all_signals:
                 self.available_signals.append(signal[0])
-        
+
+    def sync_door_signals_from_config(self):
+        """從 door_config.yaml 同步自動門信號到資料庫
+
+        此方法在 ECS Core 啟動時執行，確保 door_config.yaml 中定義的
+        所有門都有對應的資料庫信號記錄，實現配置文件到資料庫的自動同步。
+
+        流程：
+        1. 讀取 /app/config/door_config.yaml
+        2. 檢查每個門的 DM 地址是否存在於 eqp_signal 表
+        3. 如果不存在，自動創建對應的信號記錄
+        4. 重新載入 available_signals 列表
+        """
+        try:
+            # 載入門配置
+            door_config = DoorControllerConfig()
+            door_config.load_config_yaml("/app/config/door_config.yaml")
+
+            self.get_logger().info("🚪 開始同步 door_config.yaml 到資料庫...")
+
+            created_count = 0
+            with self.pool_agvc.get_session() as session:
+                for door_id, door_cfg in door_config.doors.items():
+                    # 檢查信號是否已存在 (根據 DM 地址)
+                    stmt = select(EqpSignal).where(
+                        EqpSignal.dm_address == door_cfg.dm_address
+                    )
+                    existing_signal = session.exec(stmt).first()
+
+                    if not existing_signal:
+                        # 自動創建缺失的門信號
+                        new_signal = EqpSignal(
+                            eqp_id=999,  # 自動門系統設備 ID
+                            name=f"Door_{door_id}_Status",
+                            description=f"自動門{door_id}狀態 (door_config.yaml 自動創建)",
+                            value="0",  # 預設值：0=關閉
+                            type_of_value="int",
+                            dm_address=door_cfg.dm_address
+                        )
+                        session.add(new_signal)
+                        created_count += 1
+                        self.get_logger().info(
+                            f"✅ 自動創建門信號: Door {door_id} → DM {door_cfg.dm_address} "
+                            f"(MR {door_cfg.mr_address} 控制)"
+                        )
+                    else:
+                        self.get_logger().debug(
+                            f"✓ 門信號已存在: Door {door_id} → DM {door_cfg.dm_address}"
+                        )
+
+                # 提交所有變更
+                if created_count > 0:
+                    session.commit()
+                    self.get_logger().info(
+                        f"✅ 門信號同步完成: 新增 {created_count} 個門信號"
+                    )
+                else:
+                    self.get_logger().info(
+                        "✅ 門信號同步完成: 所有門信號已存在，無需創建"
+                    )
+
+                # 🔑 關鍵修復：無論是否創建新記錄，都重新載入信號列表
+                # 這確保 available_signals 包含所有門信號
+                self.read_signals_from_db()
+
+                # 🔍 診斷日誌：確認門信號已載入
+                door_signals_in_memory = [
+                    s for s in self.available_signals
+                    if "Door" in s.name or (s.dm_address and s.dm_address in ['5000', '5001', '5002', '5003', '5004'])
+                ]
+                self.get_logger().info(
+                    f"🔄 已重新載入信號列表，當前監控 {len(self.available_signals)} 個信號 "
+                    f"（其中門信號: {len(door_signals_in_memory)} 個）"
+                )
+
+                # 🔍 詳細列出門信號（用於診斷）
+                if door_signals_in_memory:
+                    for door_signal in door_signals_in_memory:
+                        self.get_logger().debug(
+                            f"  📍 {door_signal.name}: DM{door_signal.dm_address} (當前值: {door_signal.value})"
+                        )
+                else:
+                    self.get_logger().warning(
+                        "⚠️ 未找到門信號！請檢查數據庫中的 eqp_signal 記錄"
+                    )
+
+        except FileNotFoundError:
+            self.get_logger().warning(
+                "⚠️ door_config.yaml 未找到，跳過門信號同步"
+            )
+        except Exception as e:
+            self.get_logger().error(
+                f"❌ 門信號同步失敗: {e}",
+                exc_info=True
+            )
+
     def write_signals_to_db(self):
+        # 檢查 PLC 數據是否已載入完成
         if not all(self.plc_loaded.values()):
+            # 只在初次幾次循環記錄，避免日誌過多
+            if not hasattr(self, '_plc_load_warn_count'):
+                self._plc_load_warn_count = 0
+            if self._plc_load_warn_count < 3:
+                self.get_logger().warning(
+                    f"⚠️ PLC 數據尚未完全載入，跳過信號更新。當前狀態: {self.plc_loaded}"
+                )
+                self._plc_load_warn_count += 1
             return  # 尚未全部完成
 
         with self.pool_agvc.get_session() as session:
             for signal in self.available_signals:
-#                    print( signal.dm_address, signal.type_of_value)
                 try:
                     # 只保留 數字和小數點的字元
-                    address = re.sub(r'[^0-9\.]', '', signal.dm_address)                        
-                    value = self.memory.get_value(address, signal.type_of_value)              
-                    #value = self.memory.get_value(signal.dm_address, signal.type_of_value)
-                    #數j至有變動時才寫入更新
-                    if signal.value != str(value) :
-                        self.get_logger().info(f"變動[{signal.value}] to {str(value)} for {signal.name}")
+                    address = re.sub(r'[^0-9\.]', '', signal.dm_address)
+                    value = self.memory.get_value(address, signal.type_of_value)
+
+                    # 數據有變動時才寫入更新
+                    if signal.value != str(value):
+                        # 門信號用 🚪 圖標區分，便於日誌查看
+                        is_door_signal = "Door" in signal.name
+                        log_msg = f"變動[{signal.value}] to {str(value)} for {signal.name}"
+                        if is_door_signal:
+                            self.get_logger().info(f"🚪 {log_msg}")
+                        else:
+                            self.get_logger().info(log_msg)
                         signal.value = str(value)
-                        session.merge(signal)  # or session.add(signal) if new
-                    #eqp_signal_crud.update(session,signal.id,signal)
+                        session.merge(signal)
 
                 except Exception as e:
-                    self.get_logger().warning(f"⚠️ Failed to get value for {signal.name} at {signal.dm_address}: {e}")
+                    # 門信號錯誤用 error 級別，其他用 warning
+                    if "Door" in signal.name:
+                        self.get_logger().error(
+                            f"❌ 門信號讀取失敗: {signal.name} at DM{signal.dm_address}: {e}"
+                        )
+                    else:
+                        self.get_logger().warning(
+                            f"⚠️ Failed to get value for {signal.name} at {signal.dm_address}: {e}"
+                        )
 
             session.commit()  # ✅ 最後才做一次提交 中間用merge ,提高效率
 

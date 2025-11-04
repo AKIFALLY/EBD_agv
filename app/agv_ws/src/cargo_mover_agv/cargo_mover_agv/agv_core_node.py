@@ -150,8 +150,8 @@ class AgvCoreNode(AgvNodebase):
         if isinstance(state, WaitRobotState):
             # self.get_logger().info("[CARGO]-WaitRobot")
             # self.get_logger().info("[CARGO]-Idle")
-            self.robot_context.handle()
-
+            #self.robot_context.handle()
+            pass
     def robot_after_handle(self, state):
         if isinstance(state, cargo_mover_agv.robot_states.idle_state.IdleState):
             # self.get_logger().info("[Robot]-Idle")
@@ -250,13 +250,11 @@ class AgvCoreNode(AgvNodebase):
         if self.json_recorder is None:
             self.get_logger().error("❌ JSON 記錄器為 None，無法更新狀態文件")
             return
-            
+
         try:
-            # 使用包含 AGV ID 的檔案名稱，統一格式
-            agv_id = self.agv_id if hasattr(self, 'agv_id') and self.agv_id else "cargo01"
-            filename = f"agv_status_{agv_id}.json"
-            
-            filepath = self.json_recorder.save_complete_frontend_status_to_file(self, filename)
+            # 讓 Recorder 從 ROS namespace 自動提取 AGV 名稱
+            # 不傳入 filename，避免使用整數 agv_id 導致檔名錯誤
+            filepath = self.json_recorder.save_complete_frontend_status_to_file(self)
             
             # 驗證文件是否真的被創建 (每10次才打印一次，避免日誌過多)
             import os

@@ -21,10 +21,10 @@
 3. 载具状态更新为"预烘干完成"（status_id: 503）
 4. Unloader AGV 处于空闲或有空余车位
 
-### 触发条件（三重验证）
-1. **Carrier Status 过滤**: 预烘机有 status_id=503（预烘完成）的载具（≥4个）
-2. **AGV 空位**: Unloader AGV 车上有空位（≥4格）
-3. **重复检查**: 没有重复的未完成任务
+### 触发条件
+- 预烘机有完成预烘干的载具（status_id: 503）
+- Unloader AGV 车上有空位（最多4格）
+- 没有重复的未完成任务
 
 ### 执行结果
 - 创建 Unloader AGV 取料任务
@@ -247,22 +247,19 @@ variables:
 
 ## 🔍 查询条件详解
 
-### 1. Carrier Status 过滤（制程阶段控制）
+### Carrier 查询条件（Station-based）
 
-**预烘机载具 status_id 过滤**：
+**必要条件**：
 - `room_id`: 特定房间
-- `port_in`: Station-based Port 映射
-  - **Station 01**: [2051, 2052, 2055, 2056]（B1256门，批量4格）
-  - **Station 03**: [2053, 2054, 2057, 2058]（B3478门，批量4格）
-- `status_id: 503`（预烘完成）
+- `equipment_type`: "PRE_DRYER"（预烘机）
+- `port_in`: Station-based Port 映射（**全部4格批量**）
+  - **Station 01**: [1, 2, 5, 6]（**批量4格**）
+  - **Station 03**: [3, 4, 7, 8]（**批量4格**）
+
+**状态条件**：
+- `status_id: 503`（预烘乾机处理完成）
   - Loader AGV PUT_PRE_DRYER 完成后的状态
   - 表示载具已完成预烘干制程，可以被 Unloader AGV 取走
-  - **确保不会处理未完成预烘的载具**
-
-**制程流控制**：
-```
-Loader PUT_PRE_DRYER → status_id=503（预烘完成）→ TAKE_PRE_DRYER → AGV车上
-```
 
 ### AGV 查询条件
 
@@ -286,21 +283,13 @@ Loader PUT_PRE_DRYER → status_id=503（预烘完成）→ TAKE_PRE_DRYER → A
 
 ## ⚠️ 注意事项
 
-### 三重验证机制（测试完成✅）
-1. **Carrier Status 过滤**: status_id=503（预烘完成）
-2. **AGV 空位**: AGV 车上有 ≥4格空位
-3. **重复检查**: 无未完成任务
-
-**注**: 本流程未包含 Presence 信号验证（与其他 3 个流程不同）
-
 ### Station-based 设计重点
 - **编码规则**: work_id 使用 Station 编号（**01/03**），非 Port 起始号
 - **UnloaderAGV 自定义映射**: **所有 Station 统一批量4格**（UnloaderAGV 特有）
 - **设计简化**: 从4个 Station 简化为2个，从混合批量简化为统一4格
-- **完整 Port ID**: 使用 2051-2052-2055-2056（Station 01）和 2053-2054-2057-2058（Station 03）
 
 ### 批量处理逻辑
-- **所有 Station 01/03**: 必须有 ≥ 4个 status_id=503 的载具，AGV 需 ≥ 4格空位（**车上全空**）
+- **所有 Station 01/03**: 必须有 ≥ 4个载具，AGV 需 ≥ 4格空位（**车上全空**）
 - **不支持部分取料**（要么取满4格，要么不取）
 - **效率提升**: 统一批量处理，减少任务次数
 

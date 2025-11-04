@@ -288,7 +288,7 @@ def handle_agv_connect():
 
 ### 服務配置 (docker-compose.agvc.yml驗證)
 - **端口映射**: 8000-8002:8000-8002 (實際配置)
-- **資料庫**: PostgreSQL透過setup.bash的start_db/stop_db管理
+- **資料庫**: PostgreSQL透過docker compose管理 (`docker compose -f docker-compose.agvc.yml [up -d|stop] postgres`)
 - **環境變數**: CONTAINER_TYPE="agvc" (容器環境檢測)
 
 ### 實際配置檔案

@@ -56,6 +56,7 @@ def generate_launch_description():
         package='tafl_wcs',
         executable='tafl_wcs_node',
         name='tafl_wcs_node',
+        namespace='agvc',
         output='screen',
         parameters=[{
             'flows_dir': LaunchConfiguration('flows_dir'),

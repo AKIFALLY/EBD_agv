@@ -1,7 +1,7 @@
 metadata:
   id: "machine_to_prepare"
   name: "射出機停車格到系統準備區調度"
-  enabled: false
+  enabled: true
   version: "1.0.0"
   description: "將射出機停車格已準備好的料架搬運到系統準備區空位"
   author: "TAFL System"
@@ -70,7 +70,7 @@ flow:
                     - query:
                         target: locations
                         where:
-                          id_in: [11, 12, 13, 14, 15, 16, 17, 18]
+                          id_in: [9, 8, 7, 6, 5, 4, 3, 2]
                           location_status_id: 2  # 未佔用
                         limit: 1  # 只需要一個空位
                         as: available_prepare_locations

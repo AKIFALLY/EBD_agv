@@ -13,6 +13,7 @@ class RobotContext(BaseContext):
     CHECK_IDLE_CALLBACK = 11
     WRITE_CHG_PARA = 2
     WRITE_CHG_PARAMTER = 21
+    CHECK_CHG_PARAMETER = 22
     CHECK_CHG_PARA = 3
     WRITE_PGNO = 4
     CHECK_PGNO = 5
@@ -23,10 +24,7 @@ class RobotContext(BaseContext):
     def __init__(self, initial_state: State):
         super().__init__(initial_state)
 
-        # 一些Unloader Robot可能需要跨狀態使用的參數
-        self.ocr = None
-        self.mission = None
-        self.rack_rotaion = None
+        # Robot 狀態機參數
         self.robot_parameter = UnloaderRobotParameter()
         self.robot = Robot(self.node, self.robot_parameter)
         self.selected_agv_port = 0  # 新增屬性，用於存儲選擇的 AGV車上 Port
@@ -87,8 +85,14 @@ class RobotContext(BaseContext):
         # GET_QUANTITY
         self.get_take_quantity = 0  # 新增屬性，用於存儲取貨數量
 
-        self.carrier_id = [None, None]  # 存儲雙 port 的 carrier_id [min, max]
+        self.carrier_id = [None, None, None, None]  # 存儲4個 carrier_id（兩次取放操作）
         self.get_room_id = 0
+
+        # 兩次取放循環控制（用於 take_pre_dryer, take_oven 等批量操作）
+        self.take_put_cycle_count = 0      # 當前循環次數 (0=第1次, 1=第2次)
+        self.take_put_max_cycles = 2       # 總共循環2次
+        self.take_put_port_groups = []     # 分組後的ports [[前2個], [後2個]]
+        self.take_put_current_batch = []   # 當前批次的2個ports
 
         # 新增 rack_id 屬性，用於存儲機架 ID
         self.rack_id = None

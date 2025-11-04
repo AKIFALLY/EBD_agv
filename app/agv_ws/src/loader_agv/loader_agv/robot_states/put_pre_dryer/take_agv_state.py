@@ -18,15 +18,31 @@ class TakeAgvState(BaseRobotState):
         self.sent = False
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Put PreDryer 目前狀態: TakeAgv")
+        self.node.get_logger().info(
+            "[Station-based 2格] Loader Robot Put PreDryer 目前狀態: TakeAgv")
         self.sent = False
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Put PreDryer 離開 TakeAgv 狀態")
+        self.node.get_logger().info(
+            "[Station-based 2格] Loader Robot Put PreDryer 離開 TakeAgv 狀態")
         self.sent = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Loader Robot Put PreDryer TakeAgv 狀態")
+        # 批量取料 AGV port 映射：根據計數器決定來源 AGV port（偶數層策略）
+        source_agv_port = context.pre_dryer_agv_ports[context.pre_dryer_take_count]
+        target_pre_dryer_port = context.pre_dryer_device_ports[context.pre_dryer_take_count]
+        context.get_loader_agv_port_front = source_agv_port
+
+        # 更新當前使用的 carrier_id
+        context.carrier_id = context.pre_dryer_carrier_ids[context.pre_dryer_take_count]
+
+        self.node.get_logger().info(
+            f"[Station-based 2格] 第 {context.pre_dryer_take_count + 1}/2 次取料 "
+            f"(Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: AGV Port {source_agv_port} (Carrier {context.carrier_id}) → 目標: 機械臂")
+        self.node.get_logger().info(
+            f"最終目標: Pre-dryer Port {target_pre_dryer_port} (偶數層策略: AGV Port {source_agv_port})")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -46,13 +62,15 @@ class TakeAgvState(BaseRobotState):
             self._execute_robot_logic(context, TAKE_LOADER_AGV_PGNO, read_pgno)
 
     def _execute_robot_logic(self, context: RobotContext, TAKE_LOADER_AGV_PGNO, read_pgno):
-        """執行機器人邏輯"""
+        """執行機器人邏輯 - 批量取料（第N/2次）"""
         match self.step:
             case RobotContext.IDLE:
-                self.node.get_logger().info("Loader Robot Put PreDryer TAKE LOADER AGV IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 2格] Loader Robot Put PreDryer TAKE LOADER AGV IDLE")
                 self.step = RobotContext.CHECK_IDLE
             case RobotContext.CHECK_IDLE:
-                self.node.get_logger().info("Loader Robot Put PreDryer TAKE LOADER AGV CHECK_IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 2格] Loader Robot Put PreDryer TAKE LOADER AGV CHECK_IDLE")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
@@ -70,13 +88,34 @@ class TakeAgvState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Put Pre-Dryer TAKE AGV CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 只檢查 W112（Layer Front 的 Z 軸）
+                # W112 應該等於 get_loader_agv_port_front
+                expected_params['w112'] = context.get_loader_agv_port_front
+
+                self.node.get_logger().info(
+                    f"預期檢查: loader_agv_port_front={context.get_loader_agv_port_front} → "
+                    f"W112={context.get_loader_agv_port_front}"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Loader Robot Put PreDryer TAKE LOADER AGV WRITE CHG PARA")
@@ -149,15 +188,27 @@ class TakeAgvState(BaseRobotState):
                 else:
                     self.node.get_logger().info("❌手臂動作失敗")
             case RobotContext.FINISH:
-                self.node.get_logger().info("Loader Robot Put PreDryer TAKE LOADER AGV Finish")
+                self.node.get_logger().info(
+                    "[Station-based 2格] Loader Robot Put PreDryer TAKE LOADER AGV Finish")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
                 if read_pgno.value == Robot.IDLE:
-                    self.node.get_logger().info("✅取AGV箱完成")
+                    source_agv_port = context.pre_dryer_agv_ports[context.pre_dryer_take_count]
+                    target_pre_dryer_port = context.pre_dryer_device_ports[context.pre_dryer_take_count]
+
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 2格] 取AGV箱完成 (第 {context.pre_dryer_take_count + 1}/2 次)")
+                    self.node.get_logger().info(
+                        f"完整路徑: AGV Port {source_agv_port} → 機械臂 → "
+                        f"Pre-dryer Port {target_pre_dryer_port}")
+                    self.node.get_logger().info(
+                        f"Carrier ID: {context.carrier_id}, Work ID: {context.work_id}")
 
                     # 直接進入下一個狀態 - 轉換到 PutPreDryerState
-                    self.node.get_logger().info("✅ Take AGV 完成: 進入 PutPreDryerState")
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 2格] Take AGV 完成: 進入 PutPreDryerState "
+                        f"(第 {context.pre_dryer_take_count + 1}/2 次放料)")
                     from loader_agv.robot_states.put_pre_dryer.put_pre_dryer_state import PutPreDryerState
                     context.set_state(PutPreDryerState(self.node))
 

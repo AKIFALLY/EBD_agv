@@ -347,15 +347,16 @@ colcon test --packages-select web_api_ws
 
 ### 服務啟動
 ```bash
-# 啟動 Web 服務
-start_web_api         # 啟動 Web API 服務
-start_agvcui          # 啟動管理員界面
-start_opui            # 啟動操作員界面
+# 啟動 Web 服務群組 (統一管理)
+manage_web_api_launch start   # 啟動所有 Web 服務 (API + AGVCUI + OPUI + AGVUI)
 
-# 啟動控制系統
-start_ecs             # 啟動設備控制系統
-start_rcs             # 啟動機器人控制系統
-start_wcs             # 啟動倉庫控制系統
+# 啟動控制系統 (使用統一節點管理)
+manage_ecs_core start         # 啟動設備控制系統
+manage_rcs_core start         # 啟動機器人控制系統
+manage_room_task_build start  # 啟動 WCS 房間任務節點
+
+# 檢查所有節點狀態
+manage status                 # 統一查看所有節點狀態
 ```
 
 ## 📋 工作空間總結

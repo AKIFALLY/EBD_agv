@@ -1,7 +1,7 @@
 metadata:
   id: "unloader_put_oven"
   name: "Unloader AGV 放料到烤箱下排"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查 Unloader AGV 車上載具和烤箱下排空位，創建放料任務（批量4格，固定方向）"
   author: "TAFL System"

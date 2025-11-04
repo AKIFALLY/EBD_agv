@@ -36,10 +36,28 @@ class BaseContext(ContextABC):
     def _publish_state_change(self, old_state, new_state):
         msg = AgvStateChange()
         msg.agv_id = self.agv_id
-        msg.context_name = self.__class__.__name__
+
+        # 🔍 [DEBUG] 详细类型信息 - 用于诊断 context_name 问题
+        class_name = self.__class__.__name__
+        module_name = self.__class__.__module__
+        self.node.get_logger().info(
+            f"🔍 [DEBUG] Context 类型检查:\n"
+            f"   - type(self): {type(self)}\n"
+            f"   - __class__.__name__: {class_name}\n"
+            f"   - __class__.__module__: {module_name}\n"
+            f"   - agv_id: {msg.agv_id}")
+
+        msg.context_name = class_name
         msg.from_state = old_state.__class__.__name__
         msg.to_state = new_state.__class__.__name__
         msg.timestamp = self.node.get_clock().now().to_msg()
+
+        self.node.get_logger().info(
+            f"🔍 [DEBUG] 消息内容:\n"
+            f"   - msg.context_name: {msg.context_name}\n"
+            f"   - msg.from_state: {msg.from_state}\n"
+            f"   - msg.to_state: {msg.to_state}")
+
         self._publisher.publish(msg)
         self.node.get_logger().info(
             f"📣 發佈狀態變更: {msg.agv_id} {msg.from_state} → {msg.to_state}")

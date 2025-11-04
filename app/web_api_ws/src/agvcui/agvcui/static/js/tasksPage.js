@@ -253,8 +253,15 @@ export const tasksPage = (() => {
      * @returns {number} AGV ID
      */
     function extractAgvFromTag(agvElement) {
+        // 優先從 data 屬性讀取 ID
+        if (agvElement.dataset.agvId) {
+            return parseInt(agvElement.dataset.agvId);
+        }
+
+        // 後備方案：從文本內容解析 "AGV [id]" 格式
         const text = agvElement.textContent.trim();
         if (text === '未分配') return null;
+
         const match = text.match(/AGV (\d+)/);
         return match ? parseInt(match[1]) : null;
     }
@@ -288,18 +295,23 @@ export const tasksPage = (() => {
      */
     function updateTaskAgvTag(agvElement, agv, agvId) {
         if (agv && agv.name) {
+            // 顯示 [id]name 格式
             agvElement.className = 'tag is-success';
+            agvElement.dataset.agvId = agvId;
             agvElement.innerHTML = `
                 <span class="icon">
                     <i class="mdi mdi-robot"></i>
                 </span>
-                <span>${agv.name}</span>
+                <span>[${agv.id}]${agv.name}</span>
             `;
         } else if (agvId) {
+            // 後備方案：只有 ID 時
             agvElement.className = 'tag is-warning';
+            agvElement.dataset.agvId = agvId;
             agvElement.textContent = `AGV ${agvId}`;
         } else {
             agvElement.className = 'tag is-light';
+            delete agvElement.dataset.agvId;
             agvElement.textContent = '未分配';
         }
     }

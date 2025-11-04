@@ -29,6 +29,8 @@ class AgvStatus:
         self.AGV_LAYER = None
         self.AGV_ID1 = None
         self.MAGIC = None
+        self.Work_id = None
+        self.Robot_status = None
         self.AGV_Auto = None
         self.AGV_MOVING = None
         self.AGV_ALARM = None
@@ -343,8 +345,8 @@ class AgvStatus:
         self.AGV_END_POINT = dMMemory.get_int(7624, 2)
         self.AGV_ACTION = dMMemory.get_int(7626, 2)
         self.AGV_ZONE = dMMemory.get_int(7628, 2)
-        self.AGV_SLAM_X = dMMemory.get_int(7630, 2)
-        self.AGV_SLAM_Y = dMMemory.get_int(7632, 2)
+        self.AGV_SLAM_X = dMMemory.get_int(7630, 4)
+        self.AGV_SLAM_Y = dMMemory.get_int(7632, 4)
         self.AGV_SLAM_THETA = dMMemory.get_int(7634, 2)
         self.AGV_STATUS1 = dMMemory.get_int(7636, 2)
         self.AGV_STATUS2 = dMMemory.get_int(7637, 2)
@@ -359,7 +361,10 @@ class AgvStatus:
         self.AGV_ID1 = dMMemory.get_string(7650, 20)
         self.MAGIC = dMMemory.get_int(7660, 2)
         self.Req_TAGNo = dMMemory.get_int(7661, 2)
-        
+        self.Work_id = dMMemory.get_int(7662, 4)
+        self.Robot_status = dMMemory.get_int(7664, 2)
+        #self.Robot_take_port = dMMemory.get_int(7666, 2)
+        #self.Robot_put_port = dMMemory.get_int(7668, 2)
     
  
     def get_agv_bitstatus(self,dmmemory: PlcMemory):
@@ -387,6 +392,7 @@ class AgvStatus:
         self.IN_5=d.get_bit(7637,4)
         self.BARCODE_READER_FINISH=d.get_bit(7637, 5)
         self.TAG_REQ=d.get_bit(7637, 6)
+        #self.Robot_cycle_finish = d.get_bit(7637, 7)
         
 
 

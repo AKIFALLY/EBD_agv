@@ -38,7 +38,7 @@
   "agv_core_node": {
     "variables": {
       "mission_id": "...",
-      "AGV_id": 1,
+      "agv_id": 1,
       "pathdata": null,
       "robot_finished": false,
       "plc_heartbeat": 123

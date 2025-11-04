@@ -1,7 +1,7 @@
 metadata:
   id: "loader_take_soaker"
   name: "Loader AGV 從泡藥機取料"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查泡藥機泡藥完成載具，創建 Loader AGV 取料任務（特殊設備：1格處理）"
   author: "TAFL System"

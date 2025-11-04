@@ -17,15 +17,36 @@ class TakeCleanerState(BaseRobotState):
         self.sent = False
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Take Cleaner 目前狀態: TakeCleaner")
+        self.node.get_logger().info(
+            "[Station-based 批量] Loader Robot Take Cleaner 目前狀態: TakeCleaner")
         self.sent = False
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Take Cleaner 離開 TakeCleaner 狀態")
+        self.node.get_logger().info(
+            "[Station-based 批量] Loader Robot Take Cleaner 離開 TakeCleaner 狀態")
         self.sent = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Loader Robot Take Cleaner TakeCleaner 狀態")
+        # 批量取料 port 映射：根據計數器決定來源 port
+        # Station-based 設計：
+        # - 第1次 (cleaner_take_count=0): Cleaner Port 1 → 機械臂
+        # - 第2次 (cleaner_take_count=1): Cleaner Port 2 → 機械臂
+        source_port = context.cleaner_ports[context.cleaner_take_count]
+        context.get_cleaner_port = source_port
+
+        # 更新當前使用的 carrier_id
+        context.carrier_id = context.cleaner_carrier_ids[context.cleaner_take_count]
+
+        target_agv_port = [1, 3][context.cleaner_take_count]
+
+        self.node.get_logger().info(
+            f"[Station-based 批量] 取料第 {context.cleaner_take_count + 1}/2 次 "
+            f"(Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: Cleaner Port {source_port} (Station 01 上層) → 目標: 機械臂, "
+            f"carrier_id={context.carrier_id}")
+        self.node.get_logger().info(
+            f"最終目標: AGV Port {target_agv_port}")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -69,13 +90,40 @@ class TakeCleanerState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Take Cleaner CHECK CHG PARAMETER")
+
+                # 導入計算方法
+                from loader_agv.robot_states.loader_robot_parameter import LoaderRobotParameter
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 cleaner_port → W116(layer_z_cleaner), W117(layer_y_cleaner)
+                layer_z_cleaner, layer_y_cleaner = LoaderRobotParameter.calculate_layer_from_port(
+                    context.get_cleaner_port
+                )
+                expected_params['w116'] = layer_z_cleaner
+                expected_params['w117'] = layer_y_cleaner
+
+                self.node.get_logger().info(
+                    f"預期檢查: cleaner_port={context.get_cleaner_port} → "
+                    f"W116={layer_z_cleaner}, W117={layer_y_cleaner}"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Loader Robot Take Cleaner TAKE CLEANER WRITE CHG PARA")

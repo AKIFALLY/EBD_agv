@@ -154,29 +154,55 @@ class OvenCheckEmptyState(BaseRobotState):
         return both_empty
 
     def _handle_port_selection(self, context: RobotContext):
-        """處理 port 選擇邏輯 - 使用統一的 station-based 檢查"""
+        """處理 port 選擇邏輯 - 檢查所有4個 oven port 是否都空"""
         if self.search_eqp_signal_ok and not self.check_ok:
-            # 從 work_id 解析 station 和 port pair
-            station, port_pair = self._extract_station_from_work_id(context)
-            if port_pair is None:
-                self.node.get_logger().error("無法從 work_id 解析 station，重置狀態")
+            # 從 work_id 解析 station 和所有相關 ports
+            station, all_ports = self._extract_station_from_work_id(context)
+            if all_ports is None or len(all_ports) < 4:
+                self.node.get_logger().error(
+                    f"無法從 work_id 解析足夠的 ports (需要4個)，實際={all_ports}，重置狀態")
                 self._reset_state()
                 return
 
-            # 檢查 port pair 是否兩個都空
-            if self._check_port_pair_empty(port_pair):
-                # 保存選定的 port pair 資訊
-                self.selected_port_pair = port_pair
-                self.selected_pair_name = f"Station{station:02d}(port{port_pair[0]}+{port_pair[1]})"
-                self.select_oven_port = station  # select_port 就是 station 編號
+            # 檢查所有4個 port 是否都空
+            all_ports_empty = all(not self.port_carriers[port - 1] for port in all_ports)
+
+            if all_ports_empty:
+                # 所有4個 port 都空，可以執行兩次 PUT 操作
+                # 將4個 ports 分成兩組：[[port1, port2], [port3, port4]]
+                port_groups = [
+                    [all_ports[0], all_ports[1]],  # 第1次
+                    [all_ports[2], all_ports[3]]   # 第2次
+                ]
+
+                # 保存選定的 port 資訊
+                self.selected_port_pair = all_ports  # 保存所有4個 ports
+                self.selected_pair_name = (
+                    f"Station{station}(ports {all_ports[0]},{all_ports[1]},{all_ports[2]},{all_ports[3]})")
+                self.select_oven_port = all_ports[0]  # 第1次從第一個 port 開始
+
+                # 存儲到 context
                 context.oven_number = self.select_oven_port
+                context.oven_port_groups = port_groups  # 供 update_carrier_database 使用
+
+                # 初始化兩次取放循環控制變數到 context
+                context.take_put_port_groups = port_groups  # [[port1,port2], [port3,port4]]
+                context.take_put_cycle_count = 0
+                context.take_put_current_batch = [1, 2]  # AGV port numbers
+                context.take_put_max_cycles = 2
+
                 self.check_ok = True
 
                 self.node.get_logger().info(
-                    f"✅ 選擇 {self.selected_pair_name} (select_port={self.select_oven_port})，準備查詢 Carrier")
+                    f"✅ 所有4個 Oven PORT 都為空，準備兩次 PUT 操作：\n"
+                    f"   第1次: ports {port_groups[0]}, AGV批次 [1,2]\n"
+                    f"   第2次: ports {port_groups[1]}, AGV批次 [3,4]\n"
+                    f"   循環控制變數已初始化: cycle_count={context.take_put_cycle_count}, max_cycles={context.take_put_max_cycles}")
             else:
+                # 記錄哪些 port 不為空
+                occupied_ports = [port for port in all_ports if self.port_carriers[port - 1]]
                 self.node.get_logger().warn(
-                    f"❌ Station{station:02d} port pair {port_pair} 未同時為空，無法執行 PUT 操作")
+                    f"❌ Oven PORT {occupied_ports} 不為空，無法執行 PUT_OVEN 操作（需要所有4個 PORT 都空）")
                 # 沒有可用空位，進入完成狀態
                 from unloader_agv.robot_states.complete_state import CompleteState
                 context.set_state(CompleteState(self.node))
@@ -237,9 +263,10 @@ class OvenCheckEmptyState(BaseRobotState):
                                             "valid_success", "valid_failed", self.WRITE_PORT_NUMBER)
 
             case self.WRITE_PORT_NUMBER:
+                # 根據當前循環次數動態獲取 port number
+                port_number = context.take_put_port_groups[context.take_put_cycle_count][0]
                 self._handle_step_operation(context, "port number寫入",
-                                            lambda: self.hokuyo_dms_8bit_1.write_port_number(
-                                                context.oven_number),
+                                            lambda: self.hokuyo_dms_8bit_1.write_port_number(port_number),
                                             "port_number_success", "port_number_failed", self.WAIT_LOAD_REQ)
 
             case self.WAIT_LOAD_REQ:

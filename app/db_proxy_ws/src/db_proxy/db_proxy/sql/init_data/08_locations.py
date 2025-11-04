@@ -15,8 +15,6 @@ def initialize_locations(session):
         # 預建置測試資料
         {"id": 1, "location_status_id": 1, "room_id": 1,
             "node_id": 1, "name": "未知空位1", "description": "測試用未知位置"},
-        {"id": 2, "location_status_id": 2, "room_id": 2,
-            "node_id": 2, "name": "未知空位2", "description": "測試用資料-房間2的固定設備(入口傳送箱及出口傳送箱等等)"},
 
         # 設備對應的位置資料 (對應 equipment 初始資料中的 location_id)
         {"id": 20100, "room_id": 2,
@@ -101,54 +99,59 @@ def initialize_locations(session):
         {"id": 406, "location_status_id": 1, "room_id": 3,
             "name": "工作區406", "description": "射出機4工作區6", "type": "enter_or_exit"},
 
-        {"id": 95, "location_status_id": 1,
-            "node_id": 95, "name": "射出機1-停車位置1", "description": "射出機1-OP1叫車/停車位置"},
-        {"id": 96, "location_status_id": 1,
-            "node_id": 96, "name": "射出機1-停車位置2", "description": "射出機1-OP2叫車/停車位置"},
-        {"id": 97, "location_status_id": 1,
-            "node_id": 97, "name": "射出機2-停車位置1", "description": "射出機2-OP1叫車/停車位置"},
-        {"id": 98, "location_status_id": 1,
-            "node_id": 98, "name": "射出機2-停車位置2", "description": "射出機2-OP2叫車/停車位置"},
+        {"id": 15, "location_status_id": 1,
+            "node_id": 15, "name": "射出機1-停車位置1", "description": "射出機1-OP1叫車/停車位置"},
+        {"id": 14, "location_status_id": 1,
+            "node_id": 14, "name": "射出機1-停車位置2", "description": "射出機1-OP2叫車/停車位置"},
+        {"id": 25, "location_status_id": 1,
+            "node_id": 25, "name": "射出機2-停車位置1", "description": "射出機2-OP1叫車/停車位置"},
+        {"id": 23, "location_status_id": 1,
+            "node_id": 23, "name": "射出機2-停車位置2", "description": "射出機2-OP2叫車/停車位置"},
         
         
-        {"id": 1005, "location_status_id": 1,
-            "node_id": 1005, "name": "射出機3-停車位置1", "description": "射出機3-OP1叫車/停車位置"},
-        {"id": 1006, "location_status_id": 1,
-            "node_id": 1006, "name": "射出機3-停車位置2", "description": "射出機3-OP2叫車/停車位置"},
-        {"id": 1007, "location_status_id": 1,
-            "node_id": 1007, "name": "射出機4-停車位置1", "description": "射出機4-OP1叫車/停車位置"},
-        {"id": 1008, "location_status_id": 1,
-            "node_id": 1008, "name": "射出機4-停車位置2", "description": "射出機4-OP2叫車/停車位置"},
+        {"id": 46, "location_status_id": 1,
+            "node_id": 46, "name": "射出機3-停車位置1", "description": "射出機3-OP1叫車/停車位置"},
+        {"id": 44, "location_status_id": 1,
+            "node_id": 44, "name": "射出機3-停車位置2", "description": "射出機3-OP2叫車/停車位置"},
+        {"id": 47, "location_status_id": 1,
+            "node_id": 47, "name": "射出機4-停車位置1", "description": "射出機4-OP1叫車/停車位置"},
+        {"id": 45, "location_status_id": 1,
+            "node_id": 45, "name": "射出機4-停車位置2", "description": "射出機4-OP2叫車/停車位置"},
 
-        # 房間入口/出口位置配置 (2025-10-01 更新：增加 rotation_node_id)
+        # 房間入口/出口位置配置 (2025-10-01 更新：增加 rotation_node_id; 2025-10-29 更新：增加 waypoint_node_id)
         {"id": 10001, "location_status_id": 1, "room_id": 1, "node_id": 10001,
-            "rotation_node_id": 10003,
+            "rotation_node_id": 10003, "waypoint_node_id": 10003,
             "name": "room01 Loader Box", "description": "房間1入口傳送箱","type":"room_inlet"},
         {"id": 10002, "location_status_id": 1, "room_id": 1, "node_id": 10002,
             "rotation_node_id": 10004,
+            "rotation_node_id": 10004,
             "name": "room01 Unloader Box", "description": "房間1出口傳送箱","type":"room_outlet"},
         {"id": 20001, "location_status_id": 1, "room_id": 2, "node_id": 20001,
-            "rotation_node_id": 20003,
+            "rotation_node_id": 20003, "waypoint_node_id": 20003,
             "name": "room02 Loader Box", "description": "房間2入口傳送箱","type":"room_inlet"},
         {"id": 20002, "location_status_id": 1, "room_id": 2, "node_id": 20002,
             "rotation_node_id": 20004,
+            "rotation_node_id": 20004,
             "name": "room02 Unloader Box", "description": "房間2出口傳送箱","type":"room_outlet"},
         {"id": 30001, "location_status_id": 1, "room_id": 3, "node_id": 30001,
-            "rotation_node_id": 30003,
+            "rotation_node_id": 30003, "waypoint_node_id": 30003,
             "name": "room03 Loader Box", "description": "房間3入口傳送箱","type":"room_inlet"},
         {"id": 30002, "location_status_id": 1, "room_id": 3, "node_id": 30002,
             "rotation_node_id": 30004,
+            "rotation_node_id": 30004,
             "name": "room03 Unloader Box", "description": "房間3出口傳送箱","type":"room_outlet"},
         {"id": 40001, "location_status_id": 1, "room_id": 4, "node_id": 40001,
-            "rotation_node_id": 40003,
+            "rotation_node_id": 40003, "waypoint_node_id": 40003,
             "name": "room04 Loader Box", "description": "房間4入口傳送箱","type":"room_inlet"},
         {"id": 40002, "location_status_id": 1, "room_id": 4, "node_id": 40002,
             "rotation_node_id": 40004,
+            "rotation_node_id": 40004,
             "name": "room04 Unloader Box", "description": "房間4出口傳送箱","type":"room_outlet"},
         {"id": 50001, "location_status_id": 1, "room_id": 5, "node_id": 50001,
-            "rotation_node_id": 50003,
+            "rotation_node_id": 50003, "waypoint_node_id": 50003,
             "name": "room05 Loader Box", "description": "房間5入口傳送箱","type":"room_inlet"},
         {"id": 50002, "location_status_id": 1, "room_id": 5, "node_id": 50002,
+            "rotation_node_id": 50004,
             "rotation_node_id": 50004,
             "name": "room05 Unloader Box", "description": "房間5出口傳送箱","type":"room_outlet"},
         {"id": 20101, "location_status_id": 1, "room_id": 2, "node_id": 20101,
@@ -200,34 +203,33 @@ def initialize_locations(session):
         {"id": 20201, "location_status_id": 1, "room_id": 2, "node_id": 20201,
             "name": "UnloaderAGV Unload Box", "description": "房間內出口傳送箱"},
 
-        # 區域定義
-        {"id": 11, "location_status_id": 1, "room_id": 1, "node_id": 11,
-            "name": "SystemReadyArea_11", "description": "系統準備區"},
-            {"id": 12, "location_status_id": 1, "room_id": 1, "node_id": 12,
-            "name": "SystemReadyArea_12", "description": "系統準備區"},
-            {"id": 13, "location_status_id": 1, "room_id": 1, "node_id": 13,
-            "name": "SystemReadyArea_13", "description": "系統準備區"},
-            {"id": 14, "location_status_id": 1, "room_id": 1, "node_id": 14,
-            "name": "SystemReadyArea_14", "description": "系統準備區"},
-            {"id": 15, "location_status_id": 1, "room_id": 1, "node_id": 15,
-            "name": "SystemReadyArea_15", "description": "系統準備區"},
-            {"id": 16, "location_status_id": 1, "room_id": 1, "node_id": 16,
-            "name": "SystemReadyArea_16", "description": "系統準備區"},
-            {"id": 17, "location_status_id": 1, "room_id": 1, "node_id": 17,
-            "name": "SystemReadyArea_17", "description": "系統準備區"},
-            {"id": 18, "location_status_id": 1, "room_id": 1, "node_id": 18,
-            "name": "SystemReadyArea_18", "description": "系統準備區"},
-            
+        # 區域定義 (2025-10-29 更新: 重新分配位置ID, location_status_id=2 未佔用)
+        # 系統準備區 (改為 ID 2-9)
+        {"id": 2, "location_status_id": 2, "room_id": 1, "node_id": 2,
+            "name": "SystemReadyArea_1", "description": "系統準備區"},
+        {"id": 3, "location_status_id": 2, "room_id": 1, "node_id": 3,
+            "name": "SystemReadyArea_2", "description": "系統準備區"},
+        {"id": 4, "location_status_id": 2, "room_id": 1, "node_id": 4,
+            "name": "SystemReadyArea_3", "description": "系統準備區"},
+        {"id": 5, "location_status_id": 2, "room_id": 1, "node_id": 5,
+            "name": "SystemReadyArea_4", "description": "系統準備區"},
+        {"id": 6, "location_status_id": 2, "room_id": 1, "node_id": 6,
+            "name": "SystemReadyArea_5", "description": "系統準備區"},
+        {"id": 7, "location_status_id": 2, "room_id": 1, "node_id": 7,
+            "name": "SystemReadyArea_6", "description": "系統準備區"},
+        {"id": 8, "location_status_id": 2, "room_id": 1, "node_id": 8,
+            "name": "SystemReadyArea_7", "description": "系統準備區"},
+        {"id": 9, "location_status_id": 2, "room_id": 1, "node_id": 9,
+            "name": "SystemReadyArea_8", "description": "系統準備區"},
 
-            {"id": 31, "location_status_id": 1, "room_id": 1, "node_id": 31,
+        # 系統空車停放區 (改為 ID 11-13, 減少1個位置)
+        {"id": 11, "location_status_id": 2, "room_id": 1, "node_id": 11,
             "name": "SystemEmptyRackArea_1", "description": "系統空車區"},
-            {"id": 32, "location_status_id": 1, "room_id": 1, "node_id": 32,
+        {"id": 12, "location_status_id": 2, "room_id": 1, "node_id": 12,
             "name": "SystemEmptyRackArea_2", "description": "系統空車區"},
-            {"id": 33, "location_status_id": 1, "room_id": 1, "node_id": 33,
+        {"id": 13, "location_status_id": 2, "room_id": 1, "node_id": 13,
             "name": "SystemEmptyRackArea_3", "description": "系統空車區"},
-            {"id": 34, "location_status_id": 1, "room_id": 1, "node_id": 34,
-            "name": "SystemEmptyRackArea_4", "description": "系統空車區"},
-            
+
             # 原有的手動回收區 (保持向後相容)
             {"id": 51, "location_status_id": 1, "room_id": 1, "node_id": 51,
             "name": "ManualReceiveArea_1", "description": "手動回收區"},
@@ -255,9 +257,9 @@ def initialize_locations(session):
 
 
 """
-# 區域定義
-SYSTEM_READY_AREA = [11, 12, 13, 14, 15, 16, 17, 18]  # 系統準備區
-SYSTEM_EMPTY_RACK_AREA = [31, 32, 33, 34]  # 系統空車區
+# 區域定義 (2025-10-29 更新: 重新分配位置ID)
+SYSTEM_READY_AREA = [9, 8, 7, 6, 5, 4, 3, 2]  # 系統準備區 (改為 ID 2-9)
+SYSTEM_EMPTY_RACK_AREA = [13, 12, 11]  # 系統空車區 (改為 ID 11-13, 減少1個位置)
 MANUAL_COLLECTION_AREA = [31001, 31002, 31003, 31004, 31005, 31006, 31007, 31008, 31009, 31010]  # 人工收料區 (Flow WCS)
 MANUAL_RECEIVE_AREA = [51, 52, 53, 54, 55]  # 手動回收區 (原有，保持向後相容)
 NG_RECYCLE_AREA = [71, 72]  # NG回收區

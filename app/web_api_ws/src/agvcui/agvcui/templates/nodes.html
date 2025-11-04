@@ -344,25 +344,32 @@ function startNode(nodeName) {
 function stopNode(nodeName) {
     // 立即更新 UI 顯示為 "停止中"
     updateNodeStatusUI(nodeName, 'stopping');
-    
+
     fetch(`/nodes/api/node/${nodeName}/stop`, { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification(`節點 ${nodeName} 已停止`, 'success');
+                // 改進：顯示驗證狀態
+                const msg = data.verified
+                    ? `節點 ${nodeName} 已停止 (已驗證)`
+                    : `節點 ${nodeName} 已停止`;
+                showNotification(msg, 'success');
                 // 立即更新狀態為已停止
                 updateNodeStatusUI(nodeName, 'stopped');
                 // 延遲刷新以確保狀態同步
                 setTimeout(refreshStatus, 1000);
             } else {
-                showNotification(`停止失敗: ${data.message}`, 'danger');
+                // 改進：顯示詳細錯誤資訊
+                const statusInfo = data.status ? ` (當前狀態: ${data.status})` : '';
+                const errorDetail = data.error ? `\n錯誤: ${data.error}` : '';
+                showNotification(`停止失敗: ${data.message}${statusInfo}${errorDetail}`, 'danger');
                 // 恢復原狀態
                 updateNodeStatusUI(nodeName, 'running');
             }
         })
         .catch(error => {
             console.error('Error stopping node:', error);
-            showNotification('停止節點失敗', 'danger');
+            showNotification('停止節點失敗: 網路或伺服器錯誤', 'danger');
             // 恢復原狀態
             updateNodeStatusUI(nodeName, 'running');
         });
@@ -450,9 +457,9 @@ function showNotification(message, type = 'info') {
 // 頁面載入後自動刷新一次
 document.addEventListener('DOMContentLoaded', function() {
     refreshStatus();
-    
-    // 每 30 秒自動刷新
-    setInterval(refreshStatus, 30000);
+
+    // 每 10 秒自動刷新（改進狀態同步速度）
+    setInterval(refreshStatus, 10000);
 });
 </script>
 {% endblock %}

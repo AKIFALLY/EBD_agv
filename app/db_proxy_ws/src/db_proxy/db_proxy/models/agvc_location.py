@@ -71,6 +71,8 @@ class Location(SQLModel, table=True):
     room_id: Optional[int] = Field(default=None)
     # node_id 可能對應 node.id 或 kuka_node.id，不設外鍵約束以保持靈活性
     node_id: Optional[int] = Field(default=None)
+    # node_id 可能對應 node.id 或 kuka_node.id，不設外鍵約束以保持靈活性
+    node_id: Optional[int] = Field(default=None)
     name: str
     description: Optional[str] = None
     # tafl_wcs 需要的欄位
@@ -82,6 +84,13 @@ class Location(SQLModel, table=True):
     rotation_node_id: Optional[int] = Field(
         default=None,
         description="架台在此位置旋轉時使用的中間轉向點 (參考 kuka_node.id，用於 room_inlet/room_outlet 類型)"
+    )
+
+    # 派送途經點配置 (2025-10-29 新增)
+    # 不設外鍵約束，因為 kuka_node 表由外部軟體管理和匯入
+    waypoint_node_id: Optional[int] = Field(
+        default=None,
+        description="派送任務的途經點節點 ID (參考 kuka_node.id，用於 room_inlet 類型)"
     )
 
     # 關聯關係（用於 JOIN 查詢）

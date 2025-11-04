@@ -70,7 +70,7 @@ all_summary       # 系統狀態摘要
 ```bash
 # [宿主機] 快速容器內指令執行
 quick_agv "ros2 node list"    # 在 AGV 容器執行 ROS 2 指令
-quick_agvc "check_agvc_status" # 在 AGVC 容器執行系統檢查
+quick_agvc "manage status"     # 在 AGVC 容器執行系統檢查
 ```
 
 ## 🎯 使用策略
@@ -106,7 +106,7 @@ check_zenoh_status        # 通訊狀態確認
 all_stop && sleep 5 && all_start && sleep 10 && all_health
 
 # [宿主機] 快速診斷問題
-all_status && all_ports && quick_agv "ros2 node list" && quick_agvc "check_agvc_status"
+all_status && all_ports && quick_agv "ros2 node list" && quick_agvc "manage status"
 
 # [宿主機] 開發環境快速設置
 agvc_start && agvc_enter

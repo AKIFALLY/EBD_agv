@@ -38,9 +38,10 @@ class UnloaderAgvStatusJsonRecorder:
         Returns:
             完整狀態字典
         """
-        # 基本 metadata
-        agv_id = agv_core_node.agv_id if hasattr(agv_core_node, 'agv_id') else "unloader01"
-        
+        # 基本 metadata - 從 ROS namespace 提取 AGV 名稱
+        ns = agv_core_node.get_namespace() if hasattr(agv_core_node, 'get_namespace') else None
+        agv_id = ns.strip("/") if ns else "unloader01"
+
         status = {
             "metadata": {
                 "agv_id": agv_id,
@@ -215,8 +216,10 @@ class UnloaderAgvStatusJsonRecorder:
         """
         # 如果沒有指定檔案名，使用預設格式
         if filename is None:
-            agv_id = agv_core_node.agv_id if hasattr(agv_core_node, 'agv_id') else "unloader01"
-            filename = f"agv_status_{agv_id}.json"
+            # 從 ROS namespace 提取 AGV 名稱（字符串），而不是使用 agv_id（可能是整數）
+            ns = agv_core_node.get_namespace() if hasattr(agv_core_node, 'get_namespace') else None
+            agv_name = ns.strip("/") if ns else "unloader01"
+            filename = f"agv_status_{agv_name}.json"
         
         complete_status = self.create_complete_status(agv_core_node)
         filepath = os.path.join(self.output_dir, filename)

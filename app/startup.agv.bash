@@ -23,7 +23,8 @@ if [ -f "/app/scripts/config_driven_device_detector.bash" ]; then
 else
     echo "❌ 統一設備識別腳本不存在，使用預設配置"
     export DEVICE_ID="loader02"
-    export AGV_ID="loader02"
+    # 移除默認值，要求必須通過設備識別或手動設置
+    # export AGV_ID="loader02"  # 已禁用：為確保安全，不再提供默認值
     export AGV_TYPE="loader"
     export ROS_NAMESPACE="/loader02"
     export AGV_LAUNCH_PACKAGE="loader_agv"
@@ -181,57 +182,114 @@ source /opt/pyvenv_env/bin/activate
 AGV_LOG_FILE="/tmp/agv.log"
 AGV_PID_FILE="/tmp/agv.pid"
 
-#echo "🚀 啟動 agv launch..."
-#nohup ros2 launch loader_agv launch.py > "$AGV_LOG_FILE" 2>&1 &
-#echo $! > "$AGV_PID_FILE"
-#
-#    # 檢查 agv launch 是否已經運行
-#if [ -f "$AGV_PID_FILE" ] && pgrep -F "$AGV_PID_FILE" > /dev/null; then
-#    python3 -c "import sqlmodel; print(sqlmodel.__version__)"
-#    python3 -c "import networkx; print(networkx.__version__)"
-#
-#    echo "✅ agv launch 已經在運行中 (PID: $(cat $AGV_PID_FILE))"
-#else
-#    echo "❌ agv launch 啟動失敗"
-#fi
-
 # =====================================
-# 🖥️ AGVUI 服務自動啟動配置
+# 🖥️ AGV 服務自動啟動配置
 # =====================================
-AUTO_START_AGVUI=false  # 設定為 true 啟用自動啟動，false 停用
-USE_ROS_LAUNCH=true    # 設定為 true 使用 ROS 2 Launch，false 使用原始方式
+AUTO_START_WEB_AGV_LAUNCH=true    # Web AGV Launch 服務（端口 8003 - AGVUI 車載監控界面）
+AUTO_START_AGV_LAUNCH=true       # AGV Launch 服務（本地 AGV 控制，默認關閉）
 
 # 載入 setup.bash 以取得管理函數
 source /app/setup.bash
 
-if [ "$AUTO_START_AGVUI" = "true" ]; then
+# =============================================================================
+# 📖 AGV Launch 使用說明
+# =============================================================================
+#
+# 🔧 控制 AGV Launch 自動啟動:
+#   - 啟用自動啟動: 將 AUTO_START_AGV_LAUNCH 設為 true
+#   - 停用自動啟動: 將 AUTO_START_AGV_LAUNCH 設為 false（默認）
+#
+# 🚀 手動管理 AGV Launch:
+#   在容器內執行以下指令:
+#   manage_agv_launch start     # 啟動服務
+#   manage_agv_launch stop      # 停止服務
+#   manage_agv_launch restart   # 重啟服務
+#   manage_agv_launch status    # 檢查狀態
+#   manage_agv_launch logs      # 查看日誌
+#
+# =============================================================================
+
+# =============================================================================
+# 🔧 AGV Launch 啟動控制（默認關閉，需要時手動啟用）
+# =============================================================================
+if [ "$AUTO_START_AGV_LAUNCH" = "true" ]; then
+    echo "🚗 啟動 AGV Launch 服務..."
+
     # 等待系統資源就緒
     echo "⏳ 等待系統資源就緒..."
     sleep 5
-    
-    if [ "$USE_ROS_LAUNCH" = "true" ]; then
-        echo "🚀 使用 ROS 2 Launch 啟動 AGVUI..."
-        # 使用新的 ROS 2 Launch 方式
-        if manage_web_agv_launch start; then
-            echo "✅ AGVUI 服務啟動成功 (ROS 2 Launch)"
-        else
-            echo "⚠️ AGVUI 服務啟動失敗"
-            echo "📝 請使用以下指令查看錯誤詳情："
-            echo "   tail -f /tmp/web_agv_launch.log"
-            echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
-        fi
+
+    # 捕獲錯誤但不退出，確保容器繼續運行
+    if manage_agv_launch start; then
+        echo "✅ AGV Launch 服務啟動成功"
     else
-        echo "🖥️ 使用傳統方式啟動 AGVUI..."
-        # 使用原始方式（向後相容）
-        if manage_agvui start; then
-            echo "✅ AGVUI 服務啟動成功 (傳統方式)"
-        else
-            echo "⚠️ AGVUI 服務啟動失敗"
-            echo "📝 請使用以下指令查看錯誤詳情："
-            echo "   tail -f /tmp/agvui.log"
-            echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
-        fi
+        echo "⚠️ AGV Launch 服務啟動失敗"
+        echo "📝 請查看日誌: tail -f /tmp/agv_launch.log"
+        echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
     fi
 else
-    echo "⏸️ AGVUI 自動啟動已停用 (AUTO_START_AGVUI=false)"
+    echo "⏸️ AGV Launch 自動啟動已停用 (AUTO_START_AGV_LAUNCH=false)"
 fi
+
+echo ""  # 分隔線
+
+# =============================================================================
+# 🔧 Web AGV Launch 服務啟動控制（AGVUI 車載監控界面）
+# =============================================================================
+# 說明：這是唯一的自動啟動入口，統一管理 AGVUI 服務
+# 向後兼容：用戶仍可手動執行 manage_agvui 指令（內部調用 manage_web_agv_launch）
+# =============================================================================
+
+if [ "$AUTO_START_WEB_AGV_LAUNCH" = "true" ]; then
+    echo "🚀 啟動 Web AGV Launch 服務（AGVUI 車載監控界面）..."
+
+    # 等待系統資源就緒
+    echo "⏳ 等待系統資源就緒..."
+    sleep 3
+
+    # 捕獲錯誤但不退出，確保容器繼續運行
+    if manage_web_agv_launch start; then
+        echo "✅ Web AGV Launch 服務啟動成功"
+        echo "📍 AGVUI 監控界面: http://$(hostname -I | awk '{print $1}'):8003"
+    else
+        echo "⚠️ Web AGV Launch 服務啟動失敗"
+        echo "📝 請使用以下指令查看錯誤詳情："
+        echo "   manage_web_agv_launch status"
+        echo "   tail -f /tmp/web_agv_launch.log"
+        echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
+        # 不執行 exit，讓容器繼續運行
+    fi
+else
+    echo "⏸️ Web AGV Launch 服務自動啟動已停用 (AUTO_START_WEB_AGV_LAUNCH=false)"
+fi
+
+# =============================================================================
+# 📖 Web AGV Launch (AGVUI) 使用說明
+# =============================================================================
+#
+# 🎯 服務說明:
+#   Web AGV Launch 提供 AGVUI 車載監控界面（端口 8003）
+#   這是 AGV 容器中唯一的自動啟動入口，統一管理 AGVUI 服務
+#
+# 🔧 控制自動啟動:
+#   - 啟用: 將 AUTO_START_WEB_AGV_LAUNCH 設為 true（默認）
+#   - 停用: 將 AUTO_START_WEB_AGV_LAUNCH 設為 false
+#
+# 🚀 手動管理服務:
+#   manage_web_agv_launch start     # 啟動服務
+#   manage_web_agv_launch stop      # 停止服務
+#   manage_web_agv_launch restart   # 重啟服務
+#   manage_web_agv_launch status    # 檢查狀態
+#   manage_web_agv_launch logs      # 查看日誌
+#
+#   或使用向後相容的別名:
+#   manage_agvui start              # 內部調用 manage_web_agv_launch
+#
+# 📋 技術細節:
+#   - 管理函數: manage_web_agv_launch (定義在 setup.bash)
+#   - 向後相容別名: manage_agvui (內部調用 manage_web_agv_launch)
+#   - 日誌檔案: /tmp/web_agv_launch.log
+#   - PID 檔案: /tmp/web_agv_launch.pid
+#   - 監控端口: 8003
+#
+# =============================================================================

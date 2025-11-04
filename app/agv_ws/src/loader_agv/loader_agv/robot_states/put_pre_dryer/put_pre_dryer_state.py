@@ -21,42 +21,72 @@ class PutPreDryerState(BaseRobotState):
         self.sent = False
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Put PreDryer 目前狀態: PutPreDryer")
+        self.node.get_logger().info(
+            "[Station-based 2格] Loader Robot Put PreDryer 目前狀態: PutPreDryer")
         self.update_carrier_success = False
         self.sent = False
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Put PreDryer 離開 PutPreDryer 狀態")
+        self.node.get_logger().info(
+            "[Station-based 2格] Loader Robot Put PreDryer 離開 PutPreDryer 狀態")
         self.update_carrier_success = False
         self.sent = False
 
     def update_carrier_database(self, context: RobotContext):
-        """更新單一 carrier 資料庫記錄"""
+        """更新單一 carrier 資料庫記錄 - 批量放料（第N/2次）
+
+        說明：批量處理每次更新一個 carrier
+        - 第1次：更新從 AGV Port 2 取出的 carrier
+        - 第2次：更新從 AGV Port 4 取出的 carrier
+        - 最終位置：Pre-dryer Port（根據 Station 映射）
+        """
+        source_agv_port = context.pre_dryer_agv_ports[context.pre_dryer_take_count]
+        target_pre_dryer_port = context.pre_dryer_device_ports[context.pre_dryer_take_count]
+
         carrier = CarrierMsg()
         carrier.id = context.carrier_id
         carrier.room_id = self.node.room_id
         carrier.rack_id = 0
         carrier.port_id = self.port_id_address + context.get_pre_dryer_port
         carrier.rack_index = 0
-        carrier.status_id = 3  # 假設 3 是表示預乾燥的狀態
+        carrier.status_id = Robot.CARRIER_STATUS_ENTER_PRE_DRYER  # 進入預烘機處理中 (502)
 
         self.agvc_client.async_update_carrier(
             carrier, self.update_carrier_database_callback)
         self.node.get_logger().info(
-            f"🔄 開始更新 Carrier: {context.carrier_id} 到預乾燥端口 {carrier.port_id}")
+            f"🔄 [Station-based 2格] 開始更新 Carrier: {context.carrier_id} "
+            f"(第 {context.pre_dryer_take_count + 1}/2 次, Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"完整路徑: AGV Port {source_agv_port} → 機械臂 → "
+            f"Pre-dryer Port {target_pre_dryer_port}")
+        self.node.get_logger().info(
+            f"最終位置: port_id={carrier.port_id}, 狀態: ENTER_PRE_DRYER")
 
     def update_carrier_database_callback(self, result):
         """處理 carrier 資料庫更新回應"""
         if result is not None and result.success:
             self.node.get_logger().info(
-                f"✅ Carrier 更新成功: {result.success}, {result.message}")
+                f"✅ [Station-based 2格] Carrier 更新成功: {result.success}, {result.message}")
             self.update_carrier_success = True
         else:
-            self.node.get_logger().error("❌ Carrier 更新失敗")
+            self.node.get_logger().error(
+                "❌ [Station-based 2格] Carrier 更新失敗")
             self.update_carrier_success = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Loader Robot Put PreDryer PutPreDryer 狀態")
+        # 批量放料 Pre-dryer port 映射：根據計數器決定目標 Pre-dryer port
+        source_agv_port = context.pre_dryer_agv_ports[context.pre_dryer_take_count]
+        target_pre_dryer_port = context.pre_dryer_device_ports[context.pre_dryer_take_count]
+        context.get_pre_dryer_port = target_pre_dryer_port
+
+        self.node.get_logger().info(
+            f"[Station-based 2格] 第 {context.pre_dryer_take_count + 1}/2 次放料 "
+            f"(Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: 機械臂 → 目標: Pre-dryer Port {target_pre_dryer_port}")
+        self.node.get_logger().info(
+            f"完整路徑: AGV Port {source_agv_port} (Carrier {context.carrier_id}) → "
+            f"機械臂 → Pre-dryer Port {target_pre_dryer_port}")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -76,13 +106,15 @@ class PutPreDryerState(BaseRobotState):
             self._execute_robot_logic(context, PUT_PRE_DRYER_PGNO, read_pgno)
 
     def _execute_robot_logic(self, context: RobotContext, PUT_PRE_DRYER_PGNO, read_pgno):
-        """執行機器人邏輯"""
+        """執行機器人邏輯 - 批量放料（第N/2次）"""
         match self.step:
             case RobotContext.IDLE:
-                self.node.get_logger().info("Loader Robot Put PreDryer PUT PRE DRYER IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 2格] Loader Robot Put PreDryer PUT PRE DRYER IDLE")
                 self.step = RobotContext.CHECK_IDLE
             case RobotContext.CHECK_IDLE:
-                self.node.get_logger().info("Loader Robot Put PreDryer PUT PRE DRYER CHECK_IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 2格] Loader Robot Put PreDryer PUT PRE DRYER CHECK_IDLE")
                 if read_pgno is None:
                     self.node.get_logger().debug("⏳等待讀取PGNO回應...")
                     return
@@ -100,13 +132,40 @@ class PutPreDryerState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Put Pre-Dryer PUT PRE-DRYER CHECK CHG PARAMETER")
+
+                # 導入計算方法
+                from loader_agv.robot_states.loader_robot_parameter import LoaderRobotParameter
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 pre_dryer_port → W11A(layer_z_pre_dryer), W11B(layer_y_pre_dryer)
+                layer_z_pre_dryer, layer_y_pre_dryer = LoaderRobotParameter.calculate_layer_from_port(
+                    context.get_pre_dryer_port
+                )
+                expected_params['w11a'] = layer_z_pre_dryer
+                expected_params['w11b'] = layer_y_pre_dryer
+
+                self.node.get_logger().info(
+                    f"預期檢查: pre_dryer_port={context.get_pre_dryer_port} → "
+                    f"W11A={layer_z_pre_dryer}, W11B={layer_y_pre_dryer}"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Loader Robot Put PreDryer PUT PRE DRYER WRITE CHG PARA")
@@ -189,17 +248,40 @@ class PutPreDryerState(BaseRobotState):
                 else:
                     self.node.get_logger().info("❌放預乾燥失敗")
             case RobotContext.UPDATE_DATABASE:
-                self.node.get_logger().info("Loader Robot Put PreDryer PUT PRE DRYER UPDATE_DATABASE")
+                self.node.get_logger().info(
+                    "[Station-based 2格] Loader Robot Put PreDryer PUT PRE DRYER UPDATE_DATABASE")
                 if not self.sent:
                     self.update_carrier_database(context)
                     self.sent = True
                 elif self.sent and self.update_carrier_success:
-                    self.node.get_logger().info("✅更新 Carrier 資料庫成功")
+                    self.node.get_logger().info(
+                        "✅ [Station-based 2格] 更新 Carrier 資料庫成功")
                     self.sent = False
 
-                    # 完成 PUT_PRE_DRYER 流程，直接進入完成狀態（無 continue 邏輯）
-                    self.node.get_logger().info("✅ Put PreDryer 完成: 進入 CompleteState")
-                    from loader_agv.robot_states.complete_state import CompleteState
-                    context.set_state(CompleteState(self.node))
+                    # 批量放料邏輯：檢查是否完成 2 次放料
+                    if context.pre_dryer_take_count == 0:
+                        # 第 1 次完成 → 繼續第 2 次
+                        context.pre_dryer_take_count = 1
+                        next_agv_port = context.pre_dryer_agv_ports[1]
+                        next_pre_dryer_port = context.pre_dryer_device_ports[1]
+
+                        self.node.get_logger().info(
+                            f"🔄 [Station-based 2格] 第 1/2 次放料完成 (Work ID {context.work_id})")
+                        self.node.get_logger().info(
+                            f"[Station-based 2格] 繼續第 2 次放料: AGV Port {next_agv_port} → "
+                            f"Pre-dryer Port {next_pre_dryer_port}")
+                        from loader_agv.robot_states.put_pre_dryer.take_agv_state import TakeAgvState
+                        context.set_state(TakeAgvState(self.node))
+                    else:
+                        # 第 2 次完成 → 任務完成
+                        self.node.get_logger().info(
+                            f"✅ [Station-based 2格] 批量放料完成 (2/2 次, Work ID {context.work_id})")
+                        self.node.get_logger().info(
+                            f"完整流程: AGV Ports {context.pre_dryer_agv_ports} → "
+                            f"Pre-dryer Ports {context.pre_dryer_device_ports}")
+                        self.node.get_logger().info(
+                            f"[Station-based 2格] 進入 CompleteState")
+                        from loader_agv.robot_states.complete_state import CompleteState
+                        context.set_state(CompleteState(self.node))
 
                     self.step = RobotContext.IDLE

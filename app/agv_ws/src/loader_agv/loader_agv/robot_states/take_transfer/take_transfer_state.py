@@ -28,7 +28,21 @@ class TakeTransferState(BaseRobotState):
         self.sent = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Robot Take Transfer TakeTransfer 狀態")
+        # 批量取料 port 映射：根據計數器決定來源 port
+        # Station-based 設計：
+        # - Station 01: Port [1, 2] → 第1次取 port1, 第2次取 port2
+        # - Station 03: Port [3, 4] → 第1次取 port3, 第2次取 port4
+        source_port = context.transfer_ports[context.transfer_take_count]
+        context.get_boxin_port = source_port
+
+        # 更新當前使用的 carrier_id
+        context.carrier_id = context.transfer_carrier_ids[context.transfer_take_count]
+
+        self.node.get_logger().info(
+            f"[Station-based 批量] 取料第 {context.transfer_take_count + 1}/2 次 "
+            f"(Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: 傳送箱 Port {source_port} → 目標: 機械臂, carrier_id={context.carrier_id}")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -72,13 +86,40 @@ class TakeTransferState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Take Transfer CHECK CHG PARAMETER")
+
+                # 導入計算方法
+                from loader_agv.robot_states.loader_robot_parameter import LoaderRobotParameter
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 boxin_port → W114(layer_z_boxin), W115(layer_y_boxin)
+                layer_z_boxin, layer_y_boxin = LoaderRobotParameter.calculate_layer_from_port(
+                    context.get_boxin_port
+                )
+                expected_params['w114'] = layer_z_boxin
+                expected_params['w115'] = layer_y_boxin
+
+                self.node.get_logger().info(
+                    f"預期檢查: boxin_port={context.get_boxin_port} → "
+                    f"W114={layer_z_boxin}, W115={layer_y_boxin}"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟，_handle_check_chg_parameter 會處理重試邏輯
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Robot Take Transfer TAKE TRANSFER WRITE CHG PARA")

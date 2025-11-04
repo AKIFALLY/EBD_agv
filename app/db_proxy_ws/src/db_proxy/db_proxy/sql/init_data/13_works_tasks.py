@@ -51,9 +51,9 @@ def initialize_works(session):
     test_work = [
         # opui-操作員呼叫空車和派滿車的工作 平板按下後觸發 ,WCS產生kuka需要的任務後監控任務完成後刪除任務
         {"id": 100001, "name": "opui-call-empty",
-         "description": "作業員從opui請求將空Rack派至[人工作業準備區]", "parameters": {}},
+         "description": "作業員從opui請求將空Rack派至[人工作業準備區]", "parameters": {"nodes": []}},
         {"id": 100002, "name": "opui-dispatch-full",
-         "description": "作業員從opui請求將Rack派至[系統準備派車區]", "parameters": {}},
+         "description": "作業員從opui請求將Rack派至[系統準備派車區]", "parameters": {"nodes": []}},
 
         # kuka-相關的工作
         # 移動貨架和移動指令無需預定義流程 給指定的nodes(uuid)即可
@@ -85,71 +85,71 @@ def initialize_works(session):
 
         # 入口傳送箱 - Station-based 編碼 (LoaderAGV 2格為單位)
         {"id": 2010101, "name": "LoaderAGV取入口傳送箱Station01",
-         "description": "從入口傳送箱Station01(Port1-2/2格)取到LoaderAGV車上", "parameters": {}},
+         "description": "從入口傳送箱Station01(Port1-2/2格)取到LoaderAGV車上", "parameters": {"nodes": []}},
         {"id": 2010301, "name": "LoaderAGV取入口傳送箱Station03",
-         "description": "從入口傳送箱Station03(Port3-4/2格)取到LoaderAGV車上", "parameters": {}},
+         "description": "從入口傳送箱Station03(Port3-4/2格)取到LoaderAGV車上", "parameters": {"nodes": []}},
 
         # 清洗機 - Station-based 編碼 (LoaderAGV 2格為單位)
         # 上層 Station 01 (Port 1,2) - 只拿, 下層 Station 03 (Port 3,4) - 只放
         {"id": 2030101, "name": "LoaderAGV取清洗機Station01",
-         "description": "從清洗機上層Station01(Port1-2/2格)取到LoaderAGV車上", "parameters": {}},
+         "description": "從清洗機上層Station01(Port1-2/2格)取到LoaderAGV車上", "parameters": {"nodes": []}},
         {"id": 2030302, "name": "LoaderAGV放清洗機Station03",
-         "description": "從LoaderAGV車上放到清洗機下層Station03(Port3-4/2格)", "parameters": {}},
+         "description": "從LoaderAGV車上放到清洗機下層Station03(Port3-4/2格)", "parameters": {"nodes": []}},
 
         {"id": 2040102, "name": "LoaderAGV放泡藥機A",
-         "description": "從LoaderAGV車上放到泡藥機A", "parameters": {}},
+         "description": "從LoaderAGV車上放到泡藥機A", "parameters": {"nodes": []}},
         {"id": 2040202, "name": "LoaderAGV放泡藥機B",
-         "description": "從LoaderAGV車上放到泡藥機B", "parameters": {}},
+         "description": "從LoaderAGV車上放到泡藥機B", "parameters": {"nodes": []}},
         {"id": 2040302, "name": "LoaderAGV放泡藥機C",
-         "description": "從LoaderAGV車上放到泡藥機C", "parameters": {}},
+         "description": "從LoaderAGV車上放到泡藥機C", "parameters": {"nodes": []}},
         {"id": 2040402, "name": "LoaderAGV放泡藥機D",
-         "description": "從LoaderAGV車上放到泡藥機D", "parameters": {}},
+         "description": "從LoaderAGV車上放到泡藥機D", "parameters": {"nodes": []}},
         {"id": 2040502, "name": "LoaderAGV放泡藥機E",
-         "description": "從LoaderAGV車上放到泡藥機E", "parameters": {}},
+         "description": "從LoaderAGV車上放到泡藥機E", "parameters": {"nodes": []}},
         {"id": 2040602, "name": "LoaderAGV放泡藥機F",
-         "description": "從LoaderAGV車上放到泡藥機F", "parameters": {}},
+         "description": "從LoaderAGV車上放到泡藥機F", "parameters": {"nodes": []}},
 
         {"id": 2040101, "name": "LoaderAGV拿泡藥機A",
-         "description": "從泡藥機A拿到LoaderAGV車上放", "parameters": {}},
+         "description": "從泡藥機A拿到LoaderAGV車上放", "parameters": {"nodes": []}},
         {"id": 2040201, "name": "LoaderAGV拿泡藥機B",
-         "description": "從泡藥機B拿到LoaderAGV車上放", "parameters": {}},
+         "description": "從泡藥機B拿到LoaderAGV車上放", "parameters": {"nodes": []}},
         {"id": 2040301, "name": "LoaderAGV拿泡藥機C",
-         "description": "從泡藥機C拿到LoaderAGV車上放", "parameters": {}},
+         "description": "從泡藥機C拿到LoaderAGV車上放", "parameters": {"nodes": []}},
         {"id": 2040401, "name": "LoaderAGV拿泡藥機D",
-         "description": "從泡藥機D拿到LoaderAGV車上放", "parameters": {}},
+         "description": "從泡藥機D拿到LoaderAGV車上放", "parameters": {"nodes": []}},
         {"id": 2040501, "name": "LoaderAGV拿泡藥機E",
-         "description": "從泡藥機E拿到LoaderAGV車上放", "parameters": {}},
+         "description": "從泡藥機E拿到LoaderAGV車上放", "parameters": {"nodes": []}},
         {"id": 2040601, "name": "LoaderAGV拿泡藥機F",
-         "description": "從泡藥機F拿到LoaderAGV車上放", "parameters": {}},
+         "description": "從泡藥機F拿到LoaderAGV車上放", "parameters": {"nodes": []}},
 
         # 預烘機 - Station-based 編碼 (4 個 Station)
-        # LoaderAGV: 標準映射 1 station = 2 ports (單格精密操作) - Station 01/03/05/07
-        # UnloaderAGV: 自定義映射 1 station = 4 ports (批量處理) - Station 01/03
-        {"id": 2050101, "name": "UnloaderAGV取預烘Station01",
-         "description": "UnloaderAGV從預烘機Station01(Port1-2-5-6/批量4格)取到車上", "parameters": {}},
+        # LoaderAGV: 標準映射 1 station = 2 ports (1次1格共2格操作) - Station 01/03/05/07
+        # UnloaderAGV: 自定義映射 1 station = 4 ports (1次2格共4格處理) - Station 01(1,2,5,6)/03(3,4,7,8)
+        {"id": 2051101, "name": "UnloaderAGV取預烘Station01",
+         "description": "UnloaderAGV從預烘機Station01(Port1-2-5-6/批量4格)取到車上", "parameters": {"nodes": []}},
         {"id": 2050102, "name": "LoaderAGV放預烘Station01",
-         "description": "LoaderAGV從車上放到預烘機Station01(Port1-2/單格)", "parameters": {}},
-        {"id": 2050301, "name": "UnloaderAGV取預烘Station03",
-         "description": "UnloaderAGV從預烘機Station03(Port3-4-7-8/批量4格)取到車上", "parameters": {}},
+         "description": "LoaderAGV從車上放到預烘機Station01(Port1-2/單格)", "parameters": {"nodes": []}},
+        {"id": 2051301, "name": "UnloaderAGV取預烘Station03",
+         "description": "UnloaderAGV從預烘機Station03(Port3-4-7-8/批量4格)取到車上", "parameters": {"nodes": []}},
         {"id": 2050302, "name": "LoaderAGV放預烘Station03",
-         "description": "LoaderAGV從車上放到預烘機Station03(Port3-4/單格)", "parameters": {}},
+         "description": "LoaderAGV從車上放到預烘機Station03(Port3-4/單格)", "parameters": {"nodes": []}},
         {"id": 2050502, "name": "LoaderAGV放預烘Station05",
-         "description": "LoaderAGV從車上放到預烘機Station05(Port5-6/單格)", "parameters": {}},
+         "description": "LoaderAGV從車上放到預烘機Station05(Port5-6/單格)", "parameters": {"nodes": []}},
         {"id": 2050702, "name": "LoaderAGV放預烘Station07",
-         "description": "LoaderAGV從車上放到預烘機Station07(Port7-8/單格)", "parameters": {}},
+         "description": "LoaderAGV從車上放到預烘機Station07(Port7-8/單格)", "parameters": {"nodes": []}},
 
         # 烤箱 - Station-based 編碼
         # UnloaderAGV: 自定義映射 1 station = 4 ports (批量處理)
         # Station 01: Port 1-2-3-4 (批量4格/上排/只拿), Station 05: Port 5-6-7-8 (批量4格/下排/只放)
         {"id": 2060101, "name": "UnloaderAGV取烤箱Station01",
-         "description": "UnloaderAGV從烤箱Station01(Port1-2-3-4/批量4格/上排)取到車上", "parameters": {}},
+         "description": "UnloaderAGV從烤箱Station01(Port1-2-3-4/批量4格/上排)取到車上", "parameters": {"nodes": []}},
         {"id": 2060502, "name": "UnloaderAGV放烤箱Station05",
-         "description": "UnloaderAGV從車上放到烤箱Station05(Port5-6-7-8/批量4格/下排)", "parameters": {}},
+         "description": "UnloaderAGV從車上放到烤箱Station05(Port5-6-7-8/批量4格/下排)", "parameters": {"nodes": []}},
 
         # 出口傳送箱 - Station-based 編碼
         # UnloaderAGV: 自定義映射 1 station = 4 ports (批量處理)
         {"id": 2020102, "name": "UnloaderAGV放出口傳送箱Station01",
-         "description": "從UnloaderAGV車上放到出口傳送箱Station01(Port1-2-3-4/批量4格)", "parameters": {}},
+         "description": "從UnloaderAGV車上放到出口傳送箱Station01(Port1-2-3-4/批量4格)", "parameters": {"nodes": []}},
     ]
 
     # 改進：逐個檢查並插入，避免批量插入失敗
@@ -182,64 +182,65 @@ def initialize_tasks(session):
     if not work_100001 or not work_100002:
         print("⚠️ 警告: work_id 100001 或 100002 不存在，跳過相關任務初始化")
 
+    default_tasks = [ ]
     # 測試預設 Tasks - 使用實際存在的 work_id
-    default_tasks = [
-        {"work_id": 2000102, "status_id": 1, "room_id": 2, "name": "測試任務1", "description": "測試任務1",
-            "agv_id": 1, "priority": 9, "parameters": {"room_id": 2, "rack_id": 1, "eqp_id": 1, "function": "workflow", "model": "KUKA400i", "templateCode": "W000000001"}},
-        {"work_id": 2000201, "status_id": 1, "room_id": 2, "name": "測試任務2", "description": "測試任務2",
-            "agv_id": 1, "priority": 9, "parameters": {"room_id": 2, "rack_id": 2, "eqp_id": 2, "function": "workflow", "model": "KUKA400i", "templateCode": "W000000001"}},
-        {"work_id": 2010101, "status_id": 2, "room_id": 2, "name": "測試任務-執行中任務", "description": "測試UI上正在執行的任務顯示",
-            "agv_id": 2, "priority": 5, "parameters": {"room_id": 2, "rack_id": 3, "eqp_id": 3}},
-        {"work_id": 2030102, "status_id": 3, "room_id": 2, "name": "測試任務-已完成任務", "description": "測試UI上已完成的任務顯示",
-            "agv_id": 3, "priority": 1, "parameters": {"room_id": 2, "rack_id": 4, "eqp_id": 4}},
-
-
-        # opui 叫空車測試任務
-        {"work_id": 100001, "status_id": 1, "room_id": 2,
-         "name": "叫空車 - 停車位 [node_id]", "description": "測試opui-操作員從機台 machine_id 叫空車到停車位 [node_id]",
-         "node_id": 95, "agv_id": 3, "priority": 1,
-         "parameters": {
-             "node_id": 95,
-             "machine_id": 1,
-             "client_id": "clientId",
-             "task_type": "call_empty",
-             "model": "KUKA400i",
-             "kuka_agv_id": 123,
-             "function": "rack_move",
-             "nodes": [91, 76, 91]
-         }},
-        # opui 派滿車測試任務
-        {"work_id": 100002, "status_id": 1, "room_id": 2,
-         "name": "派滿車 - product_name x count 到停車位 [node_id]", "description": "測試opui-操作員從機台 machine_id 派滿車，產品: product_name,數量: count,目標停車位: [node_id]",
-         "node_id": 95, "agv_id": 3, "priority": 1,
-         "parameters": {
-             "node_id": 95,
-             "product_name": "ABC121345",
-             "count": 32,
-             "rack_id": 1,
-             "room": 2,
-             "side": "left",  # op1 left, op2 right
-             "machine_id": 1,
-             "client_id": "clientId",
-             "task_type": "dispatch_full",
-             "model": "KUKA400i",
-             "kuka_agv_id": 123,
-             "function": "rack_move",
-             "nodes": [75, 74, 72, 75]
-         }},
-
-        
-        # 未指派mission_code及agv_id 時才可由rcs指定kuka agv來執行
-        # KUKA AGV 旋轉貨架
-        # {"work_id": 230101, "status_id": 1, "room_id": 2, "name": "kuka-房間1入口轉貨架", "description": "執行房間1入口轉貨架流程workflow",
-        #    "agv_id": 123, "priority": 1, "parameters": {"model": "KUKA400i", "templateCode": "W000000001"}},
-        # KUKA AGV 移動貨架(nodes為str list時直接將position指定uuid,為int list時使用預設map layer-distrct-nodenumber 組成position)
-        {"work_id": 220001, "status_id": 1, "room_id": 2, "name": "kuka-移動貨架", "description": "執行移動貨架(參數提供2個以上node)第1點為拿起位置及最後1點為目標位置",
-            "agv_id": 123, "priority": 1, "parameters": {"model": "KUKA400i", "nodes": [91, 76, 91]}},
-        # KUKA AGV 移動
-        {"work_id": 210001, "status_id": 1, "room_id": 2, "name": "kuka-移動", "description": "執行移動(參數提供2個以上node)依序經過所有nodes",
-            "agv_id": 123, "priority": 1, "parameters": {"model": "KUKA400i", "nodes": [75, 74, 72, 75]}},
-    ]
+    #default_tasks = [
+    #    {"work_id": 2000102, "status_id": 1, "room_id": 2, "name": "測試任務1", "description": "測試任務1",
+    #        "agv_id": 1, "priority": 9, "parameters": {"room_id": 2, "rack_id": 1, "eqp_id": 1, "function": "workflow", "model": "KUKA400i", "templateCode": "W000000001"}},
+    #    {"work_id": 2000201, "status_id": 1, "room_id": 2, "name": "測試任務2", "description": "測試任務2",
+    #        "agv_id": 1, "priority": 9, "parameters": {"room_id": 2, "rack_id": 2, "eqp_id": 2, "function": "workflow", "model": "KUKA400i", "templateCode": "W000000001"}},
+    #    {"work_id": 2010101, "status_id": 2, "room_id": 2, "name": "測試任務-執行中任務", "description": "測試UI上正在執行的任務顯示",
+    #        "agv_id": 2, "priority": 5, "parameters": {"room_id": 2, "rack_id": 3, "eqp_id": 3}},
+    #    {"work_id": 2030102, "status_id": 3, "room_id": 2, "name": "測試任務-已完成任務", "description": "測試UI上已完成的任務顯示",
+    #        "agv_id": 3, "priority": 1, "parameters": {"room_id": 2, "rack_id": 4, "eqp_id": 4}},
+#
+#
+    #    # opui 叫空車測試任務
+    #    {"work_id": 100001, "status_id": 1, "room_id": 2,
+    #     "name": "叫空車 - 停車位 [node_id]", "description": "測試opui-操作員從機台 machine_id 叫空車到停車位 [node_id]",
+    #     "node_id": 95, "agv_id": 3, "priority": 1,
+    #     "parameters": {
+    #         "node_id": 95,
+    #         "machine_id": 1,
+    #         "client_id": "clientId",
+    #         "task_type": "call_empty",
+    #         "model": "KUKA400i",
+    #         "kuka_agv_id": 123,
+    #         "function": "rack_move",
+    #         "nodes": [91, 76, 91]
+    #     }},
+    #    # opui 派滿車測試任務
+    #    {"work_id": 100002, "status_id": 1, "room_id": 2,
+    #     "name": "派滿車 - product_name x count 到停車位 [node_id]", "description": "測試opui-操作員從機台 machine_id 派滿車，產品: product_name,數量: count,目標停車位: [node_id]",
+    #     "node_id": 95, "agv_id": 3, "priority": 1,
+    #     "parameters": {
+    #         "node_id": 95,
+    #         "product_name": "ABC121345",
+    #         "count": 32,
+    #         "rack_id": 1,
+    #         "room": 2,
+    #         "side": "left",  # op1 left, op2 right
+    #         "machine_id": 1,
+    #         "client_id": "clientId",
+    #         "task_type": "dispatch_full",
+    #         "model": "KUKA400i",
+    #         "kuka_agv_id": 123,
+    #         "function": "rack_move",
+    #         "nodes": [75, 74, 72, 75]
+    #     }},
+#
+    #    
+    #    # 未指派mission_code及agv_id 時才可由rcs指定kuka agv來執行
+    #    # KUKA AGV 旋轉貨架
+    #    # {"work_id": 230101, "status_id": 1, "room_id": 2, "name": "kuka-房間1入口轉貨架", "description": "執行房間1入口轉貨架流程workflow",
+    #    #    "agv_id": 123, "priority": 1, "parameters": {"model": "KUKA400i", "templateCode": "W000000001"}},
+    #    # KUKA AGV 移動貨架(nodes為str list時直接將position指定uuid,為int list時使用預設map layer-distrct-nodenumber 組成position)
+    #    {"work_id": 220001, "status_id": 1, "room_id": 2, "name": "kuka-移動貨架", "description": "執行移動貨架(參數提供2個以上node)第1點為拿起位置及最後1點為目標位置",
+    #        "agv_id": 123, "priority": 1, "parameters": {"model": "KUKA400i", "nodes": [91, 76, 91]}},
+    #    # KUKA AGV 移動
+    #    {"work_id": 210001, "status_id": 1, "room_id": 2, "name": "kuka-移動", "description": "執行移動(參數提供2個以上node)依序經過所有nodes",
+    #        "agv_id": 123, "priority": 1, "parameters": {"model": "KUKA400i", "nodes": [75, 74, 72, 75]}},
+    #]
 
     # 改進：逐個檢查並插入，避免批量插入失敗
     # 使用 no_autoflush 避免過早的 flush

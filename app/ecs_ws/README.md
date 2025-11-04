@@ -6,7 +6,7 @@
 **運行環境**: 🖥️ AGVC 管理系統 (主要)
 **主要功能**: 設備控制系統 (ECS) - 設備信號監控和門控制邏輯
 **依賴狀態**: 依賴 plc_proxy_ws 和 db_proxy_ws，~~paho-mqtt 已棄用~~
-**手動啟動**: 可使用 `start_ecs` 指令或 launch 檔案啟動
+**手動啟動**: 可使用 `manage_ecs_core start` 指令或 launch 檔案啟動
 **重要變更**: ❌ MQTT 門控制功能已棄用，改用 Web API 整合
 
 ## 📋 專案概述
@@ -291,8 +291,8 @@ source install/setup.bash
 
 ### 4. 手動啟動 ECS 服務 (推薦)
 ```bash
-# 方法 1: 使用 setup.bash 中的便利函數
-start_ecs
+# 方法 1: 使用統一節點管理命令
+manage_ecs_core start
 
 # 方法 2: 使用 launch 文件啟動
 ros2 launch ecs_launch launch.py
@@ -433,7 +433,7 @@ print('門控制功能現在透過 web_api_ws 的 HTTP API 提供')
 ### 3. ECS 服務測試
 ```bash
 # 啟動 ECS 核心節點
-start_ecs
+manage_ecs_core start
 
 # 測試 ROS 2 節點狀態
 ros2 node list | grep ecs
@@ -480,7 +480,7 @@ curl -X POST http://localhost:8000/door/state \
 ros2 service list | grep -E "(plc_service|sql_query)"
 
 # 2. 啟動 ECS 服務
-start_ecs
+manage_ecs_core start
 
 # 3. 檢查設備信號讀取
 ros2 topic echo /agvc/eqp_signals --once
@@ -547,7 +547,7 @@ cd /app/db_proxy_ws && source install/setup.bash
 ```
 
 #### 3. ECS 服務啟動失敗
-**症狀**: `start_ecs` 指令失敗或 ECS 節點無法啟動
+**症狀**: `manage_ecs_core start` 指令失敗或 ECS 節點無法啟動
 **解決方法**:
 ```bash
 # 檢查 ECS 建置狀態

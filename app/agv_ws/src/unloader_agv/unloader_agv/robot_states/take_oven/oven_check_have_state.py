@@ -12,7 +12,7 @@ class OvenCheckHaveState(BaseRobotState):
     IDLE = 0
     WRITE_VALID = 1
     WRITE_PORT_NUMBER = 2
-    WAIT_LOAD_REQ = 3
+    WAIT_UNLOAD_REQ = 3
     WRITE_TR_REQ = 4
     WAIT_READY = 5
 
@@ -37,9 +37,11 @@ class OvenCheckHaveState(BaseRobotState):
         self.carrier_query_sended = False
         self.carrier_query_success = False
         self.port_carriers = [False] * 8  # 烤箱八個port的狀態
-        self.carrier_id_min = None  # 存儲選定組合第一個 port 的 carrier_id
-        self.carrier_id_max = None  # 存儲選定組合第二個 port 的 carrier_id
-        self.workstation_ports = None  # 存儲選定的 PORT 組合 (port1, port2)
+        self.carrier_id_1 = None  # Oven Port 1 的 carrier_id
+        self.carrier_id_2 = None  # Oven Port 2 的 carrier_id
+        self.carrier_id_3 = None  # Oven Port 3 的 carrier_id
+        self.carrier_id_4 = None  # Oven Port 4 的 carrier_id
+        self.workstation_ports = None  # 存儲選定的 PORT 組合（所有4個 ports）
         self.selected_pair_name = None  # 存儲選定組合的名稱
         self.selected_port = None  # 存儲選定組合的 select_port 值
 
@@ -65,40 +67,36 @@ class OvenCheckHaveState(BaseRobotState):
             self.node.get_logger().error(f"❌ EQP信號查詢失敗: {response.message}")
 
     def carrier_callback(self, response):
-        """Carrier查詢回調 - 處理選定 PORT 組合查詢結果"""
+        """Carrier查詢回調 - 處理所有4個 OVEN PORT 的查詢結果"""
         self.carrier_query_success = response.success
         if response.success:
-            self.node.get_logger().info(f"✅ 烤箱 {self.selected_pair_name} Carrier查詢成功")
+            self.node.get_logger().info("✅ 烤箱所有4個 PORT Carrier查詢成功")
 
-            # 計算選定 port 組合的兩個 PORT ID
-            if self.workstation_ports:
-                port_id_min = self.port_address + self.workstation_ports[0]
-                port_id_max = self.port_address + self.workstation_ports[1]
+            # 查詢所有4個 OVEN PORT 的 carrier_id (ports 1-4)
+            for i in range(4):
+                port_id = self.port_address + i + 1  # 2061, 2062, 2063, 2064
+                carrier_id = CarrierQueryClient.carrier_port_id_carrier_id(response, port_id)
 
-                # 使用 CarrierQueryClient 的靜態方法獲取對應 port 的 carrier_id
-                self.carrier_id_min = CarrierQueryClient.carrier_port_id_carrier_id(
-                    response, port_id_min)
-                self.carrier_id_max = CarrierQueryClient.carrier_port_id_carrier_id(
-                    response, port_id_max)
+                # 存儲到對應的變數
+                if i == 0:
+                    self.carrier_id_1 = carrier_id
+                elif i == 1:
+                    self.carrier_id_2 = carrier_id
+                elif i == 2:
+                    self.carrier_id_3 = carrier_id
+                elif i == 3:
+                    self.carrier_id_4 = carrier_id
 
                 # 記錄查詢結果
-                if self.carrier_id_min is not None:
+                if carrier_id is not None:
                     self.node.get_logger().info(
-                        f"PORT {self.workstation_ports[0]} 有 Carrier ID: {self.carrier_id_min}")
+                        f"烤箱 PORT {i+1} (ID={port_id}) 有 Carrier ID: {carrier_id}")
                 else:
-                    self.node.get_logger().debug(f"PORT {self.workstation_ports[0]} 沒有 Carrier")
-
-                if self.carrier_id_max is not None:
-                    self.node.get_logger().info(
-                        f"PORT {self.workstation_ports[1]} 有 Carrier ID: {self.carrier_id_max}")
-                else:
-                    self.node.get_logger().debug(f"PORT {self.workstation_ports[1]} 沒有 Carrier")
-
-                # 保持向後兼容性，設定主要的 carrier_id
-                self.carrier_id = self.carrier_id_min if self.carrier_id_min is not None else self.carrier_id_max
+                    self.node.get_logger().warn(
+                        f"烤箱 PORT {i+1} (ID={port_id}) 沒有 Carrier")
         else:
             self.node.get_logger().error(
-                f"❌ 烤箱 {self.selected_pair_name} Carrier查詢失敗: {response.message}")
+                f"❌ 烤箱所有 PORT Carrier查詢失敗: {response.message}")
 
     def _update_context_states(self, context: RobotContext):
         """更新context中的狀態"""
@@ -178,68 +176,80 @@ class OvenCheckHaveState(BaseRobotState):
                 self.port_address + selected_port_pair[1])
 
     def _validate_eqp_states(self, context: RobotContext):
-        """驗證 Carrier 查詢結果與 EQP 狀態的一致性"""
+        """驗證 Carrier 查詢結果與 EQP 狀態的一致性（所有4個 PORT 檢查）"""
         validation_passed = True
         validation_errors = []
 
-        # 驗證第一個 port (carrier_id_min)
-        if self.carrier_id_min is not None:
-            port_number = self.workstation_ports[0]
+        # 驗證所有4個 port
+        carrier_ids = [self.carrier_id_1, self.carrier_id_2, self.carrier_id_3, self.carrier_id_4]
+        for i, carrier_id in enumerate(carrier_ids):
+            port_number = i + 1
             eqp_state = getattr(context, f'oven_port{port_number}')
-            if not eqp_state:
-                validation_passed = False
-                validation_errors.append(f"PORT{port_number}: Carrier查詢有貨但EQP狀態顯示無貨")
-                self.node.get_logger().error(
-                    f"❌ 資料不一致 - PORT{port_number}: Carrier ID={self.carrier_id_min}, EQP狀態={eqp_state}")
-            else:
-                self.node.get_logger().info(
-                    f"✅ PORT{port_number} 驗證通過: Carrier ID={self.carrier_id_min}, EQP狀態={eqp_state}")
 
-        # 驗證第二個 port (carrier_id_max)
-        if self.carrier_id_max is not None:
-            port_number = self.workstation_ports[1]
-            eqp_state = getattr(context, f'oven_port{port_number}')
-            if not eqp_state:
-                validation_passed = False
-                validation_errors.append(f"PORT{port_number}: Carrier查詢有貨但EQP狀態顯示無貨")
-                self.node.get_logger().error(
-                    f"❌ 資料不一致 - PORT{port_number}: Carrier ID={self.carrier_id_max}, EQP狀態={eqp_state}")
+            if carrier_id is not None:
+                # Carrier 有貨，檢查 EQP 狀態是否一致
+                if not eqp_state:
+                    validation_passed = False
+                    validation_errors.append(
+                        f"OVEN_PORT{port_number}: Carrier查詢有貨但EQP狀態顯示無貨")
+                    self.node.get_logger().error(
+                        f"❌ 資料不一致 - OVEN_PORT{port_number}: "
+                        f"Carrier ID={carrier_id}, EQP狀態={eqp_state}")
+                else:
+                    self.node.get_logger().info(
+                        f"✅ OVEN_PORT{port_number} 驗證通過: "
+                        f"Carrier ID={carrier_id}, EQP狀態={eqp_state}")
             else:
-                self.node.get_logger().info(
-                    f"✅ PORT{port_number} 驗證通過: Carrier ID={self.carrier_id_max}, EQP狀態={eqp_state}")
+                # Carrier 無貨
+                if eqp_state:
+                    validation_passed = False
+                    validation_errors.append(
+                        f"OVEN_PORT{port_number}: Carrier查詢無貨但EQP狀態顯示有貨")
+                    self.node.get_logger().error(
+                        f"❌ 資料不一致 - OVEN_PORT{port_number}: "
+                        f"Carrier查詢無貨, EQP狀態={eqp_state}")
 
         return validation_passed, validation_errors
 
-    def _get_selected_carrier_info(self):
-        """獲取選定的 carrier 資訊"""
-        if self.carrier_id_min is not None:
-            return self.workstation_ports[0], self.carrier_id_min
-        else:
-            return self.workstation_ports[1], self.carrier_id_max
-
     def _handle_port_selection(self, context: RobotContext):
-        """處理 port 選擇邏輯 - 使用 Station-based 檢查"""
+        """處理 port 選擇邏輯 - 檢查所有4個 oven port 是否都有貨"""
         if self.search_eqp_signal_ok and not self.check_ok:
-            # 從 work_id 解析 station 和 port pair
-            station, port_pair = self._extract_station_from_work_id(context)
-            if port_pair is None:
-                self.node.get_logger().error("無法從 work_id 解析 station/port pair，重置狀態")
+            # 從 work_id 解析 station 和所有相關 ports
+            station, all_ports = self._extract_station_from_work_id(context)
+            if all_ports is None or len(all_ports) < 4:
+                self.node.get_logger().error(
+                    f"無法從 work_id 解析足夠的 ports (需要4個)，實際={all_ports}，重置狀態")
                 self._reset_state()
                 return
 
-            # 檢查 port pair 是否兩個都有貨
-            if self._check_port_pair_have_cargo(port_pair):
-                # 保存選定的 station 和 port pair 資訊
-                self.workstation_ports = port_pair
-                self.selected_pair_name = f"Station{station:02d}(port{port_pair[0]}+{port_pair[1]})"
-                self.selected_port = station  # select_port 就是 station 編號
+            # 檢查所有4個 port 是否都有貨
+            all_ports_have_cargo = all(self.port_carriers[port - 1] for port in all_ports)
+
+            if all_ports_have_cargo:
+                # 所有4個 port 都有貨，可以執行兩次 TAKE 操作
+                # 將4個 ports 分成兩組：[[port1, port2], [port3, port4]]
+                port_groups = [
+                    [all_ports[0], all_ports[1]],  # 第1次
+                    [all_ports[2], all_ports[3]]   # 第2次
+                ]
+
+                # 保存選定的 port 資訊
+                self.workstation_ports = all_ports  # 保存所有4個 ports
+                self.selected_pair_name = (
+                    f"Station{station}(ports {all_ports[0]},{all_ports[1]},{all_ports[2]},{all_ports[3]})")
+                self.selected_port = all_ports[0]  # 第1次從第一個 port 開始
+
                 self.check_ok = True
 
                 self.node.get_logger().info(
-                    f"✅ 選擇 {self.selected_pair_name} (select_port={self.selected_port})，準備查詢 Carrier")
+                    f"✅ 所有4個 Oven PORT 都有貨，準備兩次 TAKE 操作：\n"
+                    f"   第1次: ports {port_groups[0]}\n"
+                    f"   第2次: ports {port_groups[1]}")
             else:
+                # 記錄哪些 port 沒有貨
+                empty_ports = [port for port in all_ports if not self.port_carriers[port - 1]]
                 self.node.get_logger().warn(
-                    f"❌ Station{station:02d} Port pair {port_pair} 未同時有貨，無法執行 TAKE 操作")
+                    f"❌ Oven PORT {empty_ports} 沒有貨，無法執行 TAKE_OVEN 操作（需要所有4個 PORT 都有貨）")
                 self._reset_state()
 
     def handle(self, context: RobotContext):
@@ -256,59 +266,72 @@ class OvenCheckHaveState(BaseRobotState):
 
         self._handle_port_selection(context)
 
-        # 查詢選定 PORT 組合的 Carrier
-        if self.check_ok and not self.carrier_query_sended and self.workstation_ports:
-            port_id_min, port_id_max = self._calculate_port_ids(self.workstation_ports)
+        # 查詢所有4個 OVEN PORT 的 Carrier
+        if self.check_ok and not self.carrier_query_sended:
+            port_id_min = self.port_address + 1  # 2061
+            port_id_max = self.port_address + 4  # 2064
             self.node.get_logger().info(
-                f"查詢烤箱 {self.selected_pair_name} Carrier：PORT {self.workstation_ports[0]}-{self.workstation_ports[1]} (ID: {port_id_min}-{port_id_max})")
+                f"查詢烤箱所有4個 PORT Carrier：PORT 1-4 (ID: {port_id_min}-{port_id_max})")
             self.carrier_query_client.search_carrier_port_id(
                 port_id_min=port_id_min, port_id_max=port_id_max, callback=self.carrier_callback)
             self.carrier_query_sended = True
 
         # 處理 Carrier 查詢結果
-        if self.carrier_query_sended and self.carrier_query_success and self.workstation_ports:
-            port_id_min, port_id_max = self._calculate_port_ids(self.workstation_ports)
+        if self.carrier_query_sended and self.carrier_query_success:
+            # 檢查所有4個 port 是否都有 carrier
+            carrier_ids = [self.carrier_id_1, self.carrier_id_2, self.carrier_id_3, self.carrier_id_4]
+            all_have_carrier = all(cid is not None for cid in carrier_ids)
 
-            # 檢查兩個 port 是否至少有一個有 carrier（適合 TAKE 操作的有貨檢查）
-            if self.carrier_id_min is not None or self.carrier_id_max is not None:
-                # 至少有一個 port 有貨，進行 EQP 信號狀態驗證
-                self.node.get_logger().info(
-                    f"{self.selected_pair_name} 組合 {port_id_min}-{port_id_max} 至少有一個port有貨物，開始 EQP 狀態驗證。")
+            if all_have_carrier:
+                # 所有4個 port 都有貨，進行 EQP 信號狀態驗證
+                self.node.get_logger().info("所有4個 Oven PORT 都有 Carrier，開始 EQP 狀態驗證")
 
                 # 執行 EQP 狀態驗證
                 validation_passed, validation_errors = self._validate_eqp_states(context)
 
                 if validation_passed:
-                    # EQP 狀態驗證通過，可以執行 TAKE 操作
-                    self.node.get_logger().info(
-                        f"✅ {self.selected_pair_name} EQP 狀態驗證通過，可以執行烤箱操作")
+                    # EQP 狀態驗證通過，初始化兩次循環控制
+                    self.node.get_logger().info("✅ 所有 Oven PORT EQP 狀態驗證通過")
 
-                    # 獲取選定的 carrier 資訊
-                    selected_physical_port, selected_carrier_id = self._get_selected_carrier_info()
-                    self.node.get_logger().info(
-                        f"選擇烤箱 PORT {selected_physical_port}，Carrier ID: {selected_carrier_id}")
+                    # 將4個 ports 分成兩組：[[1,2], [3,4]]
+                    port_groups = [[1, 2], [3, 4]]
 
-                    # 設定 context 變數
+                    # 初始化循環控制變數
+                    context.take_put_port_groups = port_groups
+                    context.take_put_cycle_count = 0
+                    context.take_put_current_batch = port_groups[0]  # 第1次從 port 1,2 開始
+
+                    # 存儲所有4個 carrier_id 到 context
+                    context.carrier_id[0] = self.carrier_id_1
+                    context.carrier_id[1] = self.carrier_id_2
+                    context.carrier_id[2] = self.carrier_id_3
+                    context.carrier_id[3] = self.carrier_id_4
+
+                    # 設定 get_oven_port 為第一個 port
                     context.get_oven_port = self.selected_port
-                    context.carrier_id[0] = self.carrier_id_min
-                    context.carrier_id[1] = self.carrier_id_max
 
                     self.node.get_logger().info(
-                        f"烤箱 {self.selected_pair_name} 檢查完成 (select_port={self.selected_port})，進入下一個狀態")
+                        f"✅ 烤箱檢查完成，初始化兩次循環控制：\n"
+                        f"   第1次: ports {port_groups[0]}\n"
+                        f"   第2次: ports {port_groups[1]}\n"
+                        f"   Carrier IDs: {carrier_ids}")
+
+                    # 進入 8bit 步驟
                     self._handle_8bit_steps(context)
                 else:
                     # EQP 狀態驗證失敗，重置狀態
-                    self.node.get_logger().error(f"❌ {self.selected_pair_name} EQP 狀態驗證失敗:")
+                    self.node.get_logger().error("❌ Oven PORT EQP 狀態驗證失敗:")
                     for error in validation_errors:
                         self.node.get_logger().error(f"   - {error}")
                     self.node.get_logger().error("Carrier 查詢結果與 EQP 硬體信號狀態不一致，重置狀態")
                     self._reset_state()
             else:
-                # 兩個 port 都沒有貨，無法執行 TAKE 操作
+                # 有 port 沒有貨
+                missing_ports = [i + 1 for i, cid in enumerate(carrier_ids) if cid is None]
                 self.node.get_logger().error(
-                    f"Carrier 查詢成功，{self.selected_pair_name} 兩個 Port 都沒有貨物")
+                    f"❌ Carrier 查詢成功，但 Oven PORT {missing_ports} 沒有貨物")
                 self.node.get_logger().error(
-                    f"{self.selected_pair_name} 組合 {port_id_min}-{port_id_max} 都沒有貨物，無法執行烤箱操作。")
+                    "所有4個 PORT 都需要有貨物才能執行 TAKE_OVEN 操作")
                 self._reset_state()
 
     def _handle_8bit_steps(self, context: RobotContext):
@@ -324,17 +347,18 @@ class OvenCheckHaveState(BaseRobotState):
                                             "valid_success", "valid_failed", self.WRITE_PORT_NUMBER)
 
             case self.WRITE_PORT_NUMBER:
+                # 根據當前循環次數動態獲取 port number
+                port_number = context.take_put_port_groups[context.take_put_cycle_count][0]
                 self._handle_step_operation(context, "port number寫入",
-                                            lambda: self.hokuyo_dms_8bit_1.write_port_number(
-                                                context.get_oven_port),
-                                            "port_number_success", "port_number_failed", self.WAIT_LOAD_REQ)
+                                            lambda: self.hokuyo_dms_8bit_1.write_port_number(port_number),
+                                            "port_number_success", "port_number_failed", self.WAIT_UNLOAD_REQ)
 
-            case self.WAIT_LOAD_REQ:
-                if self.hokuyo_dms_8bit_1.load_req:
-                    self.node.get_logger().info("✅收到load_req")
+            case self.WAIT_UNLOAD_REQ:
+                if self.hokuyo_dms_8bit_1.unload_req:
+                    self.node.get_logger().info("✅收到unload_req")
                     self.step = self.WRITE_TR_REQ
                 else:
-                    self.node.get_logger().debug("⏳等待load_req")
+                    self.node.get_logger().debug("⏳等待unload_req")
 
             case self.WRITE_TR_REQ:
                 self._handle_step_operation(context, "tr_req寫入",

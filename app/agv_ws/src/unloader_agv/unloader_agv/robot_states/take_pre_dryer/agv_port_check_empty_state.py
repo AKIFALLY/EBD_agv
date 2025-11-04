@@ -7,8 +7,6 @@ from unloader_agv.robot_context import RobotContext
 
 class AgvPortCheckEmptyState(State):
 
-    SELECT_PORT01_PORT02, SELECT_PORT03_PORT04, SELECT_NONE = 1, 3, 0
-
     def __init__(self, node: Node):
         super().__init__(node)
         self.node = node
@@ -18,28 +16,6 @@ class AgvPortCheckEmptyState(State):
         # 動態計算 port_address 和 eqp_id (unloader_agv 參數)
         self.port_address = self.node.room_id * 1000 + 110
         self.eqp_id = self.node.room_id * 100 + 11
-
-        # 雙 port 組合選擇邏輯：只選擇兩個連續port都為空的組合
-        # 元組格式：(port1, port2, port3, port4)，其中 0=空，1=有貨
-        self.select_agv_port_table = {
-            # 上層組合 (PORT1_PORT2)：只有當 port1=0 AND port2=0 時才選擇
-            # 如果上層都空，優先選擇上層，不管下層狀態如何
-            (0, 0, 0, 0): self.SELECT_PORT01_PORT02,  # 全空，選上層
-            (0, 0, 0, 1): self.SELECT_PORT01_PORT02,  # 上層空，下層部分有貨，選上層
-            (0, 0, 1, 0): self.SELECT_PORT01_PORT02,  # 上層空，下層部分有貨，選上層
-            (0, 0, 1, 1): self.SELECT_PORT01_PORT02,  # 上層空，下層滿，選上層
-
-            # 下層組合 (PORT3_PORT4)：只有當上層不可用且 port3=0 AND port4=0 時才選擇
-            # 上層至少有一個有貨，但下層都空時選擇下層
-            (1, 0, 0, 0): self.SELECT_PORT03_PORT04,  # 上層部分有貨，下層空，選下層
-            (0, 1, 0, 0): self.SELECT_PORT03_PORT04,  # 上層部分有貨，下層空，選下層
-            (1, 1, 0, 0): self.SELECT_PORT03_PORT04,  # 上層滿，下層空，選下層
-
-            # 其他情況都返回 SELECT_NONE：
-            # (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 1) - 上層部分有貨，下層不完全空
-            # (0, 1, 0, 1), (0, 1, 1, 0), (0, 1, 1, 1) - 上層部分有貨，下層不完全空
-            # (1, 1, 0, 1), (1, 1, 1, 0), (1, 1, 1, 1) - 上層滿，下層不完全空
-        }
 
         self._reset_state()
 
@@ -51,10 +27,11 @@ class AgvPortCheckEmptyState(State):
         self.carrier_query_sended = False
         self.carrier_query_success = False
         self.port_carriers = [False] * 4  # 初始假設所有port都空
-        self.select_agv_port = self.SELECT_NONE
-        self.carrier_id = None
-        self.carrier_id_min = None  # 存儲 port_id_min 對應的 carrier_id
-        self.carrier_id_max = None  # 存儲 port_id_max 對應的 carrier_id
+        # 存儲 4 個 port 的 carrier_id
+        self.carrier_id_port1 = None
+        self.carrier_id_port2 = None
+        self.carrier_id_port3 = None
+        self.carrier_id_port4 = None
 
     def enter(self):
         self.node.get_logger().info("Unloader Robot Take Pre Dryer 目前狀態: AgvPortCheckEmpty")
@@ -65,6 +42,7 @@ class AgvPortCheckEmptyState(State):
         self._reset_state()
 
     def eqp_signal_query_callback(self, response):
+        """查詢所有 4 個 AGV ports 的 EQP 信號狀態"""
         for i in range(4):
             self.port_carriers[i] = EqpSignalQueryClient.eqp_signal_port(
                 response, self.port_address + i + 1)
@@ -72,26 +50,29 @@ class AgvPortCheckEmptyState(State):
                 f"AGV Port {i+1:02d} 有無貨: {self.port_carriers[i]}")
 
         self.search_eqp_signal_ok = True
-        port_states = tuple(int(carrier) for carrier in self.port_carriers)
-        self.select_agv_port = self.select_agv_port_table.get(
-            port_states, self.SELECT_NONE)
 
     def carrier_callback(self, response):
+        """查詢所有 4 個 AGV ports 的 Carrier 資料"""
         self.carrier_query_success = response.success
-        # 查詢兩個連續 port 的 carrier 資料
-        port_id_min = self.port_address + self.agv_port_number
-        port_id_max = port_id_min + 1
 
-        self.carrier_id_min = CarrierQueryClient.carrier_port_id_carrier_id(
-            response, port_id_min)
-        self.carrier_id_max = CarrierQueryClient.carrier_port_id_carrier_id(
-            response, port_id_max)
+        # 查詢所有 4 個 port 的 carrier_id
+        port_id_1 = self.port_address + 1  # 2111
+        port_id_2 = self.port_address + 2  # 2112
+        port_id_3 = self.port_address + 3  # 2113
+        port_id_4 = self.port_address + 4  # 2114
 
-        # 保持向後兼容性
-        self.carrier_id = self.carrier_id_min
+        self.carrier_id_port1 = CarrierQueryClient.carrier_port_id_carrier_id(
+            response, port_id_1)
+        self.carrier_id_port2 = CarrierQueryClient.carrier_port_id_carrier_id(
+            response, port_id_2)
+        self.carrier_id_port3 = CarrierQueryClient.carrier_port_id_carrier_id(
+            response, port_id_3)
+        self.carrier_id_port4 = CarrierQueryClient.carrier_port_id_carrier_id(
+            response, port_id_4)
 
         self.node.get_logger().info(
-            f"Carrier 查詢成功，資料: min={self.carrier_id_min}, max={self.carrier_id_max}")
+            f"Carrier 查詢成功，資料: Port1={self.carrier_id_port1}, Port2={self.carrier_id_port2}, "
+            f"Port3={self.carrier_id_port3}, Port4={self.carrier_id_port4}")
 
     def _update_context_states(self, context: RobotContext):
         """更新context中的狀態"""
@@ -104,116 +85,97 @@ class AgvPortCheckEmptyState(State):
         context.agv_port4 = self.port_carriers[3]
 
     def _validate_eqp_states(self, context: RobotContext):
-        """驗證 Carrier 查詢結果與 EQP 狀態的一致性（PUT 操作空位檢查）"""
+        """驗證所有 4 個 ports 是否都為空，並檢查 Carrier 查詢結果與 EQP 狀態的一致性"""
         validation_passed = True
         validation_errors = []
 
-        # 驗證第一個 port (carrier_id_min 應為 None，對應 EQP 狀態應為 False)
-        if self.carrier_id_min is None:
-            port_number = self.agv_port_number
-            eqp_state = getattr(context, f'agv_port{port_number}')
-            if eqp_state:
-                validation_passed = False
-                validation_errors.append(f"AGV_PORT{port_number}: Carrier查詢顯示空位但EQP狀態顯示有貨")
-                self.node.get_logger().error(
-                    f"❌ 資料不一致 - AGV_PORT{port_number}: Carrier查詢=空位, EQP狀態={eqp_state}")
-            else:
-                self.node.get_logger().info(
-                    f"✅ AGV_PORT{port_number} 驗證通過: Carrier查詢=空位, EQP狀態={eqp_state}")
+        # 準備 4 個 port 的驗證數據
+        ports_data = [
+            (1, self.carrier_id_port1, context.agv_port1),
+            (2, self.carrier_id_port2, context.agv_port2),
+            (3, self.carrier_id_port3, context.agv_port3),
+            (4, self.carrier_id_port4, context.agv_port4),
+        ]
 
-        # 驗證第二個 port (carrier_id_max 應為 None，對應 EQP 狀態應為 False)
-        if self.carrier_id_max is None:
-            port_number = self.agv_port_number + 1
-            eqp_state = getattr(context, f'agv_port{port_number}')
-            if eqp_state:
-                validation_passed = False
-                validation_errors.append(f"AGV_PORT{port_number}: Carrier查詢顯示空位但EQP狀態顯示有貨")
-                self.node.get_logger().error(
-                    f"❌ 資料不一致 - AGV_PORT{port_number}: Carrier查詢=空位, EQP狀態={eqp_state}")
-            else:
-                self.node.get_logger().info(
-                    f"✅ AGV_PORT{port_number} 驗證通過: Carrier查詢=空位, EQP狀態={eqp_state}")
+        # 檢查所有 4 個 ports 是否都為空
+        all_ports_empty = all(carrier_id is None for _, carrier_id, _ in ports_data)
+
+        if not all_ports_empty:
+            # 至少有一個 port 有貨，記錄哪些 port 有貨
+            ports_with_cargo = [
+                port_num for port_num, carrier_id, _ in ports_data if carrier_id is not None
+            ]
+            validation_passed = False
+            validation_errors.append(
+                f"AGV 有 {len(ports_with_cargo)} 個 port 有貨物: Port {ports_with_cargo}"
+            )
+            self.node.get_logger().error(
+                f"❌ AGV 端口檢查失敗：Port {ports_with_cargo} 有貨物，需要全部 4 個 ports 都為空"
+            )
+            return validation_passed, validation_errors
+
+        # 所有 carrier_id 都為 None，驗證 EQP 狀態是否一致
+        for port_num, carrier_id, eqp_state in ports_data:
+            if carrier_id is None:
+                # Carrier 查詢顯示空位，EQP 狀態應該也為 False
+                if eqp_state:
+                    validation_passed = False
+                    validation_errors.append(
+                        f"AGV_PORT{port_num}: Carrier查詢顯示空位但EQP狀態顯示有貨"
+                    )
+                    self.node.get_logger().error(
+                        f"❌ 資料不一致 - AGV_PORT{port_num}: Carrier查詢=空位, EQP狀態={eqp_state}"
+                    )
+                else:
+                    self.node.get_logger().info(
+                        f"✅ AGV_PORT{port_num} 驗證通過: Carrier查詢=空位, EQP狀態={eqp_state}"
+                    )
 
         return validation_passed, validation_errors
-
-    def _handle_port_selection(self, context: RobotContext):
-        """處理port選擇邏輯"""
-        if self.check_ok or not self.search_eqp_signal_ok:
-            return
-
-        port_messages = {
-            self.SELECT_PORT01_PORT02: ("上層有空位", "AGV_PORT1_PORT2", 1),
-            self.SELECT_PORT03_PORT04: ("下層有空位", "AGV_PORT3_PORT4", 3)
-        }
-
-        if self.select_agv_port in port_messages:
-            desc, port, number = port_messages[self.select_agv_port]
-            self.node.get_logger().info(
-                f"Unloader Robot Take Pre Dryer AgvPortCheckEmpty 狀態: {desc}")
-            self.node.get_logger().info(f"執行AGV端口{port}")
-            context.get_unloader_agv_port_back = number
-            self.check_ok = True
-        else:
-            self.node.get_logger().error("Unloader Robot Take Pre Dryer AgvPortCheckEmpty 狀態: AGV端口都沒有空位")
-            self.node.get_logger().error("無法執行AGV端口操作，請檢查AGV端口狀態。")
-            context.get_unloader_agv_port_back = None
-            self._reset_state()
 
     def handle(self, context: RobotContext):
         self._update_context_states(context)
 
-        # 查詢EQP信號
+        # 步驟 1: 查詢 EQP 信號
         if not self.search_eqp_signal_ok and not self.sent:
+            self.node.get_logger().info("🔍 開始查詢 AGV 所有 4 個 ports 的 EQP 信號狀態")
             self.eqp_signal_query_client.search_eqp_signal_eqp_id(
                 self.eqp_id, self.eqp_signal_query_callback)
             self.sent = True
+            return
 
         print("🔶=========================================================================🔶")
 
-        self._handle_port_selection(context)
-
-        # 查詢Carrier
-        if self.check_ok and not self.carrier_query_sended:
-            self.agv_port_number = context.get_unloader_agv_port_back
+        # 步驟 2: 查詢所有 4 個 ports 的 Carrier
+        if self.search_eqp_signal_ok and not self.carrier_query_sended:
+            port_id_min = self.port_address + 1  # 2111
+            port_id_max = self.port_address + 4  # 2114
             self.node.get_logger().info(
-                f"🔍 查詢 AGV 端口 {self.port_address + self.agv_port_number} 的 Carrier")
-            port_id_target = self.port_address + self.agv_port_number
+                f"🔍 查詢 AGV 所有 4 個 ports ({port_id_min}-{port_id_max}) 的 Carrier")
             self.carrier_query_client.search_carrier_port_id(
-                port_id_min=port_id_target, port_id_max=port_id_target+1, callback=self.carrier_callback)
+                port_id_min=port_id_min,
+                port_id_max=port_id_max,
+                callback=self.carrier_callback)
             self.carrier_query_sended = True
+            return
 
-        # 處理Carrier查詢結果
-        if self.check_ok and self.carrier_query_success:
-            port_id_min = self.port_address + self.agv_port_number
-            port_id_max = port_id_min + 1
+        # 步驟 3: 處理 Carrier 查詢結果
+        if self.carrier_query_success:
+            # 執行驗證：檢查所有 4 個 ports 是否都為空
+            self.node.get_logger().info("🔍 開始驗證所有 4 個 ports 是否都為空")
+            validation_passed, validation_errors = self._validate_eqp_states(context)
 
-            # 檢查兩個 port 是否都為空（適合 PUT 操作的空位檢查）
-            if self.carrier_id_min is None and self.carrier_id_max is None:
-                # 兩個 port 都為空，進行 EQP 信號狀態驗證
+            if validation_passed:
+                # 所有 4 個 ports 都為空，驗證通過
                 self.node.get_logger().info(
-                    f"雙 Port 組合 {port_id_min}-{port_id_max} 都為空，開始 EQP 狀態驗證。")
-
-                # 執行 EQP 狀態驗證
-                validation_passed, validation_errors = self._validate_eqp_states(context)
-
-                if validation_passed:
-                    # EQP 狀態驗證通過，可以執行 PUT 操作
-                    self.node.get_logger().info(
-                        f"✅ AGV端口 {port_id_min}-{port_id_max} EQP 狀態驗證通過，可以執行AGV端口操作")
-                    # AGV端口檢查完成，可以進入下一個狀態
-                    self.node.get_logger().info("AGV端口檢查完成")
-                    from unloader_agv.robot_states.take_pre_dryer.take_pre_dryer_state import TakePreDryerState
-                    context.set_state(TakePreDryerState(self.node))
-                else:
-                    # EQP 狀態驗證失敗，重置狀態
-                    self.node.get_logger().error(f"❌ AGV端口 {port_id_min}-{port_id_max} EQP 狀態驗證失敗:")
-                    for error in validation_errors:
-                        self.node.get_logger().error(f"   - {error}")
-                    self.node.get_logger().error("Carrier 查詢結果與 EQP 硬體信號狀態不一致，重置狀態")
-                    self._reset_state()
+                    f"✅ AGV 所有 4 個 ports 都為空，EQP 狀態驗證通過，可以執行取料操作")
+                self.node.get_logger().info("✅ AGV 端口檢查完成，進入取料狀態")
+                from unloader_agv.robot_states.take_pre_dryer.take_pre_dryer_state import TakePreDryerState
+                context.set_state(TakePreDryerState(self.node))
             else:
-                # 至少有一個 port 有貨，無法執行 PUT 操作
-                self.node.get_logger().error(f"Carrier 查詢成功，至少有一個 Port 有貨物")
-                self.node.get_logger().error(
-                    f"雙 Port 組合 {port_id_min}-{port_id_max} 至少有一個port有貨物，無法執行AGV端口操作。")
+                # 驗證失敗（部分 port 有貨或數據不一致），重置狀態
+                self.node.get_logger().error(f"❌ AGV 端口驗證失敗:")
+                for error in validation_errors:
+                    self.node.get_logger().error(f"   - {error}")
+                self.node.get_logger().error("🔄 重置狀態，等待 AGV 端口清空")
                 self._reset_state()

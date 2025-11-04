@@ -1,7 +1,7 @@
 metadata:
   id: "loader_take_boxin_transfer"
   name: "Loader AGV 從入口傳送箱取料"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查入口傳送箱待處理載具，創建 Loader AGV 取料任務（標準設備）"
   author: "TAFL System"

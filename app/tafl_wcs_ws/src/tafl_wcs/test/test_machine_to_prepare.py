@@ -27,7 +27,7 @@ async def test_machine_to_prepare_success():
     test_rack_id = 601
     test_machine_id = 99
     parking_space_1 = 201  # 測試用停車格
-    prepare_location_id = 11  # 系統準備區第一位
+    prepare_location_id = 2  # 系統準備區第一位
 
     try:
         # 清理舊資料
@@ -42,6 +42,13 @@ async def test_machine_to_prepare_success():
         # 創建測試資料
         print("\n📝 創建測試資料...")
         with pool_manager.get_session() as session:
+            # 確保停車格 location 有 node_id（測試用）
+            session.exec(
+                update(Location)
+                .where(Location.id == parking_space_1)
+                .values(node_id=201)  # 設定測試用 node_id
+            )
+
             # 確保停車格 location 有 node_id（測試用）
             session.exec(
                 update(Location)
@@ -74,15 +81,16 @@ async def test_machine_to_prepare_success():
             session.add(rack)
 
             # 確保準備區有空位和 node_id
+            # 確保準備區有空位和 node_id
             session.exec(
                 update(Location)
                 .where(Location.id == prepare_location_id)
-                .values(location_status_id=2, rack_id=None, node_id=11)
+                .values(location_status_id=2, rack_id=None, node_id=2)
             )
             session.commit()
             print("✅ 測試資料創建完成（機台停車格有已派車料架，準備區有空位）")
             print(f"   停車格 location {parking_space_1} node_id: 201")
-            print(f"   準備區 location {prepare_location_id} node_id: 11")
+            print(f"   準備區 location {prepare_location_id} node_id: 2")
 
         # 執行流程
         print("\n🚀 執行流程...")
@@ -97,6 +105,7 @@ async def test_machine_to_prepare_success():
             tasks = session.exec(
                 select(Task).where(
                     Task.rack_id == test_rack_id,
+                    Task.work_id == 220001  # KUKA_RACK_MOVE
                     Task.work_id == 220001  # KUKA_RACK_MOVE
                 )
             ).all()
@@ -113,15 +122,39 @@ async def test_machine_to_prepare_success():
                     print(f"   ❌ 錯誤：work_id 應為 220001 (RACK_MOVE)，實際為 {task.work_id}")
                     return False
                 print(f"   ✅ Work ID 正確 (220001 - RACK_MOVE)")
+
+                # 驗證 work_id 正確性
+                if task.work_id != 220001:
+                    print(f"   ❌ 錯誤：work_id 應為 220001 (RACK_MOVE)，實際為 {task.work_id}")
+                    return False
+                print(f"   ✅ Work ID 正確 (220001 - RACK_MOVE)")
                 print(f"   優先級: {task.priority}")
                 if task.parameters:
                     target_loc_id = task.parameters.get('target_location_id')
                     target_loc_name = task.parameters.get('target_location_name')
                     nodes = task.parameters.get('nodes')
                     model = task.parameters.get('model')
+                    nodes = task.parameters.get('nodes')
+                    model = task.parameters.get('model')
                     print(f"   源位置: {task.parameters.get('source_location_id')}")
                     print(f"   目標位置ID: {target_loc_id}")
                     print(f"   目標位置名稱: {target_loc_name}")
+                    print(f"   nodes: {nodes}")
+                    print(f"   model: {model}")
+
+                    # 驗證 KUKA 必要參數
+                    if not nodes or not isinstance(nodes, list) or len(nodes) != 2:
+                        print(f"   ❌ 錯誤：缺少 nodes 參數或格式不正確")
+                        return False
+                    # 檢查 node_id 不為 None
+                    if nodes[0] is None or nodes[1] is None:
+                        print(f"   ❌ 錯誤：nodes 包含 None 值: {nodes}")
+                        return False
+                    if model != "KUKA400i":
+                        print(f"   ❌ 錯誤：model 應為 KUKA400i，實際為 {model}")
+                        return False
+                    print(f"   ✅ KUKA 參數完整 (nodes: {nodes}, model: KUKA400i)")
+
                     print(f"   nodes: {nodes}")
                     print(f"   model: {model}")
 
@@ -234,6 +267,7 @@ async def test_machine_to_prepare_no_room_id():
             tasks = session.exec(
                 select(Task).where(
                     Task.rack_id == test_rack_id,
+                    Task.work_id == 220001  # KUKA_RACK_MOVE
                     Task.work_id == 220001  # KUKA_RACK_MOVE
                 )
             ).all()

@@ -101,12 +101,33 @@ Unloader AGV 採用自動 work_id 路由系統，格式：`room_id + equipment_t
 
 ### 技術實作特點
 - **批量處理邏輯**: 所有操作都採用 **一次2格** 的高效方式
+- **任務與執行動作的對應關係** ⚠️ 重要設計邏輯：
+  - **TAFL 任務定義**: 一次任務的 `batch_size = 4` (處理4個 Carrier)
+  - **機械臂能力**: 一次取放動作只能處理 **2格** Carrier
+  - **執行邏輯**: **一次任務需要執行 2次取放動作**
+    ```
+    TAFL 任務: batch_size=4, ports=[2051, 2052, 2055, 2056]
+      ↓
+    第1次動作: 從 port 2051, 2052 取2格 → 放到 AGV 車上排（或下排）
+      ↓
+    第2次動作: 從 port 2055, 2056 取2格 → 放到 AGV 車另一排
+      ↓
+    任務完成: 總共處理 4格 Carrier
+    ```
+  - **與 Loader AGV 對比**:
+    - Loader AGV: 一次任務 = 一次動作 (batch_size=1, 處理1格)
+    - Unloader AGV: 一次任務 = 兩次動作 (batch_size=4, 處理4格)
+  - **設計優勢**:
+    - 平衡了機械臂硬體限制（一次2格）與任務效率（批量4格）
+    - 減少 TAFL WCS 任務調度頻率，提升系統整體效率
+    - 充分利用 AGV 4格料架容量（上2格 + 下2格）
 - **效率提升**: 減少機械臂動作次數，提高整體製程效率
 - **參數化控制**: UnloaderRobotParameter 支援多工位參數管理和批量計算
 - **車載料架管理**: 上下排分離設計，最佳化批量處理效率
 - **完整測試覆蓋**: 具備預烘機計算邏輯和取料數量的專項測試
 
-## 📂 關鍵檔案位置
+## 📂 完整檔案結構
+## 📂 完整檔案結構
 
 ### 核心控制
 ```
@@ -114,46 +135,73 @@ unloader_agv/
 ├─ agv_core_node.py          # Unloader AGV 核心控制節點
 ├─ unloader_context.py       # Unloader 狀態管理上下文 (AGV層)
 ├─ robot_context.py          # 機器人狀態控制 (Robot層)
-└─ launch/launch.py          # ROS 2 啟動配置
+├─ status_json_recorder.py   # 狀態 JSON 記錄器
+├─ launch/launch.py          # ROS 2 啟動配置
+└─ robot_states/
+    ├─ __init__.py           # 模組初始化檔案
+    ├─ base_robot_state.py   # Robot 狀態基類
+    ├─ complete_state.py     # 完成狀態
+    ├─ idle_state.py         # 閒置狀態
+    ├─ unloader_robot_parameter.py  # Unloader 參數計算
+    ├─ take_pre_dryer/       # 從預烘機取料（5個狀態檔案）
+    ├─ take_oven/            # 從烘箱取料（5個狀態檔案）
+    ├─ put_oven/             # 放料到烘箱（5個狀態檔案）
+    └─ put_boxout_transfer/  # 放料到出口傳送箱（5個狀態檔案）
 ```
 
-### 測試套件
-```
-test/
-├─ README.md                           # 測試說明文檔
-├─ test_pre_dryer_calculation.py       # 預烘機計算邏輯測試
-└─ test_take_quantity.py               # 取料數量計算測試
-```
+### 測試說明
+⚠️ **Unloader AGV 本身無任何測試**
 
-## 🚀 Unloader AGV 專用測試
+**測試歷史**：
+- **單元測試**：曾於 2025-07-22 實作，於 2025-08-18 被刪除
+  - 刪除檔案：`test_pre_dryer_calculation.py`, `test_take_quantity.py`, `README.md`
+  - 測試內容：Port 計算邏輯、取料數量計算、邊界條件處理
+  - 刪除原因：系統性測試策略調整（提交 672d2719）
 
-### 車型特定測試
+- **狀態機測試**：從未實作
+  - `robot_states/` 中的所有狀態類別無測試覆蓋
+  - `UnloaderRobotParameter` 計算邏輯無測試驗證
+
+**相關測試（WCS 層級）**：
+- **位置**：`/app/tafl_wcs_ws/src/tafl_wcs/test/test_unloader_flows.py`
+- **測試範圍**：TAFL 流程能否為 Unloader AGV 創建正確的 Task
+- **測試內容**：4 個業務流程的任務創建驗證
+- **⚠️ 重要限制**：僅測試 WCS 任務調度層，**不測試 AGV 控制邏輯和狀態機**
+
+## 🚀 測試與驗證
+
+### WCS 層級測試（僅測試任務調度）
 ```bash
-# 【推薦方式】透過上層工作空間工具
-# 參考: ../CLAUDE.md 開發環境設定
+# ⚠️ 注意：此測試不驗證 Unloader AGV 本身的控制邏輯
+cd /app/tafl_wcs_ws/src/tafl_wcs
+python3 test/test_unloader_flows.py
 
-# 【直接測試】Unloader AGV 功能
-cd /app/agv_ws/src/unloader_agv
-python3 -m pytest test/ -v
+# 測試範圍：
+# - ✅ TAFL 流程執行正確性
+# - ✅ Task 創建與參數正確性（work_id, batch_size, ports 等）
+# - ✅ 資料庫操作正確性
+# - ❌ 不測試 AGV 狀態機邏輯
+# - ❌ 不測試 robot_states/ 狀態轉換
+# - ❌ 不測試 Port 計算和數量計算
 ```
 
-## 🧪 Unloader AGV 專項功能測試
+### AGV 功能驗證建議
+**如需驗證 Unloader AGV 本身的功能，建議：**
+1. **重新實作單元測試**（參考 Loader AGV 測試結構）
+   - 測試 `UnloaderRobotParameter` 計算邏輯
+   - 測試各 robot_states 的狀態轉換
+   - 測試批量處理邏輯（一次2格）
 
-### 批量處理邏輯測試
-```bash
-# 一次2格批量處理測試
-python3 -m pytest test/test_pre_dryer_calculation.py -v    # 預烘機計算邏輯
-python3 -m pytest test/test_take_quantity.py -v           # 取料數量計算
+2. **實際系統運行驗證**
+   - 在測試環境執行完整業務流程
+   - 驗證 Port 計算：Port 1-4 → row=1, Port 5-8 → row=2
+   - 驗證 Take Quantity 邏輯和參數轉換
+   - 驗證邊界條件處理
 
-# 直接執行測試
-python3 test/test_pre_dryer_calculation.py
-python3 test/test_take_quantity.py
-
-# 測試邏輯驗證要點:
-# - Pre Dryer Port 計算: Port 1-4 → row=1, Port 5-8 → row=2
-# - Take Quantity 邏輯: 批量 Carrier 查詢和參數轉換
-# - 邊界條件處理: 2格批量處理的邊界情況
-```
+3. **集成測試**（需實作）
+   - AGV 狀態機與 PLC 整合測試
+   - 視覺定位系統整合測試
+   - 完整取放料流程測試
 
 ## 📊 配置設定
 

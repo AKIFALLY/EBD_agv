@@ -86,6 +86,47 @@ class Robot():
         self.pgno_read_requested = False
         self.error_number_read_requested = False
 
+        # 讀取 Robot Parameter 相關變數
+        self.read_robot_parameter_step = 0
+        self.read_robot_parameter_response = None
+        self.read_robot_parameter_success = False
+        self.read_robot_parameter_failed = False
+        self.robot_parameter_read_requested = False
+
+        # Robot Parameter 個別屬性 (W110~W12F)
+        self.w110 = None
+        self.w111 = None
+        self.w112 = None
+        self.w113 = None
+        self.w114 = None
+        self.w115 = None
+        self.w116 = None
+        self.w117 = None
+        self.w118 = None
+        self.w119 = None
+        self.w11a = None
+        self.w11b = None
+        self.w11c = None
+        self.w11d = None
+        self.w11e = None
+        self.w11f = None
+        self.w120 = None
+        self.w121 = None
+        self.w122 = None
+        self.w123 = None
+        self.w124 = None
+        self.w125 = None
+        self.w126 = None
+        self.w127 = None
+        self.w128 = None
+        self.w129 = None
+        self.w12a = None
+        self.w12b = None
+        self.w12c = None
+        self.w12d = None
+        self.w12e = None
+        self.w12f = None
+
         # 其他操作相關變數
         self.write_step = 0
         self.update_response = None
@@ -155,6 +196,63 @@ class Robot():
             if (response.success and response.value != "0"):
                 #self.node.get_logger().info(f"🔍 Robot Error Number: {response.value}")
                 pass
+
+    def read_robot_parameter_callback(self, response):
+        """Robot Parameter 讀取回調函數"""
+        self.read_robot_parameter_success = response.success
+        self.read_robot_parameter_failed = not response.success
+        self.read_robot_parameter_response = response
+        self.robot_parameter_read_requested = False
+
+        # 新增錯誤處理日誌
+        if not response.success:
+            error_msg = f"❌ read_robot_parameter_callback 讀取失敗"
+            if hasattr(response, 'message') and response.message:
+                error_msg += f" - 錯誤訊息: {response.message}"
+            if hasattr(response, 'error_code') and response.error_code:
+                error_msg += f" - 錯誤代碼: {response.error_code}"
+            self.node.get_logger().error(error_msg)
+        else:
+            # 更新個別屬性 (W110~W12F)
+            if len(response.values) >= 32:
+                self.w110 = response.values[0]
+                self.w111 = response.values[1]
+                self.w112 = response.values[2]
+                self.w113 = response.values[3]
+                self.w114 = response.values[4]
+                self.w115 = response.values[5]
+                self.w116 = response.values[6]
+                self.w117 = response.values[7]
+                self.w118 = response.values[8]
+                self.w119 = response.values[9]
+                self.w11a = response.values[10]
+                self.w11b = response.values[11]
+                self.w11c = response.values[12]
+                self.w11d = response.values[13]
+                self.w11e = response.values[14]
+                self.w11f = response.values[15]
+                self.w120 = response.values[16]
+                self.w121 = response.values[17]
+                self.w122 = response.values[18]
+                self.w123 = response.values[19]
+                self.w124 = response.values[20]
+                self.w125 = response.values[21]
+                self.w126 = response.values[22]
+                self.w127 = response.values[23]
+                self.w128 = response.values[24]
+                self.w129 = response.values[25]
+                self.w12a = response.values[26]
+                self.w12b = response.values[27]
+                self.w12c = response.values[28]
+                self.w12d = response.values[29]
+                self.w12e = response.values[30]
+                self.w12f = response.values[31]
+
+            # 新增成功處理日誌
+            success_msg = f"✅ read_robot_parameter_callback 讀取成功: {len(response.values)} 個參數"
+            self.node.get_logger().info(success_msg)
+
+        self.read_robot_parameter_step = 0
 
     def update_pgno_callback(self, response):
         self.update_pgno_success = response.success
@@ -226,6 +324,63 @@ class Robot():
 
             case 1:
                 self.node.get_logger().info("等待更新參數")
+
+    def read_robot_parameter(self):
+        """讀取 Robot Parameter (從 W110 開始連續讀取 32 word)"""
+        device_type = 'W'
+        address = '110'
+        count = 32
+
+        match self.read_robot_parameter_step:
+            case 0:
+                self.robot_parameter_read_requested = True
+                self.plc_client.async_read_continuous_data(
+                    device_type=device_type,
+                    start_address=address,
+                    count=count,
+                    callback=self.read_robot_parameter_callback
+                )
+                self.read_robot_parameter_step = 1
+
+            case 1:
+                self.node.get_logger().info("等待 Robot Parameter 讀取完成")
+
+    def check_parameter_match(self, expected_values: dict) -> tuple[bool, str]:
+        """
+        檢查讀取的參數是否符合預期
+
+        Args:
+            expected_values: {屬性名: 預期值}
+                            例如 {'w114': 1, 'w115': 2}
+                            屬性名使用小寫 (w110-w12f)
+
+        Returns:
+            (是否全部匹配, 訊息)
+            - True: 所有參數都匹配
+            - False: 有參數不匹配或尚未讀取
+
+        Example:
+            >>> match, msg = robot.check_parameter_match({'w114': 1, 'w115': 2})
+            >>> if not match:
+            >>>     logger.warn(f"參數檢查: {msg}")
+        """
+        if not self.read_robot_parameter_success:
+            return (False, "參數尚未讀取成功")
+
+        mismatches = []
+        for attr_name, expected_value in expected_values.items():
+            actual_value = getattr(self, attr_name, None)
+            if actual_value is None:
+                mismatches.append(f"{attr_name.upper()}: 未讀取到值")
+            elif actual_value != expected_value:
+                mismatches.append(
+                    f"{attr_name.upper()}: 預期={expected_value}, 實際={actual_value}"
+                )
+
+        if mismatches:
+            return (False, "; ".join(mismatches))
+
+        return (True, "所有參數匹配")
 
     # def write_pgno(self, command: str) -> bool:
 #

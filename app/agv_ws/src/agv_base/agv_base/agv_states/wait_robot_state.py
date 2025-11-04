@@ -11,7 +11,6 @@ class WaitRobotState(State):
         self.agvdbclient = AGVCDatabaseClient(node)
         self.count = 0
         self.test = 0
-        
 
     def enter(self):
         self.node.get_logger().info("🤖 AGV 進入: WaitRobot 狀態")
@@ -29,7 +28,7 @@ class WaitRobotState(State):
         self.count += 1
 
         # 優先處理 robot_finished，因為需要執行路徑刪除等清理工作
-        if self.node.robot_finished:
+        if self.node.robot_finished or self.node.agv_status.AGV_LD_COMPLETE:
             # robot_finished=True 時，無論是否有路徑都要執行完成流程
             self.node.task.status_id = TaskStatus.COMPLETED # 已完成 (AGV-任務已完成)
             self.agvdbclient.async_update_task(self.node.task,self.task_update_callback)  # 更新任務狀態為執行中
@@ -79,4 +78,4 @@ class WaitRobotState(State):
         if response.success:
             print(f"✅ 任務更新成功，訊息: {response.message}")
         else:
-            print(f"⚠️ 任務更新失敗，訊息: {response.message}")   
+            print(f"⚠️ 任務更新失敗，訊息: {response.message}")

@@ -20,19 +20,21 @@ class RunningState(State):
     def enter(self):
         self.node.get_logger().info("🏃 AGV 進入: Running 狀態")
         
-        # 【新增】訂閱任務資料，參考 mission_select_state - 使用高效能 QoS 配置
+        # 【新增】訂閱任務資料，參考 mission_select_state - QoS 必須與 Publisher 匹配
         from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
-        
-        # 設定高效能的 QoS 配置
+
+        # ⚠️ 重要：QoS 必須與 agvc_database_node 的 Publisher 匹配
+        # Publisher 使用：RELIABLE + VOLATILE + depth=10
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
-            depth=50  # 增加隊列深度以提高訂閱效能
+            durability=DurabilityPolicy.VOLATILE,  # 修正：改為 VOLATILE 以匹配 Publisher
+            depth=10  # 匹配 Publisher 的 depth
         )
-        
+
         # 直接使用 node.create_subscription() 並手動管理訂閱
         subscription = self.node.create_subscription(Tasks, '/agvc/tasks', self.tasks_callback, qos_profile)
         self.subscriptions.append(subscription)
+        self.node.get_logger().info("📡 已訂閱 /agvc/tasks (QoS: RELIABLE + VOLATILE)")
 
     def leave(self):
         self.node.get_logger().info("🚪 AGV 離開 Running 狀態")
@@ -42,8 +44,8 @@ class RunningState(State):
         if self.latest_tasks:
             from shared_constants.task_status import TaskStatus
             for task in self.latest_tasks:
-                if (task.agv_id == self.node.AGV_id and 
-                    (task.status_id == TaskStatus.READY_TO_EXECUTE or 
+                if (task.agv_id == self.node.agv_id and
+                    (task.status_id == TaskStatus.READY_TO_EXECUTE or
                      task.status_id == TaskStatus.EXECUTING)):
                     self.node.task = task
                     self.node.get_logger().info(f"⚠️ 離開前印出當前任務 (status_id={task.status_id}): " + str(self.node.task))
@@ -62,8 +64,8 @@ class RunningState(State):
             if self.latest_tasks:
                 from shared_constants.task_status import TaskStatus
                 for task in self.latest_tasks:
-                    if (task.agv_id == self.node.AGV_id and 
-                        (task.status_id == TaskStatus.READY_TO_EXECUTE or 
+                    if (task.agv_id == self.node.agv_id and
+                        (task.status_id == TaskStatus.READY_TO_EXECUTE or
                          task.status_id == TaskStatus.EXECUTING)):
                         self.node.task = task
                         self.node.get_logger().info(f"✅ 回到任務選擇前抓取任務 (status_id={task.status_id}): " + str(task.id))
@@ -89,8 +91,8 @@ class RunningState(State):
             if self.latest_tasks:
                 from shared_constants.task_status import TaskStatus
                 for task in self.latest_tasks:
-                    if (task.agv_id == self.node.AGV_id and 
-                        (task.status_id == TaskStatus.READY_TO_EXECUTE or 
+                    if (task.agv_id == self.node.agv_id and
+                        (task.status_id == TaskStatus.READY_TO_EXECUTE or
                          task.status_id == TaskStatus.EXECUTING)):
                         self.node.task = task
                         self.node.get_logger().info(f"✅ 跳轉前抓取任務 (status_id={task.status_id}): " + str(task.id))
@@ -103,7 +105,23 @@ class RunningState(State):
                 from agv_base.agv_states.wait_robot_state import WaitRobotState
                 context.set_state(WaitRobotState(self.node))
             else:
-                self.node.get_logger().warn("⚠️ 任務 ID 為 0 或沒有找到有效任務，不進入 WaitRobot 狀態")
+                # 沒有找到有效任務，回到任務選擇狀態重新評估
+                self.node.get_logger().warn(
+                    f"⚠️ 任務 ID 為 0 或沒有找到有效任務，回到任務選擇狀態"
+                    f"\n  - latest_tasks 數量: {len(self.latest_tasks)}"
+                    f"\n  - 當前 AGV ID: {self.node.agv_id}"
+                    f"\n  - task_found: {task_found}"
+                )
+                # 增加診斷資訊：顯示前3個任務狀態
+                if self.latest_tasks:
+                    for idx, t in enumerate(self.latest_tasks[:3]):
+                        self.node.get_logger().warn(
+                            f"  - Task[{idx}] id={t.id}, agv_id={t.agv_id}, status_id={t.status_id}"
+                        )
+
+                # 跳轉回任務選擇狀態
+                from agv_base.agv_states.mission_select_state import MissionSelectState
+                context.set_state(MissionSelectState(self.node))
 
     def tasks_callback(self, msg: Tasks):
         """任務資料回調函數"""

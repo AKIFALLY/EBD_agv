@@ -38,79 +38,121 @@ class PutAgvState(BaseRobotState):
         self.sent = False
 
     def update_carrier_database(self, context: RobotContext):
-        """更新雙 carrier 資料庫"""
+        """更新所有4個 carrier 資料庫（第2次循環時調用）"""
+        self.node.get_logger().info("📝 開始更新所有4個carrier到數據庫")
+
+        # AGV port基礎地址
+        port_id_address = context.robot.robot_parameter.room_id * 1000 + 110
+
+        # 重置計數器
         self.carrier_updates_pending = 0
-        self.update_carrier_min_success = False
-        self.update_carrier_max_success = False
+        self.carrier_update_results = [False, False, False, False]  # 追踪4個carrier的更新狀態
 
-        # 檢查並更新第一個 carrier (carrier_id[0])
+        # 第1次操作的2個carrier (AGV上層 port 1,2)
         if context.carrier_id[0] is not None:
-            carrier_min = CarrierMsg()
-            carrier_min.id = context.carrier_id[0]
-            carrier_min.room_id = self.node.room_id
-            carrier_min.rack_id = 0
-            carrier_min.port_id = self.port_id_address + context.get_unloader_agv_port_back
-            carrier_min.rack_index = 0
-            carrier_min.status_id = Robot.CARRIER_STATUS_PRE_DRYER_COMPLETED  # 預乾燥機處理完成
+            carrier1 = CarrierMsg()
+            carrier1.id = context.carrier_id[0]
+            carrier1.room_id = self.node.room_id
+            carrier1.rack_id = 0
+            carrier1.port_id = port_id_address + 1  # 2111 (AGV port 1)
+            carrier1.rack_index = 0
+            carrier1.status_id = Robot.CARRIER_STATUS_PRE_DRYER_COMPLETED
 
             self.agvc_client.async_update_carrier(
-                carrier_min, lambda result: self.update_carrier_min_callback(result))
+                carrier1, lambda result, idx=0: self.carrier_update_callback(result, idx))
             self.carrier_updates_pending += 1
-            self.node.get_logger().info(f"🔄 開始更新第一個 Carrier: {context.carrier_id[0]}")
+            self.node.get_logger().info(
+                f"  📦 Carrier[0]: {carrier1.id} → port_id={carrier1.port_id}, status={carrier1.status_id}")
         else:
-            self.update_carrier_min_success = True  # 沒有需要更新的，視為成功
+            self.carrier_update_results[0] = True
 
-        # 檢查並更新第二個 carrier (carrier_id[1])
         if context.carrier_id[1] is not None:
-            carrier_max = CarrierMsg()
-            carrier_max.id = context.carrier_id[1]
-            carrier_max.room_id = self.node.room_id
-            carrier_max.rack_id = 0
-            carrier_max.port_id = self.port_id_address + context.get_unloader_agv_port_back + 1  # 第二個 port
-            carrier_max.rack_index = 0
-            carrier_max.status_id = Robot.CARRIER_STATUS_PREPARE_ENTER_OVEN  # 準備進入烤箱
+            carrier2 = CarrierMsg()
+            carrier2.id = context.carrier_id[1]
+            carrier2.room_id = self.node.room_id
+            carrier2.rack_id = 0
+            carrier2.port_id = port_id_address + 2  # 2112 (AGV port 2)
+            carrier2.rack_index = 0
+            carrier2.status_id = Robot.CARRIER_STATUS_PREPARE_ENTER_OVEN
 
             self.agvc_client.async_update_carrier(
-                carrier_max, lambda result: self.update_carrier_max_callback(result))
+                carrier2, lambda result, idx=1: self.carrier_update_callback(result, idx))
             self.carrier_updates_pending += 1
-            self.node.get_logger().info(f"🔄 開始更新第二個 Carrier: {context.carrier_id[1]}")
+            self.node.get_logger().info(
+                f"  📦 Carrier[1]: {carrier2.id} → port_id={carrier2.port_id}, status={carrier2.status_id}")
         else:
-            self.update_carrier_max_success = True  # 沒有需要更新的，視為成功
+            self.carrier_update_results[1] = True
+
+        # 第2次操作的2個carrier (AGV下層 port 3,4)
+        if context.carrier_id[2] is not None:
+            carrier3 = CarrierMsg()
+            carrier3.id = context.carrier_id[2]
+            carrier3.room_id = self.node.room_id
+            carrier3.rack_id = 0
+            carrier3.port_id = port_id_address + 3  # 2113 (AGV port 3)
+            carrier3.rack_index = 0
+            carrier3.status_id = Robot.CARRIER_STATUS_PRE_DRYER_COMPLETED
+
+            self.agvc_client.async_update_carrier(
+                carrier3, lambda result, idx=2: self.carrier_update_callback(result, idx))
+            self.carrier_updates_pending += 1
+            self.node.get_logger().info(
+                f"  📦 Carrier[2]: {carrier3.id} → port_id={carrier3.port_id}, status={carrier3.status_id}")
+        else:
+            self.carrier_update_results[2] = True
+
+        if context.carrier_id[3] is not None:
+            carrier4 = CarrierMsg()
+            carrier4.id = context.carrier_id[3]
+            carrier4.room_id = self.node.room_id
+            carrier4.rack_id = 0
+            carrier4.port_id = port_id_address + 4  # 2114 (AGV port 4)
+            carrier4.rack_index = 0
+            carrier4.status_id = Robot.CARRIER_STATUS_PREPARE_ENTER_OVEN
+
+            self.agvc_client.async_update_carrier(
+                carrier4, lambda result, idx=3: self.carrier_update_callback(result, idx))
+            self.carrier_updates_pending += 1
+            self.node.get_logger().info(
+                f"  📦 Carrier[3]: {carrier4.id} → port_id={carrier4.port_id}, status={carrier4.status_id}")
+        else:
+            self.carrier_update_results[3] = True
 
         # 如果沒有需要更新的 carrier，直接設為成功
         if self.carrier_updates_pending == 0:
             self.update_carrier_success = True
             self.node.get_logger().info("ℹ️ 沒有需要更新的 Carrier")
-
-    def update_carrier_min_callback(self, result):
-        """第一個 carrier 更新回調"""
-        if result is not None:
-            self.node.get_logger().info(
-                f"✅ 第一個 Carrier 更新成功: {result.success}, {result.message}")
-            self.update_carrier_min_success = True
         else:
-            self.node.get_logger().error("❌ 第一個 Carrier 更新失敗")
-            self.update_carrier_min_success = False
+            self.node.get_logger().info(f"✅ 已發送 {self.carrier_updates_pending} 個carrier更新請求")
 
-        self._check_all_carriers_updated()
-
-    def update_carrier_max_callback(self, result):
-        """第二個 carrier 更新回調"""
-        if result is not None:
+    def carrier_update_callback(self, result, carrier_index):
+        """統一的 carrier 更新回調（追踪所有4個carrier的更新狀態）"""
+        if result is not None and result.success:
+            self.carrier_update_results[carrier_index] = True
             self.node.get_logger().info(
-                f"✅ 第二個 Carrier 更新成功: {result.success}, {result.message}")
-            self.update_carrier_max_success = True
+                f"✅ Carrier[{carrier_index}] 更新成功: {result.message}")
         else:
-            self.node.get_logger().error("❌ 第二個 Carrier 更新失敗")
-            self.update_carrier_max_success = False
+            self.carrier_update_results[carrier_index] = False
+            self.node.get_logger().error(f"❌ Carrier[{carrier_index}] 更新失敗")
 
+        # 檢查是否所有carrier都已更新完成
         self._check_all_carriers_updated()
 
     def _check_all_carriers_updated(self):
         """檢查所有 carrier 是否都已更新完成"""
-        if self.update_carrier_min_success and self.update_carrier_max_success:
-            self.update_carrier_success = True
-            self.node.get_logger().info("✅ 所有 Carrier 更新完成")
+        # 計算已完成的更新數量
+        completed_count = sum(1 for result in self.carrier_update_results if result)
+
+        # 如果所有待更新的carrier都已完成
+        if completed_count >= self.carrier_updates_pending:
+            # 檢查是否全部成功
+            if all(self.carrier_update_results):
+                self.update_carrier_success = True
+                self.node.get_logger().info(f"✅✅ 所有{self.carrier_updates_pending}個Carrier更新完成！")
+            else:
+                self.update_carrier_success = False
+                failed_indices = [i for i, result in enumerate(self.carrier_update_results) if not result]
+                self.node.get_logger().error(f"❌ 部分Carrier更新失敗: {failed_indices}")
 
     def _set_hokuyo_busy(self):
         """設定 Hokuyo write_busy"""
@@ -147,13 +189,33 @@ class PutAgvState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Unloader Robot Take Pre Dryer PUT AGV CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 unloader_agv_port_back → W110
+                # layer_z = ((port-1) // 2) + 1, layer_y = 0
+                layer_z_back = ((context.get_unloader_agv_port_back - 1) // 2) + 1
+                layer_y_back = 0
+                expected_params['w110'] = (layer_z_back | (layer_y_back << 16))
+
+                self.node.get_logger().info(
+                    f"預期檢查: agv_port_back={context.get_unloader_agv_port_back} → "
+                    f"W110 (z={layer_z_back}, y={layer_y_back})")
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    self.step = RobotContext.WRITE_CHG_PARA
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Unloader Robot Take Pre Dryer PUT AGV WRITE CHG PARA")
@@ -238,17 +300,65 @@ class PutAgvState(BaseRobotState):
             case RobotContext.UPDATE_DATABASE:
                 self.node.get_logger().info("Unloader Robot Take Pre Dryer PUT AGV UPDATE_DATABASE")
                 if not self.sent:
-                    self.update_carrier_database(context)
+                    # 根據循環次數決定是否更新數據庫
+                    cycle_num = context.take_put_cycle_count + 1
+
+                    if context.take_put_cycle_count == 0:
+                        # 第1次: 不更新數據庫，只暫存
+                        self.node.get_logger().info(f"✅ 第{cycle_num}次放料完成，暫不更新數據庫")
+                    else:
+                        # 第2次: 更新所有4個carrier
+                        self.node.get_logger().info(f"✅ 第{cycle_num}次放料完成，開始更新所有4個carrier")
+                        self.update_carrier_database(context)
+
                     self.sent = True
-                elif self.sent and self.update_carrier_success:
-                    self.node.get_logger().info("✅更新 Carrier 資料庫成功")
+
+                elif self.sent:
+                    # 判斷是否需要進行第2次循環
+                    if context.take_put_cycle_count < context.take_put_max_cycles - 1:
+                        # ====== 第1次完成，準備第2次 ======
+                        context.take_put_cycle_count += 1
+
+                        # 切換到第2組ports
+                        context.take_put_current_batch = context.take_put_port_groups[1]
+                        context.get_pre_dryer_port = context.take_put_current_batch[0]
+
+                        # 更新AGV port參數（第2次放到下層port 3,4）
+                        context.get_unloader_agv_port_back = 3
+
+                        # 重置步驟和標誌
+                        self.sent = False
+                        self.step = RobotContext.IDLE
+                        self.hokuyo_busy_write_completed = False
+
+                        self.node.get_logger().info("=" * 80)
+                        self.node.get_logger().info("✅✅ 第1次取放完成")
+                        self.node.get_logger().info(
+                            f"🔄 開始第2次操作："
+                            f"\n  取 pre_dryer ports {context.take_put_current_batch}"
+                            f"\n  放到 AGV ports [3, 4]")
+                        self.node.get_logger().info("=" * 80)
+
+                        # 返回 TakePreDryerState 進行第2次取放
+                        from unloader_agv.robot_states.take_pre_dryer.take_pre_dryer_state import TakePreDryerState
+                        context.set_state(TakePreDryerState(self.node))
+
+                    else:
+                        # ====== 第2次完成，所有操作完成 ======
+                        # 確保數據庫更新成功
+                        if self.update_carrier_success:
+                            self.node.get_logger().info("=" * 80)
+                            self.node.get_logger().info("✅✅✅ 兩次取放操作全部完成 ✅✅✅")
+                            self.node.get_logger().info("✅ 已更新所有4個carrier的數據庫")
+                            self.node.get_logger().info("=" * 80)
+
+                            from unloader_agv.robot_states.complete_state import CompleteState
+                            context.set_state(CompleteState(self.node))
+                        else:
+                            self.node.get_logger().error("❌ 數據庫更新失敗，等待重試")
+                            return
+
                     self.sent = False
-
-                    # 完成 PUT_AGV 流程，進入完成狀態
-                    self.node.get_logger().info("✅ Put AGV 完成: 進入 CompleteState")
-                    from unloader_agv.robot_states.complete_state import CompleteState
-                    context.set_state(CompleteState(self.node))
-
                     self.step = RobotContext.IDLE
 
     def handle(self, context: RobotContext):

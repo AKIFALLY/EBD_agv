@@ -17,15 +17,26 @@ class TakeSoakerState(BaseRobotState):
         self.sent = False
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Take Soaker 目前狀態: TakeSoaker")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Take Soaker 目前狀態: TakeSoaker")
         self.sent = False
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Take Soaker 離開 TakeSoaker 狀態")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Take Soaker 離開 TakeSoaker 狀態")
         self.sent = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Loader Robot Take Soaker TakeSoaker 狀態")
+        # 單格處理：從泡藥機取1格 → 機械臂
+        source_soaker_port = context.get_soaker_port
+        target_agv_port = context.get_loader_agv_port_side
+
+        self.node.get_logger().info(
+            f"[Station-based 1格] 取料 (Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: 泡藥機 Port {source_soaker_port} (Station {source_soaker_port:02d}) → 目標: 機械臂")
+        self.node.get_logger().info(
+            f"最終目標: AGV Port {target_agv_port} (偶數層策略)")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -45,13 +56,15 @@ class TakeSoakerState(BaseRobotState):
             self._execute_robot_logic(context, TAKE_SOAKER_PGNO, read_pgno)
 
     def _execute_robot_logic(self, context: RobotContext, TAKE_SOAKER_PGNO, read_pgno):
-        """執行機器人邏輯"""
+        """執行機器人邏輯 - 單格處理"""
         match self.step:
             case RobotContext.IDLE:
-                self.node.get_logger().info("Loader Robot Take Soaker TAKE SOAKER IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Take Soaker TAKE SOAKER IDLE")
                 self.step = RobotContext.CHECK_IDLE
             case RobotContext.CHECK_IDLE:
-                self.node.get_logger().info("Loader Robot Take Soaker TAKE SOAKER CHECK_IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Take Soaker TAKE SOAKER CHECK_IDLE")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
@@ -69,13 +82,35 @@ class TakeSoakerState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Take Soaker TAKE SOAKER CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 soaker_port → W118(layer_z_soaker), W119(layer_y_soaker)
+                # 根據新邏輯，W118 固定為 1（不隨 port 變化）
+                expected_params['w118'] = 1
+                expected_params['w119'] = 0
+
+                self.node.get_logger().info(
+                    f"預期檢查: soaker_port={context.get_soaker_port} → "
+                    f"W118=1 (固定值), W119=0"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Loader Robot Take Soaker TAKE SOAKER WRITE CHG PARA")
@@ -148,18 +183,23 @@ class TakeSoakerState(BaseRobotState):
                 else:
                     self.node.get_logger().info("❌手臂動作失敗")
             case RobotContext.FINISH:
-                self.node.get_logger().info("Loader Robot Take Soaker TAKE SOAKER Finish")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Take Soaker TAKE SOAKER Finish")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
                 if read_pgno.value == Robot.IDLE:
-                    self.node.get_logger().info("✅取浸泡完成")
+                    self.node.get_logger().info("✅取泡藥機完成")
 
-                    # 調整狀態轉換邏輯：在 FINISH 狀態確認手臂動作完成後，直接轉換到 PutAgvState
-                    self.node.get_logger().info("✅ Take Soaker 完成: 進入 PutAgvState")
+                    # 單格處理：直接進入 PutAgvState（無批量循環）
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 1格] Take Soaker 完成: 進入 PutAgvState")
+                    self.node.get_logger().info(
+                        f"完整路徑: 泡藥機 Port {context.get_soaker_port} → 機械臂 → "
+                        f"AGV Port {context.get_loader_agv_port_side}")
                     from loader_agv.robot_states.take_soaker.put_agv_state import PutAgvState
                     context.set_state(PutAgvState(self.node))
 
                     self.step = RobotContext.IDLE
                 else:
-                    self.node.get_logger().info("❌取浸泡失敗")
+                    self.node.get_logger().info("❌取泡藥機失敗")

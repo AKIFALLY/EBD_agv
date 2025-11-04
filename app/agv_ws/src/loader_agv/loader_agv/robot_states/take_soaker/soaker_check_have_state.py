@@ -46,19 +46,27 @@ class SoakerCheckHaveState(BaseRobotState):
         self.soaker_number = None
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Take Soaker 目前狀態: SoakerCheckHave")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Take Soaker 目前狀態: SoakerCheckHave")
         self._reset_state()
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Take Soaker 離開 SoakerCheckHave 狀態")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Take Soaker 離開 SoakerCheckHave 狀態")
         self._reset_state()
 
     def eqp_signal_query_callback(self, response):
+        """處理 EqpSignal 查詢回應 - 檢查泡藥機 6 個獨立站點是否有貨
+
+        說明：Take Soaker 檢查邏輯（TAKE 操作需要有貨物）
+        - 泡藥機有 6 個獨立站點（Port 1-6）
+        - TAKE 操作：需要檢查指定 port 是否有貨物
+        """
         for i in range(6):
             self.port_carriers[i] = EqpSignalQueryClient.eqp_signal_port(
                 response, self.port_address + i + 1)
             self.node.get_logger().info(
-                f"Soaker Port {i+1:02d} 有無貨: {self.port_carriers[i]}")
+                f"[Station-based 1格] 泡藥機 Port {i+1:02d} 有無貨: {self.port_carriers[i]}")
 
         self.search_eqp_signal_ok = True
 
@@ -84,14 +92,19 @@ class SoakerCheckHaveState(BaseRobotState):
     def _extract_station_from_work_id(self, context: RobotContext):
         """從 work_id 中提取 station 並映射到 port (使用 EquipmentStations 模組)
 
-        注意：浸泡機是特殊設備（1 station = 1 port）
+        說明：泡藥機是特殊設備（SPECIAL_EQUIPMENT）
+        - 標準設備：1 station = 2 ports（如 Transfer、Cleaner）
+        - 特殊設備：1 station = 1 port（Soaker 是特例）
+        - 6 個獨立站點：Station 01-06 → Port 1-6（1:1映射）
+        - Work ID 範圍：2040101-2040601（6個獨立 Work IDs，TAKE 操作）
         """
         # 調用基類通用方法
         station, ports = self._extract_station_and_ports_from_work_id(context.work_id)
         if station is None:
             return None
 
-        # 浸泡機是特殊設備，一個 station 對應一個 port
+        # 泡藥機是特殊設備，一個 station 對應一個 port
+        # ports 是單元素列表，例如 [1], [2], ... [6]
         port_number = ports[0]
         return port_number
 
@@ -114,57 +127,78 @@ class SoakerCheckHaveState(BaseRobotState):
             self.node.get_logger().info(f"⏳等待{step_name}")
 
     def handle(self, context: RobotContext):
+        # 1. 驗證 Work ID 格式（7位數）
+        work_id_str = str(context.work_id)
+        if len(work_id_str) != 7:
+            self.node.get_logger().error(
+                f"❌ [Station-based 1格] Work ID 格式錯誤: {context.work_id}，"
+                f"必須是7位數格式（REESSAA）")
+            return
+
         self._update_context_states(context)
 
-        # 查詢EQP信號
+        # 2. 查詢 EQP 信號（只執行一次）
         if not self.search_eqp_signal_ok and not self.sent:
+            self.node.get_logger().info(
+                f"[Station-based 1格] 查詢泡藥機端口狀態 (eqp_id={self.eqp_id}), "
+                f"Work ID {context.work_id}")
             self.eqp_signal_query_client.search_eqp_signal_eqp_id(
                 self.eqp_id, self.eqp_signal_query_callback)
             self.sent = True
 
-        # 更新 Hokuyo Input - 使用統一方法
+        # 3. 更新 Hokuyo Input - 使用統一方法
         self._handle_hokuyo_input()
 
         print("🔶=========================================================================🔶")
 
-        # 直接從 work_id 解析 station 並映射到 port，然後進行驗證
+        # 4. 從 work_id 解析 station 並映射到 port，然後進行驗證
         if self.search_eqp_signal_ok and not self.check_ok:
             # 從 work_id 中解析 station 並取得對應的 port
             self.soaker_number = self._extract_station_from_work_id(context)
             if self.soaker_number is None:
-                self.node.get_logger().error("無法從 work_id 解析 station，重置狀態")
+                self.node.get_logger().error(
+                    f"❌ [Station-based 1格] 無法從 work_id {context.work_id} 解析 station，重置狀態")
                 self._reset_state()
                 return
 
-            # 檢查解析出的端口號碼是否有效
+            # 檢查解析出的端口號碼是否有效（泡藥機有6個獨立站點）
             if not (1 <= self.soaker_number <= 6):
-                self.node.get_logger().error(f"❌ 無效的端口號碼: {self.soaker_number}")
+                self.node.get_logger().error(
+                    f"❌ [Station-based 1格] 無效的端口號碼: {self.soaker_number}，"
+                    f"有效範圍: 1-6")
                 self._reset_state()
                 return
+
+            self.node.get_logger().info(
+                f"✅ [Station-based 1格] Work ID {context.work_id} → "
+                f"泡藥機 Station {self.soaker_number:02d}, Port {self.soaker_number} (單格處理)")
 
             # 使用 EQP 狀態進行驗證：檢查對應的 context.soaker_portX 狀態（TAKE 操作：檢查是否有貨物）
             port_eqp_has_cargo = self.port_carriers[self.soaker_number - 1]
 
             if port_eqp_has_cargo:
                 self.node.get_logger().info(
-                    f"✅ work_id 指定的浸泡端口 {self.soaker_number} EQP 狀態顯示有貨物，準備查詢 Carrier")
+                    f"✅ [Station-based 1格] 泡藥機 Port {self.soaker_number} EQP 狀態顯示有貨物，"
+                    f"準備查詢 Carrier")
                 self.check_ok = True
             else:
                 self.node.get_logger().warn(
-                    f"❌ work_id 指定的浸泡端口 {self.soaker_number} EQP 狀態顯示沒有貨物，無法執行 TAKE 操作")
+                    f"❌ [Station-based 1格] 泡藥機 Port {self.soaker_number} EQP 狀態顯示沒有貨物，"
+                    f"無法執行 TAKE 操作")
                 self._reset_state()
                 return
 
-        # 查詢Carrier
+        # 5. 查詢 Carrier（只執行一次）
         if self.check_ok and not self.carrier_query_sended:
             port_id_target = self.port_address + self.soaker_number
             self.node.get_logger().info(
-                f"查詢浸泡端口 {self.soaker_number} (port_id: {port_id_target}) 的 Carrier")
+                f"[Station-based 1格] 查詢泡藥機 Port {self.soaker_number} "
+                f"(port_id: {port_id_target}) 的 Carrier")
             self.carrier_query_client.search_carrier_port_id(
                 port_id_min=port_id_target, port_id_max=port_id_target, callback=self.carrier_callback)
             self.carrier_query_sended = True
 
-        # 處理Carrier查詢結果
+        # 6. 處理 Carrier 查詢結果（雙重驗證）
         if self.check_ok and self.carrier_query_success:
             port_id_target = self.port_address + self.soaker_number
             port_eqp_has_cargo = self.port_carriers[self.soaker_number - 1]
@@ -173,29 +207,35 @@ class SoakerCheckHaveState(BaseRobotState):
             if self.carrier_id is not None and port_eqp_has_cargo:
                 # 雙重驗證成功：EQP 狀態顯示有貨物，carrier 查詢也顯示有貨物
                 self.node.get_logger().info(
-                    f"✅ 雙重驗證成功：浸泡端口 {self.soaker_number} EQP 狀態和 Carrier 查詢都顯示有貨物")
+                    f"✅ [Station-based 1格] 雙重驗證成功：泡藥機 Port {self.soaker_number} "
+                    f"EQP 狀態和 Carrier 查詢都顯示有貨物")
                 context.get_soaker_port = self.soaker_number
                 self.node.get_logger().info(
-                    f"設定 context.get_soaker_port = {self.soaker_number}")
+                    f"[Station-based 1格] 設定 context.get_soaker_port = {self.soaker_number} "
+                    f"(Work ID {context.work_id})")
 
                 # 設定 carrier_id 給 context
                 context.carrier_id = self.carrier_id
-                self.node.get_logger().info(f"✅ 設定 context.carrier_id = {self.carrier_id}")
+                self.node.get_logger().info(
+                    f"✅ [Station-based 1格] 設定 context.carrier_id = {self.carrier_id}")
 
                 self._handle_8bit_steps(context)
             elif self.carrier_id is None:
                 # Carrier 查詢顯示沒有貨物
                 self.node.get_logger().warn(
-                    f"❌ 浸泡端口 {self.soaker_number} 沒有 carrier，無法執行 TAKE 操作")
+                    f"❌ [Station-based 1格] 泡藥機 Port {self.soaker_number} 沒有 carrier，"
+                    f"無法執行 TAKE 操作")
                 self._reset_state()
             elif not port_eqp_has_cargo:
                 # EQP 狀態與 carrier 查詢結果不一致
                 self.node.get_logger().warn(
-                    f"❌ 數據不一致：浸泡端口 {self.soaker_number} EQP 狀態顯示沒有貨物，但 carrier 查詢顯示有貨物")
+                    f"❌ [Station-based 1格] 數據不一致：泡藥機 Port {self.soaker_number} "
+                    f"EQP 狀態顯示沒有貨物，但 carrier 查詢顯示有貨物")
                 self._reset_state()
             else:
                 # 其他未預期的情況
-                self.node.get_logger().error(f"❌ 未預期的驗證結果：端口 {self.soaker_number}")
+                self.node.get_logger().error(
+                    f"❌ [Station-based 1格] 未預期的驗證結果：Port {self.soaker_number}")
                 self._reset_state()
 
     def _handle_8bit_steps(self, context: RobotContext):
@@ -232,8 +272,11 @@ class SoakerCheckHaveState(BaseRobotState):
                 if self.hokuyo_dms_8bit_1.ready:
                     self.node.get_logger().info("✅收到ready")
                     self.step = self.IDLE
-                    # 浸泡檢查完成，轉換到 AGV 端口檢查狀態
-                    self.node.get_logger().info("✅ 浸泡檢查完成: 進入 AgvPortCheckEmptyState")
+                    # 泡藥機檢查完成，轉換到 AGV 端口檢查狀態
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 1格] 泡藥機檢查完成: 進入 AgvPortCheckEmptyState")
+                    self.node.get_logger().info(
+                        f"檢查 AGV Port 2 和 4 是否為空（Take Soaker 使用偶數層）")
                     from loader_agv.robot_states.take_soaker.agv_port_check_empty_state import AgvPortCheckEmptyState
                     context.set_state(AgvPortCheckEmptyState(self.node))
                 else:

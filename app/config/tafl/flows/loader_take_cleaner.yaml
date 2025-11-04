@@ -1,7 +1,7 @@
 metadata:
   id: "loader_take_cleaner"
   name: "Loader AGV 從清洗機上層取料"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查清洗機上層清洗完成載具，創建 Loader AGV 取料任務（固定方向）"
   author: "TAFL System"

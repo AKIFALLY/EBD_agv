@@ -17,14 +17,12 @@
 
 ### 前置條件
 1. Loader AGV 已從入口箱或其他設備取出載具
-2. AGV 車上有載具（**status_id=301 清洗中狀態**）需要放入清洗機
+2. AGV 車上有載具需要放入清洗機
 3. **清洗機下層（Station 03）有空位**
-4. **Presence 感測器確認清洗機為空（硬體驗證）**
 
 ### 觸發條件
-- Loader AGV Port 1、3 有載具（**至少1個載具，status_id=301**）
-- **清洗機下層 Station 03 有空位**（Port 2033-2034，軟體 status="empty"）
-- **Presence 感測器確認無載具在席**（硬體 value="0"，雙重驗證）
+- Loader AGV 車上有載具（**至少2個載具，2格批量**）
+- **清洗機下層 Station 03 有2格空位**（Port 3-4 全部空閒）
 - 沒有重複的未完成任務
 
 ### 執行結果
@@ -42,10 +40,10 @@
 - **只使用 Station 03**（**下層進料**）
 
 **Station-Port 映射**（標準設備）：
-- **Station 03**: Port 2033-2034（**1格操作**/下層/**只 PUT**）
+- **Station 03**: Port 3-4（**2格批量**/下層/**只 PUT**）
 
 **Work ID 配置**：
-- `2030302`: Station 03 放清洗機（Port 2033-2034，**1格操作**/下層/**只 PUT**）
+- `2030302`: Station 03 放清洗機（Port 3-4，**2格批量**/下層/**只 PUT**）
 
 **固定方向設計**（類似 Unloader 烤箱）：
 - **Station 03（下層）**: 只支持 PUT 操作（進料）
@@ -54,13 +52,11 @@
 
 ### 批量處理邏輯
 
-**Loader 1格操作**（Station 03）：
-- **一次放料放入1格**（Loader 特性：1格操作）
-- **需要檢查 AGV 至少有1個載具**（status_id=301 清洗中）
-- **需要檢查清洗機至少有1格空位**（Port 2033-2034 任一空閒）
-- **雙重驗證機制**：
-  - 軟體狀態：eqp_ports.status = "empty"
-  - 硬體感測器：Presence signal value = "0"（無載具在席）
+**標準2格批量處理**（Station 03）：
+- **一次放料放入2格**（2格批量處理）
+- **需要檢查 AGV 至少有2個載具**（車上需有2格載具）
+- **需要檢查清洗機至少有2格空位**（Port 3-4 全部空閒）
+- **不支持部分放料**（要么放2格，要么不放）
 
 ## 📝 TAFL Flow 設計
 
@@ -86,14 +82,14 @@ settings:
 ### Variables
 ```yaml
 variables:
-  priority: 5                     # 修正：priority 必須在 1-10 範圍內
-  model: "Loader"                 # AGV 型號
+  priority: 45                    # 高優先級
+  model: "LOADER"                 # AGV 型號
   cleaner_equipment_id: 203       # 清洗機 Equipment ID
   # 固定 Station 配置（只有 Station 03，無需遍歷）
   station: 3                      # Station 03（下層進料）
   work_id: 2030302                # 唯一的 Work ID
-  ports: [2033, 2034]             # Port 2033-2034（下層）
-  batch_size: 1                   # Loader: 1格操作
+  ports: [3, 4]                   # Port 3-4（下層）
+  batch_size: 2                   # 批量2格
   row: "lower"                    # 下層
 ```
 
@@ -101,51 +97,39 @@ variables:
 
 ### 主要步驟
 
-1. 查詢所有啟用的房間（調試通知）
-2. 遍歷每個房間（調試通知進入房間）
-3. 查詢 Loader AGV（model="Loader", enable=1）
-4. 查詢 AGV Port 1、3 載具（≥ 1個，**status_id=301 清洗中**）
-5. 查詢清洗機下層 Station 03 空位（≥ 1格，軟體 status="empty"）
-6. **雙重驗證**：檢查 Presence 感測器（硬體 value="0" 無載具在席）
-7. 檢查重複任務（work_id, room_id, status_id_in=[0,1,2,3]）
-8. 創建放料任務（固定 Station 03 配置，**含 presence_verified=true**）
+1. 查詢所有房間
+2. 遍歷每個房間
+3. 查詢 Loader AGV
+4. 查詢 AGV 車上載具（≥ 2個）
+5. 查詢清洗機 Station 03 空位（≥ 2格）
+6. 檢查重複任務
+7. 創建放料任務（固定 Station 03 配置）
 
 ## ⚠️ 注意事項
 
 ### 清洗機固定方向設計
-- **下層 Station 03（本 Flow）**: Port 2033-2034，**只 PUT**（進料）
-- **上層 Station 01（Flow 3）**: Port 2031-2032，**只 TAKE**（出料）
+- **下層 Station 03（本 Flow）**: Port 3-4，**只 PUT**（進料）
+- **上層 Station 01（Flow 3）**: Port 1-2，**只 TAKE**（出料）
 - **固定單向流程**: 下層進料 → 清洗制程 → 上層出料
 
 ### 批量處理邏輯
-- **Loader 1格操作**: AGV 需 ≥ 1個載具（status_id=301），清洗機需 ≥ 1格空位
-- **支持單格放料**（Loader 特性）
+- **固定2格批量**: 必須有 ≥ 2個載具，清洗機需 ≥ 2格空位
+- **不支持部分放料**（要么放2格，要么不放）
 
 ### 狀態碼映射
-- 前置條件：載具 status_id = 301（**清洗中**，等待放入清洗機）
-- 放入清洗機後：載具 status_id 更新為 302（**清洗中**）
-
-### 雙重驗證機制（重要）
-- **軟體狀態檢查**: eqp_ports 表 status = "empty"
-- **硬體感測器驗證**: eqp_signals 表 Presence signal value = "0"
-- **只有兩者都滿足才創建任務**，避免碰撞或重複放料
-- 任務參數包含 `presence_verified: true` 標記
+- 放入清洗機後：載具 status_id 更新為 302（清洗中）
 
 ## 🧪 測試要點
 
 ### 單元測試
-1. ✅ AGV 載具數量判斷（>= 1，status_id=301）
-2. ✅ 清洗機空位判斷（>= 1，軟體 status="empty"）
-3. ✅ **Presence 感測器驗證**（硬體 value="0"）
-4. ✅ **雙重驗證邏輯**（軟體 && 硬體）
-5. ✅ 重複任務檢查
-6. ✅ 調試通知消息
+1. ✅ AGV 載具數量判斷（>= 2）
+2. ✅ 清洗機空位判斷（>= 2）
+3. ✅ 重複任務檢查
 
 ### 整合測試
-1. ✅ 與前序流程銜接（載具 status_id=301）
+1. ✅ 與 TAKE_BOXIN_TRANSFER 銜接
 2. ✅ 與 TAKE_CLEANER 銜接（固定方向）
 3. ✅ RCS 調度
-4. ✅ Presence 感測器模擬測試
 
 ## 🔗 相關文檔
 

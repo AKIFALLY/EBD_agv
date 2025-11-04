@@ -55,12 +55,13 @@ class AgvNodebase(Node):
 
         # self.start(one_cycle_ms=50)
         self.last_one_sec = int(time.time() * 1000)  # 取得現在時間（ms）
+        self.state_display_counter = 0  # 狀態顯示計數器（每5秒輸出一次）
         
         # 共用變數初始化
         self.pathdata = None  # 路徑資料
         self.mission_id = None  # 任務ID
         self.node_id = None  # 任務目標節點
-        self.AGV_id = 0  # AGV ID
+        self.agv_id = 0  # AGV ID (数据库 agv 表主键)
         self.robot_finished = False  # 機器人是否完成動作
         self.task = TaskMsg()
         self.agvsubscription = None  # AGVs 訂閱物件
@@ -126,6 +127,46 @@ class AgvNodebase(Node):
                 self.count += 1
             self.read_plc_data()
             self.context_handle()
+
+            # 📊 每5秒輸出一次當前狀態 (100次 × 50ms = 5000ms)
+            self.state_display_counter += 1
+            if self.state_display_counter >= 100:
+                self.state_display_counter = 0
+                try:
+                    # 📋 三層狀態機狀態
+                    base_state = self.base_context.state.__class__.__name__ if self.base_context and self.base_context.state else "Unknown"
+
+                    # AGV 層狀態 (loader_context, unloader_context, cargo_context)
+                    agv_state = "None"
+                    if hasattr(self, 'loader_context') and self.loader_context and hasattr(self.loader_context, 'state') and self.loader_context.state:
+                        agv_state = self.loader_context.state.__class__.__name__
+                    elif hasattr(self, 'unloader_context') and self.unloader_context and hasattr(self.unloader_context, 'state') and self.unloader_context.state:
+                        agv_state = self.unloader_context.state.__class__.__name__
+                    elif hasattr(self, 'cargo_context') and self.cargo_context and hasattr(self.cargo_context, 'state') and self.cargo_context.state:
+                        agv_state = self.cargo_context.state.__class__.__name__
+
+                    # Robot 層狀態
+                    robot_state = "None"
+                    if hasattr(self, 'robot_context') and self.robot_context and hasattr(self.robot_context, 'state') and self.robot_context.state:
+                        robot_state = self.robot_context.state.__class__.__name__
+
+                    # 📍 其他狀態資訊
+                    has_path = "是" if getattr(self.agv_status, 'AGV_PATH', False) else "否"
+                    fpgv = getattr(self.agv_status, 'AGV_FPGV', None)
+                    position = f"前PGV={fpgv}" if fpgv is not None else "前PGV=None"
+                    mission_info = f"任務ID={self.mission_id}" if hasattr(self, 'mission_id') and self.mission_id else "無任務"
+
+                    self.get_logger().info(
+                        f"📍 [三層狀態機] "
+                        f"Base={base_state} | "
+                        f"AGV={agv_state} | "
+                        f"Robot={robot_state} | "
+                        f"位置({position}), "
+                        f"有路徑={has_path}, "
+                        f"{mission_info}"
+                    )
+                except Exception as e:
+                    self.get_logger().warn(f"⚠️ 狀態顯示異常: {e}")
 
             if self.count > 30:
                 self.requesting = False  # 重置請求狀態
@@ -327,9 +368,9 @@ class AgvNodebase(Node):
             elif hasattr(self, 'unloader_context'):
                 if self.unloader_context and hasattr(self.unloader_context, 'state') and self.unloader_context.state:
                     status_dict['contexts']['agv_context']['current_state'] = self.unloader_context.state.__class__.__name__
-            elif hasattr(self, 'cargo_mover_context'):
-                if self.cargo_mover_context and hasattr(self.cargo_mover_context, 'state') and self.cargo_mover_context.state:
-                    status_dict['contexts']['agv_context']['current_state'] = self.cargo_mover_context.state.__class__.__name__
+            elif hasattr(self, 'cargo_context'):
+                if self.cargo_context and hasattr(self.cargo_context, 'state') and self.cargo_context.state:
+                    status_dict['contexts']['agv_context']['current_state'] = self.cargo_context.state.__class__.__name__
                     
             if hasattr(self, 'robot_context'):
                 if self.robot_context and hasattr(self.robot_context, 'state') and self.robot_context.state:
@@ -451,28 +492,70 @@ class AgvNodebase(Node):
 
     def setup_agv_subscription(self):
         """設置 AGVs 訂閱"""
+        self.get_logger().info("=" * 80)
+        self.get_logger().info("🔗 開始訂閱 AGV 資料庫資訊")
+        self.get_logger().info("=" * 80)
+        self.get_logger().info(f"📡 訂閱主題: /agvc/agvs")
+        self.get_logger().info(f"🏷️  訊息類型: AGVs")
+        self.get_logger().info(f"🎯 目標命名空間: {self.get_namespace().lstrip('/')}")
+        self.get_logger().info(f"⏳ 等待 agvc_database_node 發布資料...")
+        self.get_logger().info(f"💡 提示: 如果長時間沒有收到資料，請檢查 AGVC 容器是否運行")
+        self.get_logger().info("=" * 80)
+
         self.agvsubscription = self.create_subscription(
             AGVs, '/agvc/agvs', self.agvs_callback, 10)  # QoS profile depth=10
+
+        self.get_logger().info("✅ AGVs 訂閱已建立，等待接收資料...")
 
     def agvs_callback(self, msg: AGVs):
         """處理 AGVs 訂閱消息 - 共用回調方法"""
         namespace = self.get_namespace().lstrip('/')
-        self.get_logger().info(f"📥 當前命名空間: {namespace}")
-        self.get_logger().info(f"📦 接收 AGVs 數量: {len(msg.datas)}")
+        self.get_logger().info("=" * 80)
+        self.get_logger().info("🔍 AGV ID 查詢結果驗證")
+        self.get_logger().info("=" * 80)
+        self.get_logger().info(f"📥 當前 ROS 2 命名空間: {namespace}")
+        self.get_logger().info(f"📦 從資料庫接收到 AGVs 數量: {len(msg.datas)}")
 
-        # 調試用：列出所有 AGV 資訊（如需調試請取消註解）
-        # for i, a in enumerate(msg.datas):
-        #    self.get_logger().debug(f"[{i}] AGV: id={a.id}, name={a.name}")
+        # 列出所有可用的 AGV（幫助調試）
+        self.get_logger().info("📋 資料庫中所有可用的 AGV 列表:")
+        for i, a in enumerate(msg.datas, 1):
+            enable_str = "啟用" if a.enable == 1 else "停用"
+            self.get_logger().info(f"   [{i}] id={a.id:3d} | name={a.name:20s} | model={a.model:12s} | enable={enable_str}")
 
+        # 匹配當前節點的 AGV
         agv = next((a for a in msg.datas if a.name == namespace), None)
 
         if agv:
-            self.AGV_id = agv.id
-            self.get_logger().info(f"✅ 訂閱到 AGV_ID: {self.AGV_id} Name: {agv.name}")
+            self.get_logger().info("-" * 80)
+            self.get_logger().info("✅ 成功匹配 AGV！")
+            self.get_logger().info(f"   🆔 資料庫主鍵 (agv.id):        {agv.id}")
+            self.get_logger().info(f"   📛 AGV 名稱 (agv.name):        {agv.name}")
+            self.get_logger().info(f"   📝 說明 (agv.description):    {agv.description if agv.description else 'N/A'}")
+            self.get_logger().info(f"   🚗 AGV 型號 (agv.model):       {agv.model}")
+            self.get_logger().info(f"   📍 位置 (x, y, heading):       ({agv.x:.2f}, {agv.y:.2f}, {agv.heading:.2f})")
+            self.get_logger().info(f"   🎯 最後節點 (last_node_id):   {agv.last_node_id if agv.last_node_id != 0 else 'N/A'}")
+            self.get_logger().info(f"   🔌 啟用狀態 (agv.enable):      {'啟用' if agv.enable == 1 else '停用'}")
+            self.get_logger().info("-" * 80)
+
+            # 保存 agv_id
+            self.agv_id = agv.id
+            self.get_logger().info(f"💾 已將 self.agv_id 設定為: {self.agv_id}")
+            self.get_logger().info(f"🔗 後續任務查詢將使用: task.agv_id == {self.agv_id}")
+
+            # 取消訂閱
             self.destroy_subscription(self.agvsubscription)
-            self.get_logger().info("✅ 停止訂閱 AGVs 訊息")
+            self.get_logger().info("✅ 已停止訂閱 /agvc/agvs 主題")
+            self.get_logger().info("=" * 80)
         else:
-            self.get_logger().warn("⚠️ 找不到符合命名空間的 AGV")
+            self.get_logger().error("-" * 80)
+            self.get_logger().error("❌ 找不到符合命名空間的 AGV！")
+            self.get_logger().error(f"   🔍 查詢條件: agv.name == '{namespace}'")
+            self.get_logger().error(f"   📋 可用的 AGV 名稱: {[a.name for a in msg.datas]}")
+            self.get_logger().error("   💡 請檢查:")
+            self.get_logger().error("      1. 資料庫 agv 表中是否存在該記錄")
+            self.get_logger().error("      2. agv.name 是否與 ROS 2 namespace 一致")
+            self.get_logger().error("      3. agvc_database_node 是否正常運行")
+            self.get_logger().error("=" * 80)
 
     def common_state_changed(self, old_state, new_state):
         """共用的狀態變更日誌"""

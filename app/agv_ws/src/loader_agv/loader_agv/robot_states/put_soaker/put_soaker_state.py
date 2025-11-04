@@ -21,41 +21,60 @@ class PutSoakerState(BaseRobotState):
         self.sent = False
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Put Soaker 目前狀態: PutSoaker")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Put Soaker 目前狀態: PutSoaker")
         self.update_carrier_success = False
         self.sent = False
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Put Soaker 離開 PutSoaker 狀態")
+        self.node.get_logger().info(
+            "[Station-based 1格] Loader Robot Put Soaker 離開 PutSoaker 狀態")
         self.update_carrier_success = False
         self.sent = False
 
     def update_carrier_database(self, context: RobotContext):
-        """更新單一 carrier 資料庫記錄"""
+        """更新單一 carrier 資料庫記錄 - 單格處理
+
+        說明：Put Soaker 單格處理特點
+        - 一次只更新1個 carrier（與 Put Cleaner 批量2個不同）
+        - 更新目標：泡藥機指定站點（Port 1-6中的1個）
+        - carrier 狀態：ENTER_SOAKER (402) - 進入泡藥機處理中
+        """
         carrier = CarrierMsg()
         carrier.id = context.carrier_id
         carrier.room_id = self.node.room_id
         carrier.rack_id = 0
         carrier.port_id = self.port_id_address + context.get_soaker_port
         carrier.rack_index = 0
-        carrier.status_id = 3  # 假設 3 是表示浸泡的狀態
+        carrier.status_id = Robot.CARRIER_STATUS_ENTER_SOAKER  # 進入強化機處理中 (402)
 
         self.agvc_client.async_update_carrier(
             carrier, self.update_carrier_database_callback)
-        self.node.get_logger().info(f"🔄 開始更新 Carrier: {context.carrier_id} 到浸泡端口 {carrier.port_id}")
+        self.node.get_logger().info(
+            f"🔄 [Station-based 1格] 開始更新 Carrier: {context.carrier_id} → "
+            f"泡藥機 Port {context.get_soaker_port} (port_id={carrier.port_id})")
 
     def update_carrier_database_callback(self, result):
         """處理 carrier 資料庫更新回應"""
         if result is not None and result.success:
             self.node.get_logger().info(
-                f"✅ Carrier 更新成功: {result.success}, {result.message}")
+                f"✅ [Station-based 1格] Carrier 更新成功: {result.success}, {result.message}")
             self.update_carrier_success = True
         else:
-            self.node.get_logger().error("❌ Carrier 更新失敗")
+            self.node.get_logger().error("❌ [Station-based 1格] Carrier 更新失敗")
             self.update_carrier_success = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Loader Robot Put Soaker PutSoaker 狀態")
+        # 單格處理：從機械臂放1格 → 泡藥機指定站點
+        target_soaker_port = context.get_soaker_port
+
+        self.node.get_logger().info(
+            f"[Station-based 1格] 放料 (Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: 機械臂 → 目標: 泡藥機 Port {target_soaker_port} (Station {target_soaker_port:02d})")
+        self.node.get_logger().info(
+            f"完整路徑: AGV Port {context.get_loader_agv_port_side} → 機械臂 → "
+            f"泡藥機 Port {target_soaker_port}")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -75,13 +94,15 @@ class PutSoakerState(BaseRobotState):
             self._execute_robot_logic(context, PUT_SOAKER_PGNO, read_pgno)
 
     def _execute_robot_logic(self, context: RobotContext, PUT_SOAKER_PGNO, read_pgno):
-        """執行機器人邏輯"""
+        """執行機器人邏輯 - 單格處理（無批量循環）"""
         match self.step:
             case RobotContext.IDLE:
-                self.node.get_logger().info("Loader Robot Put Soaker PUT SOAKER IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Put Soaker PUT SOAKER IDLE")
                 self.step = RobotContext.CHECK_IDLE
             case RobotContext.CHECK_IDLE:
-                self.node.get_logger().info("Loader Robot Put Soaker PUT SOAKER CHECK_IDLE")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Put Soaker PUT SOAKER CHECK_IDLE")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
@@ -99,13 +120,35 @@ class PutSoakerState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Put Soaker PUT SOAKER CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 soaker_port → W118(layer_z_soaker), W119(layer_y_soaker)
+                # 根據新邏輯，W118 固定為 1（不隨 port 變化）
+                expected_params['w118'] = 1
+                expected_params['w119'] = 0
+
+                self.node.get_logger().info(
+                    f"預期檢查: soaker_port={context.get_soaker_port} → "
+                    f"W118=1 (固定值), W119=0"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Loader Robot Put Soaker PUT SOAKER WRITE CHG PARA")
@@ -178,7 +221,8 @@ class PutSoakerState(BaseRobotState):
                 else:
                     self.node.get_logger().info("❌手臂動作失敗")
             case RobotContext.FINISH:
-                self.node.get_logger().info("Loader Robot Put Soaker PUT SOAKER Finish")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Put Soaker PUT SOAKER Finish")
                 if read_pgno is None:
                     self.node.get_logger().info("⏳等待讀取PGNO回應...")
                     return
@@ -188,7 +232,8 @@ class PutSoakerState(BaseRobotState):
                 else:
                     self.node.get_logger().info("❌放浸泡失敗")
             case RobotContext.UPDATE_DATABASE:
-                self.node.get_logger().info("Loader Robot Put Soaker PUT SOAKER UPDATE_DATABASE")
+                self.node.get_logger().info(
+                    "[Station-based 1格] Loader Robot Put Soaker PUT SOAKER UPDATE_DATABASE")
                 if not self.sent:
                     self.update_carrier_database(context)
                     self.sent = True
@@ -196,8 +241,12 @@ class PutSoakerState(BaseRobotState):
                     self.node.get_logger().info("✅更新 Carrier 資料庫成功")
                     self.sent = False
 
-                    # 完成 PUT_SOAKER 流程，直接進入完成狀態（無 continue 邏輯）
-                    self.node.get_logger().info("✅ Put Soaker 完成: 進入 CompleteState")
+                    # 單格處理：直接進入 CompleteState（無批量循環邏輯）
+                    self.node.get_logger().info(
+                        f"✅ [Station-based 1格] Put Soaker 完成: 進入 CompleteState")
+                    self.node.get_logger().info(
+                        f"完整流程: AGV Port {context.get_loader_agv_port_side} → 機械臂 → "
+                        f"泡藥機 Port {context.get_soaker_port} (Work ID {context.work_id})")
                     from loader_agv.robot_states.complete_state import CompleteState
                     context.set_state(CompleteState(self.node))
 

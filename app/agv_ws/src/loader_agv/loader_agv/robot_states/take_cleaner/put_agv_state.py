@@ -22,42 +22,68 @@ class PutAgvState(BaseRobotState):
         self.sent = False
 
     def enter(self):
-        self.node.get_logger().info("Loader Robot Take Cleaner 目前狀態: PutAgv")
+        self.node.get_logger().info(
+            "[Station-based 批量] Loader Robot Take Cleaner 目前狀態: PutAgv")
         self.update_carrier_success = False
         self.sent = False
 
     def leave(self):
-        self.node.get_logger().info("Loader Robot Take Cleaner 離開 PutAgv 狀態")
+        self.node.get_logger().info(
+            "[Station-based 批量] Loader Robot Take Cleaner 離開 PutAgv 狀態")
         self.update_carrier_success = False
         self.sent = False
 
     def update_carrier_database(self, context: RobotContext):
-        """更新 carrier 的最終位置資訊"""
+        """更新 carrier 的最終位置資訊
+
+        說明：批量操作中，每次放料完成後更新對應的 carrier
+        - 第1次：carrier_id1 → AGV Port 1
+        - 第2次：carrier_id2 → AGV Port 3
+        """
         carrier = CarrierMsg()
         carrier.id = context.carrier_id
         carrier.room_id = self.node.room_id
         carrier.rack_id = 0
-        carrier.port_id = self.port_id_address + context.get_loader_agv_port_front
+        carrier.port_id = self.port_id_address + context.get_loader_agv_port_side
         carrier.rack_index = 0
         carrier.status_id = Robot.CARRIER_STATUS_PREPARE_ENTER_SOAKER  # 準備進入強化
 
         self.agvc_client.async_update_carrier(
             carrier, self.update_carrier_database_callback)
         self.node.get_logger().info(
-            f"🔄 開始更新 Carrier: {context.carrier_id} 最終位置到 AGV 端口 {carrier.port_id}")
+            f"🔄 [Station-based 批量] 開始更新 Carrier: {context.carrier_id} "
+            f"→ AGV Port {context.get_loader_agv_port_side} (port_id={carrier.port_id})")
 
     def update_carrier_database_callback(self, result):
         """處理 carrier 資料庫更新回應"""
         if result is not None and result.success:
             self.node.get_logger().info(
-                f"✅ Carrier 更新成功: {result.success}, {result.message}")
+                f"✅ [Station-based] Carrier 更新成功: {result.success}, {result.message}")
             self.update_carrier_success = True
         else:
             self.node.get_logger().error("❌ Carrier 更新失敗")
             self.update_carrier_success = False
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Loader Robot Take Cleaner PutAgv 狀態")
+        # 批量放料 AGV port 映射：根據計數器決定目標 AGV port
+        # Station-based 設計 + L尺寸配置：
+        # - 第1次從清洗機取料 → 放到 AGV port1 (第1層)
+        # - 第2次從清洗機取料 → 放到 AGV port3 (第3層)
+        # L尺寸產品配置固定使用 port1 和 port3（第2層和第4層掛勾已解下）
+        agv_port_mapping = [1, 3]  # 第1次→port1, 第2次→port3
+        target_agv_port = agv_port_mapping[context.cleaner_take_count]
+        context.get_loader_agv_port_side = target_agv_port
+
+        source_cleaner_port = context.cleaner_ports[context.cleaner_take_count]
+
+        self.node.get_logger().info(
+            f"[Station-based 批量] 放料第 {context.cleaner_take_count + 1}/2 次 "
+            f"(Work ID {context.work_id})")
+        self.node.get_logger().info(
+            f"來源: 機械臂 → 目標: AGV Port {target_agv_port} (L尺寸第{target_agv_port}層), "
+            f"carrier_id={context.carrier_id}")
+        self.node.get_logger().info(
+            f"原始來源: Cleaner Port {source_cleaner_port} → 機械臂 → AGV Port {target_agv_port}")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()
@@ -101,13 +127,34 @@ class PutAgvState(BaseRobotState):
                     self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
                     context.robot.update_parameter_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
                 elif context.robot.update_parameter_failed:
                     self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
                     context.robot.update_parameter_failed = False
                 else:
                     self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Robot Take Cleaner PUT AGV CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 只檢查 W110（Layer Side 的 Z 軸）
+                # W110 應該等於 get_loader_agv_port_side
+                expected_params['w110'] = context.get_loader_agv_port_side
+
+                self.node.get_logger().info(
+                    f"預期檢查: loader_agv_port_side={context.get_loader_agv_port_side} → "
+                    f"W110={context.get_loader_agv_port_side}"
+                )
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    # 檢查通過，進入下一步驟
+                    self.step = RobotContext.WRITE_CHG_PARA
+                # 否則繼續停留在此步驟
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Loader Robot Take Cleaner PUT LOADER AGV WRITE CHG PARA")
@@ -186,7 +233,7 @@ class PutAgvState(BaseRobotState):
                     return
                 if read_pgno.value == Robot.IDLE:
                     self.node.get_logger().info("✅放AGV箱完成")
-                    context.boxin_buffer = context.get_loader_agv_port_front
+                    context.boxin_buffer = context.get_loader_agv_port_side
                     self.step = RobotContext.UPDATE_DATABASE
                 else:
                     self.node.get_logger().info("❌放AGV箱失敗")
@@ -199,13 +246,20 @@ class PutAgvState(BaseRobotState):
                     self.node.get_logger().info("✅更新 Carrier 資料庫成功")
                     self.sent = False
 
-                    # put_agv_state.py 完成後檢查 context.take_cleaner_continue 標誌
-                    if context.take_cleaner_continue:
-                        self.node.get_logger().info("🔄 Take Cleaner 繼續: 進入 CleanerCheckHaveState")
-                        from loader_agv.robot_states.take_cleaner.cleaner_check_have_state import CleanerCheckHaveState
-                        context.set_state(CleanerCheckHaveState(self.node))
+                    # 批量取料邏輯：檢查是否完成 2 次取料
+                    if context.cleaner_take_count == 0:
+                        # 第 1 次完成 → 繼續第 2 次
+                        context.cleaner_take_count = 1
+                        self.node.get_logger().info(
+                            "🔄 批量取料第 1/2 次完成，繼續第 2 次取料")
+                        self.node.get_logger().info(
+                            f"下一次取料: 清洗機 port{context.cleaner_ports[1]} → AGV port3")
+                        from loader_agv.robot_states.take_cleaner.take_cleaner_state import TakeCleanerState
+                        context.set_state(TakeCleanerState(self.node))
                     else:
-                        self.node.get_logger().info("✅ Take Cleaner 完成: 進入 CompleteState")
+                        # 第 2 次完成 → 任務完成
+                        self.node.get_logger().info(
+                            "✅ 批量取料完成 (2/2 次): 進入 CompleteState")
                         from loader_agv.robot_states.complete_state import CompleteState
                         context.set_state(CompleteState(self.node))
 

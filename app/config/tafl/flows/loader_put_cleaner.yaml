@@ -1,7 +1,7 @@
 metadata:
   id: "loader_put_cleaner"
   name: "Loader AGV 放料到清洗機下層"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查 Loader AGV 車上載具和清洗機下層空位，創建放料任務（固定方向）"
   author: "TAFL System"

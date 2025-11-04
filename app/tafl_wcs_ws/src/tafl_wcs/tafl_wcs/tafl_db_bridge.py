@@ -29,6 +29,7 @@ from db_proxy.models import (
     Product, ProcessSettings
 )
 from db_proxy.models.agvc_eqp import Eqp, EqpPort, EqpSignal
+from db_proxy.models.agvc_eqp import Eqp, EqpPort, EqpSignal
 from sqlmodel import Session, select, and_, or_, desc, asc
 
 logger = logging.getLogger(__name__)
@@ -431,6 +432,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - rack_id: Filter by rack ID
         - work_id: Filter by work ID
         - room_id: Filter by room ID
+        - room_id: Filter by room ID
         - priority: Filter by priority
         - assigned_to: Filter by assignee
 
@@ -477,6 +479,11 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                 conditions.append(Task.rack_id == kwargs['rack_id'])
             if 'work_id' in kwargs:
                 conditions.append(Task.work_id == kwargs['work_id'])
+            if 'room_id' in kwargs:
+                if kwargs['room_id'] is None:
+                    conditions.append(Task.room_id.is_(None))
+                else:
+                    conditions.append(Task.room_id == kwargs['room_id'])
             if 'room_id' in kwargs:
                 if kwargs['room_id'] is None:
                     conditions.append(Task.room_id.is_(None))
@@ -856,6 +863,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - description: Task description
         - priority: Task priority (1-10, default: 5)
         - rack_id: Associated rack ID
+        - room_id: Associated room ID
         - room_id: Associated room ID
         - status_id: Initial status (default: PENDING)
         - metadata: Additional metadata
@@ -1370,6 +1378,9 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - port_id: Filter by single port ID
         - port_in: Filter by multiple port IDs (list)
         - agv_id: Filter by AGV ID (carrier on AGV)
+        - port_id: Filter by single port ID
+        - port_in: Filter by multiple port IDs (list)
+        - agv_id: Filter by AGV ID (carrier on AGV)
         - product_name: Filter by associated product name (requires JOIN)
 
         Enhanced status filters (NEW - unified standard):
@@ -1395,6 +1406,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         - limit: Maximum results
         """
         with self.pool_manager.get_session() as session:
+            # Simple query without unnecessary joins
             # Simple query without unnecessary joins
             query = select(Carrier, CarrierStatus).join(
                 CarrierStatus, Carrier.status_id == CarrierStatus.id, isouter=True
@@ -1428,6 +1440,16 @@ class TAFLDatabaseBridge(BaseQueryMixin):
                     conditions.append(Carrier.agv_id.is_(None))
                 else:
                     conditions.append(Carrier.agv_id == kwargs['agv_id'])
+            if 'port_in' in kwargs:
+                port_list = kwargs['port_in']
+                if isinstance(port_list, (list, tuple)):
+                    conditions.append(Carrier.port_id.in_(port_list))
+            if 'agv_id' in kwargs:
+                # Filter by Carrier.agv_id directly (not through Rack)
+                if kwargs['agv_id'] is None:
+                    conditions.append(Carrier.agv_id.is_(None))
+                else:
+                    conditions.append(Carrier.agv_id == kwargs['agv_id'])
 
             # Rack index range filters (for A-side/B-side filtering)
             self._apply_numeric_range_filters(Carrier, 'rack_index', conditions, kwargs)
@@ -1446,6 +1468,7 @@ class TAFLDatabaseBridge(BaseQueryMixin):
 
             results = session.exec(query).all()
 
+            # Get total count - use same simple query structure
             # Get total count - use same simple query structure
             count_query = select(Carrier, CarrierStatus).join(
                 CarrierStatus, Carrier.status_id == CarrierStatus.id, isouter=True

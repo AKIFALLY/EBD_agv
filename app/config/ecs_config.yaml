@@ -48,6 +48,7 @@ agvc:
   ecs_core:
     ros__parameters:
       read_ranges:
+        - "DM,5000,10"   # 正確：10 words = 20 bytes (自動門狀態)
         - "DM,7600,200"   # 正確：100 words = 200 bytes
         - "DM,11000,20"   # 正確：10 words = 20 bytes
         - "DM,12000,200"  # 修正：100 words = 200 bytes

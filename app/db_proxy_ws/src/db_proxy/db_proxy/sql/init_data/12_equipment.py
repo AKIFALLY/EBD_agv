@@ -19,7 +19,9 @@ def initialize_equipment(session):
         {"id": 211, "location_id": 21100, "name": "UnloaderAGV",
          "description": "UnloaderAGV"},
 
-
+        # 自動門控制系統 (對應 door_config.yaml)
+        {"id": 999, "location_id": None, "name": "AutoDoorSystem",
+         "description": "自動門控制系統 (DM 5000-5004)"},
 
         {"id": 201, "location_id": 20100, "name": "Room2_BoxIn",
          "description": "房間2 入口傳送箱"},
@@ -380,6 +382,18 @@ def initialize_equipment_signals(session):
          "description": "房間2 烤箱 允許/出料訊號", "value": "0", "type_of_value": "bool", "dm_address": "12062.6"},
         {"id": 20624, "eqp_id": 206, "eqp_port_id": 2068, "name": "Room2_Oven_Port08_Allow_Unload",
          "description": "房間2 烤箱 允許/出料訊號", "value": "0", "type_of_value": "bool", "dm_address": "12062.7"},
+
+        # 自動門狀態信號 (對應 door_config.yaml)
+        {"id": 99901, "eqp_id": 999, "name": "Door_1_Status",
+         "description": "自動門1狀態 (door_config.yaml)", "value": "0", "type_of_value": "int", "dm_address": "5000"},
+        {"id": 99902, "eqp_id": 999, "name": "Door_2_Status",
+         "description": "自動門2狀態 (door_config.yaml)", "value": "0", "type_of_value": "int", "dm_address": "5001"},
+        {"id": 99903, "eqp_id": 999, "name": "Door_3_Status",
+         "description": "自動門3狀態 (door_config.yaml)", "value": "0", "type_of_value": "int", "dm_address": "5002"},
+        {"id": 99904, "eqp_id": 999, "name": "Door_4_Status",
+         "description": "自動門4狀態 (door_config.yaml)", "value": "0", "type_of_value": "int", "dm_address": "5003"},
+        {"id": 99905, "eqp_id": 999, "name": "Door_5_Status",
+         "description": "自動門5狀態 (door_config.yaml)", "value": "0", "type_of_value": "int", "dm_address": "5004"},
     ]
 
     insert_data_if_not_exists_name_and_not_exists_id(

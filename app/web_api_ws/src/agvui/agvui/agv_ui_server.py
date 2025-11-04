@@ -68,7 +68,7 @@ class AgvUiServer:
                             self.container_type = line.split('=')[1].strip()
                         elif line.startswith('DEVICE_ID='):
                             device_id = line.split('=')[1].strip()
-            
+
             # 如果是 AGV 容器，讀取 .agv_identity
             if self.container_type == 'agv':
                 agv_identity_file = '/app/.agv_identity'
@@ -79,20 +79,132 @@ class AgvUiServer:
                                 self.local_agv_id = line.split('=')[1].strip()
                                 print(f"✅ 偵測到本機 AGV ID: {self.local_agv_id}")
                                 break
-            
+
             # 如果沒有 identity 檔案，嘗試從環境變數讀取
             if not self.local_agv_id:
                 self.local_agv_id = os.environ.get('AGV_ID', None)
                 if self.local_agv_id:
                     print(f"✅ 從環境變數讀取 AGV ID: {self.local_agv_id}")
-            
+
             if not self.local_agv_id:
                 print("⚠️ 無法偵測本機 AGV ID，將顯示所有 AGV 狀態")
-                
+
         except Exception as e:
             print(f"❌ 讀取身份檔案錯誤: {e}")
             self.local_agv_id = None
-    
+
+    def merge_status_data(self, new_data, legacy_data, agv_id):
+        """合併新格式和舊格式資料，並標記來源
+
+        Args:
+            new_data: 新格式資料 (/tmp/agv_status_{agv_id}.json)
+            legacy_data: 舊格式資料 (/tmp/agv_status.json)
+            agv_id: AGV ID
+
+        Returns:
+            dict: 合併後的資料，包含 source_map
+        """
+        merged = {
+            'metadata': {},
+            'agv_status': {},
+            'contexts': {},
+            'type_specific': {},
+            'door_status': {},
+            'io_data': {},
+            'alarms': {},
+            'source_map': {}
+        }
+
+        # 輔助函數：清理字符串中的 NULL 填充字符
+        def clean_string(s):
+            """移除字符串末尾的 NULL 字符和其他填充字符"""
+            if isinstance(s, str):
+                # 移除 NULL 字符 (\u0000) 和其他控制字符
+                return s.rstrip('\x00').strip()
+            return s
+
+        # 輔助函數：遞迴清理字典中的所有字符串
+        def clean_dict_strings(d):
+            """遞迴清理字典中的所有字符串值"""
+            if isinstance(d, dict):
+                return {k: clean_dict_strings(v) for k, v in d.items()}
+            elif isinstance(d, list):
+                return [clean_dict_strings(item) for item in d]
+            elif isinstance(d, str):
+                return clean_string(d)
+            else:
+                return d
+
+        # 輔助函數：扁平化字典以建立 source_map
+        def flatten_dict(d, parent_key='', sep='.'):
+            items = []
+            for k, v in d.items():
+                new_key = f"{parent_key}{sep}{k}" if parent_key else k
+                if isinstance(v, dict):
+                    items.extend(flatten_dict(v, new_key, sep=sep).items())
+                else:
+                    items.append((new_key, v))
+            return dict(items)
+
+        # 輔助函數：深度合併字典
+        def deep_merge(target, source, source_label, prefix=''):
+            for key, value in source.items():
+                field_path = f"{prefix}.{key}" if prefix else key
+
+                if key not in target:
+                    # 目標中沒有此欄位，直接加入
+                    target[key] = value
+                    merged['source_map'][field_path] = source_label
+                elif isinstance(value, dict) and isinstance(target[key], dict):
+                    # 兩者都是字典，遞迴合併
+                    deep_merge(target[key], value, source_label, field_path)
+                # 如果目標已有此欄位，保持原有值（新格式優先）
+
+        # 1. 優先處理新格式資料（標記為 N）
+        if new_data:
+            for category in ['metadata', 'agv_status', 'contexts', 'type_specific', 'door_status', 'io_data', 'alarms']:
+                if category in new_data:
+                    merged[category] = new_data[category].copy() if isinstance(new_data[category], dict) else new_data[category]
+                    # 標記所有新格式欄位
+                    flattened = flatten_dict({category: merged[category]})
+                    for field_path in flattened.keys():
+                        merged['source_map'][field_path] = 'N'
+
+        # 2. 用舊格式資料補足缺失欄位（標記為 L）
+        if legacy_data:
+            for category in ['metadata', 'agv_status', 'contexts', 'type_specific', 'door_status', 'io_data', 'alarms']:
+                if category in legacy_data:
+                    if category not in merged or not merged[category]:
+                        # 類別完全缺失，使用舊格式
+                        merged[category] = legacy_data[category].copy() if isinstance(legacy_data[category], dict) else legacy_data[category]
+                        flattened = flatten_dict({category: merged[category]})
+                        for field_path in flattened.keys():
+                            merged['source_map'][field_path] = 'L'
+                    elif isinstance(merged[category], dict) and isinstance(legacy_data[category], dict):
+                        # 深度合併，補足缺失欄位
+                        deep_merge(merged[category], legacy_data[category], 'L', category)
+
+        # 3. 確保 AGV_ID 正確
+        if 'metadata' not in merged:
+            merged['metadata'] = {}
+        merged['metadata']['AGV_ID'] = agv_id
+        merged['AGV_ID'] = agv_id
+        merged['agv_id'] = agv_id
+
+        # 4. 統計資訊
+        new_count = sum(1 for v in merged['source_map'].values() if v == 'N')
+        legacy_count = sum(1 for v in merged['source_map'].values() if v == 'L')
+        merged['source_stats'] = {
+            'new_format_fields': new_count,
+            'legacy_format_fields': legacy_count,
+            'total_fields': new_count + legacy_count
+        }
+
+        # 5. 清理所有字符串中的 NULL 填充字符（來自 PLC/C++ 固定長度字符串）
+        merged = clean_dict_strings(merged)
+
+        return merged
+
     def _register_routes(self):
         @self.app.get("/health")
         async def health_check():
@@ -260,67 +372,91 @@ class AgvUiServer:
 
     async def read_status_file_task(self):
         """定時讀取 AGV 狀態檔案並透過 Socket.IO 廣播
-        
-        自動適應兩種部署模式：
-        1. 單機模式（實際 AGV）：只讀取 /tmp/agv_status.json
-        2. 多機模式（測試/中央監控）：讀取多個 /tmp/agv_status_*.json
+
+        整合新舊格式：
+        1. 新格式（優先）：/tmp/agv_status_{agv_id}.json (Recorder Class, v2.0)
+        2. 舊格式（補足）：/tmp/agv_status.json (Base Class, v1.0)
+
+        合併策略：新格式優先，舊格式補足缺失欄位，並標記每個欄位的來源
         """
         # 測試環境的 AGV 列表
         agv_list = ["loader01", "loader02", "cargo01", "cargo02", "unloader01", "unloader02"]
-        
+
         while True:
             try:
                 files_found = False
-                
+
+                # 嘗試讀取舊格式檔案（用於補足缺失資料）
+                legacy_data = None
+                legacy_file = '/tmp/agv_status.json'
+                if os.path.exists(legacy_file):
+                    try:
+                        with open(legacy_file, 'r', encoding='utf-8') as f:
+                            legacy_data = json.load(f)
+                    except json.JSONDecodeError as e:
+                        print(f"⚠️ 舊格式 JSON 解析錯誤: {e}")
+                        legacy_data = None
+
                 # 模式 1：檢查是否有多個 AGV 狀態檔案（測試/中央監控模式）
                 for agv_id in agv_list:
-                    status_file = f'/tmp/agv_status_{agv_id}.json'
-                    if os.path.exists(status_file):
+                    new_file = f'/tmp/agv_status_{agv_id}.json'
+                    if os.path.exists(new_file):
+                        # ✅ 過濾非本機 AGV：只處理本機 AGV 的數據
+                        if self.local_agv_id and agv_id != self.local_agv_id:
+                            continue  # 跳過非本機 AGV
+
                         files_found = True
-                        with open(status_file, 'r', encoding='utf-8') as f:
-                            status_data = json.load(f)
-                        
-                        # 確保 AGV_ID 正確
-                        status_data['AGV_ID'] = agv_id
-                        status_data['agv_id'] = agv_id  # 相容舊格式
-                        
-                        # 透過 Socket.IO 廣播完整狀態
-                        await self.agv_ui_socket.notify_agv_status(status_data)
-                
-                # 模式 2：如果沒有找到多機檔案，嘗試讀取單一檔案（實際 AGV 部署）
-                if not files_found:
-                    default_file = '/tmp/agv_status.json'
-                    if os.path.exists(default_file):
-                        with open(default_file, 'r', encoding='utf-8') as f:
-                            status_data = json.load(f)
-                        
-                        # 如果有本機 AGV ID，確保資料中包含正確的 ID
-                        if self.local_agv_id:
-                            status_data['AGV_ID'] = self.local_agv_id
-                            status_data['agv_id'] = self.local_agv_id
-                        
-                        await self.agv_ui_socket.notify_agv_status(status_data)
-                        
-                        # 記錄模式
+
+                        # 讀取新格式資料
+                        new_data = None
+                        try:
+                            with open(new_file, 'r', encoding='utf-8') as f:
+                                new_data = json.load(f)
+                        except json.JSONDecodeError as e:
+                            print(f"⚠️ 新格式 JSON 解析錯誤 ({agv_id}): {e}")
+                            new_data = None
+
+                        # 合併新舊格式
+                        merged_data = self.merge_status_data(new_data, legacy_data, agv_id)
+
+                        # 透過 Socket.IO 廣播合併後的狀態
+                        await self.agv_ui_socket.notify_agv_status(merged_data)
+
+                        # 首次記錄模式
                         if not hasattr(self, '_mode_logged'):
-                            print(f"📍 單機模式：讀取 {default_file}")
-                            if self.local_agv_id:
-                                print(f"   本機 AGV ID: {self.local_agv_id}")
+                            print(f"📍 多機整合模式：讀取並合併新舊格式")
+                            print(f"   - 新格式: {new_file}")
+                            print(f"   - 舊格式: {legacy_file} (補足)")
                             self._mode_logged = True
-                else:
+
+                # 模式 2：如果沒有找到新格式檔案，使用舊格式（實際 AGV 部署）
+                if not files_found and legacy_data:
+                    # 確定使用哪個 AGV ID
+                    target_agv_id = self.local_agv_id if self.local_agv_id else 'unknown'
+
+                    # 即使只有舊格式，也透過 merge_status_data 處理以保持資料結構一致
+                    merged_data = self.merge_status_data(None, legacy_data, target_agv_id)
+
+                    await self.agv_ui_socket.notify_agv_status(merged_data)
+
                     # 記錄模式
                     if not hasattr(self, '_mode_logged'):
-                        print(f"📍 多機模式：讀取多個 AGV 狀態檔案")
+                        print(f"📍 單機模式：僅讀取舊格式")
+                        print(f"   - 舊格式: {legacy_file}")
+                        if self.local_agv_id:
+                            print(f"   - 本機 AGV ID: {self.local_agv_id}")
                         self._mode_logged = True
-                    
+
                 # 每秒讀取一次
                 await asyncio.sleep(1.0)
-                
+
             except json.JSONDecodeError as e:
                 print(f"⚠️ JSON 解析錯誤: {e}")
                 await asyncio.sleep(1.0)
             except Exception as e:
                 print(f"❌ 讀取狀態檔案錯誤: {e}")
+                import traceback
+                traceback.print_exc()
                 await asyncio.sleep(1.0)
     
     async def read_plc_file_task(self):
@@ -358,11 +494,12 @@ class AgvUiServer:
 
     async def start(self):
         self.loop = asyncio.get_running_loop()
-        # 啟動 ROS node（background thread）
-        ros_node = AgvUiRos(self.loop, self.agv_ui_socket)
-        ros_node.start()
-        
-        # 啟動狀態檔案讀取任務 (JSON 狀態)
+        # ✅ 已禁用：使用文件读取获取整合数据（带 N/L 标记）
+        # 啟動 ROS node（background thread），傳遞 local_agv_id 作為命名空間
+        # ros_node = AgvUiRos(self.loop, self.agv_ui_socket, self.local_agv_id)
+        # ros_node.start()
+
+        # 啟動狀態檔案讀取任務 (JSON 狀態) - 提供整合数据 + N/L 标记
         asyncio.create_task(self.read_status_file_task())
         print("✅ 已啟動 AGV 狀態檔案監控任務")
         

@@ -49,19 +49,39 @@ class TakeAgvState(BaseRobotState):
             case RobotContext.WRITE_CHG_PARAMTER:
                 self.node.get_logger().info("Unloader Robot Put Oven TAKE AGV WRITE CHG PARAMTER")
                 if not self.sent:
-                    context.robot.update_pgno(Robot.CHG_PARA)
+                    context.update_port_parameters()
                     self.sent = True
-                if context.robot.update_pgno_success:
-                    self.node.get_logger().info("✅傳送參數成功")
+                if context.robot.update_parameter_success:
+                    self.node.get_logger().info("✅更新參數成功")
                     self.sent = False
-                    context.robot.update_pgno_success = False
-                    self.step = RobotContext.WRITE_CHG_PARA
-                elif context.robot.update_pgno_failed:
-                    self.node.get_logger().info("❌傳送參數失敗")
+                    context.robot.update_parameter_success = False
+                    self.step = RobotContext.CHECK_CHG_PARAMETER
+                elif context.robot.update_parameter_failed:
+                    self.node.get_logger().info("❌更新參數失敗")
                     self.sent = False
-                    context.robot.update_pgno_failed = False
+                    context.robot.update_parameter_failed = False
                 else:
-                    self.node.get_logger().info("🕒傳送參數中")
+                    self.node.get_logger().info("🕒更新參數中")
+
+            case RobotContext.CHECK_CHG_PARAMETER:
+                self.node.get_logger().info("Unloader Robot Put Oven TAKE AGV CHECK CHG PARAMETER")
+
+                # 構建預期參數字典
+                expected_params = {}
+
+                # 檢查 unloader_agv_port_back → W110
+                # layer_z = ((port-1) // 2) + 1, layer_y = 0
+                layer_z_back = ((context.get_unloader_agv_port_back - 1) // 2) + 1
+                layer_y_back = 0
+                expected_params['w110'] = (layer_z_back | (layer_y_back << 16))
+
+                self.node.get_logger().info(
+                    f"預期檢查: agv_port_back={context.get_unloader_agv_port_back} → "
+                    f"W110 (z={layer_z_back}, y={layer_y_back})")
+
+                # 執行檢查
+                if self._handle_check_chg_parameter(context, expected_params):
+                    self.step = RobotContext.WRITE_CHG_PARA
 
             case RobotContext.WRITE_CHG_PARA:
                 self.node.get_logger().info("Unloader Robot Put Oven TAKE AGV WRITE CHG PARA")
@@ -152,7 +172,17 @@ class TakeAgvState(BaseRobotState):
                     self.node.get_logger().info("❌從AGV取貨失敗")
 
     def handle(self, context: RobotContext):
-        self.node.get_logger().info("Unloader Robot Put Oven TakeAgv 狀態")
+        # 根據當前循環次數獲取對應的 AGV ports
+        if hasattr(context, 'take_put_current_batch') and context.take_put_current_batch:
+            current_ports = context.take_put_current_batch
+            context.get_unloader_agv_port_back = current_ports[0]  # 使用當前批次的第一個port
+
+            cycle_num = context.take_put_cycle_count + 1
+            self.node.get_logger().info(
+                f"Unloader Robot Put Oven 狀態 (第{cycle_num}次) - "
+                f"從 AGV ports {current_ports} 取貨")
+        else:
+            self.node.get_logger().info("Unloader Robot Put Oven TakeAgv 狀態")
 
         # 並行執行：Hokuyo write_busy 設定
         self._set_hokuyo_busy()

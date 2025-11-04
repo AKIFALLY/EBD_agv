@@ -134,14 +134,14 @@
                         </td>
                         <td>
                             {% if task.agv and task.agv.name %}
-                            <span class="tag is-success" id="task-agv-{{ task.id }}">
+                            <span class="tag is-success" id="task-agv-{{ task.id }}" data-agv-id="{{ task.agv.id }}">
                                 <span class="icon">
                                     <i class="mdi mdi-robot"></i>
                                 </span>
-                                <span>{{ task.agv.name }}</span>
+                                <span>[{{ task.agv.id }}]{{ task.agv.name }}</span>
                             </span>
                             {% elif task.agv_id %}
-                            <span class="tag is-warning" id="task-agv-{{ task.id }}">AGV {{ task.agv_id }}</span>
+                            <span class="tag is-warning" id="task-agv-{{ task.id }}" data-agv-id="{{ task.agv_id }}">AGV {{ task.agv_id }}</span>
                             {% else %}
                             <span class="tag is-light" id="task-agv-{{ task.id }}">未分配</span>
                             {% endif %}

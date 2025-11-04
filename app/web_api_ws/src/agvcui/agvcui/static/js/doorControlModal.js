@@ -6,11 +6,68 @@
  * - 顯示/隱藏門控制模態窗口
  * - 調用 Web API 的門控制接口
  * - 處理開門/關門按鈕點擊事件
+ * - 即時顯示門狀態（透過 signalsStore）
  */
 
 export const doorControlModal = (() => {
     // API 基礎 URL（使用 Web API Gateway Port 8000）
     const DOOR_API_BASE = 'http://agvc.webapi/door';
+
+    // 門 ID 到 Signal ID 的映射
+    // Signal value: "0" = 關閉, "1" = 開啟
+    const DOOR_SIGNAL_MAP = {
+        1: 99901,  // 門1 → Door_1_Status (DM5000)
+        2: 99902,  // 門2 → Door_2_Status (DM5001)
+        3: 99903,  // 門3 → Door_3_Status (DM5002)
+        4: 99904   // 門4 → Door_4_Status (DM5003)
+    };
+
+    /**
+     * 更新門狀態顯示
+     * @param {string|number} doorId - 門的 ID（1-4）
+     * @param {string} signalValue - Signal 值（"0"=關閉, "1"=開啟）
+     */
+    function updateDoorStatus(doorId, signalValue) {
+        const statusTag = document.getElementById(`door-${doorId}-status`);
+        if (!statusTag) {
+            console.warn(`找不到門 ${doorId} 的狀態標籤`);
+            return;
+        }
+
+        // Signal value: "0" = 關閉, "1" = 開啟
+        const isOpen = signalValue === "1";
+
+        statusTag.textContent = isOpen ? "開啟" : "關閉";
+        statusTag.className = `tag ${isOpen ? 'is-success' : 'is-danger'}`;
+    }
+
+    /**
+     * 從 signalsStore 更新所有門的狀態
+     */
+    function updateAllDoorStatus() {
+        // 檢查 signalsStore 是否存在
+        if (!window.signalsStore) {
+            console.warn('signalsStore 不存在，無法更新門狀態');
+            return;
+        }
+
+        const signals = window.signalsStore.getState().signals || [];
+
+        // 遍歷所有門，更新狀態
+        Object.entries(DOOR_SIGNAL_MAP).forEach(([doorId, signalId]) => {
+            const signal = signals.find(s => s.id === signalId);
+            if (signal) {
+                updateDoorStatus(doorId, signal.value);
+            } else {
+                // 如果找不到對應的 signal，顯示未知狀態
+                const statusTag = document.getElementById(`door-${doorId}-status`);
+                if (statusTag) {
+                    statusTag.textContent = "未知";
+                    statusTag.className = "tag is-light";
+                }
+            }
+        });
+    }
 
     /**
      * 初始化門控制模態窗口
@@ -28,6 +85,8 @@ export const doorControlModal = (() => {
         // 打開模態窗口
         openBtn.addEventListener('click', () => {
             modal.classList.add('is-active');
+            // 立即更新門狀態顯示
+            updateAllDoorStatus();
         });
 
         // 關閉模態窗口的函數
@@ -61,6 +120,28 @@ export const doorControlModal = (() => {
 
         // 綁定門控制按鈕（使用事件委托）
         bindDoorControlButtons(modal);
+
+        // 訂閱 signalsStore 變化以即時更新門狀態
+        if (window.signalsStore) {
+            window.signalsStore.on('change', (newState) => {
+                // 只在模態窗口開啟時更新狀態（性能優化）
+                if (modal.classList.contains('is-active')) {
+                    const signals = newState.signals || [];
+
+                    // 更新所有門的狀態
+                    Object.entries(DOOR_SIGNAL_MAP).forEach(([doorId, signalId]) => {
+                        const signal = signals.find(s => s.id === signalId);
+                        if (signal) {
+                            updateDoorStatus(doorId, signal.value);
+                        }
+                    });
+                }
+            });
+
+            console.log('門控制模態窗口已訂閱 signalsStore 變化');
+        } else {
+            console.warn('signalsStore 未初始化，門狀態將無法即時更新');
+        }
     }
 
     /**

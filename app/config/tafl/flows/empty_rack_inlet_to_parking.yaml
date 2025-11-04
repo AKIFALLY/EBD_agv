@@ -86,11 +86,11 @@ flow:
                           - if:
                               condition: "${outlet_occupied}"
                               then:
-                                # 查詢系統空車停放區的空閒位置（位置31-34）
+                                # 查詢系統空車停放區的空閒位置（位置11-13）
                                 - query:
                                     target: locations
                                     where:
-                                      id_in: [31, 32, 33, 34]
+                                      id_in: [13, 12, 11]
                                       location_status_id: 2  # unoccupied
                                     limit: 1
                                     as: free_parking_locations

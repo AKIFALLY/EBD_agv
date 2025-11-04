@@ -1,7 +1,7 @@
 metadata:
   id: "unloader_take_oven"
   name: "Unloader AGV 從烤箱上排取料"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查烤箱上排烘干完成載具，創建 Unloader AGV 取料任務（批量4格，固定方向）"
   author: "TAFL System"

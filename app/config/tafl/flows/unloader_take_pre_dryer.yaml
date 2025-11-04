@@ -1,7 +1,7 @@
 metadata:
   id: "unloader_take_pre_dryer"
   name: "Unloader AGV 從預烘機取料"
-  enabled: true
+  enabled: false
   version: "1.0.0"
   description: "檢查預烘機預烘完成載具，創建 Unloader AGV 取料任務（批量4格）"
   author: "TAFL System"

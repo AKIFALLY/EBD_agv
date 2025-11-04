@@ -42,6 +42,10 @@ class KukaManager:
         self.db_pool: ConnectionPoolManager = rcs_core.db_pool
         self.get_logger: RcutilsLogger = rcs_core.get_logger
 
+        # 日誌頻率控制（降低刷屏）
+        self._container_log_counter = 0
+        self._container_log_interval = 10  # 每10次查詢輸出一次汇总（約1秒）
+
         # 設置機器人位置更新回調
         self.kuka_fleet.on_robot_query_complete = self.on_robot_update
 
@@ -50,7 +54,11 @@ class KukaManager:
 
         # 啟動監控
         self.kuka_fleet.start_monitoring()
-        self.get_logger().info("KUKA Fleet 監控已啟動，機器人位置和容器狀態更新功能已啟用")
+        self.get_logger().info("=" * 60)
+        self.get_logger().info("🚀 KUKA Fleet 監控已啟動")
+        self.get_logger().info("✅ 機器人位置更新功能已啟用")
+        self.get_logger().info("✅ 容器狀態更新功能已啟用 (Rack 資料同步)")
+        self.get_logger().info("=" * 60)
 
     def kuka_unit_2_px(self, y, x):
         """
@@ -77,7 +85,7 @@ class KukaManager:
             float: 地圖角度
         """
         # map angle to kuka angle
-        angle = ((-1 * angle + 90) + 540 % 360) - 180
+        angle = ((-1 * (angle - 90)) + 540 % 360) - 180
         return angle
 
     def on_robot_update(self, robots: list):
@@ -431,27 +439,51 @@ class KukaManager:
             self.get_logger().error("資料庫連線池不可用，無法更新容器狀態")
             return
 
+        # 日誌頻率控制
+        self._container_log_counter += 1
+        should_log_summary = (self._container_log_counter % self._container_log_interval == 0)
+
         if not containers:
+            if should_log_summary:
+                self.get_logger().debug("KUKA Fleet 查詢結果：沒有容器")
             return
+
+        # 只在每 N 次查詢時輸出汇总信息
+        if should_log_summary:
+            container_codes = [c.get("containerCode", "Unknown") for c in containers]
+            self.get_logger().info(
+                f"🔄 KUKA Fleet 查詢到 {len(containers)} 個容器: {', '.join(container_codes)}"
+            )
 
         try:
             with self.db_pool.get_session() as session:
                 updated_count = 0
+                changed_racks = []  # 記錄有狀態變化的 Rack
+
                 for container in containers:
-                    if self._update_single_container(session, container):
+                    result = self._update_single_container(session, container)
+                    if result['updated']:
                         updated_count += 1
+                    if result['changed']:
+                        changed_racks.append(result['rack_name'])
 
                 if updated_count > 0:
                     # 🔴 關鍵：標記 Rack 資料已更新，觸發前端更新
                     # 絕對不可移除！前端 agvc_ui_socket.py 監聽此事件
                     ModifyLog.mark(session, "rack")
                     session.commit()
-                    self.get_logger().debug(f"已更新 {updated_count} 個 KUKA 容器狀態")
+
+                    # 根據是否有變化輸出不同日誌
+                    if changed_racks:
+                        self.get_logger().info(f"✅ Rack 狀態變化: {', '.join(changed_racks)}")
+                    elif should_log_summary:
+                        # 只在汇总時輸出無變化訊息（降低刷屏）
+                        self.get_logger().debug(f"已同步 {updated_count} 個容器（無狀態變化）")
 
         except Exception as e:
             self.get_logger().error(f"更新 KUKA 容器狀態時發生錯誤: {e}")
 
-    def _update_single_container(self, session, container_data: dict) -> bool:
+    def _update_single_container(self, session, container_data: dict) -> dict:
         """
         更新單個容器的資料
 
@@ -460,12 +492,16 @@ class KukaManager:
             container_data: 容器資料字典
 
         Returns:
-            bool: 是否成功更新
+            dict: {
+                'updated': bool,     # 是否成功更新
+                'changed': bool,     # 狀態是否有變化
+                'rack_name': str     # Rack 名稱
+            }
         """
         container_code = container_data.get("containerCode")
         if not container_code:
             self.get_logger().warning("容器資料缺少 containerCode")
-            return False
+            return {'updated': False, 'changed': False, 'rack_name': None}
 
         try:
             # 根據 containerCode (name) 查找 Rack
@@ -476,7 +512,11 @@ class KukaManager:
             if not rack:
                 # Rack 不在資料庫中，可能是新容器或未註冊
                 self.get_logger().debug(f"Rack {container_code} 不存在於資料庫中")
-                return False
+                return {'updated': False, 'changed': False, 'rack_name': container_code}
+
+            # 記錄舊狀態（用於檢測變化）
+            old_is_carry = rack.is_carry
+            old_is_in_map = rack.is_in_map
 
             # 更新 is_carry 狀態 (是否被搬運)
             is_carry = container_data.get("isCarry")
@@ -488,22 +528,46 @@ class KukaManager:
             if is_in_map is not None:
                 rack.is_in_map = 1 if is_in_map else 0
 
-            # 如果容器正在被搬運，可以從機器人資訊推斷 agv_id
-            # 但這需要額外的邏輯來匹配容器和機器人
-            # 目前先保持簡單，只更新基本狀態
+            # ⚠️ 注意：不要從 KUKA orientation 更新 rack.direction
+            # 原因：
+            # 1. KUKA orientation 是連續角度值（0-360°），反映容器實時物理方向
+            # 2. rack.direction 是業務邏輯欄位，只能是 0 或 180
+            #    - 0° = A面朝外（Port 1-16 可存取）
+            #    - 180° = B面朝外（Port 17-32 可存取）
+            # 3. 如果直接賦值，會在旋轉過程中產生 45°、90°、135° 等中間值
+            # 4. 這會導致 AGV 狀態機（check_rack_side_state.py）的 port 驗證失敗
+            #
+            # 正確做法：rack.direction 應該由旋轉任務完成回調來更新
+            # （在 web_api/routers/kuka.py 的 missionStateCallback 中處理）
 
-            self.get_logger().debug(
-                f"更新 Rack {rack.name}: is_carry={rack.is_carry}, is_in_map={rack.is_in_map}"
+            # 檢查狀態是否有變化（不再檢查 direction，因為它不應該在這裡更新）
+            changed = (
+                old_is_carry != rack.is_carry or
+                old_is_in_map != rack.is_in_map
             )
 
-            return True
+            # 只在狀態變化時輸出詳細日誌
+            if changed:
+                log_parts = [f"🔄 Rack {rack.name} 狀態變化:"]
+                if old_is_carry != rack.is_carry:
+                    log_parts.append(f"is_carry {old_is_carry}→{rack.is_carry}")
+                if old_is_in_map != rack.is_in_map:
+                    log_parts.append(f"is_in_map {old_is_in_map}→{rack.is_in_map}")
+
+                self.get_logger().info(", ".join(log_parts))
+
+            return {
+                'updated': True,
+                'changed': changed,
+                'rack_name': rack.name
+            }
 
         except Exception as e:
             self.get_logger().error(f"更新容器 {container_code} 狀態時發生錯誤: {e}")
             if self.get_logger().isEnabledFor(10):  # DEBUG level
                 tb_str = traceback.format_exc()
                 self.get_logger().debug(f"堆疊訊息:\n{tb_str}")
-            return False
+            return {'updated': False, 'changed': False, 'rack_name': container_code}
 
     def stop_monitoring(self):
         """停止 KUKA Fleet 監控"""

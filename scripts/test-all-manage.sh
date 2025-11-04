@@ -83,14 +83,8 @@ test_service "tafl_wcs"
 echo "4️⃣ ECS Core 服務"
 test_service "ecs_core"
 
-echo "5️⃣ DB Proxy 服務"
-test_service "db_proxy"
-
-echo "6️⃣ KUKA Fleet 服務"
-test_service "kuka_fleet"
-
 # Zenoh 和 SSH 是系統服務，測試方式不同
-echo "7️⃣ Zenoh Router 服務"
+echo "5️⃣ Zenoh Router 服務"
 echo "  🔍 測試 manage_zenoh..."
 status=$(docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /app/setup.bash && agvc_source && manage_zenoh status" 2>&1 | tail -1)
 if echo "$status" | grep -q "運行中\|running"; then

@@ -43,6 +43,27 @@ class AgvCoreNode(AgvNodebase):
         self.robot_context = RobotContext(
             loader_agv.robot_states.idle_state.IdleState(self))
 
+        # 🔍 [DEBUG] 验证 Context 类型 - 诊断 context_name 问题
+        self.get_logger().info(
+            f"🔍 [INIT] Base Context 验证:\n"
+            f"   - type: {type(self.base_context)}\n"
+            f"   - __class__.__name__: {self.base_context.__class__.__name__}\n"
+            f"   - __class__.__module__: {self.base_context.__class__.__module__}")
+
+        self.get_logger().info(
+            f"🔍 [INIT] Loader Context 验证:\n"
+            f"   - type: {type(self.loader_context)}\n"
+            f"   - __class__.__name__: {self.loader_context.__class__.__name__}\n"
+            f"   - __class__.__module__: {self.loader_context.__class__.__module__}\n"
+            f"   - isinstance(LoaderContext): {isinstance(self.loader_context, LoaderContext)}")
+
+        self.get_logger().info(
+            f"🔍 [INIT] Robot Context 验证:\n"
+            f"   - type: {type(self.robot_context)}\n"
+            f"   - __class__.__name__: {self.robot_context.__class__.__name__}\n"
+            f"   - __class__.__module__: {self.robot_context.__class__.__module__}\n"
+            f"   - isinstance(RobotContext): {isinstance(self.robot_context, RobotContext)}")
+
         # 輸出日誌信息
         self.get_logger().info("Load AGV狀態機啟動")
 
@@ -111,11 +132,12 @@ class AgvCoreNode(AgvNodebase):
 
     def agv_after_handle(self, state):
         if isinstance(state, WaitRobotState):
+            # 🚫 Robot 狀態機已被禁用 - 不執行任何 robot 操作
             # self.get_logger().info("[CARGO]-WaitRobot")
             # self.get_logger().info("[CARGO]-Idle")
-            # self.robot_context.handle()
+            # self.robot_context.handle()  # 已禁用
             pass
-            # self.robot_context.handle()
+            # self.robot_context.handle()  # 已禁用
             pass
 
     def robot_after_handle(self, state):
@@ -134,22 +156,10 @@ class AgvCoreNode(AgvNodebase):
             # 使用包含 AGV ID 的檔案名稱，統一格式
             agv_id = self.agv_id if hasattr(self, 'agv_id') and self.agv_id else "loader01"
             filename = f"agv_status_{agv_id}.json"
-            
-            filepath = self.json_recorder.save_complete_status_to_file(self, filename)
-            
-            # 驗證文件是否真的被創建 (每10次才打印一次，避免日誌過多)
-            import os
-            if not hasattr(self, '_json_update_count'):
-                self._json_update_count = 0
-            self._json_update_count += 1
-            
-            if os.path.exists(filepath):
-                file_size = os.path.getsize(filepath)
-                if self._json_update_count % 10 == 1:  # 第1次，第11次，第21次...打印
-                    self.get_logger().info(f"📝 Loader AGV JSON 狀態文件更新正常 (第{self._json_update_count}次): {filepath}, 大小: {file_size} bytes")
-            else:
-                self.get_logger().error(f"❌ 文件未被創建: {filepath}")
-            
+
+            # 靜默更新 JSON 狀態文件
+            self.json_recorder.save_complete_status_to_file(self, filename)
+
         except Exception as e:
             self.get_logger().error(f"❌ 定時更新 Loader AGV JSON 狀態文件失敗: {e}")
             import traceback
