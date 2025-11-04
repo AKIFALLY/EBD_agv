@@ -37,11 +37,11 @@ class BaseContext(ContextABC):
         msg = AgvStateChange()
         msg.agv_id = self.agv_id
 
-        # 🔍 [DEBUG] 详细类型信息 - 用于诊断 context_name 问题
+        # 🔍 [DEBUG] 詳細類型信息 - 用於診斷 context_name 問題
         class_name = self.__class__.__name__
         module_name = self.__class__.__module__
         self.node.get_logger().info(
-            f"🔍 [DEBUG] Context 类型检查:\n"
+            f"🔍 [DEBUG] Context 類型檢查:\n"
             f"   - type(self): {type(self)}\n"
             f"   - __class__.__name__: {class_name}\n"
             f"   - __class__.__module__: {module_name}\n"
@@ -53,7 +53,7 @@ class BaseContext(ContextABC):
         msg.timestamp = self.node.get_clock().now().to_msg()
 
         self.node.get_logger().info(
-            f"🔍 [DEBUG] 消息内容:\n"
+            f"🔍 [DEBUG] 消息內容:\n"
             f"   - msg.context_name: {msg.context_name}\n"
             f"   - msg.from_state: {msg.from_state}\n"
             f"   - msg.to_state: {msg.to_state}")

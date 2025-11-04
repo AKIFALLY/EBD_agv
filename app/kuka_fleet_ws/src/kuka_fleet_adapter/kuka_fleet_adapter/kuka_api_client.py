@@ -250,7 +250,7 @@ class KukaApiClient:
         return self._post_request("/api/amr/chargeRobot", data=request_dto)
 
     def insert_robot(self, request_dto: dict):
-        """入場机器人 - POST /api/amr/insertRobot"""
+        """入場機器人 - POST /api/amr/insertRobot"""
         return self._post_request("/api/amr/insertRobot", data=request_dto)
 
     def query_robot_by_node_uuid_or_foreign_code(self, node_code: str):
@@ -258,7 +258,7 @@ class KukaApiClient:
         return self._post_request("/api/amr/queryRobByNodeUuidOrForeignCode", params={"nodeCode": node_code})
 
     def remove_robot(self, request_dto: dict):
-        """離場机器人 - POST /api/amr/removeRobot"""
+        """離場機器人 - POST /api/amr/removeRobot"""
         return self._post_request("/api/amr/removeRobot", data=request_dto)
 
     def robot_move_carry(self, request_dto: dict):

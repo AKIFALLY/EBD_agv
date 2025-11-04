@@ -267,7 +267,7 @@ class SocketAPI {
 
         const reconnectAttemptHandler = (attempt) => {
             this.reconnectAttempts = attempt;
-            // 只在前幾次重連時顯示通知，避免干擾用戶
+            // 只在前幾次重連時顯示通知，避免幹擾用戶
             if (attempt <= 3) {
                 notify.showErrorMessage(`重連中（第 ${attempt} 次）`);
             }

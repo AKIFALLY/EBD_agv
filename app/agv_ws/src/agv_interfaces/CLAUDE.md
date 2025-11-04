@@ -1,8 +1,8 @@
 # agv_interfaces - AGV ROS 2訊息接口定義
 
 ## 📚 Context Loading
-../../../../CLAUDE.md  # 引用根目錄系統文档
-../../CLAUDE.md  # 引用上層 agv_ws 工作空間文档
+../../../../CLAUDE.md  # 引用根目錄系統文檔
+../../CLAUDE.md  # 引用上層 agv_ws 工作空間文檔
 
 ## 📋 專案概述
 agv_interfaces 定義 RosAGV 系統中 AGV 相關的 ROS 2 訊息類型，提供標準化的通訊接口。
@@ -84,8 +84,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 @docs-ai/knowledge/protocols/ros2-interfaces.md
 
 ### 使用此接口的專案
-- **agv_base**: 發布 AgvStatus，處理 AgvStateChange
-- **cargo_mover_agv**: 使用 AgvStatus 發布車輛狀態
+- **agv_base**: 發佈 AgvStatus，處理 AgvStateChange
+- **cargo_mover_agv**: 使用 AgvStatus 發佈車輛狀態
 - **loader_agv / unloader_agv**: 狀態同步和變更通知
 - **agvcui**: 接收狀態資訊顯示 AGV 即時狀態
 - **web_api_ws**: 透過 WebSocket 轉發狀態給前端

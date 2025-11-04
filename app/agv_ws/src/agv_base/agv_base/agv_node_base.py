@@ -61,7 +61,7 @@ class AgvNodebase(Node):
         self.pathdata = None  # 路徑資料
         self.mission_id = None  # 任務ID
         self.node_id = None  # 任務目標節點
-        self.agv_id = 0  # AGV ID (数据库 agv 表主键)
+        self.agv_id = 0  # AGV ID (數據庫 agv 表主键)
         self.robot_finished = False  # 機器人是否完成動作
         self.task = TaskMsg()
         self.agvsubscription = None  # AGVs 訂閱物件
@@ -498,7 +498,7 @@ class AgvNodebase(Node):
         self.get_logger().info(f"📡 訂閱主題: /agvc/agvs")
         self.get_logger().info(f"🏷️  訊息類型: AGVs")
         self.get_logger().info(f"🎯 目標命名空間: {self.get_namespace().lstrip('/')}")
-        self.get_logger().info(f"⏳ 等待 agvc_database_node 發布資料...")
+        self.get_logger().info(f"⏳ 等待 agvc_database_node 發佈資料...")
         self.get_logger().info(f"💡 提示: 如果長時間沒有收到資料，請檢查 AGVC 容器是否運行")
         self.get_logger().info("=" * 80)
 

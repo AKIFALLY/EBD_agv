@@ -343,7 +343,7 @@ class TAFLPanels {
                         parsed = JSON.parse(currentValue);
                     } catch {
                         // 如果不是有效的 JSON，嘗試將其視為原始值
-                        // 數字、布林值或字串
+                        // 數字、佈林值或字串
                         if (currentValue === 'true' || currentValue === 'false') {
                             parsed = currentValue === 'true';
                         } else if (!isNaN(currentValue) && currentValue !== '') {
@@ -601,7 +601,7 @@ class TAFLPanels {
                     JSON.parse(newValue);
                     editorContainer.classList.remove('has-error');
                 } catch {
-                    // 如果不是 JSON，當作字串或布林值也是有效的
+                    // 如果不是 JSON，當作字串或佈林值也是有效的
                     editorContainer.classList.remove('has-error');
                 }
             } catch (error) {
@@ -664,7 +664,7 @@ class TAFLPanels {
                         parsed = JSON.parse(currentValue);
                     } catch {
                         // 如果不是有效的 JSON，嘗試將其視為原始值
-                        // 數字、布林值或字串
+                        // 數字、佈林值或字串
                         if (currentValue === 'true' || currentValue === 'false') {
                             parsed = currentValue === 'true';
                         } else if (!isNaN(currentValue) && currentValue !== '') {
@@ -916,7 +916,7 @@ class TAFLPanels {
                         parsed = JSON.parse(currentValue);
                     } catch {
                         // 如果不是有效的 JSON，嘗試將其視為原始值
-                        // 數字、布林值或字串
+                        // 數字、佈林值或字串
                         if (currentValue === 'true' || currentValue === 'false') {
                             parsed = currentValue === 'true';
                         } else if (!isNaN(currentValue) && currentValue !== '') {

@@ -342,7 +342,7 @@ export const tasksPage = (() => {
      * @param {Array} allTasks - 所有任務
      */
     function updateTaskStats(filteredTasks, allTasks) {
-        // 🔧 修正：使用更精確的選擇器，避免干擾階層視圖中的個別任務
+        // 🔧 修正：使用更精確的選擇器，避免幹擾階層視圖中的個別任務
         // 只更新頁面標題區域的統計資訊，不影響階層視圖中的任務狀態標籤
         const titleTag = document.querySelector('.hero .level-item .tag, .section .level-item .tag:not(.task-node .level-item .tag)');
         if (titleTag) {

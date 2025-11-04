@@ -359,10 +359,10 @@ show_statistics() {
     echo -e "嚴重錯誤: ${PURPLE}$critical_lines${NC}"
     echo ""
     
-    # 時間分布分析（如果日誌包含時間戳）
+    # 時間分佈分析（如果日誌包含時間戳）
     local time_pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{2}:[0-9]{2}:[0-9]{2}"
     if echo "$log_content" | grep -qE "$time_pattern"; then
-        echo -e "${YELLOW}時間分布分析:${NC}"
+        echo -e "${YELLOW}時間分佈分析:${NC}"
         
         # 按小時統計錯誤
         echo "$log_content" | grep -iE "${ERROR_PATTERNS["ERROR"]}" | \

@@ -20,7 +20,7 @@ class ProgressReporter:
     def __init__(self, node: Node):
         self.node = node
         self.current_progress = {}
-        self.progress_publisher = node.create_publisher(String, '/tafl/execution_progress', 10)
+        self.progress_publisher = node.create_publisher(String, 'tafl/execution_progress', 10)
         self.history_storage = []
         self.max_history = 1000
         
@@ -148,14 +148,14 @@ class EnhancedTAFLWCSNode(Node):
         # Create subscribers and publishers
         self.flow_subscriber = self.create_subscription(
             String,
-            '/tafl/execute_flow',
+            'tafl/execute_flow',
             self.execute_flow_callback,
             10
         )
         
         self.result_publisher = self.create_publisher(
             String,
-            '/tafl/execution_result',
+            'tafl/execution_result',
             10
         )
         
@@ -163,7 +163,7 @@ class EnhancedTAFLWCSNode(Node):
         from std_srvs.srv import Trigger
         self.progress_service = self.create_service(
             Trigger,
-            '/tafl/get_progress',
+            'tafl/get_progress',
             self.get_progress_callback
         )
         

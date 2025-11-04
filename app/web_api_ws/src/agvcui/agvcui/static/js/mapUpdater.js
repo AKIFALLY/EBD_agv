@@ -19,7 +19,7 @@ export function MapChangehandler(newState, mapContext) {
     const kukaNodes = newState.kukaNodes || [];
     const kukaEdges = newState.kukaEdges || [];
 
-    // 從 store 讀取兩個獨立的布林值
+    // 從 store 讀取兩個獨立的佈林值
     const shouldShowCT = newState.showCtNodes !== undefined ? newState.showCtNodes : true;
     const shouldShowKUKA = newState.showKukaNodes !== undefined ? newState.showKukaNodes : true;
 

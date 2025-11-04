@@ -170,7 +170,7 @@ class WritePathState(State):
             # MAGIC=21 或 work_id=21 特殊處理：不更改 task status 為 3
             if self.node.agv_status.MAGIC != 21 and self.node.task.work_id != 21:
                 self.node.task.status_id = 3  # 更新狀態為執行中
-                self.node.task.agv_id = self.node.agv_id  # 更新AGV ID (数据库外键)
+                self.node.task.agv_id = self.node.agv_id  # 更新AGV ID (數據庫外键)
                 self.agvdbclient.async_update_task(
                     self.node.task, self.task_update_callback)  # 更新任務狀態為執行中
                 self.node.get_logger().info("✅ 更新任務狀態為執行中 (status_id=3)")

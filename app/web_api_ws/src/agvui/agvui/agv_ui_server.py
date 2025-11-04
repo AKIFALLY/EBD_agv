@@ -494,12 +494,12 @@ class AgvUiServer:
 
     async def start(self):
         self.loop = asyncio.get_running_loop()
-        # ✅ 已禁用：使用文件读取获取整合数据（带 N/L 标记）
+        # ✅ 已禁用：使用文件读取獲取整合數據（帶 N/L 標記）
         # 啟動 ROS node（background thread），傳遞 local_agv_id 作為命名空間
         # ros_node = AgvUiRos(self.loop, self.agv_ui_socket, self.local_agv_id)
         # ros_node.start()
 
-        # 啟動狀態檔案讀取任務 (JSON 狀態) - 提供整合数据 + N/L 标记
+        # 啟動狀態檔案讀取任務 (JSON 狀態) - 提供整合數據 + N/L 標記
         asyncio.create_task(self.read_status_file_task())
         print("✅ 已啟動 AGV 狀態檔案監控任務")
         

@@ -1,7 +1,7 @@
 # db_proxy_ws - PostgreSQL 資料庫代理服務工作空間
 
 ## 📚 Context Loading
-../../CLAUDE.md  # 引用根目錄系統文档
+../../CLAUDE.md  # 引用根目錄系統文檔
 
 # 資料庫領域知識（工作空間層）
 @docs-ai/knowledge/agv-domain/wcs-database-design.md    # 資料庫設計

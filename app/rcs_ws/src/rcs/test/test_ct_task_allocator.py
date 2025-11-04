@@ -1,14 +1,14 @@
 """
-CT 任务分配器单元测试
+CT 任務分配器單元測試
 
-测试 CtTaskAllocator 类的各项功能
+測試 CtTaskAllocator 類的各項功能
 
-运行方式:
+運行方式:
     cd /app/rcs_ws
     python3 -m pytest src/rcs/test/test_ct_task_allocator.py -v
 
 作者: AI Assistant
-创建日期: 2025-10-21
+創建日期: 2025-10-21
 """
 
 import pytest
@@ -20,17 +20,17 @@ from rcs.ct_task_allocator import CtTaskAllocator
 
 
 class TestCtTaskAllocator:
-    """测试 CtTaskAllocator 类"""
+    """測試 CtTaskAllocator 類"""
 
     @pytest.fixture
     def mock_logger(self):
-        """创建 mock logger"""
+        """創建 mock logger"""
         logger = Mock()
         return logger
 
     @pytest.fixture
     def sample_config_content(self):
-        """示例配置内容"""
+        """示例配置內容"""
         return {
             'version': '1.0',
             'enabled': True,
@@ -51,7 +51,7 @@ class TestCtTaskAllocator:
                     'model': 'Unloader',
                     'rooms': [1, 2],
                     'max_concurrent_tasks': 1,
-                    'enabled': False  # 测试禁用状态
+                    'enabled': False  # 測試禁用狀態
                 }
             },
             'work_id_allocations': {
@@ -90,7 +90,7 @@ class TestCtTaskAllocator:
 
     @pytest.fixture
     def temp_config_file(self, sample_config_content):
-        """创建临时配置文件"""
+        """創建臨時配置文件"""
         with tempfile.NamedTemporaryFile(
             mode='w', suffix='.yaml', delete=False
         ) as f:
@@ -99,54 +99,54 @@ class TestCtTaskAllocator:
 
         yield temp_path
 
-        # 清理临时文件
+        # 清理臨時文件
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
     @pytest.fixture
     def allocator(self, temp_config_file, mock_logger):
-        """创建 CtTaskAllocator 实例"""
+        """創建 CtTaskAllocator 實例"""
         return CtTaskAllocator(temp_config_file, mock_logger)
 
     def test_initialization(self, allocator):
-        """测试初始化"""
+        """測試初始化"""
         assert allocator.config is not None
         assert allocator.config.get('version') == '1.0'
         assert allocator.config.get('enabled') is True
 
     def test_config_validation(self, allocator):
-        """测试配置验证"""
+        """測試配置驗證"""
         assert allocator._validate_config() is True
 
     def test_load_config(self, allocator, mock_logger):
-        """测试配置加载"""
+        """測試配置加載"""
         success = allocator.load_config()
         assert success is True
         mock_logger.info.assert_called()
 
     def test_allocate_task_cargo(self, allocator):
-        """测试 Cargo AGV 任务分配"""
-        # 创建 mock task
+        """測試 Cargo AGV 任務分配"""
+        # 創建 mock task
         task = Mock()
         task.work_id = 2000102
         task.room_id = 1
         task.priority = 4
 
-        # 创建 mock available_agvs
+        # 創建 mock available_agvs
         agv1 = Mock()
         agv1.name = 'cargo02'
         agv1.model = 'Cargo'
 
         available_agvs = [agv1]
 
-        # 执行分配
+        # 執行分配
         agv_name, priority = allocator.allocate_task(task, available_agvs)
 
         assert agv_name == 'cargo02'
-        assert priority is None  # 没有优先级覆盖
+        assert priority is None  # 沒有優先級覆蓋
 
     def test_allocate_task_loader_with_priority_override(self, allocator):
-        """测试 Loader AGV 任务分配（带优先级覆盖）"""
+        """測試 Loader AGV 任務分配（帶優先級覆蓋）"""
         task = Mock()
         task.work_id = 2010101
         task.room_id = 1
@@ -161,15 +161,15 @@ class TestCtTaskAllocator:
         agv_name, priority = allocator.allocate_task(task, available_agvs)
 
         assert agv_name == 'loader02'
-        assert priority == 5  # 优先级覆盖为 5
+        assert priority == 5  # 優先級覆蓋為 5
 
     def test_allocate_task_agv_not_available(self, allocator):
-        """测试 AGV 不可用时返回 None"""
+        """測試 AGV 不可用時返回 None"""
         task = Mock()
         task.work_id = 2000102
         task.room_id = 1
 
-        # available_agvs 列表为空
+        # available_agvs 列表為空
         available_agvs = []
 
         agv_name, priority = allocator.allocate_task(task, available_agvs)
@@ -178,7 +178,7 @@ class TestCtTaskAllocator:
         assert priority is None
 
     def test_allocate_task_agv_disabled(self, allocator):
-        """测试 AGV 被禁用时返回 None"""
+        """測試 AGV 被禁用時返回 None"""
         task = Mock()
         task.work_id = 2051101  # unloader02 (已禁用)
         task.room_id = 1
@@ -191,13 +191,13 @@ class TestCtTaskAllocator:
 
         agv_name, priority = allocator.allocate_task(task, available_agvs)
 
-        assert agv_name is None  # 因为 unloader02 在配置中被禁用
+        assert agv_name is None  # 因為 unloader02 在配置中被禁用
 
     def test_allocate_task_room_restriction(self, allocator):
-        """测试房间限制"""
+        """測試房間限制"""
         task = Mock()
         task.work_id = 2000102
-        task.room_id = 3  # 房间 3 不在允许列表中
+        task.room_id = 3  # 房間 3 不在允許列表中
 
         agv1 = Mock()
         agv1.name = 'cargo02'
@@ -207,10 +207,10 @@ class TestCtTaskAllocator:
 
         agv_name, priority = allocator.allocate_task(task, available_agvs)
 
-        assert agv_name is None  # 房间限制导致分配失败
+        assert agv_name is None  # 房間限制導致分配失敗
 
     def test_allocate_task_unmapped_work_id(self, allocator, mock_logger):
-        """测试未映射的 work_id"""
+        """測試未映射的 work_id"""
         task = Mock()
         task.work_id = 9999999  # 未配置的 work_id
         task.room_id = 1
@@ -224,11 +224,11 @@ class TestCtTaskAllocator:
         agv_name, priority = allocator.allocate_task(task, available_agvs)
 
         assert agv_name is None
-        # 应该记录警告
+        # 應該記錄警告
         mock_logger.warning.assert_called()
 
     def test_get_agv_capability(self, allocator):
-        """测试获取 AGV 能力配置"""
+        """測試獲取 AGV 能力配置"""
         cap = allocator.get_agv_capability('cargo02')
 
         assert cap is not None
@@ -237,7 +237,7 @@ class TestCtTaskAllocator:
         assert cap['enabled'] is True
 
     def test_get_all_configured_agvs(self, allocator):
-        """测试获取所有配置的 AGV"""
+        """測試獲取所有配置的 AGV"""
         agvs = allocator.get_all_configured_agvs()
 
         assert len(agvs) == 3
@@ -246,14 +246,14 @@ class TestCtTaskAllocator:
         assert 'unloader02' in agvs
 
     def test_get_work_id_allocation(self, allocator):
-        """测试获取 work_id 分配配置"""
+        """測試獲取 work_id 分配配置"""
         alloc = allocator.get_work_id_allocation(2000102)
 
         assert alloc is not None
         assert alloc['agv_name'] == 'cargo02'
 
     def test_get_config_stats(self, allocator):
-        """测试获取配置统计"""
+        """測試獲取配置統計"""
         stats = allocator.get_config_stats()
 
         assert stats['version'] == '1.0'
@@ -263,13 +263,13 @@ class TestCtTaskAllocator:
         assert stats['hot_reload_enabled'] is True
 
     def test_hot_reload(self, allocator, temp_config_file, sample_config_content):
-        """测试热重载功能"""
+        """測試熱重載功能"""
         import time
 
         # 初始配置
         assert allocator.config['version'] == '1.0'
 
-        # 等待1秒确保文件时间戳不同
+        # 等待1秒確保文件時間戳不同
         time.sleep(1)
 
         # 修改配置文件
@@ -277,7 +277,7 @@ class TestCtTaskAllocator:
         with open(temp_config_file, 'w') as f:
             yaml.dump(sample_config_content, f)
 
-        # 触发重载
+        # 觸發重載
         reloaded = allocator.check_and_reload()
 
         assert reloaded is True

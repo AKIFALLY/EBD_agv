@@ -46,7 +46,7 @@ class PutAgvState(BaseRobotState):
 
         # 重置計數器
         self.carrier_updates_pending = 0
-        self.carrier_update_results = [False, False, False, False]  # 追踪4個carrier的更新狀態
+        self.carrier_update_results = [False, False, False, False]  # 追蹤4個carrier的更新狀態
 
         # 第1次操作的2個carrier (AGV上層 port 1,2)
         if context.carrier_id[0] is not None:
@@ -126,7 +126,7 @@ class PutAgvState(BaseRobotState):
             self.node.get_logger().info(f"✅ 已發送 {self.carrier_updates_pending} 個carrier更新請求")
 
     def carrier_update_callback(self, result, carrier_index):
-        """統一的 carrier 更新回調（追踪所有4個carrier的更新狀態）"""
+        """統一的 carrier 更新回調（追蹤所有4個carrier的更新狀態）"""
         if result is not None and result.success:
             self.carrier_update_results[carrier_index] = True
             self.node.get_logger().info(

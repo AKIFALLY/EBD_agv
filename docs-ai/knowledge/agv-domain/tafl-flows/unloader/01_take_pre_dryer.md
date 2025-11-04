@@ -1,93 +1,93 @@
 # Flow 1: unloader_take_pre_dryer.yaml
 
-## 🎯 业务目的
-从预烘机批量取料，启动 Unloader AGV 的后段制程流程
+## 🎯 業務目的
+從預烘機批量取料，啟動 Unloader AGV 的後段制程流程
 
 ## 📋 基本信息
 
-| 项目 | 值 |
+| 項目 | 值 |
 |------|-----|
 | 文件名 | `unloader_take_pre_dryer.yaml` |
 | Flow ID | `unloader_take_pre_dryer` |
-| 优先级 | 45 |
-| 执行间隔 | 12 秒 |
-| Work ID | **2050101, 2050301**（Station-based，只有2个）|
+| 優先級 | 45 |
+| 執行間隔 | 12 秒 |
+| Work ID | **2050101, 2050301**（Station-based，只有2個）|
 
-## 🏭 业务场景
+## 🏭 業務場景
 
-### 前置条件
-1. Loader AGV 已经将载具放入预烘机（PUT_PRE_DRYER）
-2. 预烘机完成预烘干制程
-3. 载具状态更新为"预烘干完成"（status_id: 503）
-4. Unloader AGV 处于空闲或有空余车位
+### 前置條件
+1. Loader AGV 已經將載具放入預烘機（PUT_PRE_DRYER）
+2. 預烘機完成預烘幹制程
+3. 載具狀態更新為"預烘幹完成"（status_id: 503）
+4. Unloader AGV 處於空閒或有空餘車位
 
-### 触发条件
-- 预烘机有完成预烘干的载具（status_id: 503）
-- Unloader AGV 车上有空位（最多4格）
-- 没有重复的未完成任务
+### 觸發條件
+- 預烘機有完成預烘幹的載具（status_id: 503）
+- Unloader AGV 車上有空位（最多4格）
+- 沒有重復的未完成任務
 
-### 执行结果
-- 创建 Unloader AGV 取料任务
-- 任务进入待分派队列（status_id = 1 PENDING）
-- RCS 系统分派给空闲的 Unloader AGV
+### 執行結果
+- 創建 Unloader AGV 取料任務
+- 任務進入待分派隊列（status_id = 1 PENDING）
+- RCS 系統分派給空閒的 Unloader AGV
 
-## 🔧 技术规格
+## 🔧 技術規格
 
-### 预烘机配置（Station-based）
+### 預烘機配置（Station-based）
 
-**物理结构**：
-- Equipment 205（预烘机）
-- 8个 Port（Port 1-8）
-- **2个 Station**（**Station 01, 03**）
+**物理結構**：
+- Equipment 205（預烘機）
+- 8個 Port（Port 1-8）
+- **2個 Station**（**Station 01, 03**）
 
-**Station-Port 映射**（UnloaderAGV 自定义）：
+**Station-Port 映射**（UnloaderAGV 自定義）：
 - **Station 01**: Port 1-2-5-6（**批量4格**）
 - **Station 03**: Port 3-4-7-8（**批量4格**）
 
-**Work ID 对应**（Station-based 编码）：
-- `2050101`: Station 01 取预烘（Port 1-2-5-6，**批量4格**）
-- `2050301`: Station 03 取预烘（Port 3-4-7-8，**批量4格**）
+**Work ID 對應**（Station-based 編碼）：
+- `2050101`: Station 01 取預烘（Port 1-2-5-6，**批量4格**）
+- `2050301`: Station 03 取預烘（Port 3-4-7-8，**批量4格**）
 
-**关键特点**：
-- ✅ **只有2个 Work ID**（全部4格批量处理）
-- ✅ **统一批量处理**（不再有2格标准处理）
+**關鍵特點**：
+- ✅ **只有2個 Work ID**（全部4格批量處理）
+- ✅ **統一批量處理**（不再有2格標準處理）
 - ✅ **UnloaderAGV 特定映射**（Station 跨上下排，提升效率）
 
-### Station-based 设计说明
+### Station-based 設計說明
 
-**编码规则**：`room_id + equipment_type + station + action_type`
-- work_id 中的 "01/03" 代表 Station 编号（非 Port 起始号）
+**編碼規則**：`room_id + equipment_type + station + action_type`
+- work_id 中的 "01/03" 代表 Station 編號（非 Port 起始號）
 - 示例：`2050101` = room2 + pre_dryer(05) + station01(01) + take(01)
 
-**UnloaderAGV 自定义映射**：
-- 在 `equipment_stations.py` 中实作
-- **所有 Station 统一批量4格处理**（UnloaderAGV 特有）
+**UnloaderAGV 自定義映射**：
+- 在 `equipment_stations.py` 中實作
+- **所有 Station 統一批量4格處理**（UnloaderAGV 特有）
 - Station 01/03 都跨上下排（Port 1-2-5-6 和 Port 3-4-7-8）
 
-### Unloader AGV 车载配置
+### Unloader AGV 車載配置
 
-**S尺寸产品**：
+**S尺寸產品**：
 - 4格可用（上2格 + 下2格）
-- 最大容量：4个 Carrier
+- 最大容量：4個 Carrier
 
-**L尺寸产品**：
-- 2格可用（仅上2格）
-- 最大容量：2个 Carrier
+**L尺寸產品**：
+- 2格可用（僅上2格）
+- 最大容量：2個 Carrier
 
-### 批量处理逻辑
+### 批量處理邏輯
 
-**统一4格批量处理**（**所有 Station 01/03**）：
-- **每个 Station 包含4格**（跨上下排）
-- **一次任务取出4格**（统一批量处理）
-- **需要检查 AGV 至少有4格空位**（车上需全空）
-- **不支持部分取料**（要么取满4格，要么不取）
+**統一4格批量處理**（**所有 Station 01/03**）：
+- **每個 Station 包含4格**（跨上下排）
+- **一次任務取出4格**（統一批量處理）
+- **需要檢查 AGV 至少有4格空位**（車上需全空）
+- **不支持部分取料**（要麼取滿4格，要麼不取）
 
 **效率提升**：
-- 取消2格标准处理，统一为4格批量
-- 减少任务次数，提升整体产能
-- 简化逻辑，降低复杂度
+- 取消2格標準處理，統一為4格批量
+- 減少任務次數，提升整體產能
+- 簡化邏輯，降低復雜度
 
-## 📝 TAFL Flow 设计
+## 📝 TAFL Flow 設計
 
 ### Metadata
 ```yaml

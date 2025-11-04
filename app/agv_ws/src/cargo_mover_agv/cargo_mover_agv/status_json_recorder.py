@@ -531,7 +531,7 @@ class CargoAgvStatusJsonRecorder:
             'pathdata',        # 路徑資料
             'mission_id',      # 任務ID
             'node_id',         # 任務目標節點
-            'agv_id',          # AGV ID (数据库 agv 表主键)
+            'agv_id',          # AGV ID (數據庫 agv 表主键)
             'task',            # 任務訊息
             'robot_finished'   # 機器人完成狀態
         ]

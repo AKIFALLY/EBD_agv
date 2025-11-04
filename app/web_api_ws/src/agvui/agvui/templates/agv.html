@@ -269,9 +269,9 @@ function initSocketIO() {
         console.log('❌ Socket.IO 斷線:', reason);
     });
 
-    // ✅ 已禁用：避免与 socket.js 中的监听器重复
-    // 数据更新统一由 socket.js 的 agvStore.setState() 处理
-    // agvPage.js 会通过 agvStore.on('change') 自动更新界面
+    // ✅ 已禁用：避免與 socket.js 中的監聽器重復
+    // 數據更新統一由 socket.js 的 agvStore.setState() 處理
+    // agvPage.js 會通過 agvStore.on('change') 自動更新界面
     /*
     // 監聽 JSON 狀態更新 (4 分類)
     socket.on('agv_status_update', function(data) {
@@ -304,9 +304,9 @@ function initSocketIO() {
             // 更新資料儲存
             agvDataStore[agvId] = fullData;
 
-            // ✅ 修改：移除旧的 updateSingleAgvDisplay 调用
-            // 数据已通过 agvStore.setState() 更新（由 socket.js 处理）
-            // agvPage.js 会通过 agvStore.on('change') 监听器自动更新界面
+            // ✅ 修改：移除舊的 updateSingleAgvDisplay 调用
+            // 數據已通過 agvStore.setState() 更新（由 socket.js 處理）
+            // agvPage.js 會通過 agvStore.on('change') 監聽器自動更新界面
             // 使用 requestAnimationFrame 避免過度更新
             if (!window.updatePending && typeof updateDisplay === 'function') {
                 window.updatePending = true;
@@ -739,8 +739,8 @@ function updateStatusSummary(data, agvId) {
     `;
 }
 
-// ✅ 已删除旧的分类函数 updateCategoriesDisplay() 和 updateSingleAgvDisplay()
-// 现在统一使用 agvPage.js 模块中的新分类逻辑，支持 N/L 标记和 DOM 缓存
+// ✅ 已刪除舊的分類函數 updateCategoriesDisplay() 和 updateSingleAgvDisplay()
+// 現在統一使用 agvPage.js 模塊中的新分類逻輯，支持 N/L 標記和 DOM 缓存
 
 // 判斷是否為多車監控模式
 const containerType = document.getElementById('container-type').value;

@@ -3,7 +3,7 @@ metadata:
   name: "Unloader AGV 從烤箱上排取料"
   enabled: false
   version: "1.0.0"
-  description: "檢查烤箱上排烘干完成載具，創建 Unloader AGV 取料任務（批量4格，固定方向）"
+  description: "檢查烤箱上排烘幹完成載具，創建 Unloader AGV 取料任務（批量4格，固定方向）"
   author: "TAFL System"
   created_at: "2025-10-16"
   tags: ["unloader", "oven", "take", "automation"]
@@ -103,15 +103,15 @@ flow:
                         in: "${stations}"
                         as: station
                         do:
-                          # 查詢該 Station 的烘干完成載具（4個 Port，透過port過濾）
+                          # 查詢該 Station 的烘幹完成載具（4個 Port，透過port過濾）
                           - query:
                               target: carriers
                               where:
                                 room_id: "${room.id}"
                                 port_in: "${station.ports}"
-                                status_id: 603  # 烘干完成
+                                status_id: 603  # 烘幹完成
                               as: ready_carriers
-                              description: "查詢烤箱 Station ${station.station} 烘干完成載具"
+                              description: "查詢烤箱 Station ${station.station} 烘幹完成載具"
 
                           # 檢查載具數量是否足夠（需要4個）
                           - set:
@@ -162,7 +162,7 @@ flow:
                                                 with:
                                                   type: "unloader_take"
                                                   name: "房間${room.id}烤箱 Station${station.station} 取料"
-                                                  description: "烤箱 ${station.name} 有${carrier_count}個烘干完成載具，感測器確認有載具（批量4格）"
+                                                  description: "烤箱 ${station.name} 有${carrier_count}個烘幹完成載具，感測器確認有載具（批量4格）"
                                                   work_id: "${station.work_id}"
                                                   room_id: "${room.id}"
                                                   priority: "${priority}"
@@ -178,5 +178,5 @@ flow:
                                                     model: "${model}"
                                                     carrier_count: "${carrier_count}"
                                                     presence_verified: true
-                                                    reason: "烤箱有烘干完成載具，AGV 有空位，感測器確認有載具（雙重驗證）"
+                                                    reason: "烤箱有烘幹完成載具，AGV 有空位，感測器確認有載具（雙重驗證）"
                                                 description: "創建 Unloader AGV 取料任務（批量4格，含感測器驗證）"

@@ -496,7 +496,7 @@
     position: absolute;
     top: 0.5rem;
     bottom: auto;
-    /* 避免 bottom 干擾 */
+    /* 避免 bottom 幹擾 */
     transform: translateY(-50%);
 }
 
@@ -1947,7 +1947,7 @@
     overflow-y: auto;
 }
 
-/* ==================== 门状态显示样式 ==================== */
+/* ==================== 門狀態顯示樣式 ==================== */
 .door-status-container {
     display: flex;
     flex-direction: column;

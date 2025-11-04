@@ -184,7 +184,7 @@ class ExpressionParser {
             return false;
         }
         
-        // 布林值和 null
+        // 佈林值和 null
         if (this.keywords.includes(token)) {
             return false;
         }

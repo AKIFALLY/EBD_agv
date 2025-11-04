@@ -1,56 +1,56 @@
 # Flow 4: unloader_put_boxout_transfer.yaml
 
-## 🎯 业务目的
-将 Unloader AGV 车上的载具放入出口传送箱，等待 Cargo AGV 收集
+## 🎯 業務目的
+將 Unloader AGV 車上的載具放入出口傳送箱，等待 Cargo AGV 收集
 
 ## 📋 基本信息
 
-| 项目 | 值 |
+| 項目 | 值 |
 |------|-----|
 | 文件名 | `unloader_put_boxout_transfer.yaml` |
 | Flow ID | `unloader_put_boxout_transfer` |
-| 优先级 | 42 |
-| 执行间隔 | 12 秒 |
-| Work ID | **2020102**（Station-based，只有1个）|
+| 優先級 | 42 |
+| 執行間隔 | 12 秒 |
+| Work ID | **2020102**（Station-based，只有1個）|
 
-## 🏭 业务场景
+## 🏭 業務場景
 
-### 前置条件
-1. Unloader AGV 已从烤箱上排取出载具（TAKE_OVEN 完成）
-2. AGV 车上有烘干完成的载具
-3. 出口传送箱有空位
-4. Unloader AGV 处于空闲或已完成取料
+### 前置條件
+1. Unloader AGV 已從烤箱上排取出載具（TAKE_OVEN 完成）
+2. AGV 車上有烘幹完成的載具
+3. 出口傳送箱有空位
+4. Unloader AGV 處於空閒或已完成取料
 
-### 触发条件
-- Unloader AGV 车上有载具（**至少4个，批量4格**）
-- 出口传送箱 Station 01 有空位（**至少4格空位**）
-- 没有重复的未完成任务
+### 觸發條件
+- Unloader AGV 車上有載具（**至少4個，批量4格**）
+- 出口傳送箱 Station 01 有空位（**至少4格空位**）
+- 沒有重復的未完成任務
 
-### 执行结果
-- 创建 Unloader AGV 放料任务
-- 任务进入待分派队列（status_id = 1 PENDING）
-- RCS 系统分派给对应的 Unloader AGV
-- 载具最终等待 Cargo AGV 收集并装载回 Rack
+### 執行結果
+- 創建 Unloader AGV 放料任務
+- 任務進入待分派隊列（status_id = 1 PENDING）
+- RCS 系統分派給對應的 Unloader AGV
+- 載具最終等待 Cargo AGV 收集並裝載回 Rack
 
-## 🔧 技术规格
+## 🔧 技術規格
 
-### 出口传送箱配置（Station-based）
+### 出口傳送箱配置（Station-based）
 
-**物理结构**：
-- Equipment 202（出口传送箱）
-- 4个 Port（Port 1-4）
+**物理結構**：
+- Equipment 202（出口傳送箱）
+- 4個 Port（Port 1-4）
 - **只使用 Station 01**（**批量4格**）
 - Equipment ID: `room_id * 100 + 2`
 
-**Station-Port 映射**（UnloaderAGV 自定义）：
+**Station-Port 映射**（UnloaderAGV 自定義）：
 - **Station 01**: Port 1-2-3-4（**批量4格**）
 
-**Work ID 对应**（Station-based 编码）：
-- `2020102`: Station 01 放出口传送箱（Port 1-2-3-4，批量4格）
+**Work ID 對應**（Station-based 編碼）：
+- `2020102`: Station 01 放出口傳送箱（Port 1-2-3-4，批量4格）
 
-**关键特点**：
-- ✅ **只有1个 Work ID**（统一4格批量处理）
-- ✅ **每个房间1个出口传送箱**（Equipment ID = `room_id * 100 + 2`）
+**關鍵特點**：
+- ✅ **只有1個 Work ID**（統一4格批量處理）
+- ✅ **每個房間1個出口傳送箱**（Equipment ID = `room_id * 100 + 2`）
 - ✅ **UnloaderAGV 特定映射**（Station 01 批量4格）
 
 ### 完整制程流程

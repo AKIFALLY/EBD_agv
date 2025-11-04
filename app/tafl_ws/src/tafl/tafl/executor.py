@@ -807,12 +807,12 @@ class TAFLExecutor:
                 result = False
             else:
                 result = await self._evaluate_expression(stmt.condition)
-                # 確保結果是布林值
+                # 確保結果是佈林值
                 if result is None:
                     self.logger.warning(f"Check condition evaluated to None, defaulting to False")
                     result = False
                 elif not isinstance(result, bool):
-                    # 轉換為布林值
+                    # 轉換為佈林值
                     result = bool(result)
             
             if stmt.as_:

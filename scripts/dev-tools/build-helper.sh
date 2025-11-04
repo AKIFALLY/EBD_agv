@@ -37,7 +37,7 @@ declare -A BUILD_PROFILES=(
     ["full"]="完整建置，包含測試"  
     ["incremental"]="增量建置，只建置修改的工作空間"
     ["debug"]="除錯建置，包含詳細日誌"
-    ["release"]="發布建置，最佳化編譯"
+    ["release"]="發佈建置，最佳化編譯"
 )
 
 # 預設設定
@@ -104,7 +104,7 @@ show_usage() {
     echo "  $0 full --category agv               # 完整建置 AGV 相關工作空間"
     echo "  $0 incremental --jobs 8              # 8 核心增量建置"
     echo "  $0 debug --workspace agv_ws          # 除錯建置單一工作空間"
-    echo "  $0 release --clean --report          # 發布建置並生成報告"
+    echo "  $0 release --clean --report          # 發佈建置並生成報告"
 }
 
 # ============================================================================
@@ -513,7 +513,7 @@ run_release_build() {
     local workspaces=("$@")
     local clean_first="$1"
     
-    log_info "執行發布建置 (最佳化編譯)"
+    log_info "執行發佈建置 (最佳化編譯)"
     
     if [ "$clean_first" = "true" ]; then
         log_info "清理所有工作空間..."
@@ -528,17 +528,17 @@ run_release_build() {
     local total_count=${#workspaces[@]}
     
     for workspace in "${workspaces[@]}"; do
-        log_build "發布建置: $workspace"
+        log_build "發佈建置: $workspace"
         
         if build_workspace "$workspace" "release" 2 "$DEFAULT_TIMEOUT" "false" "normal" "false"; then
             ((success_count++))
         else
-            log_error "發布建置失敗: $workspace"
+            log_error "發佈建置失敗: $workspace"
             return 1
         fi
     done
     
-    log_success "發布建置完成: $success_count/$total_count 個工作空間建置成功"
+    log_success "發佈建置完成: $success_count/$total_count 個工作空間建置成功"
 }
 
 # ============================================================================

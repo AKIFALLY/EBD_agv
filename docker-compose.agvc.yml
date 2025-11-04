@@ -90,7 +90,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data # PostgreSQL 数据存储
+      - postgres_data:/var/lib/postgresql/data # PostgreSQL 數據存储
 
   pgadmin:
     image: dpage/pgadmin4

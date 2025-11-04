@@ -249,7 +249,7 @@ export const settingPage = (() => {
             sideData.products.forEach((product, index) => {
                 const input = document.querySelector(`input[data-side="${side}"][data-index="${index}"].product-input`);
                 if (input && document.activeElement !== input) {
-                    // 只在用戶沒有焦點時更新，避免干擾輸入
+                    // 只在用戶沒有焦點時更新，避免幹擾輸入
                     input.value = product.name || '';
                 }
             });

@@ -493,7 +493,7 @@ class TAFLEditor {
             }
         }
         
-        // 主畫布 drop zone - 使用統一的計算邏輯
+        // 主畫佈 drop zone - 使用統一的計算邏輯
         const canvasDropZone = document.getElementById('canvas-drop-zone');
         const cards = Array.from(canvasDropZone.querySelectorAll(':scope > .tafl-card'));
         

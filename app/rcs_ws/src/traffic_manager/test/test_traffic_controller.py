@@ -272,7 +272,7 @@ def test_kuka400i_shared_release_allowed(traffic_controller, mock_session):
     # 設定 mock 返回值（不調用 reset_mock，避免清除其他測試的設置）
     mock_session.exec.return_value.first.return_value = mock_zone
 
-    # 使用列表來追踪調用並返回對應的 mock
+    # 使用列表來追蹤調用並返回對應的 mock
     get_calls = []
     def mock_get_func(model_class, obj_id):
         get_calls.append((model_class, obj_id))

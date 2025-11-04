@@ -23,7 +23,7 @@ class PlcBytes(bytearray):
         return self.decode(encoding, errors="ignore")
 
     def to_bools(self) -> list:
-        """將 PlcBytes 轉換為布林陣列"""
+        """將 PlcBytes 轉換為佈林陣列"""
         bools = []
         for byte in self:
             for i in range(8):  # 每個 byte 有 8 個 bit
@@ -63,7 +63,7 @@ class PlcBytes(bytearray):
 
     @classmethod
     def from_bools(cls, bools: list) -> "PlcBytes":
-        """從布林陣列轉換為 PlcBytes"""
+        """從佈林陣列轉換為 PlcBytes"""
         byte_array = []
         byte = 0
         for i, value in enumerate(bools):
@@ -92,11 +92,11 @@ class PlcBytes(bytearray):
 
 if __name__ == "__main__":
 
-    # 測試從布林陣列轉換
+    # 測試從佈林陣列轉換
     bools = [True, False, True, True, False, False, True, True]
     b4 = PlcBytes.from_bools(bools)
-    print(b4)  # 將布林陣列轉換為 PlcBytes
-    print(b4.to_bools())  # 再轉回布林陣列
+    print(b4)  # 將佈林陣列轉換為 PlcBytes
+    print(b4.to_bools())  # 再轉回佈林陣列
 
     # 設置與讀取 bit 值
     b4.set_bool(0, 3, False)  # 設置第 3 位為 False

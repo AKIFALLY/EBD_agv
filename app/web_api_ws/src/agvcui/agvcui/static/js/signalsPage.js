@@ -111,7 +111,7 @@ export const signalsPage = (() => {
     function extractValueFromTag(tagElement) {
         const text = tagElement.textContent.trim();
 
-        // 處理布爾值格式 "TRUE (1)" 或 "FALSE (0)"
+        // 處理佈爾值格式 "TRUE (1)" 或 "FALSE (0)"
         if (text.includes('TRUE') || text.includes('FALSE')) {
             return text.includes('TRUE') ? '1' : '0';
         }

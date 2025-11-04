@@ -45,12 +45,12 @@ import { mapTaskManager } from './mapTaskManager.js';
 import { mapDataSync } from './mapDataSync.js';
 import { mapPerformanceMonitor } from './mapPerformanceMonitor.js';
 
-// 门信号映射 (门ID -> 信号ID)
+// 門信號映射 (門ID -> 信號ID)
 const DOOR_SIGNAL_MAP = {
-    1: 99901,  // 门1 → Door_1_Status (DM5000)
-    2: 99902,  // 门2 → Door_2_Status (DM5001)
-    3: 99903,  // 门3 → Door_3_Status (DM5002)
-    4: 99904   // 门4 → Door_4_Status (DM5003)
+    1: 99901,  // 門1 → Door_1_Status (DM5000)
+    2: 99902,  // 門2 → Door_2_Status (DM5001)
+    3: 99903,  // 門3 → Door_3_Status (DM5002)
+    4: 99904   // 門4 → Door_4_Status (DM5003)
 };
 
 export const mapPage = (() => {
@@ -167,7 +167,7 @@ export const mapPage = (() => {
 
         eqpObjects.forEach(eqp => eqp.updateSignals(signalMap));
 
-        // 更新门状态显示
+        // 更新門狀態顯示
         doorStatusObjects.forEach((doorObj, doorId) => {
             const signalId = DOOR_SIGNAL_MAP[doorId];
             const signal = signals.find(s => s.id === signalId);
@@ -611,13 +611,13 @@ export const mapPage = (() => {
             const newWeight = 3 + zoom;         // 你可以改成更合適的計算
             const newArrowSize = 3 * (3 + zoom);  // 箭頭大小也跟著縮放
 
-            // 更新 CT 边线
+            // 更新 CT 边線
             edgeObjects.forEach(edge => {
                 edge.updateWeight(newWeight);
                 edge.updateArrowSize(newArrowSize);
             });
 
-            // 更新 KUKA 边线
+            // 更新 KUKA 边線
             kukaEdgeObjects.forEach(edge => {
                 edge.updateWeight(newWeight);
                 edge.updateArrowSize(newArrowSize);
@@ -735,13 +735,13 @@ export const mapPage = (() => {
         eqpInfoCountObjects.push(room2CleanerInfo);
         eqpInfoCountObjects.push(room2OvenInfo);
 
-        // 创建门状态显示物件（固定位置 - 可根据实际地图调整）
+        // 創建門狀態顯示物件（固定位置 - 可根據實際地圖调整）
         const door1Status = new DoorStatusObject(map, L.latLng(1850, 5120), 1, "Door 1");
         const door2Status = new DoorStatusObject(map, L.latLng(2220, 5120), 2, "Door 2");
         const door3Status = new DoorStatusObject(map, L.latLng(2220, 4330), 3, "Door 3");
         const door4Status = new DoorStatusObject(map, L.latLng(2220, 3340), 4, "Door 4");
 
-        // 将门状态物件存入 Map 中
+        // 將門狀態物件存入 Map 中
         doorStatusObjects.set(1, door1Status);
         doorStatusObjects.set(2, door2Status);
         doorStatusObjects.set(3, door3Status);

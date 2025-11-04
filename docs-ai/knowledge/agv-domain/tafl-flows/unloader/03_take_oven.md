@@ -1,57 +1,57 @@
 # Flow 3: unloader_take_oven.yaml
 
-## 🎯 业务目的
-从烤箱**上排**（Station 01）批量取出烘干完成的载具
+## 🎯 業務目的
+從烤箱**上排**（Station 01）批量取出烘幹完成的載具
 
 ## 📋 基本信息
 
-| 项目 | 值 |
+| 項目 | 值 |
 |------|-----|
 | 文件名 | `unloader_take_oven.yaml` |
 | Flow ID | `unloader_take_oven` |
-| 优先级 | 43 |
-| 执行间隔 | 12 秒 |
-| Work ID | **2060101**（Station-based，只有1个）|
+| 優先級 | 43 |
+| 執行間隔 | 12 秒 |
+| Work ID | **2060101**（Station-based，只有1個）|
 
-## 🏭 业务场景
+## 🏭 業務場景
 
-### 前置条件
-1. Unloader AGV 已将载具放入烤箱**下排**（PUT_OVEN 完成，Flow 2）
-2. 烤箱完成烘干制程
-3. 载具移动到**上排**并更新为"烘干完成"（status_id: 603）
-4. Unloader AGV 处于空闲或有空余车位
+### 前置條件
+1. Unloader AGV 已將載具放入烤箱**下排**（PUT_OVEN 完成，Flow 2）
+2. 烤箱完成烘幹制程
+3. 載具移動到**上排**並更新為"烘幹完成"（status_id: 603）
+4. Unloader AGV 處於空閒或有空餘車位
 
-### 触发条件
-- **烤箱上排 Station 01 有烘干完成的载具**（status_id: 603，至少4个）
-- Unloader AGV 车上有空位（**至少4格空位**）
-- 没有重复的未完成任务
+### 觸發條件
+- **烤箱上排 Station 01 有烘幹完成的載具**（status_id: 603，至少4個）
+- Unloader AGV 車上有空位（**至少4格空位**）
+- 沒有重復的未完成任務
 
-### 执行结果
-- 创建 Unloader AGV 取料任务
-- 任务进入待分派队列（status_id = 1 PENDING）
-- RCS 系统分派给空闲的 Unloader AGV
+### 執行結果
+- 創建 Unloader AGV 取料任務
+- 任務進入待分派隊列（status_id = 1 PENDING）
+- RCS 系統分派給空閒的 Unloader AGV
 
-## 🔧 技术规格
+## 🔧 技術規格
 
 ### 烤箱配置（Station-based）
 
-**物理结构**：
-- 1个物理烤箱，8个 port（Port 1-8）
-- Equipment ID: 固定为 206
+**物理結構**：
+- 1個物理烤箱，8個 port（Port 1-8）
+- Equipment ID: 固定為 206
 - **只使用 Station 01**（**上排出料**）
 
 **Station-based 配置**（只有 Station 01）：
 - **Station 01**: Port 1-2-3-4（**上排，批量4格，只 TAKE**）
 
 **上排 Station 01（固定出料）**：
-- **只支持 TAKE 操作**（单向出料）
+- **只支持 TAKE 操作**（單向出料）
 - Port 1-2-3-4（批量4格）
-- **不支持 PUT 操作**（进料由 Flow 2 在下排进行）
+- **不支持 PUT 操作**（進料由 Flow 2 在下排進行）
 
-**Work ID 对应**（Station-based 编码）：
+**Work ID 對應**（Station-based 編碼）：
 - `2060101`: Station 01 取烤箱（Port 1-2-3-4，批量4格/上排/**只 TAKE**）
 
-### 烘干制程流程（固定方向）
+### 烘幹制程流程（固定方向）
 
 ```
 下排进料（PUT_OVEN, Station 05）

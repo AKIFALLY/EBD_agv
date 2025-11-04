@@ -1364,7 +1364,7 @@ manage_tafl_wcs() {
 
                 # 顯示節點資訊
                 echo "📊 節點資訊："
-                ros2 node info /tafl_wcs_node 2>/dev/null | head -n 10
+                ros2 node info /agvc/tafl_wcs_node 2>/dev/null | head -n 10
             else
                 echo "❌ TAFL WCS 節點啟動失敗或驗證超時"
                 echo "請檢查日誌: tail -f $TAFL_WCS_LOG_FILE"
@@ -1424,7 +1424,7 @@ manage_tafl_wcs() {
 
                     # 顯示節點資訊
                     echo "📊 節點資訊："
-                    ros2 node info /tafl_wcs_node 2>/dev/null | head -n 10
+                    ros2 node info /agvc/tafl_wcs_node 2>/dev/null | head -n 10
                 else
                     echo "  ⚠️ tafl_wcs_node 節點未在 ROS 2 中註冊"
                 fi

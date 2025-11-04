@@ -4,38 +4,38 @@
 
 KUKA
 
-Kuka-interface 标准接口
-目录
+Kuka-interface 標準接口
+目錄
 
-Kuka-interface 标准接口 .4 1
--- AMR 任务执行相关接口 ecseeesseeesneesssecsneesssecsneesneessnecsusesnessneesneesasessueesneesnecsneesusecseesusesneessnseeneensnetens 3
-1任务下发 Dispatch Mission (上游系统 -> Kuka 系统 ) ceececcsescscscscscscscscscsescscsescscsesesesesesesscsesesesesesesceeees 3
-公共请求参数说明 .4 3
-1.1 货架移动任务(missionType=RACK_MOVE) ....ccccccccsescsccscsscscscscscssscssescessessescessesusssessssuessesessuessesaeens 5
-1.2 辊简车搬运任务(missionType=ROLLER_MOVE) ......cccssescssesscsssssescsscscsscssesesessecsesenssestsacssstsasssansneees 6
-1.3 料箱搬运(missionType=PICKER_MOVE) 8
-1.4 叉车搬运任务(missionType=FORKLIFT_MOVE) ....scscsccsessssessescscsscscsssscsessssscsscsssesscscsssestssessseseceaes 10
-1.5 机器人移动(missionType=MOVE) u.....cssecescecceccecsceccscsescscscscseevevavavacacacacecscecscsceceseseseseststststseevens 11
-1.6 复合机器人任务(missionType=ROBOTICS_MOVE) Ne 12
-2 任务取消 Cancel Mission (上游系统 -> Kuka 系统 ) eececescesccsesseesecseeseeseesesseaseaseaeatesteateseeseesseseeseeses 14
-3 任务放行 Resume Workflow (EV RA -> Kuka 系统 ) cecccccccsssscssesssseesesssecsesessecsescsessescseessseeseescaes 15
-4作业看板查询接口 Query Jobs (上游系统 -> Kuka 系统 ) cece cess cscscsescsseseescssssseeeeesseseeaes 16
--- AMIR 容器相关接口 eesseecsneessseesneesssccsneesssecsneesusessnessusesnsessuessnsesnsessueesusessueesusesneesueesneessueesnteeseeesneenees 19
-5 容器入场 Insert Container (上游系统 -> Kuka 系统 ) ceeeeccccscsssssssesescssssesceecsescsscsesceseseeneseeeeeaeeneaeeeees 19
-6 容器出场 Remove Container (上游系统 -> Kuka 系统 ) ceececcsccssscssessscssesescessscssesescesesesesssceseseseeseseaee 21
-7 容器信息更新 Update Container (暂时支持: 位置和空满状态的更新) 〈上游系统 -> Kuka 系
-统 ) cecssssssesseessecsssesueesuessvecssecunesueesucesnecsesseesucesuessuesasecaesusesueesuessuesueesuessuetsesseesueesusesueeseeatesutesneesneesseesnetes 22
-8 接口回调 Mission Status Callback (Kuka 系统 -> 上游系统 ) cceccccscscscsssscscsceceesescsescsceesesesesesteeeeneees 23
-9 容器模型查询接口 Query Container Model Codes (上游系统 -> Kuka 系统) eee 24
-10 查询容器模型推荐的可存放区域 Query Area Codes By Conatiner Model (上游系统 -> Kuka 系
-统 ) cecssssssesseessecsssesueesuessvecssecunesueesucesnecsesseesucesuessuesasecaesusesueesuessuesueesuessuetsesseesueesusesueeseeatesutesneesneesseesnetes 24
-11-1 容器信息查询接口(仅查询入场状态容器) Query Containers (上游系统 -> Kuka 系统) eee. 25
-11-2 容器信息查询接口(同时查询入场和离场状态容器) Query Containers (上游系统 -> Kuka 系统)
+Kuka-interface 標準接口 .4 1
+-- AMR 任務執行相關接口 ecseeesseeesneesssecsneesssecsneesneessnecsusesnessneesneesasessueesneesnecsneesusecseesusesneessnseeneensnetens 3
+1任務下發 Dispatch Mission (上游系統 -> Kuka 系統 ) ceececcsescscscscscscscscscsescscsescscsesesesesesesscsesesesesesesceeees 3
+公共請求參數說明 .4 3
+1.1 貨架移動任務(missionType=RACK_MOVE) ....ccccccccsescsccscsscscscscscssscssescessessescessesusssessssuessesessuessesaeens 5
+1.2 輥簡車搬運任務(missionType=ROLLER_MOVE) ......cccssescssesscsssssescsscscsscssesesessecsesenssestsacssstsasssansneees 6
+1.3 料箱搬運(missionType=PICKER_MOVE) 8
+1.4 叉車搬運任務(missionType=FORKLIFT_MOVE) ....scscsccsessssessescscsscscsssscsessssscsscsssesscscsssestssessseseceaes 10
+1.5 機器人移動(missionType=MOVE) u.....cssecescecceccecsceccscsescscscscseevevavavacacacacecscecscsceceseseseseststststseevens 11
+1.6 復合機器人任務(missionType=ROBOTICS_MOVE) Ne 12
+2 任務取消 Cancel Mission (上游系統 -> Kuka 系統 ) eececescesccsesseesecseeseeseesesseaseaseaeatesteateseeseesseseeseeses 14
+3 任務放行 Resume Workflow (EV RA -> Kuka 系統 ) cecccccccsssscssesssseesesssecsesessecsescsessescseessseeseescaes 15
+4作業看板查詢接口 Query Jobs (上游系統 -> Kuka 系統 ) cece cess cscscsescsseseescssssseeeeesseseeaes 16
+-- AMIR 容器相關接口 eesseecsneessseesneesssccsneesssecsneesusessnessusesnsessuessnsesnsessueesusessueesusesneesueesneessueesnteeseeesneenees 19
+5 容器入場 Insert Container (上游系統 -> Kuka 系統 ) ceeeeccccscsssssssesescssssesceecsescsscsesceseseeneseeeeeaeeneaeeeees 19
+6 容器出場 Remove Container (上游系統 -> Kuka 系統 ) ceececcsccssscssessscssesescessscssesescesesesesssceseseseeseseaee 21
+7 容器信息更新 Update Container (暫時支持: 位置和空滿狀態的更新) 〈上游系統 -> Kuka 系
+統 ) cecssssssesseessecsssesueesuessvecssecunesueesucesnecsesseesucesuessuesasecaesusesueesuessuesueesuessuetsesseesueesusesueeseeatesutesneesneesseesnetes 22
+8 接口回調 Mission Status Callback (Kuka 系統 -> 上游系統 ) cceccccscscscsssscscsceceesescsescsceesesesesesteeeeneees 23
+9 容器模型查詢接口 Query Container Model Codes (上游系統 -> Kuka 系統) eee 24
+10 查詢容器模型推薦的可存放區域 Query Area Codes By Conatiner Model (上游系統 -> Kuka 系
+統 ) cecssssssesseessecsssesueesuessvecssecunesueesucesnecsesseesucesuessuesasecaesusesueesuessuesueesuessuetsesseesueesusesueeseeatesutesneesneesseesnetes 24
+11-1 容器信息查詢接口(僅查詢入場狀態容器) Query Containers (上游系統 -> Kuka 系統) eee. 25
+11-2 容器信息查詢接口(同時查詢入場和離場狀態容器) Query Containers (上游系統 -> Kuka 系統)
 tt 26
--- 机器人相关接口 28
-12 根据点位 UUID 或外部编码查询机器人 Query robot by node UUID or node foreign code (上游系
-统 -> Kuka 系统 ) .ss 28
-13 机器人信息查询接口 Query Robots (上游系统 -> Kuka 系统 ) eecccccccccccscscssssesssesesesessesssesssssesees 32
+-- 機器人相關接口 28
+12 根據點位 UUID 或外部編碼查詢機器人 Query robot by node UUID or node foreign code (上游系
+統 -> Kuka 系統 ) .ss 28
+13 機器人信息查詢接口 Query Robots (上游系統 -> Kuka 系統 ) eecccccccccccscscssssesssesesesessesssesssssesees 32
 
 V1.0    05.2025    KUKA AMR                                                                                                            1/49
 
@@ -43,50 +43,50 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
-14 下发机器人移动搬运任务 Dispatch Move Carry Task 〔(上游系统 -> Kuka 系统) .ee 34
-15 机器人充电 Dispatch Charge Robot Task 〈上游系统 -> Kuka 系统 ) Ne 35
-16 入场机器人 Insert The Robot Into The Map 〈上游系统 -> Kuka 系统 ) .ee 36
-17 离场机器人 Remove The Robot From The Map 〈上游系统 -> Kuka 系统 ) pp 37
--- AMIR 地图点位与区域相关接 口 eeesseeessecsneesneeesneesusesssessueesnscesueesnsessueesnessusesneeesusesneessneesneeeseeesnsensees 38
-18 查询所有 WCS 区域信息 Query All WCS Area Information 〔(上游系统 -> Kuka 系统 ) vee 38
-19 区域内点位信息查询 Query Nodes of the Area (上游系统 -> Kuka 系统) .es 39
-20 查询点位所属区域 Query Area by Map Node 〈上游系统 -> Kuka 系统 ) .RN 41
-21 查询所有禁行区 Query All Forbidden Areas (上游系统 -> Kuka 系统 ) .pp 42
-22 查询指定禁行区 Query One Forbidden Area (上游系统 -> Kuka 系统 ) .Rs 44
-23 更新指定禁行区的状态 Update Forbidden Area Status (上游系统 -> Kuka 系统) .ee 45
-24 查询功能点位 Query Function Node (上游系统 -> Kuka 系统 ) eececccececssssscsesecsssecsescseseesevsvsveeees 47
--- 接口响应报文说明 ee eccccescsesssscscscscscscscscscscscscscscscscscscscscscscssvasssasasasssasssasacscscssssssssasscsescecscscseseeeseenenens 49
-版本号          修改内容                         | 昌期 |修改人
+14 下發機器人移動搬運任務 Dispatch Move Carry Task 〔(上游系統 -> Kuka 系統) .ee 34
+15 機器人充電 Dispatch Charge Robot Task 〈上游系統 -> Kuka 系統 ) Ne 35
+16 入場機器人 Insert The Robot Into The Map 〈上游系統 -> Kuka 系統 ) .ee 36
+17 離場機器人 Remove The Robot From The Map 〈上游系統 -> Kuka 系統 ) pp 37
+-- AMIR 地圖點位與區域相關接 口 eeesseeessecsneesneeesneesusesssessueesnscesueesnsessueesnessusesneeesusesneessneesneeeseeesnsensees 38
+18 查詢所有 WCS 區域信息 Query All WCS Area Information 〔(上游系統 -> Kuka 系統 ) vee 38
+19 區域內點位信息查詢 Query Nodes of the Area (上游系統 -> Kuka 系統) .es 39
+20 查詢點位所屬區域 Query Area by Map Node 〈上游系統 -> Kuka 系統 ) .RN 41
+21 查詢所有禁行區 Query All Forbidden Areas (上游系統 -> Kuka 系統 ) .pp 42
+22 查詢指定禁行區 Query One Forbidden Area (上游系統 -> Kuka 系統 ) .Rs 44
+23 更新指定禁行區的狀態 Update Forbidden Area Status (上游系統 -> Kuka 系統) .ee 45
+24 查詢功能點位 Query Function Node (上游系統 -> Kuka 系統 ) eececccececssssscsesecsssecsescseseesevsvsveeees 47
+-- 接口響應報文說明 ee eccccescsesssscscscscscscscscscscscscscscscscscscscscscscssvasssasasasssasssasacscscssssssssasscsescecscscseseeeseenenens 49
+版本號          修改內容                         | 昌期 |修改人
 
-2. 接口回调，除了 missionCode，和
+2. 接口回調，除了 missionCode，和
 missionStatus 都改成非必填
 
- 2.0.0 1.辊简车任务，新增辊简取放完成后“| 20240708 李南
+ 2.0.0 1.輥簡車任務，新增輥簡取放完成後“| 20240708 李南
 
-1.2.3               |  1.任务下发增加复合机器人类型 2023.11.22            陈文越
+1.2.3               |  1.任務下發增加復合機器人類型 2023.11.22            陳文越
 
 是否通知字段 actionlnform
-2.料箱车任务，新增料箱取放完成后
+2.料箱車任務，新增料箱取放完成後
 是否通知字段 takeActionlnform
 
 putActionlnform
 
-取放交互一般用于与输送线对接时使
+取放交互一般用於與輸送線對接時使
 
- 2.11.1   1. 新增接口， /jobQuery。 20240125 赵禾川
+ 2.11.1   1. 新增接口， /jobQuery。 20240125 趙禾川
 
-2. 更新 与禁区 文相关 API 以及 API
-/missionCancel 的请求参数和请求体示
+2. 更新 與禁區 文相關 API 以及 API
+/missionCancel 的請求參數和請求體示
 
- 2.11.2         ;   1. 新增接口: 20250214 张骞文
+ 2.11.2         ;   1. 新增接口: 20250214 張骞文
 
 /queryRobByNodeUuidOrForeignCode.
 2. 更新 API
-/updateForbiddenAreaStatus 的请求参
+/updateForbiddenAreaStatus 的請求參
 BAS RAN
 
 /queryContainerAll
-(可以同时查询入场和离场状态的容
+(可以同時查詢入場和離場狀態的容
 
 V1.0    05.2025    KUKA AMR                                                                                                            2/49
 
@@ -96,7 +96,7 @@ KUKA
 
 /containerln
 
-新增时可以指定容器校验码)
+新增時可以指定容器校驗碼)
 
 1. 新增接口: 20250414 AI, A
 /robotMoveCarry
@@ -105,13 +105,13 @@ KUKA
 
 /queryFunctionNode
 
-3. 状态回调新增 WAITFEEDBACK 状态
+3. 狀態回調新增 WAITFEEDBACK 狀態
 
-类型〈流程节点等竺放行时回调该状
+類型〈流程節點等竺放行時回調該狀
 
-态)
+態)
 
-1. 新增接口: 20250414赵禾川
+1. 新增接口: 20250414趙禾川
 /insertRobot
 
 2. 新增接口:
@@ -122,9 +122,9 @@ KUKA
 
 /chargeRobot
 
--- AMR 任务执行相关接口
+-- AMR 任務執行相關接口
 
-1任务下发 Dispatch Mission (上游系统 -> Kuka 系统)
+1任務下發 Dispatch Mission (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
 Ah | submitMisson
@@ -134,9 +134,9 @@ APIURL http://[IP:Port]/interfaces/api/amr/submitMission
 
 @ Headers
 
-参数名称          参数值              是否必须
+參數名稱          參數值              是否必須
 
-公共请求参数说明
+公共請求參數說明
 
 V1.0    05.2025    KUKA AMR                                                                                                            3/49
 
@@ -176,30 +176,30 @@ String
 
 —     py
 
-库存组织 ID(或工
-Ie 供应商代
+庫存組織 ID(或工
+Ie 供應商代
 
 (ea
-T      任务类型:
+T      任務類型:
 he FE A)
-动:RACK_MOVE
-辊简车搬运任务:
+動:RACK_MOVE
+輥簡車搬運任務:
 ROLLER_MOVE
-料箱车搬运:
+料箱車搬運:
 PICKER_MOVE
-又车搬运:
+又車搬運:
 FORKLIFT_MOVE
-机器人移动:
+機器人移動:
 MOVE
-复合机器人搬运:
+復合機器人搬運:
 ROBOTICS_MOVE
 
 PLE Ahh   eee
 WHA: LIFT
 
-辊简类: ROLLER
-料箱类:PICKER
-车: FORKLIFT
+輥簡類: ROLLER
+料箱類:PICKER
+車: FORKLIFT
 
 加     Site   本
 
@@ -217,95 +217,95 @@ String
 
 V1.0    05.2025    KUKA AMR
 
-L5G 级,1-99，
-   小， 优先级
+L5G 級,1-99，
+   小， 優先級
 
 一
 一
 一
-天需要流程 结束
-后机器人保持人
-锁定状态
+天需要流程 結束
+後機器人保持人
+鎖定狀態
 
-当前小车的在
-F务的锁定状
+當前小車的在
+F務的鎖定狀
 
-原则上不允许为
-空，如果为空
+原則上不允許為
+空，如果為空
 
-就会通过通过机
-器人具体信号或
-容器类型编码进
+就會通過通過機
+器人具體信號或
+容器類型編碼進
 AT HET
 
-支持指定多个，会
-人人  个
-适的执行任务;
+支持指定多個，會
+人人  個
+適的執行任務;
 
-支持指定多个，会
-从多个中指定一个
-合适的执行任务;
-如果小车前一个任
-务流程结束后执行
-锁车，该字段必填
-批量任务下发时
+支持指定多個，會
+從多個中指定一個
+合適的執行任務;
+如果小車前一個任
+務流程結束後執行
+鎖車，該字段必填
+批量任務下發時
 有效
 
-多用于流程结束
-后，机器人放下
-容器之后还需要
-当前小车搬运的
-场景
+多用於流程結束
+後，機器人放下
+容器之後還需要
+當前小車搬運的
+場景
 
-F             作业流程    完成后，
+F             作業流程    完成後，
 
-j于校验解锁是
+j於校驗解鎖是
 AEWA
 
 4/49
 
 ## Page 5
 
-指定机器人停放区
-域/点
+指定機器人停放區
+域/點
 
-oe                  —                                                      当前任务包含的流
-程节点信息列表具
-体字段参考一下章
+oe                  —                                                      當前任務包含的流
+程節點信息列表具
+體字段參考一下章
 
-如果是调用流程模
-板，则次字段可以
+如果是調用流程模
+板，則次字段可以
 
-1.1 货架移动任务(missionType=RAck_MovE)
+1.1 貨架移動任務(missionType=RAck_MovE)
 
-@ 请求参数说明
-Integer                           序号 默认 1 为起始货
-架的起点，  , 后续需
-要停留点的需要依次
-递增，终点值最大
+@ 請求參數說明
+Integer                           序號 默認 1 為起始貨
+架的起點，  , 後續需
+要停留點的需要依次
+遞增，終點值最大
 
-                     E业路径位置
-FE业位置类型，
-点位; NODE_POINT
-区域: NODE_AREA
+                     E業路徑位置
+FE業位置類型，
+點位; NODE_POINT
+區域: NODE_AREA
 
-jPutpows | Boolean                              作业点位是否需要放
-下货架
+jPutpows | Boolean                              作業點位是否需要放
+下貨架
 
-we                   String                                                                     当前任务点结束后放
+we                   String                                                                     當前任務點結束後放
 了策略:
 iz: AUTO
 2): MANUAL
 
-waitingMillis          Integer                                   动触发离开当
-务节点的时间，默认 | passStrategy
-单位:毫秒           是手动则可
+waitingMillis          Integer                                   動觸發離開當
+務節點的時間，默認 | passStrategy
+單位:毫秒           是手動則可
 不 填 ，
 passStrategy
-是自动则必
+是自動則必
 填
 
-@ 请求报文示例
+@ 請求報文示例
 {
 "orgid": "UNIVERSAL",
 "requestid": "request202309250001",
@@ -353,7 +353,7 @@ KUKA
 }
 ]
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": null,
 "code": "0",
@@ -362,15 +362,15 @@ KUKA
 
 }
 1.2 4 fal 42 PIS ES (missiontype=ROLLER_MOVE)
-@ 请求参数说明
+@ 請求參數說明
 
-sequence          Integer           T              序号 默认 1 AA
-一个节点，后续需要
+sequence          Integer           T              序號 默認 1 AA
+一個節點，後續需要
 
 “position Sting    1
 
 type                String              T                            on
-点位;NODE
+點位;NODE
 Xt: NODE
 
 “bincode se SSCSC*SCR I
@@ -388,7 +388,7 @@ actionConfirm
 
 actionInform
 
-@ 请求报文示例
+@ 請求報文示例
 {
 "orgid": "UNIVERSAL",
 "requestid": "request202309250002",
@@ -423,39 +423,39 @@ V1.0    05.2025    KUKA AMR
 
 放
 
-在点位上需要执行的
-动作
+在點位上需要執行的
+動作
 
 ROLLER_RECEIVE: 取
 ROLLER_SEND: 方
 
-当一 个点位
-对应多个设
-备时需要传
-入该值
-当需要对接
-输送线且需
-要自动上下
-料时，需要
-传入对应的
-执行指令;
+當一 個點位
+對應多個設
+備時需要傳
+入該值
+當需要對接
+輸送線且需
+要自動上下
+料時，需要
+傳入對應的
+執行指令;
 如果是人工
 上下料或者
-是夹取料，
-则可以不传
+是夾取料，
+則可以不傳
 
-Boolean   pf false      上下料前是否需要确
-认
+Boolean   pf false      上下料前是否需要確
+認
 
-般用于与
-输送线对接
+般用於與
+輸送線對接
 交互
 
-Boolean   ae false      上下料后是否需要通
+Boolean   ae false      上下料後是否需要通
 知
 
-般用于与
-输送线对接
+般用於與
+輸送線對接
 交互
 
 7/49
@@ -488,7 +488,7 @@ KUKA
 }
 ]
 }
-请求返回报文示例
+請求返回報文示例
 {
 "data": null,
 "code": "0",
@@ -510,19 +510,19 @@ putActionConfirm
 
 V1.0    05.2025    KUKA AMR
 
-T           搬运料箱序号，从 1
-开始，也可以认为是
-执行的优先级
+T           搬運料箱序號，從 1
+開始，也可以認為是
+執行的優先級
 
 TORR ee finite mcf
 TR MRI Ae frteke nin
-To | | 料箱所在的目标点位
-了 |和料箱所在的目标村位
+To | | 料箱所在的目標點位
+了 |和料箱所在的目標村位
 
- false     取料箱时之前
-要确认
+ false     取料箱時之前
+要確認
 
- false     取料箱后是否需
+ false     取料箱後是否需
 
 F
 
@@ -530,9 +530,9 @@ F
 —
 —
 —
-ee |料箱号
+ee |料箱號
 
-           放料箱后是否需要通
+           放料箱後是否需要通
 
 8/49
 
@@ -602,7 +602,7 @@ KUKA
 
 }
 
-@ 请求返回报文示例
+@ 請求返回報文示例
 
 {
 "data": null,
@@ -613,20 +613,20 @@ KUKA
 }
 
 1.4 X 4 RRIS LES (missiontype=FORKLIFT_MOVE)
-@ 请求参数说明
+@ 請求參數說明
 
-sequence          Integer           T              序号 默认 1 为任务第
-停留点的需要依次弟
-增，终点值最大
+sequence          Integer           T              序號 默認 1 為任務第
+停留點的需要依次弟
+增，終點值最大
 |                      |
 
 am Sting ST             fe
 
 meee |       |
-数           EYER
-要确认
+數           EYER
+要確認
 
-@ 请求报文示例
+@ 請求報文示例
 {
 
 "orgld": "9001",
@@ -674,7 +674,7 @@ KUKA
 
 }
 
-@ 请求返回报文示例
+@ 請求返回報文示例
 
 {
 "data": null,
@@ -683,32 +683,32 @@ KUKA
 "success": true
 
 }
-1.5  机器人移动 (missionType=MovE)
+1.5  機器人移動 (missionType=MovE)
 
-sequence          Integer                           序号 默认 1 为经过的
-第一个点， , 后续需
-要停留点的需要依次
-递增，终点值最大
+sequence          Integer                           序號 默認 1 為經過的
+第一個點， , 後續需
+要停留點的需要依次
+遞增，終點值最大
 
--Sm | 上|一一  作业路径位置
+-Sm | 上|一一  作業路徑位置
 
-[si __J                                String                                                                 作业位置类型;
-点位; NODE_POINT
-区域:， NODE_AREA
-passStrategy                 String                           F              AUTO          当前任务点结
+[si __J                                String                                                                 作業位置類型;
+點位; NODE_POINT
+區域:， NODE_AREA
+passStrategy                 String                           F              AUTO          當前任務點結
 行策略;
-自动: AUTO
-手动: MANUAL
+自動: AUTO
+手動: MANUAL
 
-waitingMillis                 Integer                         F                                   动触发离开当前任 | 若
-务节点的时间，默认 | passStrategy
-单位:毫秒           是手动则可
+waitingMillis                 Integer                         F                                   動觸發離開當前任 | 若
+務節點的時間，默認 | passStrategy
+單位:毫秒           是手動則可
 不 填 ，
 passStrategy
-是自动则必
+是自動則必
 填
 
-@ 请求报文示例
+@ 請求報文示例
 {
 "orgid": "UNIVERSAL",
 "requestld": "request202309250005",
@@ -751,7 +751,7 @@ KUKA
 }
 ]
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": null,
 "code": "0",
@@ -759,21 +759,21 @@ KUKA
 "success": true
 
 }
-1.6 复合机器人任务(missionrype=RoBoTics_MovE)
+1.6 復合機器人任務(missionrype=RoBoTics_MovE)
 @     "yaa
 
-er             Integer                                       序号 默认 1 为起始货
-架的起点，，后续需
-要停留点的需要依次
-递增，终点值最大
+er             Integer                                       序號 默認 1 為起始貨
+架的起點，，後續需
+要停留點的需要依次
+遞增，終點值最大
 | Cd
 |
 
-Position String          Ht {|  作业路径位置
+Position String          Ht {|  作業路徑位置
 
-type                              String                                                                   作业位置类型;
-点位， NODE_POINT
-区域: NODE_AREA
+type                              String                                                                   作業位置類型;
+點位， NODE_POINT
+區域: NODE_AREA
 
 “applicationName | Sting)  T | CLR
 “parame | sting | SON
@@ -786,20 +786,20 @@ KUKA
 
 pRB
 
-—a——     a               AUTO   7 A EAE 结束后放
+—a——     a               AUTO   7 A EAE 結束後放
 行策略;
 Az: AUTO
-手动: MANUAL
+手動: MANUAL
 
-waitingMillis         Integer                                    动触发离开当前任
-务节点的时间，默认 | passStrategy
-单位:毫秒          是手动则可
+waitingMillis         Integer                                    動觸發離開當前任
+務節點的時間，默認 | passStrategy
+單位:毫秒          是手動則可
 不 填 ，
 passStrategy
-是自动则必
+是自動則必
 填
 
-@ 请求报文示例
+@ 請求報文示例
 {
 "orgid": "UNIVERSAL",
 "requestid": "request202311220001",
@@ -851,14 +851,14 @@ KUKA
 ]
 
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": null,
 "code": "0",
 "message": null,
 "success": true
 
-2 任务取消 Cancel Mission (上游系统 -> Kuka 系统)
+2 任務取消 Cancel Mission (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
 
@@ -871,7 +871,7 @@ APIURL http://[IP:Port]/interfaces/api/amr/missionCancel
 
 aaa |
 
-@ 请求参数说明
+@ 請求參數說明
 
 requests | Sting 3 TT) Rid, HEAP eae
 
@@ -881,39 +881,39 @@ requests | Sting 3 TT) Rid, HEAP eae
 pre frm | RRR |
 了
 
-cancelMode            String                      T            FORCE | 取消模式:                        当前
+cancelMode            String                      T            FORCE | 取消模式:                        當前
 
-FORCE 强制取消，立即结       关亚
-NORMAL 普通取消，不会 | 任
-取消小车正在执行的任
+FORCE 強制取消，立即結       關亞
+NORMAL 普通取消，不會 | 任
+取消小車正在執行的任
 
-务，等待小车把当前任务
+務，等待小車把當前任務
 
-执行完，再取消流程
-REDIRECT_END 前往终点，      FORCE,
-不会取消小车正在执行的 | 是具体还
+執行完，再取消流程
+REDIRECT_END 前往終點，      FORCE,
+不會取消小車正在執行的 | 是具體還
 
 V1.0    05.2025    KUKA AMR                                                                                                           14/49
 
 ## Page 15
 
-任务，等待小车把当前任 | 需要看机
-务执行完，如果目标点不 | 器人维度
-需要降下货架，则小车携 | 是否支持
-带货架前往终点，和否则空 | 取消
+任務，等待小車把當前任 | 需要看機
+務執行完，如果目標點不 | 器人維度
+需要降下貨架，則小車攜 | 是否支持
+帶貨架前往終點，和否則空 | 取消
 
-车移动至终点
+車移動至終點
 REDIRECT_START 前往起
-点，不会取消小车正在执
-行的任务，等待小车把当
-前任务执行完，如果目标
-点不需要降下货架，则小
-车携带货架回到起点，和否
-则空车移动回到起点
+點，不會取消小車正在執
+行的任務，等待小車把當
+前任務執行完，如果目標
+點不需要降下貨架，則小
+車攜帶貨架回到起點，和否
+則空車移動回到起點
 
 reasm String | IF | |取消原因
 
-@ 请求报文示例
+@ 請求報文示例
 {
 "redquestld": "request202309250006",
 "missionCode": "mission202309250004",
@@ -924,17 +924,17 @@ reasm String | IF | |取消原因
 
 "reason":
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": null,
 "code": "0",
 "message": null,
 "success": true
 
-3 任务放行 Resume Workflow (上游系统 -> Kuka 系统)
+3 任務放行 Resume Workflow (上游系統 -> Kuka 系統)
 
 @ API 基本信息
- 节点任务完成后，上游对任务完成信息的反馈
+ 節點任務完成後，上游對任務完成信息的反饋
 
 APIURL http://[IP:Port]/interfaces/api/amr/operationFeedback
 
@@ -942,7 +942,7 @@ APIURL http://[IP:Port]/interfaces/api/amr/operationFeedback
 
  application/ison |是 | |
 
-@ 请求参数说明
+@ 請求參數說明
 
  RIG HG wuidse fe)
 
@@ -952,9 +952,9 @@ V1.0    05.2025    KUKA AMR                                                     
 
 ‘missionCode [Sting | SSS*d 5
 “containercode | Sting) SSS         eo
-“position | Sting SSS        当前执行作业的节点
+“position | Sting SSS        當前執行作業的節點
 
-@ 请求报文示例
+@ 請求報文示例
 
 {
 "requestid": "request202309250007",
@@ -962,7 +962,7 @@ V1.0    05.2025    KUKA AMR                                                     
 "missionCode": "mission202309250005",
 "position": ""
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": null,
 "code": "0",
@@ -972,34 +972,34 @@ V1.0    05.2025    KUKA AMR                                                     
 
 }
 
-4作业看板查询接口 Query Jobs (上游系统 -> Kuka 系统)
+4作業看板查詢接口 Query Jobs (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
-API 名称                 jobauerry eee
-作业看板查询接口
+API 名稱                 jobauerry eee
+作業看板查詢接口
 
 http://[IP:Port]/interfaces/api/amr/jobQuer
 HTTP Method
 
 @ Headers
 
-@ 请求参数说明
+@ 請求參數說明
 
-流程实例 id
-状态
+流程實例 id
+狀態
 
-机器人编号
-流程配置名称
+機器人編號
+流程配置名稱
 
 |
 |
 |
-10: 待执行，20: 执行
+10: 待執行，20: 執行
 中; 25: 等待放行;
 28: 取消中; 30: 已完
 成; 31: 已取消;35:
-手动完成， 50: 告警;
-60: 流程启动异常
+手動完成， 50: 告警;
+60: 流程啟動異常
 |
 |
 
@@ -1013,30 +1013,30 @@ KUKA
 Smaps testngs | LPB         -
 “ereateUsername | Sting FI
 
-sourceValue      Integer                     来源
+sourceValue      Integer                     來源
 2: FOF AES; 3:
-PDA 任务; 4: 设备任
-3; 5: MLS 任务;6;
-前端界面触发，7: 流
-程事件触发;
+PDA 任務; 4: 設備任
+3; 5: MLS 任務;6;
+前端界面觸發，7: 流
+程事件觸發;
 
-Integer                       返回作业条数，默认返 |
-回 10 条
-@ 返回字段说明
+Integer                       返回作業條數，默認返 |
+回 10 條
+@ 返回字段說明
 
- 作业及中
+ 作業及中
 
 eC ER
  suing HS
 robots String ES
 
-Integer    FE业状态
-0: 待执行， 20: 执行
+Integer    FE業狀態
+0: 待執行， 20: 執行
 H; 25: 等竺放行;
 8: 取消中; 30: mo
 成; 31: GRY:
-FE 动完成; 50: ne
-0: 流程启动异常
+FE 動完成; 50: ne
+0: 流程啟動異常
 
 workflowcode | String | WRB |
  AI
@@ -1047,33 +1047,33 @@ workflowcode | String | WRB |
 “beginceliCodeForeign sting ASIA LIANG
    ee
 
-warnFlag                     Integer        告警标志
+warnFlag                     Integer        告警標志
 0: 正常，1: 告警
 Tie Se AS |
-completeTime           String       流 fo    = 时 间 Cyyyy-
+completeTime           String       流 fo    = 時 間 Cyyyy-
 MM-dd HH:mm:ss )
 
 spendTime                           Integer          TRE AE Be TA] CRD)            |
-_createUsername | String |操作员 |
+_createUsername | String |操作員 |
 
-createTime               String       流程创建时间 (yyyy-
+createTime               String       流程創建時間 (yyyy-
 MM-dd HH:mmiss )
 
-String    作业来源
+String    作業來源
 INTERFACE: 接口平台;
-PDA: PDA fh 发 ;
-DEVICE: 设备触发;
-MLS: MLS 触发，SELF，
-前端界面触发，EVENT:
-流程事件触发;
+PDA: PDA fh 發 ;
+DEVICE: 設備觸發;
+MLS: MLS 觸發，SELF，
+前端界面觸發，EVENT:
+流程事件觸發;
 
- 物料信息              现场再
+ 物料信息              現場再
 
 V1.0    05.2025    KUKA AMR                                                                                                           17/49
 
 ## Page 18
 
-@ 请求报文示例〈仅供参考，根据实际需要填写参数，所有字段非必填)
+@ 請求報文示例〈僅供參考，根據實際需要填寫參數，所有字段非必填)
 
 {
 "containerCode": "C001",
@@ -1091,7 +1091,7 @@ V1.0    05.2025    KUKA AMR                                                     
 
 }
 
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": [
 {
@@ -1131,13 +1131,13 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
--- AMR 容器相关接口
+-- AMR 容器相關接口
 
-5 容器入场 Insert Container (上游系统 -> Kuka 系统)
+5 容器入場 Insert Container (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
  containerin
- 容器相关操作，入声
+ 容器相關操作，入聲
 
 APIURL http://[IP:Port]/interfaces/api/amr/containerin
   POST
@@ -1149,19 +1149,19 @@ APIURL http://[IP:Port]/interfaces/api/amr/containerin
 requestld          String   32   T       OR ids He 等
 uuid32 位
 
-containerType                 String                F                 容器类型
-货架:，RACK
-料箱 :BIN(暂未实
-见)
-containerModelCode           String                                  容器模型编码
+containerType                 String                F                 容器類型
+貨架:，RACK
+料箱 :BIN(暫未實
+見)
+containerModelCode           String                                  容器模型編碼
 chew-true
-时必传
+時必傳
 
 容器
 
 enterOrientation       ie s aT
 
-@ 请求参数说明
+@ 請求參數說明
 
                         cana
                          false           TSI Bd A a
@@ -1172,14 +1172,14 @@ a ae
 
 -一二-一
 
-a             String                                                            7 RI                      当
+a             String                                                            7 RI                      當
 
 isNew=true
-时可以指
+時可以指
 定是否配
-置校验码
+置校驗碼
 
-withDefaultValidationCode    Boolean                   false | 配置容器默认校验 | 4
+withDefaultValidationCode    Boolean                   false | 配置容器默認校驗 | 4
 ng                                      isNew=true
 
 V1.0    05.2025    KUKA AMR                                                                                                           19/49
@@ -1188,7 +1188,7 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
-@ 请求报文示例〈当前货架入场)
+@ 請求報文示例〈當前貨架入場)
 {
 
 "requestid": "request202309250008",
@@ -1205,7 +1205,7 @@ KUKA
 
 St
 
-@ 请求报文示例《货架新增并入场,不配置校验码)
+@ 請求報文示例《貨架新增並入場,不配置校驗碼)
 
 {
 
@@ -1222,7 +1222,7 @@ St
 
 }
 
-@ 请求报文示例《货架新增并入场,配置指定校验码)
+@ 請求報文示例《貨架新增並入場,配置指定校驗碼)
 
 {
 
@@ -1259,7 +1259,7 @@ St
 
 }
 
-@ 请求返回报文示例
+@ 請求返回報文示例
 
 V1.0    05.2025    KUKA AMR
 
@@ -1276,7 +1276,7 @@ KUKA
 
 }
 
-6 容器出场 Remove Container (上游系统 -> Kuka AA)
+6 容器出場 Remove Container (上游系統 -> Kuka AA)
 
 @ API 基本信息
  containerOut
@@ -1288,12 +1288,12 @@ HTTP Method                POST
 
 @ Headers
 
-参数名称         参数值             是否必用
+參數名稱         參數值             是否必用
 Content-Type       application/json
 
-@ 请求参数说明
+@ 請求參數說明
 
-@ 请求报文示例
+@ 請求報文示例
 
 {
 "requestid": "request202309250009",
@@ -1302,7 +1302,7 @@ Content-Type       application/json
 "position": "M001-A001-31",
 "isDelete": false
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": null,
 "code": "0",
@@ -1314,10 +1314,10 @@ V1.0    05.2025    KUKA AMR
 
 5
 
-货架: RACK
+貨架: RACK
 BLA: BING AS
-| 容器编号
-| 容器出场位置
+| 容器編號
+| 容器出場位置
  Tea sa
 
 21/49
@@ -1326,8 +1326,8 @@ BLA: BING AS
 
 KUKA
 
-7 容器信息更新 Update Container (AN MH: 位置和空满状态的更
-新) (上游系统 -> Kuka 系统)
+7 容器信息更新 Update Container (AN MH: 位置和空滿狀態的更
+新) (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
 
@@ -1338,10 +1338,10 @@ APIURL http://[IP:Port]/interfaces/api/amr/updateContainer
 
 @ Headers
 
-@ 请求参数说明
+@ 請求參數說明
 
-货架: BUCKET
-料箱:BIN(暂不支持)
+貨架: BUCKET
+料箱:BIN(暫不支持)
 
 Joc
 
@@ -1355,7 +1355,7 @@ Joc
 "emptyStatus": "EMPTY",
 "reason": ""
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": null,
 "code": "0",
@@ -1372,16 +1372,16 @@ V1.0    05.2025    KUKA AMR
 
 KUKA
 
-8接口回调 Mission Status Callback (Kuka 系统 -> 上游系统)
+8接口回調 Mission Status Callback (Kuka 系統 -> 上游系統)
 
 @ ApPl 基本信息
 
- 党间作
+ 黨間作
 
 APIURL http://[IP:Port]/interfaces/api/amr/missionStateCallback
   POST
 
-@ 请求参数说明
+@ 請求參數說明
 
 mmcde Sting 3 T yd |
 ‘viewBoardType se | FF | 人sk
@@ -1393,21 +1393,21 @@ merge [sting [fF a sn
 message
 ea |
 
-@ 请求报文示例
+@ 請求報文示例
 {
 "missionCode": "mission202309250005",
 
-IF | |当
+IF | |當
 a ee
-String                                T                                 作业当前状态
+String                                T                                 作業當前狀態
 
-开始移动: MOVE_BEGIN
-到达任务节点;ARRIVED
+開始移動: MOVE_BEGIN
+到達任務節點;ARRIVED
 i 升 完 成 :
 UP_CONTAINER
 放 下完成 :
 DOWN_CONTAINER
-辊 ff 上 料    :
+輥 ff 上 料    :
 ROLLER_RECEIVE
  fl 下 -    :
 ROLLER_SE
@@ -1415,13 +1415,13 @@ ROLLER_SE
 PICKER_RECEIVE
 料箱下料完成:
 PICKER_SEND
-又车又取完成
+又車又取完成
 FORK_UP
-叉车放下完成;
+叉車放下完成;
 FORK_DOWN
 等竺放行， WAITFEEDBACK
-任务完成: COMPLETED
-任务取消完成: CANCELED
+任務完成: COMPLETED
+任務取消完成: CANCELED
 
 message   fet aor
 
@@ -1447,17 +1447,17 @@ KUKA
 
 }
 
-9 容器模型查询接口 Query Container Model Codes (上游系统 -> Kuka 系
-统)
+9 容器模型查詢接口 Query Container Model Codes (上游系統 -> Kuka 系
+統)
 
 @ ApPl 基本信息
 
- 查询所有已配置容器模型
+ 查詢所有已配置容器模型
 
 APIURL http://[IP:Port]/interfaces/api/amr/queryAllContainerModelCode
 
-@ 无请求参数
-@ 请求返回报文示例
+@ 無請求參數
+@ 請求返回報文示例
 {
 "code": "0",
 "message": null,
@@ -1467,28 +1467,28 @@ APIURL http://[IP:Port]/interfaces/api/amr/queryAllContainerModelCode
 ]
 }
 
-10 查询容器模型推荐的可存放区域 Query Area Codes By Conatiner
-Model (上游系统 -> Kuka 系统)
+10 查詢容器模型推薦的可存放區域 Query Area Codes By Conatiner
+Model (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
 
  queryAreaCodeForContainerModel
- 查询容器模型推荐的可存放区域
+ 查詢容器模型推薦的可存放區域
 
 APIURL http://[IP:Port]/interfaces/api/amr/queryAreaCodeForContainerModel
  GET
 
-@ 请求参数说明
-| 容器模型编码              |
+@ 請求參數說明
+| 容器模型編碼              |
 
 containerModelCode
 
 Te
-noContainerFirst      Boolean             F        false | 是否区域内无容器优先，
+noContainerFirst      Boolean             F        false | 是否區域內無容器優先，
 ture 是
 false &
 
-@ 请求 URL 示例
+@ 請求 URL 示例
 http://[IP:Port]/interfaces/api/amr/queryAreaCodeForContainerModel?containerModelCode=10001&
 noContainerFirst=false
 
@@ -1498,7 +1498,7 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "code": "0",
 "message": "",
@@ -1510,21 +1510,21 @@ KUKA
 ]
 }
 
-11-1 容器信息查询接口(仅查询入场状态容器) Query Containers (上游
-系统 -> Kuka 系统)
+11-1 容器信息查詢接口(僅查詢入場狀態容器) Query Containers (上游
+系統 -> Kuka 系統)
 
 @ API 基本信息
  containerQuery
- 容器信息查询接口(仅查询入场状态的容器)
+ 容器信息查詢接口(僅查詢入場狀態的容器)
 
 APIURL http://[IP:Port]/interfaces/api/amr/containerQuery
 HTTP Method
 
 @ Headers
 
-参数名称          参数值              是否必须
+參數名稱          參數值              是否必須
 
-© 请求参数说明
+© 請求參數說明
 
 gen
 
@@ -1537,30 +1537,30 @@ nodeCode
 |
 emptyFullStatus            pm]
 
-@ 返回字段说明
+@ 返回字段說明
 
-containerCode   容器编码
+containerCode   容器編碼
 
-点位编码
-容器模型编码
+點位編碼
+容器模型編碼
 
 —
 —
 |
 —
-  容器的空满状态;
+  容器的空滿狀態;
 
- 容器编四
+ 容器編四
 | |
 | |
 
 20
-满1
+滿1
 全部2
 
-nodeCode  点位编码                   |
-Integer         入场/离场状态
-0-离场，1-入场
+nodeCode  點位編碼                   |
+Integer         入場/離場狀態
+0-離場，1-入場
 
 containerModelCode 容器模型
 
@@ -1571,17 +1571,17 @@ V1.0    05.2025    KUKA AMR                                                     
 KUKA
 
 emptyFullStatus
-isCarry                      Integer       搬运状态 0-静止 ，1-搬
-运中
+isCarry                      Integer       搬運狀態 0-靜止 ，1-搬
+運中
 String           a 半角度
-String | 容器校验码 |
-mapCode                                            地图 人
-| districtCode          | String     | 地图片区编码            |
+String | 容器校驗碼 |
+mapCode                                            地圖 人
+| districtCode          | String     | 地圖片區編碼            |
 
 orientation
 containerCheckCode
 
-@ 请求报文示例〈查询指定容器)
+@ 請求報文示例〈查詢指定容器)
 {
 "nodeCode": "M001-A001-30",
 "containerModelCode": "10001",
@@ -1589,7 +1589,7 @@ containerCheckCode
 "areaCode": "A000000014",
 eee 2
 
-e aR 回报文示例
+e aR 回報文示例
 
 {
 "data": [
@@ -1618,8 +1618,8 @@ e aR 回报文示例
 "message": null,
 "success": true
 
-11-2 容器信息查询接口(同时查询入场和离场状态容器) Query
-Containers (上游系统 -> Kuka 系统)
+11-2 容器信息查詢接口(同時查詢入場和離場狀態容器) Query
+Containers (上游系統 -> Kuka 系統)
 
 @ API 基本信息
 API 描述
@@ -1631,7 +1631,7 @@ API 描述
 @ Headers
 
 containerQueryAll
-容器信息查询接口(同时查询入场和离场状态的容器)
+容器信息查詢接口(同時查詢入場和離場狀態的容器)
 
 http://[IP:Port]/interfaces/api/amr/containerQueryAll                      |
 POST
@@ -1640,36 +1640,36 @@ V1.0    05.2025    KUKA AMR                                                     
 
 ## Page 27
 
-参数名称 — | Set     是否必须
+參數名稱 — | Set     是否必須
  spplicatonfson | 是 | |
 
 _
 
-@ 请求参数说明
+@ 請求參數說明
 
 containerCode
  String
  String
 
-emptyFullStatus                                                  容器的空满状态:
+emptyFullStatus                                                  容器的空滿狀態:
 20
-满1
-                               容器入场离场状态
-离场0
-入场1
+滿1
+                               容器入場離場狀態
+離場0
+入場1
 
-Integer         入场/离场状态
-0-离场，1-入场
+Integer         入場/離場狀態
+0-離場，1-入場
 _containerModelCode _
 
-@ 返回字段说明
+@ 返回字段說明
 
 containerModelCode | String           容器模型
 
-emptyFullStatus   0-空 1-满
+emptyFullStatus   0-空 1-滿
 
- 这 me me
-运中
+ 這 me me
+運中
 
  EAI
 
@@ -1677,12 +1677,12 @@ emptyFullStatus   0-空 1-满
 mapcode | Sting | SMS
 “distritCode | Sting | SIRS
 
-@ 请求报文示例〈查询指定地图所有容器)
+@ 請求報文示例〈查詢指定地圖所有容器)
 
 {
 "mapCode": "ABC"
 }
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": [
 {
@@ -1723,16 +1723,16 @@ KUKA
 "message": null,
 "success": true
 
--- 机器人相关接口
+-- 機器人相關接口
 
-12 根据点位 UUID 或外部编码查询机器人 Query robot by node UUID or
-node foreign code (上游系统 -> Kuka 系统)
+12 根據點位 UUID 或外部編碼查詢機器人 Query robot by node UUID or
+node foreign code (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
 
-API 名称                   queryRobByNodeUuidOrForeignCode
+API 名稱                   queryRobByNodeUuidOrForeignCode
 
-API 描述                   根据点位 UUID 或点位外部编码查询机器人
+API 描述                   根據點位 UUID 或點位外部編碼查詢機器人
 
 APIURL http://[IP:Port]/interfaces/api/amr/queryRobByNodeUuidOrForeignCode
 
@@ -1742,7 +1742,7 @@ APIURL http://[IP:Port]/interfaces/api/amr/queryRobByNodeUuidOrForeignCode
 
 Content-Type          application/json
 
-@ 请求参数说明
+@ 請求參數說明
 
 V1.0    05.2025    KUKA AMR                                                                                                           28/49
 
@@ -1752,13 +1752,13 @@ KUKA
 
 PoP yy
 
-@ 返回字段说明
+@ 返回字段說明
 
-点位 UUID 或点位外部编
-码
+點位 UUID 或點位外部編
+碼
 
-  机器人编码               |
-  机器人型号               |
+  機器人編碼               |
+  機器人型號               |
 
 mapCode
 floorNumber
@@ -1792,37 +1792,37 @@ nodeForeignCode
 
 V1.0    05.2025    KUKA AMR
 
- 地图编码
-文乡
+ 地圖編碼
+文鄉
 
-  工厂或者仓库编码
-  机器人持有容器的编码
+  工廠或者倉庫編碼
+  機器人持有容器的編碼
 
- 1-离 场 ，2-离 线 ，3-空
-As 4-任务中;， 5-充电
+ 1-離 場 ，2-離 線 ，3-空
+As 4-任務中;， 5-充電
 中;，6-更新中，7-噶常
 
  是否占用: OA; 1-
 占用
 
-  量〈单位，百分比)
+  量〈單位，百分比)
 
-String     [器人当前所处坐标
-   单位: 毫米)
+String     [器人當前所處坐標
+   單位: 毫米)
 
-    L       当前所处坐标
+    L       當前所處坐標
 y(4     毫米)
 
- 机器人项升状态 CA: 项
-Ft; O: 未顶升)
+ 機器人項升狀態 CA: 項
+Ft; O: 未頂升)
 
 Integer     定位置信度: 0-不可信;
 
- 运行时长
+ 運行時長
 
   件
 
- 片区编码
+ 片區編碼
 
 wn
 o
@@ -1830,10 +1830,10 @@ a
 5
 oa
 
-String | 右电机温度
+String | 右電機溫度
 
-String | 机器人所在节点的外部
-编码
+String | 機器人所在節點的外部
+編碼
 
 wn
 o
@@ -1841,14 +1841,14 @@ a
 5
 oa
 
-任务号
+任務號
 
 EEE
-当使用节
-点的外部
-编码查询
-机器人
-时，该字
+當使用節
+點的外部
+編碼查詢
+機器人
+時，該字
 BORA
 值。
 
@@ -1858,7 +1858,7 @@ BORA
 
 KUKA
 
-@ 请求报文示例
+@ 請求報文示例
 1) 示例1
 {
 "nodeCode": "startNode1, startNode2"
@@ -1870,7 +1870,7 @@ KUKA
 "nodeCode": "test01-5-91"
 }
 
-@ 返回报文示例
+@ 返回報文示例
 1) 示例1
 {
 "data": [
@@ -1998,43 +1998,43 @@ KUKA
 "message": null,
 "success": true
 
-13 机器人信息查询接口 Query Robots (上游系统 -> Kuka 系统)
+13 機器人信息查詢接口 Query Robots (上游系統 -> Kuka 系統)
 
 @ API 基本信息
-API和称 robotauevy
- 机器人信息查询接口(蒜认查所有)
+API和稱 robotauevy
+ 機器人信息查詢接口(蒜認查所有)
 
 APIURL http://[IP:Port]/interfaces/api/amr/robotQuery
 
 @ Headers
 
-参数名称   参数值    是否必须
+參數名稱   參數值    是否必須
 
-robotd lstrnge | IF | |机器人编码           1) 如果参
-            号              六
-      地图编码〈禁有    | 空，则默认
+robotd lstrnge | IF | |機器人編碼           1) 如果參
+            號              六
+      地圖編碼〈禁有    | 空，則默認
 
 F
 
-@ 请求参数说明
+@ 請求參數說明
 
 mapCode                          String
-果为空)        碍全部。
+果為空)        礙全部。
 
 |
 -                                    Te        7
-floorNumber       String                        og ( 48 F        2) 请求参
-数 mapCode
+floorNumber       String                        og ( 48 F        2) 請求參
+數 mapCode
 和
 floorNumber
-必须一起传
+必須一起傳
 ih.
 
-@ 返回字段说明
+@ 返回字段說明
 
-  机器人纲码
+  機器人綱碼
 
- 机器人型号
+ 機器人型號
  SFE
 
 V1.0    05.2025    KUKA AMR                                                                                                           32/49
@@ -2043,15 +2043,15 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
-floorNumber                        String           片区编码
+floorNumber                        String           片區編碼
 
-buildingCode                 String        工广或者仓库编码
+buildingCode                 String        工廣或者倉庫編碼
 
-containerCode                    String          机器人持有容器的编码
+containerCode                    String          機器人持有容器的編碼
 
-status                         Integer       1-离 场 ，2-离 线 ; 3-空
-PAs 4-任务中;， 5-充电
-中;，6-更新中，7-异常
+status                         Integer       1-離 場 ，2-離 線 ; 3-空
+PAs 4-任務中;， 5-充電
+中;，6-更新中，7-異常
 
 occupyStatus                 Integer       是否占用: 0-未占用; 1
 
@@ -2059,43 +2059,43 @@ occupyStatus                 Integer       是否占用: 0-未占用; 1
 
 batteryLevel                   Double       Hie (AAT: 百分比)
 
-nodeCode                            String            当前点位
+nodeCode                            String            當前點位
 
-X                     String      机器人当前所处坐标
-x(单位: 毫米)
+X                     String      機器人當前所處坐標
+x(單位: 毫米)
 
-Y                     String      机器人当前所处坐标
-y(单位:  毫米)
+Y                     String      機器人當前所處坐標
+y(單位:  毫米)
 
-robotOrientation                  String           机器人当前角度
+robotOrientation                  String           機器人當前角度
 
-missionCode                        String            当前任务号
+missionCode                        String            當前任務號
 
-liftStatus                      Integer       机器人项升状态 C1: Tit
-升; 0: 未顶升)
+liftStatus                      Integer       機器人項升狀態 C1: Tit
+升; 0: 未頂升)
 
 reliability                  Integer      定位置信度: 0-不可信，
 1-可信
 
-runTime                      String        运行时长
+runTime                      String        運行時長
 
-karOsVersion                String        软件版本
+karOsVersion                String        軟件版本
 
-mileage                         String         运行总里程
+mileage                         String         運行總裡程
 
-leftMotorTemperature       String        左电机温度
+leftMotorTemperature       String        左電機溫度
 
-rightMotorTemperature     String        右电机温度
+rightMotorTemperature     String        右電機溫度
 
-liftMotorTemperature          String           顶升电机温度
+liftMotorTemperature          String           頂升電機溫度
 
 rotateMotorTemperature | String           ees WL
 
-rotateTimes                  Integer       托盘旋转次数
+rotateTimes                  Integer       托盤旋轉次數
 
-liftTimes                      Integer       托盘顶升次数
+liftTimes                      Integer       托盤頂升次數
 
-@ 请求报文示例〈当前货架入场)
+@ 請求報文示例〈當前貨架入場)
 
 V1.0
 
@@ -2108,7 +2108,7 @@ V1.0
 
 }
 
-请求返回报文示例
+請求返回報文示例
 
 {
 
@@ -2129,8 +2129,8 @@ V1.0
 
 05.2025    KUKA AMR
 
-上游下发
-任务号
+上游下發
+任務號
 
 33/49
 
@@ -2166,13 +2166,13 @@ KUKA
 
 "success": true
 
-14 下发机器人移动搬运任务 Dispatch Move Carry Task (上游系统 ->
-Kuka 系统)
+14 下發機器人移動搬運任務 Dispatch Move Carry Task (上游系統 ->
+Kuka 系統)
 
 @ ApPl 基本信息
 
 robotMoveCarr
-下发机器人移动搬运任务，只在任务列表展示，作业看板不可见。
+下發機器人移動搬運任務，只在任務列表展示，作業看板不可見。
 
 Dispatch a move carry task to the robot. The function is the same as
 
@@ -2188,15 +2188,15 @@ HTTP Method
 
 a
 
-@ 请求参数说明
+@ 請求參數說明
 
-| 机器人编号
+| 機器人編號
 
-目标点位编码〈点位
+目標點位編碼〈點位
 UUID )
 
 a ae
-_containerCode | String | TO 容器编号
+_containerCode | String | TO 容器編號
 |
 
 targetNodeCode
@@ -2205,14 +2205,14 @@ V1.0    05.2025    KUKA AMR                                                     
 
 ## Page 35
 
-missionCode                                任务号，下发给 mission
-manager的任务号。不传
-会自动生成。
+missionCode                                任務號，下發給 mission
+manager的任務號。不傳
+會自動生成。
 
-@ 返回字段说明
-下发成功时，返回任务号
+@ 返回字段說明
+下發成功時，返回任務號
 
-@ 请求 URL 示例
+@ 請求 URL 示例
 http://[IP:Port]/interfaces/api/amr/robotMoveCarr
 {
 "robotld": "10001",
@@ -2220,7 +2220,7 @@ http://[IP:Port]/interfaces/api/amr/robotMoveCarr
 "targetNodeCode": "TEST-1-45"
 
 }
-@ 返回报文示例
+@ 返回報文示例
 示例1
 {
 "data": "I-CARRY-1744609148201",
@@ -2231,12 +2231,12 @@ http://[IP:Port]/interfaces/api/amr/robotMoveCarr
 
 }
 
-15 机器人充电 Dispatch Charge Robot Task (上游系统 -> Kuka 系统)
+15 機器人充電 Dispatch Charge Robot Task (上游系統 -> Kuka 系統)
 
 @ ApPl 基本信息
 
-API名称 | chargeRobot
-机器人充电，只在任务列表展示，作业看板不可见。
+API名稱 | chargeRobot
+機器人充電，只在任務列表展示，作業看板不可見。
 
 Dispatch charge task to the robot. The function is the same as which in
 
@@ -2252,36 +2252,36 @@ HTTP Method                POST
 
  applicationfison |是 | |
 
-@ 请求参数说明
+@ 請求參數說明
 
-| 机器人编号
+| 機器人編號
 
 Te                                          |
-necessary                       Integer                          T                             是否强制生成充电任务
-1-一定生成任务并排
+necessary                       Integer                          T                             是否強制生成充電任務
+1-一定生成任務並排
 
 V1.0    05.2025    KUKA AMR                                                                                                           35/49
 
 ## Page 36
 
-BA; 0-低 于 lowestLevel
-则去充电，   无资源的情
+BA; 0-低 於 lowestLevel
+則去充電，   無資源的情
 
 可 直接完成
 
 “targetlevel finger] STS,
 
-lowestLevel                 Integer                                                WEF 电的电量，单位
+lowestLevel                 Integer                                                WEF 電的電量，單位
 =F Coe
-必传
+必傳
 == ED
-wes 自动生成
+wes 自動生成
 
-@ 返回字段说明
+@ 返回字段說明
 
-无
+無
 
-@ 请求 URL 示例
+@ 請求 URL 示例
 http://[IP:Port]/interfaces/api/amr/robotMoveCarr
 {
 
@@ -2291,7 +2291,7 @@ http://[IP:Port]/interfaces/api/amr/robotMoveCarr
 "targetLevel": 90
 
 }
-@ 返回报文示例
+@ 返回報文示例
 {
 
 "data": null,
@@ -2299,12 +2299,12 @@ http://[IP:Port]/interfaces/api/amr/robotMoveCarr
 "message": "OK",
 "success": true
 
-16 入场机器人 Insert The Robot Into The Map (上游系统 -> Kuka 系统)
+16 入場機器人 Insert The Robot Into The Map (上游系統 -> Kuka 系統)
 
 @ API 基本信息
 
  ingertRobot
-入场机器人，该接口目前只文持真车。
+入場機器人，該接口目前只文持真車。
 Insert the robot into the map. Only support real AMR
 
 currently (distinguished from simulated AMR).
@@ -2316,20 +2316,20 @@ APIURL http://[IP:Port]/interfaces/api/amr/insertRobot
 
 Content-Type       application/json   SS
 
-@ 请求参数说明
+@ 請求參數說明
 
 V1.0    05.2025    KUKA AMR                                                                                                           36/49
 
 ## Page 37
 
-robotd | String TT 机器人编号               |
+robotd | String TT 機器人編號               |
 jcelcode __} String | fr} BBA AM 位       |
 
-@ 返回字段说明
+@ 返回字段說明
 
-无
+無
 
-@ 请求 URL 示例
+@ 請求 URL 示例
 http://[IP:Port]/interfaces/api/amr/insertRobot
 {
 
@@ -2338,7 +2338,7 @@ http://[IP:Port]/interfaces/api/amr/insertRobot
 "synchroContainer": 1
 
 }
-@ 返回报文示例
+@ 返回報文示例
 {
 
 "data": null,
@@ -2348,12 +2348,12 @@ http://[IP:Port]/interfaces/api/amr/insertRobot
 
 }
 
-17 离场机器人 Remove The Robot From The Map (上游系统 -> Kuka 系
-统)
+17 離場機器人 Remove The Robot From The Map (上游系統 -> Kuka 系
+統)
 
 @ API 基本信息
 
-API 描述      离场机器人
+API 描述      離場機器人
 Remove the robot from the map
 
 APIURL http://[IP:Port]/interfaces/api/amr/removeRobot
@@ -2364,11 +2364,11 @@ Temes [acco |
 
 fn
 
-@ 请求参数说明
+@ 請求參數說明
 
-ee |sme | ft}  机器人编号
+ee |sme | ft}  機器人編號
 
-@ 返回字段说明
+@ 返回字段說明
 
 V1.0    05.2025    KUKA AMR                                                                                                           37/49
 
@@ -2376,8 +2376,8 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
-无
-@ 请求 URL 示例
+無
+@ 請求 URL 示例
 http://[IP:Port]/interfaces/api/amr/removeRobot
 {
 "robotld": "2",
@@ -2385,7 +2385,7 @@ http://[IP:Port]/interfaces/api/amr/removeRobot
 "withContainer": 1
 
 }
-@ 返回报文示例
+@ 返回報文示例
 {
 "data": null,
 "code": "0",
@@ -2394,14 +2394,14 @@ http://[IP:Port]/interfaces/api/amr/removeRobot
 
 }
 
--- AMR 地图点位与区域相关接口
+-- AMR 地圖點位與區域相關接口
 
-18 查询所有 Wocs 区域信息 Query All WCS Area Information (上游系统
--> Kuka 系统)
+18 查詢所有 Wocs 區域信息 Query All WCS Area Information (上游系統
+-> Kuka 系統)
 
 @ ApPl 基本信息
 
-  查询所有 WCS 区域信息 Query All WCS Area Information
+  查詢所有 WCS 區域信息 Query All WCS Area Information
 
 APIURL http://[IP:Port]/interfaces/api/amr/areaQuery
 
@@ -2414,8 +2414,8 @@ aaa | 一
 
 |
 |
-areaType                Integer       区 TE 区  3c fF
-5监管区 7又车搬运
+areaType                Integer       區 TE 區  3c fF
+5監管區 7又車搬運
 
 V1.0    05.2025    KUKA AMR                                                                                                           38/49
 
@@ -2423,8 +2423,8 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
-@ 请求报文示例
-@ 请求返回报文示例
+@ 請求報文示例
+@ 請求返回報文示例
 
 {
 "data": [
@@ -2459,14 +2459,14 @@ KUKA
 "message": null,
 "success": true
 
-19 区域内点位信息查询 Query Nodes of the Area (上游系统 -> Kuka K
+19 區域內點位信息查詢 Query Nodes of the Area (上游系統 -> Kuka K
 
-统)
+統)
 
 @ ApPl 基本信息
 
-api 名称               | areaNodesQuery
-API 描述                区域内点位 (外部编码) 信息查询 Query Nodes of the Area
+api 名稱               | areaNodesQuery
+API 描述                區域內點位 (外部編碼) 信息查詢 Query Nodes of the Area
 
 V1.0    05.2025    KUKA AMR
 
@@ -2484,19 +2484,19 @@ HTTP Method                POST
 
 Content-Type       application/json   SS
 
-@ 请求参数说明
+@ 請求參數說明
 
 areacodes | listcSting> | TT) LRU       _—
-@ 返回字段说明
+@ 返回字段說明
 
  ra        Po
 
-List<String> | 点位外部编码的集合。
-若该区域内所有点位均
-无外部编码，则该字段
-可能为空
+List<String> | 點位外部編碼的集合。
+若該區域內所有點位均
+無外部編碼，則該字段
+可能為空
 
-@ 请求报文示例
+@ 請求報文示例
 
 1) 示例1
 {
@@ -2507,7 +2507,7 @@ List<String> | 点位外部编码的集合。
 "areaCodes": ["1-song-1732612877805"]
 }
 
-@ 返回报文示例
+@ 返回報文示例
 1) 示例1
 {
 "data": [
@@ -2543,7 +2543,7 @@ KUKA
 
 }
 
-3) 示例 2，区域内点位均无外部编码
+3) 示例 2，區域內點位均無外部編碼
 {
 "data": [
 {
@@ -2556,12 +2556,12 @@ KUKA
 "message": null,
 "success": true
 
-20 查询点位所属区域 Query Area by Map Node (上游系统 -> Kuka 系
-统)
+20 查詢點位所屬區域 Query Area by Map Node (上游系統 -> Kuka 系
+統)
 
 @ ApPl 基本信息
 
-  查询点位所属区域 Query Area by Map Node
+  查詢點位所屬區域 Query Area by Map Node
 
 APIURL http://[IP:Port]/interfaces/api/amr/queryWCSAreaByMapNode
 
@@ -2569,26 +2569,26 @@ APIURL http://[IP:Port]/interfaces/api/amr/queryWCSAreaByMapNode
 
 | content-type | application/json |是 | | Cd
 
-nodeuud | String, | IT | |点位uup
-@ 返回字段说明
+nodeuud | String, | IT | |點位uup
+@ 返回字段說明
 
-@ 请求参数说明
+@ 請求參數說明
 
-areaCode                          String             区域编码
+areaCode                          String             區域編碼
 area code
 
 V1.0    05.2025    KUKA AMR                                                                                                           41/49
 
 ## Page 42
 
-区域可放置的容器的模 | 不一定有
-型编码
+區域可放置的容器的模 | 不一定有
+型編碼
 
-@ 请求 URL 示例
+@ 請求 URL 示例
 http://[IP:Port]/interfaces/api/amr/queryWCSAreaByMapNode?nodeUuid= 1-song-44
 
-@ 返回报文示例
-1) 查询到点位所属区域，区域未配置可放置的容器模型编码
+@ 返回報文示例
+1) 查詢到點位所屬區域，區域未配置可放置的容器模型編碼
 {
 
 "data": {
@@ -2604,7 +2604,7 @@ http://[IP:Port]/interfaces/api/amr/queryWCSAreaByMapNode?nodeUuid= 1-song-44
 "success": true
 
 }
-2) 查询到点位所属区域，区域未配置可放置的容器模型编码
+2) 查詢到點位所屬區域，區域未配置可放置的容器模型編碼
 {
 
 "data": {
@@ -2617,7 +2617,7 @@ http://[IP:Port]/interfaces/api/amr/queryWCSAreaByMapNode?nodeUuid= 1-song-44
 "success": true
 
 }
-3) 未查询到点位所属区域
+3) 未查詢到點位所屬區域
 {
 "data": null,
 
@@ -2625,11 +2625,11 @@ http://[IP:Port]/interfaces/api/amr/queryWCSAreaByMapNode?nodeUuid= 1-song-44
 "message": "No such node in the graph.[7788]",
 "success': false
 
-21 查询所有禁行区 Query All Forbidden Areas (上游系统 -> Kuka 系统)
+21 查詢所有禁行區 Query All Forbidden Areas (上游系統 -> Kuka 系統)
 
 @ API 基本信息
-API 名称                   queryAllForbiddenAreas
-API 描述                     查询所有禁行区 Query All Forbidden Areas
+API 名稱                   queryAllForbiddenAreas
+API 描述                     查詢所有禁行區 Query All Forbidden Areas
 
 API URL                    http://[IP:Port]/interfaces/api/amr/queryAllForbiddenAreas
 | HTTP Method      | GET
@@ -2644,27 +2644,27 @@ KUKA
 
 Content-type | applicationvison |是 | |
 
-@ 请求参数说明
-无
+@ 請求參數說明
+無
 
-@ 返回字段说明
+@ 返回字段說明
 forbiddenAread integer | 全id
  SF Oa        _
 
 floorNumber
-  禁行区描述
+  禁行區描述
 
-forbiddenAreaStrategy | Integer          禁行策略:0-默认;1-人允许
-有车
-Integer        状态:0-禁用;1-启 A;
+forbiddenAreaStrategy | Integer          禁行策略:0-默認;1-人允許
+有車
+Integer        狀態:0-禁用;1-啟 A;
 效中;3-失效中
 enableType                 Integer        E效方式:0-立即生效;
-按给定时间段生效
+按給定時間段生效
 
-@ 请求报文示例
-无
+@ 請求報文示例
+無
 
-@ 请求返回报文示例
+@ 請求返回報文示例
 {
 "data": [
 {
@@ -2717,13 +2717,13 @@ KUKA
 "message": null,
 "success": true
 
-22 查询指定禁行区 Query One Forbidden Area (上游系统 -> Kuka K
-统)
+22 查詢指定禁行區 Query One Forbidden Area (上游系統 -> Kuka K
+統)
 
 @ API 基本信息
   queryOneForbiddenArea
 
-  查询指定禁行区 Query One Forbidden Area
+  查詢指定禁行區 Query One Forbidden Area
 
 PPorUntracesyapyamyatenOnetorhdeneea |  http://[IP:Port]/interfaces/api/amr/queryOneForbiddenArea
 
@@ -2733,35 +2733,35 @@ HTTP Method                GET
 
 forbiddenAreald          Integer                                            PEAT IX id
 forbidden area ID
-@ 返回字段说明
+@ 返回字段說明
 
-字段名称  字段描述                        项目用途
+字段名稱  字段描述                        項目用途
 型
 
 forbiddenAreald         Integer MTR ig
- 地图片区编码
+ 地圖片區編碼
 
-@ 请求参数说明 _
+@ 請求參數說明 _
 
 floorNumber        sme RE OSCC‘“‘~*~“—s*~*~S~S~S
  27 DCT          an
 
-forbiddenAreaStrategy   禁行策略:0-默认;1-人允许
-有车
+forbiddenAreaStrategy   禁行策略:0-默認;1-人允許
+有車
 
 V1.0    05.2025    KUKA AMR                                                                                                           44/49
 
 ## Page 45
 
-Integer     状态:0-禁用;1-启 A;
+Integer     狀態:0-禁用;1-啟 A;
 效中;3-失效中
 enableType             Integer     生效方式:0-立即生效;
-按给定时间段生效
+按給定時間段生效
 
-@ 请求 URL 示例
+@ 請求 URL 示例
 http://[IP:Port]/interfaces/api/amr/queryOneForbiddenArea?forbiddenAreald=2
 
-@ 返回报文示例
+@ 返回報文示例
 
 示例1
 {
@@ -2779,38 +2779,38 @@ http://[IP:Port]/interfaces/api/amr/queryOneForbiddenArea?forbiddenAreald=2
 "message": null,
 "success": true
 
-23 更新指定禁行区的状态 Update Forbidden Area Status (上游系统 ->
-Kuka 系统)
+23 更新指定禁行區的狀態 Update Forbidden Area Status (上游系統 ->
+Kuka 系統)
 
 @  Pl 基本信息
 
  updateForbiddenAreastatus
-  更新指定禁行区的状态 Update Forbidden Area Status
+  更新指定禁行區的狀態 Update Forbidden Area Status
 
 APIURL http://[IP:Port]/interfaces/api/amr/updateForbiddenAreaStatus
 HTTP Method                POST
 
 @ Headers
 
-@ 请求参数说明
+@ 請求參數說明
 
-forbiddenAreald          a et a                                                                              在请求体中，
+forbiddenAreald          a et a                                                                              在請求體中，
 
 forbiddenAreald 或
 forbiddenAreaCode
-只能选择其中一
+只能選擇其中一
 
 V1.0    05.2025    KUKA AMR                                                                                                           45/49
 
 ## Page 46
 
-个作为参数。
+個作為參數。
 
 status                                String
 
-@ 返回字段说明
-无
-@ 请求报文示例 request body
+@ 返回字段說明
+無
+@ 請求報文示例 request body
 1) 示例1
 {
 "forbiddenAreald": 2,
@@ -2824,17 +2824,17 @@ status                                String
 
 }
 
-@ 返回报文示例 response body
-1) 状态修改成功后返回的报文
+@ 返回報文示例 response body
+1) 狀態修改成功後返回的報文
 {
 "data": null,
 "code": "0",
 "message": null,
 "success": true
 }
-2) 状态修改失败后返回的报文
-错误原因: 该禁行区的状态已经为0〈禁用) ，仍旧修改其状态为0，则会收到如下错误。如果状态已
-经为1〈启用) ，再次修改其状态为1，也会收到类似错误。
+2) 狀態修改失敗後返回的報文
+錯誤原因: 該禁行區的狀態已經為0〈禁用) ，仍舊修改其狀態為0，則會收到如下錯誤。如果狀態已
+經為1〈啟用) ，再次修改其狀態為1，也會收到類似錯誤。
 {
 "data": null,
 "code": "100001",
@@ -2842,8 +2842,8 @@ status                                String
 update [ MAP_ZONE_STATUS_DISABLE ]]]",
 "success": false
 }
-3) 传参错误
-错误原因: 每次只能选择 forbiddenAreald 和 forbiddenAreaCode 中的一个作为请求参数。
+3) 傳參錯誤
+錯誤原因: 每次只能選擇 forbiddenAreald 和 forbiddenAreaCode 中的一個作為請求參數。
 {
 
 "data": null,
@@ -2858,11 +2858,11 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
-24 查询功能点位 Query Function Node (上游系统 -> Kuka 系统)
+24 查詢功能點位 Query Function Node (上游系統 -> Kuka 系統)
 
 @ APL 基本信息
    queryFunctionNode
-  查询功能点位 Query Function Node
+  查詢功能點位 Query Function Node
 
 APIURL http://[IP:Port]/interfaces/api/amr/queryFunctionNode
   POST
@@ -2871,9 +2871,9 @@ APIURL http://[IP:Port]/interfaces/api/amr/queryFunctionNode
 
 | content-type | application/json |是 | | Cd
 
-© 请求参数说明
+© 請求參數說明
 
-functionType                   T                              功能点位类型
+functionType                   T                              功能點位類型
 
                     nae
                     ae
@@ -2882,10 +2882,10 @@ V1.0    05.2025    KUKA AMR                                                     
 
 ## Page 48
 
-robotTypeClass | String | FO | |机器人类型编码
-containerModel           Strng | IF |容器模型编码
+robotTypeClass | String | FO | |機器人類型編碼
+containerModel           Strng | IF |容器模型編碼
 
-@ 返回字段说明
+@ 返回字段說明
 
 | nodeCode         | String
 | externalCode
@@ -2893,20 +2893,20 @@ containerModel           Strng | IF |容器模型编码
 |  String
 functionType                  Integer
 
-| 点位编码 CUUID)    |
-| 点位外部编码     |     |
+| 點位編碼 CUUID)    |
+| 點位外部編碼     |     |
 
-功能点位类型
+功能點位類型
 
 containerModelCode
 
 Bh DL SC HF BA A eh eA Sh
-码
+碼
 
-robotTypeCode                  List<String> | 点位支持的机器人类型
-|                           编码
+robotTypeCode                  List<String> | 點位支持的機器人類型
+|                           編碼
 
-@ 请求报文示例
+@ 請求報文示例
 {
 
 List<String>
@@ -2915,7 +2915,7 @@ List<String>
 "functionType": 1,
 "mapCode": "TEST"
 
-@ 返回报文示例
+@ 返回報文示例
 {
 "data": [
 {
@@ -2949,9 +2949,9 @@ V1.0    05.2025    KUKA AMR                                                     
 
 KUKA
 
--- 接口响应报文说明
+-- 接口響應報文說明
 
-@ 成功响应
+@ 成功響應
 {
 
 "code": "oO",
@@ -2963,13 +2963,13 @@ KUKA
 }
 @ FMA py
 {
-"code": mn //异常代码
+"code": mn //異常代碼
 "message": " //Re it fa
 "success": false,
 "data": null
 
 }
-异常信息说明:
+異常信息說明:
 
 An
 was
@@ -2978,7 +2978,7 @@ eet
 
 cer
 BARRIS
-酸砚是
+酸硯是
 
 V1.0    05.2025    KUKA AMR
 

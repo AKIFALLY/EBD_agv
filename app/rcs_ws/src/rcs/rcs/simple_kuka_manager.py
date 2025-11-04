@@ -44,7 +44,7 @@ class KukaManager:
 
         # 日誌頻率控制（降低刷屏）
         self._container_log_counter = 0
-        self._container_log_interval = 10  # 每10次查詢輸出一次汇总（約1秒）
+        self._container_log_interval = 10  # 每10次查詢輸出一次匯總（約1秒）
 
         # 設置機器人位置更新回調
         self.kuka_fleet.on_robot_query_complete = self.on_robot_update
@@ -448,7 +448,7 @@ class KukaManager:
                 self.get_logger().debug("KUKA Fleet 查詢結果：沒有容器")
             return
 
-        # 只在每 N 次查詢時輸出汇总信息
+        # 只在每 N 次查詢時輸出匯總信息
         if should_log_summary:
             container_codes = [c.get("containerCode", "Unknown") for c in containers]
             self.get_logger().info(
@@ -477,7 +477,7 @@ class KukaManager:
                     if changed_racks:
                         self.get_logger().info(f"✅ Rack 狀態變化: {', '.join(changed_racks)}")
                     elif should_log_summary:
-                        # 只在汇总時輸出無變化訊息（降低刷屏）
+                        # 只在匯總時輸出無變化訊息（降低刷屏）
                         self.get_logger().debug(f"已同步 {updated_count} 個容器（無狀態變化）")
 
         except Exception as e:

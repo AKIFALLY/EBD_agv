@@ -8,7 +8,7 @@ from kuka_fleet_adapter.kuka_api_client import KukaApiClient
 
 class KukaFleetAdapter:
     # AGV 狀態常數
-    # |status | 机器人状态 1-离场；2-离线；3-空闲；4-任务中；5-充电中；6-更新中；7-异常 robot status 1-Removed;2-Offline;3-idle;4-running;5-charging;6-updating;7-error   |integer(int32)  |    |
+    # |status | 機器人狀態 1-離场；2-離線；3-空闲；4-任務中；5-充電中；6-更新中；7-异常 robot status 1-Removed;2-Offline;3-idle;4-running;5-charging;6-updating;7-error   |integer(int32)  |    |
     STATUS_REMOVED = 1  # 離場
     STATUS_OFFLINE = 2  # 離線
     STATUS_IDLE = 3  # 空閒

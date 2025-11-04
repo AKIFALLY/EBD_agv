@@ -117,20 +117,69 @@ def _resolve_variable(self, var_ref: str):
 
 ### ROS 2 Service Interface
 ```python
+# ✅ 正確：使用相對路徑（自動加上節點的 namespace 前綴）
+# 當節點在 /agvc/ namespace 時，實際路徑為 /agvc/tafl/*
+
 # 訂閱者 - 接收流程執行請求
 self.flow_subscriber = self.create_subscription(
-    String, '/tafl/execute_flow', self._execute_flow_callback, 10)
+    String, 'tafl/execute_flow', self._execute_flow_callback, 10)
+# → 實際路徑: /agvc/tafl/execute_flow
 
 # 發布者 - 發布執行結果和進度
 self.result_publisher = self.create_publisher(
-    String, '/tafl/execution_result', 10)
+    String, 'tafl/execution_result', 10)
+# → 實際路徑: /agvc/tafl/execution_result
+
 self.progress_publisher = self.create_publisher(
-    String, '/tafl/execution_progress', 10)
+    String, 'tafl/execution_progress', 10)
+# → 實際路徑: /agvc/tafl/execution_progress
 
 # 服務 - 查詢進度
 self.progress_service = self.create_service(
-    Trigger, '/tafl/get_progress', self._get_progress_callback)
+    Trigger, 'tafl/get_progress', self._get_progress_callback)
+# → 實際路徑: /agvc/tafl/get_progress
 ```
+
+### ⚠️ ROS2 命名空間最佳實踐
+
+**重要**: 所有 topics 和 services 都應該使用相對路徑，以支援正確的命名空間管理。
+
+#### 路徑規則
+- ✅ **使用相對路徑**: `'tafl/execute_flow'`（自動加上節點的 namespace 前綴）
+- ❌ **避免絕對路徑**: `'/tafl/execute_flow'`（無視 namespace，總在根命名空間）
+
+####正確示例
+```python
+# ✅ 正確：使用相對路徑
+self.publisher = self.create_publisher(String, 'tafl/execution_progress', 10)
+# 當節點在 /agvc/ namespace → 實際路徑: /agvc/tafl/execution_progress
+
+# ❌ 錯誤：使用絕對路徑
+self.publisher = self.create_publisher(String, '/tafl/execution_progress', 10)
+# 無論節點在哪個 namespace → 總是: /tafl/execution_progress
+```
+
+#### 驗證方法
+```bash
+# 檢查節點的 topics 是否有正確的 namespace 前綴
+ros2 node info /agvc/tafl_wcs_node
+
+# 應該看到 /agvc/tafl/* 而不是 /tafl/*
+# 正確輸出範例:
+#   Subscribers:
+#     /agvc/tafl/execute_flow: std_msgs/msg/String
+#   Publishers:
+#     /agvc/tafl/execution_progress: std_msgs/msg/String
+#     /agvc/tafl/execution_result: std_msgs/msg/String
+#   Service Servers:
+#     /agvc/tafl/get_progress: std_srvs/srv/Trigger
+```
+
+#### 為什麼重要
+1. **命名空間隔離**: 支援多個系統實例並行運行
+2. **避免衝突**: 防止不同命名空間的節點互相干擾
+3. **清晰的架構**: Topic 路徑清楚表明所屬的系統/子系統
+4. **正確的節點識別**: ROS2 daemon 可以正確識別節點位置
 
 ## 🚀 Development Workflow
 

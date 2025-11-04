@@ -251,7 +251,7 @@ def main():
 
             # 使用 struct.unpack 解包 2 個字節
             unpacked_value = struct.unpack("<H", plc_memory.get_bytes(7636, 2))[0]
-            # 將每個位元轉換為布林值 (0 或 1)
+            # 將每個位元轉換為佈林值 (0 或 1)
             bool_values = [(unpacked_value >> i) & 1 == 1 for i in range(16)]
             is_auto = bool_values[0]
             is_run = bool_values[1]
@@ -288,7 +288,7 @@ def main():
 
             # 使用 struct.unpack 解包 1 個字節 (2個byte 這裡只拿1個)
             unpacked_value = struct.unpack("<B", plc_memory.get_bytes(7637, 1))[0]
-            # 將每個位元轉換為布林值 (0 或 1)
+            # 將每個位元轉換為佈林值 (0 或 1)
             bool_values = [(unpacked_value >> i) & 1 == 1 for i in range(8)]
             present_1 = bool_values[0]
             present_2 = bool_values[1]
@@ -305,7 +305,7 @@ def main():
 
             # AGV狀態 3 DM7638 (2個byte 這裡只拿1個) B (unsinged char)
             unpacked_value = struct.unpack("<B", plc_memory.get_bytes(7638, 1))[0]
-            # 將每個位元轉換為布林值 (0 或 1)
+            # 將每個位元轉換為佈林值 (0 或 1)
             bool_values = [(unpacked_value >> i) & 1 == 1 for i in range(8)]
             door_req = bool_values[0]
             print("開關門請求:", door_req)  # DM7638.0

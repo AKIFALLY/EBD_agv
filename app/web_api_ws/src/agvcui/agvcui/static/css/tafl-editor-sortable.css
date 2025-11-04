@@ -53,7 +53,7 @@ body.dragging .nested-cards:empty::before {
     border-color: #2196F3;
 }
 
-/* 主畫布的拖動區域 */
+/* 主畫佈的拖動區域 */
 #canvas-drop-zone {
     min-height: 100px;
     transition: background-color 0.3s ease;

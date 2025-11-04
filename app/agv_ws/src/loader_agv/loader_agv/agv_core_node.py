@@ -43,22 +43,22 @@ class AgvCoreNode(AgvNodebase):
         self.robot_context = RobotContext(
             loader_agv.robot_states.idle_state.IdleState(self))
 
-        # 🔍 [DEBUG] 验证 Context 类型 - 诊断 context_name 问题
+        # 🔍 [DEBUG] 验證 Context 類型 - 诊斷 context_name 问題
         self.get_logger().info(
-            f"🔍 [INIT] Base Context 验证:\n"
+            f"🔍 [INIT] Base Context 验證:\n"
             f"   - type: {type(self.base_context)}\n"
             f"   - __class__.__name__: {self.base_context.__class__.__name__}\n"
             f"   - __class__.__module__: {self.base_context.__class__.__module__}")
 
         self.get_logger().info(
-            f"🔍 [INIT] Loader Context 验证:\n"
+            f"🔍 [INIT] Loader Context 验證:\n"
             f"   - type: {type(self.loader_context)}\n"
             f"   - __class__.__name__: {self.loader_context.__class__.__name__}\n"
             f"   - __class__.__module__: {self.loader_context.__class__.__module__}\n"
             f"   - isinstance(LoaderContext): {isinstance(self.loader_context, LoaderContext)}")
 
         self.get_logger().info(
-            f"🔍 [INIT] Robot Context 验证:\n"
+            f"🔍 [INIT] Robot Context 验證:\n"
             f"   - type: {type(self.robot_context)}\n"
             f"   - __class__.__name__: {self.robot_context.__class__.__name__}\n"
             f"   - __class__.__module__: {self.robot_context.__class__.__module__}\n"

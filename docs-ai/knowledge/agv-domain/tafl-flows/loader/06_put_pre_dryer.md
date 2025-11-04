@@ -1,7 +1,7 @@
 # Flow 6: loader_put_pre_dryer.yaml
 
 ## 🎯 業務目的
-將 Loader AGV 車上的載具放入預烘機，進行預烘干處理，完成前段製程並銜接 Unloader AGV
+將 Loader AGV 車上的載具放入預烘機，進行預烘幹處理，完成前段製程並銜接 Unloader AGV
 
 ## 📋 基本信息
 
@@ -28,7 +28,7 @@
 ### 執行結果
 - 創建 Loader AGV 放料任務
 - 任務進入待分派隊列（status_id = 1 PENDING）
-- 載具放入預烘機進行預烘干
+- 載具放入預烘機進行預烘幹
 - **銜接 Unloader AGV TAKE_PRE_DRYER 流程**
 
 ## 🔧 技術規格
@@ -71,7 +71,7 @@
 
 **製程銜接點**：
 - **Loader 完成**: PUT_PRE_DRYER → 載具放入預烘機（status_id: 502 預烘中）
-- **製程處理**: 預烘機完成預烘干 → 載具 status_id 更新為 503（預烘完成）
+- **製程處理**: 預烘機完成預烘幹 → 載具 status_id 更新為 503（預烘完成）
 - **Unloader 接手**: TAKE_PRE_DRYER → Unloader AGV 從預烘機取出載具
 
 **前後段銜接**：

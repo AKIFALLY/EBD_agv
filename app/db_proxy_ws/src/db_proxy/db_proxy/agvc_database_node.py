@@ -439,7 +439,7 @@ class AGVCDatabaseNode(Node):
                 self.force_publish_flags['Tasks'] = True  # 設定旗標，強制發佈
 
         except Exception as e:
-            self.get_logger().error(f"❌ handle_update_task 发生异常: {e}")
+            self.get_logger().error(f"❌ handle_update_task 發生异常: {e}")
             import traceback
             traceback.print_exc()
             response.success = False
@@ -464,7 +464,7 @@ class AGVCDatabaseNode(Node):
                 self.force_publish_flags['Racks'] = True  # 設定旗標，強制發佈
                 self.get_logger().info(f"rack_crud:{rack_result}")
         except Exception as e:
-            self.get_logger().error(f"❌ handle_update_rack 发生异常: {e}")
+            self.get_logger().error(f"❌ handle_update_rack 發生异常: {e}")
             import traceback
             traceback.print_exc()
             response.success = False
@@ -500,7 +500,7 @@ class AGVCDatabaseNode(Node):
                 # 如果carrier的eqp是在預烘的時候,要自動去預烘訊號更新 在席以及出料
                 # 如果carrier的eqp不在預烘的時候,要自動去預烘訊號更新 在席以及要料
         except Exception as e:
-            self.get_logger().error(f"❌ handle_update_carrier 发生异常: {e}")
+            self.get_logger().error(f"❌ handle_update_carrier 發生异常: {e}")
             import traceback
             traceback.print_exc()
             response.success = False
