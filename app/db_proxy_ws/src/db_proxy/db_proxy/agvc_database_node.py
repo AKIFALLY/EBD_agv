@@ -421,7 +421,6 @@ class AGVCDatabaseNode(Node):
         new_task = msg_to_model(request.task, Task)
 
         # 自動處理時間戳欄位
-        # 修正：使用 datetime.datetime.now() 或正確導入 datetime 類別
         from datetime import datetime, timezone
         current_time = datetime.now(timezone.utc)
         if new_task.id is None or new_task.id == 0:  # 新建任務
@@ -438,11 +437,14 @@ class AGVCDatabaseNode(Node):
                 response.message = "Task 設定完成"
                 response.task = task_msg
                 self.force_publish_flags['Tasks'] = True  # 設定旗標，強制發佈
-                self.get_logger().info(f"task_crud:{task_result.model_dump()}")
+
         except Exception as e:
+            self.get_logger().error(f"❌ handle_update_task 发生异常: {e}")
+            import traceback
+            traceback.print_exc()
             response.success = False
             response.message = str(e)
-            response.task = None
+            response.task = TaskMsg()
         return response
 
     def handle_update_rack(self, request, response):
@@ -462,9 +464,12 @@ class AGVCDatabaseNode(Node):
                 self.force_publish_flags['Racks'] = True  # 設定旗標，強制發佈
                 self.get_logger().info(f"rack_crud:{rack_result}")
         except Exception as e:
+            self.get_logger().error(f"❌ handle_update_rack 发生异常: {e}")
+            import traceback
+            traceback.print_exc()
             response.success = False
             response.message = str(e)
-            response.rack = None
+            response.rack = RackMsg()
         return response
 
     def handle_update_carrier(self, request, response):
@@ -495,9 +500,12 @@ class AGVCDatabaseNode(Node):
                 # 如果carrier的eqp是在預烘的時候,要自動去預烘訊號更新 在席以及出料
                 # 如果carrier的eqp不在預烘的時候,要自動去預烘訊號更新 在席以及要料
         except Exception as e:
+            self.get_logger().error(f"❌ handle_update_carrier 发生异常: {e}")
+            import traceback
+            traceback.print_exc()
             response.success = False
             response.message = str(e)
-            response.carrier = None
+            response.carrier = CarrierMsg()
         return response
 
     def handle_eqp_signal_query(self, request, response):
@@ -556,7 +564,12 @@ class AGVCDatabaseNode(Node):
 
     def timer_callback(self):
         """定時器回呼函式，每秒執行一次"""
-        self.publish_all_table()
+        try:
+            self.publish_all_table()
+        except Exception as e:
+            self.get_logger().error(f"❌ timer_callback 發生錯誤: {e}")
+            import traceback
+            traceback.print_exc()
 
     def publish_all_table(self):
         """
@@ -573,10 +586,14 @@ class AGVCDatabaseNode(Node):
 
             # 檢查是否需要發佈
             if force_publish or (current_time - last_time >= self.publish_interval):
-                # self.get_logger().info(f"📤 發佈 {sql_model.__name__} 資料 (強制: {force_publish})")
-                datas = self.query_all(sql_model, ros_msg)
-                self.publisher_list[pub_key].publish(
-                    ros_msg_list(datas=datas))
+                try:
+                    datas = self.query_all(sql_model, ros_msg)
+                    self.publisher_list[pub_key].publish(
+                        ros_msg_list(datas=datas))
+                except Exception as e:
+                    self.get_logger().error(f"❌ 發佈 {sql_model.__name__} 時發生錯誤: {e}")
+                    import traceback
+                    traceback.print_exc()
 
                 # 更新發佈時間並重設旗標
                 self.last_publish_time[pub_key] = current_time

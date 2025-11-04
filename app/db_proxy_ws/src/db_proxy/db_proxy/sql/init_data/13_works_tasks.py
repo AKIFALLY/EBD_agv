@@ -49,6 +49,8 @@ def initialize_works(session):
 
     # 測試預設 Works
     test_work = [
+        {"id": 21, "name": "手動純路徑移動",
+         "description": "手動純路徑移動", "parameters": {"nodes": []}},
         # opui-操作員呼叫空車和派滿車的工作 平板按下後觸發 ,WCS產生kuka需要的任務後監控任務完成後刪除任務
         {"id": 100001, "name": "opui-call-empty",
          "description": "作業員從opui請求將空Rack派至[人工作業準備區]", "parameters": {"nodes": []}},

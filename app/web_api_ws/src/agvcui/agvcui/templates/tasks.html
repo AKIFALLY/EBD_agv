@@ -188,17 +188,30 @@
                             {% endif %}
                         </td>
                         <td class="task-status-cell" data-status-id="{{ task.status_id or 0 }}">
-                            {% if task.status_id == 1 %}
+                            {% if task.status_id == 0 %}
+                            <span class="tag is-light" id="task-status-{{ task.id }}">請求中</span>
+                            {% elif task.status_id == 1 %}
                             <span class="tag is-warning" id="task-status-{{ task.id }}">待處理</span>
                             {% elif task.status_id == 2 %}
-                            <span class="tag is-info" id="task-status-{{ task.id }}">進行中</span>
+                            <span class="tag is-primary" id="task-status-{{ task.id }}">待執行</span>
                             {% elif task.status_id == 3 %}
-                            <span class="tag is-success" id="task-status-{{ task.id }}">已完成</span>
+                            <span class="tag is-info" id="task-status-{{ task.id }}">執行中</span>
                             {% elif task.status_id == 4 %}
+                            <span class="tag is-success" id="task-status-{{ task.id }}">已完成</span>
+                            {% elif task.status_id == 5 %}
+                            <span class="tag is-warning" id="task-status-{{ task.id }}">取消中</span>
+                            {% elif task.status_id == 51 %}
+                            <span class="tag is-warning" id="task-status-{{ task.id }}">WCS-取消中</span>
+                            {% elif task.status_id == 52 %}
+                            <span class="tag is-warning" id="task-status-{{ task.id }}">RCS-取消中</span>
+                            {% elif task.status_id == 53 %}
+                            <span class="tag is-warning" id="task-status-{{ task.id }}">AGV-取消中</span>
+                            {% elif task.status_id == 54 %}
                             <span class="tag is-danger" id="task-status-{{ task.id }}">已取消</span>
+                            {% elif task.status_id == 6 %}
+                            <span class="tag is-danger" id="task-status-{{ task.id }}">錯誤</span>
                             {% else %}
-                            <span class="tag is-light" id="task-status-{{ task.id }}">{{ task.status_id or '未知'
-                                }}</span>
+                            <span class="tag is-light" id="task-status-{{ task.id }}">未知({{ task.status_id }})</span>
                             {% endif %}
                         </td>
                         <td><span class="has-text-grey is-family-monospace is-size-7">{{
