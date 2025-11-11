@@ -17,6 +17,8 @@ from enum import Enum
 # Import db_proxy's ConnectionPoolManager
 import sys
 sys.path.insert(0, '/app/db_proxy_ws/install/db_proxy/lib/python3.12/site-packages')
+sys.path.insert(0, '/app/web_api_ws/install/agvcui/lib/python3.12/site-packages')
+sys.path.insert(0, '/app/kuka_fleet_ws/install/kuka_fleet_adapter/lib/python3.12/site-packages')
 
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 from db_proxy.models import (
@@ -28,6 +30,15 @@ from db_proxy.models import (
     Room,
     Product, ProcessSettings
 )
+
+# KUKA 同步服務（用於 TAFL 流程中的 rack 更新）
+try:
+    from agvcui.services.kuka_sync_service import KukaContainerSyncService
+    KUKA_SYNC_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"KUKA sync service not available: {e}")
+    KUKA_SYNC_AVAILABLE = False
+from db_proxy.models.agvc_eqp import Eqp, EqpPort, EqpSignal
 from db_proxy.models.agvc_eqp import Eqp, EqpPort, EqpSignal
 from db_proxy.models.agvc_eqp import Eqp, EqpPort, EqpSignal
 from sqlmodel import Session, select, and_, or_, desc, asc
@@ -584,7 +595,6 @@ class TAFLDatabaseBridge(BaseQueryMixin):
 
         Basic filters:
         - id: Filter by work ID
-        - work_code: Filter by work code
         - enabled: Filter by enabled status
         - category: Filter by work category
 
@@ -611,8 +621,6 @@ class TAFLDatabaseBridge(BaseQueryMixin):
             # Basic filters
             if 'id' in kwargs:
                 conditions.append(Work.id == kwargs['id'])
-            if 'work_code' in kwargs:
-                conditions.append(Work.work_code == kwargs['work_code'])
             if 'enabled' in kwargs:
                 conditions.append(Work.enabled == kwargs['enabled'])
             if 'category' in kwargs:
@@ -1177,7 +1185,12 @@ class TAFLDatabaseBridge(BaseQueryMixin):
     
     def update_rack(self, **kwargs) -> bool:
         """
-        Generic update rack function for TAFL
+        Generic update rack function for TAFL（整合 KUKA Container 同步）
+
+        自動同步到 KUKA Fleet Manager：
+        - is_in_map: 0→1 時調用 container_in（入場）
+        - is_in_map: 1→0 時調用 container_out（出場）
+        - location_id 變更時調用 update_container（位置更新）
 
         Args:
             where: Dict with conditions (e.g., {'id': 1})
@@ -1189,32 +1202,74 @@ class TAFLDatabaseBridge(BaseQueryMixin):
         where = kwargs.get('where', {})
         # Support both 'set' and 'data' for TAFL compatibility
         set_fields = kwargs.get('set', kwargs.get('data', {}))
-        
+
         with self.pool_manager.get_session() as session:
             try:
                 # Build query
                 query = select(Rack)
-                
+
                 # Apply where conditions
                 for key, value in where.items():
                     query = query.where(getattr(Rack, key) == value)
-                
+
                 # Get racks to update
                 racks = session.exec(query).all()
-                
+
                 if not racks:
                     logger.warning(f"No racks found with conditions: {where}")
                     return False
-                
+
+                # 儲存舊狀態用於比對變更
+                old_racks = {rack.id: {
+                    'location_id': rack.location_id,
+                    'is_in_map': rack.is_in_map
+                } for rack in racks}
+
                 # Update each rack
                 for rack in racks:
                     for key, value in set_fields.items():
                         setattr(rack, key, value)
-                
+
                 session.commit()
                 logger.info(f"Updated {len(racks)} rack(s) with {set_fields}")
+
+                # KUKA 同步（錯誤不影響資料庫更新）
+                if KUKA_SYNC_AVAILABLE:
+                    try:
+                        kuka_sync = KukaContainerSyncService()
+
+                        for rack in racks:
+                            # 重建舊 rack 物件用於比對
+                            old_rack_data = old_racks[rack.id]
+                            old_rack = Rack(
+                                id=rack.id,
+                                name=rack.name,
+                                location_id=old_rack_data['location_id'],
+                                is_in_map=old_rack_data['is_in_map']
+                            )
+
+                            # 同步到 KUKA
+                            sync_result = kuka_sync.sync_rack_to_kuka(old_rack, rack, session)
+
+                            if sync_result["success"] and sync_result.get("action") != "skip":
+                                logger.info(
+                                    f"✅ TAFL→KUKA sync: Rack(id={rack.id}) | "
+                                    f"Action: {sync_result.get('action')}"
+                                )
+                            elif not sync_result["success"]:
+                                logger.warning(
+                                    f"⚠️ TAFL→KUKA sync failed (DB updated): Rack(id={rack.id}) | "
+                                    f"Error: {sync_result.get('error')}"
+                                )
+                    except Exception as e:
+                        # KUKA 同步失敗不影響 TAFL 流程執行
+                        logger.error(
+                            f"❌ TAFL→KUKA sync error (DB updated): {str(e)}",
+                            exc_info=True
+                        )
+
                 return True
-                
+
             except Exception as e:
                 logger.error(f"Failed to update rack: {e}")
                 session.rollback()

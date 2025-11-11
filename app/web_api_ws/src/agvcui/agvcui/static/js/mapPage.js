@@ -24,6 +24,65 @@ const AGV_ANIMATION_CONFIG = {
 // 3: 最小緩衝，較快響應但平滑度一般
 // 5: 推薦設定，平衡響應性和平滑度
 // 7: 最大緩衝，最平滑但響應較慢
+
+/**
+ * 檢查 AGV alarm/warning 狀態
+ * @param {Object} agv_status_json - AGV 狀態 JSON 數據
+ * @returns {string} 'alarm' | 'warning' | 'normal'
+ */
+function checkAgvAlarmStatus(agv_status_json) {
+    // 容錯處理：如果 agv_status_json 為 null 或 undefined，返回 normal
+    if (!agv_status_json) {
+        return 'normal';
+    }
+
+    // 檢查 alarm 狀態 (alarm1/2/3/4 任一 > 0)
+    const alarmFields = ['alarm1', 'alarm2', 'alarm3', 'alarm4'];
+    for (const field of alarmFields) {
+        if (agv_status_json[field] && agv_status_json[field] > 0) {
+            return 'alarm';
+        }
+    }
+
+    // 檢查 warning 狀態 (alarm5/6 任一 > 0)
+    const warningFields = ['alarm5', 'alarm6'];
+    for (const field of warningFields) {
+        if (agv_status_json[field] && agv_status_json[field] > 0) {
+            return 'warning';
+        }
+    }
+
+    // 無告警
+    return 'normal';
+}
+
+/**
+ * 更新 AGV 的 alarm/warning 樣式（背景色 + 发光边框，不影响旋转）
+ * @param {Object} agvObject - AGV 物件
+ * @param {Object} agv - AGV 數據（包含 agv_status_json）
+ */
+function updateAgvAlarmStyle(agvObject, agv) {
+    // 獲取 AGV DOM 元素
+    const agvElement = agvObject.el;
+    if (!agvElement) {
+        return;
+    }
+
+    // 移除所有狀態類
+    agvElement.classList.remove('agv-alarm-state', 'agv-warning-state');
+
+    // 檢查狀態並添加對應的 CSS 類
+    const alarmStatus = checkAgvAlarmStatus(agv.agv_status_json);
+
+    if (alarmStatus === 'alarm') {
+        // Alarm 状态：红色背景 + 发光边框
+        agvElement.classList.add('agv-alarm-state');
+    } else if (alarmStatus === 'warning') {
+        // Warning 状态：橘色背景 + 发光边框
+        agvElement.classList.add('agv-warning-state');
+    }
+    // normal 狀態：移除所有效果，背景保持透明
+}
 import {
     RotatingMovingObject,
     TransferBoxObject,
@@ -44,6 +103,7 @@ import { mapObjectManager } from './mapObjectManager.js';
 import { mapTaskManager } from './mapTaskManager.js';
 import { mapDataSync } from './mapDataSync.js';
 import { mapPerformanceMonitor } from './mapPerformanceMonitor.js';
+import { mapDoorControlModal } from './mapDoorControlModal.js';
 
 // 門信號映射 (門ID -> 信號ID)
 const DOOR_SIGNAL_MAP = {
@@ -79,6 +139,9 @@ export const mapPage = (() => {
                 const latLng = L.latLng(agv.y, agv.x);
                 //console.log("Updating existing AGV:", latLng, agv.heading);
                 agvObject.setTargetPosition(latLng, agv.heading);
+
+                // 更新 AGV alarm/warning 狀態樣式
+                updateAgvAlarmStyle(agvObject, agv);
             } else {
                 console.log(`No object found for name: ${agv.name} , add one `, agv);
                 // 沒有 id，就新增該物件
@@ -118,6 +181,9 @@ export const mapPage = (() => {
                 } else {
                     console.warn('mapObjectManager not available for AGV:', agv.id);
                 }
+
+                // 設置 AGV alarm/warning 狀態樣式
+                updateAgvAlarmStyle(newAgvObject, agv);
             }
         });
 
@@ -325,17 +391,17 @@ export const mapPage = (() => {
         // 🔧 修復：加強資料完整性驗證，避免處理不完整的資料
         const carriedRacks = allRacks.filter(r => r.is_carry === 1 && r.agv_id != null);
         const dockedRacks = allRacks.filter(r => r.is_docked === 1);
-        const stationaryRacks = allRacks.filter(r => r.is_carry !== 1 && r.is_docked !== 1 && r.location_id != null);
+        const stationaryRacks = allRacks.filter(r => r.is_in_map === 1 && r.is_carry !== 1 && r.is_docked !== 1 && r.location_id != null);
 
         // 🔧 記錄無效資料，方便追蹤後端問題
         const invalidCarriedRacks = allRacks.filter(r => r.is_carry === 1 && r.agv_id == null);
-        const invalidStationaryRacks = allRacks.filter(r => r.is_carry !== 1 && r.is_docked !== 1 && r.location_id == null);
+        const invalidStationaryRacks = allRacks.filter(r => r.is_in_map === 1 && r.is_carry !== 1 && r.is_docked !== 1 && r.location_id == null);
 
         if (invalidCarriedRacks.length > 0) {
             console.warn('發現無效的 carried racks (is_carry=1 但 agv_id=null):', invalidCarriedRacks.map(r => r.id));
         }
         if (invalidStationaryRacks.length > 0) {
-            console.warn('發現無效的 stationary racks (非 carry/docked 但 location_id=null):', invalidStationaryRacks.map(r => r.id));
+            console.warn('發現無效的 stationary racks (在地圖中但非 carry/docked 且 location_id=null):', invalidStationaryRacks.map(r => r.id));
         }
 
         // 1. 處理在 AGV 上的 Racks
@@ -747,15 +813,13 @@ export const mapPage = (() => {
         doorStatusObjects.set(3, door3Status);
         doorStatusObjects.set(4, door4Status);
 
-        // 點擊地圖時，移動並旋轉物件
-        map.on("click", e => {
-            const clickLatLng = e.latlng;
-            console.log("clickLatLng", clickLatLng)
-            agv.setTargetPosition(clickLatLng);
-
-            // 點地圖時的處理邏輯（已移除 info-panel 相關功能）
-
-        });
+        //// 點擊地圖時，移動並旋轉物件
+        //map.on("click", e => {
+        //    const clickLatLng = e.latlng;
+        //    console.log("clickLatLng", clickLatLng)
+        //    agv.setTargetPosition(clickLatLng);
+        //    // 點地圖時的處理邏輯（已移除 info-panel 相關功能）
+        //});
 
         // 動畫循環
         //let lastTime = null;
@@ -810,6 +874,10 @@ export const mapPage = (() => {
         // 確保管理器在全域可用
         window.mapObjectManager = mapObjectManager;
         window.mapTaskManager = mapTaskManager;
+
+        // 初始化門控制 Modal
+        mapDoorControlModal.setup();
+        window.mapDoorControlModal = mapDoorControlModal;
 
         // 初始化資料同步
         mapDataSync.init();

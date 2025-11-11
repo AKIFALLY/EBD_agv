@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}房間管理{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-door"></i>
+                        </span>
+                        房間管理
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <table class="table is-fullwidth is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>房間名稱</th>
+                        <th>描述</th>
+                        <th>製程 ID</th>
+                        <th>入口位置</th>
+                        <th>出口位置</th>
+                        <th>啟用狀態</th>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <th>操作</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in rooms %}
+                    <tr>
+                        <td><strong>{{ room.id }}</strong></td>
+                        <td>
+                            <div class="has-text-weight-medium">{{ room.name or '未命名' }}</div>
+                        </td>
+                        <td>
+                            <span class="has-text-grey">{{ room.description or '-' }}</span>
+                        </td>
+                        <td>
+                            {% if room.process_settings_id %}
+                            <span class="tag is-primary">{{ room.process_settings_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">未設置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if room.enter_location_id %}
+                            <span class="tag is-info">{{ room.enter_location_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if room.exit_location_id %}
+                            <span class="tag is-info">{{ room.exit_location_id }}</span>
+                            {% else %}
+                            <span class="tag is-light">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if room.enable == 1 %}
+                            <span class="tag is-success">
+                                <span class="icon">
+                                    <i class="mdi mdi-check"></i>
+                                </span>
+                                <span>已啟用</span>
+                            </span>
+                            {% else %}
+                            <span class="tag is-danger">
+                                <span class="icon">
+                                    <i class="mdi mdi-close"></i>
+                                </span>
+                                <span>已停用</span>
+                            </span>
+                            {% endif %}
+                        </td>
+                        {% if current_user and current_user.role in ['operator', 'admin'] %}
+                        <td>
+                            <a class="button is-info is-small" href="/rooms/{{ room.id }}/edit">
+                                <span class="icon">
+                                    <i class="mdi mdi-pencil"></i>
+                                </span>
+                                <span>編輯</span>
+                            </a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="notification">
+            <p class="has-text-grey">最後查詢時間: {{ latest_query }}</p>
+        </div>
+
+        <!-- 分頁信息 -->
+        {% set start_item = (current_page - 1) * 20 + 1 %}
+        {% set end_item = [current_page * 20, total_count]|min %}
+        <div class="has-text-grey is-size-7 mb-2">
+            顯示第 {{ start_item }} - {{ end_item }} 項，共 {{ total_count }} 項 (第 {{ current_page }} / {{ total_pages }} 頁)
+        </div>
+
+        <!-- 分頁 -->
+        {% if total_pages > 1 %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            {% if current_page > 1 %}
+            <a class="pagination-previous" href="/rooms?page={{ current_page - 1 }}">上一頁</a>
+            {% endif %}
+            {% if current_page < total_pages %} <a class="pagination-next" href="/rooms?page={{ current_page + 1 }}">
+                下一頁</a>
+                {% endif %}
+
+                <ul class="pagination-list">
+                    {% set start_page = [1, current_page - 2]|max %}
+                    {% set end_page = [total_pages, current_page + 2]|min %}
+
+                    <!-- 第一頁 -->
+                    {% if start_page > 1 %}
+                    <li><a class="pagination-link" href="/rooms?page=1">1</a></li>
+                    {% if start_page > 2 %}
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- 當前頁附近的頁碼 -->
+                    {% for page_num in range(start_page, end_page + 1) %}
+                    {% if page_num == current_page %}
+                    <li><a class="pagination-link is-current">{{ page_num }}</a></li>
+                    {% else %}
+                    <li><a class="pagination-link" href="/rooms?page={{ page_num }}">{{ page_num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- 最後一頁 -->
+                    {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li><span
+                            class="pagination-ellipsis">&hellip;</span></li>
+                        {% endif %}
+                        <li><a class="pagination-link" href="/rooms?page={{ total_pages }}">{{ total_pages }}</a>
+                        </li>
+                        {% endif %}
+                </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

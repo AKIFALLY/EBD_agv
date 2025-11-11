@@ -8,23 +8,15 @@ import { mapInteraction } from './mapInteraction.js';
 
 export const mapRackManager = (() => {
     let rackData = new Map(); // 儲存貨架資料
-    let carrierData = new Map(); // 儲存載具資料
 
     // 初始化
     function init() {
         loadRackData();
-        loadCarrierData();
 
         // 監聽 racksStore 的變化
         if (window.racksStore) {
             window.racksStore.on('change', handleRacksChange);
             console.debug('mapRackManager: 已訂閱 racksStore 變化');
-        }
-
-        // 監聽 carriersStore 的變化
-        if (window.carriersStore) {
-            window.carriersStore.on('change', handleCarriersChange);
-            console.debug('mapRackManager: 已訂閱 carriersStore 變化');
         }
     }
 
@@ -49,25 +41,6 @@ export const mapRackManager = (() => {
         }
     }
 
-    // 處理 carriersStore 變化（用於更新載具資料）
-    function handleCarriersChange(newState) {
-        if (!newState?.carriers) return;
-
-        const carriers = newState.carriers || [];
-        console.debug(`mapRackManager: 收到載具更新，共 ${carriers.length} 個載具`);
-
-        // 更新本地載具資料
-        carrierData.clear();
-        carriers.forEach(carrier => {
-            if (carrier.rack_id) {
-                if (!carrierData.has(carrier.rack_id)) {
-                    carrierData.set(carrier.rack_id, []);
-                }
-                carrierData.get(carrier.rack_id).push(carrier);
-            }
-        });
-    }
-
     // 載入貨架資料
     async function loadRackData() {
         try {
@@ -90,38 +63,10 @@ export const mapRackManager = (() => {
         }
     }
 
-    // 載入載具資料
-    async function loadCarrierData() {
-        try {
-            // 使用現有的 store 資料而不是 API 調用
-            if (window.carriersStore) {
-                const carriersState = window.carriersStore.getState();
-                const carriers = carriersState.carriers || [];
-
-                carrierData.clear();
-                carriers.forEach(carrier => {
-                    if (carrier.rack_id) {
-                        if (!carrierData.has(carrier.rack_id)) {
-                            carrierData.set(carrier.rack_id, []);
-                        }
-                        carrierData.get(carrier.rack_id).push(carrier);
-                    }
-                });
-
-                console.debug(`Loaded ${carriers.length} carriers from store for rack manager`);
-            } else {
-                console.warn('carriersStore not available for rack manager');
-            }
-        } catch (error) {
-            console.error('Error loading carrier data for rack manager:', error);
-        }
-    }
-
     // 獲取貨架詳細資訊
     function getRackDetails(rackId) {
         const actualRackId = parseRackId(rackId);
         const rack = rackData.get(actualRackId);
-        const carriers = carrierData.get(actualRackId) || [];
 
         if (!rack) {
             console.warn('Rack not found for ID:', rackId, 'Parsed as:', actualRackId);
@@ -130,20 +75,18 @@ export const mapRackManager = (() => {
             // 返回預設值以避免錯誤
             return {
                 rack: null,
-                carriers: [],
                 carrierCount: 0,
                 maxCapacity: 32 // 預設為 S 產品容量
             };
         }
 
         console.debug('Found rack:', rack);
-        console.debug('Rack product_id:', rack.product_id);
+        console.debug('Rack carrier_bitmap count:', rack.count, 'total:', rack.total);
 
         return {
             rack,
-            carriers,
-            carrierCount: carriers.length,
-            maxCapacity: getMaxCapacity(rack.product_id)
+            carrierCount: rack.count || 0,      // 使用 carrier_bitmap 計算的值
+            maxCapacity: rack.total || 32       // 使用後端返回的總容量
         };
     }
 
@@ -179,7 +122,7 @@ export const mapRackManager = (() => {
     // 顯示貨架詳細資訊彈出視窗
     function showRackPopup(rackObject, latlng) {
         const details = getRackDetails(rackObject.id);
-        const { rack, carriers, carrierCount, maxCapacity } = details;
+        const { rack, carrierCount, maxCapacity } = details;
 
         if (!rack) {
             console.warn('Rack not found:', rackObject.id);
@@ -224,90 +167,21 @@ export const mapRackManager = (() => {
                             </span>
                         </td>
                     </tr>
-                    ${carriers.length > 0 ? `
-                    <tr>
-                        <td class="popup-label">載具列表</td>
-                        <td>
-                            <div class="tags">
-                                ${carriers.slice(0, 5).map(carrier =>
-            `<span class="tag is-light">載具 ${carrier.id}</span>`
-        ).join('')}
-                                ${carriers.length > 5 ? `<span class="tag is-light">+${carriers.length - 5} 更多</span>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                    ` : ''}
                 </tbody>
             </table>
         `;
 
         const actions = [
             {
-                text: '查看載具',
-                icon: 'mdi-package-variant',
-                class: 'is-info',
-                onclick: `mapRackManager.viewRackCarriers('${rack.id}')`,
-                permission: 'view_carriers'
-            },
-            {
                 text: '編輯貨架',
                 icon: 'mdi-pencil',
                 class: 'is-primary',
                 onclick: `mapRackManager.editRack('${rack.id}')`,
                 permission: 'edit_rack'
-            },
-            {
-                text: '新增載具',
-                icon: 'mdi-plus',
-                class: 'is-success',
-                onclick: `mapRackManager.addCarrierToRack('${rack.id}')`,
-                permission: 'create_carrier'
             }
         ];
 
         mapInteraction.showPopup(latlng, title, content, actions);
-    }
-
-    // 顯示載具格位視覺化
-    function showCarrierGrid(rackId) {
-        const details = getRackDetails(rackId);
-        const { rack, carriers, maxCapacity } = details;
-
-        if (!rack) return;
-
-        const isLProduct = rack.product_id && String(rack.product_id).includes('L');
-        const gridLayout = isLProduct ?
-            { rows: 2, cols: 8, sides: ['A面', 'B面'] } :
-            { rows: 4, cols: 4, sides: ['A面', 'B面'] };
-
-        let gridHtml = '<div class="carrier-grid">';
-
-        gridLayout.sides.forEach((side, sideIndex) => {
-            gridHtml += `<div class="grid-side">`;
-            gridHtml += `<h6 class="title is-6">${side}</h6>`;
-            gridHtml += `<div class="grid-container" style="display: grid; grid-template-columns: repeat(${gridLayout.cols}, 1fr); gap: 2px;">`;
-
-            const startIndex = sideIndex * (maxCapacity / 2);
-            for (let i = 0; i < maxCapacity / 2; i++) {
-                const slotIndex = startIndex + i + 1;
-                const carrier = carriers.find(c => c.rack_index === slotIndex);
-                const isOccupied = !!carrier;
-
-                gridHtml += `
-                    <div class="grid-slot ${isOccupied ? 'is-occupied' : 'is-empty'}" 
-                         data-slot="${slotIndex}" 
-                         title="${isOccupied ? `載具 ${carrier.id}` : `空格 ${slotIndex}`}">
-                        ${slotIndex}
-                    </div>
-                `;
-            }
-
-            gridHtml += `</div></div>`;
-        });
-
-        gridHtml += '</div>';
-
-        return gridHtml;
     }
 
     // 輔助函數
@@ -330,24 +204,10 @@ export const mapRackManager = (() => {
     }
 
     // 操作方法
-    function viewRackCarriers(rackId) {
-        mapPermissions.executeWithPermission('view_carriers', () => {
-            const actualRackId = parseRackId(rackId);
-            window.open(`/carriers?rack_id=${actualRackId}`, '_blank');
-        });
-    }
-
     function editRack(rackId) {
         mapPermissions.executeWithPermission('edit_rack', () => {
             const actualRackId = parseRackId(rackId);
             window.open(`/racks/${actualRackId}/edit`, '_blank');
-        });
-    }
-
-    function addCarrierToRack(rackId) {
-        mapPermissions.executeWithPermission('create_carrier', () => {
-            const actualRackId = parseRackId(rackId);
-            window.open(`/carriers/create?rack_id=${actualRackId}`, '_blank');
         });
     }
 
@@ -502,15 +362,11 @@ export const mapRackManager = (() => {
     return {
         init,
         loadRackData,
-        loadCarrierData,
         getRackDetails,
         showRackPopup,
-        showCarrierGrid,
         loadRacksList,
         showRackDetails,
-        viewRackCarriers,
         editRack,
-        addCarrierToRack,
         updateRackStatus
     };
 })();

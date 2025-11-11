@@ -678,6 +678,7 @@ manage_web_api_launch() {
 
             echo "🚀 啟動 Web API Launch 服務群組..."
             # 載入完整 AGVC 環境確保所有依賴可用
+            # 注意：移除 -i 標志避免 job control 暫停問題
             nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 launch web_api_launch launch.py" > "$WEB_API_LOG_FILE" 2>&1 &
             local PARENT_PID=$!
             
@@ -1324,6 +1325,9 @@ manage_agvui() {
 
 
 # ===== TAFL WCS 控制函式 (新一代 WCS 系統) =====
+# =============================================================================
+# 🏭 TAFL WCS 節點管理
+# =============================================================================
 manage_tafl_wcs() {
     # 環境檢測：僅限 AGVC 容器
     if ! is_agvc_environment; then
@@ -1337,71 +1341,250 @@ manage_tafl_wcs() {
 
     case "$1" in
         start)
-            # 檢查是否已經在運行
-            if pgrep -f "tafl_wcs_node" > /dev/null 2>&1; then
-                echo "⚠️ TAFL WCS 已經在運行中"
-                return 0
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🚀 啟動 TAFL WCS 節點"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # ========== 階段 1: 啟動前檢查 ==========
+            echo "📋 階段 1/4: 啟動前檢查"
+
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$TAFL_WCS_PID_FILE" ]; then
+                local all_running=true
+                while IFS= read -r pid; do
+                    # 跳過空行
+                    [ -z "$pid" ] && continue
+                    if ! kill -0 "$pid" 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$TAFL_WCS_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ TAFL WCS 已經在運行中"
+                    echo "💡 如需重新啟動，請使用: manage_tafl_wcs restart"
+                    return 0
+                else
+                    echo "🧹 清理過期的 PID 文件"
+                    rm -f "$TAFL_WCS_PID_FILE"
+                fi
             fi
 
-            echo "🚀 啟動 TAFL WCS 節點..."
+            # ========== 階段 2: 依賴檢查 ==========
+            echo "📋 階段 2/4: 依賴檢查"
 
-            # 確保日誌檔案存在
+            # 2.1 檢查資料庫連接
+            if ! pgrep -f "db_proxy_node" > /dev/null 2>&1; then
+                echo "⚠️ 警告：資料庫代理未運行，TAFL WCS 可能無法正常工作"
+                echo "💡 建議先啟動: manage_agvc_database_node start"
+            fi
+
+            # 2.2 檢查工作空間建置
+            if [ ! -d "/app/tafl_wcs_ws/install" ]; then
+                echo "❌ TAFL WCS 工作空間未建置"
+                echo "💡 診斷建議："
+                echo "   1. 執行建置: cd /app/tafl_wcs_ws && colcon build"
+                echo "   2. 或使用快速建置: ba"
+                return 1
+            fi
+
+            # ========== 階段 3: 啟動服務 ==========
+            echo "📋 階段 3/4: 啟動服務"
+
+            # 3.1 確保日誌目錄存在
             touch "$TAFL_WCS_LOG_FILE"
 
-            # 啟動 TAFL WCS 節點（載入完整 AGVC 環境確保所有依賴可用）
+            # 3.2 啟動 TAFL WCS Launch
+            echo "🔧 啟動 TAFL WCS Launch..."
             nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 launch tafl_wcs tafl_wcs.launch.py" > "$TAFL_WCS_LOG_FILE" 2>&1 &
             local PARENT_PID=$!
 
-            # 記錄主進程 PID
+            # 3.3 記錄父進程 PID
             echo "$PARENT_PID" > "$TAFL_WCS_PID_FILE"
+            echo "  📌 父進程 PID: $PARENT_PID"
 
-            # 使用 ros2 node list 驗證：Launch 產生的命名節點需要確認 ROS 2 網路註冊
-            # TAFL WCS 是核心流程控制服務，必須確保節點正常註冊
-            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於 launch 產生的命名節點
-            if verify_ros2_node_startup "tafl_wcs_node" 10; then
-                echo "✅ TAFL WCS 節點已成功啟動"
-                echo "📝 日誌檔案: $TAFL_WCS_LOG_FILE"
+            # 3.4 等待 1 秒讓子進程啟動
+            sleep 1
 
-                # 顯示節點資訊
-                echo "📊 節點資訊："
-                ros2 node info /agvc/tafl_wcs_node 2>/dev/null | head -n 10
-            else
-                echo "❌ TAFL WCS 節點啟動失敗或驗證超時"
-                echo "請檢查日誌: tail -f $TAFL_WCS_LOG_FILE"
+            # 3.5 記錄子進程 PID（bash -c 產生的子 shell）
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                echo "  📌 子進程 PIDs: $CHILD_PIDS"
+                echo "$CHILD_PIDS" >> "$TAFL_WCS_PID_FILE"
+            fi
+
+            # 3.6 記錄實際服務進程（python3 執行 launch）
+            sleep 1
+            local SERVICE_PIDS=$(pgrep -f "ros2 launch tafl_wcs")
+            if [ -n "$SERVICE_PIDS" ]; then
+                echo "  📌 服務進程 PIDs: $SERVICE_PIDS"
+                echo "$SERVICE_PIDS" >> "$TAFL_WCS_PID_FILE"
+            fi
+
+            # ========== 階段 4: 驗證啟動 ==========
+            echo "📋 階段 4/4: 驗證啟動"
+
+            # 4.1 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ TAFL WCS 啟動失敗（父進程未運行）"
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $TAFL_WCS_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/tafl_wcs_ws/install"
+                echo "   3. 驗證環境: source /app/setup.bash && agvc_source && ros2 pkg list | grep tafl_wcs"
+                rm -f "$TAFL_WCS_PID_FILE"
                 return 1
             fi
+
+            # 4.2 使用 ros2 node list 驗證
+            # TAFL WCS 是核心流程控制服務，必須確保節點正常註冊到 ROS 2 網路
+            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於 launch 產生的命名節點
+            echo "  🔍 等待 ROS 2 節點註冊..."
+            if verify_ros2_node_startup "tafl_wcs_node" 15; then
+                echo "  ✅ ROS 2 節點已註冊"
+            else
+                echo "  ❌ ROS 2 節點註冊失敗或超時"
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $TAFL_WCS_LOG_FILE"
+                echo "   2. 檢查 ROS 2 環境: ros2 node list"
+                echo "   3. 檢查 Zenoh Router: check_zenoh_status"
+                echo "   4. 驗證網路: ros2 doctor --report"
+
+                # 清理失敗的啟動
+                echo "🧹 清理失敗的啟動..."
+                manage_tafl_wcs stop > /dev/null 2>&1
+                return 1
+            fi
+
+            # 4.3 最終進程驗證
+            if pgrep -f "tafl_wcs" > /dev/null 2>&1; then
+                echo "  ✅ 服務進程運行正常"
+            else
+                echo "  ⚠️ 警告：服務進程可能異常"
+            fi
+
+            # 4.4 顯示啟動摘要
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ TAFL WCS 啟動完成"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📝 日誌檔案: $TAFL_WCS_LOG_FILE"
+            echo "📊 PID 文件: $TAFL_WCS_PID_FILE"
+            echo "💡 查看日誌: manage_tafl_wcs logs"
+            echo "💡 檢查狀態: manage_tafl_wcs status"
+            echo ""
+
+            # 顯示節點資訊
+            echo "📊 節點資訊："
+            ros2 node info /agvc/tafl_wcs_node 2>/dev/null | head -n 10 || echo "  ⚠️ 無法獲取節點資訊"
             ;;
 
         stop)
-            echo "🛑 停止 TAFL WCS..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🛑 停止 TAFL WCS 節點"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            # 使用進程名稱查找並終止
-            local pids=$(pgrep -f "tafl_wcs_node")
-            if [ -n "$pids" ]; then
-                echo "找到 TAFL WCS 進程: $pids"
-                for pid in $pids; do
-                    echo "終止進程 $pid..."
-                    kill -TERM $pid 2>/dev/null || true
-                done
+            # ========== 階段 1: 優雅停止主進程 (SIGTERM) ==========
+            echo "📋 階段 1/6: 優雅停止 (SIGTERM)"
 
-                # 等待進程結束
-                sleep 2
+            if [ -f "$TAFL_WCS_PID_FILE" ]; then
+                local stopped_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  🔄 發送 SIGTERM 到進程 $pid"
+                        kill -TERM "$pid" 2>/dev/null || true
+                        ((stopped_count++))
+                    fi
+                done < <(tac "$TAFL_WCS_PID_FILE")
 
-                # 強制終止仍在運行的進程
-                pids=$(pgrep -f "tafl_wcs_node")
-                if [ -n "$pids" ]; then
-                    echo "強制終止剩餘進程..."
-                    for pid in $pids; do
-                        kill -KILL $pid 2>/dev/null || true
-                    done
+                if [ $stopped_count -gt 0 ]; then
+                    echo "  ⏳ 等待 3 秒讓進程優雅退出..."
+                    sleep 3
                 fi
-
-                # 清理 PID 檔案
-                rm -f "$TAFL_WCS_PID_FILE"
-                echo "✅ TAFL WCS 已停止"
             else
-                echo "📌 TAFL WCS 未在運行"
+                echo "  ℹ️ 未找到 PID 文件"
             fi
+
+            # ========== 階段 2: 強制終止殘留進程 (SIGKILL) ==========
+            echo "📋 階段 2/6: 強制終止 (SIGKILL)"
+
+            if [ -f "$TAFL_WCS_PID_FILE" ]; then
+                local killed_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  ⚠️ 進程 $pid 仍在運行，強制終止"
+                        kill -KILL "$pid" 2>/dev/null || true
+                        ((killed_count++))
+                    fi
+                done < <(tac "$TAFL_WCS_PID_FILE")
+
+                if [ $killed_count -gt 0 ]; then
+                    echo "  ✅ 已強制終止 $killed_count 個殘留進程"
+                    sleep 1
+                fi
+            fi
+
+            # ========== 階段 3: 備份清理（檢查僵屍進程） ==========
+            echo "📋 階段 3/6: 備份清理"
+
+            local zombie_pids=$(pgrep -f "tafl_wcs" | while read p; do
+                if [ -d "/proc/$p" ] && grep -q "Z (zombie)" "/proc/$p/status" 2>/dev/null; then
+                    echo $p
+                fi
+            done)
+
+            if [ -n "$zombie_pids" ]; then
+                echo "  🧟 發現僵屍進程: $zombie_pids"
+                echo "  🔧 嘗試清理僵屍進程的父進程"
+                for zpid in $zombie_pids; do
+                    local parent=$(ps -o ppid= -p $zpid 2>/dev/null | tr -d ' ')
+                    if [ -n "$parent" ] && [ "$parent" != "1" ]; then
+                        echo "    終止父進程 $parent"
+                        kill -KILL "$parent" 2>/dev/null || true
+                    fi
+                done
+                sleep 1
+            fi
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "📋 階段 4/6: 殘留進程清理"
+
+            local remaining_pids=$(pgrep -f "tafl_wcs")
+            if [ -n "$remaining_pids" ]; then
+                echo "  🔍 發現殘留進程: $remaining_pids"
+                for pid in $remaining_pids; do
+                    echo "    終止進程 $pid"
+                    kill -KILL "$pid" 2>/dev/null || true
+                done
+                sleep 1
+            else
+                echo "  ✅ 無殘留進程"
+            fi
+
+            # ========== 階段 5: 端口資源釋放 ==========
+            echo "📋 階段 5/6: 端口資源釋放"
+
+            # TAFL WCS 主要使用 ROS 2 DDS/Zenoh，無特定端口需要釋放
+            echo "  ✅ TAFL WCS 無需額外端口清理"
+
+            # ========== 階段 6: 清理臨時文件 ==========
+            echo "📋 階段 6/6: 清理臨時文件"
+
+            rm -f "$TAFL_WCS_PID_FILE"
+            echo "  ✅ 已清理 PID 文件"
+
+            # 清理 launch 臨時參數文件
+            local launch_params=$(find /tmp -maxdepth 1 -name "launch_params_*" -path "*/tafl_wcs*" 2>/dev/null)
+            if [ -n "$launch_params" ]; then
+                echo "  🧹 清理 Launch 參數目錄: $launch_params"
+                rm -rf $launch_params
+            fi
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ TAFL WCS 已完全停止"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             ;;
 
         restart)
@@ -1412,39 +1595,66 @@ manage_tafl_wcs() {
             ;;
 
         status)
-            # 使用進程名稱檢查
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  📊 TAFL WCS 狀態檢查"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # 檢查進程狀態
             if pgrep -f "tafl_wcs_node" > /dev/null 2>&1; then
-                PIDS=$(pgrep -f "tafl_wcs_node")
-                echo "✅ TAFL WCS 正在運行 (PIDs: $PIDS)"
+                local pids=$(pgrep -f "tafl_wcs_node")
+                echo "✅ TAFL WCS 正在運行"
+                echo "   PIDs: $pids"
+
+                # 檢查 PID 文件
+                if [ -f "$TAFL_WCS_PID_FILE" ]; then
+                    echo "   PID 文件: $TAFL_WCS_PID_FILE"
+                    echo "   記錄的 PIDs: $(cat $TAFL_WCS_PID_FILE | tr '\n' ' ')"
+                fi
 
                 # 檢查 ROS 2 節點狀態
+                echo ""
                 echo "🔍 ROS 2 節點狀態："
-                if ros2 node list | grep -q "tafl_wcs_node"; then
-                    echo "  ✅ tafl_wcs_node 節點在線"
+                if ros2 node list 2>/dev/null | grep -q "tafl_wcs_node"; then
+                    echo "  ✅ tafl_wcs_node 節點已註冊到 ROS 2 網路"
 
                     # 顯示節點資訊
-                    echo "📊 節點資訊："
-                    ros2 node info /agvc/tafl_wcs_node 2>/dev/null | head -n 10
+                    echo ""
+                    echo "📊 節點詳細資訊："
+                    ros2 node info /agvc/tafl_wcs_node 2>/dev/null | head -n 15 || echo "  ⚠️ 無法獲取節點資訊"
                 else
-                    echo "  ⚠️ tafl_wcs_node 節點未在 ROS 2 中註冊"
+                    echo "  ⚠️ tafl_wcs_node 節點未在 ROS 2 網路中註冊"
+                    echo "  💡 可能原因："
+                    echo "     1. 節點仍在啟動中"
+                    echo "     2. Zenoh Router 未運行"
+                    echo "     3. 網路連接問題"
                 fi
 
                 # 顯示最新日誌
                 if [ -f "$TAFL_WCS_LOG_FILE" ]; then
-                    echo "📜 最新日誌 (最後 5 行)："
+                    echo ""
+                    echo "📜 最新日誌 (最後 5 行):"
                     tail -n 5 "$TAFL_WCS_LOG_FILE"
                 fi
             else
                 echo "🚫 TAFL WCS 未在運行"
+
+                if [ -f "$TAFL_WCS_PID_FILE" ]; then
+                    echo "⚠️ 發現殘留的 PID 文件"
+                    echo "💡 建議執行: manage_tafl_wcs stop"
+                fi
             fi
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             ;;
 
         logs)
             if [ -f "$TAFL_WCS_LOG_FILE" ]; then
-                echo "📜 TAFL WCS 日誌："
+                echo "📜 TAFL WCS 日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 tail -f "$TAFL_WCS_LOG_FILE"
             else
                 echo "❌ 找不到日誌檔案: $TAFL_WCS_LOG_FILE"
+                echo "💡 服務可能未啟動過，請先執行: manage_tafl_wcs start"
                 return 1
             fi
             ;;
@@ -1460,82 +1670,198 @@ manage_tafl_wcs() {
 # 核心節點管理函數
 # ============================================================================
 
+# =============================================================================
+# PLC 服務管理函數（AGVC）
+# =============================================================================
+#
+# 功能說明：
+#   管理 PLC 服務的啟動、停止、重啟和狀態檢查
+#
+# 依賴檢查：
+#   - 工作空間：plc_proxy_ws
+#   - 配置檔案：/app/config/ecs_config.yaml
+#   - ROS2 節點：/agvc/plc_service
+#
+# 使用方式：
+#   manage_plc_service_agvc start   - 啟動服務
+#   manage_plc_service_agvc stop    - 停止服務
+#   manage_plc_service_agvc restart - 重啟服務
+#   manage_plc_service_agvc status  - 查看服務狀態
+#   manage_plc_service_agvc logs    - 查看實時日誌
+#
+# =============================================================================
+
 manage_plc_service_agvc() {
-    local action="${1:-status}"
     local PLC_SERVICE_LOG_FILE="/tmp/plc_service_agvc.log"
     local PLC_SERVICE_PID_FILE="/tmp/plc_service_agvc.pid"
 
+    # 環境檢查
     if ! is_agvc_environment; then
         echo "❌ 此功能僅適用於 AGVC 環境"
         return 1
     fi
 
-    case "$action" in
+    case "$1" in
         start)
-            echo "🚀 啟動 PLC 服務節點 (AGVC)..."
+            # ========== 階段 1: 啟動前檢查 ==========
 
-            # 檢查是否已經在運行
-            if ros2 node list 2>/dev/null | grep -q "/agvc/plc_service"; then
-                echo "⚠️ PLC 服務節點已經在運行中"
-                return 0
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$PLC_SERVICE_PID_FILE" ]; then
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$PLC_SERVICE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ PLC 服務已經在運行中"
+                    return 0
+                else
+                    echo "⏳ 檢測到過時的 PID 文件，正在清理..."
+                    rm -f "$PLC_SERVICE_PID_FILE"
+                fi
             fi
 
-            # 確保配置檔案存在
+            # 1.2 檢查工作空間是否已建置
+            if [ ! -d "/app/plc_proxy_ws/install" ]; then
+                echo "⚠️ 警告: plc_proxy_ws 未建置，請先執行: build_ws plc_proxy_ws"
+            fi
+
+            # 1.3 檢查配置檔案
             if [ ! -f "/app/config/ecs_config.yaml" ]; then
                 echo "❌ 配置檔案不存在: /app/config/ecs_config.yaml"
                 return 1
             fi
 
+            # ========== 階段 2: 啟動服務 ==========
+
+            echo "🚀 啟動 PLC 服務節點 (AGVC)..."
+
             # 確保日誌檔案存在
             touch "$PLC_SERVICE_LOG_FILE"
 
-            # 使用 ros2 run 啟動單一節點（載入完整 AGVC 環境確保所有依賴可用）
+            # 使用 ros2 run 啟動單一節點
             nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run plc_proxy plc_service --ros-args -r __ns:=/agvc --params-file /app/config/ecs_config.yaml" > "$PLC_SERVICE_LOG_FILE" 2>&1 &
             local PARENT_PID=$!
 
-            # 記錄主進程 PID
-            echo "$PARENT_PID" > "$PLC_SERVICE_PID_FILE"
+            # 記錄父進程
+            echo $PARENT_PID > "$PLC_SERVICE_PID_FILE"
 
-            # 使用 ros2 node list 驗證：核心基礎設施服務需要確認 ROS 2 網路註冊
-            # 這確保 PLC 服務不只進程存在，而且已正確註冊到 ROS 2 網路並可進行通訊
-            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於核心服務的深度驗證
-            if verify_ros2_node_startup "/agvc/plc_service" 10; then
-                echo "✅ PLC 服務節點已成功啟動 (PID: $PARENT_PID)"
+            # 等待子進程啟動
+            sleep 3
+
+            # 記錄子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$PLC_SERVICE_PID_FILE"
+                done
+            fi
+
+            # 記錄實際的服務進程
+            sleep 2
+            local SERVICE_PID=$(pgrep -f "plc_proxy.*plc_service" | head -n1)
+            if [ -n "$SERVICE_PID" ]; then
+                if ! grep -q "^$SERVICE_PID$" "$PLC_SERVICE_PID_FILE" 2>/dev/null; then
+                    echo $SERVICE_PID >> "$PLC_SERVICE_PID_FILE"
+                fi
+            fi
+
+            # ========== 階段 3: 驗證啟動 ==========
+
+            # 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ PLC 服務啟動失敗（父進程未運行）"
+                echo ""
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $PLC_SERVICE_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/plc_proxy_ws/install"
+                echo "   3. 重新建置: cd /app/plc_proxy_ws && colcon build --packages-select plc_proxy"
+                echo "   4. 檢查 Zenoh Router 狀態: manage_zenoh status"
+                return 1
+            fi
+
+            echo "✅ PLC 服務已啟動"
+            echo "   記錄的 PID: $(cat $PLC_SERVICE_PID_FILE | tr '\n' ' ')"
+
+            # 驗證 ROS2 節點注冊
+            if verify_ros2_node_startup "/agvc/plc_service" 15; then
+                echo "✅ ROS2 節點已註冊"
+                echo "✅ PLC 服務啟動完成"
             else
-                echo "❌ PLC 服務節點啟動失敗或驗證超時"
-                echo "請檢查日誌: tail -f $PLC_SERVICE_LOG_FILE"
-                rm -f "$PLC_SERVICE_PID_FILE"
+                echo "⚠️ ROS2 節點註冊超時"
+                echo ""
+                echo "💡 建議："
+                echo "   1. 查看日誌: tail -f $PLC_SERVICE_LOG_FILE"
+                echo "   2. 檢查 Zenoh Router: manage_zenoh status"
+                echo "   3. 檢查 ROS2 環境: echo \$ROS_DISTRO"
                 return 1
             fi
             ;;
 
         stop)
-            echo "🛑 停止 PLC 服務節點..."
+            echo "⏳ 停止 PLC 服務節點..."
 
-            # 使用進程名稱查找並終止
-            local pids=$(pgrep -f "plc_proxy.*plc_service")
-            if [ -n "$pids" ]; then
-                for pid in $pids; do
-                    kill -TERM $pid 2>/dev/null
+            # ========== 階段 1: 優雅停止 ==========
+            if [ -f "$PLC_SERVICE_PID_FILE" ]; then
+                local PIDS=$(tac "$PLC_SERVICE_PID_FILE")
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   停止進程 PID: $pid"
+                        kill $pid 2>/dev/null  # SIGTERM
+                    fi
                 done
 
-                # 等待優雅停止
-                sleep 2
+                sleep 3  # 等待優雅退出
 
-                # 強制終止剩餘進程
-                pids=$(pgrep -f "plc_proxy.*plc_service")
-                if [ -n "$pids" ]; then
-                    for pid in $pids; do
-                        kill -9 $pid 2>/dev/null
-                    done
-                fi
+                # ========== 階段 2: 強制終止 ==========
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   強制終止 PID: $pid"
+                        kill -9 $pid 2>/dev/null  # SIGKILL
+                    fi
+                done
 
-                rm -f "$PLC_SERVICE_PID_FILE"
-                echo "✅ PLC 服務節點已停止"
-            else
-                echo "ℹ️ PLC 服務節點未運行"
                 rm -f "$PLC_SERVICE_PID_FILE"
             fi
+
+            # ========== 階段 3: 備用清理（無 PID 文件時） ==========
+            if [ ! -f "$PLC_SERVICE_PID_FILE" ]; then
+                echo "🚨 PID 文件未找到，檢查相關進程..."
+                if pgrep -f "plc_proxy.*plc_service" > /dev/null; then
+                    echo "   發現進程: plc_service"
+                    pkill -f "plc_proxy.*plc_service"
+                    sleep 2
+                    echo "   相關進程已停止"
+                fi
+            fi
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "🔍 檢查並清理殘留進程..."
+            local found_residual=false
+
+            if pgrep -f "plc_proxy.*plc_service" > /dev/null; then
+                echo "   發現殘留進程: plc_service"
+                pkill -9 -f "plc_proxy.*plc_service" 2>/dev/null
+                found_residual=true
+            fi
+
+            if [ "$found_residual" = true ]; then
+                sleep 2
+                echo "   殘留進程已清理"
+            fi
+
+            # ========== 階段 5: 臨時文件清理 ==========
+            echo "🧹 清理臨時文件..."
+            local launch_params_count=$(find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 2>/dev/null | wc -l)
+            if [ "$launch_params_count" -gt 0 ]; then
+                find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 -exec rm -rf {} + 2>/dev/null
+                echo "   清理了 $launch_params_count 個 launch_params 臨時目錄"
+            fi
+
+            echo "✅ PLC 服務已停止"
             ;;
 
         restart)
@@ -1545,99 +1871,255 @@ manage_plc_service_agvc() {
             ;;
 
         status)
-            # 使用 ROS 2 節點檢查
-            if ros2 node list 2>/dev/null | grep -q "/agvc/plc_service"; then
-                local PIDS=$(pgrep -f "plc_proxy.*plc_service")
-                echo "✅ PLC 服務節點正在運行 (PIDs: $PIDS)"
+            if [ -f "$PLC_SERVICE_PID_FILE" ]; then
+                local all_running=true
+                local pids=""
+
+                while read pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        pids="$pids $pid"
+                    else
+                        all_running=false
+                    fi
+                done < "$PLC_SERVICE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ PLC 服務運行中 (PIDs:$pids)"
+
+                    # 顯示 ROS2 節點信息
+                    if ros2 node list 2>/dev/null | grep -q "/agvc/plc_service"; then
+                        echo "   ROS2 節點: /agvc/plc_service 已註冊"
+                    fi
+
+                    return 0
+                else
+                    echo "⚠️ PLC 服務部分進程未運行"
+                    rm -f "$PLC_SERVICE_PID_FILE"
+                    return 1
+                fi
             else
-                echo "🚫 PLC 服務節點未在運行"
+                echo "🚫 PLC 服務未運行"
+                return 1
+            fi
+            ;;
+
+        logs)
+            if [ -f "$PLC_SERVICE_LOG_FILE" ]; then
+                echo "📄 PLC 服務實時日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$PLC_SERVICE_LOG_FILE"
+            else
+                echo "❌ 日誌文件不存在: $PLC_SERVICE_LOG_FILE"
+                return 1
             fi
             ;;
 
         *)
-            echo "用法: manage_plc_service_agvc {start|stop|restart|status}"
+            echo "用法: manage_plc_service_agvc {start|stop|restart|status|logs}"
+            echo ""
+            echo "指令說明："
+            echo "  start   - 啟動 PLC 服務"
+            echo "  stop    - 停止 PLC 服務"
+            echo "  restart - 重啟 PLC 服務"
+            echo "  status  - 查看服務狀態"
+            echo "  logs    - 查看實時日誌"
             return 1
             ;;
     esac
 }
 
-# 管理 ECS 核心節點
+# =============================================================================
+# ECS 核心管理函數（AGVC）
+# =============================================================================
+#
+# 功能說明：
+#   管理 ECS 核心服務的啟動、停止、重啟和狀態檢查
+#
+# 依賴檢查：
+#   - 工作空間：ecs_ws
+#   - 配置檔案：/app/config/ecs_config.yaml
+#   - ROS2 節點：/agvc/ecs_core
+#
+# 使用方式：
+#   manage_ecs_core start   - 啟動服務
+#   manage_ecs_core stop    - 停止服務
+#   manage_ecs_core restart - 重啟服務
+#   manage_ecs_core status  - 查看服務狀態
+#   manage_ecs_core logs    - 查看實時日誌
+#
+# =============================================================================
+
 manage_ecs_core() {
-    local action="${1:-status}"
     local ECS_CORE_LOG_FILE="/tmp/ecs_core.log"
     local ECS_CORE_PID_FILE="/tmp/ecs_core.pid"
 
+    # 環境檢查
     if ! is_agvc_environment; then
         echo "❌ 此功能僅適用於 AGVC 環境"
         return 1
     fi
 
-    case "$action" in
+    case "$1" in
         start)
-            echo "🚀 啟動 ECS 核心節點..."
+            # ========== 階段 1: 啟動前檢查 ==========
 
-            # 檢查是否已經在運行
-            if ros2 node list 2>/dev/null | grep -q "/agvc/ecs_core"; then
-                echo "⚠️ ECS 核心節點已經在運行中"
-                return 0
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$ECS_CORE_PID_FILE" ]; then
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$ECS_CORE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ ECS 核心已經在運行中"
+                    return 0
+                else
+                    echo "⏳ 檢測到過時的 PID 文件，正在清理..."
+                    rm -f "$ECS_CORE_PID_FILE"
+                fi
             fi
 
-            # 確保配置檔案存在
+            # 1.2 檢查工作空間是否已建置
+            if [ ! -d "/app/ecs_ws/install" ]; then
+                echo "⚠️ 警告: ecs_ws 未建置，請先執行: build_ws ecs_ws"
+            fi
+
+            # 1.3 檢查配置檔案
             if [ ! -f "/app/config/ecs_config.yaml" ]; then
                 echo "❌ 配置檔案不存在: /app/config/ecs_config.yaml"
                 return 1
             fi
 
+            # ========== 階段 2: 啟動服務 ==========
+
+            echo "🚀 啟動 ECS 核心節點..."
+
             # 確保日誌檔案存在
             touch "$ECS_CORE_LOG_FILE"
 
-            # 使用 ros2 run 啟動單一節點（載入完整 AGVC 環境確保所有依賴可用）
+            # 使用 ros2 run 啟動節點
             nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run ecs ecs_core --ros-args -r __ns:=/agvc --params-file /app/config/ecs_config.yaml" > "$ECS_CORE_LOG_FILE" 2>&1 &
             local PARENT_PID=$!
 
-            # 記錄主進程 PID
-            echo "$PARENT_PID" > "$ECS_CORE_PID_FILE"
+            # 記錄父進程
+            echo $PARENT_PID > "$ECS_CORE_PID_FILE"
 
-            # 使用 ros2 node list 驗證：核心基礎設施服務需要確認 ROS 2 網路註冊
-            # ECS 核心服務負責設備控制，必須確保 ROS 2 通訊正常
-            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於核心服務的深度驗證
-            if verify_ros2_node_startup "/agvc/ecs_core" 10; then
-                echo "✅ ECS 核心節點已成功啟動 (PID: $PARENT_PID)"
+            # 等待子進程啟動
+            sleep 3
+
+            # 記錄子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$ECS_CORE_PID_FILE"
+                done
+            fi
+
+            # 記錄實際的服務進程
+            sleep 2
+            local SERVICE_PID=$(pgrep -f "ecs.*ecs_core" | head -n1)
+            if [ -n "$SERVICE_PID" ]; then
+                if ! grep -q "^$SERVICE_PID$" "$ECS_CORE_PID_FILE" 2>/dev/null; then
+                    echo $SERVICE_PID >> "$ECS_CORE_PID_FILE"
+                fi
+            fi
+
+            # ========== 階段 3: 驗證啟動 ==========
+
+            # 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ ECS 核心啟動失敗（父進程未運行）"
+                echo ""
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $ECS_CORE_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/ecs_ws/install"
+                echo "   3. 重新建置: cd /app/ecs_ws && colcon build --packages-select ecs"
+                echo "   4. 檢查 PLC 服務狀態: manage_plc_service_agvc status"
+                return 1
+            fi
+
+            echo "✅ ECS 核心已啟動"
+            echo "   記錄的 PID: $(cat $ECS_CORE_PID_FILE | tr '\n' ' ')"
+
+            # 驗證 ROS2 節點注冊
+            if verify_ros2_node_startup "/agvc/ecs_core" 15; then
+                echo "✅ ROS2 節點已註冊"
+                echo "✅ ECS 核心啟動完成"
             else
-                echo "❌ ECS 核心節點啟動失敗或驗證超時"
-                echo "請檢查日誌: tail -f $ECS_CORE_LOG_FILE"
-                rm -f "$ECS_CORE_PID_FILE"
+                echo "⚠️ ROS2 節點註冊超時"
+                echo ""
+                echo "💡 建議："
+                echo "   1. 查看日誌: tail -f $ECS_CORE_LOG_FILE"
+                echo "   2. 檢查 Zenoh Router: manage_zenoh status"
+                echo "   3. 檢查 ROS2 環境: echo \$ROS_DISTRO"
                 return 1
             fi
             ;;
 
         stop)
-            echo "🛑 停止 ECS 核心節點..."
+            echo "⏳ 停止 ECS 核心節點..."
 
-            # 使用進程名稱查找並終止
-            local pids=$(pgrep -f "ecs_core")
-            if [ -n "$pids" ]; then
-                for pid in $pids; do
-                    kill -TERM $pid 2>/dev/null
+            # ========== 階段 1: 優雅停止 ==========
+            if [ -f "$ECS_CORE_PID_FILE" ]; then
+                local PIDS=$(tac "$ECS_CORE_PID_FILE")
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   停止進程 PID: $pid"
+                        kill $pid 2>/dev/null  # SIGTERM
+                    fi
                 done
 
-                # 等待優雅停止
-                sleep 2
+                sleep 3  # 等待優雅退出
 
-                # 強制終止剩餘進程
-                pids=$(pgrep -f "ecs_core")
-                if [ -n "$pids" ]; then
-                    for pid in $pids; do
-                        kill -9 $pid 2>/dev/null
-                    done
-                fi
+                # ========== 階段 2: 強制終止 ==========
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   強制終止 PID: $pid"
+                        kill -9 $pid 2>/dev/null  # SIGKILL
+                    fi
+                done
 
-                rm -f "$ECS_CORE_PID_FILE"
-                echo "✅ ECS 核心節點已停止"
-            else
-                echo "ℹ️ ECS 核心節點未運行"
                 rm -f "$ECS_CORE_PID_FILE"
             fi
+
+            # ========== 階段 3: 備用清理（無 PID 文件時） ==========
+            if [ ! -f "$ECS_CORE_PID_FILE" ]; then
+                echo "🚨 PID 文件未找到，檢查相關進程..."
+                if pgrep -f "ecs.*ecs_core" > /dev/null; then
+                    echo "   發現進程: ecs_core"
+                    pkill -f "ecs.*ecs_core"
+                    sleep 2
+                    echo "   相關進程已停止"
+                fi
+            fi
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "🔍 檢查並清理殘留進程..."
+            local found_residual=false
+
+            if pgrep -f "ecs.*ecs_core" > /dev/null; then
+                echo "   發現殘留進程: ecs_core"
+                pkill -9 -f "ecs.*ecs_core" 2>/dev/null
+                found_residual=true
+            fi
+
+            if [ "$found_residual" = true ]; then
+                sleep 2
+                echo "   殘留進程已清理"
+            fi
+
+            # ========== 階段 5: 臨時文件清理 ==========
+            echo "🧹 清理臨時文件..."
+            local launch_params_count=$(find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 2>/dev/null | wc -l)
+            if [ "$launch_params_count" -gt 0 ]; then
+                find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 -exec rm -rf {} + 2>/dev/null
+                echo "   清理了 $launch_params_count 個 launch_params 臨時目錄"
+            fi
+
+            echo "✅ ECS 核心已停止"
             ;;
 
         restart)
@@ -1647,244 +2129,605 @@ manage_ecs_core() {
             ;;
 
         status)
-            # 使用 ROS 2 節點檢查
-            if ros2 node list 2>/dev/null | grep -q "/agvc/ecs_core"; then
-                local PIDS=$(pgrep -f "ecs_core")
-                echo "✅ ECS 核心節點正在運行 (PIDs: $PIDS)"
+            if [ -f "$ECS_CORE_PID_FILE" ]; then
+                local all_running=true
+                local pids=""
+
+                while read pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        pids="$pids $pid"
+                    else
+                        all_running=false
+                    fi
+                done < "$ECS_CORE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ ECS 核心運行中 (PIDs:$pids)"
+
+                    # 顯示 ROS2 節點信息
+                    if ros2 node list 2>/dev/null | grep -q "/agvc/ecs_core"; then
+                        echo "   ROS2 節點: /agvc/ecs_core 已註冊"
+                    fi
+
+                    return 0
+                else
+                    echo "⚠️ ECS 核心部分進程未運行"
+                    rm -f "$ECS_CORE_PID_FILE"
+                    return 1
+                fi
             else
-                echo "🚫 ECS 核心節點未在運行"
+                echo "🚫 ECS 核心未運行"
+                return 1
+            fi
+            ;;
+
+        logs)
+            if [ -f "$ECS_CORE_LOG_FILE" ]; then
+                echo "📄 ECS 核心實時日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$ECS_CORE_LOG_FILE"
+            else
+                echo "❌ 日誌文件不存在: $ECS_CORE_LOG_FILE"
+                return 1
             fi
             ;;
 
         *)
-            echo "用法: manage_ecs_core {start|stop|restart|status}"
+            echo "用法: manage_ecs_core {start|stop|restart|status|logs}"
+            echo ""
+            echo "指令說明："
+            echo "  start   - 啟動 ECS 核心"
+            echo "  stop    - 停止 ECS 核心"
+            echo "  restart - 重啟 ECS 核心"
+            echo "  status  - 查看服務狀態"
+            echo "  logs    - 查看實時日誌"
             return 1
             ;;
     esac
 }
 
-# 管理 RCS 節點
+# =============================================================================
+# RCS 核心管理函數（AGVC）
+# =============================================================================
+#
+# 功能說明：
+#   管理 RCS 核心服務的啟動、停止、重啟和狀態檢查
+#   使用 ros2 launch 啟動多節點服務
+#
+# 依賴檢查：
+#   - 工作空間：rcs_ws
+#   - Launch 文件：rcs_launch.py
+#
+# 使用方式：
+#   manage_rcs_core start   - 啟動服務
+#   manage_rcs_core stop    - 停止服務
+#   manage_rcs_core restart - 重啟服務
+#   manage_rcs_core status  - 查看服務狀態
+#   manage_rcs_core logs    - 查看實時日誌
+#
+# =============================================================================
+
 manage_rcs_core() {
-    local action="${1:-status}"
-    
+    local RCS_CORE_LOG_FILE="/tmp/rcs_launch.log"
+    local RCS_CORE_PID_FILE="/tmp/rcs_core.pid"
+
+    # 環境檢查
     if ! is_agvc_environment; then
         echo "❌ 此功能僅適用於 AGVC 環境"
         return 1
     fi
-    
-    case "$action" in
+
+    case "$1" in
         start)
-            echo "🚀 啟動 RCS 節點 (使用 ROS 2 Launch)..."
-            # 檢查是否有活動的 rcs_core 進程
-            if pgrep -f "rcs_launch.py" > /dev/null 2>&1; then
-                echo "ℹ️ RCS 節點已在運行中"
-                return 0
+            # ========== 階段 1: 啟動前檢查 ==========
+
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$RCS_CORE_PID_FILE" ]; then
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$RCS_CORE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ RCS 核心已經在運行中"
+                    return 0
+                else
+                    echo "⏳ 檢測到過時的 PID 文件，正在清理..."
+                    rm -f "$RCS_CORE_PID_FILE"
+                fi
             fi
 
-            # 確保 RCS 工作空間已載入
+            # 1.2 檢查工作空間是否已建置
             if [ ! -f "/app/rcs_ws/install/setup.bash" ]; then
                 echo "❌ RCS 工作空間未建置，請先執行: cd /app/rcs_ws && colcon build"
                 return 1
             fi
 
-            # 使用 ROS 2 Launch 啟動（載入完整 AGVC 環境確保所有依賴可用）
-            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 launch rcs rcs_launch.py" > /tmp/rcs_launch.log 2>&1 &
-            local pid=$!
-            echo $pid > /tmp/rcs_core.pid
+            # ========== 階段 2: 啟動服務 ==========
 
-            # 使用 pgrep 驗證：Launch 檔案會產生多進程，檢查 launch 進程而非個別節點
-            # RCS Launch 可能啟動多個子節點，因此使用進程檢查更可靠
-            # 參考決策樹：方法 2️⃣ verify_process_startup() 用於複雜 launch 檔案
+            echo "🚀 啟動 RCS 核心節點 (使用 ROS 2 Launch)..."
+
+            # 確保日誌檔案存在
+            touch "$RCS_CORE_LOG_FILE"
+
+            # 使用 ros2 launch 啟動
+            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 launch rcs rcs_launch.py" > "$RCS_CORE_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+
+            # 記錄父進程
+            echo $PARENT_PID > "$RCS_CORE_PID_FILE"
+
+            # 等待子進程啟動
+            sleep 3
+
+            # 記錄子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$RCS_CORE_PID_FILE"
+                done
+            fi
+
+            # 記錄實際的服務進程
+            sleep 2
+            local service_patterns=("rcs_launch.py" "rcs_core")
+            for pattern in "${service_patterns[@]}"; do
+                local SERVICE_PID=$(pgrep -f "$pattern" | head -n1)
+                if [ -n "$SERVICE_PID" ]; then
+                    if ! grep -q "^$SERVICE_PID$" "$RCS_CORE_PID_FILE" 2>/dev/null; then
+                        echo $SERVICE_PID >> "$RCS_CORE_PID_FILE"
+                    fi
+                fi
+            done
+
+            # ========== 階段 3: 驗證啟動 ==========
+
+            # 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ RCS 核心啟動失敗（父進程未運行）"
+                echo ""
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $RCS_CORE_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/rcs_ws/install"
+                echo "   3. 重新建置: cd /app/rcs_ws && colcon build"
+                echo "   4. 檢查 Zenoh Router: manage_zenoh status"
+                return 1
+            fi
+
+            echo "✅ RCS 核心已啟動"
+            echo "   記錄的 PID: $(cat $RCS_CORE_PID_FILE | tr '\n' ' ')"
+
+            # 驗證 Launch 進程
             if verify_process_startup "rcs_launch.py" 10; then
-                echo "📋 查看日誌: tail -f /tmp/rcs_launch.log"
-                return 0
+                echo "✅ RCS Launch 進程已驗證"
+                echo "✅ RCS 核心啟動完成"
+                echo ""
+                echo "💡 提示："
+                echo "   查看日誌: manage_rcs_core logs"
             else
-                echo "❌ RCS 節點啟動失敗或驗證超時"
-                echo "📋 檢查日誌: cat /tmp/rcs_launch.log"
+                echo "⚠️ RCS Launch 進程驗證超時"
+                echo ""
+                echo "💡 建議："
+                echo "   1. 查看日誌: tail -f $RCS_CORE_LOG_FILE"
+                echo "   2. 檢查 ROS2 環境: echo \$ROS_DISTRO"
                 return 1
             fi
             ;;
-            
+
         stop)
-            echo "🛑 停止 RCS 節點..."
-            
-            # 停止 launch 進程
-            if [ -f "/tmp/rcs_core.pid" ]; then
-                local launch_pid=$(cat "/tmp/rcs_core.pid")
-                if kill -0 $launch_pid 2>/dev/null; then
-                    echo "  停止 ROS 2 Launch 進程 (PID: $launch_pid)..."
-                    kill -TERM $launch_pid 2>/dev/null
-                    sleep 2
-                    if kill -0 $launch_pid 2>/dev/null; then
-                        kill -9 $launch_pid 2>/dev/null
+            echo "⏳ 停止 RCS 核心節點..."
+
+            # ========== 階段 1: 優雅停止 ==========
+            if [ -f "$RCS_CORE_PID_FILE" ]; then
+                local PIDS=$(tac "$RCS_CORE_PID_FILE")
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   停止進程 PID: $pid"
+                        kill $pid 2>/dev/null  # SIGTERM
                     fi
-                fi
-                rm -f "/tmp/rcs_core.pid"
+                done
+
+                sleep 3  # 等待優雅退出
+
+                # ========== 階段 2: 強制終止 ==========
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   強制終止 PID: $pid"
+                        kill -9 $pid 2>/dev/null  # SIGKILL
+                    fi
+                done
+
+                rm -f "$RCS_CORE_PID_FILE"
             fi
-            
-            # 舊的 PID 檔案相容性
+
+            # 舊的 PID 檔案相容性清理
             if [ -f "/tmp/rcs.pid" ]; then
                 rm -f "/tmp/rcs.pid"
             fi
-            
-            # 清理所有相關進程
-            echo "  清理 ROS 2 Launch 和 rcs_core 進程..."
-            pkill -f "ros2 launch rcs" 2>/dev/null
-            pkill -f "rcs_launch.py" 2>/dev/null
-            pkill -f "rcs_core" 2>/dev/null
-            
-            # 等待進程完全退出
-            sleep 1
 
-            # 檢查是否還有殘留的 launch 進程
-            if pgrep -f "rcs_launch.py" > /dev/null 2>&1; then
-                echo "⚠️  檢測到殘留進程，強制終止..."
-                pkill -9 -f "rcs_launch.py" 2>/dev/null
-                pkill -9 -f "rcs_core" 2>/dev/null
-                sleep 1
+            # ========== 階段 3: 備用清理（無 PID 文件時） ==========
+            if [ ! -f "$RCS_CORE_PID_FILE" ]; then
+                echo "🚨 PID 文件未找到，檢查相關進程..."
+                local service_patterns=("ros2 launch rcs" "rcs_launch.py" "rcs_core")
+                local found_process=false
+
+                for pattern in "${service_patterns[@]}"; do
+                    if pgrep -f "$pattern" > /dev/null; then
+                        echo "   發現進程: $pattern"
+                        pkill -f "$pattern"
+                        found_process=true
+                    fi
+                done
+
+                if [ "$found_process" = true ]; then
+                    sleep 2
+                    echo "   相關進程已停止"
+                fi
             fi
-            
-            # 清理殭屍進程（通過終止其父進程）
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "🔍 檢查並清理殘留進程..."
+            local found_residual=false
+            local service_patterns=("ros2 launch rcs" "rcs_launch.py" "rcs_core")
+
+            for pattern in "${service_patterns[@]}"; do
+                if pgrep -f "$pattern" > /dev/null; then
+                    echo "   發現殘留進程: $pattern"
+                    pkill -9 -f "$pattern" 2>/dev/null
+                    found_residual=true
+                fi
+            done
+
+            if [ "$found_residual" = true ]; then
+                sleep 2
+                echo "   殘留進程已清理"
+            fi
+
+            # ========== 階段 5: 僵屍進程清理 ==========
             local zombie=$(pgrep -af "rcs_core" | grep "defunct" | awk '{print $1}')
             if [ -n "$zombie" ]; then
-                echo "  清理殭屍進程..."
-                # 嘗試發送 SIGCHLD 給 init 進程，讓它回收殭屍進程
-                # 注意：殭屍進程通常會被系統自動清理，這裡只是加速這個過程
+                echo "🧹 清理殭屍進程..."
+                # 發送 SIGCHLD 給 init 進程，讓它回收殭屍進程
                 kill -SIGCHLD 1 2>/dev/null || true
             fi
-            
-            echo "✅ RCS 節點已停止"
+
+            # ========== 階段 6: 臨時文件清理 ==========
+            echo "🧹 清理臨時文件..."
+            local launch_params_count=$(find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 2>/dev/null | wc -l)
+            if [ "$launch_params_count" -gt 0 ]; then
+                find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 -exec rm -rf {} + 2>/dev/null
+                echo "   清理了 $launch_params_count 個 launch_params 臨時目錄"
+            fi
+
+            echo "✅ RCS 核心已停止"
             ;;
-            
+
         restart)
             manage_rcs_core stop
-            sleep 1
+            sleep 2
             manage_rcs_core start
             ;;
-            
+
         status)
-            # 檢查 launch 進程是否運行
-            if pgrep -f "rcs_launch.py" > /dev/null 2>&1; then
-                local launch_pid=$(pgrep -f "rcs_launch.py")
-                local core_pid=$(pgrep -f "lib/rcs/rcs_core" 2>/dev/null)
-                echo "✅ RCS 節點運行中"
-                echo "  Launch PID: $launch_pid"
-                if [ -n "$core_pid" ]; then
-                    echo "  RCS Core PID: $core_pid"
+            if [ -f "$RCS_CORE_PID_FILE" ]; then
+                local all_running=true
+                local pids=""
+
+                while read pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        pids="$pids $pid"
+                    else
+                        all_running=false
+                    fi
+                done < "$RCS_CORE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ RCS 核心運行中 (PIDs:$pids)"
+
+                    # 顯示 Launch 進程信息
+                    local launch_pid=$(pgrep -f "rcs_launch.py" | head -n1)
+                    if [ -n "$launch_pid" ]; then
+                        echo "   Launch 進程: PID $launch_pid"
+                    fi
+
+                    # 顯示 Core 進程信息
+                    local core_pid=$(pgrep -f "lib/rcs/rcs_core" | head -n1)
+                    if [ -n "$core_pid" ]; then
+                        echo "   RCS Core: PID $core_pid"
+                    fi
+
+                    return 0
+                else
+                    echo "⚠️ RCS 核心部分進程未運行"
+                    rm -f "$RCS_CORE_PID_FILE"
+                    return 1
                 fi
-                return 0
             else
-                echo "❌ RCS 節點未運行"
+                echo "🚫 RCS 核心未運行"
+
                 # 檢查是否有殭屍進程
                 local zombie=$(pgrep -af "rcs_core" | grep "defunct" | wc -l)
                 if [ "$zombie" -gt 0 ]; then
-                    echo "  ⚠️ 發現殭屍進程，建議重啟容器或清理"
+                    echo "   ⚠️ 發現 $zombie 個殭屍進程"
                 fi
+
+                return 1
             fi
             ;;
-            
+
+        logs)
+            if [ -f "$RCS_CORE_LOG_FILE" ]; then
+                echo "📄 RCS 核心實時日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$RCS_CORE_LOG_FILE"
+            else
+                echo "❌ 日誌文件不存在: $RCS_CORE_LOG_FILE"
+                return 1
+            fi
+            ;;
+
         *)
-            echo "用法: manage_rcs_core {start|stop|restart|status}"
+            echo "用法: manage_rcs_core {start|stop|restart|status|logs}"
+            echo ""
+            echo "指令說明："
+            echo "  start   - 啟動 RCS 核心"
+            echo "  stop    - 停止 RCS 核心"
+            echo "  restart - 重啟 RCS 核心"
+            echo "  status  - 查看服務狀態"
+            echo "  logs    - 查看實時日誌"
             return 1
             ;;
     esac
 }
 
 # =============================================================================
-# 📊 AGVC Database Node 管理
+# 資料庫節點管理函數（AGVC）
 # =============================================================================
-manage_agvc_database_node() {
-    # 環境檢測：僅限 AGVC 容器
-    if ! is_agvc_environment; then
-        echo "❌ 此功能僅適用於 AGVC 環境"
-        echo "💡 AGV 容器請使用: check_agv_status"
-        return 1
-    fi
+#
+# 功能說明：
+#   管理 AGVC 資料庫節點的啟動、停止、重啟和狀態檢查
+#
+# 依賴檢查：
+#   - 工作空間：db_proxy_ws
+#   - ROS2 節點：agvc_database_node
+#   - PostgreSQL：需要資料庫服務運行
+#
+# 使用方式：
+#   manage_agvc_database_node start   - 啟動服務
+#   manage_agvc_database_node stop    - 停止服務
+#   manage_agvc_database_node restart - 重啟服務
+#   manage_agvc_database_node status  - 查看服務狀態
+#   manage_agvc_database_node logs    - 查看實時日誌
+#
+# =============================================================================
 
+manage_agvc_database_node() {
     local DB_NODE_LOG_FILE="/tmp/agvc_database_node.log"
     local DB_NODE_PID_FILE="/tmp/agvc_database_node.pid"
 
+    # 環境檢查
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        return 1
+    fi
+
     case "$1" in
         start)
-            # 檢查是否已運行
-            if pgrep -f "agvc_database_node" > /dev/null 2>&1; then
-                echo "⚠️ AGVC Database Node 已經在運行中"
-                return 0
+            # ========== 階段 1: 啟動前檢查 ==========
+
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$DB_NODE_PID_FILE" ]; then
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$DB_NODE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ 資料庫節點已經在運行中"
+                    return 0
+                else
+                    echo "⏳ 檢測到過時的 PID 文件，正在清理..."
+                    rm -f "$DB_NODE_PID_FILE"
+                fi
             fi
 
-            echo "🚀 啟動 AGVC Database Node..."
+            # 1.2 檢查工作空間是否已建置
+            if [ ! -d "/app/db_proxy_ws/install" ]; then
+                echo "⚠️ 警告: db_proxy_ws 未建置，請先執行: build_ws db_proxy_ws"
+            fi
+
+            # ========== 階段 2: 啟動服務 ==========
+
+            echo "🚀 啟動資料庫節點..."
+
+            # 確保日誌檔案存在
             touch "$DB_NODE_LOG_FILE"
 
-            # 啟動節點（載入完整 AGVC 環境確保所有依賴可用）
+            # 啟動節點
             nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run db_proxy agvc_database_node --ros-args -r __ns:=/agvc" > "$DB_NODE_LOG_FILE" 2>&1 &
             local PARENT_PID=$!
-            echo "$PARENT_PID" > "$DB_NODE_PID_FILE"
 
-            # 使用 ros2 node list 驗證：資料庫代理節點是核心基礎設施
-            # 必須確保節點已正確註冊到 ROS 2 網路，可以接收服務請求
-            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於核心服務的深度驗證
-            if verify_ros2_node_startup "agvc_database_node" 10; then
-                echo "✅ AGVC Database Node 已成功啟動 (PID: $PARENT_PID)"
-                echo "📝 日誌檔案: $DB_NODE_LOG_FILE"
+            # 記錄父進程
+            echo $PARENT_PID > "$DB_NODE_PID_FILE"
+
+            # 等待子進程啟動
+            sleep 3
+
+            # 記錄子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$DB_NODE_PID_FILE"
+                done
+            fi
+
+            # 記錄實際的服務進程
+            sleep 2
+            local SERVICE_PID=$(pgrep -f "agvc_database_node" | head -n1)
+            if [ -n "$SERVICE_PID" ]; then
+                if ! grep -q "^$SERVICE_PID$" "$DB_NODE_PID_FILE" 2>/dev/null; then
+                    echo $SERVICE_PID >> "$DB_NODE_PID_FILE"
+                fi
+            fi
+
+            # ========== 階段 3: 驗證啟動 ==========
+
+            # 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ 資料庫節點啟動失敗（父進程未運行）"
+                echo ""
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $DB_NODE_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/db_proxy_ws/install"
+                echo "   3. 檢查資料庫連接: psql -h 192.168.100.254 -U agvc -d agvc"
+                echo "   4. 重新建置: cd /app/db_proxy_ws && colcon build --packages-select db_proxy"
+                return 1
+            fi
+
+            echo "✅ 資料庫節點已啟動"
+            echo "   記錄的 PID: $(cat $DB_NODE_PID_FILE | tr '\n' ' ')"
+
+            # 驗證 ROS2 節點注冊
+            if verify_ros2_node_startup "agvc_database_node" 15; then
+                echo "✅ ROS2 節點已註冊"
+                echo "✅ 資料庫節點啟動完成"
             else
-                echo "❌ AGVC Database Node 啟動失敗或驗證超時"
-                echo "📝 日誌檔案: $DB_NODE_LOG_FILE"
+                echo "⚠️ ROS2 節點註冊超時"
+                echo ""
+                echo "💡 建議："
+                echo "   1. 查看日誌: tail -f $DB_NODE_LOG_FILE"
+                echo "   2. 檢查 Zenoh Router: manage_zenoh status"
                 return 1
             fi
             ;;
 
         stop)
-            echo "🛑 停止 AGVC Database Node..."
-            local pids=$(pgrep -f "agvc_database_node")
+            echo "⏳ 停止資料庫節點..."
 
-            if [ -n "$pids" ]; then
-                # 優雅停止
-                for pid in $pids; do
-                    kill -TERM $pid 2>/dev/null || true
+            # ========== 階段 1: 優雅停止 ==========
+            if [ -f "$DB_NODE_PID_FILE" ]; then
+                local PIDS=$(tac "$DB_NODE_PID_FILE")
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   停止進程 PID: $pid"
+                        kill $pid 2>/dev/null
+                    fi
                 done
-                sleep 2
 
-                # 強制終止
-                pids=$(pgrep -f "agvc_database_node")
-                if [ -n "$pids" ]; then
-                    for pid in $pids; do
-                        kill -KILL $pid 2>/dev/null || true
-                    done
-                fi
+                sleep 3
 
-                rm -f "$DB_NODE_PID_FILE"
-                echo "✅ AGVC Database Node 已停止"
-            else
-                echo "ℹ️ AGVC Database Node 未在運行"
+                # ========== 階段 2: 強制終止 ==========
+                for pid in $PIDS; do
+                    if kill -0 $pid 2>/dev/null; then
+                        echo "   強制終止 PID: $pid"
+                        kill -9 $pid 2>/dev/null
+                    fi
+                done
+
                 rm -f "$DB_NODE_PID_FILE"
             fi
+
+            # ========== 階段 3: 備用清理 ==========
+            if [ ! -f "$DB_NODE_PID_FILE" ]; then
+                echo "🚨 PID 文件未找到，檢查相關進程..."
+                if pgrep -f "agvc_database_node" > /dev/null; then
+                    echo "   發現進程: agvc_database_node"
+                    pkill -f "agvc_database_node"
+                    sleep 2
+                    echo "   相關進程已停止"
+                fi
+            fi
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "🔍 檢查並清理殘留進程..."
+            if pgrep -f "agvc_database_node" > /dev/null; then
+                echo "   發現殘留進程: agvc_database_node"
+                pkill -9 -f "agvc_database_node" 2>/dev/null
+                sleep 2
+                echo "   殘留進程已清理"
+            fi
+
+            # ========== 階段 5: 臨時文件清理 ==========
+            echo "🧹 清理臨時文件..."
+            local launch_params_count=$(find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 2>/dev/null | wc -l)
+            if [ "$launch_params_count" -gt 0 ]; then
+                find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime -1 -exec rm -rf {} + 2>/dev/null
+                echo "   清理了 $launch_params_count 個 launch_params 臨時目錄"
+            fi
+
+            echo "✅ 資料庫節點已停止"
             ;;
 
         restart)
-            echo "🔄 重新啟動 AGVC Database Node..."
             manage_agvc_database_node stop
             sleep 2
             manage_agvc_database_node start
             ;;
 
         status)
-            if pgrep -f "agvc_database_node" > /dev/null 2>&1; then
-                local pids=$(pgrep -f "agvc_database_node")
-                echo "✅ AGVC Database Node 正在運行 (PIDs: $pids)"
+            if [ -f "$DB_NODE_PID_FILE" ]; then
+                local all_running=true
+                local pids=""
 
-                # 顯示服務狀態
-                if ros2 node list 2>/dev/null | grep -q "agvc_database_node"; then
-                    echo "🔍 ROS 2 節點狀態："
-                    ros2 service list 2>/dev/null | grep -E "(sql_query|carrier_query|rack_query)" | head -5
-                    echo "   ... (共 11 個資料庫服務)"
+                while read pid; do
+                    if kill -0 $pid 2>/dev/null; then
+                        pids="$pids $pid"
+                    else
+                        all_running=false
+                    fi
+                done < "$DB_NODE_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ 資料庫節點運行中 (PIDs:$pids)"
+
+                    # 顯示 ROS2 節點信息
+                    if ros2 node list 2>/dev/null | grep -q "agvc_database_node"; then
+                        echo "   ROS2 節點: agvc_database_node 已註冊"
+                        # 顯示部分服務列表
+                        local services=$(ros2 service list 2>/dev/null | grep -E "(sql_query|carrier_query|rack_query)" | head -3)
+                        if [ -n "$services" ]; then
+                            echo "   資料庫服務: 已就緒"
+                        fi
+                    fi
+
+                    return 0
+                else
+                    echo "⚠️ 資料庫節點部分進程未運行"
+                    rm -f "$DB_NODE_PID_FILE"
+                    return 1
                 fi
             else
-                echo "❌ AGVC Database Node 未在運行"
+                echo "🚫 資料庫節點未運行"
+                return 1
+            fi
+            ;;
+
+        logs)
+            if [ -f "$DB_NODE_LOG_FILE" ]; then
+                echo "📄 資料庫節點實時日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$DB_NODE_LOG_FILE"
+            else
+                echo "❌ 日誌文件不存在: $DB_NODE_LOG_FILE"
+                return 1
             fi
             ;;
 
         *)
-            echo "用法: manage_agvc_database_node {start|stop|restart|status}"
+            echo "用法: manage_agvc_database_node {start|stop|restart|status|logs}"
+            echo ""
+            echo "指令說明："
+            echo "  start   - 啟動資料庫節點"
+            echo "  stop    - 停止資料庫節點"
+            echo "  restart - 重啟資料庫節點"
+            echo "  status  - 查看服務狀態"
+            echo "  logs    - 查看實時日誌"
             return 1
             ;;
     esac
@@ -1906,59 +2749,249 @@ manage_room_task_build() {
 
     case "$1" in
         start)
-            # 檢查是否已運行
-            if pgrep -f "room_task_build_node" > /dev/null 2>&1; then
-                echo "⚠️ Room Task Build Node 已經在運行中"
-                return 0
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🚀 啟動 Room Task Build Node"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # ========== 階段 1: 啟動前檢查 ==========
+            echo "📋 階段 1/4: 啟動前檢查"
+
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$ROOM_TASK_PID_FILE" ]; then
+                local all_running=true
+                while IFS= read -r pid; do
+                    # 跳過空行
+                    [ -z "$pid" ] && continue
+                    if ! kill -0 "$pid" 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$ROOM_TASK_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ Room Task Build Node 已經在運行中"
+                    echo "💡 如需重新啟動，請使用: manage_room_task_build restart"
+                    return 0
+                else
+                    echo "🧹 清理過期的 PID 文件"
+                    rm -f "$ROOM_TASK_PID_FILE"
+                fi
             fi
 
-            echo "🚀 啟動 Room Task Build Node..."
-            touch "$ROOM_TASK_LOG_FILE"
+            # ========== 階段 2: 依賴檢查 ==========
+            echo "📋 階段 2/4: 依賴檢查"
 
-            # 使用 node 方式啟動（載入完整 AGVC 環境確保所有依賴可用）
-            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run alan_room_task_build room_task_build_node --ros-args -r __ns:=/agvc" > "$ROOM_TASK_LOG_FILE" 2>&1 &
-            local PARENT_PID=$!
-            echo "$PARENT_PID" > "$ROOM_TASK_PID_FILE"
+            # 2.1 檢查資料庫連接
+            if ! pgrep -f "db_proxy_node" > /dev/null 2>&1; then
+                echo "⚠️ 警告：資料庫代理未運行，Room Task Build 可能無法正常工作"
+                echo "💡 建議先啟動: manage_agvc_database_node start"
+            fi
 
-            # 使用 ros2 node list 驗證：Room Task Build 是任務建置核心節點
-            # 需要確認節點已正確註冊到 ROS 2 網路，可以接收任務請求
-            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於核心服務的深度驗證
-            if verify_ros2_node_startup "/agvc/room_task_build_node" 10; then
-                echo "✅ Room Task Build Node 已成功啟動 (PID: $PARENT_PID)"
-                echo "📝 日誌檔案: $ROOM_TASK_LOG_FILE"
-            else
-                echo "❌ Room Task Build Node 啟動失敗或驗證超時"
-                echo "📝 日誌檔案: $ROOM_TASK_LOG_FILE"
-                echo "💡 提示: 節點可能仍在後台啟動中，請稍後使用 'manage_room_task_build status' 檢查"
+            # 2.2 檢查 TAFL WCS（上游服務）
+            if ! pgrep -f "tafl_wcs_node" > /dev/null 2>&1; then
+                echo "⚠️ 警告：TAFL WCS 未運行，Room Task Build 可能無法接收任務"
+                echo "💡 建議先啟動: manage_tafl_wcs start"
+            fi
+
+            # 2.3 檢查工作空間建置
+            if [ ! -d "/app/tafl_wcs_ws/install" ]; then
+                echo "❌ Room Task Build 工作空間未建置"
+                echo "💡 診斷建議："
+                echo "   1. 執行建置: cd /app/tafl_wcs_ws && colcon build"
+                echo "   2. 或使用快速建置: ba"
                 return 1
             fi
+
+            # ========== 階段 3: 啟動服務 ==========
+            echo "📋 階段 3/4: 啟動服務"
+
+            # 3.1 確保日誌目錄存在
+            touch "$ROOM_TASK_LOG_FILE"
+
+            # 3.2 啟動 Room Task Build Node
+            echo "🔧 啟動 Room Task Build Node..."
+            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run alan_room_task_build room_task_build_node --ros-args -r __ns:=/agvc" > "$ROOM_TASK_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+
+            # 3.3 記錄父進程 PID
+            echo "$PARENT_PID" > "$ROOM_TASK_PID_FILE"
+            echo "  📌 父進程 PID: $PARENT_PID"
+
+            # 3.4 等待 1 秒讓子進程啟動
+            sleep 1
+
+            # 3.5 記錄子進程 PID（bash -c 產生的子 shell）
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                echo "  📌 子進程 PIDs: $CHILD_PIDS"
+                echo "$CHILD_PIDS" >> "$ROOM_TASK_PID_FILE"
+            fi
+
+            # 3.6 記錄實際服務進程（python3 執行節點）
+            sleep 1
+            local SERVICE_PIDS=$(pgrep -f "room_task_build_node")
+            if [ -n "$SERVICE_PIDS" ]; then
+                echo "  📌 服務進程 PIDs: $SERVICE_PIDS"
+                echo "$SERVICE_PIDS" >> "$ROOM_TASK_PID_FILE"
+            fi
+
+            # ========== 階段 4: 驗證啟動 ==========
+            echo "📋 階段 4/4: 驗證啟動"
+
+            # 4.1 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ Room Task Build Node 啟動失敗（父進程未運行）"
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $ROOM_TASK_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/tafl_wcs_ws/install"
+                echo "   3. 驗證環境: source /app/setup.bash && agvc_source && ros2 pkg list | grep alan_room_task_build"
+                rm -f "$ROOM_TASK_PID_FILE"
+                return 1
+            fi
+
+            # 4.2 使用 ros2 node list 驗證
+            # Room Task Build 是任務建置核心節點，必須確保節點正常註冊到 ROS 2 網路
+            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於核心服務的深度驗證
+            echo "  🔍 等待 ROS 2 節點註冊..."
+            if verify_ros2_node_startup "/agvc/room_task_build_node" 15; then
+                echo "  ✅ ROS 2 節點已註冊"
+            else
+                echo "  ❌ ROS 2 節點註冊失敗或超時"
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $ROOM_TASK_LOG_FILE"
+                echo "   2. 檢查 ROS 2 環境: ros2 node list"
+                echo "   3. 檢查 Zenoh Router: check_zenoh_status"
+                echo "   4. 驗證網路: ros2 doctor --report"
+
+                # 清理失敗的啟動
+                echo "🧹 清理失敗的啟動..."
+                manage_room_task_build stop > /dev/null 2>&1
+                return 1
+            fi
+
+            # 4.3 最終進程驗證
+            if pgrep -f "room_task_build_node" > /dev/null 2>&1; then
+                echo "  ✅ 服務進程運行正常"
+            else
+                echo "  ⚠️ 警告：服務進程可能異常"
+            fi
+
+            # 4.4 顯示啟動摘要
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Room Task Build Node 啟動完成"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📝 日誌檔案: $ROOM_TASK_LOG_FILE"
+            echo "📊 PID 文件: $ROOM_TASK_PID_FILE"
+            echo "💡 查看日誌: manage_room_task_build logs"
+            echo "💡 檢查狀態: manage_room_task_build status"
+            echo ""
+
+            # 顯示節點資訊
+            echo "📊 節點資訊："
+            ros2 node info /agvc/room_task_build_node 2>/dev/null | head -n 10 || echo "  ⚠️ 無法獲取節點資訊"
             ;;
 
         stop)
-            echo "🛑 停止 Room Task Build Node..."
-            local pids=$(pgrep -f "room_task_build_node")
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🛑 停止 Room Task Build Node"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            if [ -n "$pids" ]; then
-                # 優雅停止
-                for pid in $pids; do
-                    kill -TERM $pid 2>/dev/null || true
-                done
-                sleep 2
+            # ========== 階段 1: 優雅停止主進程 (SIGTERM) ==========
+            echo "📋 階段 1/6: 優雅停止 (SIGTERM)"
 
-                # 強制終止
-                pids=$(pgrep -f "room_task_build_node")
-                if [ -n "$pids" ]; then
-                    for pid in $pids; do
-                        kill -KILL $pid 2>/dev/null || true
-                    done
+            if [ -f "$ROOM_TASK_PID_FILE" ]; then
+                local stopped_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  🔄 發送 SIGTERM 到進程 $pid"
+                        kill -TERM "$pid" 2>/dev/null || true
+                        ((stopped_count++))
+                    fi
+                done < <(tac "$ROOM_TASK_PID_FILE")
+
+                if [ $stopped_count -gt 0 ]; then
+                    echo "  ⏳ 等待 3 秒讓進程優雅退出..."
+                    sleep 3
                 fi
-
-                rm -f "$ROOM_TASK_PID_FILE"
-                echo "✅ Room Task Build Node 已停止"
             else
-                echo "ℹ️ Room Task Build Node 未在運行"
-                rm -f "$ROOM_TASK_PID_FILE"
+                echo "  ℹ️ 未找到 PID 文件"
             fi
+
+            # ========== 階段 2: 強制終止殘留進程 (SIGKILL) ==========
+            echo "📋 階段 2/6: 強制終止 (SIGKILL)"
+
+            if [ -f "$ROOM_TASK_PID_FILE" ]; then
+                local killed_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  ⚠️ 進程 $pid 仍在運行，強制終止"
+                        kill -KILL "$pid" 2>/dev/null || true
+                        ((killed_count++))
+                    fi
+                done < <(tac "$ROOM_TASK_PID_FILE")
+
+                if [ $killed_count -gt 0 ]; then
+                    echo "  ✅ 已強制終止 $killed_count 個殘留進程"
+                    sleep 1
+                fi
+            fi
+
+            # ========== 階段 3: 備份清理（檢查僵屍進程） ==========
+            echo "📋 階段 3/6: 備份清理"
+
+            local zombie_pids=$(pgrep -f "room_task_build_node" | while read p; do
+                if [ -d "/proc/$p" ] && grep -q "Z (zombie)" "/proc/$p/status" 2>/dev/null; then
+                    echo $p
+                fi
+            done)
+
+            if [ -n "$zombie_pids" ]; then
+                echo "  🧟 發現僵屍進程: $zombie_pids"
+                echo "  🔧 嘗試清理僵屍進程的父進程"
+                for zpid in $zombie_pids; do
+                    local parent=$(ps -o ppid= -p $zpid 2>/dev/null | tr -d ' ')
+                    if [ -n "$parent" ] && [ "$parent" != "1" ]; then
+                        echo "    終止父進程 $parent"
+                        kill -KILL "$parent" 2>/dev/null || true
+                    fi
+                done
+                sleep 1
+            fi
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "📋 階段 4/6: 殘留進程清理"
+
+            local remaining_pids=$(pgrep -f "room_task_build_node")
+            if [ -n "$remaining_pids" ]; then
+                echo "  🔍 發現殘留進程: $remaining_pids"
+                for pid in $remaining_pids; do
+                    echo "    終止進程 $pid"
+                    kill -KILL "$pid" 2>/dev/null || true
+                done
+                sleep 1
+            else
+                echo "  ✅ 無殘留進程"
+            fi
+
+            # ========== 階段 5: 端口資源釋放 ==========
+            echo "📋 階段 5/6: 端口資源釋放"
+
+            # Room Task Build 主要使用 ROS 2 DDS/Zenoh，無特定端口需要釋放
+            echo "  ✅ Room Task Build 無需額外端口清理"
+
+            # ========== 階段 6: 清理臨時文件 ==========
+            echo "📋 階段 6/6: 清理臨時文件"
+
+            rm -f "$ROOM_TASK_PID_FILE"
+            echo "  ✅ 已清理 PID 文件"
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Room Task Build Node 已完全停止"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             ;;
 
         restart)
@@ -1969,139 +3002,838 @@ manage_room_task_build() {
             ;;
 
         status)
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  📊 Room Task Build Node 狀態檢查"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # 檢查進程狀態
             if pgrep -f "room_task_build_node" > /dev/null 2>&1; then
                 local pids=$(pgrep -f "room_task_build_node")
-                echo "✅ Room Task Build Node 正在運行 (PIDs: $pids)"
+                echo "✅ Room Task Build Node 正在運行"
+                echo "   PIDs: $pids"
 
-                # 顯示節點狀態
+                # 檢查 PID 文件
+                if [ -f "$ROOM_TASK_PID_FILE" ]; then
+                    echo "   PID 文件: $ROOM_TASK_PID_FILE"
+                    echo "   記錄的 PIDs: $(cat $ROOM_TASK_PID_FILE | tr '\n' ' ')"
+                fi
+
+                # 檢查 ROS 2 節點狀態
+                echo ""
+                echo "🔍 ROS 2 節點狀態："
                 if ros2 node list 2>/dev/null | grep -q "/agvc/room_task_build_node"; then
-                    echo "🔍 ROS 2 節點狀態：已連接到 ROS 2 網路"
+                    echo "  ✅ room_task_build_node 節點已註冊到 ROS 2 網路"
+
+                    # 顯示節點資訊
+                    echo ""
+                    echo "📊 節點詳細資訊："
+                    ros2 node info /agvc/room_task_build_node 2>/dev/null | head -n 15 || echo "  ⚠️ 無法獲取節點資訊"
+                else
+                    echo "  ⚠️ room_task_build_node 節點未在 ROS 2 網路中註冊"
+                    echo "  💡 可能原因："
+                    echo "     1. 節點仍在啟動中"
+                    echo "     2. Zenoh Router 未運行"
+                    echo "     3. 網路連接問題"
+                fi
+
+                # 顯示最新日誌
+                if [ -f "$ROOM_TASK_LOG_FILE" ]; then
+                    echo ""
+                    echo "📜 最新日誌 (最後 5 行):"
+                    tail -n 5 "$ROOM_TASK_LOG_FILE"
                 fi
             else
-                echo "❌ Room Task Build Node 未在運行"
+                echo "🚫 Room Task Build Node 未在運行"
+
+                if [ -f "$ROOM_TASK_PID_FILE" ]; then
+                    echo "⚠️ 發現殘留的 PID 文件"
+                    echo "💡 建議執行: manage_room_task_build stop"
+                fi
+            fi
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            ;;
+
+        logs)
+            if [ -f "$ROOM_TASK_LOG_FILE" ]; then
+                echo "📜 Room Task Build Node 日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$ROOM_TASK_LOG_FILE"
+            else
+                echo "❌ 找不到日誌檔案: $ROOM_TASK_LOG_FILE"
+                echo "💡 服務可能未啟動過，請先執行: manage_room_task_build start"
+                return 1
             fi
             ;;
 
         *)
-            echo "用法: manage_room_task_build {start|stop|restart|status}"
+            echo "用法: manage_room_task_build {start|stop|restart|status|logs}"
             return 1
             ;;
     esac
 }
 
-# 統一管理所有節點
-manage_all_nodes() {
-    local action="${1:-status}"
-    
-    echo "🎮 統一節點管理系統"
-    echo "===================="
-    
-    case "$action" in
-        status)
-            echo "📊 節點狀態檢查:"
-            echo ""
-            echo "=== 系統服務 ==="
-            manage_ssh status
-            manage_zenoh status
-            echo ""
-            echo "=== 資料庫服務 ==="
-            manage_agvc_database_node status
-            echo ""
-            echo "=== Web 服務 ==="
-            manage_web_api_launch status
-            echo ""
-            echo "=== 核心服務 ==="
-            manage_tafl_wcs status  # 新一代 WCS 系統
-            manage_plc_service_agvc status
-            manage_ecs_core status
-            manage_rcs_core status
-            manage_room_task_build status
-            ;;
-            
+# =============================================================================
+# 📦 Transfer Box Task Build Node 管理
+# =============================================================================
+manage_transfer_box_task_build() {
+    # 環境檢測：僅限 AGVC 容器
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        echo "💡 AGV 容器請使用: check_agv_status"
+        return 1
+    fi
+
+    local TRANSFER_BOX_LOG_FILE="/tmp/transfer_box_task_build_node.log"
+    local TRANSFER_BOX_PID_FILE="/tmp/transfer_box_task_build_node.pid"
+
+    case "$1" in
         start)
-            echo "🚀 啟動所有節點..."
-            echo ""
-            echo "1. 啟動系統服務..."
-            manage_ssh start
-            manage_zenoh start
-            # 已移除固定等待：manage_zenoh 內部使用動態驗證
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🚀 啟動 Transfer Box Task Build Node"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            echo ""
-            echo "2. 啟動資料庫服務..."
-            manage_agvc_database_node start
-            # 已移除固定等待：manage_agvc_database_node 內部使用動態驗證
+            # ========== 階段 1: 啟動前檢查 ==========
+            echo "📋 階段 1/4: 啟動前檢查"
 
-            echo ""
-            echo "3. 啟動核心服務..."
-            manage_plc_service_agvc start
-            manage_ecs_core start
-            manage_rcs_core start
-            manage_tafl_wcs start  # 新一代 WCS 系統
-            manage_room_task_build start
-            # 已移除固定等待：所有核心服務內部使用動態驗證
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$TRANSFER_BOX_PID_FILE" ]; then
+                local all_running=true
+                while IFS= read -r pid; do
+                    # 跳過空行
+                    [ -z "$pid" ] && continue
+                    if ! kill -0 "$pid" 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$TRANSFER_BOX_PID_FILE"
 
-            echo ""
-            echo "4. 啟動 Web 服務..."
-            manage_web_api_launch start
+                if [ "$all_running" = true ]; then
+                    echo "✅ Transfer Box Task Build Node 已經在運行中"
+                    echo "💡 如需重新啟動，請使用: manage_transfer_box_task_build restart"
+                    return 0
+                else
+                    echo "🧹 清理過期的 PID 文件"
+                    rm -f "$TRANSFER_BOX_PID_FILE"
+                fi
+            fi
 
+            # ========== 階段 2: 依賴檢查 ==========
+            echo "📋 階段 2/4: 依賴檢查"
+
+            # 2.1 檢查資料庫連接
+            if ! pgrep -f "db_proxy_node" > /dev/null 2>&1; then
+                echo "⚠️ 警告：資料庫代理未運行，Transfer Box Task Build 可能無法正常工作"
+                echo "💡 建議先啟動: manage_agvc_database_node start"
+            fi
+
+            # 2.2 檢查 PLC Proxy（必要依賴）
+            if ! pgrep -f "plc_service" > /dev/null 2>&1; then
+                echo "❌ PLC 代理未運行，Transfer Box Task Build 無法與 PLC 通訊"
+                echo "💡 必須先啟動: manage_plc_service_agvc start"
+                return 1
+            fi
+
+            # 2.3 檢查工作空間建置
+            if [ ! -d "/app/wcs_ws/install" ]; then
+                echo "❌ Transfer Box Task Build 工作空間未建置"
+                echo "💡 診斷建議："
+                echo "   1. 執行建置: cd /app/wcs_ws && colcon build"
+                echo "   2. 或使用快速建置: ba"
+                return 1
+            fi
+
+            # 2.4 檢查套件是否已安裝
+            if [ ! -d "/app/wcs_ws/install/transfer_box_task_build" ]; then
+                echo "❌ transfer_box_task_build 套件未安裝"
+                echo "💡 診斷建議："
+                echo "   1. 執行建置: cd /app/wcs_ws && colcon build --packages-select transfer_box_task_build"
+                echo "   2. 或使用快速建置: ba"
+                return 1
+            fi
+
+            # ========== 階段 3: 啟動服務 ==========
+            echo "📋 階段 3/4: 啟動服務"
+
+            # 3.1 確保日誌目錄存在
+            touch "$TRANSFER_BOX_LOG_FILE"
+
+            # 3.2 啟動 Transfer Box Task Build Node (使用 launch 檔案)
+            echo "🔧 啟動 Transfer Box Task Build Node..."
+            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 launch transfer_box_task_build transfer_box_task_build.launch.py" > "$TRANSFER_BOX_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+
+            # 3.3 記錄父進程 PID
+            echo "$PARENT_PID" > "$TRANSFER_BOX_PID_FILE"
+            echo "  📌 父進程 PID: $PARENT_PID"
+
+            # 3.4 等待 1 秒讓子進程啟動
+            sleep 1
+
+            # 3.5 記錄子進程 PID（bash -c 產生的子 shell）
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                echo "  📌 子進程 PIDs: $CHILD_PIDS"
+                echo "$CHILD_PIDS" >> "$TRANSFER_BOX_PID_FILE"
+            fi
+
+            # 3.6 記錄實際服務進程（python3 執行節點）
+            sleep 1
+            local SERVICE_PIDS=$(pgrep -f "transfer_box_task_build_node")
+            if [ -n "$SERVICE_PIDS" ]; then
+                echo "  📌 服務進程 PIDs: $SERVICE_PIDS"
+                echo "$SERVICE_PIDS" >> "$TRANSFER_BOX_PID_FILE"
+            fi
+
+            # ========== 階段 4: 驗證啟動 ==========
+            echo "📋 階段 4/4: 驗證啟動"
+
+            # 4.1 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ Transfer Box Task Build Node 啟動失敗（父進程未運行）"
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $TRANSFER_BOX_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/wcs_ws/install/transfer_box_task_build"
+                echo "   3. 驗證環境: source /app/setup.bash && agvc_source && ros2 pkg list | grep transfer_box_task_build"
+                rm -f "$TRANSFER_BOX_PID_FILE"
+                return 1
+            fi
+
+            # 4.2 使用 ros2 node list 驗證
+            # Transfer Box Task Build 是傳送箱任務建置節點，負責 PLC 雙向通訊與自動任務建立
+            # 參考決策樹：方法 1️⃣ verify_ros2_node_startup() 用於核心服務的深度驗證
+            echo "  🔍 等待 ROS 2 節點註冊..."
+            if verify_ros2_node_startup "/agvc/transfer_box_task_build_node" 15; then
+                echo "  ✅ ROS 2 節點已註冊"
+            else
+                echo "  ❌ ROS 2 節點註冊失敗或超時"
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $TRANSFER_BOX_LOG_FILE"
+                echo "   2. 檢查 ROS 2 環境: ros2 node list"
+                echo "   3. 檢查 Zenoh Router: check_zenoh_status"
+                echo "   4. 驗證網路: ros2 doctor --report"
+
+                # 清理失敗的啟動
+                echo "🧹 清理失敗的啟動..."
+                manage_transfer_box_task_build stop > /dev/null 2>&1
+                return 1
+            fi
+
+            # 4.3 最終進程驗證
+            if pgrep -f "transfer_box_task_build_node" > /dev/null 2>&1; then
+                echo "  ✅ 服務進程運行正常"
+            else
+                echo "  ⚠️ 警告：服務進程可能異常"
+            fi
+
+            # 4.4 顯示啟動摘要
             echo ""
-            echo "✅ 所有節點啟動完成"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Transfer Box Task Build Node 啟動完成"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📝 日誌檔案: $TRANSFER_BOX_LOG_FILE"
+            echo "📊 PID 文件: $TRANSFER_BOX_PID_FILE"
+            echo "💡 查看日誌: manage_transfer_box_task_build logs"
+            echo "💡 檢查狀態: manage_transfer_box_task_build status"
+            echo ""
+
+            # 顯示節點資訊
+            echo "📊 節點資訊："
+            ros2 node info /agvc/transfer_box_task_build_node 2>/dev/null | head -n 10 || echo "  ⚠️ 無法獲取節點資訊"
             ;;
-            
+
         stop)
-            echo "🛑 停止所有節點..."
-            echo ""
-            echo "1. 停止 Web 服務..."
-            manage_web_api_launch stop
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🛑 停止 Transfer Box Task Build Node"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # ========== 階段 1: 優雅停止主進程 (SIGTERM) ==========
+            echo "📋 階段 1/6: 優雅停止 (SIGTERM)"
+
+            if [ -f "$TRANSFER_BOX_PID_FILE" ]; then
+                local stopped_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  🔄 發送 SIGTERM 到進程 $pid"
+                        kill -TERM "$pid" 2>/dev/null || true
+                        ((stopped_count++))
+                    fi
+                done < <(tac "$TRANSFER_BOX_PID_FILE")
+
+                if [ $stopped_count -gt 0 ]; then
+                    echo "  ⏳ 等待 3 秒讓進程優雅退出..."
+                    sleep 3
+                fi
+            else
+                echo "  ℹ️ 未找到 PID 文件"
+            fi
+
+            # ========== 階段 2: 強制終止殘留進程 (SIGKILL) ==========
+            echo "📋 階段 2/6: 強制終止 (SIGKILL)"
+
+            if [ -f "$TRANSFER_BOX_PID_FILE" ]; then
+                local killed_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  ⚠️ 進程 $pid 仍在運行，強制終止"
+                        kill -KILL "$pid" 2>/dev/null || true
+                        ((killed_count++))
+                    fi
+                done < <(tac "$TRANSFER_BOX_PID_FILE")
+
+                if [ $killed_count -gt 0 ]; then
+                    echo "  ✅ 已強制終止 $killed_count 個殘留進程"
+                    sleep 1
+                fi
+            fi
+
+            # ========== 階段 3: 備份清理（檢查僵屍進程） ==========
+            echo "📋 階段 3/6: 備份清理"
+
+            local zombie_pids=$(pgrep -f "transfer_box_task_build_node" | while read p; do
+                if [ -d "/proc/$p" ] && grep -q "Z (zombie)" "/proc/$p/status" 2>/dev/null; then
+                    echo $p
+                fi
+            done)
+
+            if [ -n "$zombie_pids" ]; then
+                echo "  🧟 發現僵屍進程: $zombie_pids"
+                echo "  🔧 嘗試清理僵屍進程的父進程"
+                for zpid in $zombie_pids; do
+                    local parent=$(ps -o ppid= -p $zpid 2>/dev/null | tr -d ' ')
+                    if [ -n "$parent" ] && [ "$parent" != "1" ]; then
+                        echo "    終止父進程 $parent"
+                        kill -KILL "$parent" 2>/dev/null || true
+                    fi
+                done
+                sleep 1
+            fi
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "📋 階段 4/6: 殘留進程清理"
+
+            local remaining_pids=$(pgrep -f "transfer_box_task_build_node")
+            if [ -n "$remaining_pids" ]; then
+                echo "  🔍 發現殘留進程: $remaining_pids"
+                for pid in $remaining_pids; do
+                    echo "    終止進程 $pid"
+                    kill -KILL "$pid" 2>/dev/null || true
+                done
+                sleep 1
+            else
+                echo "  ✅ 無殘留進程"
+            fi
+
+            # ========== 階段 5: 端口資源釋放 ==========
+            echo "📋 階段 5/6: 端口資源釋放"
+
+            # Transfer Box Task Build 主要使用 ROS 2 DDS/Zenoh，無特定端口需要釋放
+            echo "  ✅ Transfer Box Task Build 無需額外端口清理"
+
+            # ========== 階段 6: 清理臨時文件 ==========
+            echo "📋 階段 6/6: 清理臨時文件"
+
+            rm -f "$TRANSFER_BOX_PID_FILE"
+            echo "  ✅ 已清理 PID 文件"
 
             echo ""
-            echo "2. 停止核心服務..."
-            manage_room_task_build stop
-            manage_tafl_wcs stop  # 新一代 WCS 系統
-            manage_rcs_core stop
-            manage_ecs_core stop
-            manage_plc_service_agvc stop
-
-            echo ""
-            echo "3. 停止資料庫服務..."
-            manage_agvc_database_node stop
-
-            echo ""
-            echo "✅ 所有節點已停止"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Transfer Box Task Build Node 已完全停止"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             ;;
-            
+
         restart)
-            manage_all_nodes stop
-            echo ""
+            echo "🔄 重新啟動 Transfer Box Task Build Node..."
+            manage_transfer_box_task_build stop
             sleep 2
-            manage_all_nodes start
+            manage_transfer_box_task_build start
             ;;
-            
+
+        status)
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  📊 Transfer Box Task Build Node 狀態檢查"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # 檢查進程狀態
+            if pgrep -f "transfer_box_task_build_node" > /dev/null 2>&1; then
+                local pids=$(pgrep -f "transfer_box_task_build_node")
+                echo "✅ Transfer Box Task Build Node 正在運行"
+                echo "   PIDs: $pids"
+
+                # 檢查 PID 文件
+                if [ -f "$TRANSFER_BOX_PID_FILE" ]; then
+                    echo "   PID 文件: $TRANSFER_BOX_PID_FILE"
+                    echo "   記錄的 PIDs: $(cat $TRANSFER_BOX_PID_FILE | tr '\n' ' ')"
+                fi
+
+                # 檢查 ROS 2 節點狀態
+                echo ""
+                echo "🔍 ROS 2 節點狀態："
+                if ros2 node list 2>/dev/null | grep -q "/agvc/transfer_box_task_build_node"; then
+                    echo "  ✅ transfer_box_task_build_node 節點已註冊到 ROS 2 網路"
+
+                    # 顯示節點資訊
+                    echo ""
+                    echo "📊 節點詳細資訊："
+                    ros2 node info /agvc/transfer_box_task_build_node 2>/dev/null | head -n 15 || echo "  ⚠️ 無法獲取節點資訊"
+                else
+                    echo "  ⚠️ transfer_box_task_build_node 節點未在 ROS 2 網路中註冊"
+                    echo "  💡 可能原因："
+                    echo "     1. 節點仍在啟動中"
+                    echo "     2. Zenoh Router 未運行"
+                    echo "     3. 網路連接問題"
+                fi
+
+                # 顯示最新日誌
+                if [ -f "$TRANSFER_BOX_LOG_FILE" ]; then
+                    echo ""
+                    echo "📜 最新日誌 (最後 5 行):"
+                    tail -n 5 "$TRANSFER_BOX_LOG_FILE"
+                fi
+            else
+                echo "🚫 Transfer Box Task Build Node 未在運行"
+
+                if [ -f "$TRANSFER_BOX_PID_FILE" ]; then
+                    echo "⚠️ 發現殘留的 PID 文件"
+                    echo "💡 建議執行: manage_transfer_box_task_build stop"
+                fi
+            fi
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            ;;
+
+        logs)
+            if [ -f "$TRANSFER_BOX_LOG_FILE" ]; then
+                echo "📜 Transfer Box Task Build Node 日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$TRANSFER_BOX_LOG_FILE"
+            else
+                echo "❌ 找不到日誌檔案: $TRANSFER_BOX_LOG_FILE"
+                echo "💡 服務可能未啟動過，請先執行: manage_transfer_box_task_build start"
+                return 1
+            fi
+            ;;
+
         *)
-            echo "用法: manage_all_nodes {start|stop|restart|status}"
-            echo ""
-            echo "可管理的節點:"
-            echo "  - SSH 服務 (manage_ssh)"
-            echo "  - Zenoh Router (manage_zenoh)"
-            echo "  - AGVC Database Node (manage_agvc_database_node)"
-            echo "  - Web API Launch (manage_web_api_launch)"
-            echo "  - TAFL WCS (manage_tafl_wcs)"  # 新一代 WCS 系統
-            echo "  - PLC Service (manage_plc_service_agvc)"
-            echo "  - ECS Core (manage_ecs_core)"
-            echo "  - RCS (manage_rcs_core)"
-            echo "  - Room Task Build (manage_room_task_build)"
+            echo "用法: manage_transfer_box_task_build {start|stop|restart|status|logs}"
             return 1
             ;;
     esac
 }
 
-# 簡化的統一管理指令（預設顯示狀態）
+# =============================================================================
+# 📦 Cargo Move Task Build Node 管理
+# =============================================================================
+manage_cargo_move_task_build() {
+    # 環境檢測：僅限 AGVC 容器
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        echo "💡 AGV 容器請使用: check_agv_status"
+        return 1
+    fi
+
+    local CARGO_TASK_LOG_FILE="/tmp/cargo_move_task_build_node.log"
+    local CARGO_TASK_PID_FILE="/tmp/cargo_move_task_build_node.pid"
+
+    case "$1" in
+        start)
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🚀 啟動 Cargo Move Task Build Node"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # ========== 階段 1: 啟動前檢查 ==========
+            echo "📋 階段 1/4: 啟動前檢查"
+
+            # 1.1 檢查是否已運行（幂等性）
+            if [ -f "$CARGO_TASK_PID_FILE" ]; then
+                local all_running=true
+                while IFS= read -r pid; do
+                    # 跳過空行
+                    [ -z "$pid" ] && continue
+                    if ! kill -0 "$pid" 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$CARGO_TASK_PID_FILE"
+
+                if [ "$all_running" = true ]; then
+                    echo "✅ Cargo Move Task Build Node 已經在運行中"
+                    echo "💡 如需重新啟動，請使用: manage_cargo_move_task_build restart"
+                    return 0
+                else
+                    echo "🧹 清理過期的 PID 文件"
+                    rm -f "$CARGO_TASK_PID_FILE"
+                fi
+            fi
+
+            # ========== 階段 2: 依賴檢查 ==========
+            echo "📋 階段 2/4: 依賴檢查"
+
+            # 2.1 檢查資料庫連接
+            if ! pgrep -f "db_proxy_node" > /dev/null 2>&1; then
+                echo "⚠️ 警告：資料庫代理未運行，Cargo Move Task Build 可能無法正常工作"
+                echo "💡 建議先啟動: manage_agvc_database_node start"
+            fi
+
+            # 2.2 檢查 PLC 服務
+            if ! pgrep -f "plc_service" > /dev/null 2>&1; then
+                echo "⚠️ 警告：PLC 服務未運行，Cargo Move Task Build 無法與 PLC 通訊"
+                echo "💡 建議先啟動: manage_plc_service_agvc start"
+            fi
+
+            # 2.3 檢查工作空間建置
+            if [ ! -d "/app/wcs_ws/install/cargo_move_task_build" ]; then
+                echo "❌ Cargo Move Task Build 工作空間未建置"
+                echo "💡 診斷建議："
+                echo "   1. 執行建置: cd /app/wcs_ws && colcon build --packages-select cargo_move_task_build"
+                echo "   2. 或使用快速建置: ba"
+                return 1
+            fi
+
+            # ========== 階段 3: 啟動服務 ==========
+            echo "📋 階段 3/4: 啟動服務"
+
+            # 3.1 確保日誌目錄存在
+            touch "$CARGO_TASK_LOG_FILE"
+
+            # 3.2 啟動 Cargo Move Task Build Node
+            echo "🔧 啟動 Cargo Move Task Build Node..."
+            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run cargo_move_task_build cargo_move_task_build_node --ros-args -r __ns:=/agvc" > "$CARGO_TASK_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+
+            # 3.3 記錄父進程 PID
+            echo "$PARENT_PID" > "$CARGO_TASK_PID_FILE"
+            echo "  📌 父進程 PID: $PARENT_PID"
+
+            # 3.4 等待 1 秒讓子進程啟動
+            sleep 1
+
+            # 3.5 記錄子進程 PID（bash -c 產生的子 shell）
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                echo "  📌 子進程 PIDs: $CHILD_PIDS"
+                echo "$CHILD_PIDS" >> "$CARGO_TASK_PID_FILE"
+            fi
+
+            # 3.6 記錄實際服務進程（python3 執行節點）
+            sleep 1
+            local SERVICE_PIDS=$(pgrep -f "cargo_move_task_build_node")
+            if [ -n "$SERVICE_PIDS" ]; then
+                echo "  📌 服務進程 PIDs: $SERVICE_PIDS"
+                echo "$SERVICE_PIDS" >> "$CARGO_TASK_PID_FILE"
+            fi
+
+            # ========== 階段 4: 驗證啟動 ==========
+            echo "📋 階段 4/4: 驗證啟動"
+
+            # 4.1 驗證父進程
+            if ! kill -0 $PARENT_PID 2>/dev/null; then
+                echo "❌ Cargo Move Task Build Node 啟動失敗（父進程未運行）"
+                echo "💡 診斷建議："
+                echo "   1. 查看日誌: tail -f $CARGO_TASK_LOG_FILE"
+                echo "   2. 檢查工作空間建置: ls /app/wcs_ws/install/cargo_move_task_build"
+                echo "   3. 驗證環境: source /app/setup.bash && agvc_source && ros2 pkg list | grep cargo_move_task_build"
+                rm -f "$CARGO_TASK_PID_FILE"
+                return 1
+            fi
+
+            # 4.2 使用 ros2 node list 驗證
+            echo "  🔍 等待 ROS 2 節點註冊..."
+            if verify_ros2_node_startup "/agvc/cargo_move_task_build_node" 15; then
+                echo "  ✅ ROS 2 節點已註冊"
+            else
+                echo "  ❌ ROS 2 節點註冊失敗或超時"
+                echo "💡 診斷建議:"
+                echo "   1. 查看日誌: tail -f $CARGO_TASK_LOG_FILE"
+                echo "   2. 檢查 ROS 2 環境: ros2 node list"
+                echo "   3. 檢查 Zenoh Router: check_zenoh_status"
+                echo "   4. 驗證網路: ros2 doctor --report"
+
+                # 清理失敗的啟動
+                echo "🧹 清理失敗的啟動..."
+                manage_cargo_move_task_build stop > /dev/null 2>&1
+                return 1
+            fi
+
+            # 4.3 最終進程驗證
+            if pgrep -f "cargo_move_task_build_node" > /dev/null 2>&1; then
+                echo "  ✅ 服務進程運行正常"
+            else
+                echo "  ⚠️ 警告：服務進程可能異常"
+            fi
+
+            # 4.4 顯示啟動摘要
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Cargo Move Task Build Node 啟動完成"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📝 日誌檔案: $CARGO_TASK_LOG_FILE"
+            echo "📊 PID 文件: $CARGO_TASK_PID_FILE"
+            echo "💡 查看日誌: manage_cargo_move_task_build logs"
+            echo "💡 檢查狀態: manage_cargo_move_task_build status"
+            echo ""
+
+            # 顯示節點資訊
+            echo "📊 節點資訊："
+            ros2 node info /agvc/cargo_move_task_build_node 2>/dev/null | head -n 10 || echo "  ⚠️ 無法獲取節點資訊"
+            ;;
+
+        stop)
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  🛑 停止 Cargo Move Task Build Node"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # ========== 階段 1: 優雅停止主進程 (SIGTERM) ==========
+            echo "📋 階段 1/6: 優雅停止 (SIGTERM)"
+
+            if [ -f "$CARGO_TASK_PID_FILE" ]; then
+                local stopped_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  🔄 發送 SIGTERM 到進程 $pid"
+                        kill -TERM "$pid" 2>/dev/null || true
+                        ((stopped_count++))
+                    fi
+                done < <(tac "$CARGO_TASK_PID_FILE")
+
+                if [ $stopped_count -gt 0 ]; then
+                    echo "  ⏳ 等待 3 秒讓進程優雅退出..."
+                    sleep 3
+                fi
+            else
+                echo "  ℹ️ 未找到 PID 文件"
+            fi
+
+            # ========== 階段 2: 強制終止殘留進程 (SIGKILL) ==========
+            echo "📋 階段 2/6: 強制終止 (SIGKILL)"
+
+            if [ -f "$CARGO_TASK_PID_FILE" ]; then
+                local killed_count=0
+                while IFS= read -r pid; do
+                    [ -z "$pid" ] && continue
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "  ⚠️ 進程 $pid 仍在運行，強制終止"
+                        kill -KILL "$pid" 2>/dev/null || true
+                        ((killed_count++))
+                    fi
+                done < <(tac "$CARGO_TASK_PID_FILE")
+
+                if [ $killed_count -gt 0 ]; then
+                    echo "  ✅ 已強制終止 $killed_count 個殘留進程"
+                    sleep 1
+                fi
+            fi
+
+            # ========== 階段 3: 備份清理（檢查僵屍進程） ==========
+            echo "📋 階段 3/6: 備份清理"
+
+            local zombie_pids=$(pgrep -f "cargo_move_task_build_node" | while read p; do
+                if [ -d "/proc/$p" ] && grep -q "Z (zombie)" "/proc/$p/status" 2>/dev/null; then
+                    echo $p
+                fi
+            done)
+
+            if [ -n "$zombie_pids" ]; then
+                echo "  🧟 發現僵屍進程: $zombie_pids"
+                echo "  🔧 嘗試清理僵屍進程的父進程"
+                for zpid in $zombie_pids; do
+                    local parent=$(ps -o ppid= -p $zpid 2>/dev/null | tr -d ' ')
+                    if [ -n "$parent" ] && [ "$parent" != "1" ]; then
+                        echo "    終止父進程 $parent"
+                        kill -KILL "$parent" 2>/dev/null || true
+                    fi
+                done
+                sleep 1
+            fi
+
+            # ========== 階段 4: 殘留進程清理 ==========
+            echo "📋 階段 4/6: 殘留進程清理"
+
+            local remaining_pids=$(pgrep -f "cargo_move_task_build_node")
+            if [ -n "$remaining_pids" ]; then
+                echo "  🔍 發現殘留進程: $remaining_pids"
+                for pid in $remaining_pids; do
+                    echo "    終止進程 $pid"
+                    kill -KILL "$pid" 2>/dev/null || true
+                done
+                sleep 1
+            else
+                echo "  ✅ 無殘留進程"
+            fi
+
+            # ========== 階段 5: 端口資源釋放 ==========
+            echo "📋 階段 5/6: 端口資源釋放"
+            echo "  ✅ Cargo Move Task Build 無需額外端口清理"
+
+            # ========== 階段 6: 清理臨時文件 ==========
+            echo "📋 階段 6/6: 清理臨時文件"
+
+            rm -f "$CARGO_TASK_PID_FILE"
+            echo "  ✅ 已清理 PID 文件"
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Cargo Move Task Build Node 已完全停止"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            ;;
+
+        restart)
+            echo "🔄 重新啟動 Cargo Move Task Build Node..."
+            manage_cargo_move_task_build stop
+            sleep 2
+            manage_cargo_move_task_build start
+            ;;
+
+        status)
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  📊 Cargo Move Task Build Node 狀態檢查"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # 檢查進程狀態
+            if pgrep -f "cargo_move_task_build_node" > /dev/null 2>&1; then
+                local pids=$(pgrep -f "cargo_move_task_build_node")
+                echo "✅ Cargo Move Task Build Node 正在運行"
+                echo "   PIDs: $pids"
+
+                # 檢查 PID 文件
+                if [ -f "$CARGO_TASK_PID_FILE" ]; then
+                    echo "   PID 文件: $CARGO_TASK_PID_FILE"
+                    echo "   記錄的 PIDs: $(cat $CARGO_TASK_PID_FILE | tr '\n' ' ')"
+                fi
+
+                # 檢查 ROS 2 節點狀態
+                echo ""
+                echo "🔍 ROS 2 節點狀態："
+                if ros2 node list 2>/dev/null | grep -q "/agvc/cargo_move_task_build_node"; then
+                    echo "  ✅ cargo_move_task_build_node 節點已註冊到 ROS 2 網路"
+
+                    # 顯示節點資訊
+                    echo ""
+                    echo "📊 節點詳細資訊："
+                    ros2 node info /agvc/cargo_move_task_build_node 2>/dev/null | head -n 15 || echo "  ⚠️ 無法獲取節點資訊"
+                else
+                    echo "  ⚠️ cargo_move_task_build_node 節點未在 ROS 2 網路中註冊"
+                    echo "  💡 可能原因："
+                    echo "     1. 節點仍在啟動中"
+                    echo "     2. Zenoh Router 未運行"
+                    echo "     3. 網路連接問題"
+                fi
+
+                # 顯示最新日誌
+                if [ -f "$CARGO_TASK_LOG_FILE" ]; then
+                    echo ""
+                    echo "📜 最新日誌 (最後 5 行):"
+                    tail -n 5 "$CARGO_TASK_LOG_FILE"
+                fi
+            else
+                echo "🚫 Cargo Move Task Build Node 未在運行"
+
+                if [ -f "$CARGO_TASK_PID_FILE" ]; then
+                    echo "⚠️ 發現殘留的 PID 文件"
+                    echo "💡 建議執行: manage_cargo_move_task_build stop"
+                fi
+            fi
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            ;;
+
+        logs)
+            if [ -f "$CARGO_TASK_LOG_FILE" ]; then
+                echo "📜 Cargo Move Task Build Node 日誌 (Ctrl+C 退出):"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$CARGO_TASK_LOG_FILE"
+            else
+                echo "❌ 找不到日誌檔案: $CARGO_TASK_LOG_FILE"
+                echo "💡 服務可能未啟動過，請先執行: manage_cargo_move_task_build start"
+                return 1
+            fi
+            ;;
+
+        *)
+            echo "用法: manage_cargo_move_task_build {start|stop|restart|status|logs}"
+            return 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# 📊 統一狀態查看函數
+# =============================================================================
+# 顯示所有 AGVC 服務的運行狀態（僅狀態查看，不提供統一啟動/停止）
 manage() {
-    # 無參數時預設顯示狀態，有參數時轉發給 manage_all_nodes
-    if [ -z "$1" ]; then
-        manage_all_nodes status
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  📊 AGVC 系統服務狀態總覽"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    # 檢查環境
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        echo "💡 AGV 容器請使用: check_agv_status"
+        return 1
+    fi
+
+    # 定義服務列表（按照邏輯分組）
+    echo "🔧 核心服務:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    check_service_status "PLC 服務              " "plc_service" "manage_plc_service_agvc"
+    check_service_status "ECS 核心              " "ecs_core" "manage_ecs_core"
+    check_service_status "RCS 核心              " "rcs_core" "manage_rcs_core"
+    echo ""
+
+    echo "📦 資料服務:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    check_service_status "資料庫代理            " "agvc_database_node" "manage_agvc_database_node"
+    check_service_status "Room Task Build       " "room_task_build_node" "manage_room_task_build"
+    check_service_status "Cargo Move Task Build " "cargo_move_task_build_node" "manage_cargo_move_task_build"
+    echo ""
+
+    echo "🌐 Web 服務:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    check_service_status "API Gateway (8000)    " "api_server" "manage_web_api_launch"
+    check_service_status "AGVCUI (8001)         " "agvc_ui_server" "manage_web_api_launch"
+    check_service_status "OPUI (8002)           " "op_ui_server" "manage_web_api_launch"
+    check_service_status "AGVUI (8003)          " "agv_ui_server" "manage_web_api_launch"
+    echo ""
+
+    echo "🔌 基礎服務:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    check_service_status "Zenoh Router          " "zenohd" "manage_zenoh"
+    check_service_status "SSH 服務              " "sshd" "manage_ssh"
+    echo ""
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "💡 管理服務:"
+    echo "   • 單獨啟動: manage_<service_name> start"
+    echo "   • 單獨停止: manage_<service_name> stop"
+    echo "   • 查看狀態: manage_<service_name> status"
+    echo "   • 查看日誌: manage_<service_name> logs"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# 檢查單個服務狀態的輔助函數
+check_service_status() {
+    local display_name="$1"
+    local process_name="$2"
+    local manage_func="$3"
+
+    # 使用 printf 確保對齊
+    printf "  %-25s" "$display_name"
+
+    if pgrep -f "$process_name" > /dev/null 2>&1; then
+        local pids=$(pgrep -f "$process_name" | head -n 3 | tr '\n' ',' | sed 's/,$//')
+        local pid_count=$(pgrep -f "$process_name" | wc -l)
+
+        if [ $pid_count -gt 3 ]; then
+            echo "✅ 運行中 (PIDs: $pids... +$((pid_count-3)) 更多)"
+        else
+            echo "✅ 運行中 (PIDs: $pids)"
+        fi
     else
-        manage_all_nodes "$@"
+        echo "🚫 未運行"
     fi
 }
 
@@ -2192,6 +3924,7 @@ manage_agv_launch() {
             echo "⏳ 啟動 AGV Launch..."
 
             # 啟動 Launch（後台運行）
+            # 注意：移除 -i 標志避免 job control 暫停問題
             nohup bash -c "source /app/setup.bash > /dev/null 2>&1 && agv_source > /dev/null 2>&1 && ros2 launch $package_name launch.py" > "$AGV_LAUNCH_LOG_FILE" 2>&1 &
             local launch_pid=$!
             echo $launch_pid > "$AGV_LAUNCH_PID_FILE"
@@ -2456,3 +4189,231 @@ alias lagv='manage_agv_launch'
 
 # ===== 模組初始化完成 =====
 log_debug "✅ Node Management 模組已載入（含本地 AGV Launch 管理）"
+
+# =============================================================================
+# KUKA WCS 節點管理（KUKA Warehouse Control System）
+# =============================================================================
+
+manage_kuka_wcs() {
+    # 環境檢測：僅限 AGVC 容器
+    if ! is_agvc_environment; then
+        echo "❌ 此功能僅適用於 AGVC 環境"
+        return 1
+    fi
+
+    local KUKA_WCS_LOG_FILE="/tmp/kuka_wcs.log"
+    local KUKA_WCS_PID_FILE="/tmp/kuka_wcs.pid"
+    local NODE_NAME="/agvc/kuka_wcs_node"
+
+    case "$1" in
+        start)
+            # ===== 階段 1: 啟動前檢查（幂等性驗證）=====
+            if [ -f "$KUKA_WCS_PID_FILE" ]; then
+                local all_running=true
+                while read pid; do
+                    if ! kill -0 $pid 2>/dev/null; then
+                        all_running=false
+                        break
+                    fi
+                done < "$KUKA_WCS_PID_FILE"
+                
+                if [ "$all_running" = true ]; then
+                    echo "✅ KUKA WCS 節點已經在運行中"
+                    echo "   PID: $(cat $KUKA_WCS_PID_FILE | tr '\n' ' ')"
+                    return 0
+                else
+                    echo "🧹 清理過時的 PID 檔案..."
+                    rm -f "$KUKA_WCS_PID_FILE"
+                fi
+            fi
+            
+            # ===== 階段 2: 依賴檢查 =====
+            echo "🔍 啟動前環境檢查..."
+            
+            # 檢查工作空間是否已建置
+            if [ ! -d "/app/kuka_wcs_ws/install" ]; then
+                echo "⚠️  警告: kuka_wcs_ws 未建置"
+                echo "💡 請先執行: cd /app && build_ws kuka_wcs_ws"
+                return 1
+            fi
+            
+            # 檢查資料庫連接
+            if ! docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | grep -q "Up"; then
+                echo "❌ PostgreSQL 資料庫未運行"
+                echo "💡 請先啟動資料庫: docker compose -f docker-compose.agvc.yml up -d postgres"
+                return 1
+            fi
+
+            # ===== 階段 3: 啟動服務 =====
+            echo "🚀 啟動 KUKA WCS 節點..."
+            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run kuka_wcs kuka_wcs_node" > "$KUKA_WCS_LOG_FILE" 2>&1 &
+            local PARENT_PID=$!
+            
+            # 記錄父進程
+            echo $PARENT_PID > "$KUKA_WCS_PID_FILE"
+            
+            # 等待子進程啟動
+            sleep 3
+            
+            # 找出並記錄子進程
+            local CHILD_PIDS=$(pgrep -P $PARENT_PID)
+            if [ -n "$CHILD_PIDS" ]; then
+                for pid in $CHILD_PIDS; do
+                    echo $pid >> "$KUKA_WCS_PID_FILE"
+                done
+            fi
+            
+            # 記錄實際的服務進程
+            sleep 2
+            local SERVICE_PID=$(pgrep -f "kuka_wcs_node" | head -n1)
+            if [ -n "$SERVICE_PID" ] && ! grep -q "^$SERVICE_PID$" "$KUKA_WCS_PID_FILE" 2>/dev/null; then
+                echo $SERVICE_PID >> "$KUKA_WCS_PID_FILE"
+            fi
+
+            # ===== 階段 4: 驗證啟動（使用 ROS2 節點驗證）=====
+            if verify_ros2_node_startup "$NODE_NAME" 15; then
+                echo "✅ KUKA WCS 節點已成功啟動"
+                echo "   記錄的 PID: $(cat $KUKA_WCS_PID_FILE | tr '\n' ' ')"
+                echo "   節點名稱: $NODE_NAME"
+                echo "💡 查看日誌: tail -f $KUKA_WCS_LOG_FILE"
+                return 0
+            else
+                echo "❌ KUKA WCS 節點啟動失敗或驗證超時"
+                echo "📝 檢查日誌: tail -f $KUKA_WCS_LOG_FILE"
+                echo "💡 可能的原因:"
+                echo "   - 套件未正確建置 (執行: build_ws kuka_wcs_ws)"
+                echo "   - Python 依賴未安裝"
+                echo "   - 資料庫連接失敗"
+                echo "   - ROS2 環境未正確載入"
+                return 1
+            fi
+            ;;
+
+        stop)
+            if [ ! -f "$KUKA_WCS_PID_FILE" ]; then
+                echo "⚠️  KUKA WCS 節點未運行（無 PID 檔案）"
+                return 0
+            fi
+            
+            # ===== 6 階段停止流程 =====
+            echo "⏳ 停止 KUKA WCS 節點..."
+            
+            # 階段 1: 優雅停止 (SIGTERM)
+            local PIDS=$(tac "$KUKA_WCS_PID_FILE")
+            for pid in $PIDS; do
+                if kill -0 $pid 2>/dev/null; then
+                    echo "   停止進程 PID: $pid (SIGTERM)"
+                    kill $pid 2>/dev/null
+                fi
+            done
+            
+            # 等待進程結束
+            sleep 3
+            
+            # 階段 2: 強制終止 (SIGKILL)
+            for pid in $PIDS; do
+                if kill -0 $pid 2>/dev/null; then
+                    echo "   強制終止 PID: $pid (SIGKILL)"
+                    kill -9 $pid 2>/dev/null
+                fi
+            done
+            
+            # 階段 3-4: 清理殘留進程
+            local remaining=$(pgrep -f "kuka_wcs_node")
+            if [ -n "$remaining" ]; then
+                echo "   清理殘留進程: $remaining"
+                kill -9 $remaining 2>/dev/null
+            fi
+            
+            # 階段 6: 清理臨時文件
+            rm -f "$KUKA_WCS_PID_FILE"
+            
+            echo "✅ KUKA WCS 節點已停止"
+            ;;
+
+        restart)
+            echo "🔄 重啟 KUKA WCS 節點..."
+            manage_kuka_wcs stop
+            sleep 2
+            manage_kuka_wcs start
+            ;;
+
+        status)
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📊 KUKA WCS 節點狀態"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            # 檢查 PID 檔案
+            if [ -f "$KUKA_WCS_PID_FILE" ]; then
+                local pids=$(cat "$KUKA_WCS_PID_FILE" | tr '\n' ' ')
+                echo "✅ PID 檔案存在: $pids"
+                
+                # 檢查進程是否運行
+                local running_count=0
+                for pid in $pids; do
+                    if kill -0 $pid 2>/dev/null; then
+                        ((running_count++))
+                    fi
+                done
+                echo "   運行中的進程數: $running_count / $(wc -l < $KUKA_WCS_PID_FILE)"
+            else
+                echo "🚫 PID 檔案不存在"
+            fi
+            
+            # 檢查 ROS2 節點
+            if ros2 node list 2>/dev/null | grep -q "$NODE_NAME"; then
+                echo "✅ ROS2 節點已註冊: $NODE_NAME"
+            else
+                echo "🚫 ROS2 節點未註冊: $NODE_NAME"
+            fi
+            
+            # 檢查進程
+            if pgrep -f "kuka_wcs_node" > /dev/null 2>&1; then
+                local proc_pid=$(pgrep -f "kuka_wcs_node")
+                echo "✅ 進程運行中 (PID: $proc_pid)"
+            else
+                echo "🚫 進程未運行"
+            fi
+            
+            # 檢查日誌檔案
+            if [ -f "$KUKA_WCS_LOG_FILE" ]; then
+                local log_size=$(du -h "$KUKA_WCS_LOG_FILE" | cut -f1)
+                echo "📝 日誌檔案: $KUKA_WCS_LOG_FILE ($log_size)"
+            else
+                echo "   無日誌檔案"
+            fi
+            
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "💡 詳細日誌: tail -f $KUKA_WCS_LOG_FILE"
+            echo "💡 重啟服務: manage_kuka_wcs restart"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            ;;
+
+        logs)
+            if [ -f "$KUKA_WCS_LOG_FILE" ]; then
+                echo "📝 KUKA WCS 節點日誌（Ctrl+C 退出）:"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                tail -f "$KUKA_WCS_LOG_FILE"
+            else
+                echo "❌ 日誌檔案不存在: $KUKA_WCS_LOG_FILE"
+                return 1
+            fi
+            ;;
+
+        *)
+            echo "用法: manage_kuka_wcs {start|stop|restart|status|logs}"
+            echo ""
+            echo "指令說明:"
+            echo "  start   - 啟動 KUKA WCS 節點"
+            echo "  stop    - 停止 KUKA WCS 節點"
+            echo "  restart - 重啟 KUKA WCS 節點"
+            echo "  status  - 顯示 KUKA WCS 節點狀態"
+            echo "  logs    - 查看 KUKA WCS 節點日誌"
+            return 1
+            ;;
+    esac
+}
+
+# 別名定義
+alias kuka_wcs='manage_kuka_wcs'
+

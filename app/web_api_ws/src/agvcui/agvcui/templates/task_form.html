@@ -126,7 +126,6 @@
                                         {% for work in works %}
                                         <option value="{{ work.id }}"
                                                 data-work-id="{{ work.id }}"
-                                                data-work-code="{{ work.work_code or '' }}"
                                                 data-work-name="{{ work.name }}"
                                                 data-work-description="{{ work.description or '' }}"
                                                 data-work-parameters='{{ work.parameters | tojson if work.parameters else "{}" }}'

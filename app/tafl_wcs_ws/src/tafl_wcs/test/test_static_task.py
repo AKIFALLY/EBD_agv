@@ -42,8 +42,7 @@ async def test_static_task():
             test_work = Work(
                 id=TEST_WORK_ID,
                 name="測試 Work",
-                description="用於 TAFL 靜態任務測試",
-                work_code="TEST_STATIC"
+                description="用於 TAFL 靜態任務測試"
             )
             session.add(test_work)
             print("   ✅ Work 記錄")

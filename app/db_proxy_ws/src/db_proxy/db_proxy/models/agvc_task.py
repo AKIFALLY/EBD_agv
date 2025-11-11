@@ -10,7 +10,6 @@ import json
 class Work(SQLModel, table=True):
     __tablename__ = "work"
     id: Optional[int] = Field(default=None, primary_key=True)
-    work_code: Optional[str] = None  # Flow WCS 需要的 work_code 欄位
     name: str
     description: Optional[str] = None
 

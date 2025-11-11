@@ -28,9 +28,6 @@
     /// See https://docs.rs/zenoh/latest/zenoh/config/struct.EndPoint.html
     endpoints: [
         // 以下端點可正常連接
-        "tcp/192.168.10.11:7447",
-        "tcp/192.168.10.12:7447",
-        "tcp/192.168.10.13:7447",
         "tcp/192.168.10.3:7447"          // ✅ AGVC 主電腦內網 IP
         
         

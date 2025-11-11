@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 from opui.database.operations import connection_pool
-from db_proxy.models import Location, Rack, LocationStatus, Carrier
+from db_proxy.models import Location, Rack, LocationStatus
 from sqlmodel import select, delete
 
 router = APIRouter(prefix="/api/hmi", tags=["hmi"])
@@ -70,46 +70,43 @@ async def remove_rack(request: RemoveRackRequest):
             # 3. 移出 Rack
             rack_name = rack.name
             rack_id = rack.id
-            
-            # 4. 清除相關的 Carrier 記錄
-            # 查詢所有關聯到此 Rack 的 Carrier
-            carriers_to_clear = session.exec(
-                select(Carrier).where(Carrier.rack_id == rack_id)
-            ).all()
-            
-            carrier_count = len(carriers_to_clear)
-            
-            # 刪除所有相關的 Carrier 記錄
-            if carrier_count > 0:
-                for carrier in carriers_to_clear:
-                    session.delete(carrier)
-                print(f"清除 {carrier_count} 個 Carrier 記錄 (Rack {rack_name})")
-            
-            # 更新 Rack - 清除 location_id
+
+            # 更新 Rack - 清除 location_id 並標記為不在地圖中
             rack.location_id = None
-            
+            rack.is_in_map = 0  # 標記為不在地圖中（觸發 KUKA 出場）
+
+            # 🆕 KUKA 容器出場同步
+            try:
+                from opui.services.kuka_sync_service import OpuiKukaContainerSync
+                kuka_sync = OpuiKukaContainerSync()
+                sync_result = kuka_sync.sync_container_exit(rack)
+                if sync_result.get("success"):
+                    print(f"✅ KUKA 容器出場成功: {rack_name}")
+                else:
+                    print(f"⚠️ KUKA 容器出場失敗: {sync_result.get('message')}")
+            except Exception as kuka_error:
+                print(f"⚠️ KUKA 同步異常（不影響 Rack 移出）: {str(kuka_error)}")
+
             # 更新 Location 狀態
             location.location_status_id = LocationStatus.UNOCCUPIED
             
-            # 5. 記錄操作日誌（包含 Carrier 清除資訊）
+            # 5. 記錄操作日誌
             # TODO: 加入操作日誌記錄
             # log_entry = OperationLog(
             #     device_id=request.device_id,
             #     action="REMOVE_RACK",
             #     location_id=request.location_id,
             #     rack_id=rack.id,
-            #     note=f"{request.operator_note}. 已清除 {carrier_count} 個 Carrier 記錄",
+            #     note=request.operator_note,
             #     timestamp=datetime.now(timezone.utc)
             # )
             # session.add(log_entry)
-            
+
             # 6. 提交變更
             session.commit()
-            
+
             # 建立回應訊息
             message = f"成功從 Location {location.name} 移出 Rack {rack_name}"
-            if carrier_count > 0:
-                message += f"，並清除 {carrier_count} 個相關 Carrier 記錄"
             
             return RemoveRackResponse(
                 success=True,

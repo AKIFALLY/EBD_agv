@@ -29,6 +29,7 @@ build_agv() {
         "agv_ws"
         "sensorpart_ws"
         "uno_gpio_ws"
+        "web_api_ws"        # AGVUI 車載監控依賴
         "launch_ws"
     )
 
@@ -104,8 +105,7 @@ build_agvc() {
     local agvc_app_workspaces=(
         "ecs_ws"
         "rcs_ws"
-        "tafl_ws"      # TAFL parser and executor (新一代 WCS 基礎)
-        "tafl_wcs_ws"  # TAFL WCS integration (目前使用的 WCS 實作)
+        "kuka_wcs_ws"  # KUKA WCS (纯 Python 实现，替代 TAFL)
         "web_api_ws"
         "kuka_fleet_ws"
         "launch_ws"
@@ -202,7 +202,7 @@ build_all_workspaces() {
         "path_algorithm"
 
         # 核心服務工作空間
-        "db_proxy_ws"          # 資料庫服務，被 tafl_wcs_ws 等依賴
+        "db_proxy_ws"          # 資料庫服務，被 kuka_wcs_ws 等依賴
 
         # AGV 相關工作空間
         "agv_ws"               # 核心 AGV 控制
@@ -213,8 +213,7 @@ build_all_workspaces() {
         # AGVC 應用工作空間 (依賴 db_proxy_ws)
         "ecs_ws"               # 設備控制系統
         "rcs_ws"               # 機器人控制系統
-        "tafl_ws"              # TAFL parser and executor (新一代 WCS 基礎)
-        "tafl_wcs_ws"          # TAFL WCS integration (目前使用的 WCS 實作)
+        "kuka_wcs_ws"          # KUKA WCS (纯 Python 实现，替代 TAFL)
         "web_api_ws"           # Web API 服務
         "kuka_fleet_ws"        # KUKA Fleet 整合
 

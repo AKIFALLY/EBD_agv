@@ -36,6 +36,13 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
             tasks = get_tasks(offset=offset, limit=limit)
             total = count_tasks()
 
+        # 將所有 task 的時間字段轉換為 Taipei 時區
+        for task in tasks:
+            if task.created_at and task.created_at.tzinfo:
+                task.created_at = task.created_at.astimezone(ZoneInfo("Asia/Taipei"))
+            if task.updated_at and task.updated_at.tzinfo:
+                task.updated_at = task.updated_at.astimezone(ZoneInfo("Asia/Taipei"))
+
         total_pages = (total + limit - 1) // limit
 
         taipei_time = datetime.now(ZoneInfo("Asia/Taipei"))

@@ -9,7 +9,6 @@
  */
 
 import { mapRackManager } from './mapRackManager.js';
-import { mapCarrierManager } from './mapCarrierManager.js';
 import { mapTaskManager } from './mapTaskManager.js';
 
 export const mapDataSync = (() => {
@@ -37,11 +36,6 @@ export const mapDataSync = (() => {
         // 初始化貨架管理器資料
         if (window.mapRackManager) {
             window.mapRackManager.loadRackData();
-        }
-
-        // 初始化載具管理器資料
-        if (window.mapCarrierManager) {
-            window.mapCarrierManager.loadCarrierData();
         }
 
         // 初始化任務管理器資料
@@ -79,8 +73,6 @@ export const mapDataSync = (() => {
 
         if (key === 'map_data_racks' && window.mapRackManager) {
             window.mapRackManager.loadRackData();
-        } else if (key === 'map_data_carriers' && window.mapCarrierManager) {
-            window.mapCarrierManager.loadCarrierData();
         } else if (key === 'map_data_tasks' && window.mapTaskManager) {
             window.mapTaskManager.loadTaskData();
         }

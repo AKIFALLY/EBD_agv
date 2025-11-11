@@ -5,14 +5,12 @@
 
 from db_proxy.connection_pool_manager import ConnectionPoolManager
 from db_proxy.models import (
-    Client, Product, Machine, Room, Rack, Task, TaskStatus, Carrier, CarrierStatus,
+    Client, Product, Machine, Room, Rack, Task, TaskStatus,
     User, EqpPort, Eqp, EqpSignal, RosoutLog, RuntimeLog, ModifyLog, Work, AGV,
     Node, ProcessSettings, Location, RackStatus
 )
 from db_proxy.crud.base_crud import BaseCRUD
 from db_proxy.crud.eqp_crud import eqp_signal_crud, eqp_crud, eqp_port_crud
-from db_proxy.crud.carrier_crud import carrier_crud
-from db_proxy.crud.carrier_status_crud import carrier_status_crud
 from db_proxy.crud.room_crud import room_crud
 from db_proxy.crud.rack_crud import rack_crud
 from db_proxy.crud.agv_crud import agv_crud
@@ -31,7 +29,7 @@ connection_pool = ConnectionPoolManager(db_url_agvc)
 client_crud = BaseCRUD(Client, id_column="id")
 product_crud = BaseCRUD(Product, id_column="id")
 machine_crud = BaseCRUD(Machine, id_column="id")
-room_crud = BaseCRUD(Room, id_column="id")
+# room_crud 從 db_proxy.crud.room_crud 導入，不需要重新創建
 rack_crud = BaseCRUD(Rack, id_column="id")
 task_crud = BaseCRUD(Task, id_column="id")
 task_status_crud = BaseCRUD(TaskStatus, id_column="id")

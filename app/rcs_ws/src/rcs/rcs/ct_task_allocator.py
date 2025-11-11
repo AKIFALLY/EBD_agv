@@ -187,7 +187,7 @@ class CtTaskAllocator:
 
     def _handle_unmapped_work_id(self, work_id, task, available_agvs) -> Tuple[Optional[str], Optional[int]]:
         """
-        處理未映射的 work_id
+        處理未映射的 work_id - 使用動態分配
 
         Args:
             work_id: 工作 ID
@@ -197,26 +197,72 @@ class CtTaskAllocator:
         Returns:
             Tuple[Optional[str], Optional[int]]: (agv_name, priority)
         """
-        default = self.config.get('default_allocation', {})
+        # 嘗試動態分配（根據 room_id + agv_type）
+        agv_name = self._allocate_by_room_and_type(task, available_agvs)
 
-        # 記錄未映射的 work_id
-        if default.get('log_unmapped', True):
-            self.logger.warning(
-                f"work_id {work_id} 未在配置文件中定義映射 (任務 {task.id})"
-            )
+        if agv_name:
+            if self.config.get('debug', {}).get('log_allocation_decisions', True):
+                self.logger.info(
+                    f"work_id {work_id} 未映射，使用動態分配: AGV {agv_name} "
+                    f"(room_id={task.room_id}, agv_type={task.parameters.get('agv_type')})"
+                )
+            return agv_name, None
 
-        # 檢查是否啟用默認分配
-        if not default.get('enabled', False):
-            return None, None
-
-        # 使用默認 AGV
-        fallback_agv = default.get('fallback_agv')
-
-        if fallback_agv and self._validate_agv_for_task(fallback_agv, task, available_agvs):
-            self.logger.info(f"使用默認 AGV {fallback_agv} 處理未映射的 work_id {work_id}")
-            return fallback_agv, None
-
+        # 動態分配失敗，記錄警告
+        self.logger.warning(
+            f"work_id {work_id} 未映射且無法動態分配 AGV (任務 {task.id})"
+        )
         return None, None
+
+    def _allocate_by_room_and_type(self, task, available_agvs: List) -> Optional[str]:
+        """
+        根據房間編號和 AGV 類型動態分配 AGV
+
+        規則：每個房間每個型號只有一台 AGV
+        命名格式：{agv_type.lower()}{room_id:02d}（例如：loader02, unloader02）
+
+        Args:
+            task: 任務實例（需包含 room_id 和 parameters['agv_type']）
+            available_agvs: 可用的 AGV 列表
+
+        Returns:
+            Optional[str]: AGV 名稱，無法分配則返回 None
+        """
+        # 從任務參數中提取 agv_type 和 room_id
+        if not task.parameters or 'agv_type' not in task.parameters:
+            self.logger.warning(
+                f"任務 {task.id} 缺少 parameters['agv_type']，無法動態分配"
+            )
+            return None
+
+        agv_type = task.parameters.get('agv_type')
+        room_id = task.room_id
+
+        if not room_id:
+            self.logger.warning(
+                f"任務 {task.id} 缺少 room_id，無法動態分配"
+            )
+            return None
+
+        # 根據命名規則構建 AGV 名稱
+        agv_name = f"{agv_type.lower()}{room_id:02d}"
+
+        # 驗證 AGV 是否可用
+        if self._validate_agv_for_task(agv_name, task, available_agvs):
+            if self.config.get('debug', {}).get('verbose_logging', False):
+                self.logger.debug(
+                    f"動態分配成功: 任務 {task.id} → AGV {agv_name} "
+                    f"(room={room_id}, type={agv_type})"
+                )
+            return agv_name
+
+        # AGV 不可用
+        if self.config.get('debug', {}).get('verbose_logging', False):
+            self.logger.debug(
+                f"動態分配失敗: AGV {agv_name} 不可用 "
+                f"(room={room_id}, type={agv_type})"
+            )
+        return None
 
     def _validate_agv_for_task(self, agv_name: str, task, available_agvs: List) -> bool:
         """

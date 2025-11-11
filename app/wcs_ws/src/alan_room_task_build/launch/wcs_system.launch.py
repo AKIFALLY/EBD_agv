@@ -6,14 +6,16 @@ WCS 系統完整啟動 Launch 文件
 1. PLC 代理節點 (plc_proxy_node)
 2. ECS 設備控制節點 (ecs_node)
 3. Room Task Build 節點 (room_task_build_node)
+4. Cargo Move Task Build 節點 (cargo_move_task_build_node)
 
 使用方式：
     ros2 launch alan_room_task_build wcs_system.launch.py
 
 參數：
-    log_level:=info    # 日志級別 (debug, info, warn, error)
-    use_ecs:=true      # 是否啟動 ECS
-    use_plc:=true      # 是否啟動 PLC 代理
+    log_level:=info        # 日志級別 (debug, info, warn, error)
+    use_ecs:=true          # 是否啟動 ECS
+    use_plc:=true          # 是否啟動 PLC 代理
+    use_cargo_task:=true   # 是否啟動 Cargo Move Task Build
 """
 
 from launch import LaunchDescription
@@ -45,10 +47,17 @@ def generate_launch_description():
         description='是否啟動 PLC 代理節點'
     )
 
+    use_cargo_task_arg = DeclareLaunchArgument(
+        'use_cargo_task',
+        default_value='true',
+        description='是否啟動 Cargo Move Task Build 節點'
+    )
+
     # 獲取參數值
     log_level = LaunchConfiguration('log_level')
     use_ecs = LaunchConfiguration('use_ecs')
     use_plc = LaunchConfiguration('use_plc')
+    use_cargo_task = LaunchConfiguration('use_cargo_task')
 
     # 1. PLC 代理節點
     plc_proxy_node = Node(
@@ -88,6 +97,19 @@ def generate_launch_description():
         respawn_delay=2.0,
     )
 
+    # 4. Cargo Move Task Build 節點
+    cargo_move_task_build_node = Node(
+        package='cargo_move_task_build',
+        executable='cargo_move_task_build_node',
+        name='cargo_move_task_build_node',
+        namespace='agvc',  # 使用 agvc 命名空間
+        output='screen',
+        arguments=['--ros-args', '--log-level', log_level],
+        condition=IfCondition(use_cargo_task),
+        respawn=True,
+        respawn_delay=2.0,
+    )
+
     # 啟動信息
     launch_info = LogInfo(
         msg=[
@@ -99,6 +121,7 @@ def generate_launch_description():
             '  - PLC 代理: ', use_plc, '\n',
             '  - ECS 設備控制: ', use_ecs, '\n',
             '  - Room Task Build: true\n',
+            '  - Cargo Move Task Build: ', use_cargo_task, '\n',
             '日志級別: ', log_level, '\n',
             '=' * 60, '\n',
         ]
@@ -110,6 +133,7 @@ def generate_launch_description():
         log_level_arg,
         use_ecs_arg,
         use_plc_arg,
+        use_cargo_task_arg,
 
         # 啟動信息
         launch_info,
@@ -118,4 +142,5 @@ def generate_launch_description():
         plc_proxy_node,
         ecs_node,
         room_task_build_node,
+        cargo_move_task_build_node,
     ])

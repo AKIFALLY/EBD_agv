@@ -118,8 +118,13 @@ variables:
   model: "UNLOADER"        # AGV 型号
   boxout_equipment_type: 202  # 出口传送箱设备类型
   # 固定 Station 配置（只有 Station 01，无需遍历）
+  priority: 42             # 高优先级（送至出口等待收集）
+  model: "UNLOADER"        # AGV 型号
+  boxout_equipment_type: 202  # 出口传送箱设备类型
+  # 固定 Station 配置（只有 Station 01，无需遍历）
   station: 1               # Station 01（批量4格）
   work_id: 2020102         # 唯一的 Work ID
+  ports: [1, 2, 3, 4]      # Port 1-4
   ports: [1, 2, 3, 4]      # Port 1-4
   batch_size: 4            # 批量4格
 ```
@@ -129,6 +134,7 @@ variables:
 ### 主要步骤
 
 #### 1. 查询所有房间
+#### 1. 查询所有房间
 ```yaml
 - query:
     target: rooms
@@ -136,11 +142,16 @@ variables:
       enabled: true
     as: active_rooms
     description: "查询所有启用的房间"
+      enabled: true
+    as: active_rooms
+    description: "查询所有启用的房间"
 ```
 
 #### 2. 遍历每个房间
+#### 2. 遍历每个房间
 ```yaml
 - for:
+    in: "${active_rooms}"
     in: "${active_rooms}"
     as: room
     do:
@@ -148,13 +159,17 @@ variables:
 ```
 
 #### 3. 查询 Unloader AGV
+#### 3. 查询 Unloader AGV
 ```yaml
 - query:
     target: agvs
     where:
       agv_type: "unloader"
       room_id: "${room.id}"
+      agv_type: "unloader"
+      room_id: "${room.id}"
     as: unloader_agvs
+    description: "查询房间${room.id}的 Unloader AGV"
     description: "查询房间${room.id}的 Unloader AGV"
 ```
 
@@ -168,26 +183,46 @@ variables:
 ```
 
 #### 5. 查询 AGV 车上载具
+#### 5. 查询 AGV 车上载具
 ```yaml
 - query:
     target: carriers
     where:
       agv_id: "${agv.id}"
       status_id: 603  # 烘乾机处理完成
+      agv_id: "${agv.id}"
+      status_id: 603  # 烘乾机处理完成
     as: agv_carriers
+    description: "查询 AGV ${agv.name} 车上载具"
     description: "查询 AGV ${agv.name} 车上载具"
 ```
 
+#### 6. 检查载具数量（固定4格批量）
 #### 6. 检查载具数量（固定4格批量）
 ```yaml
 - set:
     carrier_count: "${agv_carriers.length}"
     required_count: "${batch_size}"        # 固定4格
     has_enough_carriers: "${carrier_count >= required_count}"
+    carrier_count: "${agv_carriers.length}"
+    required_count: "${batch_size}"        # 固定4格
+    has_enough_carriers: "${carrier_count >= required_count}"
 ```
 
 #### 7. 查询出口传送箱 Station 01 空位（固定配置）
+#### 7. 查询出口传送箱 Station 01 空位（固定配置）
 ```yaml
+- set:
+    boxout_equipment_id: "${room.id * 100 + 2}"  # 动态计算
+
+- query:
+    target: equipment_ports
+    where:
+      equipment_id: "${boxout_equipment_id}"
+      port_in: "${ports}"                   # [1, 2, 3, 4] 固定 Station 01
+      status: "empty"
+    as: empty_ports
+    description: "查询房间${room.id}出口传送箱 Station 01 空位（Port 1-4）"
 - set:
     boxout_equipment_id: "${room.id * 100 + 2}"  # 动态计算
 
@@ -202,15 +237,28 @@ variables:
 ```
 
 #### 8. 检查空位数量（固定4格批量）
+#### 8. 检查空位数量（固定4格批量）
 ```yaml
 - set:
     empty_count: "${empty_ports.length}"
     required_space: 4                      # 固定4格批量
     has_space: "${empty_count >= required_space}"
+    required_space: 4                      # 固定4格批量
+    has_space: "${empty_count >= required_space}"
 ```
 
 #### 9. 检查重复任务
+#### 9. 检查重复任务
 ```yaml
+- query:
+    target: tasks
+    where:
+      work_id: "${work_id}"
+      room_id: "${room.id}"
+      agv_id: "${agv.id}"
+      status_id_in: [0, 1, 2, 3]  # 未完成的状态
+    as: existing_tasks
+    description: "检查是否已存在放料任务"
 - query:
     target: tasks
     where:
@@ -223,8 +271,10 @@ variables:
 ```
 
 #### 10. 创建放料任务（固定 Station 01 配置）
+#### 10. 创建放料任务（固定 Station 01 配置）
 ```yaml
 - if:
+    condition: "${has_enough_carriers} && ${has_space} && ${existing_tasks.length == 0}"
     condition: "${has_enough_carriers} && ${has_space} && ${existing_tasks.length == 0}"
     then:
       - create:
@@ -234,17 +284,32 @@ variables:
             name: "房间${room.id}出口传送箱 Station 01 放料"
             description: "将 AGV ${agv.name} 车上载具放入出口传送箱 Station 01（批量4格）"
             work_id: "${work_id}"        # 固定 2020102
+            name: "房间${room.id}出口传送箱 Station 01 放料"
+            description: "将 AGV ${agv.name} 车上载具放入出口传送箱 Station 01（批量4格）"
+            work_id: "${work_id}"        # 固定 2020102
             room_id: "${room.id}"
+            agv_id: "${agv.id}"
             agv_id: "${agv.id}"
             priority: "${priority}"
             status_id: 1  # PENDING
             parameters:
               station: 1                 # 固定 Station 01
               work_id: "${work_id}"      # 固定 2020102
+              station: 1                 # 固定 Station 01
+              work_id: "${work_id}"      # 固定 2020102
               room_id: "${room.id}"
               agv_id: "${agv.id}"
               agv_name: "${agv.name}"
+              agv_id: "${agv.id}"
+              agv_name: "${agv.name}"
               model: "${model}"
+              carrier_count: "${carrier_count}"
+              empty_ports: "${empty_count}"
+              ports: "${ports}"          # [1, 2, 3, 4]
+              batch_size: 4              # 固定4格
+              boxout_equipment_id: "${boxout_equipment_id}"
+              reason: "AGV 车上有载具，出口传送箱 Station 01 有空位"
+          description: "创建 Unloader AGV 放料任务（固定 Station 01 批量4格）"
               carrier_count: "${carrier_count}"
               empty_ports: "${empty_count}"
               ports: "${ports}"          # [1, 2, 3, 4]
@@ -257,7 +322,13 @@ variables:
 ## 🔍 查询条件详解
 
 ### Carrier 查询条件
+### Carrier 查询条件
 
+**AGV 车上载具**：
+- `agv_id`: 特定 Unloader AGV
+- `status_id: 603` (烘乾机处理完成)
+  - TAKE_OVEN 完成后，载具状态保持为 603
+  - 表示载具已完成烘干制程，在 AGV 车上准备放入出口传送箱
 **AGV 车上载具**：
 - `agv_id`: 特定 Unloader AGV
 - `status_id: 603` (烘乾机处理完成)
@@ -268,10 +339,18 @@ variables:
 - **至少4个载具**（一次放4格）
 - S尺寸：4格可用（需全满）
 - L尺寸：不支持（需要完整4格）
+- S尺寸：4格可用（需全满）
+- L尺寸：不支持（需要完整4格）
 
+### Equipment Port 查询条件（固定 Station 01）
 ### Equipment Port 查询条件（固定 Station 01）
 
 **出口传送箱 Station 01 空位**：
+- `equipment_id`: 出口传送箱设备ID
+  - 计算公式：`room_id * 100 + 2`
+  - Equipment Type: 202
+- `port_in: [1, 2, 3, 4]` (固定 Station 01)
+- `status`: "empty"（空位）
 - `equipment_id`: 出口传送箱设备ID
   - 计算公式：`room_id * 100 + 2`
   - Equipment Type: 202
@@ -282,14 +361,22 @@ variables:
 - **至少4格空位**（一次放4格）
 - Port 1-4 全部空闲才创建任务
 - 不支持部分放料
+- **至少4格空位**（一次放4格）
+- Port 1-4 全部空闲才创建任务
+- 不支持部分放料
 
 **Station 01 Port 映射**：
 - **Station 01**: Port 1-2-3-4（**批量4格**）
 - PUT_BOXOUT_TRANSFER 只使用 Station 01（Port 1-4）
 
 ### Task 重复检查
+- **Station 01**: Port 1-2-3-4（**批量4格**）
+- PUT_BOXOUT_TRANSFER 只使用 Station 01（Port 1-4）
+
+### Task 重复检查
 
 **防止重复创建**：
+- 检查相同 `work_id`、`room_id`、`agv_id`
 - 检查相同 `work_id`、`room_id`、`agv_id`
 - 状态为未完成（0=创建, 1=待分派, 2=执行中, 3=暂停）
 - 如果存在未完成任务，不创建新任务
@@ -299,10 +386,12 @@ variables:
 ### 入口/出口传送箱区分
 - **入口传送箱（BOX_IN_TRANSFER）**:
   - Equipment ID: `room_id * 100 + 1`
+  - Equipment ID: `room_id * 100 + 1`
   - Cargo AGV 卸载（从 Rack 到入口箱）
   - Loader AGV 取料（从入口箱到车上）
 
 - **出口传送箱（BOX_OUT_TRANSFER）**:
+  - Equipment ID: `room_id * 100 + 2`
   - Equipment ID: `room_id * 100 + 2`
   - Unloader AGV 放料（从车上到出口箱）← 本 Flow
   - Cargo AGV 装载（从出口箱到 Rack）
@@ -314,7 +403,9 @@ variables:
 
 ### 批量处理逻辑
 - **固定4格批量**: 必须有 ≥ 4个载具，出口传送箱需 ≥ 4格空位（Port 1-4 全空）
+- **固定4格批量**: 必须有 ≥ 4个载具，出口传送箱需 ≥ 4格空位（Port 1-4 全空）
 - **不支持部分放料**（要么放满4格，要么不放）
+- **车上需全满**: AGV 车上必须有4个载具才创建任务
 - **车上需全满**: AGV 车上必须有4个载具才创建任务
 
 ### 与 Cargo AGV 的协作
@@ -339,6 +430,8 @@ Unloader 出口放料 → Cargo 出口装载 → 完成
 
 ### AGV 状态判断
 - 检查车上载具数量（**≥ 4个**）
+- 建议检查最近一次任务是否为 TAKE_OVEN
+- 确保载具 status_id = 603（烘干完成）
 - 建议检查最近一次任务是否为 TAKE_OVEN
 - 确保载具 status_id = 603（烘干完成）
 

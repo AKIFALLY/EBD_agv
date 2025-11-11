@@ -1,0 +1,358 @@
+"""
+資料庫操作封裝模組（擴展 Rack CRUD）
+使用 SQLModel + ConnectionPoolManager + BaseCRUD
+"""
+
+from db_proxy.connection_pool_manager import ConnectionPoolManager
+from db_proxy.crud.base_crud import BaseCRUD
+from db_proxy.models import Work, Task, AGV, Rack
+from sqlmodel import select
+from typing import Optional, List
+import logging
+
+
+class DatabaseHelper:
+    """資料庫操作助手（擴展 Rack 操作）"""
+
+    def __init__(self, db_url: str, logger: logging.Logger):
+        """
+        初始化資料庫助手
+
+        Args:
+            db_url: 資料庫連接字串
+            logger: 日誌記錄器
+        """
+        self.logger = logger
+        self.pool_manager = ConnectionPoolManager(db_url)
+
+        # 建立 CRUD 實例
+        self.work_crud = BaseCRUD(Work, id_column="id")
+        self.task_crud = BaseCRUD(Task, id_column="id")
+        self.agv_crud = BaseCRUD(AGV, id_column="id")
+        self.rack_crud = BaseCRUD(Rack, id_column="id")  # 新增 Rack CRUD
+
+        self.logger.info("✅ DatabaseHelper 初始化完成（包含 Rack CRUD）")
+
+    def get_work_by_id(self, work_id: int) -> Optional[Work]:
+        """
+        根據 ID 查詢 Work
+
+        Args:
+            work_id: Work ID
+
+        Returns:
+            Work 物件，若不存在則返回 None
+        """
+        try:
+            with self.pool_manager.get_session() as session:
+                work = self.work_crud.get_by_id(session, work_id)
+                if work:
+                    self.logger.debug(f"查詢到 Work: ID={work.id}, Name={work.name}")
+                else:
+                    self.logger.warning(f"Work ID {work_id} 不存在")
+                return work
+        except Exception as e:
+            self.logger.error(f"❌ 查詢 Work {work_id} 失敗: {e}")
+            return None
+
+    def get_rack_by_location(self, location_id: int) -> Optional[Rack]:
+        """
+        根據 location_id 查詢 Rack
+
+        Args:
+            location_id: Location ID
+
+        Returns:
+            Rack 物件，若不存在則返回 None
+        """
+        try:
+            with self.pool_manager.get_session() as session:
+                statement = select(Rack).where(Rack.location_id == location_id)
+                rack = session.exec(statement).first()
+
+                if rack:
+                    self.logger.debug(
+                        f"查詢到 Rack: ID={rack.id}, "
+                        f"Location ID={rack.location_id}, "
+                        f"Carrier Bitmap={rack.carrier_bitmap}"
+                    )
+                else:
+                    self.logger.debug(f"Location {location_id} 沒有 Rack")
+                return rack
+
+        except Exception as e:
+            self.logger.error(f"❌ 查詢 Rack (Location {location_id}) 失敗: {e}")
+            return None
+
+    def check_duplicate_task(
+        self,
+        work_id: int,
+        room_id: int,
+        rack_id: Optional[int] = None
+    ) -> bool:
+        """
+        檢查是否已有未完成的 Task（避免重複建立）
+
+        Args:
+            work_id: Work ID
+            room_id: Room ID
+            rack_id: Rack ID（可選）
+
+        Returns:
+            True 表示已有未完成的 Task，False 表示可以建立新 Task
+        """
+        try:
+            with self.pool_manager.get_session() as session:
+                # 查詢未完成的 Task
+                # status_id not in [4=已完成, 54=已取消]
+                statement = select(Task).where(
+                    Task.work_id == work_id,
+                    Task.room_id == room_id,
+                    Task.status_id.not_in([4, 54])
+                )
+
+                # 如果指定 rack_id，加入條件
+                if rack_id is not None:
+                    statement = statement.where(Task.rack_id == rack_id)
+
+                existing_tasks = session.exec(statement).all()
+
+                if existing_tasks:
+                    self.logger.info(
+                        f"⚠️ Work {work_id} 在 Room {room_id} "
+                        f"{'Rack ' + str(rack_id) if rack_id else ''} "
+                        f"已有 {len(existing_tasks)} 個未完成的 Task"
+                    )
+                    return True
+                else:
+                    return False
+
+        except Exception as e:
+            self.logger.error(f"❌ 檢查重複 Task 失敗: {e}")
+            # 出錯時保守處理，視為已存在（避免重複建立）
+            return True
+
+    def check_any_cargo_task_exists(self, work_ids: List[int]) -> bool:
+        """
+        檢查是否存在任何指定 work_id 的未完成 Task
+
+        Args:
+            work_ids: Work ID 列表（例如 [2000102, 2002102]）
+
+        Returns:
+            True 表示至少有一個未完成的 Task，False 表示都沒有
+        """
+        try:
+            with self.pool_manager.get_session() as session:
+                statement = select(Task).where(
+                    Task.work_id.in_(work_ids),
+                    Task.status_id.not_in([4, 54])
+                )
+                existing_tasks = session.exec(statement).all()
+
+                if existing_tasks:
+                    self.logger.debug(
+                        f"發現 {len(existing_tasks)} 個未完成的 Cargo Task "
+                        f"(work_ids: {work_ids})"
+                    )
+                    return True
+                else:
+                    return False
+
+        except Exception as e:
+            self.logger.error(f"❌ 檢查 Cargo Task 失敗: {e}")
+            return True  # 保守處理
+
+    def create_task(
+        self,
+        work_id: int,
+        room_id: int,
+        agv_type: str,
+        work: Optional[Work] = None,
+        rack: Optional[Rack] = None,
+        work_name: str = "",
+        **kwargs
+    ) -> Optional[Task]:
+        """
+        建立新 Task（支援 Rack 資訊）
+
+        Args:
+            work_id: Work ID
+            room_id: Room ID
+            agv_type: AGV 類型（CARGO）
+            work: Work 物件（用於提取 parameters 中的 nodes）
+            rack: Rack 物件（用於提取 carrier_bitmap 等資訊）
+            work_name: Work 名稱（用於 Task 名稱）
+            **kwargs: 其他 Task 參數（可包含 rack_id）
+
+        Returns:
+            建立的 Task 物件，失敗則返回 None
+        """
+        try:
+            with self.pool_manager.get_session() as session:
+                # 從 work.parameters 中提取 node_id（如果有的話）
+                node_id = kwargs.get('node_id', None)
+
+                if work and work.parameters:
+                    nodes = work.parameters.get('nodes', [])
+
+                    # 如果 nodes 列表只有 1 個元素，提取第一個作為 node_id
+                    if isinstance(nodes, list) and len(nodes) == 1:
+                        node_id = nodes[0]
+                        self.logger.info(
+                            f"📍 從 Work {work_id} parameters 提取 node_id: {node_id}"
+                        )
+                    elif isinstance(nodes, list) and len(nodes) > 1:
+                        # 2 個以上元素，暫時不處理（保留預設值）
+                        self.logger.info(
+                            f"📍 Work {work_id} 有 {len(nodes)} 個 nodes，"
+                            f"暫時保留預設 node_id"
+                        )
+
+                # 準備 parameters 欄位（保存 agv_type、room_id 和 rack 資訊供 RCS 使用）
+                task_parameters = {
+                    "agv_type": agv_type,     # AGV 類型（CARGO）
+                    "room_id": room_id,       # 房間編號
+                }
+
+                # 如果有 rack 物件，加入 rack 資訊到 parameters
+                if rack:
+                    task_parameters["carrier_bitmap"] = rack.carrier_bitmap
+                    task_parameters["carrier_enable_bitmap"] = rack.carrier_enable_bitmap
+                    task_parameters["rack_direction"] = rack.direction
+
+                # 如果 work 有 parameters，保留原有的 model 等欄位
+                if work and work.parameters:
+                    work_params = work.parameters.copy() if isinstance(work.parameters, dict) else {}
+                    task_parameters.update(work_params)
+                    # 確保 agv_type 和 room_id 不被覆蓋
+                    task_parameters["agv_type"] = agv_type
+                    task_parameters["room_id"] = room_id
+
+                # 建立 Task 物件
+                new_task = Task(
+                    work_id=work_id,
+                    room_id=room_id,
+                    rack_id=kwargs.get('rack_id', None),  # 新增 rack_id
+                    name=kwargs.get('name', f"{agv_type} Task - {work_name}"),
+                    description=kwargs.get(
+                        'description',
+                        f"Auto-created from PLC DM for {agv_type}"
+                    ),
+                    status_id=kwargs.get('status_id', 1),  # 預設 PENDING
+                    priority=kwargs.get('priority', 5),     # 預設優先級 5
+                    agv_id=kwargs.get('agv_id', None),     # 預設為 None，由 RCS 動態分配
+                    node_id=node_id,                       # 從 work.parameters.nodes 提取或預設值
+                    parameters=task_parameters             # 保存完整資訊供 RCS 使用
+                )
+
+                # 使用 CRUD 建立
+                created_task = self.task_crud.create(session, new_task)
+
+                self.logger.info(
+                    f"✅ 建立 Task 成功: "
+                    f"Task ID={created_task.id}, "
+                    f"Work ID={work_id}, "
+                    f"Room ID={room_id}, "
+                    f"Rack ID={kwargs.get('rack_id', 'N/A')}, "
+                    f"AGV Type={agv_type}, "
+                    f"Node ID={node_id}"
+                )
+
+                return created_task
+
+        except Exception as e:
+            self.logger.error(f"❌ 建立 Task 失敗: {e}")
+            return None
+
+    def delete_completed_tasks(self, status_ids: List[int]) -> int:
+        """
+        刪除已完成或已取消的 Task
+
+        Args:
+            status_ids: 需要刪除的狀態 ID 列表（例如: [4, 54]）
+
+        Returns:
+            刪除的 Task 數量，失敗則返回 0
+        """
+        try:
+            with self.pool_manager.get_session() as session:
+                # 查詢需要刪除的 Task
+                statement = select(Task).where(
+                    Task.status_id.in_(status_ids)
+                )
+                tasks_to_delete = session.exec(statement).all()
+
+                if not tasks_to_delete:
+                    self.logger.debug(
+                        f"沒有需要清理的 Task (status in {status_ids})"
+                    )
+                    return 0
+
+                # 刪除 Task
+                delete_count = 0
+                for task in tasks_to_delete:
+                    session.delete(task)
+                    delete_count += 1
+
+                session.commit()
+
+                self.logger.info(
+                    f"🗑️ 已清理 {delete_count} 個 Task (status in {status_ids})"
+                )
+                return delete_count
+
+        except Exception as e:
+            self.logger.error(f"❌ 刪除已完成 Task 失敗: {e}")
+            return 0
+
+    def update_rack_carrier_bitmap(
+        self,
+        location_id: int,
+        carrier_bitmap: str
+    ) -> bool:
+        """
+        更新 Rack 的 carrier_bitmap（PLC 回饋在席值）
+
+        Args:
+            location_id: Location ID
+            carrier_bitmap: 8位16進制字串（例如 "12345678"）
+
+        Returns:
+            True 表示更新成功，False 表示失敗
+        """
+        try:
+            with self.pool_manager.get_session() as session:
+                # 查詢 Rack
+                statement = select(Rack).where(Rack.location_id == location_id)
+                rack = session.exec(statement).first()
+
+                if not rack:
+                    self.logger.warning(f"Location {location_id} 沒有 Rack")
+                    return False
+
+                # 更新 carrier_bitmap
+                old_bitmap = rack.carrier_bitmap
+                rack.carrier_bitmap = carrier_bitmap
+
+                session.add(rack)
+                session.commit()
+
+                self.logger.info(
+                    f"✅ 更新 Rack {rack.id} carrier_bitmap: "
+                    f"{old_bitmap} → {carrier_bitmap}"
+                )
+
+                return True
+
+        except Exception as e:
+            self.logger.error(f"❌ 更新 Rack carrier_bitmap 失敗: {e}")
+            return False
+
+    def shutdown(self):
+        """關閉資料庫連線池"""
+        try:
+            self.pool_manager.shutdown()
+            self.logger.info("✅ DatabaseHelper 已關閉連線池")
+        except Exception as e:
+            self.logger.error(f"❌ 關閉連線池失敗: {e}")

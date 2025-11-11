@@ -63,7 +63,7 @@
                             <!-- 右上: Carrier -->
                             <div class="info-item">
                                 <span class="info-label">Carrier</span>
-                                <span class="info-value value-carrier">{{ location_data.carriers|length }}</span>
+                                <span class="info-value value-carrier">{{ location_data.carrier_count }}</span>
                             </div>
                             
                             {% if location_data.product %}
@@ -289,7 +289,7 @@
                         </div>
                         <div class="info-item">
                             <span class="info-label">Carrier</span>
-                            <span class="info-value value-carrier">${locationData.carriers.length}</span>
+                            <span class="info-value value-carrier">${locationData.carrier_count}</span>
                         </div>`;
                     
                     if (locationData.product) {
@@ -333,7 +333,7 @@
                 
                 const carrierValue = box.querySelector('.value-carrier');
                 if (carrierValue) {
-                    carrierValue.textContent = locationData.carriers.length;
+                    carrierValue.textContent = locationData.carrier_count;
                 }
                 
                 if (locationData.product) {

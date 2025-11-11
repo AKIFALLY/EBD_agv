@@ -41,6 +41,7 @@
                         <th>貨架名稱</th>
                         <th>位置 ID</th>
                         <th>產品 ID</th>
+                        <th>格位狀態</th>
                         <th>狀態</th>
                         <th>方向</th>
                         {% if current_user and current_user.role in ['operator', 'admin'] %}
@@ -70,6 +71,16 @@
                             {% endif %}
                         </td>
                         <td>
+                            <div id="rack-bitmap-status-{{ rack.id }}">
+                                <span class="tag is-light">
+                                    <span class="icon is-small">
+                                        <i class="mdi mdi-loading mdi-spin"></i>
+                                    </span>
+                                    載入中...
+                                </span>
+                            </div>
+                        </td>
+                        <td>
                             {% if rack.status_id == 1 %}
                             <span class="tag is-success" id="rack-status-{{ rack.id }}">空閒</span>
                             {% elif rack.status_id == 2 %}
@@ -93,6 +104,14 @@
                         {% if current_user and current_user.role in ['operator', 'admin'] %}
                         <td>
                             <div class="buttons are-small">
+                                <button class="button is-primary is-small rack-bitmap-manage-btn"
+                                        data-rack-id="{{ rack.id }}"
+                                        data-rack-name="{{ rack.name }}">
+                                    <span class="icon">
+                                        <i class="mdi mdi-grid"></i>
+                                    </span>
+                                    <span>管理格位</span>
+                                </button>
                                 <a class="button is-info is-small" href="/racks/{{ rack.id }}/edit">
                                     <span class="icon">
                                         <i class="mdi mdi-pencil"></i>
@@ -171,6 +190,125 @@
     </div>
 </section>
 
-<!-- Racks 頁面 JavaScript 已移至 index.js 統一管理 -->
+<!-- 格位管理模態框 -->
+<div class="modal" id="rack-bitmap-modal">
+    <div class="modal-background"></div>
+    <div class="modal-card" style="width: 90%; max-width: 1200px;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">
+                <span class="icon">
+                    <i class="mdi mdi-grid"></i>
+                </span>
+                <span id="modal-rack-title">貨架格位管理</span>
+            </p>
+            <button class="delete" aria-label="close" id="close-bitmap-modal"></button>
+        </header>
+        <section class="modal-card-body">
+            <!-- 統計信息 -->
+            <div class="notification is-light">
+                <div class="columns is-mobile">
+                    <div class="column">
+                        <p class="heading">有貨格位</p>
+                        <p class="title is-4" id="modal-occupied-count">-</p>
+                    </div>
+                    <div class="column">
+                        <p class="heading">啟用格位</p>
+                        <p class="title is-4" id="modal-enabled-count">-</p>
+                    </div>
+                    <div class="column">
+                        <p class="heading">空且可用</p>
+                        <p class="title is-4" id="modal-empty-enabled-count">-</p>
+                    </div>
+                    <div class="column">
+                        <p class="heading">總格位數</p>
+                        <p class="title is-4" id="modal-total-slots">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 格位可視化 -->
+            <div class="box">
+                <h2 class="subtitle">A 面 (格位 1-16)</h2>
+                <div class="rack-grid" id="rack-grid-a" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                    <!-- 格位 1-16 將由 JavaScript 生成 -->
+                </div>
+            </div>
+
+            <div class="box">
+                <h2 class="subtitle">B 面 (格位 17-32)</h2>
+                <div class="rack-grid" id="rack-grid-b" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                    <!-- 格位 17-32 將由 JavaScript 生成 -->
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <div class="buttons">
+                <button class="button is-warning" id="btn-clear-all">
+                    <span class="icon"><i class="mdi mdi-broom"></i></span>
+                    <span>全部清空</span>
+                </button>
+                <button class="button is-success" id="btn-enable-all">
+                    <span class="icon"><i class="mdi mdi-check-all"></i></span>
+                    <span>全部啟用</span>
+                </button>
+                <button class="button is-danger" id="btn-disable-all">
+                    <span class="icon"><i class="mdi mdi-close-circle"></i></span>
+                    <span>全部禁用</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<!-- 格位管理 CSS -->
+<style>
+.rack-slot {
+    min-height: 60px;
+    font-weight: bold;
+    position: relative;
+    border: 2px solid #dbdbdb;
+}
+
+.rack-slot.occupied {
+    background-color: #48c78e !important;
+    border-color: #3abb81 !important;
+    color: white;
+}
+
+.rack-slot.occupied:hover {
+    background-color: #3abb81 !important;
+}
+
+.rack-slot.empty {
+    background-color: #f5f5f5;
+    border-color: #dbdbdb;
+}
+
+.rack-slot.empty:hover {
+    background-color: #e8e8e8;
+}
+
+.rack-slot.disabled {
+    background-color: #ffdd57 !important;
+    border-color: #ffd83d !important;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.rack-slot.disabled.occupied {
+    background-color: #f14668 !important;
+    border-color: #f03a5f !important;
+}
+
+.rack-slot .slot-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 0.7rem;
+}
+</style>
+
+<!-- Racks 頁面 JavaScript -->
+<script src="/static/js/rackBitmapManager.js?v=2"></script>
 
 {% endblock %}

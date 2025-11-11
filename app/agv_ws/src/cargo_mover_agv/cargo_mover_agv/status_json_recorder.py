@@ -529,7 +529,7 @@ class CargoAgvStatusJsonRecorder:
         # 定義要收集的 agv_node_base.py 變數
         base_var_names = [
             'pathdata',        # 路徑資料
-            'mission_id',      # 任務ID
+            'mission_id',      # 任務ID (已廢棄，保留向後兼容，請使用 task.id)
             'node_id',         # 任務目標節點
             'agv_id',          # AGV ID (數據庫 agv 表主键)
             'task',            # 任務訊息

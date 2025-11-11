@@ -20,7 +20,7 @@ from .connection import connection_pool
 from .client_ops import *
 from .product_ops import *
 from .rack_ops import *
-from .carrier_ops import *
+# from .carrier_ops import *  # 🔴 已移除 Carrier 表，改用 rack.carrier_bitmap
 from .equipment_ops import *
 from .log_ops import *
 from .audit_log_ops import *
@@ -50,12 +50,12 @@ __all__ = [
     # 貨架操作
     'rack_all', 'get_racks', 'count_racks', 'get_rack_by_id',
     'create_rack', 'update_rack', 'delete_rack', 'get_all_racks',
-    'get_all_rack_statuses', 'get_rack_grid_info', 'count_carriers_by_rack',
+    'get_all_rack_statuses', 'get_rack_grid_info',  # 🔴 移除 count_carriers_by_rack
 
-    # 載具操作
-    'carrier_all', 'get_carriers', 'count_carriers', 'get_carriers_grouped',
-    'get_carrier_status_list', 'get_carrier_by_id', 'update_carrier',
-    'delete_carrier', 'create_carrier',
+    # 🔴 載具操作已移除，改用 rack.carrier_bitmap
+    # 'carrier_all', 'get_carriers', 'count_carriers', 'get_carriers_grouped',
+    # 'get_carrier_status_list', 'get_carrier_by_id', 'update_carrier',
+    # 'delete_carrier', 'create_carrier',
 
     # 設備操作
     'get_eqps', 'count_eqps', 'get_signals', 'count_signals',

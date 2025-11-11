@@ -31,11 +31,6 @@
                 <i class="mdi mdi-view-grid"></i>
             </span>
         </button>
-        <button class="button" id="map-tool-carriers" title="載具管理">
-            <span class="icon">
-                <i class="mdi mdi-package-variant"></i>
-            </span>
-        </button>
         <button class="button" id="map-tool-agvs" title="AGV 管理">
             <span class="icon">
                 <i class="mdi mdi-robot"></i>
@@ -92,25 +87,6 @@
                 </div>
                 <div id="racks-list">
                     <!-- 動態載入貨架列表 -->
-                </div>
-            </div>
-
-            <!-- 載具管理模板 -->
-            <div id="carriers-template" style="display: none;">
-                <div class="map-info-card">
-                    <div class="map-info-card-header">
-                        <span class="map-info-card-title">載具管理</span>
-                    </div>
-                    <p>點擊地圖上的貨架來查看載具分佈</p>
-                    <div class="map-quick-actions" id="carriers-actions" style="display: none;">
-                        <button class="button is-primary" onclick="mapInteraction.createCarrier()">
-                            <span class="icon"><i class="mdi mdi-plus"></i></span>
-                            <span>新增載具</span>
-                        </button>
-                    </div>
-                </div>
-                <div id="carriers-list">
-                    <!-- 動態載入載具列表 -->
                 </div>
             </div>
 
@@ -371,6 +347,39 @@
                 <button class="button is-success" id="save-node">儲存</button>
                 <button class="button" id="cancel-node">取消</button>
             </footer>
+        </div>
+    </div>
+
+    <!-- 單門控制 Modal -->
+    <div class="modal" id="mapDoorControlModal">
+        <div class="modal-background"></div>
+        <div class="modal-card" style="width: 400px;">
+            <header class="modal-card-head">
+                <p class="modal-card-title" id="mapDoorModalTitle">自動門控制</p>
+                <button class="delete" aria-label="close" id="mapDoorModalClose"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="box">
+                    <h5 class="title is-5">
+                        <span id="mapDoorModalDoorName">門 1</span>
+                        <span id="mapDoorModalStatus" class="tag is-light">查詢中...</span>
+                    </h5>
+                    <div class="buttons">
+                        <button class="button is-success is-fullwidth" id="mapDoorModalOpenBtn">
+                            <span class="icon">
+                                <i class="mdi mdi-door-open"></i>
+                            </span>
+                            <span>開門</span>
+                        </button>
+                        <button class="button is-danger is-fullwidth" id="mapDoorModalCloseBtn">
+                            <span class="icon">
+                                <i class="mdi mdi-door-closed"></i>
+                            </span>
+                            <span>關門</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 

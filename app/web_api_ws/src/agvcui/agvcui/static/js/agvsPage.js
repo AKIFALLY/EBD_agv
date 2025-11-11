@@ -70,7 +70,7 @@ export const agvsPage = (() => {
             // 顯示空狀態（優化版本 - 使用 DOM 創建而非 innerHTML）
             const emptyRow = document.createElement('tr');
             const emptyCell = document.createElement('td');
-            emptyCell.setAttribute('colspan', '10');
+            emptyCell.setAttribute('colspan', '11');
             emptyCell.className = 'has-text-centered py-6';
 
             const iconSpan = document.createElement('span');
@@ -149,6 +149,33 @@ export const agvsPage = (() => {
                 <span id="last-node-${agv.id}">
                     ${agv.last_node_id ? `<span class="tag is-light" id="last-node-tag-${agv.id}">節點 ${agv.last_node_id}</span>` : '<span class="has-text-grey" id="last-node-tag-${agv.id}">-</span>'}
                 </span>
+            </td>
+            <td>
+                <div id="agv-status-json-${agv.id}">
+                    ${agv.agv_status_json ? `
+                    <div class="dropdown is-hoverable agv-status-json-dropdown">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-info" aria-haspopup="true"
+                                aria-controls="dropdown-menu-${agv.id}">
+                                <span class="icon">
+                                    <i class="mdi mdi-code-json"></i>
+                                </span>
+                                <span>JSON</span>
+                                <span class="icon is-small">
+                                    <i class="mdi mdi-chevron-down"></i>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-${agv.id}" role="menu">
+                            <div class="dropdown-content">
+                                <div class="dropdown-item">
+                                    <pre>${JSON.stringify(agv.agv_status_json, null, 2)}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : '<span class="has-text-grey-light">無資料</span>'}
+                </div>
             </td>
             <td>
                 <div class="buttons are-small">
@@ -303,6 +330,12 @@ export const agvsPage = (() => {
             }
         }
 
+        // 更新 Status JSON
+        const statusJsonElement = document.getElementById(`agv-status-json-${agv.id}`);
+        if (statusJsonElement) {
+            updateAgvStatusJsonTag(statusJsonElement, agv.agv_status_json);
+        }
+
         // 記錄變化但不添加整行動畫
         if (hasChanges) {
             console.debug(`AGV ${agv.name} 資料已更新`);
@@ -350,6 +383,45 @@ export const agvsPage = (() => {
         } else {
             tagElement.className = 'has-text-grey';
             tagElement.textContent = '-';
+        }
+    }
+
+    /**
+     * 更新 AGV Status JSON 顯示
+     * @param {Element} element - 容器元素
+     * @param {Object} statusJson - JSON 資料
+     */
+    function updateAgvStatusJsonTag(element, statusJson) {
+        if (statusJson) {
+            // 從 element id 提取 agv id
+            const agvId = element.id.replace('agv-status-json-', '');
+
+            // 重新生成 JSON dropdown
+            element.innerHTML = `
+                <div class="dropdown is-hoverable agv-status-json-dropdown">
+                    <div class="dropdown-trigger">
+                        <button class="button is-small is-info" aria-haspopup="true"
+                                aria-controls="dropdown-menu-${agvId}">
+                            <span class="icon">
+                                <i class="mdi mdi-code-json"></i>
+                            </span>
+                            <span>JSON</span>
+                            <span class="icon is-small">
+                                <i class="mdi mdi-chevron-down"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu-${agvId}" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                <pre>${JSON.stringify(statusJson, null, 2)}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            element.innerHTML = '<span class="has-text-grey-light">無資料</span>';
         }
     }
 

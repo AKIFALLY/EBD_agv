@@ -33,6 +33,12 @@
     box-shadow: 0 0px 5px #fff !important;
 }
 
+/* 地圖容器 - 防止 sidebar 在手機版超出邊界 */
+.map-container {
+    position: relative;
+    overflow: hidden;  /* 隱藏超出邊界的內容，確保 sidebar 在手機版正確隱藏 */
+}
+
 .map {
     flex: 1;
 }
@@ -293,6 +299,7 @@
     height: 96px;
     background-image: url("/static/ct-agv-icon.cargo.svg");
     background-position: center center;
+    border-radius: 5px;
 }
 
 .agv-loader {
@@ -301,6 +308,7 @@
     height: 96px;
     background-image: url("/static/ct-agv-icon.loader.svg");
     background-position: center center;
+    border-radius: 5px;
 }
 
 .agv-unloader {
@@ -309,6 +317,7 @@
     height: 96px;
     background-image: url("/static/ct-agv-icon.unloader.svg");
     background-position: center center;
+    border-radius: 5px;
 }
 
 .mdi-navigation {
@@ -812,7 +821,7 @@
     transition: all 0.3s ease;
     box-shadow: 0 0px 2px rgba(0, 0, 0, 0.2);
     background: #444;
-    border-color: #444;
+    border: 1px solid #666;
     border-radius: 0.5rem;
     color: rgba(100, 200, 255, 1);
     position: relative;
@@ -1947,13 +1956,27 @@
     overflow-y: auto;
 }
 
+/* ==================== 門控制 Modal z-index ==================== */
+#mapDoorControlModal {
+    z-index: 10000 !important; /* 確保顯示在地圖上方 */
+}
+
+#mapDoorControlModal .modal-background {
+    z-index: 9999;
+}
+
+#mapDoorControlModal .modal-card {
+    z-index: 10001;
+}
+
 /* ==================== 門狀態顯示樣式 ==================== */
 .door-status-container {
     display: flex;
     flex-direction: column;
-    box-shadow: 0 0px 2px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(128, 128, 128, 0.2);
+    box-shadow: 0 0px 2px rgba(0, 0, 0, 0.2);
     border-radius: 0.5rem;
-    background-color: #fff;
+    background-color: #444;
     overflow: hidden;
     width: 100%;
     height: 100%;
@@ -1965,7 +1988,7 @@
 }
 
 .door-status-title {
-    background-color: #3273dc;
+    background-color: #444;
     color: white;
     padding: 4px 8px;
     font-size: 12px;
@@ -1981,26 +2004,67 @@
     align-items: center;
     justify-content: center;
     flex: 1;
-}
-
-.door-status-value .tag {
     font-size: 14px;
     font-weight: bold;
-    min-width: 50px;
     transition: all 0.2s ease;
 }
 
-.door-status-value .tag.is-success {
-    background-color: #48c774;
-    color: white;
+.door-status-value.opened {
+    background-color: rgba(240, 255, 240, 0.9);
+    color: rgba(0, 200, 0, 0.5);
 }
 
-.door-status-value .tag.is-danger {
-    background-color: #f14668;
-    color: white;
+.door-status-value.closed {
+    background-color: rgba(255, 240, 240, 0.9);
+    color: rgba(200, 0, 0, 0.5);
 }
 
-.door-status-value .tag.is-light {
-    background-color: #f5f5f5;
-    color: #363636;
+/* ==================== AGV Alarm/Warning 状态动画（背景 + 发光边框） ==================== */
+
+/* AGV Alarm 状态 - 红色发光效果（不影响旋转） */
+.agv-alarm-state {
+    animation: agv-alarm-enhanced 1s infinite;
+}
+
+@keyframes agv-alarm-enhanced {
+    0%, 100% {
+        background-color: rgba(255, 0, 0, 0.3);
+        box-shadow:
+            0 0 10px rgba(255, 0, 0, 0.6),
+            0 0 20px rgba(255, 0, 0, 0.4),
+            0 0 30px rgba(255, 0, 0, 0.3),
+            0 0 40px rgba(255, 0, 0, 0.2);
+    }
+    50% {
+        background-color: rgba(255, 0, 0, 0.6);
+        box-shadow:
+            0 0 15px rgba(255, 0, 0, 0.8),
+            0 0 30px rgba(255, 0, 0, 0.6),
+            0 0 45px rgba(255, 0, 0, 0.4),
+            0 0 60px rgba(255, 0, 0, 0.3);
+    }
+}
+
+/* AGV Warning 状态 - 橘色发光效果（不影响旋转） */
+.agv-warning-state {
+    animation: agv-warning-enhanced 1s infinite;
+}
+
+@keyframes agv-warning-enhanced {
+    0%, 100% {
+        background-color: rgba(255, 165, 0, 0.3);
+        box-shadow:
+            0 0 8px rgba(255, 165, 0, 0.6),
+            0 0 16px rgba(255, 165, 0, 0.4),
+            0 0 24px rgba(255, 165, 0, 0.3),
+            0 0 32px rgba(255, 165, 0, 0.2);
+    }
+    50% {
+        background-color: rgba(255, 165, 0, 0.5);
+        box-shadow:
+            0 0 12px rgba(255, 165, 0, 0.8),
+            0 0 24px rgba(255, 165, 0, 0.6),
+            0 0 36px rgba(255, 165, 0, 0.4),
+            0 0 48px rgba(255, 165, 0, 0.3);
+    }
 }

@@ -205,7 +205,7 @@ class RoomTaskBuildNode(Node):
 
     def _process_work_id(self, work_id: int, agv_type: str, work) -> bool:
         """
-        處理 work_id：檢查重複 → 建立 Task
+        處理 work_id：檢查重複 → 建立 Task（不指定 AGV）
 
         Args:
             work_id: Work ID
@@ -229,22 +229,8 @@ class RoomTaskBuildNode(Node):
             )
             return False
 
-        # 3. 查詢對應的 AGV
-        agv_name = f"{agv_type.lower()}{room_id:02d}"
-        agv = self.db_helper.get_agv_by_name(agv_name)
-
-        if not agv:
-            self.get_logger().warn(
-                f"⚠️ 找不到對應的 AGV: {agv_name} (enable=1)，跳過創建任務"
-            )
-            return False
-
-        agv_id = agv.id
-        self.get_logger().info(
-            f"✅ 找到對應的 AGV: {agv_name} (ID={agv_id}, Model={agv.model})"
-        )
-
-        # 4. 建立新 Task（使用查詢到的 agv_id，並從 work.parameters 提取 node_id）
+        # 3. 建立新 Task（不指定 agv_id，由 RCS 負責分配）
+        # agv_type 和 room_id 會保存到 parameters 中，供 RCS 使用
         task = self.db_helper.create_task(
             work_id=work_id,
             room_id=room_id,
@@ -253,9 +239,14 @@ class RoomTaskBuildNode(Node):
             work_name=work.name,
             status_id=config.DEFAULT_STATUS_ID,
             priority=config.DEFAULT_PRIORITY,
-            agv_id=agv_id,
+            agv_id=None,  # ✅ 不指定 AGV，由 RCS 根據 room_id + agv_type 動態分配
             node_id=config.DEFAULT_NODE_ID  # 預設值，會被 work.parameters.nodes 覆蓋
         )
+
+        if task:
+            self.get_logger().info(
+                f"✅ 成功建立 Task (ID={task.id})，等待 RCS 分配 AGV (agv_type={agv_type}, room_id={room_id})"
+            )
 
         return task is not None
 
@@ -268,15 +259,29 @@ class RoomTaskBuildNode(Node):
 def main(args=None):
     """主函數"""
     rclpy.init(args=args)
-    node = RoomTaskBuildNode()
+    node = None
 
     try:
+        node = RoomTaskBuildNode()
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
+    except Exception as e:
+        if node:
+            node.get_logger().error(f"❌ 節點執行錯誤: {e}")
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        if node:
+            try:
+                node.destroy_node()
+            except Exception as e:
+                print(f"⚠️ 節點銷毀時發生錯誤: {e}")
+
+        # 安全地關閉 rclpy，避免重複 shutdown
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception as e:
+            print(f"⚠️ rclpy shutdown 時發生錯誤: {e}")
 
 
 if __name__ == '__main__':

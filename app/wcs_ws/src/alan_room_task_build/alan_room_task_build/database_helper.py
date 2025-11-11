@@ -132,6 +132,21 @@ class DatabaseHelper:
                             f"📍 Work {work_id} 有 {len(nodes)} 個 nodes，暫時保留預設 node_id"
                         )
 
+                # 準備 parameters 欄位（保存 agv_type 和 room_id 供 RCS 使用）
+                task_parameters = {
+                    "agv_type": agv_type,     # AGV 類型（LOADER/UNLOADER）
+                    "room_id": room_id,       # 房間編號
+                }
+
+                # 如果 work 有 parameters，保留原有的 model 等欄位
+                if work and work.parameters:
+                    # 保留 work.parameters 中的其他欄位（如 model）
+                    work_params = work.parameters.copy() if isinstance(work.parameters, dict) else {}
+                    task_parameters.update(work_params)
+                    # 確保 agv_type 和 room_id 不被覆蓋
+                    task_parameters["agv_type"] = agv_type
+                    task_parameters["room_id"] = room_id
+
                 # 建立 Task 物件
                 new_task = Task(
                     work_id=work_id,
@@ -143,8 +158,9 @@ class DatabaseHelper:
                     ),
                     status_id=kwargs.get('status_id', 1),  # 預設 PENDING
                     priority=kwargs.get('priority', 5),     # 預設優先級 5
-                    agv_id=kwargs.get('agv_id', 0),         # 預設未指派
-                    node_id=node_id                         # 從 work.parameters.nodes 提取或預設值
+                    agv_id=kwargs.get('agv_id', None),     # ✅ 預設為 None，由 RCS 動態分配
+                    node_id=node_id,                       # 從 work.parameters.nodes 提取或預設值
+                    parameters=task_parameters             # ✅ 保存 agv_type 和 room_id 供 RCS 使用
                 )
 
                 # 使用 CRUD 建立

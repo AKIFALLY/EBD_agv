@@ -114,10 +114,13 @@ settings:
 variables:
   priority: 44             # 高优先级（进入烘干制程）
   model: "UNLOADER"        # AGV 型号
+  priority: 44             # 高优先级（进入烘干制程）
+  model: "UNLOADER"        # AGV 型号
   oven_equipment_id: 206   # 固定的烤箱设备 ID
   # 固定 Station 配置（只有 Station 05，无需遍歷）
   station: 5               # Station 05（下排进料）
   work_id: 2060502         # 唯一的 Work ID
+  ports: [5, 6, 7, 8]      # Port 5-8（下排）
   ports: [5, 6, 7, 8]      # Port 5-8（下排）
   batch_size: 4            # 批量4格
   row: "lower"             # 下排
@@ -128,6 +131,7 @@ variables:
 ### 主要步骤
 
 #### 1. 查询所有房间
+#### 1. 查询所有房间
 ```yaml
 - query:
     target: rooms
@@ -135,11 +139,16 @@ variables:
       enabled: true
     as: active_rooms
     description: "查询所有启用的房间"
+      enabled: true
+    as: active_rooms
+    description: "查询所有启用的房间"
 ```
 
 #### 2. 遍历每个房间
+#### 2. 遍历每个房间
 ```yaml
 - for:
+    in: "${active_rooms}"
     in: "${active_rooms}"
     as: room
     do:
@@ -147,13 +156,17 @@ variables:
 ```
 
 #### 3. 查询 Unloader AGV
+#### 3. 查询 Unloader AGV
 ```yaml
 - query:
     target: agvs
     where:
       agv_type: "unloader"
       room_id: "${room.id}"
+      agv_type: "unloader"
+      room_id: "${room.id}"
     as: unloader_agvs
+    description: "查询房间${room.id}的 Unloader AGV"
     description: "查询房间${room.id}的 Unloader AGV"
 ```
 
@@ -167,13 +180,17 @@ variables:
 ```
 
 #### 5. 查询 AGV 车上载具
+#### 5. 查询 AGV 车上载具
 ```yaml
 - query:
     target: carriers
     where:
       agv_id: "${agv.id}"
       status_id: 503  # 预烘乾机处理完成
+      agv_id: "${agv.id}"
+      status_id: 503  # 预烘乾机处理完成
     as: agv_carriers
+    description: "查询 AGV ${agv.name} 车上载具"
     description: "查询 AGV ${agv.name} 车上载具"
 ```
 
@@ -182,10 +199,21 @@ variables:
 - set:
     carrier_count: "${agv_carriers.length}"
     has_carriers: "${carrier_count >= 2}"  # 至少2个载具
+    carrier_count: "${agv_carriers.length}"
+    has_carriers: "${carrier_count >= 2}"  # 至少2个载具
 ```
 
 #### 7. 查询烤箱 Station 05 空位（固定配置，无需遍历）
+#### 7. 查询烤箱 Station 05 空位（固定配置，无需遍历）
 ```yaml
+- query:
+    target: equipment_ports
+    where:
+      equipment_id: "${oven_equipment_id}"  # 固定 206
+      port_in: "${ports}"                   # [5, 6, 7, 8]
+      status: "empty"
+    as: empty_ports
+    description: "查询 Station 05 下排空位（Port 5-8）"
 - query:
     target: equipment_ports
     where:
@@ -197,15 +225,28 @@ variables:
 ```
 
 #### 8. 检查空位数量（固定4格批量）
+#### 8. 检查空位数量（固定4格批量）
 ```yaml
 - set:
     empty_count: "${empty_ports.length}"
     required_space: 4                     # 固定4格批量
     has_space: "${empty_count >= required_space}"
+    required_space: 4                     # 固定4格批量
+    has_space: "${empty_count >= required_space}"
 ```
 
 #### 9. 检查重复任务
+#### 9. 检查重复任务
 ```yaml
+- query:
+    target: tasks
+    where:
+      work_id: "${work_id}"               # 固定 2060502
+      room_id: "${room.id}"
+      agv_id: "${agv.id}"
+      status_id_in: [0, 1, 2, 3]  # 未完成的状态
+    as: existing_tasks
+    description: "检查是否已存在放料任务"
 - query:
     target: tasks
     where:
@@ -218,8 +259,10 @@ variables:
 ```
 
 #### 10. 创建放料任务（固定 Station 05）
+#### 10. 创建放料任务（固定 Station 05）
 ```yaml
 - if:
+    condition: "${has_carriers} && ${has_space} && ${existing_tasks.length == 0}"
     condition: "${has_carriers} && ${has_space} && ${existing_tasks.length == 0}"
     then:
       - create:
@@ -229,11 +272,17 @@ variables:
             name: "房间${room.id}烤箱下排 Station 05 放料"
             description: "将 AGV ${agv.name} 车上载具放入烤箱 Station 05（批量4格/下排）"
             work_id: "${work_id}"         # 固定 2060502
+            name: "房间${room.id}烤箱下排 Station 05 放料"
+            description: "将 AGV ${agv.name} 车上载具放入烤箱 Station 05（批量4格/下排）"
+            work_id: "${work_id}"         # 固定 2060502
             room_id: "${room.id}"
+            agv_id: "${agv.id}"
             agv_id: "${agv.id}"
             priority: "${priority}"
             status_id: 1  # PENDING
             parameters:
+              station: 5                  # 固定 Station 05
+              work_id: "${work_id}"       # 固定 2060502
               station: 5                  # 固定 Station 05
               work_id: "${work_id}"       # 固定 2060502
               room_id: "${room.id}"
@@ -245,7 +294,17 @@ variables:
               ports: "${ports}"           # [5, 6, 7, 8]
               batch_size: 4               # 固定4格
               row: "lower"                # 下排
+              agv_id: "${agv.id}"
+              agv_name: "${agv.name}"
+              model: "${model}"
+              carrier_count: "${carrier_count}"
+              empty_ports: "${empty_count}"
+              ports: "${ports}"           # [5, 6, 7, 8]
+              batch_size: 4               # 固定4格
+              row: "lower"                # 下排
               equipment_id: "${oven_equipment_id}"
+              reason: "AGV 车上有载具，烤箱下排 Station 05 有空位"
+          description: "创建 Unloader AGV 放料任务（固定 Station 05 下排进料）"
               reason: "AGV 车上有载具，烤箱下排 Station 05 有空位"
           description: "创建 Unloader AGV 放料任务（固定 Station 05 下排进料）"
 ```
@@ -253,7 +312,13 @@ variables:
 ## 🔍 查询条件详解
 
 ### Carrier 查询条件
+### Carrier 查询条件
 
+**AGV 车上载具**：
+- `agv_id`: 特定 Unloader AGV
+- `status_id: 503` (预烘乾机处理完成)
+  - TAKE_PRE_DRYER 完成后，载具状态更新为 503
+  - 表示载具已完成预烘干制程，在 AGV 车上准备放入烤箱
 **AGV 车上载具**：
 - `agv_id`: 特定 Unloader AGV
 - `status_id: 503` (预烘乾机处理完成)
@@ -263,15 +328,20 @@ variables:
 **数量要求**：
 - 至少2个载具（一次放2格）
 - S尺寸最多4个，L尺寸最多2个
+- 至少2个载具（一次放2格）
+- S尺寸最多4个，L尺寸最多2个
 
+### Equipment Port 查询条件
 ### Equipment Port 查询条件
 
 **烤箱下排 Station 05 空位**（固定配置）：
 - `equipment_id: 206` (固定的烤箱设备ID)
 - `port_in: [5, 6, 7, 8]` (固定 Station 05 Port 映射)
+- `port_in: [5, 6, 7, 8]` (固定 Station 05 Port 映射)
 - `status: "empty"` (空位)
 
 **空位要求**（固定4格批量）：
+- **至少4格空位**（一次放4格，Port 5-8 全部空闲）
 - **至少4格空位**（一次放4格，Port 5-8 全部空闲）
 
 **Port 映射**（固定 Station 05）：
@@ -279,8 +349,13 @@ variables:
 - **PUT_OVEN 只使用下排 Station 05**（Port 5-8）
 
 ### Task 重复检查
+- **Station 05**: Port 5-6-7-8（下排进料位置，批量4格）
+- **PUT_OVEN 只使用下排 Station 05**（Port 5-8）
+
+### Task 重复检查
 
 **防止重复创建**：
+- 检查相同 `work_id`、`room_id`、`agv_id`
 - 检查相同 `work_id`、`room_id`、`agv_id`
 - 状态为未完成（0=创建, 1=待分派, 2=执行中, 3=暂停）
 - 如果存在未完成任务，不创建新任务
@@ -295,11 +370,15 @@ variables:
 ### 烤箱固定方向设计
 - **下排 Station 05（本 Flow）**: Port 5-8，**只 PUT**（进料）
 - **上排 Station 01（Flow 3）**: Port 1-4，**只 TAKE**（出料）
+- **下排 Station 05（本 Flow）**: Port 5-8，**只 PUT**（进料）
+- **上排 Station 01（Flow 3）**: Port 1-4，**只 TAKE**（出料）
 - **固定单向流程**: 下排进料 → 烘干制程 → 上排出料
 
 ### 批量处理逻辑
 - **固定4格批量**: 必须有 ≥ 4个载具，烤箱需 ≥ 4格空位（Port 5-8 全部空闲）
+- **固定4格批量**: 必须有 ≥ 4个载具，烤箱需 ≥ 4格空位（Port 5-8 全部空闲）
 - **不支持部分放料**（要么放满4格，要么不放）
+- **车上需全满**: AGV 车上必须有4个载具才创建任务
 - **车上需全满**: AGV 车上必须有4个载具才创建任务
 
 ### 烘干制程衔接（固定方向）
@@ -310,6 +389,8 @@ variables:
 
 ### AGV 状态判断
 - 检查车上载具数量（**≥ 4个**）
+- 建议检查最近一次任务是否为 TAKE_PRE_DRYER
+- 确保载具 status_id = 503（预烘干完成）
 - 建议检查最近一次任务是否为 TAKE_PRE_DRYER
 - 确保载具 status_id = 503（预烘干完成）
 

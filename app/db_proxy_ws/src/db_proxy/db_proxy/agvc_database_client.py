@@ -110,7 +110,19 @@ class AGVCDatabaseClient:
         """非同步更新 Task（需提供 callback）"""
         if not self.task_client.service_is_ready():
             self.node.get_logger().warn('❌ Service /agvc/update_task 尚未就緒')
+            callback(None)
             return None
+
+        # ⚠️ 驗證外鍵欄位，避免資料庫約束錯誤
+        if task.node_id == 0:
+            self.node.get_logger().error(f'❌ Task {task.id} 的 node_id=0，無法更新 (外鍵約束)')
+            callback(None)
+            return None
+
+        # ⚠️ room_id 預設值處理：如果為 0 則自動設定為 2
+        if task.room_id == 0:
+            task.room_id = 2
+            self.node.get_logger().info(f'⚠️ Task {task.id} 的 room_id=0，自動設定為 2')
 
         request = UpdateTask.Request(task=task)
         future = self.task_client.call_async(request)

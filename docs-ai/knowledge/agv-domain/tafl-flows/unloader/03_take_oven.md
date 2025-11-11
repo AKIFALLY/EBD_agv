@@ -112,7 +112,15 @@ settings:
 variables:
   priority: 43             # 高优先级（烘干完成取出）
   model: "UNLOADER"        # AGV 型号
+  priority: 43             # 高优先级（烘干完成取出）
+  model: "UNLOADER"        # AGV 型号
   oven_equipment_id: 206   # 固定的烤箱设备 ID
+  # 固定 Station 配置（只有 Station 01，无需遍历）
+  station: 1               # Station 01（上排出料）
+  work_id: 2060101         # 唯一的 Work ID
+  ports: [1, 2, 3, 4]      # Port 1-4（上排）
+  batch_size: 4            # 批量4格
+  row: "upper"             # 上排
   # 固定 Station 配置（只有 Station 01，无需遍历）
   station: 1               # Station 01（上排出料）
   work_id: 2060101         # 唯一的 Work ID
@@ -145,6 +153,7 @@ variables:
 ```
 
 #### 3. 查询烤箱上排 Station 01 载具（固定配置）
+#### 3. 查询烤箱上排 Station 01 载具（固定配置）
 ```yaml
 - query:
     target: carriers
@@ -153,14 +162,20 @@ variables:
       equipment_id: "${oven_equipment_id}"  # 固定 206
       port_in: "${ports}"                   # [1, 2, 3, 4] 固定上排
       status_id: 603  # 烘乾机处理完成
+      equipment_id: "${oven_equipment_id}"  # 固定 206
+      port_in: "${ports}"                   # [1, 2, 3, 4] 固定上排
+      status_id: 603  # 烘乾机处理完成
     as: ready_carriers
+    description: "查询烤箱 Station 01 上排烘干完成的载具（Port 1-4）"
     description: "查询烤箱 Station 01 上排烘干完成的载具（Port 1-4）"
 ```
 
 #### 4. 检查载具数量（固定4格批量）
+#### 4. 检查载具数量（固定4格批量）
 ```yaml
 - set:
     carrier_count: "${ready_carriers.length}"
+    required_count: "${batch_size}"        # 固定4格
     required_count: "${batch_size}"        # 固定4格
     has_enough_carriers: "${carrier_count >= required_count}"
 ```
@@ -238,20 +253,30 @@ variables:
 ## 🔍 查询条件详解
 
 ### Carrier 查询条件（固定 Station 01）
+### Carrier 查询条件（固定 Station 01）
 
+**烤箱上排 Station 01 载具**：
 **烤箱上排 Station 01 载具**：
 - `room_id`: 特定房间
 - `equipment_id: 206` (固定的烤箱设备ID)
 - `port_in: [1, 2, 3, 4]` (固定 Station 01 上排端口)
 - `status_id: 603` (烘乾机处理完成)
+- `equipment_id: 206` (固定的烤箱设备ID)
+- `port_in: [1, 2, 3, 4]` (固定 Station 01 上排端口)
+- `status_id: 603` (烘乾机处理完成)
   - 烤箱制程完成后的状态
+  - 表示载具已完成烘干，在上排准备被 Unloader AGV 取走
   - 表示载具已完成烘干，在上排准备被 Unloader AGV 取走
 
 **数量要求**（固定4格批量）：
 - **至少4个载具**（一次取4格）
 - Port 1-4 全部有载具才创建任务
+- Port 1-4 全部有载具才创建任务
 - 不支持部分取料
 
+**Station 01 Port 映射**：
+- **Station 01**: Port 1-2-3-4（**批量4格**/上排/**只 TAKE**）
+- TAKE_OVEN 只查询上排 Station 01（Port 1-4）
 **Station 01 Port 映射**：
 - **Station 01**: Port 1-2-3-4（**批量4格**/上排/**只 TAKE**）
 - TAKE_OVEN 只查询上排 Station 01（Port 1-4）
@@ -282,8 +307,13 @@ variables:
 - **编码规则**: work_id 使用 Station 编号（**只有 01**），非 Port 起始号
 - **UnloaderAGV 自定义映射**: **Station 01 固定批量4格**（UnloaderAGV 特有）
 - **单向操作**: **Station 01 只支持 TAKE 操作**（固定上排出料）
+- **编码规则**: work_id 使用 Station 编号（**只有 01**），非 Port 起始号
+- **UnloaderAGV 自定义映射**: **Station 01 固定批量4格**（UnloaderAGV 特有）
+- **单向操作**: **Station 01 只支持 TAKE 操作**（固定上排出料）
 
 ### 烤箱固定方向设计
+- **上排 Station 01（本 Flow）**: Port 1-4，**只 TAKE**（出料）
+- **下排 Station 05（Flow 2）**: Port 5-8，**只 PUT**（进料）
 - **上排 Station 01（本 Flow）**: Port 1-4，**只 TAKE**（出料）
 - **下排 Station 05（Flow 2）**: Port 5-8，**只 PUT**（进料）
 - **固定单向流程**: 下排进料 → 烘干制程 → 上排出料
@@ -291,6 +321,7 @@ variables:
 ### 批量处理逻辑
 - **固定4格批量**: 必须有 ≥ 4个载具，AGV 需 ≥ 4格空位（车上全空）
 - **不支持部分取料**（要么取满4格，要么不取）
+- **Port 1-4 全部就绪**: 所有端口都有载具才创建任务
 - **Port 1-4 全部就绪**: 所有端口都有载具才创建任务
 
 ### 烘干制程衔接（固定方向）

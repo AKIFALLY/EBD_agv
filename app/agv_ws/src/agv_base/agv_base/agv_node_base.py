@@ -59,12 +59,38 @@ class AgvNodebase(Node):
         
         # 共用變數初始化
         self.pathdata = None  # 路徑資料
-        self.mission_id = None  # 任務ID
+        self.mission_id = None  # 任務ID (已廢棄，保留向後兼容，請使用 self.task.id)
         self.node_id = None  # 任務目標節點
         self.agv_id = 0  # AGV ID (數據庫 agv 表主键)
         self.robot_finished = False  # 機器人是否完成動作
         self.task = TaskMsg()
         self.agvsubscription = None  # AGVs 訂閱物件
+
+        # 全局 tasks 訂閱相關變數
+        self.latest_tasks = []  # 全局任務列表（所有狀態共享）
+        self.tasks_subscription = None  # 全局 tasks 訂閱物件
+        self.last_tasks_callback_time = None  # 最後收到 tasks 的時間
+
+        # 資料庫備援查詢機制（全局）- 直接連接 PostgreSQL
+        self.db_fallback_enabled = False  # 是否啟用資料庫備援
+        self.db_fallback_timeout = 15.0  # 訂閱超時閾值（秒），超過則啟用備援
+        self.db_query_interval = 2.0  # 資料庫查詢間隔（秒）
+        self.last_db_query_time = 0  # 上次資料庫查詢時間
+        self.db_fallback_warning_shown = False  # 是否已顯示備援警告
+
+        # PostgreSQL 直接連接配置
+        self.db_config = {
+            'host': '192.168.10.3',  # AGVC 電腦 IP
+            'port': 5432,
+            'database': 'agvc',
+            'user': 'agvc',
+            'password': 'password'
+        }
+        self.db_connection = None  # psycopg2 連接物件
+        self.last_tasks_log_time = None  # 最後輸出 tasks 日誌的時間（基於時間的檢查）
+
+        # 建立全局 tasks 訂閱
+        self._setup_global_tasks_subscription()
 
     def start(self, one_cycle_ms=50):
         """啟動搖桿監聽 (獨立執行緒)"""
@@ -126,6 +152,10 @@ class AgvNodebase(Node):
             if self.requesting:
                 self.count += 1
             self.read_plc_data()
+
+            # 🔄 檢查訂閱超時並啟用資料庫備援
+            self._check_subscription_timeout_and_fallback()
+
             self.context_handle()
 
             # 📊 每5秒輸出一次當前狀態 (100次 × 50ms = 5000ms)
@@ -154,7 +184,7 @@ class AgvNodebase(Node):
                     has_path = "是" if getattr(self.agv_status, 'AGV_PATH', False) else "否"
                     fpgv = getattr(self.agv_status, 'AGV_FPGV', None)
                     position = f"前PGV={fpgv}" if fpgv is not None else "前PGV=None"
-                    mission_info = f"任務ID={self.mission_id}" if hasattr(self, 'mission_id') and self.mission_id else "無任務"
+                    mission_info = f"任務ID={self.task.id}" if hasattr(self, 'task') and self.task and hasattr(self.task, 'id') and self.task.id else "無任務"
 
                     self.get_logger().info(
                         f"📍 [三層狀態機] "
@@ -272,12 +302,17 @@ class AgvNodebase(Node):
             self.requesting = False  # 重置請求狀態
 
     def toWriteStatus(self):
-        """寫入AGV狀態到PLC"""
-        self.plc_heartbeat += 1
+        """寫入AGV狀態到PLC (DM7800: heartbeat, DM7801: BaseState, DM7802: AGV state)"""
+        # 心跳溢位保護：大於等於 50000 時重置為 0
+        if self.plc_heartbeat >= 50000:
+            self.plc_heartbeat = 0
+        else:
+            self.plc_heartbeat += 1
 
         # write_countinuous_byte
         if self.writing_status:  # 寫入狀態標誌為 True，則不執行寫入
             return
+
         # 根據當前狀態設定 BaseState
         if self.base_context.state.__class__.__name__ == "IdleState":
             self.BaseState = 1
@@ -287,8 +322,22 @@ class AgvNodebase(Node):
             self.BaseState = 3
         elif self.base_context.state.__class__.__name__ == "ErrorState":
             self.BaseState = 4
-        # 寫入資料到DM7800
-        valuedata = [str(self.plc_heartbeat), str(self.BaseState)]
+
+        # 偵測 AGV 層狀態並映射到數值
+        agv_state = 0  # 預設值（未知狀態）
+        if hasattr(self, 'agv_context') and self.agv_context and self.agv_context.state:
+            agv_state_name = self.agv_context.state.__class__.__name__
+            if agv_state_name == "MissionSelectState":
+                agv_state = 1
+            elif agv_state_name == "WritePathState":
+                agv_state = 2
+            elif agv_state_name == "RunningState":
+                agv_state = 3
+            elif agv_state_name == "WaitRobotState":
+                agv_state = 4
+
+        # 寫入資料到DM7800 (三個暫存器: heartbeat, BaseState, agv_state)
+        valuedata = [str(self.plc_heartbeat), str(self.BaseState), str(agv_state)]
         try:
             self.plc_client.async_write_continuous_data(
                 device_type='DM',
@@ -491,7 +540,7 @@ class AgvNodebase(Node):
         self.get_logger().info(f"✅ 已接收 room_id: {self.room_id}")
 
     def setup_agv_subscription(self):
-        """設置 AGVs 訂閱"""
+        """設置 AGVs 訂閱（附帶資料庫備援）"""
         self.get_logger().info("=" * 80)
         self.get_logger().info("🔗 開始訂閱 AGV 資料庫資訊")
         self.get_logger().info("=" * 80)
@@ -507,8 +556,15 @@ class AgvNodebase(Node):
 
         self.get_logger().info("✅ AGVs 訂閱已建立，等待接收資料...")
 
+        # 啟動備援檢查 timer（5 秒後檢查，如果還沒收到訂閱則使用資料庫查詢）
+        self.agv_id_fallback_timer = self.create_timer(5.0, self._check_agv_id_fallback)
+
     def agvs_callback(self, msg: AGVs):
         """處理 AGVs 訂閱消息 - 共用回調方法"""
+        # 如果已經設定了 agv_id，直接返回（避免重複執行）
+        if self.agv_id != 0:
+            return
+
         namespace = self.get_namespace().lstrip('/')
         self.get_logger().info("=" * 80)
         self.get_logger().info("🔍 AGV ID 查詢結果驗證")
@@ -562,9 +618,278 @@ class AgvNodebase(Node):
         self.get_logger().info(
             f"狀態變更: {old_state.__class__.__name__} -> {new_state.__class__.__name__}")
 
+    def _setup_global_tasks_subscription(self):
+        """建立全局 tasks 訂閱（所有狀態共享）"""
+        from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+        from db_proxy_interfaces.msg import Tasks
+        import time
+
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+            depth=10
+        )
+
+        self.tasks_subscription = self.create_subscription(
+            Tasks, '/agvc/tasks', self._global_tasks_callback, qos_profile
+        )
+        self.last_tasks_callback_time = time.time()  # 初始化時間
+        self.get_logger().info("📡 全局訂閱 /agvc/tasks 已建立（所有狀態共享）")
+
+    def _global_tasks_callback(self, msg):
+        """全局 tasks 回調（所有狀態共享）"""
+        import time
+        from db_proxy_interfaces.msg import Tasks
+
+        self.latest_tasks = msg.datas
+        self.last_tasks_callback_time = time.time()
+
+        # 如果收到訂閱資料，停用資料庫備援並恢復正常模式
+        if self.db_fallback_enabled:
+            self.get_logger().info("✅ 訂閱恢復正常，停用資料庫備援模式")
+            self.db_fallback_enabled = False
+            self.db_fallback_warning_shown = False
+
+        # 每 5 秒輸出一次訂閱結果筆數（基於時間檢查，不依賴回調次數）
+        current_time = time.time()
+        if self.last_tasks_log_time is None or (current_time - self.last_tasks_log_time) >= 5.0:
+            self.last_tasks_log_time = current_time
+            self.get_logger().info(
+                f"📊 全局 tasks 訂閱: 收到 {len(self.latest_tasks)} 筆任務資料"
+            )
+
+    def _check_subscription_timeout_and_fallback(self):
+        """檢查訂閱超時並啟用資料庫備援查詢"""
+        import time
+
+        current_time = time.time()
+
+        # 如果從未收到訂閱，跳過檢查
+        if self.last_tasks_callback_time is None:
+            return
+
+        # 計算距離上次收到訂閱的時間
+        elapsed = current_time - self.last_tasks_callback_time
+
+        # 檢查是否超時
+        if elapsed > self.db_fallback_timeout:
+            # 啟用資料庫備援
+            if not self.db_fallback_enabled:
+                self.db_fallback_enabled = True
+                if not self.db_fallback_warning_shown:
+                    self.get_logger().warn(
+                        f"⚠️ 全局 tasks 訂閱超時（已 {elapsed:.1f} 秒未收到）\n"
+                        f"  - 超時閾值: {self.db_fallback_timeout} 秒\n"
+                        f"  - 🔄 啟用資料庫備援查詢模式（每 {self.db_query_interval} 秒查詢一次）"
+                    )
+                    self.db_fallback_warning_shown = True
+
+            # 執行資料庫查詢（按間隔執行）
+            if current_time - self.last_db_query_time >= self.db_query_interval:
+                self.last_db_query_time = current_time
+                self._query_tasks_from_database()
+
+    def _query_tasks_from_database(self):
+        """直接連接 PostgreSQL 查詢任務資料（備援機制）"""
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        from db_proxy_interfaces.msg import Task as TaskMsg
+        import json
+
+        try:
+            # 建立資料庫連接（如果還沒建立或已關閉）
+            if self.db_connection is None or self.db_connection.closed:
+                self.db_connection = psycopg2.connect(**self.db_config)
+                self.get_logger().info("🔌 資料庫備援: 建立 PostgreSQL 連接")
+
+            # 建立 cursor
+            cursor = self.db_connection.cursor(cursor_factory=RealDictCursor)
+
+            # 查詢當前 AGV 的任務（status_id = 1, 2, 3）
+            sql = """
+                SELECT id, work_id, status_id, room_id, node_id,
+                       name, description, agv_id, priority, parameters,
+                       created_at, updated_at
+                FROM task
+                WHERE agv_id = %s AND status_id IN (1, 2, 3)
+                ORDER BY priority DESC, created_at ASC
+            """
+
+            cursor.execute(sql, (self.agv_id,))
+            results = cursor.fetchall()
+            cursor.close()
+
+            # 處理查詢結果
+            self._handle_db_query_results(results)
+
+        except psycopg2.OperationalError as e:
+            self.get_logger().warn(f"⚠️ 資料庫備援連接失敗: {e}")
+            # 連接失敗，重置連接物件
+            self.db_connection = None
+        except Exception as e:
+            self.get_logger().error(f"❌ 資料庫備援查詢異常: {e}")
+            import traceback
+            self.get_logger().error(f"   詳細錯誤: {traceback.format_exc()}")
+
+    def _handle_db_query_results(self, results):
+        """處理資料庫查詢結果"""
+        from db_proxy_interfaces.msg import Task as TaskMsg
+        from datetime import datetime
+        import json
+
+        try:
+            # 轉換為 TaskMsg 列表
+            tasks = []
+            for task_data in results:
+                task_msg = TaskMsg()
+
+                # 數值欄位（Task.msg 中的 uint64）
+                task_msg.id = int(task_data.get('id', 0))
+                task_msg.work_id = int(task_data.get('work_id', 0))
+                task_msg.status_id = int(task_data.get('status_id', 0))
+                task_msg.room_id = int(task_data.get('room_id', 0))
+                task_msg.node_id = int(task_data.get('node_id', 0))
+                task_msg.agv_id = int(task_data.get('agv_id', 0))
+
+                # priority 是 uint8，需確保在 0-255 範圍內
+                priority = task_data.get('priority', 0)
+                task_msg.priority = max(0, min(255, int(priority)))
+
+                # 字串欄位
+                task_msg.name = str(task_data.get('name', ''))
+                task_msg.description = str(task_data.get('description', ''))
+
+                # parameters: 資料庫是 JSON/Dict，需轉換為 string
+                parameters = task_data.get('parameters')
+                if parameters is None:
+                    task_msg.parameters = ''
+                elif isinstance(parameters, str):
+                    task_msg.parameters = parameters
+                elif isinstance(parameters, dict):
+                    task_msg.parameters = json.dumps(parameters)
+                else:
+                    task_msg.parameters = str(parameters)
+
+                # 時間戳欄位（資料庫返回 datetime 物件，需轉換為 ISO string）
+                created_at = task_data.get('created_at')
+                updated_at = task_data.get('updated_at')
+
+                if isinstance(created_at, datetime):
+                    task_msg.created_at = created_at.isoformat()
+                else:
+                    task_msg.created_at = str(created_at) if created_at else ''
+
+                if isinstance(updated_at, datetime):
+                    task_msg.updated_at = updated_at.isoformat()
+                else:
+                    task_msg.updated_at = str(updated_at) if updated_at else ''
+
+                tasks.append(task_msg)
+
+            # 更新全局任務列表
+            self.latest_tasks = tasks
+            self.get_logger().info(
+                f"🔄 資料庫備援查詢: 查詢到 {len(tasks)} 筆任務 (agv_id={self.agv_id})"
+            )
+
+        except Exception as e:
+            self.get_logger().error(f"❌ 資料庫備援查詢異常: {e}")
+            import traceback
+            self.get_logger().error(f"   詳細錯誤: {traceback.format_exc()}")
+
+    def _check_agv_id_fallback(self):
+        """檢查 AGV ID 是否已設定，若未設定則使用資料庫備援"""
+        # 取消 timer（只執行一次）
+        if hasattr(self, 'agv_id_fallback_timer'):
+            self.agv_id_fallback_timer.cancel()
+
+        # 如果已經設定 agv_id，不需要備援
+        if self.agv_id != 0:
+            self.get_logger().info("✅ AGV ID 已透過訂閱成功設定，無需備援")
+            return
+
+        # 啟用資料庫備援查詢
+        self.get_logger().warn(
+            "⚠️ 訂閱超時未收到 AGV 資料\n"
+            "  - 🔄 啟用資料庫備援查詢模式"
+        )
+        self._query_agv_id_from_database()
+
+    def _query_agv_id_from_database(self):
+        """直接從資料庫查詢 AGV ID（備援機制）"""
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+
+        namespace = self.get_namespace().lstrip('/')
+
+        try:
+            # 建立資料庫連接（使用全局配置）
+            if self.db_connection is None or self.db_connection.closed:
+                self.db_connection = psycopg2.connect(**self.db_config)
+                self.get_logger().info("🔌 AGV ID 備援: 建立 PostgreSQL 連接")
+
+            # 建立 cursor
+            cursor = self.db_connection.cursor(cursor_factory=RealDictCursor)
+
+            # 查詢 AGV ID
+            sql = """
+                SELECT id, name, description, model, x, y, heading,
+                       battery, last_node_id, enable
+                FROM agv
+                WHERE name = %s AND enable = 1
+            """
+
+            cursor.execute(sql, (namespace,))
+            result = cursor.fetchone()
+            cursor.close()
+
+            if result:
+                self.get_logger().info("=" * 80)
+                self.get_logger().info("✅ 資料庫備援: 成功查詢 AGV 資料！")
+                self.get_logger().info(f"   🆔 資料庫主鍵 (agv.id):        {result['id']}")
+                self.get_logger().info(f"   📛 AGV 名稱 (agv.name):        {result['name']}")
+                self.get_logger().info(f"   📝 說明 (agv.description):    {result['description'] if result['description'] else 'N/A'}")
+                self.get_logger().info(f"   🚗 AGV 型號 (agv.model):       {result['model']}")
+                self.get_logger().info(f"   📍 位置 (x, y, heading):       ({result['x']:.2f}, {result['y']:.2f}, {result['heading']:.2f})")
+                self.get_logger().info(f"   🔌 啟用狀態 (agv.enable):      {'啟用' if result['enable'] == 1 else '停用'}")
+                self.get_logger().info("=" * 80)
+
+                # 設定 agv_id
+                self.agv_id = result['id']
+                self.get_logger().info(f"💾 已將 self.agv_id 設定為: {self.agv_id}")
+                self.get_logger().info(f"🔗 後續任務查詢將使用: task.agv_id == {self.agv_id}")
+
+                # 取消訂閱（已經取得 ID）
+                if self.agvsubscription:
+                    self.destroy_subscription(self.agvsubscription)
+                    self.get_logger().info("✅ 已停止訂閱 /agvc/agvs 主題")
+            else:
+                self.get_logger().error("=" * 80)
+                self.get_logger().error("❌ 資料庫備援: 找不到符合的 AGV！")
+                self.get_logger().error(f"   🔍 查詢條件: agv.name == '{namespace}' AND agv.enable == 1")
+                self.get_logger().error("   💡 請檢查:")
+                self.get_logger().error("      1. 資料庫 agv 表中是否存在該記錄")
+                self.get_logger().error("      2. agv.name 是否與 ROS 2 namespace 一致")
+                self.get_logger().error("      3. agv.enable 是否為 1（啟用）")
+                self.get_logger().error("=" * 80)
+
+        except psycopg2.OperationalError as e:
+            self.get_logger().error(f"❌ AGV ID 備援連接失敗: {e}")
+            self.db_connection = None
+        except Exception as e:
+            self.get_logger().error(f"❌ AGV ID 備援查詢異常: {e}")
+            import traceback
+            self.get_logger().error(f"   詳細錯誤: {traceback.format_exc()}")
+
     def destroy_node(self):
         self.stop()
         self.plc_client.destroy()
+
+        # 關閉資料庫連接
+        if self.db_connection is not None and not self.db_connection.closed:
+            self.db_connection.close()
+            self.get_logger().info("🔌 資料庫備援連接已關閉")
+
         super().destroy_node()
 
 

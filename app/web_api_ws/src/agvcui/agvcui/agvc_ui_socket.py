@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from fastapi.encoders import jsonable_encoder
 from agvcui.db import node_all, edge_all, kuka_node_all, kuka_edge_all
-from agvcui.db import signal_all, carrier_all, rack_all, task_all
+from agvcui.db import signal_all, rack_all, task_all
 from agvcui.db import machine_all, room_all
 from agvcui.db import get_all_agvs, get_all_locations
 from agvcui.db import modify_log_all_objects
@@ -19,7 +19,6 @@ class AgvcUiSocket:
         now = time.perf_counter()
         self.tasks = [
             {"func": self.notify_agvs,     "interval": 5, "last_time": now},
-            {"func": self.notify_carriers, "interval": 10, "last_time": now},
             {"func": self.notify_signals,  "interval": 10, "last_time": now},
             {"func": self.notify_racks,    "interval": 10, "last_time": now},
             {"func": self.notify_tasks,    "interval": 15, "last_time": now},
@@ -51,9 +50,8 @@ class AgvcUiSocket:
         await self.notify_rooms(sid)
         # 初次連線傳送一次必要資訊
         await self.notify_agvs(sid)
-        await self.notify_carriers(sid)
         await self.notify_signals(sid)
-        await self.notify_racks(sid)  # 依賴 map, agv 及 carrier 的資訊 最後載入
+        await self.notify_racks(sid)  # 依賴 map, agv 的資訊 最後載入
         print(f"🔍 DEBUG connect: 即將調用 notify_tasks({sid})", flush=True)
         try:
             await self.notify_tasks(sid)
@@ -230,12 +228,6 @@ class AgvcUiSocket:
         # print(signals)
         await self.sio.emit("signal_list", jsonable_encoder(payload), room=sid)
 
-    async def notify_carriers(self, sid):
-        carriers = carrier_all()
-        payload = {"carriers": carriers}
-        # print(carriers)
-        await self.sio.emit("carrier_list", jsonable_encoder(payload), room=sid)
-
     async def notify_racks(self, sid):
         racks = rack_all()
         payload = {"racks": racks}
@@ -312,7 +304,6 @@ class AgvcUiSocket:
         notify_map = {
             "agv": self.notify_agvs,      # AGV 位置更新 → 地圖顯示
             "rack": self.notify_racks,    # Rack 狀態更新 → Rack 顯示
-            "carrier": self.notify_carriers,
             "signal": self.notify_signals,
             "task": self.notify_tasks,
             # Add other mappings as needed

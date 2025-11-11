@@ -248,9 +248,18 @@ variables:
 ## 🔍 查询条件详解
 
 ### Carrier 查询条件（Station-based）
+### Carrier 查询条件（Station-based）
 
 **必要条件**：
+**必要条件**：
 - `room_id`: 特定房间
+- `equipment_type`: "PRE_DRYER"（预烘机）
+- `port_in`: Station-based Port 映射（**全部4格批量**）
+  - **Station 01**: [1, 2, 5, 6]（**批量4格**）
+  - **Station 03**: [3, 4, 7, 8]（**批量4格**）
+
+**状态条件**：
+- `status_id: 503`（预烘乾机处理完成）
 - `equipment_type`: "PRE_DRYER"（预烘机）
 - `port_in`: Station-based Port 映射（**全部4格批量**）
   - **Station 01**: [1, 2, 5, 6]（**批量4格**）
@@ -289,6 +298,7 @@ variables:
 - **设计简化**: 从4个 Station 简化为2个，从混合批量简化为统一4格
 
 ### 批量处理逻辑
+- **所有 Station 01/03**: 必须有 ≥ 4个载具，AGV 需 ≥ 4格空位（**车上全空**）
 - **所有 Station 01/03**: 必须有 ≥ 4个载具，AGV 需 ≥ 4格空位（**车上全空**）
 - **不支持部分取料**（要么取满4格，要么不取）
 - **效率提升**: 统一批量处理，减少任务次数

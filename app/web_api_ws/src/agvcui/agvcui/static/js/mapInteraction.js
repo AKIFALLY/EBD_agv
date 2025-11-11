@@ -136,9 +136,6 @@ export const mapInteraction = (() => {
             case 'map-tool-racks':
                 showRacksSidebar();
                 break;
-            case 'map-tool-carriers':
-                showCarriersSidebar();
-                break;
             case 'map-tool-agvs':
                 showAgvsSidebar();
                 break;
@@ -393,40 +390,6 @@ export const mapInteraction = (() => {
         }
     }
 
-    // 顯示載具側邊面板
-    function showCarriersSidebar() {
-        const template = document.getElementById('carriers-template');
-
-        if (template) {
-            // 克隆模板內容
-            const clonedContent = template.cloneNode(true);
-            clonedContent.style.display = 'block';
-            clonedContent.removeAttribute('id'); // 移除重複的 ID
-
-            // 檢查權限並顯示/隱藏操作按鈕
-            const actionsElement = clonedContent.querySelector('#carriers-actions');
-            if (actionsElement) {
-                const canCreate = mapPermissions.hasPermission('create_carrier');
-                actionsElement.style.display = canCreate ? 'flex' : 'none';
-                actionsElement.removeAttribute('id'); // 移除重複的 ID
-            }
-
-            showSidebar('載具管理', clonedContent.outerHTML);
-
-            // 延遲載入列表，確保 DOM 已更新
-            setTimeout(() => {
-                // 優先使用 mapCarrierManager 的 loadCarriersList，如果不存在則使用本地的
-                if (window.mapCarrierManager && typeof window.mapCarrierManager.loadCarriersList === 'function') {
-                    console.log('Using mapCarrierManager.loadCarriersList');
-                    window.mapCarrierManager.loadCarriersList();
-                } else {
-                    console.log('Using mapInteraction.loadCarriersList');
-                    loadCarriersList();
-                }
-            }, 10);
-        }
-    }
-
     // 顯示 AGV 側邊面板
     function showAgvsSidebar() {
         const template = document.getElementById('agvs-template');
@@ -652,59 +615,6 @@ export const mapInteraction = (() => {
         }
     }
 
-    // 載入載具列表
-    async function loadCarriersList() {
-        // 在側邊面板中查找載具列表元素
-        const sidebarContent = document.getElementById('sidebar-content');
-        if (!sidebarContent) return;
-
-        const listElement = sidebarContent.querySelector('#carriers-list') || sidebarContent.querySelector('[data-list="carriers"]');
-        if (!listElement) {
-            console.warn('Carriers list element not found in sidebar');
-            return;
-        }
-
-        try {
-            listElement.innerHTML = '<div class="has-text-centered"><span class="icon"><i class="mdi mdi-loading mdi-spin"></i></span> 載入中...</div>';
-
-            // 直接從 carriersStore 載入資料
-            if (window.carriersStore) {
-                const carriersState = window.carriersStore.getState();
-                const carriers = carriersState.carriers || [];
-
-                if (carriers.length === 0) {
-                    listElement.innerHTML = '<p class="has-text-grey">目前沒有載具</p>';
-                    return;
-                }
-
-                // 按 ID 排序載具
-                const sortedCarriers = carriers.sort((a, b) => a.id - b.id);
-
-                const carriersHtml = sortedCarriers.map(carrier => `
-                    <div class="map-info-card" style="margin-bottom: 0.5rem; cursor: pointer;" onclick="mapInteraction.viewCarrierDetails(${carrier.id})">
-                        <div class="map-info-card-header">
-                            <span class="map-info-card-title">載具 ${carrier.id}</span>
-                            <span class="tag is-info">載具 ${carrier.id}</span>
-                        </div>
-                        <div class="is-size-7 has-text-grey">
-                            貨架: ${carrier.rack_id || 'N/A'} | 位置: ${carrier.rack_index || 'N/A'}
-                        </div>
-                    </div>
-                `).join('');
-
-                // 新增載具總數顯示
-                const totalInfo = `<div class="has-text-grey is-size-7 mb-2">總計 ${carriers.length} 個載具</div>`;
-                listElement.innerHTML = totalInfo + carriersHtml;
-            } else {
-                listElement.innerHTML = '<div class="has-text-danger">載具資料未載入</div>';
-            }
-
-        } catch (error) {
-            console.error('Error loading carriers:', error);
-            listElement.innerHTML = '<div class="has-text-danger">載入失敗</div>';
-        }
-    }
-
     // 輔助函數 - 任務狀態
     function getTaskStatusClass(statusId) {
         switch (statusId) {
@@ -739,27 +649,6 @@ export const mapInteraction = (() => {
         }
     }
 
-    // 輔助函數 - 載具狀態
-    function getCarrierStatusClass(statusId) {
-        switch (statusId) {
-            case 1: return 'is-success';   // 正常
-            case 2: return 'is-info';      // 使用中
-            case 3: return 'is-warning';   // 維護中
-            case 4: return 'is-danger';    // 故障
-            default: return 'is-light';
-        }
-    }
-
-    function getCarrierStatusName(statusId) {
-        switch (statusId) {
-            case 1: return '正常';
-            case 2: return '使用中';
-            case 3: return '維護中';
-            case 4: return '故障';
-            default: return '未知';
-        }
-    }
-
     // 詳細檢視方法
     function viewTaskDetails(taskId) {
         mapPermissions.executeWithPermission('view_tasks', () => {
@@ -773,12 +662,6 @@ export const mapInteraction = (() => {
         });
     }
 
-    function viewCarrierDetails(carrierId) {
-        mapPermissions.executeWithPermission('view_carriers', () => {
-            window.open(`/carriers/${carrierId}/edit`, '_blank');
-        });
-    }
-
     // 創建方法
     function createTask() {
         mapPermissions.executeWithPermission('create_task', () => {
@@ -789,12 +672,6 @@ export const mapInteraction = (() => {
     function createRack() {
         mapPermissions.executeWithPermission('create_rack', () => {
             window.open('/racks/create', '_blank');
-        });
-    }
-
-    function createCarrier() {
-        mapPermissions.executeWithPermission('create_carrier', () => {
-            window.open('/carriers/create', '_blank');
         });
     }
 
@@ -1789,12 +1666,10 @@ export const mapInteraction = (() => {
         updatePermissions,
         viewTaskDetails,
         viewRackDetails,
-        viewCarrierDetails,
         viewAgvDetails,
         viewNodeDetails,
         createTask,
         createRack,
-        createCarrier,
         createAgv,
         createNode,
         editNode,

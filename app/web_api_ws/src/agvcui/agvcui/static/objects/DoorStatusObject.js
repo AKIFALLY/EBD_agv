@@ -20,9 +20,7 @@ export class DoorStatusObject extends BaseObject {
     <div class="door-status-title">
         <span>${displayName}</span>
     </div>
-    <div class="door-status-value">
-        <span class="tag is-light">未知</span>
-    </div>
+    <div class="door-status-value">未知</div>
 </div>
         `;
 
@@ -34,6 +32,34 @@ export class DoorStatusObject extends BaseObject {
 
         this.doorId = doorId;
         this.doorName = displayName;
+
+        // 添加點擊事件監聽器
+        this.addClickHandler();
+    }
+
+    /**
+     * 添加點擊事件處理器
+     */
+    addClickHandler() {
+        // 獲取門狀態容器元素
+        const elem = document.getElementById(`door-status-${this.doorId}`);
+        if (!elem) {
+            console.warn(`Door status element not found for click handler: door-status-${this.doorId}`);
+            return;
+        }
+
+        // 添加點擊樣式
+        elem.style.cursor = 'pointer';
+
+        // 添加點擊事件
+        elem.addEventListener('click', () => {
+            // 檢查 mapDoorControlModal 是否存在
+            if (window.mapDoorControlModal && typeof window.mapDoorControlModal.openModal === 'function') {
+                window.mapDoorControlModal.openModal(this.doorId, this.doorName);
+            } else {
+                console.error('mapDoorControlModal 未初始化或 openModal 方法不存在');
+            }
+        });
     }
 
     /**
@@ -47,16 +73,16 @@ export class DoorStatusObject extends BaseObject {
             return;
         }
 
-        const tag = elem.querySelector('.tag');
-        if (!tag) {
-            console.warn(`Door status tag not found for door ${this.doorId}`);
+        const valueElem = elem.querySelector('.door-status-value');
+        if (!valueElem) {
+            console.warn(`Door status value element not found for door ${this.doorId}`);
             return;
         }
 
         // 根據信號值設置狀態
         const isOpen = signalValue === "1";
-        tag.textContent = isOpen ? "開" : "關";
-        tag.className = `tag ${isOpen ? 'is-success' : 'is-danger'}`;
+        valueElem.textContent = isOpen ? "開" : "關";
+        valueElem.className = `door-status-value ${isOpen ? 'opened' : 'closed'}`;
     }
 
     /**

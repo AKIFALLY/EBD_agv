@@ -75,7 +75,7 @@ def main(args=None):
     # 測試同步 read_data（你可以改成其他方法）
     try:
         result = node.read_data(device_type="DM", address="7600")
-        node.get_logger().info(f"Read Result: {result}")
+        # node.get_logger().info(f"Read Result: {result}")  # 已註解：正常讀取不需要 log
     except Exception as e:
         node.get_logger().error(f"Service call failed: {e}")
 

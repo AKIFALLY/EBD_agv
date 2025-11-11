@@ -40,6 +40,33 @@ r quick-diag
 docker compose -f docker-compose.agvc.yml logs -f agvc_server
 ```
 
+### 📌 服務管理標準化（重要）
+**所有 ROS2 服務管理函數 (manage_*) 已標準化，採用 4+6 階段設計：**
+
+```bash
+# 統一介面（所有服務）
+manage_<service_name> start     # 4階段啟動（幂等性 → 依賴 → 啟動 → 驗證）
+manage_<service_name> stop      # 6階段停止（TERM → KILL → 僵屍 → 殘留 → 端口 → 臨時文件）
+manage_<service_name> restart   # 完整重啟
+manage_<service_name> status    # 詳細狀態檢查
+manage_<service_name> logs      # 即時日誌查看
+
+# 已標準化的服務（6個核心服務）
+manage_plc_service_agvc        # PLC 服務
+manage_ecs_core                # ECS 核心服務
+manage_rcs_core                # RCS 核心服務
+manage_agvc_database_node      # 資料庫代理
+manage_tafl_wcs                # TAFL WCS 流程控制
+manage_room_task_build         # Room Task Build
+
+# 參考範例
+manage_web_api_launch          # Web 服務（最佳實踐範例）
+```
+
+**開發新服務管理函數時必讀：**
+- 📖 [manage-function-standard.md](docs-ai/operations/development/ros2/manage-function-standard.md) - 開發標準
+- 📖 [manage-function-template.md](docs-ai/operations/development/ros2/manage-function-template.md) - 實作模板
+
 ## ⚠️ AI Agent 核心規則
 1. **先查文檔，不要猜** - @docs-ai/ 是唯一權威
 2. **用現成工具，不要造** - 檢查 scripts/ 和 r 命令

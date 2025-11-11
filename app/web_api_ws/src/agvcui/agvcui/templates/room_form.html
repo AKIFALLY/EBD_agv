@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- 統一的 level 佈局 -->
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <h1 class="title">
+                        <span class="icon">
+                            <i class="mdi mdi-door"></i>
+                        </span>
+                        {{ form_title }}
+                    </h1>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <a class="button is-light" href="/rooms">
+                        <span class="icon">
+                            <i class="mdi mdi-arrow-left"></i>
+                        </span>
+                        <span>返回列表</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="columns">
+            <!-- 左側：編輯表單 -->
+            <div class="column is-half">
+                <div class="box">
+                    <h2 class="title is-5">製程設定</h2>
+                    <form method="post" action="{{ form_action }}">
+                        <!-- 製程設置 -->
+                        <div class="field">
+                            <label class="label">製程 ID *</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select name="process_settings_id" required>
+                                        <option value="">請選擇製程設置</option>
+                                        {% for ps in process_settings %}
+                                        <option value="{{ ps.id }}" {{ 'selected' if room and
+                                            room.process_settings_id==ps.id else '' }}>
+                                            {{ ps.description or ("製程 " + ps.id|string) }} (ID: {{ ps.id }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="help">選擇此房間使用的製程設定</p>
+                        </div>
+
+                        <!-- 啟用狀態 -->
+                        <div class="field">
+                            <label class="label">啟用狀態</label>
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="enable" value="true" {{ 'checked' if room and
+                                        room.enable==1 else '' }}>
+                                    啟用此房間
+                                </label>
+                            </div>
+                            <p class="help">停用後此房間將不參與任務調度</p>
+                        </div>
+
+                        <!-- 按鈕區域 -->
+                        <div class="field is-grouped mt-5">
+                            <div class="control">
+                                <button class="button is-primary" type="submit">
+                                    <span class="icon">
+                                        <i class="mdi mdi-content-save"></i>
+                                    </span>
+                                    <span>保存變更</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a class="button is-light" href="/rooms">
+                                    <span class="icon">
+                                        <i class="mdi mdi-close"></i>
+                                    </span>
+                                    <span>取消</span>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 右側：房間信息（只讀） -->
+            <div class="column is-half">
+                <div class="box">
+                    <h2 class="title is-5">房間資訊</h2>
+                    <div class="content">
+                        <table class="table is-fullwidth">
+                            <tbody>
+                                <tr>
+                                    <td class="has-text-weight-bold" style="width: 40%;">房間 ID</td>
+                                    <td>{{ room.id }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="has-text-weight-bold">房間名稱</td>
+                                    <td>{{ room.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="has-text-weight-bold">描述</td>
+                                    <td>{{ room.description or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="has-text-weight-bold">入口位置 ID</td>
+                                    <td>
+                                        {% if locations and locations.enter_location_id %}
+                                        <span class="tag is-info">{{ locations.enter_location_id }}</span>
+                                        {% else %}
+                                        <span class="tag is-light">未設定</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="has-text-weight-bold">出口位置 ID</td>
+                                    <td>
+                                        {% if locations and locations.exit_location_id %}
+                                        <span class="tag is-info">{{ locations.exit_location_id }}</span>
+                                        {% else %}
+                                        <span class="tag is-light">未設定</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="has-text-weight-bold">目前狀態</td>
+                                    <td>
+                                        {% if room.enable == 1 %}
+                                        <span class="tag is-success">
+                                            <span class="icon">
+                                                <i class="mdi mdi-check-circle"></i>
+                                            </span>
+                                            <span>已啟用</span>
+                                        </span>
+                                        {% else %}
+                                        <span class="tag is-danger">
+                                            <span class="icon">
+                                                <i class="mdi mdi-close-circle"></i>
+                                            </span>
+                                            <span>已停用</span>
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="notification is-info is-light">
+                        <p class="is-size-7">
+                            <span class="icon">
+                                <i class="mdi mdi-information"></i>
+                            </span>
+                            <strong>提示：</strong>房間名稱、描述和位置資訊為系統配置，無法在此修改。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -113,7 +113,14 @@ else
 fi
 
 # 設定 Zenoh 相關環境變數
-export ZENOH_ROUTER_CONFIG_URI="/app/routerconfig.json5"
+# 根據容器類型選擇配置文件，或保留已有的環境變數
+if [ -z "$ZENOH_ROUTER_CONFIG_URI" ]; then
+    if [ "$CONTAINER_TYPE" = "agvc" ]; then
+        export ZENOH_ROUTER_CONFIG_URI="/app/routerconfig.agvc.json5"
+    else
+        export ZENOH_ROUTER_CONFIG_URI="/app/routerconfig.json5"
+    fi
+fi
 export RMW_IMPLEMENTATION="rmw_zenoh_cpp"
 
 # 確認環境變數設定
@@ -214,6 +221,7 @@ echo "  manage_web_api_launch <cmd>       - 管理 Web API Launch"
 echo "  manage_tafl_wcs <cmd>             - 管理 TAFL WCS 節點"  # 新一代 WCS 系統
 echo "  manage_rcs_core <cmd>             - 管理 RCS 核心節點"
 echo "  manage_room_task_build <cmd>      - 管理 WCS 房間任務節點"
+echo "  manage_transfer_box_task_build <cmd> - 管理 WCS 傳送箱任務節點"
 echo "  manage_ssh <cmd>                  - 管理 SSH 服務"
 echo ""
 echo "🚗 AGV 本地管理指令："

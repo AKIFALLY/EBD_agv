@@ -149,11 +149,6 @@ export const mapIntegrationTest = (() => {
         await runTest('Rack Manager', () => {
             return window.mapRackManager && typeof window.mapRackManager.loadRackData === 'function';
         });
-        
-        // 測試載具管理器
-        await runTest('Carrier Manager', () => {
-            return window.mapCarrierManager && typeof window.mapCarrierManager.loadCarrierData === 'function';
-        });
     }
 
     // 效能測試

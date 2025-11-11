@@ -22,9 +22,12 @@ import uuid
 from itertools import zip_longest
 from kuka_fleet_adapter.kuka_fleet_adapter import KukaFleetAdapter
 from db_proxy.models import AGV, ModifyLog, Rack
+from db_proxy.models.agvc_kuka import KukaNode
+from db_proxy.models.agvc_location import Location
 from db_proxy.crud.agv_crud import agv_crud
 from sqlmodel import select
 import traceback
+from typing import Optional
 
 
 class KukaManager:
@@ -119,6 +122,9 @@ class KukaManager:
                     if self._update_single_robot(session, robot):
                         updated_count += 1
 
+                # 🆕 同步 robot→rack 關聯（在 callback 無法工作時的備用機制）
+                self._sync_rack_agv_mapping(session, robots)
+
                 if updated_count > 0:
                     # 🔴 關鍵：標記 AGV 資料已更新，觸發前端更新
                     # 絕對不可移除！前端 agvc_ui_socket.py 監聽此事件
@@ -193,6 +199,175 @@ class KukaManager:
                 tb_str = traceback.format_exc()
                 self.get_logger().debug(f"堆疊訊息:\n{tb_str}")
             return False
+
+    def _sync_rack_agv_mapping(self, session, robots: list):
+        """
+        同步 robotId → containerCode 到 rack.agv_id
+
+        此功能用於在 KUKA Fleet Callback 無法正常工作時，
+        透過輪詢 robotQuery 來維持 robot-rack 關聯關係
+
+        Args:
+            session: 資料庫 session
+            robots: 機器人狀態列表
+        """
+        try:
+            # 1. 構建 robotId → containerCode 映射
+            robot_containers = {}
+            for robot in robots:
+                robot_id = robot.get("robotId")
+                container_code = robot.get("containerCode")
+                if robot_id and container_code:
+                    try:
+                        robot_containers[container_code] = int(robot_id)
+                    except (ValueError, TypeError):
+                        self.get_logger().warning(
+                            f"無效的 robotId: {robot_id}，跳過容器 {container_code}")
+                        continue
+
+            if not robot_containers:
+                # 沒有任何 robot 正在搬運容器，執行安全清除
+                self._safe_clear_rack_agv_mapping(session)
+                return
+
+            # 2. 更新有映射的 rack.agv_id（增量更新）
+            updated_count = 0
+            for container_code, robot_id in robot_containers.items():
+                rack = session.exec(
+                    select(Rack).where(Rack.name == container_code)
+                ).first()
+
+                if rack:
+                    # 查詢 AGV 是否存在
+                    agv = agv_crud.get_by_id(session, robot_id)
+                    if agv:
+                        # 只在 agv_id 有變化時更新
+                        if rack.agv_id != agv.id:
+                            old_agv_id = rack.agv_id
+                            rack.agv_id = agv.id
+                            updated_count += 1
+                            self.get_logger().info(
+                                f"✅ Rack-AGV 同步: {rack.name} agv_id {old_agv_id} → {agv.id}")
+                    else:
+                        self.get_logger().warning(
+                            f"⚠️ Robot {robot_id} 不存在於 AGV 表，無法同步 Rack {container_code}")
+                else:
+                    self.get_logger().debug(
+                        f"Rack {container_code} 不存在於資料庫中")
+
+            # 3. 安全清除：只清除 is_carry=0 且不在映射中的 rack
+            cleared_count = self._safe_clear_rack_agv_mapping(session, robot_containers)
+
+            # 4. 如果有更新，觸發前端更新
+            if updated_count > 0 or cleared_count > 0:
+                ModifyLog.mark(session, "rack")
+                if updated_count > 0:
+                    self.get_logger().info(f"✅ 同步了 {updated_count} 個 rack.agv_id")
+                if cleared_count > 0:
+                    self.get_logger().info(f"✅ 安全清除了 {cleared_count} 個 rack.agv_id")
+
+        except Exception as e:
+            self.get_logger().error(f"同步 Rack-AGV 映射時發生錯誤: {e}")
+            if self.get_logger().isEnabledFor(10):  # DEBUG level
+                tb_str = traceback.format_exc()
+                self.get_logger().debug(f"堆疊訊息:\n{tb_str}")
+
+    def _safe_clear_rack_agv_mapping(self, session, robot_containers: dict = None):
+        """
+        安全清除 rack.agv_id
+        只清除 is_carry=0（未被搬運）且不在 robot_containers 映射中的 rack
+
+        Args:
+            session: 資料庫 session
+            robot_containers: robotId → containerCode 映射（可選）
+
+        Returns:
+            int: 清除的數量
+        """
+        try:
+            if robot_containers is None:
+                robot_containers = {}
+
+            # 查詢需要清除的 rack：
+            # 1. is_carry = 0（未被搬運）
+            # 2. agv_id 不為 None
+            # 3. name 不在當前的 robot_containers 映射中
+            query = select(Rack).where(
+                Rack.is_carry == 0,
+                Rack.agv_id != None
+            )
+
+            racks_to_check = session.exec(query).all()
+
+            cleared_count = 0
+            for rack in racks_to_check:
+                # 檢查是否在當前映射中
+                if rack.name not in robot_containers:
+                    old_agv_id = rack.agv_id
+                    rack.agv_id = None
+                    cleared_count += 1
+                    self.get_logger().info(
+                        f"🧹 安全清除: Rack {rack.name} agv_id {old_agv_id} → None (is_carry=0)")
+
+            return cleared_count
+
+        except Exception as e:
+            self.get_logger().error(f"安全清除 Rack-AGV 映射時發生錯誤: {e}")
+            return 0
+
+    def _get_location_id_from_node_code(self, node_code: str, session) -> Optional[int]:
+        """
+        將 KUKA nodeCode 映射到 location_id
+
+        映射逻辑：
+        1. 查询 kuka_node 表，匹配 kuka_node.uuid = nodeCode
+        2. 获取 kuka_node.id
+        3. 查询 location 表，匹配 location.node_id = kuka_node.id
+        4. 返回 location.id
+
+        Args:
+            node_code: KUKA 节点代码（如 "AlanACT-AlanSec1-26"）
+            session: 数据库 session
+
+        Returns:
+            Optional[int]: location_id 或 None（映射失败时）
+        """
+        if not node_code:
+            return None
+
+        try:
+            # 步骤1: 查询 KukaNode（通过 uuid 匹配，而不是 name）
+            kuka_node = session.exec(
+                select(KukaNode).where(KukaNode.uuid == node_code)
+            ).first()
+
+            if not kuka_node:
+                # 可能是新节点，记录 debug 日志
+                self.get_logger().debug(f"找不到 KukaNode: {node_code}")
+                return None
+
+            # 步骤2: 使用 kuka_node.id 查询 Location
+            location = session.exec(
+                select(Location).where(Location.node_id == kuka_node.id)
+            ).first()
+
+            if location:
+                return location.id
+            else:
+                self.get_logger().debug(
+                    f"KukaNode {node_code} (id={kuka_node.id}) 沒有對應的 Location")
+                return None
+
+        except Exception as e:
+            self.get_logger().error(f"映射 nodeCode 到 location_id 時發生錯誤: {e}")
+            if self.get_logger().isEnabledFor(10):  # DEBUG level
+                tb_str = traceback.format_exc()
+                self.get_logger().debug(f"堆疊訊息:\n{tb_str}")
+            return None
+
+    def _normalize_direction(self, orientation: float) -> int:
+        """将 KUKA orientation 规范化到 10 的倍数（保持原始正負號）"""
+        return round(orientation / 10) * 10
 
     def _validate_robot_data(self, robot_data: dict) -> bool:
         """
@@ -517,6 +692,8 @@ class KukaManager:
             # 記錄舊狀態（用於檢測變化）
             old_is_carry = rack.is_carry
             old_is_in_map = rack.is_in_map
+            old_location_id = rack.location_id
+            old_direction = rack.direction
 
             # 更新 is_carry 狀態 (是否被搬運)
             is_carry = container_data.get("isCarry")
@@ -528,22 +705,53 @@ class KukaManager:
             if is_in_map is not None:
                 rack.is_in_map = 1 if is_in_map else 0
 
-            # ⚠️ 注意：不要從 KUKA orientation 更新 rack.direction
-            # 原因：
-            # 1. KUKA orientation 是連續角度值（0-360°），反映容器實時物理方向
-            # 2. rack.direction 是業務邏輯欄位，只能是 0 或 180
-            #    - 0° = A面朝外（Port 1-16 可存取）
-            #    - 180° = B面朝外（Port 17-32 可存取）
-            # 3. 如果直接賦值，會在旋轉過程中產生 45°、90°、135° 等中間值
-            # 4. 這會導致 AGV 狀態機（check_rack_side_state.py）的 port 驗證失敗
-            #
-            # 正確做法：rack.direction 應該由旋轉任務完成回調來更新
-            # （在 web_api/routers/kuka.py 的 missionStateCallback 中處理）
+            # 🆕 當容器在地圖中時，根據 orientation 更新 direction
+            if rack.is_in_map == 1:
+                orientation = container_data.get("orientation")
+                if orientation is not None:
+                    try:
+                        orientation_float = float(orientation)
+                        rack.direction = self._normalize_direction(orientation_float)
+                    except (ValueError, TypeError) as e:
+                        self.get_logger().warning(
+                            f"⚠️ 无法解析容器 {container_code} 的 orientation: {orientation}, error: {e}"
+                        )
 
-            # 檢查狀態是否有變化（不再檢查 direction，因為它不應該在這裡更新）
+            # ✅ 新增：更新 location_id (只在容器已放下且在地图中時)
+            # 當 is_carry = 0 且 is_in_map = 1 時，容器已放在某個位置，應該更新位置資訊
+            if rack.is_carry == 0 and rack.is_in_map == 1:
+                node_code = container_data.get("nodeCode")
+                if node_code:
+                    location_id = self._get_location_id_from_node_code(node_code, session)
+                    if location_id is not None and location_id != rack.location_id:
+                        rack.location_id = location_id
+                        self.get_logger().info(
+                            f"📍 Rack {rack.name} 位置更新: "
+                            f"location_id {old_location_id} → {location_id} "
+                            f"(nodeCode: {node_code})")
+                    elif location_id is None:
+                        # 映射失败，记录警告
+                        self.get_logger().warning(
+                            f"⚠️ 無法映射 nodeCode: {node_code} → location_id (Rack: {rack.name})")
+                else:
+                    # nodeCode 为空
+                    self.get_logger().debug(f"Rack {rack.name} 的 nodeCode 為空")
+            elif rack.is_carry == 0 and rack.is_in_map != 1:
+                # 容器已放下但不在地图中，跳过位置更新
+                self.get_logger().debug(
+                    f"Rack {rack.name} 已放下但不在地图中 (is_in_map={rack.is_in_map})，"
+                    f"跳过 location 更新")
+
+            # ✅ rack.direction 更新機制：
+            # 現在使用 _normalize_direction() 自動將 KUKA orientation 規範化到 10 的倍數
+            # 這樣可以避免旋轉過程中的中間角度值，並保持角度的一致性
+
+            # 檢查狀態是否有變化（包含位置和方向變化）
             changed = (
                 old_is_carry != rack.is_carry or
-                old_is_in_map != rack.is_in_map
+                old_is_in_map != rack.is_in_map or
+                old_location_id != rack.location_id or
+                old_direction != rack.direction
             )
 
             # 只在狀態變化時輸出詳細日誌
@@ -553,6 +761,10 @@ class KukaManager:
                     log_parts.append(f"is_carry {old_is_carry}→{rack.is_carry}")
                 if old_is_in_map != rack.is_in_map:
                     log_parts.append(f"is_in_map {old_is_in_map}→{rack.is_in_map}")
+                if old_location_id != rack.location_id:
+                    log_parts.append(f"location_id {old_location_id}→{rack.location_id}")
+                if old_direction != rack.direction:
+                    log_parts.append(f"direction {old_direction}°→{rack.direction}°")
 
                 self.get_logger().info(", ".join(log_parts))
 

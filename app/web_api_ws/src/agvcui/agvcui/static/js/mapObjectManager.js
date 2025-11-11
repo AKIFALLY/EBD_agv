@@ -6,7 +6,6 @@
 import { mapInteraction } from './mapInteraction.js';
 import { mapPermissions } from './mapPermissions.js';
 import { mapRackManager } from './mapRackManager.js';
-import { mapCarrierManager } from './mapCarrierManager.js';
 import { mapTaskManager } from './mapTaskManager.js';
 import { mapAgvManager } from './mapAgvManager.js';
 import { mapAuditLogger } from './mapAuditLogger.js';
@@ -16,7 +15,6 @@ export const mapObjectManager = (() => {
     function init() {
         // 初始化管理器
         mapRackManager.init();
-        mapCarrierManager.init();
         mapTaskManager.init();
         mapAgvManager.init();
         mapAuditLogger.init();
@@ -408,19 +406,6 @@ export const mapObjectManager = (() => {
     }
 
     // 貨架相關操作
-    function viewRackCarriers(rackId) {
-        mapPermissions.executeWithPermission('view_carriers', () => {
-            // 記錄查看貨架載具操作
-            mapAuditLogger.logView(mapAuditLogger.RESOURCE_TYPES.CARRIER, null, {
-                action: 'view_rack_carriers',
-                rackId: rackId,
-                source: 'map_popup'
-            });
-
-            window.open(`/carriers?rack_id=${rackId}`, '_blank');
-        });
-    }
-
     function editRack(rackId) {
         mapPermissions.executeWithPermission('edit_rack', () => {
             // 記錄編輯貨架操作
@@ -430,19 +415,6 @@ export const mapObjectManager = (() => {
             });
 
             window.open(`/racks/${rackId}/edit`, '_blank');
-        });
-    }
-
-    function addCarrierToRack(rackId) {
-        mapPermissions.executeWithPermission('create_carrier', () => {
-            // 記錄新增載具到貨架操作
-            mapAuditLogger.logCreate(mapAuditLogger.RESOURCE_TYPES.CARRIER, null, {
-                action: 'add_carrier_to_rack',
-                rackId: rackId,
-                source: 'map_popup'
-            });
-
-            window.open(`/carriers/create?rack_id=${rackId}`, '_blank');
         });
     }
 
@@ -607,9 +579,7 @@ export const mapObjectManager = (() => {
         controlEquipment,
 
         // 貨架相關操作
-        viewRackCarriers,
         editRack,
-        addCarrierToRack,
 
         // 節點相關操作
         createTaskAtNode,

@@ -47,8 +47,7 @@ async def test_minimal_flow():
             test_work = Work(
                 id=TEST_WORK_ID,
                 name="測試 Work",
-                description="用於 TAFL 最簡化測試",
-                work_code="TEST_MINIMAL"
+                description="用於 TAFL 最簡化測試"
             )
             session.add(test_work)
             print(f"   ✅ Work: id={TEST_WORK_ID}, name=測試 Work")

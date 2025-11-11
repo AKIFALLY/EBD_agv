@@ -12,16 +12,11 @@ def initialize_racks(session):
     print("🗄️ 初始化貨架資料...")
     
     default_rack = [
-        {"id": 1, "name": "001", "location_id": 51, "agv_id": None,
-            "is_carry": 0, "product_id": 1, "status_id": 1, "direction": 0, "is_docked": 1},
-        {"id": 2, "name": "002", "location_id": 52, "agv_id": None,
-            "is_carry": 0, "product_id": 1, "status_id": 1, "direction": 0},
-        {"id": 3, "name": "003", "location_id": 53, "agv_id": None,
-            "is_carry": 0, "product_id": 1, "status_id": 1, "direction": 180},
-        {"id": 4, "name": "004", "location_id": 54, "agv_id": None,
-            "is_carry": 0, "product_id": 2, "status_id": 1, "direction": 180},
-        {"id": 5, "name": "005", "location_id": 55, "agv_id": None,
-            "is_carry": 0, "product_id": 2, "status_id": 1, "direction": 180}
+        {"id": 1, "name": "001", "location_id": 51, "agv_id": None, "is_carry": 0, "product_id": 1, "status_id": 1, "direction": 0, "is_docked": 1, "carrier_bitmap": "00000000", "carrier_enable_bitmap": "FFFFFFFF"},
+        {"id": 2, "name": "002", "location_id": 52, "agv_id": None, "is_carry": 0, "product_id": 1, "status_id": 1, "direction": 0, "carrier_bitmap": "00000000", "carrier_enable_bitmap": "FFFFFFFF"},
+        {"id": 3, "name": "003", "location_id": 53, "agv_id": None, "is_carry": 0, "product_id": 1, "status_id": 1, "direction": 180, "carrier_bitmap": "00000000", "carrier_enable_bitmap": "FFFFFFFF"},
+        {"id": 4, "name": "004", "location_id": 54, "agv_id": None, "is_carry": 0, "product_id": 2, "status_id": 1, "direction": 180, "carrier_bitmap": "00000000", "carrier_enable_bitmap": "0F0F0F0F"},
+        {"id": 5, "name": "005", "location_id": 55, "agv_id": None, "is_carry": 0, "product_id": 2, "status_id": 1, "direction": 180, "carrier_bitmap": "00000000", "carrier_enable_bitmap": "0F0F0F0F"}
     ]
     
     insert_data_if_not_exists_name(session, default_rack, Rack)

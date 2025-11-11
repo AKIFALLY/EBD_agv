@@ -71,7 +71,7 @@
                                         {% for location in locations %}
                                         <option value="{{ location.id }}" {{ 'selected' if rack and
                                             rack.location_id==location.id else '' }}>
-                                            {{ location.name or ("位置 " + location.id|string) }}
+                                            {{ location.id }} - {{ location.name or "未命名" }}
                                         </option>
                                         {% endfor %}
                                     </select>

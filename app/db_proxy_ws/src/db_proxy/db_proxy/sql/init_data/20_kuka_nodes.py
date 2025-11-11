@@ -52,6 +52,13 @@ def initialize_kuka_nodes(session):
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
         {"id": 72, "uuid": "KUKA072", "node_type_id": 2, "name": "NG回收區2", "description": "NG回收放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
+
+        # Room2 出入口節點 (2025-11-10 新增: 修復 location 20001/20002 的節點引用)
+        {"id": 26, "uuid": "KUKA026", "node_type_id": 2, "name": "Room2出口(KUKA)", "description": "Room2出口(KUKA)",
+        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
+        {"id": 27, "uuid": "KUKA027", "node_type_id": 2, "name": "Room2入口(KUKA)", "description": "Room2入口(KUKA)",
+        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
+
         {"id": 91, "uuid": "KUKA091", "node_type_id": 2, "name": "Room2出口", "description": "Room2出口",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
         {"id": 92, "uuid": "KUKA092", "node_type_id": 2, "name": "Room2入口", "description": "Room2入口",

@@ -82,7 +82,7 @@ class AGVCDatabaseNode(Node):
 
         # 新增: 用於控制發佈邏輯
         self.last_publish_time = {}
-        self.publish_interval = 10.0  # 10 秒
+        self.publish_interval = 5.0  # 5 秒
         self.force_publish_flags = {
             ros_msg_list.__name__: False
             for _, ros_msg_list, _ in self.pub_datas

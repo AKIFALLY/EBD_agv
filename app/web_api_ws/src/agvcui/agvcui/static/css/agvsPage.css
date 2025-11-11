@@ -163,3 +163,14 @@
 }
 
 /* AGV 頁面動畫效果已移至 updateAnimations.css 統一管理 */
+
+/* AGV Status JSON dropdown 樣式 */
+.agv-status-json-dropdown .dropdown-content {
+    min-width: 300px;
+}
+
+.agv-status-json-dropdown pre {
+    max-height: 180px;
+    overflow: auto;
+    font-size: 0.75rem;
+}

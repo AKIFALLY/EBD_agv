@@ -183,7 +183,7 @@ class PlcService(Node):
         try:
             self.pool.execute(command)
         except Exception as e:
-            error_msg = f"PLC 強制置位失敗 {e},pool conn:{len(self.pool.connections)}"
+            error_msg = f"PLC 強制置位失敗 {e},pool conn:{len(self.pool.connections)}, command: {command.strip()}"
             self.get_logger().warn(error_msg)
             response.message = error_msg
             return response
@@ -203,7 +203,7 @@ class PlcService(Node):
         try:
             self.pool.execute(command)
         except Exception as e:
-            error_msg = f"PLC 強制復位失敗 {e},pool conn:{len(self.pool.connections)}"
+            error_msg = f"PLC 強制復位失敗 {e},pool conn:{len(self.pool.connections)}, command: {command.strip()}"
             self.get_logger().warn(error_msg)
             response.message = error_msg
             return response
@@ -215,7 +215,6 @@ class PlcService(Node):
         # response.success = True
         # response.message = ""
         # return response
-        # self.get_logger().info(f"PLC 讀取數據 request: {request}")
         command = KeyencePlcCommand.read_data(
             request.device_type, request.address)
         response.success = False
@@ -224,19 +223,17 @@ class PlcService(Node):
         try:
             response.value = self.pool.execute(command)
         except Exception as e:
-            error_msg = f"PLC 讀取數據失敗 {e},pool conn:{len(self.pool.connections)}"
+            error_msg = f"PLC 讀取數據失敗 {e},pool conn:{len(self.pool.connections)}, command: {command.strip()}"
             self.get_logger().warn(error_msg)
             response.message = error_msg
             return response
         response.success = True
-        # self.get_logger().info("PLC 讀取數據完成")
         return response
 
     def write_data_callback(self, request, response):
         # response.success = True
         # response.message = ""
         # return response
-        self.get_logger().info(f"PLC 寫入數據 request: {request}")
         command = KeyencePlcCommand.write_data(
             request.device_type, request.address, request.value
         )
@@ -245,19 +242,17 @@ class PlcService(Node):
         try:
             self.pool.execute(command)
         except Exception as e:
-            error_msg = f"PLC 寫入數據失敗 {e},pool conn:{len(self.pool.connections)}"
+            error_msg = f"PLC 寫入數據失敗 {e},pool conn:{len(self.pool.connections)}, command: {command.strip()}"
             self.get_logger().warn(error_msg)
             response.message = error_msg
             return response
         response.success = True
-        self.get_logger().info("PLC 寫入數據完成")
         return response
 
     def read_continuous_data_callback(self, request, response):
         # response.success = True
         # response.message = ""
         # return response
-        # self.get_logger().debug(f"PLC 連續讀取數據 request: {request}")
         command = KeyencePlcCommand.read_continuous_data(
             request.device_type, request.start_address, request.count
         )
@@ -269,20 +264,18 @@ class PlcService(Node):
             response.values = values.split(" ")
         except Exception as e:
             error_msg = (
-                f"PLC 連續讀取數據失敗 {e},pool conn:{len(self.pool.connections)}"
+                f"PLC 連續讀取數據失敗 {e},pool conn:{len(self.pool.connections)}, command: {command.strip()}"
             )
             self.get_logger().warn(error_msg)
             response.message = error_msg
             return response
         response.success = True
-        # self.get_logger().debug("PLC 連續讀取數據完成")
         return response
 
     def write_continuous_data_callback(self, request, response):
         # response.success = True
         # response.message = ""
         # return response
-        #self.get_logger().info(f"PLC 連續寫入數據 request: {request}")
         command = KeyencePlcCommand.write_continuous_data(
             request.device_type, request.start_address, request.values
         )
@@ -292,13 +285,12 @@ class PlcService(Node):
             self.pool.execute(command)
         except Exception as e:
             error_msg = (
-                f"PLC 連續寫入數據失敗 {e},pool conn:{len(self.pool.connections)}"
+                f"PLC 連續寫入數據失敗 {e},pool conn:{len(self.pool.connections)}, command: {command.strip()}"
             )
             self.get_logger().warn(error_msg)
             response.message = error_msg
             return response
         response.success = True
-        #self.get_logger().info("PLC 連續寫入數據完成")
         return response
 
     def read_continuous_byte_callback(self, request, response):

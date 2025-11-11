@@ -298,7 +298,8 @@ class Robot():
                 self.read_step = 1
 
             case 1:
-                self.node.get_logger().info("等待 PGNO 和 Error Number 讀取完成")
+                # 等待 PGNO 和 Error Number 讀取完成（已注释避免日志污染）
+                pass
 
     def update_pgno(self, write_data):
         update_pgno_device_type = 'W'  # 假設寫入的是EM裝置
@@ -310,7 +311,8 @@ class Robot():
                     device_type=update_pgno_device_type, address=update_pgno_address, value=write_data, callback=self.update_pgno_callback)
                 self.write_step = 1
             case 1:
-                self.node.get_logger().info("等待Update PGNO")
+                # 等待 Update PGNO 完成（已注释避免日志污染）
+                pass
 
     def update_parameter(self):
         """更新參數"""
@@ -323,7 +325,65 @@ class Robot():
                 self.update_parameter_step = 1
 
             case 1:
-                self.node.get_logger().info("等待更新參數")
+                # 等待更新參數完成（已注释避免日志污染）
+                pass
+
+    def read_robot_parameter(self):
+        """讀取 Robot Parameter (從 W110 開始連續讀取 32 word)"""
+        device_type = 'W'
+        address = '110'
+        count = 32
+
+        match self.read_robot_parameter_step:
+            case 0:
+                self.robot_parameter_read_requested = True
+                self.plc_client.async_read_continuous_data(
+                    device_type=device_type,
+                    start_address=address,
+                    count=count,
+                    callback=self.read_robot_parameter_callback
+                )
+                self.read_robot_parameter_step = 1
+
+            case 1:
+                self.node.get_logger().info("等待 Robot Parameter 讀取完成")
+
+    def check_parameter_match(self, expected_values: dict) -> tuple[bool, str]:
+        """
+        檢查讀取的參數是否符合預期
+
+        Args:
+            expected_values: {屬性名: 預期值}
+                            例如 {'w114': 1, 'w115': 2}
+                            屬性名使用小寫 (w110-w12f)
+
+        Returns:
+            (是否全部匹配, 訊息)
+            - True: 所有參數都匹配
+            - False: 有參數不匹配或尚未讀取
+
+        Example:
+            >>> match, msg = robot.check_parameter_match({'w114': 1, 'w115': 2})
+            >>> if not match:
+            >>>     logger.warn(f"參數檢查: {msg}")
+        """
+        if not self.read_robot_parameter_success:
+            return (False, "參數尚未讀取成功")
+
+        mismatches = []
+        for attr_name, expected_value in expected_values.items():
+            actual_value = getattr(self, attr_name, None)
+            if actual_value is None:
+                mismatches.append(f"{attr_name.upper()}: 未讀取到值")
+            elif actual_value != expected_value:
+                mismatches.append(
+                    f"{attr_name.upper()}: 預期={expected_value}, 實際={actual_value}"
+                )
+
+        if mismatches:
+            return (False, "; ".join(mismatches))
+
+        return (True, "所有參數匹配")
 
     def read_robot_parameter(self):
         """讀取 Robot Parameter (從 W110 開始連續讀取 32 word)"""

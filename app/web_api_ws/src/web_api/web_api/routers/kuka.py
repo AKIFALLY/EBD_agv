@@ -5,11 +5,18 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from db_proxy.connection_pool_manager import ConnectionPoolManager
-from db_proxy.models import Task
+from db_proxy.models import Task, Rack
+from db_proxy.models.modify_log import ModifyLog
 from db_proxy.crud.task_crud import task_crud
+from db_proxy.crud.agv_crud import agv_crud
 from sqlmodel import select
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_direction(orientation: float) -> int:
+    """将 KUKA orientation 规范化到 10 的倍数（保持原始正負號）"""
+    return round(orientation / 10) * 10
 
 
 class MissionStateCallbackData(BaseModel):
@@ -61,65 +68,178 @@ def create_kuka_router(db_pool: ConnectionPoolManager):
                     Task.mission_code == data.missionCode)
                 existing_task = session.exec(statement).first()
 
+                # ✅ 修改：即使沒有 task，仍然處理 rack 狀態更新
                 if not existing_task:
-                    logger.warning(f"找不到對應的任務: missionCode={data.missionCode}")
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Task not found for missionCode: {data.missionCode}"
-                    )
+                    logger.warning(
+                        f"找不到對應的任務: missionCode={data.missionCode}, "
+                        f"但仍會處理 rack 狀態更新 (containerCode={data.containerCode}, "
+                        f"missionStatus={data.missionStatus})")
+                else:
+                    # 有 task 時才更新 task.parameters
+                    # 更新任務的參數，將 Kuka 回報的資訊存入 parameters 欄位
+                    current_params = existing_task.parameters or {}
+                    logger.info(f"原始 parameters: {current_params}")
 
-                # 更新任務的參數，將 Kuka 回報的資訊存入 parameters 欄位
-                current_params = existing_task.parameters or {}
-                logger.info(f"原始 parameters: {current_params}")
+                    # 更新任務狀態相關資訊
+                    kuka_status_info = {
+                        "kuka_mission_status": data.missionStatus,
+                        "kuka_robot_id": data.robotId,
+                        "kuka_container_code": data.containerCode,
+                        "kuka_current_position": data.currentPosition,
+                        "kuka_slot_code": data.slotCode,
+                        "kuka_view_board_type": data.viewBoardType,
+                        "kuka_message": data.message,
+                        "kuka_mission_data": data.missionData,
+                        "kuka_last_update": datetime.now(timezone.utc).isoformat()
+                    }
+                    logger.info(f"新增的 Kuka 狀態資訊: {kuka_status_info}")
 
-                # 更新任務狀態相關資訊
-                kuka_status_info = {
-                    "kuka_mission_status": data.missionStatus,
-                    "kuka_robot_id": data.robotId,
-                    "kuka_container_code": data.containerCode,
-                    "kuka_current_position": data.currentPosition,
-                    "kuka_slot_code": data.slotCode,
-                    "kuka_view_board_type": data.viewBoardType,
-                    "kuka_message": data.message,
-                    "kuka_mission_data": data.missionData,
-                    "kuka_last_update": datetime.now(timezone.utc).isoformat()
-                }
-                logger.info(f"新增的 Kuka 狀態資訊: {kuka_status_info}")
+                    # 合併現有參數和新的 Kuka 狀態資訊
+                    current_params.update(kuka_status_info)
+                    logger.info(f"合併後的 parameters: {current_params}")
 
-                # 合併現有參數和新的 Kuka 狀態資訊
-                current_params.update(kuka_status_info)
-                logger.info(f"合併後的 parameters: {current_params}")
+                    # 簡化版本：只更新 parameters，不改變狀態
+                    # 狀態由 WCS 統一管理
+                    existing_task.parameters = dict(current_params)
+                    existing_task.updated_at = datetime.now(timezone.utc)
+                    logger.info(
+                        f"更新任務 {existing_task.id} parameters: {existing_task.parameters}")
+                    logger.info(f"任務狀態保持: {existing_task.status_id} (由 WCS 統一管理)")
 
-                # 簡化版本：只更新 parameters，不改變狀態
-                # 狀態由 WCS 統一管理
-                existing_task.parameters = dict(current_params)
-                existing_task.updated_at = datetime.now(timezone.utc)
-                logger.info(
-                    f"更新任務 {existing_task.id} parameters: {existing_task.parameters}")
-                logger.info(f"任務狀態保持: {existing_task.status_id} (由 WCS 統一管理)")
+                    # 標記 parameters 欄位為已修改（確保 SQLAlchemy 檢測到變化）
+                    from sqlalchemy.orm import attributes
+                    attributes.flag_modified(existing_task, "parameters")
 
-                # 標記 parameters 欄位為已修改（確保 SQLAlchemy 檢測到變化）
-                from sqlalchemy.orm import attributes
-                attributes.flag_modified(existing_task, "parameters")
+                    # 將更新後的物件添加到 session 並提交
+                    session.add(existing_task)
+                    session.commit()
+                    session.refresh(existing_task)
 
-                # 將更新後的物件添加到 session 並提交
-                session.add(existing_task)
-                session.commit()
-                session.refresh(existing_task)
+                # 處理容器頂升/放下狀態
+                if data.missionStatus in ['UP_CONTAINER', 'DOWN_CONTAINER']:
+                    if data.containerCode:
+                        # 根據 containerCode 查找 Rack
+                        rack_statement = select(Rack).where(Rack.name == data.containerCode)
+                        rack = session.exec(rack_statement).first()
 
-                updated_task = existing_task
-                logger.info(f"提交後的 parameters: {updated_task.parameters}")
+                        if rack:
+                            if data.missionStatus == 'UP_CONTAINER':
+                                # AGV 頂升容器
+                                # ✅ 使用 robotId 查詢 AGV（解耦優化）
+                                if data.robotId:
+                                    try:
+                                        agv = agv_crud.get_by_id(session, int(data.robotId))
+                                        if agv:
+                                            rack.agv_id = agv.id
+                                            logger.info(
+                                                f"✅ UP_CONTAINER: Rack {rack.name} (id={rack.id}) "
+                                                f"picked up by AGV {agv.id} (robotId={data.robotId})")
+                                        else:
+                                            logger.warning(f"⚠️ AGV not found for robotId: {data.robotId}")
+                                            # 如果有 task，使用 task.agv_id 作為 fallback
+                                            if existing_task:
+                                                rack.agv_id = existing_task.agv_id
+                                                logger.info(f"使用 task.agv_id={existing_task.agv_id} 作為 fallback")
+                                            else:
+                                                logger.error("❌ 無法設置 agv_id：robotId 無效且沒有對應的 task")
+                                    except (ValueError, TypeError) as e:
+                                        logger.error(f"❌ Invalid robotId format: {data.robotId}, error: {e}")
+                                        # 如果有 task，使用 task.agv_id 作為 fallback
+                                        if existing_task:
+                                            rack.agv_id = existing_task.agv_id
+                                            logger.info(f"使用 task.agv_id={existing_task.agv_id} 作為 fallback")
+                                        else:
+                                            logger.error("❌ 無法設置 agv_id：robotId 格式無效且沒有對應的 task")
+                                else:
+                                    # 沒有 robotId
+                                    if existing_task:
+                                        logger.warning("⚠️ No robotId provided, using task.agv_id")
+                                        rack.agv_id = existing_task.agv_id
+                                    else:
+                                        logger.error("❌ 無法設置 agv_id：沒有 robotId 且沒有對應的 task")
 
-                logger.info(f"任務參數更新成功: task_id={updated_task.id}, "
-                            f"missionStatus={data.missionStatus} (僅更新 parameters，不修改 status_id)")
+                                rack.is_carry = 1
 
-                return {
-                    "success": True,
-                    "message": "Mission state callback processed successfully",
-                    "task_id": updated_task.id,
-                    "mission_code": data.missionCode,
-                    "mission_status": data.missionStatus
-                }
+                            elif data.missionStatus == 'DOWN_CONTAINER':
+                                # AGV 放下容器
+                                old_agv_id = rack.agv_id
+                                rack.agv_id = None
+                                rack.is_carry = 0
+
+                                # 🆕 更新 direction（从 missionData 中获取 orientation）
+                                if data.missionData and 'orientation' in data.missionData:
+                                    try:
+                                        orientation = float(data.missionData['orientation'])
+                                        old_direction = rack.direction
+                                        rack.direction = _normalize_direction(orientation)
+                                        logger.info(
+                                            f"📐 DOWN_CONTAINER: Rack {rack.name} direction 更新: "
+                                            f"{old_direction}° → {rack.direction}° "
+                                            f"(KUKA orientation: {orientation}°)")
+                                    except (ValueError, TypeError) as e:
+                                        logger.warning(f"⚠️ 无法解析 orientation: {data.missionData.get('orientation')}, error: {e}")
+
+                                # ✅ 更新 location_id（位置同步）- 仅当容器在地图中时
+                                if data.currentPosition and rack.is_in_map == 1:
+                                    try:
+                                        # 解析 currentPosition: "M001-A001-31" → location_id = 31
+                                        location_id = int(data.currentPosition.split('-')[-1])
+                                        old_location_id = rack.location_id
+                                        rack.location_id = location_id
+                                        logger.info(
+                                            f"✅ DOWN_CONTAINER: Rack {rack.name} (id={rack.id}) "
+                                            f"put down at location {location_id} "
+                                            f"(was on AGV {old_agv_id}, location {old_location_id} → {location_id})")
+                                    except (ValueError, IndexError) as e:
+                                        logger.error(
+                                            f"❌ Failed to parse location_id from currentPosition: "
+                                            f"{data.currentPosition}, error: {e}")
+                                elif data.currentPosition and rack.is_in_map != 1:
+                                    logger.debug(
+                                        f"DOWN_CONTAINER for Rack {rack.name}: 容器不在地图中 (is_in_map={rack.is_in_map})，"
+                                        f"跳过 location 更新 (currentPosition={data.currentPosition})")
+                                elif not data.currentPosition:
+                                    logger.debug(
+                                        f"DOWN_CONTAINER for Rack {rack.name} but no currentPosition provided")
+
+                            # 觸發前端更新
+                            session.add(rack)
+                            ModifyLog.mark(session, "rack")
+                            session.commit()
+                            session.refresh(rack)
+                        else:
+                            logger.warning(
+                                f"⚠️ Rack not found for containerCode: {data.containerCode}")
+                    else:
+                        logger.debug(
+                            f"missionStatus={data.missionStatus} but no containerCode provided")
+
+                # 根據是否有 task 返回不同的響應
+                if existing_task:
+                    logger.info(f"提交後的 parameters: {existing_task.parameters}")
+                    logger.info(f"任務參數更新成功: task_id={existing_task.id}, "
+                                f"missionStatus={data.missionStatus} (僅更新 parameters，不修改 status_id)")
+
+                    return {
+                        "success": True,
+                        "message": "Mission state callback processed successfully",
+                        "task_id": existing_task.id,
+                        "mission_code": data.missionCode,
+                        "mission_status": data.missionStatus
+                    }
+                else:
+                    logger.info(f"Rack 狀態更新成功 (無對應 task): "
+                                f"missionCode={data.missionCode}, "
+                                f"missionStatus={data.missionStatus}, "
+                                f"containerCode={data.containerCode}")
+
+                    return {
+                        "success": True,
+                        "message": "Rack state updated (task not found)",
+                        "mission_code": data.missionCode,
+                        "mission_status": data.missionStatus,
+                        "warning": "No corresponding task found, only rack state updated"
+                    }
 
         except HTTPException:
             # 重新拋出 HTTP 異常

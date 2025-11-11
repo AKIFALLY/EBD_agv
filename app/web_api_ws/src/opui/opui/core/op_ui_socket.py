@@ -95,6 +95,60 @@ class OpUiSocket:
         except Exception as e:
             print(f"❌ 廣播資料更新失敗: {e}")
 
+    @staticmethod
+    def calculate_carrier_bitmap(count: int, product_size: str = "S") -> str:
+        """
+        根據格數和產品尺寸計算 carrier_bitmap
+        Args:
+            count: 格數 (1-32 for S, 1-16 for L)
+            product_size: 產品尺寸 ("S" 或 "L")
+        Returns:
+            8位16進制字符串（例如 "0000000F" 或 "FFFFFFFF"）
+
+        S 產品（連續填滿）:
+            count=4  → "0000000F" (二進制: 0...1111)
+            count=8  → "000000FF" (二進制: 0...11111111)
+            count=16 → "0000FFFF" (二進制: 0...1111111111111111)
+            count=32 → "FFFFFFFF" (二進制: 11111111...11111111)
+
+        L 產品（間隔填滿，每次填滿4位，跳過4位）:
+            count=4  → "0000000F" (第1個4位)
+            count=8  → "00000F0F" (第1、3個4位)
+            count=12 → "000F0F0F" (第1、3、5個4位)
+            count=16 → "0F0F0F0F" (第1、3、5、7個4位，最大值)
+        """
+        if count <= 0:
+            return "00000000"
+
+        if product_size == "L":
+            # L 產品：間隔填滿，最多16格
+            if count >= 16:
+                return "0F0F0F0F"
+
+            # L 產品每4格填滿一個hex字符（4 bits）
+            # 填滿的模式：0xF 在奇數位置（從右往左數）
+            # count=4  → 0x0000000F (位置1)
+            # count=8  → 0x00000F0F (位置1, 3)
+            # count=12 → 0x000F0F0F (位置1, 3, 5)
+            # count=16 → 0x0F0F0F0F (位置1, 3, 5, 7)
+            result = 0
+            filled_groups = (count + 3) // 4  # 向上取整，計算需要填滿多少組
+
+            for i in range(filled_groups):
+                # 每組填滿4位，間隔8位
+                # 第1組在bit 0-3，第2組在bit 8-11，第3組在bit 16-19，第4組在bit 24-27
+                result |= (0xF << (i * 8))
+
+            return f"{result:08X}"
+        else:
+            # S 產品：連續填滿，最多32格
+            if count >= 32:
+                return "FFFFFFFF"
+
+            # 從低位開始連續填滿
+            bitmap_value = (1 << count) - 1
+            return f"{bitmap_value:08X}"
+
     def _format_client_data(self, client_data):
         """統一的客戶端資料格式化"""
         client_dict = dict(client_data)
@@ -654,6 +708,7 @@ class OpUiSocket:
 
                     # 更新料架的工作區位置
                     exist_rack.location_id = available_location
+                    exist_rack.is_docked = 1    # 已對接到工作區
                     rack_crud.update(session, exist_rack.id, exist_rack)
                     rack_id = exist_rack.id
                     action = "分配到工作區"
@@ -697,6 +752,21 @@ class OpUiSocket:
 
                 # 移除料架的停車格分配
                 rack.location_id = None
+                rack.is_in_map = 0      # 標記為不在地圖中（觸發 KUKA 出場）
+                rack.is_docked = 0      # 取消對接狀態
+
+                # KUKA 容器出場同步
+                try:
+                    from opui.services.kuka_sync_service import OpuiKukaContainerSync
+                    kuka_sync = OpuiKukaContainerSync()
+                    sync_result = kuka_sync.sync_container_exit(rack)
+                    if sync_result.get("success"):
+                        print(f"✅ KUKA 容器出場成功: {rack.name}")
+                    else:
+                        print(f"⚠️ KUKA 容器出場失敗: {sync_result.get('message')}")
+                except Exception as kuka_error:
+                    print(f"⚠️ KUKA 同步異常（不影響 Rack 移出）: {str(kuka_error)}")
+
                 rack_crud.update(session, rack.id, rack)
 
                 print(f"✅ 料架刪除成功: {rack.name}")
@@ -791,7 +861,7 @@ class OpUiSocket:
     async def dispatch_full(self, sid, data):
         """派滿車任務（從工作區移動到停車格）"""
         try:
-            from opui.database.operations import create_task, get_dispatch_full_work_id, rack_crud, machine_crud, connection_pool
+            from opui.database.operations import create_task, get_dispatch_full_work_id, rack_crud, machine_crud, connection_pool, product_crud
             from shared_constants.task_status import TaskStatus
 
             # 獲取任務參數
@@ -809,9 +879,18 @@ class OpUiSocket:
             if not all([side, product_name, count, rack_id, room]):
                 return {"success": False, "message": "缺少必要參數"}
 
-            # 查詢有這個rack_id的料架資料
+            # 查詢產品尺寸
             session = connection_pool.get_session()
             try:
+                # 根據產品名稱查詢產品資訊
+                from sqlmodel import select
+                from db_proxy.models import Product
+                statement = select(Product).where(Product.name == product_name)
+                product = session.exec(statement).first()
+                product_size = product.size if product else "S"  # 默認為 S
+                print(f"📦 產品: {product_name}, 尺寸: {product_size}")
+
+                # 查詢有這個rack_id的料架資料
                 rack = rack_crud.get_by_id(session, rack_id)
                 if not rack:
                     return {"success": False, "message": f"找不到料架 ID: {rack_id}"}
@@ -840,8 +919,41 @@ class OpUiSocket:
                 # 將料架移動到停車格
                 if parking_space:
                     print(f"🚚 移動料架 {rack.name} 從location {rack.location_id} 到停車格 {parking_space}")
+
+                    # ⭐ 一次性更新所有欄位（避免多次 update 導致欄位遺失）
                     rack.location_id = parking_space
-                    rack_crud.update(session, rack.id, rack)
+                    rack.is_in_map = 1          # 派車任務前標記入場
+                    rack.is_docked = 0          # 脫離工作區對接狀態
+
+                    # 根據格數和產品尺寸更新 carrier_bitmap 和 carrier_enable_bitmap
+                    carrier_bitmap = self.calculate_carrier_bitmap(count, product_size)
+                    rack.carrier_bitmap = carrier_bitmap
+
+                    # carrier_enable_bitmap：S產品為FFFFFFFF，L產品為0F0F0F0F
+                    carrier_enable_bitmap = "FFFFFFFF" if product_size == "S" else "0F0F0F0F"
+                    rack.carrier_enable_bitmap = carrier_enable_bitmap
+
+                    # 一次性更新所有修改
+                    rack = rack_crud.update(session, rack.id, rack)
+                    print(f"✅ 派滿車更新 Rack {rack_id}:")
+                    print(f"   - location_id: {rack.location_id} (停車格)")
+                    print(f"   - is_in_map: {rack.is_in_map}")
+                    print(f"   - is_docked: {rack.is_docked}")
+                    print(f"   - carrier_bitmap: {carrier_bitmap} (格數: {count}, 尺寸: {product_size})")
+                    print(f"   - carrier_enable_bitmap: {carrier_enable_bitmap}")
+
+                    # 🆕 KUKA 容器入場同步（派車任務產生前）
+                    try:
+                        from opui.services.kuka_sync_service import OpuiKukaContainerSync
+                        kuka_sync = OpuiKukaContainerSync()
+                        sync_result = kuka_sync.sync_container_entry(rack, parking_space, session)
+                        if sync_result.get("success"):
+                            print(f"✅ KUKA 容器入場成功: {rack.name} → Location {parking_space}")
+                        else:
+                            print(f"⚠️ KUKA 容器入場失敗: {sync_result.get('message')}")
+                    except Exception as kuka_error:
+                        print(f"⚠️ KUKA 同步異常（不影響派車流程）: {str(kuka_error)}")
+
                     print(f"✅ 料架已移動到停車格")
             finally:
                 session.close()
@@ -1466,7 +1578,8 @@ class OpUiSocket:
                 layout = permissions.get("layout", "2x2")
                 
                 # 3. 查詢位置資料
-                from db_proxy.models import Location, Rack, Product, Carrier
+                from db_proxy.models import Location, Rack, Product
+                from agvcui.database.rack_ops import count_occupied_slots
                 locations_data = []
                 
                 for location_name in location_names:
@@ -1482,12 +1595,15 @@ class OpUiSocket:
                             },
                             "rack": None,
                             "product": None,
-                            "carriers": []
+                            "carrier_count": 0
                         }
                         
-                        # 查詢該位置的料架
+                        # 查詢該位置的料架（只查询在地图中的 Rack）
                         rack = session.exec(
-                            select(Rack).where(Rack.location_id == location.id)
+                            select(Rack).where(
+                                (Rack.location_id == location.id) &
+                                (Rack.is_in_map == 1)
+                            )
                         ).first()
                         
                         if rack:
@@ -1508,13 +1624,8 @@ class OpUiSocket:
                                         "size": product.size
                                     }
                             
-                            # 查詢載具數量
-                            carriers = session.exec(
-                                select(Carrier).where(Carrier.rack_id == rack.id)
-                            ).all()
-                            location_info["carriers"] = [
-                                {"id": c.id, "index": c.rack_index} for c in carriers
-                            ]
+                            # 計算已佔用格位數量（使用 carrier_bitmap）
+                            location_info["carrier_count"] = count_occupied_slots(rack.carrier_bitmap)
                         
                         locations_data.append(location_info)
                 

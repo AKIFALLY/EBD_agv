@@ -300,9 +300,8 @@ class OpUiServer:
                 from opui.database.operations import connection_pool
                 from db_proxy.crud.location_crud import location_crud
                 from db_proxy.crud.rack_crud import rack_crud
-                from db_proxy.crud.carrier_crud import carrier_crud
                 from sqlmodel import select
-                from db_proxy.models import Location, Rack, Carrier, Product
+                from db_proxy.models import Location, Rack, Product
                 
                 locations_data = []
                 with connection_pool.get_session() as session:
@@ -314,30 +313,22 @@ class OpUiServer:
                         
                         if location:
                             rack = None
-                            carriers = []
                             product = None
-                            
+
                             # 查詢該位置是否有 Rack
                             rack = session.exec(
                                 select(Rack).where(Rack.location_id == location.id)
                             ).first()
-                            
-                            # 查詢該 Rack 上的 Carriers
-                            if rack:
-                                carriers = session.exec(
-                                    select(Carrier).where(Carrier.rack_id == rack.id)
-                                ).all()
-                                
-                                # 查詢 Rack 關聯的產品資訊
-                                if rack.product_id:
-                                    product = session.exec(
-                                        select(Product).where(Product.id == rack.product_id)
-                                    ).first()
-                            
+
+                            # 查詢 Rack 關聯的產品資訊
+                            if rack and rack.product_id:
+                                product = session.exec(
+                                    select(Product).where(Product.id == rack.product_id)
+                                ).first()
+
                             locations_data.append({
                                 "location": location,
                                 "rack": rack,
-                                "carriers": carriers,
                                 "product": product
                             })
                         else:
@@ -345,7 +336,6 @@ class OpUiServer:
                             locations_data.append({
                                 "location": {"name": loc_name, "id": None},
                                 "rack": None,
-                                "carriers": [],
                                 "product": None
                             })
                 

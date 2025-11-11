@@ -2,7 +2,7 @@ from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSON, JSONB
 from pydantic import ConfigDict
 
 
@@ -20,6 +20,11 @@ class AGV(SQLModel, table=True):
     last_node_id: Optional[int] = None
     enable: int = Field(default=1)
     status_id: Optional[int] = Field(default=None, foreign_key="agv_status.id")
+    agv_status_json: Optional[Dict[str, Any]] = Field(
+        default=None,
+        sa_column=Column(JSON),
+        description="AGV 完整狀態資料（來自 /agv/status topic）"
+    )
 
     contexts: List["AGVContext"] = Relationship(
         back_populates="agv")  # 設定 relationship可以簡寫 join

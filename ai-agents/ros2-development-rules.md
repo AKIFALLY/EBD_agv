@@ -128,9 +128,69 @@ rm -rf build/ install/ log/
 colcon build
 ```
 
+## 服務管理函數開發 (manage_*)
+
+### ⚠️ 重要：所有 manage_* 函數必須遵循標準化規範
+
+**必讀文檔**:
+- [manage-function-standard.md](../docs-ai/operations/development/ros2/manage-function-standard.md) - 開發標準與最佳實踐
+- [manage-function-template.md](../docs-ai/operations/development/ros2/manage-function-template.md) - 詳細實作模板
+
+### 核心要求
+
+#### 4 階段啟動流程
+```bash
+階段 1: 啟動前檢查（幂等性驗證）
+階段 2: 依賴檢查（資料庫、上游服務、工作空間建置）
+階段 3: 啟動服務（記錄父進程、子進程、服務進程 PID）
+階段 4: 驗證啟動（多層驗證 + 診斷建議）
+```
+
+#### 6 階段停止流程
+```bash
+階段 1: 優雅停止 (SIGTERM)
+階段 2: 強制終止 (SIGKILL)
+階段 3: 備份清理（僵屍進程）
+階段 4: 殘留進程清理
+階段 5: 端口資源釋放
+階段 6: 清理臨時文件
+```
+
+### 必須支援的子命令
+```bash
+manage_service_name start    # 啟動服務
+manage_service_name stop     # 停止服務
+manage_service_name restart  # 重啟服務
+manage_service_name status   # 狀態檢查
+manage_service_name logs     # 查看日誌
+```
+
+### 驗證方法決策
+- **ROS2 節點** → 使用 `verify_ros2_node_startup()`
+- **Web 服務** → 使用 `wait_for_port_with_retry()`
+- **一般進程** → 使用 `verify_process_startup()`
+
+### PID 追蹤規範
+```bash
+# ✅ 正確：記錄所有相關進程
+echo "$PARENT_PID" > "$PID_FILE"      # 父進程
+echo "$CHILD_PIDS" >> "$PID_FILE"     # 子進程
+echo "$SERVICE_PIDS" >> "$PID_FILE"   # 服務進程
+
+# ❌ 錯誤：只記錄父進程
+echo "$PARENT_PID" > "$PID_FILE"
+```
+
+### 已標準化的函數範例
+- `manage_web_api_launch` - Web 服務管理（最佳實踐）
+- `manage_plc_service_agvc` - PLC 服務管理
+- `manage_tafl_wcs` - TAFL WCS 流程控制
+- `manage_room_task_build` - Room Task Build 節點
+
 ## 關鍵規則
 1. **ROS2 只在容器內**: 宿主機無 ROS2 環境
 2. **載入環境優先**: 執行前必須 `source /app/setup.bash`
 3. **工作目錄**: 在 ~/RosAGV 執行 docker compose
 4. **Zenoh 通訊**: 跨容器通訊依賴 Zenoh Router
 5. **自動載入**: 使用 `all_source` 自動檢測環境
+6. **服務管理標準化**: 所有 `manage_*` 函數必須遵循 4+6 階段標準

@@ -157,165 +157,113 @@ AUTO_START_AGVC_DATABASE_NODE=true     # AGVC 資料庫代理節點（資料層�
 AUTO_START_PLC_SERVICE_AGVC=true       # PLC 服務（硬體接口層）
 AUTO_START_ECS_CORE=true               # ECS 核心服務（設備控制層）
 AUTO_START_RCS_CORE=true               # RCS 核心服務（機器人控制層）
-AUTO_START_TAFL_WCS=true               # TAFL WCS 節點（流程控制層）
+AUTO_START_TAFL_WCS=false              # TAFL WCS 節點（流程控制層，已停用）
 AUTO_START_ROOM_TASK_BUILD=true        # 房間任務構建節點（任務構建層）
 AUTO_START_WEB_API_LAUNCH=true         # Web API Launch 服務群組（用戶界面層）
 
 # =============================================================================
-# 🔧 SSH 服務啟動控制（基礎設施層）
+# 🚀 服務啟動流程
 # =============================================================================
+echo "⚙️ 開始啟動已啟用的 AGVC 服務..."
+echo ""
+
+# SSH 服務
 if [ "$AUTO_START_SSH" = "true" ]; then
     echo "🔐 啟動 SSH 服務..."
     if manage_ssh start; then
         echo "✅ SSH 服務啟動成功"
     else
         echo "⚠️ SSH 服務啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_ssh status"
     fi
-else
-    echo "⏸️ SSH 服務自動啟動已停用 (AUTO_START_SSH=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 Zenoh Router 啟動控制（通訊層）
-# =============================================================================
+# Zenoh Router
 if [ "$AUTO_START_ZENOH" = "true" ]; then
     echo "🌐 啟動 Zenoh Router..."
     if manage_zenoh start; then
         echo "✅ Zenoh Router 啟動成功"
     else
         echo "⚠️ Zenoh Router 啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_zenoh status"
     fi
-else
-    echo "⏸️ Zenoh Router 自動啟動已停用 (AUTO_START_ZENOH=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 AGVC 資料庫代理節點啟動控制（資料層）
-# =============================================================================
+# AGVC Database Node
 if [ "$AUTO_START_AGVC_DATABASE_NODE" = "true" ]; then
     echo "🗄️ 啟動 AGVC 資料庫代理節點..."
     if manage_agvc_database_node start; then
-        echo "✅ AGVC 資料庫代理節點啟動成功"
+        echo "✅ 資料庫節點啟動成功"
     else
-        echo "⚠️ AGVC 資料庫代理節點啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_agvc_database_node status"
+        echo "⚠️ 資料庫節點啟動失敗"
     fi
-else
-    echo "⏸️ AGVC 資料庫代理節點自動啟動已停用 (AUTO_START_AGVC_DATABASE_NODE=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 PLC 服務啟動控制（硬體接口層）
-# =============================================================================
+# PLC Service
 if [ "$AUTO_START_PLC_SERVICE_AGVC" = "true" ]; then
-    echo "🔌 啟動 PLC 服務 (AGVC)..."
+    echo "🔌 啟動 PLC 服務..."
     if manage_plc_service_agvc start; then
         echo "✅ PLC 服務啟動成功"
     else
         echo "⚠️ PLC 服務啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_plc_service_agvc status"
     fi
-else
-    echo "⏸️ PLC 服務自動啟動已停用 (AUTO_START_PLC_SERVICE_AGVC=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 ECS 核心服務啟動控制（設備控制層）
-# =============================================================================
+# ECS Core
 if [ "$AUTO_START_ECS_CORE" = "true" ]; then
     echo "🚪 啟動 ECS 核心服務..."
     if manage_ecs_core start; then
-        echo "✅ ECS 核心服務啟動成功"
+        echo "✅ ECS 核心啟動成功"
     else
-        echo "⚠️ ECS 核心服務啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_ecs_core status"
+        echo "⚠️ ECS 核心啟動失敗"
     fi
-else
-    echo "⏸️ ECS 核心服務自動啟動已停用 (AUTO_START_ECS_CORE=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 RCS 核心服務啟動控制（機器人控制層）
-# =============================================================================
+# RCS Core
 if [ "$AUTO_START_RCS_CORE" = "true" ]; then
     echo "🤖 啟動 RCS 核心服務..."
     if manage_rcs_core start; then
-        echo "✅ RCS 核心服務啟動成功"
+        echo "✅ RCS 核心啟動成功"
     else
-        echo "⚠️ RCS 核心服務啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_rcs_core status"
+        echo "⚠️ RCS 核心啟動失敗"
     fi
-else
-    echo "⏸️ RCS 核心服務自動啟動已停用 (AUTO_START_RCS_CORE=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 TAFL WCS 節點啟動控制（流程控制層）
-# =============================================================================
+# TAFL WCS
 if [ "$AUTO_START_TAFL_WCS" = "true" ]; then
     echo "⚙️ 啟動 TAFL WCS 節點..."
     if manage_tafl_wcs start; then
-        echo "✅ TAFL WCS 節點啟動成功"
+        echo "✅ TAFL WCS 啟動成功"
     else
-        echo "⚠️ TAFL WCS 節點啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_tafl_wcs status"
+        echo "⚠️ TAFL WCS 啟動失敗"
     fi
-else
-    echo "⏸️ TAFL WCS 節點自動啟動已停用 (AUTO_START_TAFL_WCS=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 房間任務構建節點啟動控制（任務構建層）
-# =============================================================================
+# Room Task Build
 if [ "$AUTO_START_ROOM_TASK_BUILD" = "true" ]; then
     echo "🏗️ 啟動房間任務構建節點..."
     if manage_room_task_build start; then
-        echo "✅ 房間任務構建節點啟動成功"
+        echo "✅ 房間任務啟動成功"
     else
-        echo "⚠️ 房間任務構建節點啟動失敗"
-        echo "📝 請使用以下指令查看詳情: manage_room_task_build status"
+        echo "⚠️ 房間任務啟動失敗"
     fi
-else
-    echo "⏸️ 房間任務構建節點自動啟動已停用 (AUTO_START_ROOM_TASK_BUILD=false)"
+    echo ""
 fi
 
-echo ""  # 分隔線
-
-# =============================================================================
-# 🔧 Web API Launch 啟動控制（用戶界面層）
-# =============================================================================
-
-# 根據開關決定是否啟動 Web API Launch
+# Web API Launch
 if [ "$AUTO_START_WEB_API_LAUNCH" = "true" ]; then
     echo "🌐 啟動 Web API Launch 服務群組..."
-    # 捕獲錯誤但不退出，確保容器繼續運行
     if manage_web_api_launch start; then
-        echo "✅ Web API Launch 服務群組啟動成功"
+        echo "✅ Web API Launch 啟動成功"
     else
-        echo "⚠️ Web API Launch 服務群組啟動失敗"
-        echo "📝 請使用以下指令查看錯誤詳情："
-        echo "   tail -f /tmp/web_api_launch.log"
-        echo "💡 容器仍在運行，您可以透過 SSH 連線進行診斷"
-        # 不執行 exit，讓容器繼續運行
+        echo "⚠️ Web API Launch 啟動失敗"
     fi
-else
-    echo "⏸️ Web API Launch 自動啟動已停用 (AUTO_START_WEB_API_LAUNCH=false)"
+    echo ""
 fi
 
 # =============================================================================

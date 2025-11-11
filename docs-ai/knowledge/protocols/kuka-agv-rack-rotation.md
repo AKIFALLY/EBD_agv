@@ -183,10 +183,6 @@ def create_rack_rotation_task(location, rack, work):
 **Problem**: KUKA AGV cannot execute rotation with incorrect node pattern
 **Solution**: Ensure exactly 3 nodes with first == third node
 
-### Issue: Work ID Confusion
-**Problem**: Using work_code string instead of work.id integer
-**Solution**: Always use `work.id` (integer) for task.work_id field
-
 ### Issue: Lost Work Parameters
 **Problem**: Task missing important work configuration parameters
 **Solution**: Merge work.parameters first, then add/override with metadata

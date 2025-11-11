@@ -13,6 +13,7 @@ from db_proxy.connection_pool_manager import ConnectionPoolManager
 from db_proxy.models import AGV, AGVContext, ModifyLog
 from sqlmodel import select
 from rcs.ct_task_allocator import CtTaskAllocator
+from datetime import datetime, timezone
 
 
 class CtManager:
@@ -147,6 +148,36 @@ class CtManager:
                 agv.heading = self.ct_angle_2_map_angle(msg.slam_theta / 10)
                 agv.battery = msg.power
 
+                # 將完整 AgvStatus 訊息序列化為 JSON
+                agv.agv_status_json = {
+                    "agv_id": msg.agv_id,
+                    "slam_x": msg.slam_x,
+                    "slam_y": msg.slam_y,
+                    "slam_theta": msg.slam_theta,
+                    "power": msg.power,
+                    "x_speed": msg.x_speed,
+                    "y_speed": msg.y_speed,
+                    "theta_speed": msg.theta_speed,
+                    "front_pgv": msg.front_pgv,
+                    "back_pgv": msg.back_pgv,
+                    "start_point": msg.start_point,
+                    "end_point": msg.end_point,
+                    "action": msg.action,
+                    "zone": msg.zone,
+                    "status1": msg.status1,
+                    "status2": msg.status2,
+                    "status3": msg.status3,
+                    "alarm1": msg.alarm1,
+                    "alarm2": msg.alarm2,
+                    "alarm3": msg.alarm3,
+                    "alarm4": msg.alarm4,
+                    "alarm5": msg.alarm5,
+                    "alarm6": msg.alarm6,
+                    "magic": msg.magic,
+                    "layer": msg.layer,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+
                 # 🔴 關鍵：標記 AGV 資料已更新，觸發前端更新
                 # 前端 agvc_ui_socket.py 監聽此事件進行即時更新
                 # 絕對不可移除！(參考 rcs_ws/CLAUDE.md 警告)
@@ -167,7 +198,7 @@ class CtManager:
     def handle_state_change(self, msg: AgvStateChange):
         """處理 AGV 狀態變更並更新資料庫"""
         self.logger.info(
-            f"CT AGV 狀態變更: {msg.agv_id} 狀態從 {msg.from_state} 變更為 {msg.to_state}")
+            f"🔄 CT AGV 狀態變更: {msg.agv_id} 狀態從 {msg.from_state} 變更為 {msg.to_state}")
 
         if not self.db_pool:
             self.logger.error("資料庫連線池不可用，無法更新 AGV context。")
@@ -199,7 +230,7 @@ class CtManager:
                     session.add(agv_context)
 
                 session.commit()
-                self.logger.info(f"成功更新 CT AGV {msg.agv_id} 的 context。")
+                self.logger.info(f"✅ 成功更新 CT AGV {msg.agv_id} 的 context。")
         except Exception as e:
             self.logger.error(
                 f"更新 CT AGV context 時發生錯誤: {e}")
@@ -266,19 +297,27 @@ class CtManager:
                     self.logger.debug("目前沒有可用的 CT AGV")
                     return
 
-                # 查詢待執行的 CT 任務 (使用小寫 model，排除 KUKA400i)
-                ct_tasks = session.exec(
+                # 查詢待執行的 CT 任務
+                # 注意：不在 SQL 中過濾 model，因為 CT 任務的 parameters 中沒有 model 字段
+                all_pending_tasks = session.exec(
                     select(Task).where(
                         Task.status_id == TaskStatus.PENDING,  # 待處理
                         Task.mission_code == None,  # 尚未指定任務代碼
-                        Task.parameters["model"].as_string() != "KUKA400i"  # 排除 KUKA
+                        Task.agv_id == None  # ✅ 只處理未分配 AGV 的任務
                     ).order_by(Task.priority.asc())  # 優先級低的數字先執行
                 ).all()
 
+                # 在 Python 中過濾：排除 model="KUKA400i" 的任務
+                ct_tasks = [
+                    task for task in all_pending_tasks
+                    if not (task.parameters and task.parameters.get("model") == "KUKA400i")
+                ]
+
                 if not ct_tasks:
+                    self.logger.debug(f"沒有 CT 任務待處理 (總共 {len(all_pending_tasks)} 個待處理任務)")
                     return
 
-                self.logger.info(f"找到 {len(ct_tasks)} 個 CT 任務待處理")
+                self.logger.info(f"🔍 找到 {len(ct_tasks)} 個 CT 任務待處理 (已排除 {len(all_pending_tasks) - len(ct_tasks)} 個 KUKA 任務)")
 
                 # 遍歷任務並分配
                 for task in ct_tasks:
@@ -305,13 +344,18 @@ class CtManager:
                             self.logger.error(f"找不到 AGV: {agv_name}")
                             continue
 
-                        # 查詢該 AGV 是否有待執行或執行中的任務
+                        # 查詢該 AGV 是否有活動任務（包含取消中的狀態）
+                        # 取消中的任務仍可能占用 AGV（執行清理動作）
                         existing_task = session.exec(
                             select(Task).where(
                                 Task.agv_id == agv.id,
                                 Task.status_id.in_([
-                                    TaskStatus.READY_TO_EXECUTE,  # 待執行
-                                    TaskStatus.EXECUTING           # 執行中
+                                    TaskStatus.READY_TO_EXECUTE,  # 2 - 待執行
+                                    TaskStatus.EXECUTING,          # 3 - 執行中
+                                    TaskStatus.CANCELLING,         # 5 - 取消中
+                                    TaskStatus.WCS_CANCELLING,     # 51 - WCS取消中
+                                    TaskStatus.RCS_CANCELLING,     # 52 - RCS取消中
+                                    TaskStatus.AGV_CANCELLING      # 53 - AGV取消中
                                 ])
                             )
                         ).first()
@@ -332,7 +376,7 @@ class CtManager:
                             # 提交變更
                             session.commit()
                             self.logger.info(
-                                f"成功分配任務 {task.id} (work_id={task.work_id}) "
+                                f"✅ 成功分配任務 {task.id} (work_id={task.work_id}) "
                                 f"給 AGV {agv_name}"
                             )
                         else:
@@ -441,7 +485,7 @@ class CtManager:
 
             # 記錄分配詳情
             self.logger.info(
-                f"分配任務詳情: "
+                f"📋 分配任務詳情: "
                 f"Task ID={task.id}, Work ID={task.work_id}, "
                 f"AGV={agv_name} (id={agv.id}), "
                 f"Priority={task.priority}, Room={task.room_id}"

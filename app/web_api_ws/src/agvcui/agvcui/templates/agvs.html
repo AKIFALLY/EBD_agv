@@ -47,6 +47,7 @@
                             <th>狀態</th>
                             <th>啟用</th>
                             <th>最後節點</th>
+                            <th>Status JSON</th>
                             {% if current_user and current_user.role in ['admin'] %}
                             <th>操作</th>
                             {% endif %}
@@ -148,6 +149,35 @@
                                     <span class="has-text-grey" id="last-node-tag-{{ agv.id }}">-</span>
                                     {% endif %}
                                 </span>
+                            </td>
+                            <td>
+                                <div id="agv-status-json-{{ agv.id }}">
+                                    {% if agv.agv_status_json %}
+                                    <div class="dropdown is-hoverable agv-status-json-dropdown">
+                                        <div class="dropdown-trigger">
+                                            <button class="button is-small is-info" aria-haspopup="true"
+                                                aria-controls="dropdown-menu-{{ agv.id }}">
+                                                <span class="icon">
+                                                    <i class="mdi mdi-code-json"></i>
+                                                </span>
+                                                <span>JSON</span>
+                                                <span class="icon is-small">
+                                                    <i class="mdi mdi-chevron-down"></i>
+                                                </span>
+                                            </button>
+                                        </div>
+                                        <div class="dropdown-menu" id="dropdown-menu-{{ agv.id }}" role="menu">
+                                            <div class="dropdown-content">
+                                                <div class="dropdown-item">
+                                                    <pre>{{ agv.agv_status_json | tojson_chinese(indent=2) }}</pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="has-text-grey-light">無資料</span>
+                                    {% endif %}
+                                </div>
                             </td>
                             {% if current_user and current_user.role in ['admin'] %}
                             <td>

@@ -2,6 +2,23 @@ import { tasksStore } from '../store/index.js';
 import { notify } from './notify.js';
 import { getTaskStatusInfo, getTaskStatusName, getTaskStatusIdByName, validateTaskStatus } from './taskStatus.js';
 
+/**
+ * 統一時間格式化函數（24小時制，帶秒）
+ * @param {string} dateString - ISO 時間字符串
+ * @returns {string} 格式化後的時間字符串 (YYYY-MM-DD HH:MM:SS)
+ */
+function formatDateTime(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 export const tasksPage = (() => {
     let currentTasks = []; // 當前顯示的任務列表
     let currentAgvId = null; // 當前篩選的 AGV ID
@@ -151,7 +168,7 @@ export const tasksPage = (() => {
         const timestampElement = document.getElementById(`task-timestamp-${taskId}`);
         if (timestampElement && newTask.updated_at) {
             const oldTimestamp = timestampElement.textContent;
-            const newTimestamp = new Date(newTask.updated_at).toLocaleString();
+            const newTimestamp = formatDateTime(newTask.updated_at);
 
             if (hasChanged(oldTimestamp, newTimestamp)) {
                 timestampElement.textContent = newTimestamp;

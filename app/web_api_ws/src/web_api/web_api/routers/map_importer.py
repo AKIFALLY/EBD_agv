@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from db_proxy.connection_pool_manager import ConnectionPoolManager
-from db_proxy.models import KukaNode, KukaEdge
+from db_proxy.models import KukaNode, KukaEdge, Location
 from db_proxy.models import Node, Edge
 from sqlalchemy import Row, select, delete
 
@@ -88,6 +88,32 @@ def create_map_importer_router(pool_agvc: ConnectionPoolManager):
                 session.commit()
                 print(f"第一階段完成：儲存了 {total_nodes} 個節點")
 
+                # === Phase 1.5：自動建立缺失的 Location 記錄 ===
+                locations_created = 0
+                for node_label, node_number in node_label_to_id.items():
+                    # 檢查 Location 是否存在
+                    existing_location = session.exec(
+                        select(Location).where(Location.id == node_number)
+                    ).first()
+
+                    if not existing_location:
+                        # 建立新的 Location 記錄
+                        new_location = Location(
+                            id=node_number,
+                            node_id=node_number,
+                            name=f"NEW_KUKA_{node_number}",
+                            type="kuka_auto",
+                            location_status_id=2,  # LocationStatus.UNOCCUPIED
+                            # 其他欄位保持 NULL (room_id, rack_id, rotation_node_id, waypoint_node_id)
+                        )
+                        session.add(new_location)
+                        locations_created += 1
+                        print(f"建立 Location: id={node_number}, name=NEW_KUKA_{node_number}")
+
+                # 提交新建立的 Location
+                session.commit()
+                print(f"Phase 1.5 完成：建立了 {locations_created} 個 Location 記錄")
+
                 # === 第二階段：處理所有邊，根據 nodeLabel 映射到對應的 kuka_node.id ===
                 for edge in all_edges:
                     begin_label = edge["beginNodeLabel"]
@@ -143,6 +169,7 @@ def create_map_importer_router(pool_agvc: ConnectionPoolManager):
                     "floors": len(floor_list),
                     "nodes_saved": total_nodes,
                     "edges_saved": total_edges,
+                    "locations_created": locations_created,
                     "node_label_mapping": node_label_to_id
                 }
             except Exception as e:
