@@ -119,11 +119,12 @@ rotate_log_file() {
         fi
     done
 
-    # 輪轉當前檔案：.log → .log.1
-    mv "$log_file" "${log_file}.1"
+    # 輪轉當前檔案：複製內容到 .log.1，然後截斷原檔案
+    # 使用 copytruncate 模式保留原 inode，進程繼續寫入同一檔案
+    cp "$log_file" "${log_file}.1"
 
-    # 建立新的空日誌檔案（保持原有權限）
-    touch "$log_file"
+    # 截斷原檔案為空（保留 inode 和檔案描述符）
+    truncate -s 0 "$log_file"
 
     log_success "✅ 日誌輪轉完成: $(basename $log_file) → $(basename ${log_file}).1"
     return 0
