@@ -1,4 +1,5 @@
 import { BaseObject } from './BaseObject.js';
+import { mapPermissions } from '../js/mapPermissions.js';
 
 /**
  * 門狀態顯示物件
@@ -53,6 +54,24 @@ export class DoorStatusObject extends BaseObject {
 
         // 添加點擊事件
         elem.addEventListener('click', () => {
+            // 檢查權限：控制自動門需要 operator 以上權限
+            if (!mapPermissions.hasPermission('control_door')) {
+                // 未登入或權限不足時顯示提示訊息
+                const userInfo = mapPermissions.getUserInfo();
+                if (!userInfo.isLoggedIn) {
+                    // 未登入時的提示訊息
+                    if (window.notify) {
+                        window.notify.showNotifyMessage('請先登入以控制自動門', 'is-warning', 3000);
+                    } else {
+                        alert('請先登入以控制自動門');
+                    }
+                } else {
+                    // 已登入但權限不足
+                    mapPermissions.showPermissionDenied('control_door');
+                }
+                return; // 阻止開啟 Modal
+            }
+
             // 檢查 mapDoorControlModal 是否存在
             if (window.mapDoorControlModal && typeof window.mapDoorControlModal.openModal === 'function') {
                 window.mapDoorControlModal.openModal(this.doorId, this.doorName);

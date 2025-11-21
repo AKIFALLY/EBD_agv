@@ -17,11 +17,13 @@ nodes:
     port_check: [8000, 8001, 8002]
     log_file: /tmp/web_api_launch.log
     status_check: "ros2 node list | grep -E '(agvc_ui_server|op_ui_server|web_api_server)'"
-    
+
   # ===== TAFL WCS 系統 (新一代) =====
+  # 注意: 此系統已不再使用，保留配置但不在管理界面顯示
   tafl_wcs:
     type: launch
-    description: "TAFL WCS 倉儲控制系統 (新一代)"
+    description: "TAFL WCS 倉儲控制系統 (新一代 - 已棄用)"
+    hidden: true
     package: tafl_wcs
     launch_file: tafl_wcs_launch.py
     log_file: /tmp/tafl_wcs.log
@@ -70,6 +72,37 @@ nodes:
       - agvc_database_node
       - plc_service_agvc
 
+  # ===== Transfer Box Task Build Node =====
+  transfer_box_task_build:
+    type: launch
+    description: "Transfer Box 任務自動建立節點"
+    package: transfer_box_task_build
+    launch_file: transfer_box_task_build.launch.py
+    workspace: wcs_ws
+    namespace: agvc
+    log_file: /tmp/transfer_box_task_build_node.log
+    pid_file: /tmp/transfer_box_task_build_node.pid
+    status_check: "ros2 node list | grep /agvc/transfer_box_task_build_node"
+    dependencies:
+      - zenoh
+      - agvc_database_node
+      - plc_service_agvc
+
+  # ===== KUKA WCS Node =====
+  kuka_wcs:
+    type: launch
+    description: "KUKA WCS 業務邏輯處理節點"
+    package: kuka_wcs
+    launch_file: kuka_wcs.launch.py
+    workspace: kuka_wcs_ws
+    namespace: agvc
+    log_file: /tmp/kuka_wcs.log
+    pid_file: /tmp/kuka_wcs.pid
+    status_check: "ros2 node list | grep /agvc/kuka_wcs_node"
+    dependencies:
+      - zenoh
+      - agvc_database_node
+
   # ===== ECS 設備控制系統 =====
   # 注意: 在 setup.bash 中對應的函數是 manage_ecs_core
   ecs_core:
@@ -102,16 +135,18 @@ nodes:
     params_file: /app/config/ecs_config.yaml
     log_file: /tmp/plc_service_agvc.log
     status_check: "ros2 node list | grep /agvc/plc_service"
-    
+
   # ===== AGV UI 服務 =====
   # 注意: 在 setup.bash 中對應的函數是 manage_agvui
+  # 此服務僅用於 AGV 車載環境，不在 AGVCUI 管理界面顯示
   agvui:
     type: launch
-    description: "AGV UI 服務"
+    description: "AGV UI 服務 (車載監控)"
+    hidden: true
     port_check: 8003
     log_file: /tmp/agvui.log
     status_check: "ros2 node list | grep agv_ui_server"
-    
+
   # ===== SSH 服務 =====
   # 注意: 在 setup.bash 中對應的函數是 manage_ssh  
   ssh:
@@ -198,16 +233,15 @@ node_groups:
       - plc_service_agvc
       - ecs_core
       - rcs_core
-      - tafl_wcs
       - room_task_build
-      - agvui
-      
+      - transfer_box_task_build
+      - kuka_wcs
+
   web_services:
     description: "Web 服務群組"
     nodes:
       - web_api_launch
-      - agvui
-      
+
   core_services:
     description: "核心服務"
     nodes:

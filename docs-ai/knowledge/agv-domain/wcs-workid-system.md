@@ -1149,7 +1149,9 @@ except ValueError as e:
 - **實際實作**:
   - shared_constants_ws: @app/shared_constants_ws/CLAUDE.md
   - RCS 系統: @app/rcs_ws/CLAUDE.md
-  - TAFL WCS 實作: @app/tafl_wcs_ws/CLAUDE.md
+  - KUKA WCS 實作: @app/kuka_wcs_ws/CLAUDE.md（當前使用）
+  - WCS 工作空間: @app/wcs_ws/CLAUDE.md（流程控制邏輯）
+  - ~~TAFL WCS 實作: @app/tafl_wcs_ws/CLAUDE.md~~（⚠️ 已棄用）
 - **設計文檔**:
   - WCS 系統設計: docs-ai/knowledge/agv-domain/wcs-system-design.md
   - 資料庫設計: docs-ai/knowledge/agv-domain/wcs-database-design.md

@@ -5,7 +5,8 @@
 """
 from typing import List, Optional, Dict, Any
 from sqlmodel import select, Session
-from db_proxy.models import Location, Rack, Carrier, Task, Product, Room
+from db_proxy.models import Location, Rack, Carrier, Task, Product, Room, Work
+from db_proxy.utils.runtime_log_helper import TaskLogHelper
 import json
 
 
@@ -254,6 +255,8 @@ class KukaWcsDbBridge:
         work_id: int,
         nodes: List[str],
         rack_id: Optional[int] = None,
+        room_id: Optional[int] = None,
+        location_id: Optional[int] = None,
         rotation_angle: Optional[int] = None,
         **kwargs
     ) -> Task:
@@ -265,15 +268,31 @@ class KukaWcsDbBridge:
             work_id: 工作 ID (210001=move, 220001=rack_move, etc.)
             nodes: 节点列表 (node names)
             rack_id: rack ID（可选）
+            room_id: room ID（可选，但建議提供）
+            location_id: location ID（可选，但建議提供用於防重複）
             rotation_angle: 旋转角度（可选，如 180）
             **kwargs: 其他参数
 
         Returns:
             创建的 Task 对象
         """
+        # 查询 work 表获取 name 和 description
+        work = session.get(Work, work_id)
+        if not work:
+            self.logger.warn(f"Work ID {work_id} 不存在，使用預設值")
+            task_name = f"KUKA任務 #{work_id}"
+            task_description = "自動生成的 KUKA 任務"
+        else:
+            task_name = work.name
+            task_description = work.description or work.name
+
+        # 允許從 kwargs 覆蓋任務名稱和描述
+        task_name = kwargs.get('name', task_name)
+        task_description = kwargs.get('description', task_description)
+
         # 构建 parameters 字典
         parameters = {
-            "model": "kuka400i",  # 统一使用小写（与 rcs 保持一致）
+            "model": "KUKA400i",  # 统一使用大寫（与 rcs 保持一致）
             "nodes": nodes,
         }
 
@@ -287,7 +306,11 @@ class KukaWcsDbBridge:
         task = Task(
             work_id=work_id,
             rack_id=rack_id,
+            room_id=room_id,  # 明確設置 room_id
+            location_id=location_id,  # 明確設置 location_id（用於防重複）
             status_id=1,  # PENDING
+            name=task_name,  # 從 work 表查詢
+            description=task_description,  # 從 work 表查詢
             parameters=parameters,
             priority=kwargs.get('priority', 5),
             notes=kwargs.get('notes'),
@@ -297,7 +320,24 @@ class KukaWcsDbBridge:
         session.commit()
         session.refresh(task)
 
-        self.logger.info(f"创建 KUKA 任务成功: Task ID={task.id}, Work ID={work_id}, Rack ID={rack_id}")
+        # 記錄任務創建到 RuntimeLog
+        TaskLogHelper.log_task_create_success(
+            session=session,
+            task_id=task.id,
+            work_id=work_id,
+            status_id=task.status_id,
+            task_name=task.name,
+            room_id=room_id,
+            rack_id=rack_id,
+            location_id=location_id,
+            node_name="kuka_wcs"
+        )
+        session.commit()  # 提交 RuntimeLog
+
+        self.logger.info(
+            f"创建 KUKA 任务成功: Task ID={task.id}, Work ID={work_id}, Name={task_name}, "
+            f"Room ID={room_id}, Location ID={location_id}, Rack ID={rack_id}"
+        )
         return task
 
     # ========== Rack 更新 ==========
@@ -340,3 +380,62 @@ class KukaWcsDbBridge:
 
         self.logger.info(f"更新 Rack {rack_id} 成功: {updates}")
         return rack
+
+    # ========== Waypoint 查詢 ==========
+
+    def get_waypoint_nodes(
+        self,
+        session: Session,
+        source_location_id: int,
+        target_location_id: int
+    ) -> List[int]:
+        """
+        獲取兩個 location 之間的路徑節點（包含 waypoint）
+
+        查詢邏輯：
+        1. 查詢 source_location 和 target_location
+        2. 檢查兩者的 waypoint_node_id
+        3. 如果都為空 → 返回 [source_location_id, target_location_id]
+        4. 如果任一有值 → 返回 [source_location_id, waypoint_node_id, target_location_id]
+
+        ⚠️ 注意：直接使用 location_id 作為路徑節點，不使用 location.node_id
+
+        Args:
+            session: 資料庫 session
+            source_location_id: 出料位置 ID
+            target_location_id: 要料位置 ID
+
+        Returns:
+            節點 ID 列表 [source_location_id, waypoint(可選), target_location_id]
+        """
+        # 查詢 source location
+        source_location = session.get(Location, source_location_id)
+        if not source_location:
+            self.logger.warn(f"Location {source_location_id} 不存在")
+            return []
+
+        # 查詢 target location
+        target_location = session.get(Location, target_location_id)
+        if not target_location:
+            self.logger.warn(f"Location {target_location_id} 不存在")
+            return []
+
+        # 檢查 waypoint_node_id（只使用 target 的 waypoint，若無則直接連接）
+        waypoint_node_id = target_location.waypoint_node_id
+
+        if waypoint_node_id:
+            # 有 waypoint：直接使用 location_id 作為起點和終點
+            nodes = [source_location_id, waypoint_node_id, target_location_id]
+            self.logger.info(
+                f"路徑節點（含 waypoint）: {nodes} "
+                f"(Location {source_location_id} → waypoint {waypoint_node_id} → Location {target_location_id})"
+            )
+        else:
+            # 無 waypoint，直接連接：使用 location_id
+            nodes = [source_location_id, target_location_id]
+            self.logger.info(
+                f"路徑節點（無 waypoint）: {nodes} "
+                f"(Location {source_location_id} → Location {target_location_id})"
+            )
+
+        return nodes

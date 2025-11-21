@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any, ClassVar
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime
+from sqlalchemy import Column, DateTime, Integer
 from sqlalchemy.dialects.postgresql import JSONB, JSON
 from pydantic import ConfigDict
 import json
@@ -96,14 +96,15 @@ class TaskStatus(SQLModel, table=True):
 class Task(SQLModel, table=True):
     __tablename__ = "task"
     id: Optional[int] = Field(default=None, primary_key=True)
-    type: Optional[str] = None  # Flow WCS 需要的 type 欄位
     parent_task_id: Optional[int] = Field(default=None, foreign_key="task.id")
     work_id: Optional[int] = Field(default=None, foreign_key="work.id")
     status_id: Optional[int] = Field(
         default=None, foreign_key="task_status.id")
     room_id: Optional[int] = Field(default=None, foreign_key="room.id")
     node_id: Optional[int] = Field(default=None, foreign_key="node.id")
-    location_id: Optional[int] = None  # Flow WCS 需要的 location_id 欄位
+    location_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(Integer, nullable=True))  
     rack_id: Optional[int] = None  # Flow WCS 需要的 rack_id 欄位
     name: str
     description: Optional[str] = None

@@ -203,15 +203,15 @@ class NavigationManager {
                         },
                         {
                             id: 'tafl-editor',
-                            title: 'TAFL 編輯器指南',
-                            file: 'technical-details/tafl-editor.md',
-                            description: '視覺化流程編輯器使用'
+                            title: '⚠️ TAFL 編輯器指南 (已棄用)',
+                            file: 'technical-details/archived/tafl-editor.md',
+                            description: '[已棄用] 視覺化流程編輯器使用 - 已被 KUKA WCS 取代'
                         },
                         {
                             id: 'tafl-wcs-integration',
-                            title: 'TAFL WCS 整合',
-                            file: 'technical-details/tafl-wcs-integration.md',
-                            description: 'TAFL 倉儲控制系統整合'
+                            title: '⚠️ TAFL WCS 整合 (已棄用)',
+                            file: 'technical-details/archived/tafl-wcs-integration.md',
+                            description: '[已棄用] TAFL 倉儲控制系統整合 - 已被 KUKA WCS 取代'
                         },
                         { 
                             id: 'performance-optimization', 

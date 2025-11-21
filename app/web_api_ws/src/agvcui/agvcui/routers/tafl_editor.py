@@ -1,5 +1,11 @@
+# ⚠️ DEPRECATED - 2025-11-18
+# 原因: TAFL Editor 已被 KUKA WCS 取代
+# 狀態: 路由已在 agvc_ui_server.py 中註解停用，代碼保留作為歷史參考
+# 替代方案: 使用 KUKA WCS 系統進行倉儲控制和任務管理
+# 遷移指南: /home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+
 """
-TAFL Editor Router
+TAFL Editor Router (⚠️ DEPRECATED)
 TAFL (Task Automation Flow Language) Visual Editor - Card-based UI for TAFL flow creation
 
 IMPORTANT: Main route is /tafl/editor (NOT /tafl-editor)
@@ -8,6 +14,8 @@ IMPORTANT: Main route is /tafl/editor (NOT /tafl-editor)
 - Full path: /tafl/editor
 
 This is the primary visual flow editor for TAFL flow creation and management.
+
+⚠️ 已棄用: 此路由已被註解停用，代碼僅供歷史參考。
 """
 
 import json

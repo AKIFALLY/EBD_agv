@@ -79,7 +79,7 @@ test_single db_proxy_ws
 
 #### 1.4 環境檢測函數
 
-**is_agvc_environment** - 檢測當前環境類型
+**is_agvc_environment** - 檢測當前是否為 AGVC 環境
 ```bash
 if is_agvc_environment; then
     echo "AGVC 管理環境"
@@ -90,7 +90,21 @@ fi
 
 檢測方法：
 - 主要檢測 `$CONTAINER_TYPE` 環境變數
+- 當 `$CONTAINER_TYPE = "agvc"` 時返回 true (0)
 - AGVC 環境：包含資料庫、Web API、RCS 等管理系統
+
+**is_agv_environment** - 檢測當前是否為 AGV 環境
+```bash
+if is_agv_environment; then
+    echo "AGV 車載環境"
+else
+    echo "AGVC 管理環境"
+fi
+```
+
+檢測方法：
+- 主要檢測 `$CONTAINER_TYPE` 環境變數
+- 當 `$CONTAINER_TYPE = "agv"` 時返回 true (0)
 - AGV 環境：包含 AGV 控制、感測器、PLC 通訊等
 
 #### 1.5 節點啟動驗證函數
@@ -508,11 +522,12 @@ manage_<service_name> <action>
 ```
 
 **常見管理函數**:
-- `manage_zenoh` - Zenoh Router 管理
-- `manage_ssh` - SSH 服務管理
-- `manage_web_api_launch` - Web API Launch 管理（多進程群組）
-- `manage_agvc_database_node` - AGVC 資料庫節點管理
-- `manage_tafl_wcs` - TAFL WCS 節點管理
+- `manage_zenoh` - Zenoh Router 管理 [AGVC]
+- `manage_ssh` - SSH 服務管理 [通用]
+- `manage_web_api_launch` - Web API Launch 管理（API/AGVCUI/OPUI, 8000/8001/8002）[AGVC]
+- `manage_web_agv_launch` - Web AGV Launch 管理（AGVUI 車載監控, 8003）[AGV]
+- `manage_agvc_database_node` - AGVC 資料庫節點管理 [AGVC]
+- `manage_tafl_wcs` - TAFL WCS 節點管理 [AGVC]
 - `manage_rcs_core` - RCS 核心節點管理
 - `manage_ecs_core` - ECS 核心節點管理
 - `manage_room_task_build` - 房間任務建置節點管理

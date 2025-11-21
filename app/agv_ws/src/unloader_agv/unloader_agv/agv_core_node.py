@@ -142,8 +142,8 @@ class AgvCoreNode(AgvNodebase):
             
             if os.path.exists(filepath):
                 file_size = os.path.getsize(filepath)
-                if self._json_update_count % 10 == 1:  # 第1次，第11次，第21次...打印
-                    self.get_logger().debug(f"📝 Unloader AGV JSON 狀態文件更新正常 (第{self._json_update_count}次): {filepath}, 大小: {file_size} bytes")
+                # if self._json_update_count % 10 == 1:  # 第1次，第11次，第21次...打印
+                #     self.get_logger().debug(f"📝 Unloader AGV JSON 狀態文件更新正常 (第{self._json_update_count}次): {filepath}, 大小: {file_size} bytes")
             else:
                 self.get_logger().error(f"❌ 文件未被創建: {filepath}")
             

@@ -171,7 +171,7 @@
 
 ### 🌐 系統整合能力
 - **KUKA Fleet 整合**：外部 AGV 系統無縫整合
-- **TAFL WCS 架構**：統一的 TAFL 語言驅動 WCS
+- **KUKA WCS 系統**：現代化倉儲控制系統（取代舊版 ~~TAFL WCS~~）
 - **工業 4.0 就緒**：完整的數據驅動決策
 
 </div>
@@ -217,9 +217,9 @@
 ### 🔧 技術詳解
 - **[ROS 2 技術整合](technical-details/ros2-integration.md)**：ROS 2 + Zenoh RMW
 - **[PLC 整合方案](technical-details/plc-integration.md)**：工業控制整合
-- **[KUKA Fleet 整合](technical-details/kuka-integration.md)**：外部系統整合
+- **[KUKA Fleet 整合](technical-details/kuka-integration.md)**：外部系統整合與 KUKA WCS
 - **[Zenoh 通訊機制](technical-details/zenoh-communication.md)**：高效能通訊
-- **[TAFL WCS 整合](technical-details/tafl-wcs-integration.md)**：TAFL 倉儲控制系統整合
+- **[~~TAFL WCS 整合~~](technical-details/archived/tafl-wcs-integration.md)** ⚠️ 已棄用：歷史倉儲控制系統（已改用 KUKA WCS）
 - **[效能調優](technical-details/performance-optimization.md)**：系統效能最佳化
 - **[監控配置](technical-details/monitoring-setup.md)**：完整監控告警設定
 

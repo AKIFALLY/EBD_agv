@@ -76,7 +76,9 @@ def create_rack(rack_data: dict):
             is_in_map=rack_data.get('is_in_map', 0),
             is_docked=rack_data.get('is_docked', 0),
             status_id=rack_data.get('status_id', 1),
-            direction=rack_data.get('direction', 0)
+            direction=rack_data.get('direction', 0),
+            carrier_bitmap=rack_data.get('carrier_bitmap', '00000000'),
+            carrier_enable_bitmap=rack_data.get('carrier_enable_bitmap', '00000000')
         )
         return rack_crud.create(session, rack_obj)
 
@@ -112,7 +114,9 @@ def update_rack(rack_id: int, rack_data: dict):
             is_in_map=rack_data.get('is_in_map', 0),
             is_docked=rack_data.get('is_docked', 0),
             status_id=rack_data.get('status_id', 1),
-            direction=rack_data.get('direction', 0)
+            direction=rack_data.get('direction', 0),
+            carrier_bitmap=rack_data.get('carrier_bitmap', '00000000'),
+            carrier_enable_bitmap=rack_data.get('carrier_enable_bitmap', '00000000')
         )
 
         # 3. 執行資料庫更新

@@ -16,46 +16,46 @@ def initialize_locations(session):
         {"id": 1, "location_status_id": 1, "room_id": 1, "node_id": 1, "name": "未知空位1", "description": "測試用未知位置"},
 
         # 設備對應的位置資料 (對應 equipment 初始資料中的 location_id)
-        {"id": 20100, "room_id": 2, "name": "Room2_BoxIn_Location", "description": "房間2 入口傳送箱位置"},
-        {"id": 20200, "room_id": 2, "name": "Room2_BoxOut_Location", "description": "房間2 出口傳送箱位置"},
-        {"id": 20300, "room_id": 2, "name": "Room2_Cleaner_Location", "description": "房間2 清洗機位置"},
-        {"id": 20400, "room_id": 2, "name": "Room2_Soaking_Location", "description": "房間2 泡藥機群組位置"},
-        {"id": 20500, "room_id": 2, "name": "Room2_Dryer_Location", "description": "房間2 預烘機位置"},
-        {"id": 20600, "room_id": 2, "name": "Room2_Oven_Location", "description": "房間2 烤箱位置"},
-        {"id": 21000, "room_id": 2, "name": "LoaderAGV_Location", "description": "LoaderAGV 設備位置"},
-        {"id": 21100, "room_id": 2, "name": "UnloaderAGV_Location", "description": "UnloaderAGV 設備位置"},
+        {"id": 20100, "name": "Room2_BoxIn_Location", "description": "房間2 入口傳送箱位置"},
+        {"id": 20200, "name": "Room2_BoxOut_Location", "description": "房間2 出口傳送箱位置"},
+        {"id": 20300, "name": "Room2_Cleaner_Location", "description": "房間2 清洗機位置"},
+        {"id": 20400, "name": "Room2_Soaking_Location", "description": "房間2 泡藥機群組位置"},
+        {"id": 20500, "name": "Room2_Dryer_Location", "description": "房間2 預烘機位置"},
+        {"id": 20600, "name": "Room2_Oven_Location", "description": "房間2 烤箱位置"},
+        {"id": 21000, "name": "LoaderAGV_Location", "description": "LoaderAGV 設備位置"},
+        {"id": 21100, "name": "UnloaderAGV_Location", "description": "UnloaderAGV 設備位置"},
 
         # 射出機1工作區 (101-106)
-        {"id": 101, "location_status_id": 1, "room_id": 3, "name": "工作區101", "description": "射出機1工作區1", "type": "enter_or_exit"},
-        {"id": 102, "location_status_id": 1, "room_id": 3, "name": "工作區102", "description": "射出機1工作區2", "type": "enter_or_exit"},
-        {"id": 103, "location_status_id": 1, "room_id": 3, "name": "工作區103", "description": "射出機1工作區3", "type": "enter_or_exit"},
-        {"id": 104, "location_status_id": 1, "room_id": 3, "name": "工作區104", "description": "射出機1工作區4", "type": "enter_or_exit"},
-        {"id": 105, "location_status_id": 1, "room_id": 3, "name": "工作區105", "description": "射出機1工作區5", "type": "enter_or_exit"},
-        {"id": 106, "location_status_id": 1, "room_id": 3, "name": "工作區106", "description": "射出機1工作區6", "type": "enter_or_exit"},
+        {"id": 101, "location_status_id": 1, "name": "工作區101", "description": "射出機1工作區1", "type": "op_work_space"},
+        {"id": 102, "location_status_id": 1, "name": "工作區102", "description": "射出機1工作區2", "type": "op_work_space"},
+        {"id": 103, "location_status_id": 1, "name": "工作區103", "description": "射出機1工作區3", "type": "op_work_space"},
+        {"id": 104, "location_status_id": 1, "name": "工作區104", "description": "射出機1工作區4", "type": "op_work_space"},
+        {"id": 105, "location_status_id": 1, "name": "工作區105", "description": "射出機1工作區5", "type": "op_work_space"},
+        {"id": 106, "location_status_id": 1, "name": "工作區106", "description": "射出機1工作區6", "type": "op_work_space"},
 
         # 射出機2工作區 (201-206)
-        {"id": 201, "location_status_id": 1, "room_id": 3, "name": "工作區201", "description": "射出機2工作區1", "type": "enter_or_exit"},
-        {"id": 202, "location_status_id": 1, "room_id": 3, "name": "工作區202", "description": "射出機2工作區2", "type": "enter_or_exit"},
-        {"id": 203, "location_status_id": 1, "room_id": 3, "name": "工作區203", "description": "射出機2工作區3", "type": "enter_or_exit"},
-        {"id": 204, "location_status_id": 1, "room_id": 3, "name": "工作區204", "description": "射出機2工作區4", "type": "enter_or_exit"},
-        {"id": 205, "location_status_id": 1, "room_id": 3, "name": "工作區205", "description": "射出機2工作區5", "type": "enter_or_exit"},
-        {"id": 206, "location_status_id": 1, "room_id": 3, "name": "工作區206", "description": "射出機2工作區6", "type": "enter_or_exit"},
+        {"id": 201, "location_status_id": 1, "name": "工作區201", "description": "射出機2工作區1", "type": "op_work_space"},
+        {"id": 202, "location_status_id": 1, "name": "工作區202", "description": "射出機2工作區2", "type": "op_work_space"},
+        {"id": 203, "location_status_id": 1, "name": "工作區203", "description": "射出機2工作區3", "type": "op_work_space"},
+        {"id": 204, "location_status_id": 1, "name": "工作區204", "description": "射出機2工作區4", "type": "op_work_space"},
+        {"id": 205, "location_status_id": 1, "name": "工作區205", "description": "射出機2工作區5", "type": "op_work_space"},
+        {"id": 206, "location_status_id": 1, "name": "工作區206", "description": "射出機2工作區6", "type": "op_work_space"},
 
         # 射出機3工作區 (301-306)
-        {"id": 301, "location_status_id": 1, "room_id": 3, "name": "工作區301", "description": "射出機3工作區1", "type": "enter_or_exit"},
-        {"id": 302, "location_status_id": 1, "room_id": 3, "name": "工作區302", "description": "射出機3工作區2", "type": "enter_or_exit"},
-        {"id": 303, "location_status_id": 1, "room_id": 3, "name": "工作區303", "description": "射出機3工作區3", "type": "enter_or_exit"},
-        {"id": 304, "location_status_id": 1, "room_id": 3, "name": "工作區304", "description": "射出機3工作區4", "type": "enter_or_exit"},
-        {"id": 305, "location_status_id": 1, "room_id": 3, "name": "工作區305", "description": "射出機3工作區5", "type": "enter_or_exit"},
-        {"id": 306, "location_status_id": 1, "room_id": 3, "name": "工作區306", "description": "射出機3工作區6", "type": "enter_or_exit"},
+        {"id": 301, "location_status_id": 1, "name": "工作區301", "description": "射出機3工作區1", "type": "op_work_space"},
+        {"id": 302, "location_status_id": 1, "name": "工作區302", "description": "射出機3工作區2", "type": "op_work_space"},
+        {"id": 303, "location_status_id": 1, "name": "工作區303", "description": "射出機3工作區3", "type": "op_work_space"},
+        {"id": 304, "location_status_id": 1, "name": "工作區304", "description": "射出機3工作區4", "type": "op_work_space"},
+        {"id": 305, "location_status_id": 1, "name": "工作區305", "description": "射出機3工作區5", "type": "op_work_space"},
+        {"id": 306, "location_status_id": 1, "name": "工作區306", "description": "射出機3工作區6", "type": "op_work_space"},
 
         # 射出機4工作區 (401-406)
-        {"id": 401, "location_status_id": 1, "room_id": 3, "name": "工作區401", "description": "射出機4工作區1", "type": "enter_or_exit"},
-        {"id": 402, "location_status_id": 1, "room_id": 3, "name": "工作區402", "description": "射出機4工作區2", "type": "enter_or_exit"},
-        {"id": 403, "location_status_id": 1, "room_id": 3, "name": "工作區403", "description": "射出機4工作區3", "type": "enter_or_exit"},
-        {"id": 404, "location_status_id": 1, "room_id": 3, "name": "工作區404", "description": "射出機4工作區4", "type": "enter_or_exit"},
-        {"id": 405, "location_status_id": 1, "room_id": 3, "name": "工作區405", "description": "射出機4工作區5", "type": "enter_or_exit"},
-        {"id": 406, "location_status_id": 1, "room_id": 3, "name": "工作區406", "description": "射出機4工作區6", "type": "enter_or_exit"},
+        {"id": 401, "location_status_id": 1, "name": "工作區401", "description": "射出機4工作區1", "type": "op_work_space"},
+        {"id": 402, "location_status_id": 1, "name": "工作區402", "description": "射出機4工作區2", "type": "op_work_space"},
+        {"id": 403, "location_status_id": 1, "name": "工作區403", "description": "射出機4工作區3", "type": "op_work_space"},
+        {"id": 404, "location_status_id": 1, "name": "工作區404", "description": "射出機4工作區4", "type": "op_work_space"},
+        {"id": 405, "location_status_id": 1, "name": "工作區405", "description": "射出機4工作區5", "type": "op_work_space"},
+        {"id": 406, "location_status_id": 1, "name": "工作區406", "description": "射出機4工作區6", "type": "op_work_space"},
 
         {"id": 15, "location_status_id": 1, "node_id": 15, "name": "射出機1-停車位置1", "description": "射出機1-OP1叫車/停車位置"},
         {"id": 14, "location_status_id": 1, "node_id": 14, "name": "射出機1-停車位置2", "description": "射出機1-OP2叫車/停車位置"},
@@ -67,20 +67,9 @@ def initialize_locations(session):
         {"id": 45, "location_status_id": 1, "node_id": 45, "name": "射出機4-停車位置2", "description": "射出機4-OP2叫車/停車位置"},
 
         # Room2 KUKA 停靠位置 (2025-11-10 新增)
-        {"id": 26, "location_status_id": 1, "room_id": 2, "node_id": 26, "name": "房間2出口(KUKA)", "description": "房間2出口KUKA停靠位置", "type": "enter_or_exit"},
-        {"id": 27, "location_status_id": 1, "room_id": 2, "node_id": 27, "name": "房間2入口(KUKA)", "description": "房間2入口KUKA停靠位置", "type": "enter_or_exit"},
+        {"id": 26, "location_status_id": 1, "room_id": 2, "node_id": 26, "rotation_node_id": 86, "waypoint_node_id": 89, "name": "房間2出口(KUKA)", "description": "房間2出口KUKA停靠位置", "type": "room_outlet"},
+        {"id": 27, "location_status_id": 1, "room_id": 2, "node_id": 27, "rotation_node_id": 87, "waypoint_node_id": 90, "name": "房間2入口(KUKA)", "description": "房間2入口KUKA停靠位置", "type": "room_inlet"},
 
-        # 房間入口/出口位置配置 (2025-10-01 更新：增加 rotation_node_id; 2025-10-29 更新：增加 waypoint_node_id)
-        {"id": 10001, "location_status_id": 1, "room_id": 1, "node_id": 10001, "rotation_node_id": 10003, "waypoint_node_id": 10003, "name": "room01 Loader Box", "description": "房間1入口傳送箱","type":"room_inlet"},
-        {"id": 10002, "location_status_id": 1, "room_id": 1, "node_id": 10002, "rotation_node_id": 10003, "waypoint_node_id": 10004, "name": "room01 Unloader Box", "description": "房間1出口傳送箱","type":"room_outlet"},
-        {"id": 20001, "location_status_id": 1, "room_id": 2, "node_id": 27, "rotation_node_id": 87, "waypoint_node_id": 90, "name": "room02 Loader Box", "description": "房間2入口傳送箱","type":"room_inlet"},
-        {"id": 20002, "location_status_id": 1, "room_id": 2, "node_id": 26, "rotation_node_id": 86, "waypoint_node_id": 89, "name": "room02 Unloader Box", "description": "房間2出口傳送箱","type":"room_outlet"},
-        {"id": 30001, "location_status_id": 1, "room_id": 3, "node_id": 30001, "rotation_node_id": 30003, "waypoint_node_id": 30004, "name": "room03 Loader Box", "description": "房間3入口傳送箱","type":"room_inlet"},
-        {"id": 30002, "location_status_id": 1, "room_id": 3, "node_id": 30002, "rotation_node_id": 30003, "waypoint_node_id": 30004, "name": "room03 Unloader Box", "description": "房間3出口傳送箱","type":"room_outlet"},
-        {"id": 40001, "location_status_id": 1, "room_id": 4, "node_id": 40001, "rotation_node_id": 40003, "waypoint_node_id": 40003, "name": "room04 Loader Box", "description": "房間4入口傳送箱","type":"room_inlet"},
-        {"id": 40002, "location_status_id": 1, "room_id": 4, "node_id": 40002, "rotation_node_id": 40003, "waypoint_node_id": 40003, "name": "room04 Unloader Box", "description": "房間4出口傳送箱","type":"room_outlet"},
-        {"id": 50001, "location_status_id": 1, "room_id": 5, "node_id": 50001, "rotation_node_id": 50003, "waypoint_node_id": 50003, "name": "room05 Loader Box", "description": "房間5入口傳送箱","type":"room_inlet"},
-        {"id": 50002, "location_status_id": 1, "room_id": 5, "node_id": 50002, "rotation_node_id": 50003, "waypoint_node_id": 50003, "name": "room05 Unloader Box", "description": "房間5出口傳送箱","type":"room_outlet"},
         # 房間2 內部位置 
         {"id": 20101, "location_status_id": 1, "room_id": 2, "node_id": 20101, "name": "LoaderAGV Loader Box", "description": "房間內入口傳送箱"},
         {"id": 20301, "location_status_id": 1, "room_id": 2, "node_id": 20301, "name": "LoaderAGV Washer Inport", "description": "清洗機入口"},
@@ -109,25 +98,25 @@ def initialize_locations(session):
 
         # 區域定義 (2025-10-29 更新: 重新分配位置ID, location_status_id=2 未佔用)
         # 系統準備區 (改為 ID 2-9)
-        {"id": 2, "location_status_id": 2, "room_id": 1, "node_id": 2, "name": "SystemReadyArea_1", "description": "系統準備區"},
-        {"id": 3, "location_status_id": 2, "room_id": 1, "node_id": 3, "name": "SystemReadyArea_2", "description": "系統準備區"},
-        {"id": 4, "location_status_id": 2, "room_id": 1, "node_id": 4, "name": "SystemReadyArea_3", "description": "系統準備區"},
-        {"id": 5, "location_status_id": 2, "room_id": 1, "node_id": 5, "name": "SystemReadyArea_4", "description": "系統準備區"},
-        {"id": 6, "location_status_id": 2, "room_id": 1, "node_id": 6, "name": "SystemReadyArea_5", "description": "系統準備區"},
-        {"id": 7, "location_status_id": 2, "room_id": 1, "node_id": 7, "name": "SystemReadyArea_6", "description": "系統準備區"},
-        {"id": 8, "location_status_id": 2, "room_id": 1, "node_id": 8, "name": "SystemReadyArea_7", "description": "系統準備區"},
-        {"id": 9, "location_status_id": 2, "room_id": 1, "node_id": 9, "name": "SystemReadyArea_8", "description": "系統準備區"},
+        {"id": 2, "location_status_id": 2, "node_id": 2, "name": "SystemReadyArea_1", "description": "系統準備區1"},
+        {"id": 3, "location_status_id": 2, "node_id": 3, "name": "SystemReadyArea_2", "description": "系統準備區2"},
+        {"id": 4, "location_status_id": 2, "node_id": 4, "name": "SystemReadyArea_3", "description": "系統準備區3"},
+        {"id": 5, "location_status_id": 2, "node_id": 5, "name": "SystemReadyArea_4", "description": "系統準備區4"},
+        {"id": 6, "location_status_id": 2, "node_id": 6, "name": "SystemReadyArea_5", "description": "系統準備區5"},
+        {"id": 7, "location_status_id": 2, "node_id": 7, "name": "SystemReadyArea_6", "description": "系統準備區6"},
+        {"id": 8, "location_status_id": 2, "node_id": 8, "name": "SystemReadyArea_7", "description": "系統準備區7"},
+        {"id": 9, "location_status_id": 2, "node_id": 9, "name": "SystemReadyArea_8", "description": "系統準備區8"},
 
         # 系統空車停放區 (改為 ID 11-13, 減少1個位置)
-        {"id": 11, "location_status_id": 2, "room_id": 1, "node_id": 11, "name": "SystemEmptyRackArea_1", "description": "系統空車區"},
-        {"id": 12, "location_status_id": 2, "room_id": 1, "node_id": 12, "name": "SystemEmptyRackArea_2", "description": "系統空車區"},
-        {"id": 13, "location_status_id": 2, "room_id": 1, "node_id": 13, "name": "SystemEmptyRackArea_3", "description": "系統空車區"},
+        {"id": 11, "location_status_id": 2, "node_id": 11, "name": "SystemEmptyRackArea_1", "description": "系統空車區9"},
+        {"id": 12, "location_status_id": 2, "node_id": 12, "name": "SystemEmptyRackArea_2", "description": "系統空車區10"},
+        {"id": 13, "location_status_id": 2, "node_id": 13, "name": "SystemEmptyRackArea_3", "description": "系統空車區11"},
 
         # 人工收料區 (KUKA WCS 使用)
-        {"id": 21, "location_status_id": 2, "room_id": 1, "node_id": 21, "name": "ManualReceiveArea_1", "description": "人工收料區"},
-        {"id": 22, "location_status_id": 2, "room_id": 1, "node_id": 22, "name": "ManualReceiveArea_2", "description": "人工收料區"},
-        {"id": 71, "location_status_id": 1, "room_id": 1, "node_id": 71, "name": "NGRecycleArea_1", "description": "NG回收區"},
-        {"id": 72, "location_status_id": 1, "room_id": 1, "node_id": 72, "name": "NGRecycleArea_2", "description": "NG回收區"},
+        {"id": 21, "location_status_id": 2, "node_id": 21, "name": "ManualReceiveArea_1", "description": "人工收料區1"},
+        {"id": 22, "location_status_id": 2, "node_id": 22, "name": "ManualReceiveArea_2", "description": "人工收料區2"},
+        {"id": 71, "location_status_id": 1, "node_id": 71, "name": "NGRecycleArea_1", "description": "NG回收區"},
+        {"id": 72, "location_status_id": 1, "node_id": 72, "name": "NGRecycleArea_2", "description": "NG回收區"},
             
         
 
@@ -143,8 +132,8 @@ def initialize_locations(session):
 SYSTEM_READY_AREA = [9, 8, 7, 6, 5, 4, 3, 2]  # 系統準備區 (改為 ID 2-9)
 SYSTEM_EMPTY_RACK_AREA = [13, 12, 11]  # 系統空車區 (改為 ID 11-13, 減少1個位置)
 MANUAL_COLLECTION_AREA = [31001, 31002, 31003, 31004, 31005, 31006, 31007, 31008, 31009, 31010]  # 人工收料區 (Flow WCS)
-MANUAL_RECEIVE_AREA = [51, 52, 53, 54, 55]  # 手動回收區 (原有，保持向後相容)
-NG_RECYCLE_AREA = [71, 72]  # NG回收區
+MANUAL_RECEIVE_AREA = [21,22]  # 手動回收區
+NG_RECYCLE_AREA = [71, 72]  # NG回收區(目前棄用)
 
 
 """

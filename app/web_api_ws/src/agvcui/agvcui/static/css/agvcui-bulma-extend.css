@@ -67,3 +67,21 @@
 .tag.is-loading {
     animation: pulse 1.5s infinite;
 }
+
+/* 粉红色 tag - 用于「等待」状态 */
+.tag.is-pink {
+    background-color: #FF69B4;  /* Hot Pink */
+    color: #fff;
+}
+
+/* 淡紫色 tag - 用于「更新中」和「初始化」状态 */
+.tag.is-purple-light {
+    background-color: #B19CD9;  /* Light Purple */
+    color: #fff;
+}
+
+/* 金黄色 tag - 用于「充電中」状态 */
+.tag.is-gold {
+    background-color: #FFD700;  /* Gold */
+    color: #363636;  /* 深色文字提高可读性 */
+}

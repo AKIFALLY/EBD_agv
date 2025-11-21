@@ -31,21 +31,23 @@ def initialize_license(session):
             "device_type": "hmi_terminal",
             "description": "ManualReceiveArea HMI",
             "permissions": {
-                "locations": ["ManualReceiveArea01", "ManualReceiveArea02", "ManualReceiveArea03", "ManualReceiveArea04", "ManualReceiveArea05"],
-                "layout": "2x3",
+                "locations": ["ManualReceiveArea_1", "ManualReceiveArea_2"],
+                "layout": "1x2",
                 "can_remove_rack": True
             }
         },
-        # HMI 終端 2 - NG區域（4個 Location）
+        # HMI 終端 2 -  測試用（8個 Location）
         {
-            "device_id": "hmi00000000002",
+            "device_id": "476e01ab82a53f9a",
             "active": 1,
             "device_type": "hmi_terminal",
-            "description": "NG區 HMI",
+            "description": "測試用 HMI",
             "permissions": {
-                "locations": ["LOC101", "LOC102", "LOC103", "LOC104"],
-                "layout": "2x2",
-                "can_remove_rack": True
+                "locations": ["射出機2-停車位置1","射出機2-停車位置2","ManualReceiveArea_1", "ManualReceiveArea_2", "SystemReadyArea_1", "SystemEmptyRackArea_1", "房間2入口(KUKA)", "房間2出口(KUKA)"],
+                "layout": "2x4",
+                "can_remove_rack": True,
+                "can_add_rack": True,
+                "can_edit_rack": True
             }
         }
     ]

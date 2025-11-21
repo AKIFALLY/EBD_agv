@@ -48,8 +48,8 @@ src/
 ├── agvcui/              # 🖥️ 車隊管理系統 (Port 8001)
 │   ├── database/        # 資料库操作層 (完整 CRUD)
 │   ├── routers/         # 完整 API 路由系統
-│   │   ├── tafl_editor.py # TAFL 編輯器 API (路由: /tafl/editor)
-│   │   ├── tafl_editor_direct.py # TAFL 直接編輯 API
+│   │   ├── tafl_editor.py # ⚠️ 已棄用 - TAFL 編輯器 API (路由: /tafl/editor)
+│   │   ├── tafl_editor_direct.py # ⚠️ 已棄用 - TAFL 直接編輯 API
 │   │   └── ...          # 其他路由器 (agvs, tasks, racks 等)
 │   ├── static/          # 前端靜態資源
 │   ├── templates/       # Jinja2 模板
@@ -240,10 +240,11 @@ async def restart_node(node_name: str):
 async def get_door_status(door_id: str):
     # PLC整合邏輯
 
+# ⚠️ 已棄用 (2025-11-18) - 使用 kuka_wcs_ws 替代
 # agvcui/routers/tafl_editor.py (TAFL編輯器)
-@router.get("/tafl/editor")
-async def tafl_editor_page():
-    # TAFL視覺化編輯器頁面
+# @router.get("/tafl/editor")
+# async def tafl_editor_page():
+#     # TAFL視覺化編輯器頁面
 ```
 
 ## Socket.IO事件管理
@@ -274,7 +275,7 @@ def handle_agv_connect():
 
 ### AGVCUI (車隊管理系統)
 - **功能**: 車隊管理與監控
-- **TAFL編輯器**: 視覺化流程編輯器 (/tafl/editor)
+- ~~**TAFL編輯器**~~: ⚠️ 已棄用 - 視覺化流程編輯器 (/tafl/editor)
 - **節點管理**: 統一ROS 2節點控制
 - **即時更新**: Socket.IO實時資料
 
@@ -444,11 +445,11 @@ POST /interfaces/api/amr/missionStateCallback  # 任務狀態回調
 
 ### AGVCUI (Port 8001)
 ```bash
-# TAFL編輯器
-GET  /tafl/editor                   # TAFL視覺化編輯器
-GET  /tafl/verbs                    # TAFL動詞列表
-POST /tafl/validate                 # 驗證TAFL流程
-POST /tafl/save                     # 保存TAFL流程
+# ⚠️ 已棄用 (2025-11-18) - TAFL Editor 已被 KUKA WCS 取代
+# GET  /tafl/editor                   # TAFL視覺化編輯器
+# GET  /tafl/verbs                    # TAFL動詞列表
+# POST /tafl/validate                 # 驗證TAFL流程
+# POST /tafl/save                     # 保存TAFL流程
 
 # AGV管理
 GET  /api/agvs                      # AGV列表

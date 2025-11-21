@@ -115,3 +115,31 @@ def modify_log_all_objects():
     """取得所有 ModifyLog 物件"""
     with connection_pool.get_session() as session:
         return modify_log_crud.get_all(session)
+
+
+# 交管區相關
+def traffic_zone_all() -> list[dict]:
+    """獲取所有交管區及其占用者 AGV 名稱"""
+    from db_proxy.crud.traffic_crud import traffic_zone_curd
+    with connection_pool.get_session() as session:
+        traffic_zones = traffic_zone_curd.get_all(session)
+        result = []
+
+        for zone in traffic_zones:
+            zone_dict = {
+                'id': zone.id,
+                'status': zone.status,
+                'owner_agv_id': zone.owner_agv_id,
+                'enable': zone.enable,
+                'owner_agv_name': None
+            }
+
+            # 如果有 owner_agv_id，查詢對應的 AGV 名稱
+            if zone.owner_agv_id:
+                agv = agv_crud.get_by_id(session, zone.owner_agv_id)
+                if agv:
+                    zone_dict['owner_agv_name'] = agv.name
+
+            result.append(zone_dict)
+
+        return result

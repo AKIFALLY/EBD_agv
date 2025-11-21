@@ -92,7 +92,9 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
         is_in_map: int = Form(0),
         is_docked: int = Form(0),
         status_id: int = Form(1),
-        direction: int = Form(0)
+        direction: int = Form(0),
+        carrier_bitmap: str = Form("00000000"),
+        carrier_enable_bitmap: str = Form("00000000")
     ):
         try:
             # 處理可選的整數字段
@@ -113,7 +115,9 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
                 "is_in_map": is_in_map,
                 "is_docked": is_docked,
                 "status_id": status_id,
-                "direction": direction
+                "direction": direction,
+                "carrier_bitmap": carrier_bitmap,
+                "carrier_enable_bitmap": carrier_enable_bitmap
             }
             create_rack(rack_data)
             return RedirectResponse(url="/racks", status_code=303)
@@ -161,7 +165,9 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
         is_in_map: int = Form(0),
         is_docked: int = Form(0),
         status_id: int = Form(1),
-        direction: int = Form(0)
+        direction: int = Form(0),
+        carrier_bitmap: str = Form("00000000"),
+        carrier_enable_bitmap: str = Form("00000000")
     ):
         try:
             # 處理可選的整數字段
@@ -182,7 +188,9 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
                 "is_in_map": is_in_map,
                 "is_docked": is_docked,
                 "status_id": status_id,
-                "direction": direction
+                "direction": direction,
+                "carrier_bitmap": carrier_bitmap,
+                "carrier_enable_bitmap": carrier_enable_bitmap
             }
             update_rack(rack_id, rack_data)
             return RedirectResponse(url="/racks", status_code=303)

@@ -42,6 +42,50 @@ echo "ROS_DISTRO=$ROS_DISTRO"
 echo "ZENOH_ROUTER_CONFIG_URI=$ZENOH_ROUTER_CONFIG_URI"
 echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
 
+# 🧹 啟動時自動清理臨時文件
+# =============================================================================
+echo "🧹 清理過期的臨時文件..."
+
+# 清理 7 天前的 launch_params_* 目錄
+LAUNCH_PARAMS_CLEANED=$(find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime +7 2>/dev/null | wc -l)
+if [ "$LAUNCH_PARAMS_CLEANED" -gt 0 ]; then
+    find /tmp -maxdepth 1 -name 'launch_params_*' -type d -mtime +7 -exec rm -rf {} + 2>/dev/null
+    echo "  ✅ 清理 $LAUNCH_PARAMS_CLEANED 個過期的 launch_params 目錄"
+fi
+
+# 清理孤立的 PID 文件 (進程不存在的 PID 文件)
+# 正確處理多行 PID 文件（如 zenoh_router.pid 包含多個 PID）
+for pid_file in /tmp/*.pid; do
+    if [ -f "$pid_file" ]; then
+        all_dead=true
+        # 逐行讀取 PID 文件
+        while read -r pid; do
+            # 跳過空行
+            [ -z "$pid" ] && continue
+            # 如果任何一個 PID 還在運行，保留文件
+            if kill -0 "$pid" 2>/dev/null; then
+                all_dead=false
+                break
+            fi
+        done < "$pid_file"
+
+        # 只有當所有 PID 都不運行時才刪除文件
+        if [ "$all_dead" = true ]; then
+            rm -f "$pid_file"
+            echo "  ✅ 清理孤立的 PID 文件: $(basename $pid_file)"
+        fi
+    fi
+done
+
+# 清理 7 天前的日誌文件（包含原始日誌和輪轉日誌）
+OLD_LOGS=$(find /tmp -maxdepth 1 \( -name '*.log' -o -name '*.log.*' \) -type f -mtime +7 2>/dev/null | wc -l)
+if [ "$OLD_LOGS" -gt 0 ]; then
+    find /tmp -maxdepth 1 \( -name '*.log' -o -name '*.log.*' \) -type f -mtime +7 -delete 2>/dev/null
+    echo "  ✅ 清理 $OLD_LOGS 個過期的日誌文件（含輪轉檔案）"
+fi
+
+echo "✅ 臨時文件清理完成"
+
 source /opt/ros/$ROS_DISTRO/setup.bash
 source /opt/ws_rmw_zenoh/install/setup.bash
 #ros套件的interfaces source
@@ -262,6 +306,35 @@ if [ "$AUTO_START_WEB_AGV_LAUNCH" = "true" ]; then
 else
     echo "⏸️ Web AGV Launch 服務自動啟動已停用 (AUTO_START_WEB_AGV_LAUNCH=false)"
 fi
+
+# =============================================================================
+# 🧹 啟動日誌輪換守護進程
+# =============================================================================
+echo "🧹 啟動日誌清理守護進程..."
+if [ -f "/app/setup_modules/log-cleanup-daemon.bash" ]; then
+    # 在背景啟動守護進程，輸出重定向到 /dev/null
+    nohup bash /app/setup_modules/log-cleanup-daemon.bash > /dev/null 2>&1 &
+    DAEMON_PID=$!
+
+    # 等待 1 秒確保守護進程成功啟動
+    sleep 1
+
+    # 檢查守護進程是否仍在運行
+    if kill -0 $DAEMON_PID 2>/dev/null; then
+        echo "✅ 日誌清理守護進程已啟動 (PID: $DAEMON_PID)"
+        echo "   📋 守護進程日誌: /tmp/log-cleanup-daemon.log"
+        echo "   ⚙️ 輪轉策略: 每個檔案最大 10MB，保留 5 個版本"
+        echo "   ⏰ 執行頻率: 每 6 小時自動檢查並輪轉"
+        echo "   📝 查看日誌: tail -f /tmp/log-cleanup-daemon.log"
+    else
+        echo "⚠️ 日誌清理守護進程啟動後立即退出，請檢查日誌"
+        echo "   查看錯誤: cat /tmp/log-cleanup-daemon.log"
+    fi
+else
+    echo "⚠️ 日誌清理守護腳本不存在: /app/setup_modules/log-cleanup-daemon.bash"
+    echo "   日誌清理功能未啟動，請手動管理日誌大小"
+fi
+echo ""
 
 # =============================================================================
 # 📖 Web AGV Launch (AGVUI) 使用說明

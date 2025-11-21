@@ -85,7 +85,7 @@
                             </span>
                         </p>
                         <div class="card-header-icon">
-                            <span class="tag is-{{ 'success' if node.status == 'running' else 'danger' if node.status == 'stopped' else 'warning' }}">
+                            <span class="tag is-{{ 'success' if node.status == 'running' else 'danger' if node.status == 'stopped' else 'light' if node.status == 'unknown' else 'warning' }}">
                                 {{ node.status }}
                             </span>
                         </div>
@@ -154,7 +154,7 @@
                             </span>
                         </p>
                         <div class="card-header-icon">
-                            <span class="tag is-{{ 'success' if agv.status == 'running' else 'danger' if agv.status == 'stopped' else 'warning' }}">
+                            <span class="tag is-{{ 'success' if agv.status == 'running' else 'danger' if agv.status == 'stopped' else 'light' if agv.status == 'unknown' else 'warning' }}">
                                 {{ agv.status }}
                             </span>
                         </div>
@@ -162,7 +162,16 @@
                     <div class="card-content">
                         <div class="content">
                             <p>類型: {{ agv.type }}</p>
-                            <small>IP: {{ agv.ip }}</small>
+                            <small>IP:
+                                <a href="http://{{ agv.ip }}:8003" target="_blank" class="has-text-link">
+                                    <span class="icon-text">
+                                        <span>{{ agv.ip }}</span>
+                                        <span class="icon has-text-info">
+                                            <i class="mdi mdi-monitor"></i>
+                                        </span>
+                                    </span>
+                                </a>
+                            </small>
                         </div>
                     </div>
                     <footer class="card-footer">

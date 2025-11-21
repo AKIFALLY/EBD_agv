@@ -25,6 +25,8 @@ from agv_base.base_context import BaseContext
 from cargo_mover_agv.cargo_context import CargoContext
 from cargo_mover_agv.robot_context import RobotContext
 from cargo_mover_agv.status_json_recorder import CargoAgvStatusJsonRecorder
+# Cargo 專屬狀態（包含交管邏輯）
+from cargo_mover_agv.states import CargoMissionSelectState
 # AGVs 和 TaskMsg 現在由 AgvNodebase 提供
 import cargo_mover_agv.robot_states.idle_state
 
@@ -44,8 +46,9 @@ class AgvCoreNode(AgvNodebase):
 
         self.base_context = BaseContext(
             agv_base.states.idle_state.IdleState(self))
+        # 使用 Cargo 專屬的 MissionSelectState（包含交管邏輯）
         self.cargo_context = CargoContext(
-            MissionSelectState(self))
+            CargoMissionSelectState(self))
         self.robot_context = RobotContext(
             cargo_mover_agv.robot_states.idle_state.IdleState(self))
 
@@ -114,14 +117,14 @@ class AgvCoreNode(AgvNodebase):
             except Exception as e:
                 self.get_logger().error(f"❌狀態轉換失敗 (Base {base_state_name} → Robot Idle): {str(e)}")
 
-        # 2. 檢查 AGV 層是否在 WaitRobotState，若是則轉換到 MissionSelectState
+        # 2. 檢查 AGV 層是否在 WaitRobotState，若是則轉換到 CargoMissionSelectState
         if isinstance(self.cargo_context.state, WaitRobotState):
             try:
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                self.get_logger().info(f"🔄 跳出 AutoState 時，AGV WaitRobot → MissionSelect 狀態轉換")
-                self.cargo_context.set_state(MissionSelectState(self))
+                from cargo_mover_agv.states.cargo_mission_select_state import CargoMissionSelectState
+                self.get_logger().info(f"🔄 跳出 AutoState 時，AGV WaitRobot → CargoMissionSelect 狀態轉換")
+                self.cargo_context.set_state(CargoMissionSelectState(self))
             except Exception as e:
-                self.get_logger().error(f"❌AGV 狀態轉換失敗 (WaitRobot → MissionSelect): {str(e)}")
+                self.get_logger().error(f"❌AGV 狀態轉換失敗 (WaitRobot → CargoMissionSelect): {str(e)}")
         
         # 3. 繼續執行一次 AGV 層狀態機，確保狀態轉換生效
         try:
@@ -140,8 +143,9 @@ class AgvCoreNode(AgvNodebase):
             # 非 AutoState 狀態下的處理
             self._handle_non_auto_state("Manual")
         if isinstance(state, agv_base.states.auto_state.AutoState):
-            # self.get_logger().info("[BASE]-Auto")
-            self.cargo_context.handle()
+            # 只有當 agv_id 已初始化時才執行狀態機
+            if self.agv_id > 0:
+                self.cargo_context.handle()
         if isinstance(state, agv_base.states.error_state.ErrorState):
             # 非 AutoState 狀態下的處理
             self._handle_non_auto_state("Error")
@@ -264,8 +268,8 @@ class AgvCoreNode(AgvNodebase):
             
             if os.path.exists(filepath):
                 file_size = os.path.getsize(filepath)
-                if self._json_update_count % 10 == 1:  # 第1次，第11次，第21次...打印
-                    self.get_logger().info(f"📝 JSON 狀態文件更新正常 (第{self._json_update_count}次): {filepath}, 大小: {file_size} bytes")
+                # if self._json_update_count % 10 == 1:  # 第1次，第11次，第21次...打印
+                #     self.get_logger().info(f"📝 JSON 狀態文件更新正常 (第{self._json_update_count}次): {filepath}, 大小: {file_size} bytes")
             else:
                 self.get_logger().error(f"❌ 文件未被創建: {filepath}")
             

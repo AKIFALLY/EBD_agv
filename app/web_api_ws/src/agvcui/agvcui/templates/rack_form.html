@@ -2,6 +2,11 @@
 
 {% block title %}{{ form_title }}{% endblock %}
 
+{% block extra_head %}
+<!-- 位图编辑器样式 -->
+<link rel="stylesheet" href="/static/css/bitmapEditor.css" />
+{% endblock %}
+
 {% block content %}
 <section class="section">
     <div class="container">
@@ -136,6 +141,48 @@
                             </div>
                         </div>
 
+                        <!-- 載具位圖 (Carrier Bitmap) -->
+                        <div class="field">
+                            <label class="label">載具位圖</label>
+                            <div class="field has-addons">
+                                <div class="control is-expanded">
+                                    <input class="input" type="text" name="carrier_bitmap" id="carrier_bitmap"
+                                        value="{{ rack.carrier_bitmap if rack else '00000000' }}"
+                                        placeholder="00000000" pattern="[0-9A-Fa-f]{8}" maxlength="8">
+                                </div>
+                                <div class="control">
+                                    <button type="button" class="button is-info" onclick="openBitmapEditor('carrier_bitmap')">
+                                        <span class="icon">
+                                            <i class="mdi mdi-pencil"></i>
+                                        </span>
+                                        <span>編輯</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="help">32位位圖（8位十六進制），表示載具佔用狀態</p>
+                        </div>
+
+                        <!-- 載具啟用位圖 (Carrier Enable Bitmap) -->
+                        <div class="field">
+                            <label class="label">載具啟用位圖</label>
+                            <div class="field has-addons">
+                                <div class="control is-expanded">
+                                    <input class="input" type="text" name="carrier_enable_bitmap" id="carrier_enable_bitmap"
+                                        value="{{ rack.carrier_enable_bitmap if rack else '00000000' }}"
+                                        placeholder="00000000" pattern="[0-9A-Fa-f]{8}" maxlength="8">
+                                </div>
+                                <div class="control">
+                                    <button type="button" class="button is-info" onclick="openBitmapEditor('carrier_enable_bitmap')">
+                                        <span class="icon">
+                                            <i class="mdi mdi-pencil"></i>
+                                        </span>
+                                        <span>編輯</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="help">32位位圖（8位十六進制），表示載具槽位啟用狀態</p>
+                        </div>
+
                         <!-- 佈林值選項 -->
                         <div class="field">
                             <label class="label">狀態選項</label>
@@ -220,4 +267,7 @@
         {% endif %}
     </div>
 </section>
+
+<!-- 位图编辑器脚本 -->
+<script src="/static/js/bitmapEditor.js"></script>
 {% endblock %}

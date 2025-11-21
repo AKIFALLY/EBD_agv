@@ -61,8 +61,11 @@ class RcsCore(Node):
         # 如果正在關閉，不執行任務
         if self.is_shutting_down:
             return
-            
+
         self.get_logger().debug("1秒定時器觸發 (timer_1s)")
+
+        # CT 車隊狀態更新（從資料庫讀取並更新 status_id）
+        self.ct_manager.update_ct_agv_status()
 
         # KUKA 車隊任務派發 (簡化版)
         self.kuka_manager.dispatch()

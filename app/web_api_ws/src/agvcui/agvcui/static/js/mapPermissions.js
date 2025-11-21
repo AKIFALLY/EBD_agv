@@ -51,6 +51,7 @@ export const mapPermissions = (() => {
         'edit_carrier': PERMISSION_LEVELS.OPERATE,
         'edit_node': PERMISSION_LEVELS.OPERATE,
         'control_equipment': PERMISSION_LEVELS.OPERATE,
+        'control_door': PERMISSION_LEVELS.OPERATE,
         'move_agv': PERMISSION_LEVELS.OPERATE,
 
         // 刪除操作

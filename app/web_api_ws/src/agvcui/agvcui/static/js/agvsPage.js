@@ -330,7 +330,7 @@ export const agvsPage = (() => {
             }
         }
 
-        // 更新 Status JSON
+        // 更新 Status JSON（優化版本 - 只更新內容不重建 DOM）
         const statusJsonElement = document.getElementById(`agv-status-json-${agv.id}`);
         if (statusJsonElement) {
             updateAgvStatusJsonTag(statusJsonElement, agv.agv_status_json);
@@ -387,41 +387,51 @@ export const agvsPage = (() => {
     }
 
     /**
-     * 更新 AGV Status JSON 顯示
+     * 更新 AGV Status JSON 顯示（優化版本 - 只更新內容不重建 DOM）
      * @param {Element} element - 容器元素
      * @param {Object} statusJson - JSON 資料
      */
     function updateAgvStatusJsonTag(element, statusJson) {
         if (statusJson) {
-            // 從 element id 提取 agv id
-            const agvId = element.id.replace('agv-status-json-', '');
+            // 檢查 dropdown 是否已經存在
+            const existingPre = element.querySelector('pre');
 
-            // 重新生成 JSON dropdown
-            element.innerHTML = `
-                <div class="dropdown is-hoverable agv-status-json-dropdown">
-                    <div class="dropdown-trigger">
-                        <button class="button is-small is-info" aria-haspopup="true"
-                                aria-controls="dropdown-menu-${agvId}">
-                            <span class="icon">
-                                <i class="mdi mdi-code-json"></i>
-                            </span>
-                            <span>JSON</span>
-                            <span class="icon is-small">
-                                <i class="mdi mdi-chevron-down"></i>
-                            </span>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="dropdown-menu-${agvId}" role="menu">
-                        <div class="dropdown-content">
-                            <div class="dropdown-item">
-                                <pre>${JSON.stringify(statusJson, null, 2)}</pre>
+            if (existingPre) {
+                // 只更新 <pre> 元素的文本內容，不重建 DOM
+                existingPre.textContent = JSON.stringify(statusJson, null, 2);
+            } else {
+                // 首次創建：生成完整的 dropdown 結構
+                const agvId = element.id.replace('agv-status-json-', '');
+                element.innerHTML = `
+                    <div class="dropdown is-hoverable agv-status-json-dropdown">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-info" aria-haspopup="true"
+                                    aria-controls="dropdown-menu-${agvId}">
+                                <span class="icon">
+                                    <i class="mdi mdi-code-json"></i>
+                                </span>
+                                <span>JSON</span>
+                                <span class="icon is-small">
+                                    <i class="mdi mdi-chevron-down"></i>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-${agvId}" role="menu">
+                            <div class="dropdown-content">
+                                <div class="dropdown-item">
+                                    <pre>${JSON.stringify(statusJson, null, 2)}</pre>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         } else {
-            element.innerHTML = '<span class="has-text-grey-light">無資料</span>';
+            // 無資料：只在結構不同時才更新
+            const existingSpan = element.querySelector('span.has-text-grey-light');
+            if (!existingSpan) {
+                element.innerHTML = '<span class="has-text-grey-light">無資料</span>';
+            }
         }
     }
 

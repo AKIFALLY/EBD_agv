@@ -7,22 +7,30 @@
 
 ## 📋 AGVC 工作空間架構
 
-### 工作空間總覽 (11個)
-AGVC 管理系統包含 11 個專用工作空間，每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
+### 工作空間總覽 (13個：7專用 + 4共用基礎 + 2共用應用)
+AGVC 管理系統包含 13 個工作空間（含共用），每個工作空間負責特定的管理功能，形成完整的車隊管理和控制系統。
 
 ```
 AGVC 管理系統工作空間
-├── web_api_ws/                # Web API 和 Socket.IO
-├── db_proxy_ws/               # 資料庫代理服務
-├── ecs_ws/                    # 設備控制系統
-├── rcs_ws/                    # 機器人控制系統
-├── tafl_ws/                   # TAFL 語言核心實作
-├── tafl_wcs_ws/               # TAFL WCS (目前使用的 WCS 系統)
-├── kuka_fleet_ws/             # KUKA Fleet 整合
-├── keyence_plc_ws/            # Keyence PLC 通訊 (共用)
-├── plc_proxy_ws/              # PLC 代理服務 (共用)
-├── path_algorithm/            # 路徑規劃演算法 (共用)
-└── launch_ws/                 # Launch 編排服務
+├── 專用工作空間 (7個)
+│   ├── web_api_ws/                # Web API 和 Socket.IO
+│   ├── db_proxy_ws/               # 資料庫代理服務
+│   ├── ecs_ws/                    # 設備控制系統
+│   ├── rcs_ws/                    # 機器人控制系統
+│   ├── kuka_wcs_ws/               # KUKA WCS 系統 (當前使用)
+│   ├── wcs_ws/                    # WCS 工作空間 (流程控制邏輯)
+│   └── kuka_fleet_ws/             # KUKA Fleet 整合
+├── 共用基礎設施 (4個)
+│   ├── shared_constants_ws/       # 系統級常數定義
+│   ├── keyence_plc_ws/            # Keyence PLC 通訊
+│   ├── plc_proxy_ws/              # PLC 代理服務
+│   └── path_algorithm/            # 路徑規劃演算法
+├── 共用應用工作空間 (2個)
+│   ├── agv_ws/                    # AGV 介面定義 (AGVC 監控用)
+│   └── launch_ws/                 # ROS 2 啟動編排
+└── 已棄用 (2個，目錄仍存在)
+    ├── ~~tafl_ws/~~               # ⚠️ 已棄用 - TAFL 語言核心
+    └── ~~tafl_wcs_ws/~~           # ⚠️ 已棄用 - TAFL WCS 系統
 ```
 
 ## 🌐 Web 服務工作空間
@@ -223,7 +231,10 @@ rcs_ws/src/
 - **KUKA 車隊整合**: 完整的 KUKA Fleet 管理和配置
 - **交通管制**: 交通區域控制和衝突避免
 
-### tafl_ws/ - TAFL 語言核心實作
+## ⚠️ 已棄用的工作空間
+
+### ~~tafl_ws/~~ - TAFL 語言核心實作（已棄用）
+**⚠️ 已於 2025-11-18 棄用，由 kuka_wcs_ws 取代**
 **職責**: TAFL (Task Automation Flow Language) 語言核心實作，提供語法解析、執行和驗證功能
 
 #### 套件結構
@@ -255,8 +266,9 @@ tafl_ws/src/
 - **迴圈處理**: for 迴圈和 foreach 遍歷
 - **資料查詢**: 支援資料庫查詢和條件過濾
 
-### tafl_wcs_ws/ - TAFL WCS 系統
-**職責**: 目前使用的 WCS 實作，基於 TAFL (Task Automation Flow Language) 的倉庫控制系統
+### ~~tafl_wcs_ws/~~ - TAFL WCS 系統（已棄用）
+**⚠️ 已於 2025-11-18 棄用，由 kuka_wcs_ws 取代**
+**職責**: 過去使用的 WCS 實作，基於 TAFL (Task Automation Flow Language) 的倉庫控制系統
 
 #### 套件結構
 ```
@@ -307,7 +319,7 @@ tafl_wcs_ws/src/
 all_source             # 或別名: sa
 
 # 強制載入 AGVC 工作空間
-agvc_source           # 載入所有 AGVC 工作空間 (包含共用基礎設施和 tafl_wcs_ws)
+agvc_source           # 載入所有 AGVC 工作空間 (包含共用基礎設施和 kuka_wcs_ws)
 
 # 檢查載入狀態
 echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
@@ -326,11 +338,13 @@ echo $ROS_WORKSPACE   # 顯示當前載入的工作空間
 #### AGVC 應用工作空間 (依序載入)
 7. **ecs_ws**: 設備控制系統
 8. **rcs_ws**: 機器人控制系統
-9. **tafl_ws**: TAFL 語言核心實作
-10. **tafl_wcs_ws**: TAFL WCS (目前使用的 WCS 實作)
-11. **web_api_ws**: Web API 和使用者介面
-12. **kuka_fleet_ws**: KUKA Fleet 外部整合
-13. **launch_ws**: AGVC 啟動編排服務
+9. ~~**tafl_ws**~~: TAFL 語言核心實作（已棄用）
+10. ~~**tafl_wcs_ws**~~: TAFL WCS（已棄用）
+11. **kuka_wcs_ws**: KUKA WCS 系統（當前使用的 WCS 實作）
+12. **wcs_ws**: WCS 工作空間（流程控制邏輯）
+13. **web_api_ws**: Web API 和使用者介面
+14. **kuka_fleet_ws**: KUKA Fleet 外部整合
+15. **launch_ws**: AGVC 啟動編排服務
 
 ### 建置管理
 ```bash

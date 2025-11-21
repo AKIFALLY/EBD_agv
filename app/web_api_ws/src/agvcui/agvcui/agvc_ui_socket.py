@@ -6,7 +6,7 @@ from agvcui.db import node_all, edge_all, kuka_node_all, kuka_edge_all
 from agvcui.db import signal_all, rack_all, task_all
 from agvcui.db import machine_all, room_all
 from agvcui.db import get_all_agvs, get_all_locations
-from agvcui.db import modify_log_all_objects
+from agvcui.db import modify_log_all_objects, traffic_zone_all
 
 
 class AgvcUiSocket:
@@ -22,6 +22,7 @@ class AgvcUiSocket:
             {"func": self.notify_signals,  "interval": 10, "last_time": now},
             {"func": self.notify_racks,    "interval": 10, "last_time": now},
             {"func": self.notify_tasks,    "interval": 15, "last_time": now},
+            {"func": self.notify_traffic_zones, "interval": 10, "last_time": now},
             {"func": self.notify_by_modifylog, "interval": 0.1, "last_time": now},
         ]
 
@@ -32,11 +33,17 @@ class AgvcUiSocket:
         self.sio.on('disconnect')(self.disconnect)
         self.sio.on('user_login')(self.user_login)
         self.sio.on('user_logout')(self.user_logout)
-        
-        # TAFL Editor 事件
+
+        # ⚠️ DEPRECATED - TAFL Editor 事件處理（2025-11-18）
+        # 以下 TAFL Editor 相關事件已棄用，保留作為歷史參考
+        # 原因: TAFL WCS 系統已被 KUKA WCS 完全取代
+        # 狀態: TAFL Editor 路由已在 agvc_ui_server.py 中註解停用
         self.sio.on('flow_save')(self.flow_save)
         self.sio.on('flow_load')(self.flow_load)
         self.sio.on('flow_validate')(self.flow_validate)
+
+        # 交管區事件
+        self.sio.on('request_traffic_zones')(self.handle_request_traffic_zones)
 
         # 如果還有其他事件，這裡可以繼續綁定
 
@@ -60,6 +67,7 @@ class AgvcUiSocket:
             print(f"❌ DEBUG connect: notify_tasks 失敗: {e}", flush=True)
             import traceback
             traceback.print_exc()
+        await self.notify_traffic_zones(sid)  # 交管區狀態初次推送
         # await self.notify_client_data(sid)
 
     async def disconnect(self, sid):
@@ -264,6 +272,32 @@ class AgvcUiSocket:
         payload = {"agvs": agvs}
         await self.sio.emit("agv_list", jsonable_encoder(payload), room=sid)
 
+    async def notify_traffic_zones(self, sid):
+        """通知交管區狀態"""
+        traffic_zones = self.get_traffic_zones_data()
+        payload = {"traffic_zones": traffic_zones}
+        await self.sio.emit("traffic_zones_update", jsonable_encoder(payload), room=sid)
+
+    async def handle_request_traffic_zones(self, sid):
+        """處理前端請求交管區數據"""
+        print(f"📡 收到交管區數據請求 (sid: {sid})")
+        await self.notify_traffic_zones(sid)
+
+    def get_traffic_zones_data(self):
+        """
+        獲取交管區數據
+
+        從資料庫獲取所有交管區狀態，包含占用者 AGV 名稱
+        """
+        try:
+            traffic_zones = traffic_zone_all()
+            return traffic_zones
+        except Exception as e:
+            print(f"❌ 獲取交管區數據失敗: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
     async def notify_by_modifylog(self, sid):
         """
         🔴 關鍵機制 - ModifyLog 監聽與通知
@@ -306,6 +340,7 @@ class AgvcUiSocket:
             "rack": self.notify_racks,    # Rack 狀態更新 → Rack 顯示
             "signal": self.notify_signals,
             "task": self.notify_tasks,
+            "traffic_zone": self.notify_traffic_zones,  # 交管區狀態更新 → 交管區顯示
             # Add other mappings as needed
         }
 

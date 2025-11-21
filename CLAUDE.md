@@ -29,8 +29,8 @@ manage_web_api_launch stop && ba && sa && manage_web_api_launch start
 # 快速重啟服務
 manage_web_api_launch restart
 
-# TAFL Editor 重建
-cd /app/web_api_ws && colcon build --packages-select agvcui && manage_web_api_launch restart
+# ⚠️ TAFL Editor 已棄用（2025-11-18）
+# cd /app/web_api_ws && colcon build --packages-select agvcui && manage_web_api_launch restart
 
 # 檢查系統狀態（宿主機）
 r agvc-check
@@ -51,16 +51,20 @@ manage_<service_name> restart   # 完整重啟
 manage_<service_name> status    # 詳細狀態檢查
 manage_<service_name> logs      # 即時日誌查看
 
-# 已標準化的服務（6個核心服務）
+# 已標準化的服務（5個核心服務 + 1個已棄用）
 manage_plc_service_agvc        # PLC 服務
 manage_ecs_core                # ECS 核心服務
 manage_rcs_core                # RCS 核心服務
 manage_agvc_database_node      # 資料庫代理
-manage_tafl_wcs                # TAFL WCS 流程控制
 manage_room_task_build         # Room Task Build
+# manage_tafl_wcs              # ⚠️ 已棄用 - TAFL WCS 流程控制 (使用 kuka_wcs_ws)
 
 # 參考範例
 manage_web_api_launch          # Web 服務（最佳實踐範例）
+
+# Web 服務管理（環境專屬）
+manage_web_api_launch          # AGVC 容器：管理 API/AGVCUI/OPUI (8000/8001/8002)
+manage_web_agv_launch          # AGV 容器：管理 AGVUI 車載監控 (8003)
 ```
 
 **開發新服務管理函數時必讀：**
@@ -89,13 +93,13 @@ manage_web_api_launch          # Web 服務（最佳實踐範例）
 # 🔝 通用層級：AI Agent 核心規則與開發指導（6個強引用 + 8個參考文檔）
 # 所有 AI Agent 必須理解的基礎知識
 
-# AI Agent 核心規則與開發指導 - 6個
+# AI Agent 核心規則與開發指導 - 5個
 @ai-agents/container-development-rules.md    # 容器開發規則
 @ai-agents/database-operations-rules.md      # 資料庫操作規則
 @ai-agents/ros2-development-rules.md         # ROS2 開發規則
-@ai-agents/tafl-language-rules.md           # TAFL 語言規則
 @ai-agents/unified-tools-usage.md           # 統一工具使用
 @ai-agents/web-api-development-rules.md     # Web API 開發規則
+# @ai-agents/tafl-language-rules.md         # ⚠️ 已棄用並歸檔 - TAFL 語言規則
 
 # 系統架構（參考文檔）- 3個
 docs-ai/context/system/rosagv-overview.md              # 系統概覽
@@ -120,7 +124,7 @@ docs-ai/operations/guides/troubleshooting.md           # 故障排除與診斷
 ### 工作空間層文檔（在對應 _ws 目錄查看）
 # 各工作空間的 CLAUDE.md 會包含：
 # - 工作空間架構（agv-workspaces.md, agvc-workspaces.md）
-# - 領域特定知識（如 AGV 狀態機、PLC 協議、TAFL 語言等）
+# - 領域特定知識（如 AGV 狀態機、PLC 協議、KUKA WCS 等）
 # - 開發流程文檔（ROS2 開發、測試標準、資料庫操作等）
 
 ### 專業實作層文檔（在 src 目錄查看）
@@ -137,7 +141,7 @@ docs-ai/operations/guides/troubleshooting.md           # 故障排除與診斷
 # 工作空間相關文檔應查看對應的 _ws/CLAUDE.md：
 # - PLC 通訊 → plc_proxy_ws/CLAUDE.md 或 keyence_plc_ws/CLAUDE.md
 # - AGV 控制 → agv_ws/CLAUDE.md
-# - WCS 系統 → tafl_wcs_ws/CLAUDE.md
+# - WCS 系統 → kuka_wcs_ws/CLAUDE.md (⚠️ tafl_wcs_ws 已棄用)
 # - Web 開發 → web_api_ws/CLAUDE.md
 # - 資料庫 → db_proxy_ws/CLAUDE.md
 # - KUKA Fleet → kuka_fleet_ws/CLAUDE.md
@@ -220,8 +224,11 @@ cat js/claude-architecture.json | jq '.summary'
 ### 核心控制系統
 - **agv_ws/CLAUDE.md**: AGV 狀態機、車輛控制
 - **agv_cmd_service_ws/CLAUDE.md**: AGV 命令服務、手動控制
-- **tafl_wcs_ws/CLAUDE.md**: TAFL 流程控制、WCS 系統
+- **kuka_wcs_ws/CLAUDE.md**: KUKA WCS 系統、任務流程控制
+- **wcs_ws/CLAUDE.md**: WCS 工作空間、流程控制邏輯
 - **rcs_ws/CLAUDE.md**: 機器人控制系統、任務調度
+- ~~**tafl_wcs_ws/CLAUDE.md**~~: ⚠️ 已棄用 (使用 kuka_wcs_ws)
+- ~~**tafl_ws/CLAUDE.md**~~: ⚠️ 已棄用 (TAFL 核心已停用)
 
 ### Web 與資料服務
 - **web_api_ws/CLAUDE.md**: Web 服務、API 開發、Socket.IO 整合

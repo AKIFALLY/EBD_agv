@@ -5,7 +5,7 @@
 
 from sqlmodel import select, func, or_
 from sqlalchemy.orm import selectinload
-from db_proxy.models import Task, Work
+from db_proxy.models import Task, Work, ModifyLog
 from .connection import connection_pool, task_crud, work_crud, task_status_crud
 from .utils import fetch_all
 
@@ -113,7 +113,14 @@ def create_task(task_data: dict):
     with connection_pool.get_session() as session:
         # 創建 Task 對象
         task_obj = Task(**task_data)
-        return task_crud.create(session, task_obj)
+        result = task_crud.create(session, task_obj)
+
+        # 🔴 關鍵：標記 task 表已更新，觸發前端即時更新
+        # 絕對不可移除！前端 agvc_ui_socket.py 監聽此事件
+        ModifyLog.mark(session, "task")
+        session.commit()
+
+        return result
 
 
 def update_task(task_id: int, task_data: dict):
@@ -121,13 +128,27 @@ def update_task(task_id: int, task_data: dict):
     with connection_pool.get_session() as session:
         # 創建 Task 對象用於更新
         task_obj = Task(**task_data)
-        return task_crud.update(session, task_id, task_obj)
+        result = task_crud.update(session, task_id, task_obj)
+
+        # 🔴 關鍵：標記 task 表已更新，觸發前端即時更新
+        # 絕對不可移除！前端 agvc_ui_socket.py 監聽此事件
+        ModifyLog.mark(session, "task")
+        session.commit()
+
+        return result
 
 
 def delete_task(task_id: int):
     """刪除任務"""
     with connection_pool.get_session() as session:
-        return task_crud.delete(session, task_id)
+        result = task_crud.delete(session, task_id)
+
+        # 🔴 關鍵：標記 task 表已更新，觸發前端即時更新
+        # 絕對不可移除！前端 agvc_ui_socket.py 監聽此事件
+        ModifyLog.mark(session, "task")
+        session.commit()
+
+        return result
 
 
 def work_all() -> list[dict]:

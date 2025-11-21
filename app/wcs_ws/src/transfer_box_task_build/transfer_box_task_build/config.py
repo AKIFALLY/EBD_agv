@@ -71,6 +71,9 @@ AUTO_CLEANUP_INTERVAL = 2.0
 # PLC 回饋更新頻率（秒）- Timer 4
 FEEDBACK_UPDATE_INTERVAL = 10.0
 
+# 清空 DM 頻率（秒）- Timer 5
+CLEAR_DM_INTERVAL = 10.0
+
 # ==================== Task 配置 ====================
 # 預設狀態
 DEFAULT_STATUS_ID = 1      # PENDING

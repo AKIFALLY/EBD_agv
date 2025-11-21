@@ -185,8 +185,13 @@ function createEdge(map, edge, nodeMap, edgeMap, className = '') {
         return;
     }
 
+    // 根据当前缩放级别计算初始箭头大小
+    const zoom = map.getZoom();
+    const initialArrowSize = 3 * (3 + zoom);
+
     const line = new LineObject(map, from, to, {
         id: edgeName,
+        arrowSize: initialArrowSize,  // 传入初始箭头大小
         ...(className && { className })
     });
 

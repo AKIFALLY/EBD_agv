@@ -4,6 +4,7 @@ export class BaseObject {
         this.latlng = latlng;
         this.data = {}; // 儲存物件相關資料
         this.clickHandlers = []; // 點擊事件處理器
+        this.hoverHandlers = []; // 懸停事件處理器
 
         const icon = L.divIcon({
             className: '',
@@ -17,6 +18,8 @@ export class BaseObject {
 
         // 設置點擊事件
         this.setupClickEvents();
+        // 設置懸停事件
+        this.setupHoverEvents();
 
         requestAnimationFrame(this.animate.bind(this));
     }
@@ -54,6 +57,61 @@ export class BaseObject {
         const index = this.clickHandlers.indexOf(handler);
         if (index > -1) {
             this.clickHandlers.splice(index, 1);
+        }
+    }
+
+    // 設置懸停事件
+    setupHoverEvents() {
+        if (this.marker) {
+            this.marker.on('mouseover', (e) => {
+                e.originalEvent.stopPropagation();
+                this.handleMouseOver(e);
+            });
+            this.marker.on('mouseout', (e) => {
+                e.originalEvent.stopPropagation();
+                this.handleMouseOut(e);
+            });
+        }
+    }
+
+    // 處理滑鼠移入事件
+    handleMouseOver(e) {
+        this.hoverHandlers.forEach(handler => {
+            try {
+                if (handler.onEnter && typeof handler.onEnter === 'function') {
+                    handler.onEnter(this, e);
+                }
+            } catch (error) {
+                console.error('Hover onEnter handler error:', error);
+            }
+        });
+    }
+
+    // 處理滑鼠移出事件
+    handleMouseOut(e) {
+        this.hoverHandlers.forEach(handler => {
+            try {
+                if (handler.onLeave && typeof handler.onLeave === 'function') {
+                    handler.onLeave(this, e);
+                }
+            } catch (error) {
+                console.error('Hover onLeave handler error:', error);
+            }
+        });
+    }
+
+    // 添加懸停事件處理器
+    addHoverHandler(handler) {
+        if (typeof handler === 'object' && (handler.onEnter || handler.onLeave)) {
+            this.hoverHandlers.push(handler);
+        }
+    }
+
+    // 移除懸停事件處理器
+    removeHoverHandler(handler) {
+        const index = this.hoverHandlers.indexOf(handler);
+        if (index > -1) {
+            this.hoverHandlers.splice(index, 1);
         }
     }
 

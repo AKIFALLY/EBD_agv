@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""測試 Unloader AGV 4 個流程的完整集成測試"""
+"""測試 Unloader AGV 4 個流程的完整集成測試
+
+⚠️ 已棄用 (DEPRECATED) - 2025-11-18
+此測試文件使用已移除的 Task.type 字段，不再適用於當前系統。
+TAFL WCS 系統已被 KUKA WCS 取代，請使用 kuka_wcs_ws 進行相關測試。
+"""
 
 import sys
 import asyncio

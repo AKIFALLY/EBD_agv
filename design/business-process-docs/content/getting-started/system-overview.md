@@ -109,18 +109,24 @@ AGV 車載工作空間:
     - 共用模組: keyence_plc_ws, plc_proxy_ws, path_algorithm
 ```
 
-### AGVC 管理工作空間（11個）
+### AGVC 管理工作空間（13個含共用）
 ```yaml
 AGVC 管理工作空間:
   專注: 車隊管理和系統整合
-  工作空間:
+  專用工作空間 (7個):
     - web_api_ws: Web API 和 Socket.IO
     - db_proxy_ws: 資料庫代理服務
     - ecs_ws: 設備控制系統
     - rcs_ws: 機器人控制系統
-    - tafl_wcs_ws: TAFL 流程執行引擎
+    - kuka_wcs_ws: KUKA WCS 系統 (當前使用)
+    - wcs_ws: WCS 工作空間 (流程控制邏輯)
     - kuka_fleet_ws: KUKA Fleet 整合
-    - 共用模組: keyence_plc_ws, plc_proxy_ws, path_algorithm
+  共用基礎設施 (4個):
+    - shared_constants_ws, keyence_plc_ws, plc_proxy_ws, path_algorithm
+  共用應用 (2個):
+    - agv_ws (監控用), launch_ws
+  已棄用 (2個):
+    - ~~tafl_ws, tafl_wcs_ws~~: ⚠️ 已棄用 (使用 kuka_wcs_ws 替代)
 ```
 
 ## 🌐 通訊機制
@@ -159,7 +165,8 @@ AGVC 管理系統:
 ```
 
 ### 系統協調機制
-- **TAFL WCS 流程執行**：YAML 配置驅動的任務建立和執行
+- ~~**TAFL WCS 流程執行**~~：⚠️ 已棄用 - YAML 配置驅動的任務建立和執行 (已被 KUKA WCS 取代)
+- **KUKA WCS 系統**：當前使用的倉儲控制系統，提供任務建立和執行
 - **RCS 簡化調度**：1秒定時器的基本任務分派
 - **ECS 設備控制**：門控、電梯等設備協調
 - **實時監控**：Web 介面實時顯示所有 AGV 狀態

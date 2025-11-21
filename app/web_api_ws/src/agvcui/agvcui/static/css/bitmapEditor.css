@@ -1,0 +1,296 @@
+/**
+ * bitmapEditor.css - 位图编辑器样式
+ * 支持左右两区布局（每区 4x4 格子）
+ */
+
+/* ========== 左右两区容器 ========== */
+.bitmap-grid-wrapper {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    background: #fafafa;
+    border-radius: 12px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* ========== 区域容器 ========== */
+.bitmap-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ========== 区域标签 ========== */
+.zone-label {
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #363636;
+    padding: 8px;
+    background: linear-gradient(135deg, #e8f4f8 0%, #d4e9f2 100%);
+    border-radius: 6px;
+    border: 1px solid #b5d9eb;
+    letter-spacing: 0.5px;
+}
+
+/* ========== 位图格子容器 ========== */
+.bitmap-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 2px solid #dbdbdb;
+}
+
+/* ========== 位图行 ========== */
+.bitmap-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+/* ========== 位图格子 ========== */
+.bitmap-slot {
+    width: 65px;
+    height: 65px;
+    border: 2px solid #dbdbdb;
+    border-radius: 6px;
+    background: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+    user-select: none;
+}
+
+/* 格子编号 */
+.slot-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: #7a7a7a;
+    transition: color 0.2s ease;
+}
+
+/* ========== 格子激活状态 ========== */
+.bitmap-slot.is-active {
+    background: linear-gradient(135deg, #48c774 0%, #3ec46d 100%);
+    border-color: #3abb67;
+    box-shadow: 0 2px 6px rgba(72, 199, 116, 0.4);
+}
+
+.bitmap-slot.is-active .slot-number {
+    color: #ffffff;
+    font-weight: 800;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ========== 格子悬停效果 ========== */
+.bitmap-slot:hover {
+    border-color: #48c774;
+    box-shadow: 0 0 12px rgba(72, 199, 116, 0.3);
+    transform: scale(1.08);
+}
+
+.bitmap-slot.is-active:hover {
+    background: linear-gradient(135deg, #3abb67 0%, #36a85f 100%);
+    border-color: #36a85f;
+    box-shadow: 0 4px 10px rgba(72, 199, 116, 0.5);
+}
+
+/* ========== 格子按下效果 ========== */
+.bitmap-slot:active {
+    transform: scale(0.98);
+}
+
+/* ========== Modal 对话框样式增强 ========== */
+#bitmap-editor-modal .modal-card {
+    max-width: 800px;
+    width: 95%;
+}
+
+#bitmap-editor-modal .modal-card-body {
+    padding: 2rem;
+}
+
+/* 十六进制预览框样式 */
+#bitmap-hex-preview {
+    font-size: 1.4em;
+    text-align: center;
+    letter-spacing: 0.35em;
+    font-weight: 700;
+    background: #f5f5f5;
+    border: 2px solid #48c774;
+    color: #363636;
+    padding: 12px;
+}
+
+/* ========== 操作按钮区域 ========== */
+.bitmap-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 1024px) {
+    .bitmap-grid-wrapper {
+        gap: 30px;
+    }
+
+    .bitmap-slot {
+        width: 60px;
+        height: 60px;
+    }
+
+    .slot-number {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    .bitmap-grid-wrapper {
+        flex-direction: column;
+        gap: 20px;
+        padding: 15px;
+    }
+
+    .bitmap-slot {
+        width: 55px;
+        height: 55px;
+    }
+
+    .slot-number {
+        font-size: 12px;
+    }
+
+    .bitmap-grid {
+        padding: 12px;
+        gap: 6px;
+    }
+
+    .bitmap-row {
+        gap: 6px;
+    }
+
+    #bitmap-editor-modal .modal-card {
+        width: 98%;
+    }
+
+    #bitmap-editor-modal .modal-card-body {
+        padding: 1.5rem;
+    }
+
+    #bitmap-hex-preview {
+        font-size: 1.2em;
+        letter-spacing: 0.25em;
+    }
+
+    .zone-label {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bitmap-slot {
+        width: 48px;
+        height: 48px;
+    }
+
+    .slot-number {
+        font-size: 11px;
+    }
+
+    .bitmap-grid {
+        padding: 10px;
+        gap: 5px;
+    }
+
+    .bitmap-row {
+        gap: 5px;
+    }
+
+    .bitmap-grid-wrapper {
+        padding: 10px;
+    }
+
+    #bitmap-hex-preview {
+        font-size: 1em;
+        letter-spacing: 0.2em;
+        padding: 10px;
+    }
+
+    .zone-label {
+        font-size: 0.85rem;
+        padding: 6px;
+    }
+}
+
+/* ========== 动画效果 ========== */
+@keyframes slot-activate {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.12);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.bitmap-slot.is-active {
+    animation: slot-activate 0.3s ease;
+}
+
+/* ========== 帮助文本样式 ========== */
+.bitmap-help-text {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #7a7a7a;
+    text-align: center;
+    font-style: italic;
+}
+
+.bitmap-help-text code {
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    color: #3273dc;
+}
+
+/* ========== 键盘快捷键提示 ========== */
+.keyboard-hint {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #7a7a7a;
+    margin-top: 1rem;
+}
+
+.keyboard-hint kbd {
+    background: #f5f5f5;
+    border: 1px solid #dbdbdb;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 0.8em;
+    font-family: monospace;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 区分左右区的视觉效果 ========== */
+.bitmap-zone:first-child .zone-label {
+    background: linear-gradient(135deg, #e8f4f8 0%, #cfe2ff 100%);
+    border-color: #a2c9e8;
+}
+
+.bitmap-zone:last-child .zone-label {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border-color: #ffc107;
+}

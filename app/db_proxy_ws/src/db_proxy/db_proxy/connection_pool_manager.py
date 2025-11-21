@@ -8,7 +8,7 @@ import json
 from contextlib import contextmanager
 
 # 常數定義
-POOL_SIZE = 5
+POOL_SIZE = 3 #降低連線術
 MAX_POOL_SIZE = 10
 POOL_TIMEOUT = 30
 POOL_RECYCLE = 180

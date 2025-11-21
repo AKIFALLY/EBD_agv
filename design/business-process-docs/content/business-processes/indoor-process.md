@@ -2,25 +2,27 @@
 
 ## 🎯 倉庫控制系統概覽
 
-RosAGV 的室內製程管理採用 TAFL WCS（Task Automation Flow Language - Warehouse Control System）架構，結合簡化的 RCS 車隊調度系統和 KUKA Fleet 外部整合，提供基礎的製程調度和資源管理。
+RosAGV 的室內製程管理採用倉儲控制系統（Warehouse Control System）架構，結合簡化的 RCS 車隊調度系統和 KUKA Fleet 外部整合，提供基礎的製程調度和資源管理。
+
+> 📝 **技術實作說明**：當前系統使用 KUKA WCS 作為倉儲控制實作。詳見 [KUKA WCS 整合方案](../technical-details/kuka-integration.md)。
 
 ## 🏗️ 系統架構
 
-### TAFL WCS（流程執行引擎）
+### 倉儲控制系統（WCS）
 ```
-⚙️ TAFL WCS - YAML 配置驅動引擎
-├── YAML 流程定義 (6段式結構)
-├── 週期性執行 (如每9秒)
+⚙️ 倉儲控制系統 - 流程執行引擎
+├── 流程定義與管理
+├── 週期性執行機制
 ├── 資料庫查詢和更新
 ├── 任務創建和狀態管理
 └── 流程狀態追蹤
 ```
 
 **核心功能**：
-- **配置化流程**: YAML 檔案定義業務流程，無需修改程式碼
-- **定期執行**: 根據 execution_interval 週期執行（如每9秒）
+- **配置化流程**: 業務流程可透過配置定義，無需修改程式碼
+- **定期執行**: 根據執行間隔週期性檢查和創建任務
 - **資料庫操作**: 查詢 locations、racks、tasks，創建和更新記錄
-- **同步執行**: 使用同步模式避免記憶體問題
+- **可靠執行**: 穩定的執行機制確保流程正常運行
 
 ### RCS 簡化調度系統
 ```
@@ -75,51 +77,51 @@ Priority 100: AGV旋轉檢查 (雙旋轉點) ✅ 已實作
 ├── 房間入口旋轉 (A面空B面工作) ✅ 已啟用
 │   ├── 條件：A面載具已取走，B面有待作業載具
 │   ├── 用途：讓B面載具能被Cargo AGV卸載
-│   ├── 流程：rack_rotation_room_inlet_aempty_bwork.yaml (enabled: true)
+│   ├── 週期檢查：定期檢查條件並創建任務
 │   └── 測試：test_rack_rotation.py (場景1)
 ├── 房間出口旋轉 (A面滿B面空) ✅ 已啟用
 │   ├── 條件：A面已滿16個載具，B面為空
 │   ├── 用途：讓B面繼續收集房間內處理完成的載具
-│   ├── 流程：rack_rotation_room_outlet_afull_bempty.yaml (enabled: true)
+│   ├── 週期檢查：定期檢查條件並創建任務
 │   └── 測試：test_rack_rotation.py (場景2)
 └── 最高優先級確保機器手臂對接
 
 Priority 80: 滿料架到人工收料區 ✅ 已實作
 ├── 製程完成 Rack 的最終處理
-├── 人工收料區 (位置 51-55)
-├── 流程：full_rack_outlet_to_manual_collection.yaml (enabled: true)
+├── 人工收料區 (位置 21-22)
+├── 自動檢查：定期檢查滿載或尾批條件
 ├── 功能：滿載或尾批判斷，自動搬運到收料區
 └── 測試：test_full_rack_to_collection.py (2個場景)
 
 Priority 60: 系統準備區到房間 ✅ 已實作
 ├── 投料調度和生產準備
-├── 系統準備區 (位置 11-18)
-├── 流程：room_dispatch_simple.yaml (enabled: true)
-├── 功能：依房間優先級將準備區料架調度到對應房間入口
+├── 系統準備區 (位置 2-9)
+├── 自動調度：依房間優先級調度料架
+├── 功能：將準備區料架調度到對應房間入口
 └── 測試：test_room_dispatch.py (2個場景)
 
 Priority 50: 射出機停車格到系統準備區 ✅ 已實作
 ├── 料架準備和調度
-├── 流程：machine_to_prepare.yaml (enabled: true)
-├── 功能：將已派車料架從停車格調度到準備區
+├── 自動調度：將已派車料架從停車格移至準備區
+├── 功能：準備進入房間的料架
 └── 測試：test_machine_to_prepare.py (2個場景)
 
 Priority 40: 空料架搬運（三路徑流程）✅ 已實作
 ├── 流程A：空料架入口→出口（優先）✅ 已實作
 │   ├── 條件：A/B面都為空，房間出口位置空閒
 │   ├── 用途：準備收集處理完成的Carrier
-│   ├── 流程：empty_rack_inlet_to_outlet.yaml (enabled: true)
+│   ├── 自動執行：定期檢查條件並創建搬運任務
 │   └── 測試：test_parking_flows.py (場景1)
 ├── 流程B：空料架入口→停車區（備選）✅ 已實作
 │   ├── 條件：A/B面都為空，房間出口位置已佔用
-│   ├── 目標：系統空車停放區 (31-34)
+│   ├── 目標：系統空車停放區 (11-13)
 │   ├── 用途：暫存空Rack，避免出口堵塞
-│   ├── 流程：empty_rack_inlet_to_parking.yaml (enabled: true)
+│   ├── 自動執行：定期檢查條件並創建搬運任務
 │   └── 測試：test_parking_flows.py (場景2)
 ├── 流程C：停車區→出口（需求調度）✅ 已實作
 │   ├── 條件：房間有已完成carrier等待，出口缺rack
 │   ├── 用途：從停車區調配rack到出口
-│   ├── 流程：parking_to_outlet.yaml (enabled: true)
+│   ├── 自動調度：定期檢查需求並創建調配任務
 │   └── 測試：test_parking_flows.py (場景3)
 └── 防衝突機制：所有流程都檢查未完成任務，避免重複創建
 ```
@@ -137,21 +139,20 @@ Priority 40: 空料架搬運（三路徑流程）✅ 已實作
 
 ## 🏭 製程區域管理
 
-### 系統準備區 (11-18)
+### 系統準備區 (2-9)
 **功能**: 等待送到房間的 Rack 暫存
 - **容量**: 8 個 Rack 位置
 - **管理**: 資料庫記錄位置狀態
-- **查詢**: TAFL 流程定期檢查並創建搬運任務
+- **自動檢查**: WCS 定期檢查並創建搬運任務
 
-### 人工收料區 (51-55)
+### 人工收料區 (21-22)
 **功能**: 製程完成後的產品收集
-- **容量**: 5 個 Rack 位置
+- **容量**: 2 個 Rack 位置
 - **流程**:
   1. 滿載 Rack 送達
   2. 人工取出產品
   3. OPUI-HMI「移出系統」(location_id = null)
   4. 人工搬運到系統外倉儲
-
 
 ## 🔄 空料架循環管理（手動管理模式）
 
@@ -207,7 +208,7 @@ class TrafficController:
 ### 基礎監控功能
 - **任務狀態查詢**: 資料庫查詢任務執行狀態
 - **AGV 位置追蹤**: 定期更新 AGV 位置到資料庫
-- **流程執行日誌**: TAFL 執行進度和結果記錄
+- **流程執行日誌**: WCS 執行進度和結果記錄
 - **簡單統計**: 基本的任務完成數量統計
 
 ### 資料庫查詢
@@ -229,11 +230,13 @@ WHERE agv_type IN ('loader', 'unloader', 'cargo');
 
 ## 🔧 技術實現
 
-### TAFL 流程配置
-- **YAML 定義**: 使用 YAML 檔案定義流程邏輯
-- **定期執行**: 根據 execution_interval 設定執行週期
-- **同步處理**: 避免異步執行的記憶體問題
+### WCS 流程控制
+- **配置定義**: 使用配置檔案定義流程邏輯
+- **定期執行**: 根據執行間隔設定執行週期
+- **可靠處理**: 穩定的執行機制
 - **簡單可靠**: 基礎但穩定的執行機制
+
+> 📚 **當前實作**: 系統使用 [KUKA WCS](../technical-details/kuka-integration.md) 作為倉儲控制系統實作。
 
 ### RCS 簡化實現
 - **單體架構**: 簡單的單一程序設計
@@ -245,7 +248,7 @@ WHERE agv_type IN ('loader', 'unloader', 'cargo');
 
 ### 務實設計
 - **簡化架構**: 移除了複雜的優先度調度和 WCS 適配
-- **配置驅動**: 透過 YAML 配置調整業務邏輯
+- **配置驅動**: 透過配置調整業務邏輯
 - **基礎功能**: 專注於核心的調度和執行
 - **穩定可靠**: 簡單的設計帶來穩定性
 
@@ -259,9 +262,9 @@ WHERE agv_type IN ('loader', 'unloader', 'cargo');
 
 - [眼鏡生產完整流程](eyewear-production.md) - 了解端到端業務流程
 - [AGV 車型技術詳解](../agv-vehicles/vehicle-types.md) - 三種 AGV 的技術特色
-- [KUKA Fleet 整合方案](../technical-details/kuka-integration.md) - 外部系統整合
-- [TAFL WCS 系統](../technical-details/tafl-wcs-integration.md) - 流程執行引擎
+- [KUKA WCS 整合方案](../technical-details/kuka-integration.md) - 當前 WCS 系統實作
+- [KUKA Fleet 整合](../technical-details/kuka-integration.md) - 外部系統整合
 
 ---
 
-💡 **總結**：室內製程基礎調度展現了 RosAGV 系統的務實設計，通過簡化的 RCS 調度、TAFL 流程執行和基礎的設備整合，實現了穩定可靠的半自動化生產流程。系統專注於核心功能，避免過度複雜化，提供了易於理解和維護的解決方案。
+💡 **總結**：室內製程基礎調度展現了 RosAGV 系統的務實設計，通過簡化的 RCS 調度、WCS 流程執行和基礎的設備整合，實現了穩定可靠的半自動化生產流程。系統專注於核心功能，避免過度複雜化，提供了易於理解和維護的解決方案。

@@ -202,17 +202,17 @@ export const mapAgvManager = (() => {
             case 4:
                 return { class: 'is-info', text: '任務中' };
             case 5:
-                return { class: 'is-warning', text: '充電中' };
+                return { class: 'is-gold', text: '充電中' };
             case 6:
-                return { class: 'is-link', text: '更新中' };
+                return { class: 'is-purple-light', text: '更新中' };
             case 7:
                 return { class: 'is-danger', text: '異常' };
             case 8:
                 return { class: 'is-warning', text: '維護中' };
             case 9:
-                return { class: 'is-light', text: '待機' };
+                return { class: 'is-pink', text: '等待' };
             case 10:
-                return { class: 'is-info', text: '初始化' };
+                return { class: 'is-purple-light', text: '初始化' };
             default:
                 return { class: 'is-light', text: `未知(${status})` };
         }

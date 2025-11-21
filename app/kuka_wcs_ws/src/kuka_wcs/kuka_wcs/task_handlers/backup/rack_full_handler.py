@@ -9,7 +9,7 @@
 from typing import List
 from sqlmodel import Session, select
 from db_proxy.models import Task, Location
-from .base_handler import BaseHandler
+from ..base_handler import BaseHandler
 
 
 class RackFullHandler(BaseHandler):

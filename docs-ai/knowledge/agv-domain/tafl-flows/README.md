@@ -1,8 +1,29 @@
-# TAFL Flows - AGV 自動化流程設計
+# ~~TAFL Flows~~ - AGV 自動化流程設計（歷史文檔）
 
-## 📋 概述
+> ⚠️ **重要警告：本文檔已過時**
+>
+> **TAFL WCS 系統已於 2025 年棄用**
+>
+> 本文檔及其子目錄的所有內容（cargo/、loader/、unloader/ 及其 TAFL Flow 設計）均為**歷史參考資料**。
+>
+> **當前系統**：RosAGV 已改用 **KUKA WCS** 作為倉儲控制系統。
+> - **當前 WCS**: `kuka_wcs_ws` - KUKA WCS 系統
+> - **輔助模組**: `wcs_ws` - WCS 工作空間（流程控制邏輯）
+>
+> 本目錄保留僅供：
+> 1. 理解系統演進歷史
+> 2. AGV 類型職責和流程設計思維（概念仍然適用）
+> 3. Work ID 編碼規則參考（仍然適用）
+>
+> **請勿使用本文檔進行新功能開發或系統配置。**
+>
+> 現行系統文檔請參考：
+> - `kuka_wcs_ws/CLAUDE.md` - KUKA WCS 實作
+> - `wcs_ws/CLAUDE.md` - WCS 流程控制邏輯
 
-TAFL (Task Automation Flow Language) Flows 是 RosAGV 系統中使用 TAFL 語言定義的 AGV 自動化任務流程。本目錄包含所有 AGV 類型的 TAFL Flow 設計文檔。
+## 📋 概述（歷史內容）
+
+~~TAFL (Task Automation Flow Language) Flows 是 RosAGV 系統中使用 TAFL 語言定義的 AGV 自動化任務流程。~~（**已棄用**）本目錄包含所有 AGV 類型的 TAFL Flow 設計文檔（**歷史參考**）。
 
 ## 🚗 AGV 類型與職責
 

@@ -25,6 +25,9 @@ function setup() {
         }
 
         notify.showErrorMessage(`✅ AGVC 已連線`, "is-success");
+
+        // 請求交管區數據
+        socket.emit("request_traffic_zones");
     });
 
     socket.on("disconnect", () => {
@@ -118,6 +121,10 @@ function setup() {
     });
     socket.on("agv_list", (msg) => {
         agvsStore.setState({ "agvs": msg.agvs });
+    });
+    socket.on("traffic_zones_update", (msg) => {
+        console.log("收到 traffic_zones_update 事件:", msg);
+        trafficZonesStore.setState({ "trafficZones": msg.traffic_zones });
     });
 
 }

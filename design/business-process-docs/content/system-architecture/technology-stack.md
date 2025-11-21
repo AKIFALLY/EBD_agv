@@ -95,14 +95,14 @@ export RMW_IMPLEMENTATION=rmw_zenohd
 AGV 車載環境:
   - 容器: rosagv (單容器)
   - 網路: host (直接硬體存取)
-  - 工作空間: 7個專用 + 共用基礎設施
-  - 服務: AGV 控制、PLC 通訊、感測器處理、搖桿控制
+  - 工作空間: 11個 (6專用 + 4共用基礎 + 2共用應用 - db_proxy_ws, launch_ws)
+  - 服務: AGV 控制、PLC 通訊、感測器處理、搖桿控制、AGVUI
 
 AGVC 管理環境:
   - 容器: agvc_server, postgres, nginx, pgadmin (4個容器)
   - 網路: bridge (192.168.100.0/24)
-  - 工作空間: 10個專用 + 共用基礎設施
-  - 服務: Web API、資料庫、反向代理、TAFL WCS、KUKA Fleet
+  - 工作空間: 13個 (7專用 + 4共用基礎 + 2共用應用 - agv_ws監控, launch_ws)
+  - 服務: Web API、資料庫、反向代理、KUKA WCS、KUKA Fleet
 ```
 
 ### Ubuntu 24.04 LTS
@@ -195,37 +195,64 @@ class KeyencePlcCommunication:
 
 ## 📦 工作空間架構
 
-### AGV 車載工作空間 (7個專用)
+### AGV 車載工作空間 (11個含共用)
+
+#### 專用工作空間 (6個)
 | 工作空間 | 功能描述 |
 |---------|---------|
 | `agv_ws` | 核心 AGV 控制和狀態機 |
 | `agv_cmd_service_ws` | 手動指令服務介面 |
 | `joystick_ws` | 搖桿控制整合 |
 | `sensorpart_ws` | 感測器資料處理 (3D相機、OCR) |
+| `uno_gpio_ws` | GPIO 控制服務 |
+| `web_api_ws` | AGVUI 車載監控介面 |
+
+#### 共用基礎設施 (4個)
+| 工作空間 | 功能描述 |
+|---------|---------|
+| `shared_constants_ws` | 系統級常數定義 (跨環境共用) |
 | `keyence_plc_ws` | Keyence PLC 通訊協議 |
 | `plc_proxy_ws` | PLC 代理服務 |
 | `path_algorithm` | 路徑規劃演算法 |
 
-### AGVC 管理工作空間 (11個)
+#### 共用應用 (2個)
+| 工作空間 | 功能描述 |
+|---------|---------|
+| `db_proxy_ws` | 本地資料存取 |
+| `launch_ws` | ROS 2 啟動編排 |
+
+### AGVC 管理工作空間 (13個含共用)
+
+#### 專用工作空間 (7個)
 | 工作空間 | 功能描述 |
 |---------|---------|
 | `web_api_ws` | Web API 和 Socket.IO 服務 |
 | `db_proxy_ws` | 資料庫代理和 ORM |
 | `ecs_ws` | 設備控制系統 (門控) |
 | `rcs_ws` | 機器人控制系統 |
-| `tafl_ws` | TAFL 語言核心實作 |
-| `tafl_wcs_ws` | TAFL WCS (現行 WCS 實作) |
+| `kuka_wcs_ws` | KUKA WCS 系統 (當前 WCS 實作) |
+| `wcs_ws` | WCS 工作空間 (流程控制邏輯) |
 | `kuka_fleet_ws` | KUKA Fleet 系統整合 |
-| `launch_ws` | ROS 2 Launch 系統管理 |
-| `agv_ws` | AGV 介面定義 (AGVC 監控需要) |
+
+#### 共用基礎設施 (4個)
+| 工作空間 | 功能描述 |
+|---------|---------|
 | `shared_constants_ws` | 系統級常數定義 (跨環境共用) |
 | `keyence_plc_ws` | Keyence PLC 通訊 (共用) |
+| `plc_proxy_ws` | PLC 代理服務 (共用) |
+| `path_algorithm` | 路徑規劃演算法 (共用) |
 
-**註**：以上工作空間包含 AGVC 專用、TAFL 系統和與 AGV 共用的基礎設施工作空間。
+#### 共用應用 (2個)
+| 工作空間 | 功能描述 |
+|---------|---------|
+| `agv_ws` | AGV 介面定義 (AGVC 監控需要) |
+| `launch_ws` | ROS 2 Launch 系統管理 |
 
-### 額外共用基礎設施（未列入上表）
-- `plc_proxy_ws` - PLC 代理服務 (AGV 和 AGVC 共用)
-- `path_algorithm` - 路徑規劃演算法 (AGV 和 AGVC 共用)
+#### 已棄用 (2個)
+| 工作空間 | 狀態 |
+|---------|------|
+| ~~`tafl_ws`~~ | ⚠️ 已棄用 - TAFL 語言核心實作 |
+| ~~`tafl_wcs_ws`~~ | ⚠️ 已棄用 - TAFL WCS (已被 kuka_wcs_ws 取代) |
 
 ## 🔧 開發工具鏈
 

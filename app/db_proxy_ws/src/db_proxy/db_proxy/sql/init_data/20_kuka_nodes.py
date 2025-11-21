@@ -14,40 +14,35 @@ def initialize_kuka_nodes(session):
 
 
     default_kuka_nodes = [
-        {"id": 11, "uuid": "KUKA001", "node_type_id": 2, "name": "系統準備區1", "description": "人工將滿料貨架放置處",
+        {"id": 2, "uuid": "KUKA001", "node_type_id": 2, "name": "系統準備區1", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 12, "uuid": "KUKA002", "node_type_id": 2, "name": "系統準備區2", "description": "人工將滿料貨架放置處",
+        {"id": 3, "uuid": "KUKA002", "node_type_id": 2, "name": "系統準備區2", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 13, "uuid": "KUKA003", "node_type_id": 2, "name": "系統準備區3", "description": "人工將滿料貨架放置處",
+        {"id": 4, "uuid": "KUKA003", "node_type_id": 2, "name": "系統準備區3", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 14, "uuid": "KUKA004", "node_type_id": 2, "name": "系統準備區4", "description": "人工將滿料貨架放置處",
+        {"id": 5, "uuid": "KUKA004", "node_type_id": 2, "name": "系統準備區4", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 15, "uuid": "KUKA005", "node_type_id": 2, "name": "系統準備區5", "description": "人工將滿料貨架放置處",
+        {"id": 6, "uuid": "KUKA005", "node_type_id": 2, "name": "系統準備區5", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 16, "uuid": "KUKA006", "node_type_id": 2, "name": "系統準備區6", "description": "人工將滿料貨架放置處",
+        {"id": 7, "uuid": "KUKA006", "node_type_id": 2, "name": "系統準備區6", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 17, "uuid": "KUKA007", "node_type_id": 2, "name": "系統準備區7", "description": "人工將滿料貨架放置處",
+        {"id": 8, "uuid": "KUKA007", "node_type_id": 2, "name": "系統準備區7", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 18, "uuid": "KUKA008", "node_type_id": 2, "name": "系統準備區8", "description": "人工將滿料貨架放置處",
+        {"id": 9, "uuid": "KUKA008", "node_type_id": 2, "name": "系統準備區8", "description": "人工將滿料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 31, "uuid": "KUKA031", "node_type_id": 2, "name": "空架放置區1", "description": "人工將空料貨架放置處",
+
+        {"id": 11, "uuid": "KUKA031", "node_type_id": 2, "name": "空架放置區1", "description": "人工將空料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 32, "uuid": "KUKA032", "node_type_id": 2, "name": "空架放置區2", "description": "人工將空料貨架放置處",
+        {"id": 12, "uuid": "KUKA032", "node_type_id": 2, "name": "空架放置區2", "description": "人工將空料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 33, "uuid": "KUKA033", "node_type_id": 2, "name": "空架放置區3", "description": "人工將空料貨架放置處",
+        {"id": 13, "uuid": "KUKA033", "node_type_id": 2, "name": "空架放置區3", "description": "人工將空料貨架放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 34, "uuid": "KUKA034", "node_type_id": 2, "name": "空架放置區4", "description": "人工將空料貨架放置處",
+        
+        {"id": 21, "uuid": "KUKA051", "node_type_id": 2, "name": "人工滿料回收區1", "description": "滿料貨架回收放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 51, "uuid": "KUKA051", "node_type_id": 2, "name": "人工滿料回收區1", "description": "滿料貨架回收放置處",
+        {"id": 22, "uuid": "KUKA052", "node_type_id": 2, "name": "人工滿料回收區2", "description": "滿料貨架回收放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 52, "uuid": "KUKA052", "node_type_id": 2, "name": "人工滿料回收區2", "description": "滿料貨架回收放置處",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 53, "uuid": "KUKA053", "node_type_id": 2, "name": "人工滿料回收區3", "description": "滿料貨架回收放置處",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 54, "uuid": "KUKA054", "node_type_id": 2, "name": "人工滿料回收區4", "description": "滿料貨架回收放置處",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 55, "uuid": "KUKA055", "node_type_id": 2, "name": "人工滿料回收區5", "description": "滿料貨架回收放置處",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
+        
         {"id": 71, "uuid": "KUKA071", "node_type_id": 2, "name": "NG回收區1", "description": "NG回收放置處",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
         {"id": 72, "uuid": "KUKA072", "node_type_id": 2, "name": "NG回收區2", "description": "NG回收放置處",
@@ -58,46 +53,8 @@ def initialize_kuka_nodes(session):
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
         {"id": 27, "uuid": "KUKA027", "node_type_id": 2, "name": "Room2入口(KUKA)", "description": "Room2入口(KUKA)",
         "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-
-        {"id": 91, "uuid": "KUKA091", "node_type_id": 2, "name": "Room2出口", "description": "Room2出口",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 92, "uuid": "KUKA092", "node_type_id": 2, "name": "Room2入口", "description": "Room2入口",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 20001, "uuid": "KUKA20001", "node_type_id": 2, "name": "Room2入口", "description": "Room2入口",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 20002, "uuid": "KUKA20002", "node_type_id": 2, "name": "Room2入口", "description": "Room2入口",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-
-        # 房間旋轉點配置 (2025-10-01 新增)
-        # 房間1旋轉點
-        {"id": 10003, "uuid": "KUKA10003", "node_type_id": 2, "name": "Room1入口旋轉點", "description": "Room1入口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 10004, "uuid": "KUKA10004", "node_type_id": 2, "name": "Room1出口旋轉點", "description": "Room1出口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-
-        # 房間2旋轉點
-        {"id": 20003, "uuid": "KUKA20003", "node_type_id": 2, "name": "Room2入口旋轉點", "description": "Room2入口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 20004, "uuid": "KUKA20004", "node_type_id": 2, "name": "Room2出口旋轉點", "description": "Room2出口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-
-        # 房間3旋轉點
-        {"id": 30003, "uuid": "KUKA30003", "node_type_id": 2, "name": "Room3入口旋轉點", "description": "Room3入口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 30004, "uuid": "KUKA30004", "node_type_id": 2, "name": "Room3出口旋轉點", "description": "Room3出口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-
-        # 房間4旋轉點
-        {"id": 40003, "uuid": "KUKA40003", "node_type_id": 2, "name": "Room4入口旋轉點", "description": "Room4入口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 40004, "uuid": "KUKA40004", "node_type_id": 2, "name": "Room4出口旋轉點", "description": "Room4出口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-
-        # 房間5旋轉點
-        {"id": 50003, "uuid": "KUKA50003", "node_type_id": 2, "name": "Room5入口旋轉點", "description": "Room5入口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
-        {"id": 50004, "uuid": "KUKA50004", "node_type_id": 2, "name": "Room5出口旋轉點", "description": "Room5出口架台旋轉時使用的中間轉向點",
-        "x": 0.0, "y": 0.0, "created_at": datetime.now(timezone.utc), "updated_at": None},
+        
+        
     ]
 
     insert_data_if_not_exists_name(session, default_kuka_nodes, KukaNode)

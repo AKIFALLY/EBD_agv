@@ -86,25 +86,29 @@ RosAGV 採用**雙環境分離架構**，將 AGV 控制功能分為兩個獨立�
 - **硬體整合**：PLC、感測器、執行器的直接控制
 - **USB 設備**：搖桿、感測器等 USB 設備直接掛載
 
-### 工作空間架構（10個）
+### 工作空間架構（11個含共用）
 
 ```
 AGV 車載工作空間 - 專注於即時控制和硬體整合
-├── agv_ws/                    # 核心 AGV 控制
-│   ├── agv_base              # 基礎狀態機架構
-│   ├── cargo_mover_agv       # Cargo Mover 車型實作
-│   ├── loader_agv            # Loader 車型實作
-│   └── unloader_agv          # Unloader 車型實作
-├── agv_cmd_service_ws/        # 手動指令服務
-├── joystick_ws/               # 搖桿控制整合
-├── sensorpart_ws/             # 感測器資料處理
-├── uno_gpio_ws/               # GPIO 控制服務
-├── launch_ws/                 # AGV 啟動編排
-└── [共用基礎設施工作空間]
-    ├── shared_constants_ws/   # 系統級常數定義
-    ├── keyence_plc_ws/        # Keyence PLC 通訊
-    ├── plc_proxy_ws/          # PLC 代理服務
-    └── path_algorithm/        # 路徑規劃演算法
+├── 專用工作空間 (6個)
+│   ├── agv_ws/                    # 核心 AGV 控制
+│   │   ├── agv_base              # 基礎狀態機架構
+│   │   ├── cargo_mover_agv       # Cargo Mover 車型實作
+│   │   ├── loader_agv            # Loader 車型實作
+│   │   └── unloader_agv          # Unloader 車型實作
+│   ├── agv_cmd_service_ws/        # 手動指令服務
+│   ├── joystick_ws/               # 搖桿控制整合
+│   ├── sensorpart_ws/             # 感測器資料處理
+│   ├── uno_gpio_ws/               # GPIO 控制服務
+│   └── web_api_ws/                # AGVUI 車載監控介面
+├── 共用基礎設施 (4個)
+│   ├── shared_constants_ws/       # 系統級常數定義
+│   ├── keyence_plc_ws/            # Keyence PLC 通訊
+│   ├── plc_proxy_ws/              # PLC 代理服務
+│   └── path_algorithm/            # 路徑規劃演算法
+└── 共用應用 (2個)
+    ├── db_proxy_ws/               # 本地資料存取
+    └── launch_ws/                 # ROS 2 啟動編排
 ```
 
 ### 啟動流程
@@ -174,27 +178,32 @@ Robot 層狀態機     # 機械臂專用狀態
 - **負載均衡**：支援負載均衡和反向代理
 - **監控管理**：便於網路流量監控和管理
 
-### 工作空間架構（12個）
+### 工作空間架構（13個含共用）
 
 ```
 AGVC 管理工作空間 - 專注於車隊管理和系統整合
-├── web_api_ws/                # Web API 和 Socket.IO
-│   ├── web_api              # 核心 API 服務
-│   ├── agvcui               # 管理員界面
-│   └── opui                 # 操作員界面
-├── db_proxy_ws/              # 資料庫代理服務
-├── ecs_ws/                   # 設備控制系統
-├── rcs_ws/                   # 機器人控制系統
-├── tafl_ws/                  # TAFL 語言核心實作
-├── tafl_wcs_ws/              # TAFL WCS 系統 (目前使用的 WCS 實作)
-├── kuka_fleet_ws/            # KUKA Fleet 整合
-├── launch_ws/                # 啟動編排服務
-└── [共用基礎設施工作空間]
-    ├── shared_constants_ws/   # 系統級常數定義
-    ├── agv_ws/                # AGV 介面定義 (監控需要)
-    ├── keyence_plc_ws/        # PLC 通訊 (共用)
-    ├── plc_proxy_ws/          # PLC 代理 (共用)
-    └── path_algorithm/        # 路徑規劃 (共用)
+├── 專用工作空間 (7個)
+│   ├── web_api_ws/                # Web API 和 Socket.IO
+│   │   ├── web_api              # 核心 API 服務
+│   │   ├── agvcui               # 管理員界面
+│   │   └── opui                 # 操作員界面
+│   ├── db_proxy_ws/              # 資料庫代理服務
+│   ├── ecs_ws/                   # 設備控制系統
+│   ├── rcs_ws/                   # 機器人控制系統
+│   ├── kuka_wcs_ws/              # KUKA WCS 系統（當前使用）
+│   ├── wcs_ws/                   # WCS 工作空間（流程控制邏輯）
+│   └── kuka_fleet_ws/            # KUKA Fleet 整合
+├── 共用基礎設施 (4個)
+│   ├── shared_constants_ws/      # 系統級常數定義
+│   ├── keyence_plc_ws/           # PLC 通訊（共用）
+│   ├── plc_proxy_ws/             # PLC 代理（共用）
+│   └── path_algorithm/           # 路徑規劃（共用）
+├── 共用應用 (2個)
+│   ├── agv_ws/                   # AGV 介面定義（監控需要）
+│   └── launch_ws/                # 啟動編排服務
+└── 已棄用 (2個)
+    ├── ~~tafl_ws/~~              # ⚠️ 已棄用 - TAFL 語言核心實作
+    └── ~~tafl_wcs_ws/~~          # ⚠️ 已棄用（已被 kuka_wcs_ws 取代）
 ```
 
 ### 服務架構詳解

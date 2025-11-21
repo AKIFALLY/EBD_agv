@@ -178,6 +178,17 @@ class CtManager:
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
 
+                # 🆕 根據 status1 和 alarm 字段計算並更新 status_id
+                old_status_id = agv.status_id
+                new_status_id = self._calculate_ct_agv_status_id(msg)
+
+                if old_status_id != new_status_id:
+                    agv.status_id = new_status_id
+                    self.logger.info(
+                        f"[CT AGV狀態] {msg.agv_id} 狀態變更: "
+                        f"{old_status_id} → {new_status_id}"
+                    )
+
                 # 🔴 關鍵：標記 AGV 資料已更新，觸發前端更新
                 # 前端 agvc_ui_socket.py 監聽此事件進行即時更新
                 # 絕對不可移除！(參考 rcs_ws/CLAUDE.md 警告)
@@ -194,6 +205,51 @@ class CtManager:
 
         except Exception as e:
             self.logger.error(f"更新 CT AGV {msg.agv_id} 位置時發生錯誤: {e}")
+
+    def _calculate_ct_agv_status_id(self, msg: AgvStatus) -> int:
+        """
+        根據 CT AGV 的 status1 位和 alarm 字段計算 status_id
+
+        映射規則：
+        - 異常 (7): status1.bit2=1 或 alarm1~4 任一 > 0
+        - 待機 (9): status1.bit11=1 或 alarm5~6 任一 > 0
+        - 任務中 (4): status1.bit0=1 且 status1.bit3=1
+        - 空閒 (3): status1.bit0=1 且 status1.bit3=0
+        - 默認 (8): 其他情況返回維護中
+
+        優先級：異常 > 待機 > 任務中 > 空閒 > 維護中
+
+        Args:
+            msg: AgvStatus 消息
+
+        Returns:
+            int: 對應的 status_id (3=空閒, 4=任務中, 7=異常, 8=維護中, 9=待機)
+        """
+        status1 = msg.status1
+
+        # 優先級 1: 檢查異常狀態
+        # status1.bit2=1 或 alarm1~4 任一 > 0
+        if (status1 & (1 << 2)) or msg.alarm1 or msg.alarm2 or msg.alarm3 or msg.alarm4:
+            return 7  # 異常
+
+        # 優先級 2: 檢查待機狀態
+        # status1.bit11=1 或 alarm5~6 任一 > 0
+        if (status1 & (1 << 11)) or msg.alarm5 or msg.alarm6:
+            return 9  # 待機
+
+        # 優先級 3: 檢查任務中狀態
+        # status1.bit0=1 且 status1.bit3=1
+        if (status1 & (1 << 0)) and (status1 & (1 << 3)):
+            return 4  # 任務中
+
+        # 優先級 4: 檢查空閒狀態
+        # status1.bit0=1 且 status1.bit3=0
+        if (status1 & (1 << 0)) and not (status1 & (1 << 3)):
+            return 3  # 空閒
+
+        # 默認：維護中（無法判斷狀態）
+        # 如果不符合任何已知的 PLC 狀態模式，表示 AGV 處於維護或初始化狀態
+        return 8
 
     def handle_state_change(self, msg: AgvStateChange):
         """處理 AGV 狀態變更並更新資料庫"""
@@ -263,7 +319,149 @@ class CtManager:
         # CT Manager 沒有定時器，但有訂閱者
         # 訂閱者會在節點銷毀時自動清理，這裡只記錄日誌
         self.logger.info("CT Manager 已關閉")
-    
+
+    def update_ct_agv_status(self):
+        """
+        從資料庫讀取 CT AGV 狀態並更新 status_id
+
+        流程:
+        1. 查詢所有啟用的 CT AGV (model != 'KUKA400i')
+        2. 讀取每個 AGV 的 agv_status_json
+        3. 使用 _calculate_ct_agv_status_id() 計算新的 status_id
+        4. 如果有變化，更新資料庫並觸發前端更新
+        """
+        self.logger.debug("[CT AGV定時更新] 開始執行狀態檢查")
+
+        if not self.db_pool:
+            self.logger.error("資料庫連線池不可用，無法更新 CT AGV 狀態")
+            return
+
+        try:
+            with self.db_pool.get_session() as session:
+                from db_proxy.models import AGV, ModifyLog
+                from sqlmodel import select
+
+                # 查詢所有啟用的 CT AGV
+                ct_agvs = session.exec(
+                    select(AGV).where(
+                        AGV.enable == 1,
+                        AGV.model != "KUKA400i"
+                    )
+                ).all()
+
+                if not ct_agvs:
+                    return
+
+                # 追蹤是否有任何變更
+                has_changes = False
+
+                for agv in ct_agvs:
+                    try:
+                        # 檢查 agv_status_json 是否存在
+                        if not agv.agv_status_json:
+                            continue
+
+                        # 從 JSON 讀取狀態欄位
+                        status_json = agv.agv_status_json
+
+                        # 🔴 優先級 0: 檢查資料新鮮度（離線判斷）
+                        # 這是最高優先級，因為如果資料很舊，即使舊資料顯示異常
+                        # 也不如通訊中斷來得嚴重
+                        timestamp_str = status_json.get("timestamp")
+                        if timestamp_str:
+                            from datetime import datetime, timezone
+                            try:
+                                # 解析 ISO 格式時間戳（支援多種格式）
+                                if timestamp_str.endswith('Z'):
+                                    timestamp_str = timestamp_str.replace('Z', '+00:00')
+                                timestamp = datetime.fromisoformat(timestamp_str)
+
+                                # 計算資料年齡（使用 UTC 時間）
+                                if timestamp.tzinfo:
+                                    now = datetime.now(timezone.utc)
+                                else:
+                                    timestamp = timestamp.replace(tzinfo=timezone.utc)
+                                    now = datetime.now(timezone.utc)
+                                age_seconds = (now - timestamp).total_seconds()
+
+                                self.logger.debug(
+                                    f"[CT AGV時間戳檢查] {agv.name} 資料年齡: {age_seconds:.1f} 秒"
+                                )
+
+                                # 資料超過 30 秒 → 強制離線
+                                if age_seconds > 30:
+                                    old_status_id = agv.status_id
+                                    if old_status_id != 2:
+                                        agv.status_id = 2  # 離線
+                                        has_changes = True
+                                        self.logger.warning(
+                                            f"[CT AGV通訊中斷] {agv.name} 資料已 {age_seconds:.1f} 秒未更新 → 離線"
+                                        )
+                                    continue  # 跳過後續的 PLC 狀態計算
+                            except Exception as e:
+                                self.logger.error(f"解析 {agv.name} 時間戳失敗: {e}")
+
+                        # 資料新鮮，繼續正常的 PLC 狀態計算
+                        status1 = status_json.get("status1", 0)
+                        alarm1 = status_json.get("alarm1", 0)
+                        alarm2 = status_json.get("alarm2", 0)
+                        alarm3 = status_json.get("alarm3", 0)
+                        alarm4 = status_json.get("alarm4", 0)
+                        alarm5 = status_json.get("alarm5", 0)
+                        alarm6 = status_json.get("alarm6", 0)
+
+                        # 創建臨時 AgvStatus 物件用於計算
+                        class TempAgvStatus:
+                            def __init__(self, status1, alarm1, alarm2, alarm3,
+                                         alarm4, alarm5, alarm6):
+                                self.status1 = status1
+                                self.alarm1 = alarm1
+                                self.alarm2 = alarm2
+                                self.alarm3 = alarm3
+                                self.alarm4 = alarm4
+                                self.alarm5 = alarm5
+                                self.alarm6 = alarm6
+
+                        temp_msg = TempAgvStatus(
+                            status1, alarm1, alarm2, alarm3,
+                            alarm4, alarm5, alarm6
+                        )
+
+                        # 計算新的 status_id
+                        old_status_id = agv.status_id
+                        new_status_id = self._calculate_ct_agv_status_id(temp_msg)
+
+                        # 檢查是否有變化
+                        if old_status_id != new_status_id:
+                            agv.status_id = new_status_id
+                            has_changes = True
+
+                            self.logger.info(
+                                f"[CT AGV狀態更新] {agv.name} 狀態變更: "
+                                f"{old_status_id} → {new_status_id} "
+                                f"(status1={status1}, alarms=[{alarm1},{alarm2},"
+                                f"{alarm3},{alarm4},{alarm5},{alarm6}])"
+                            )
+
+                    except KeyError as e:
+                        self.logger.warning(
+                            f"AGV {agv.name} 的 agv_status_json 缺少欄位: {e}"
+                        )
+                        continue
+                    except Exception as e:
+                        self.logger.error(
+                            f"更新 AGV {agv.name} 狀態時發生錯誤: {e}"
+                        )
+                        continue
+
+                # 如果有任何變更，觸發前端更新
+                if has_changes:
+                    ModifyLog.mark(session, "agv")
+                    session.commit()
+
+        except Exception as e:
+            self.logger.error(f"更新 CT AGV 狀態時發生錯誤: {e}")
+
     def dispatch(self):
         """
         CT AGV 任務派發邏輯（基於 YAML 配置）

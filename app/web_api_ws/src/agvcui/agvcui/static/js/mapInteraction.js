@@ -13,6 +13,7 @@ export const mapInteraction = (() => {
     let currentSidebar = null;
     let map = null;
     let currentPopupLatLng = null; // 新增：儲存當前 popup 的經緯度
+    let popupCloseTimer = null; // Popup 延遲關閉定時器
 
     // 初始化
     function init(leafletMap) {
@@ -187,10 +188,13 @@ export const mapInteraction = (() => {
                     `;
 
                     if (hasPermission) {
-                        button.onclick = () => eval(action.onclick);
+                        // 使用 data 属性存储 onclick 代码，避免 cloneNode 时丢失
+                        button.dataset.actionOnclick = action.onclick;
+                        button.dataset.hasPermission = 'true';
                     } else {
                         button.disabled = true;
                         button.title = mapPermissions.createPermissionTooltip(action.permission);
+                        button.dataset.hasPermission = 'false';
                     }
 
                     actionsElement.appendChild(button);
@@ -209,6 +213,9 @@ export const mapInteraction = (() => {
         currentPopup.style.top = `${point.y - 10}px`;
         currentPopup.style.display = 'block';
 
+        // 設置 popup hover 事件，防止鼠標移到 popup 上時被關閉
+        setupPopupHoverEvents();
+
         return currentPopup;
     }
 
@@ -216,6 +223,68 @@ export const mapInteraction = (() => {
     function closePopup() {
         if (currentPopup) {
             currentPopup.style.display = 'none';
+        }
+        // 清除定時器
+        cancelPopupClose();
+    }
+
+    // 設置 popup hover 事件
+    function setupPopupHoverEvents() {
+        if (!currentPopup) return;
+
+        // 移除舊的事件監聽器（如果有）
+        const newPopup = currentPopup.cloneNode(true);
+        currentPopup.parentNode.replaceChild(newPopup, currentPopup);
+        currentPopup = newPopup;
+
+        // 重新綁定所有按鈕的 onclick 事件（修復 cloneNode 丢失事件的问题）
+        const actionButtons = currentPopup.querySelectorAll('#popup-actions button[data-action-onclick]');
+        actionButtons.forEach(button => {
+            if (button.dataset.hasPermission === 'true') {
+                const onclickCode = button.dataset.actionOnclick;
+                button.addEventListener('click', () => eval(onclickCode));
+            }
+        });
+
+        // 當鼠標移入 popup 時，清除關閉定時器
+        currentPopup.addEventListener('mouseenter', () => {
+            cancelPopupClose();
+        });
+
+        // 當鼠標移出 popup 時，延遲關閉
+        currentPopup.addEventListener('mouseleave', () => {
+            schedulePopupClose();
+        });
+
+        // 防止點擊彈出視窗時關閉
+        currentPopup.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // 重新綁定關閉按鈕
+        const popupCloseButton = currentPopup.querySelector('#popup-close');
+        if (popupCloseButton) {
+            popupCloseButton.addEventListener('click', closePopup);
+        }
+    }
+
+    // 延遲關閉 popup
+    function schedulePopupClose(delay = 300) {
+        // 清除現有定時器
+        cancelPopupClose();
+
+        // 設置新定時器
+        popupCloseTimer = setTimeout(() => {
+            closePopup();
+            popupCloseTimer = null;
+        }, delay);
+    }
+
+    // 取消延遲關閉
+    function cancelPopupClose() {
+        if (popupCloseTimer) {
+            clearTimeout(popupCloseTimer);
+            popupCloseTimer = null;
         }
     }
 
@@ -1205,6 +1274,15 @@ export const mapInteraction = (() => {
         } else {
             console.warn('找不到圖例切換按鈕 #map-tool-legend');
         }
+
+        // 初始化圖例本身的點擊事件（點擊圖例可關閉）
+        const legendElement = document.getElementById('map-legend');
+        if (legendElement) {
+            legendElement.addEventListener('click', showLegend);
+            console.log('圖例點擊事件初始化完成');
+        } else {
+            console.warn('找不到圖例元素 #map-legend');
+        }
     }
 
     // 重設節點表單
@@ -1656,11 +1734,345 @@ export const mapInteraction = (() => {
         }
     }
 
+    // ========== KUKA Fleet 同步處理 ==========
+
+    let currentKukaData = null; // 儲存當前的 KUKA 資料用於執行
+
+    async function syncKukaPathsFromFleet() {
+        console.log('syncKukaPathsFromFleet called');
+
+        try {
+            // 顯示處理中訊息
+            notify.showNotifyMessage('正在從 KUKA Fleet 下載地圖資料...', 'is-info');
+
+            // 調用預覽 API 獲取差異（API 會自動從 KUKA Fleet 下載地圖）
+            const previewResponse = await fetch('/path-nodes/api/kuka-sync/preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    map_code: 'AlanACT',
+                    floor_number: 'AlanSec1'
+                })
+            });
+
+            if (previewResponse.ok) {
+                const result = await previewResponse.json();
+                console.log('KUKA sync preview data:', result);
+
+                // 儲存完整的 KUKA 資料（包含在回應中）
+                currentKukaData = result.kuka_data || {};
+
+                // 顯示差異預覽 Modal
+                showKukaSyncPreviewModal(result, currentKukaData);
+            } else {
+                const error = await previewResponse.json();
+                console.error('KUKA sync preview error:', error);
+                notify.showErrorMessage(`預覽失敗: ${error.detail}`);
+            }
+
+        } catch (error) {
+            console.error('KUKA sync error:', error);
+            notify.showErrorMessage('同步 KUKA 路徑時發生錯誤');
+        }
+    }
+
+    function showKukaSyncPreviewModal(diffData, kukaData) {
+        currentKukaData = kukaData;
+
+        // 更新計數
+        document.getElementById('kuka-new-count').textContent = diffData.new_nodes.length;
+        document.getElementById('kuka-modified-count').textContent = diffData.modified_nodes.length;
+        document.getElementById('kuka-deleted-count').textContent = diffData.deleted_nodes.length;
+        document.getElementById('kuka-missing-locations-count').textContent = diffData.missing_locations.length;
+
+        // 檢查是否有差異（只計算節點變更，與 LabVIEW Modal 一致）
+        const totalChanges = diffData.new_nodes.length +
+                           diffData.modified_nodes.length +
+                           diffData.deleted_nodes.length;
+
+        // 更新 Modal 標題
+        const modalTitle = document.querySelector('#kuka-sync-modal .modal-card-title');
+        if (totalChanges === 0) {
+            modalTitle.textContent = 'KUKA 路徑同步預覽 - ✅ 無差異';
+        } else {
+            modalTitle.textContent = `KUKA 路徑同步預覽 - 共 ${totalChanges} 項變更`;
+        }
+
+        // 填充四個列表
+        populateKukaNewNodesList(diffData.new_nodes);
+        populateKukaModifiedNodesList(diffData.modified_nodes);
+        populateKukaDeletedNodesList(diffData.deleted_nodes);
+        populateKukaMissingLocationsList(diffData.missing_locations);
+
+        // 顯示 Modal
+        document.getElementById('kuka-sync-modal').classList.add('is-active');
+
+        // 綁定事件處理器
+        setupKukaSyncModalEvents();
+    }
+
+    function populateKukaNewNodesList(newNodes) {
+        const tbody = document.getElementById('kuka-new-nodes-list');
+        tbody.innerHTML = '';
+
+        if (newNodes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="has-text-centered">無新增節點</td></tr>';
+            return;
+        }
+
+        newNodes.forEach(node => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="checkbox" class="node-checkbox" data-node-id="${node.id}" checked></td>
+                <td>${node.id}</td>
+                <td>${node.node_uuid}</td>
+                <td>${node.x_m.toFixed(2)} m</td>
+                <td>${node.y_m.toFixed(2)} m</td>
+                <td>${node.x.toFixed(1)} px</td>
+                <td>${node.y.toFixed(1)} px</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function populateKukaModifiedNodesList(modifiedNodes) {
+        const tbody = document.getElementById('kuka-modified-nodes-list');
+        tbody.innerHTML = '';
+
+        if (modifiedNodes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="has-text-centered">無修改節點</td></tr>';
+            return;
+        }
+
+        modifiedNodes.forEach(item => {
+            // 檢查哪些欄位有變化
+            const changes = [];
+            if (Math.abs(item.old.x_m - item.new.x_m) > 0.001) {
+                changes.push({ field: 'X (m)', old: item.old.x_m, new: item.new.x_m });
+            }
+            if (Math.abs(item.old.y_m - item.new.y_m) > 0.001) {
+                changes.push({ field: 'Y (m)', old: item.old.y_m, new: item.new.y_m });
+            }
+            if (Math.abs(item.old.x - item.new.x) > 0.01) {
+                changes.push({ field: 'X (px)', old: item.old.x, new: item.new.x });
+            }
+            if (Math.abs(item.old.y - item.new.y) > 0.01) {
+                changes.push({ field: 'Y (px)', old: item.old.y, new: item.new.y });
+            }
+            if (item.old.node_uuid !== item.new.node_uuid) {
+                changes.push({ field: 'UUID', old: item.old.node_uuid, new: item.new.node_uuid });
+            }
+
+            changes.forEach((change, index) => {
+                const tr = document.createElement('tr');
+                const oldValue = typeof change.old === 'number' ? change.old.toFixed(2) : change.old;
+                const newValue = typeof change.new === 'number' ? change.new.toFixed(2) : change.new;
+
+                tr.innerHTML = `
+                    <td>${index === 0 ? `<input type="checkbox" class="node-checkbox" data-node-id="${item.id}" checked>` : ''}</td>
+                    <td>${index === 0 ? item.id : ''}</td>
+                    <td>${change.field}</td>
+                    <td class="diff-old-value">${oldValue}</td>
+                    <td>→</td>
+                    <td class="diff-new-value">${newValue}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    function populateKukaDeletedNodesList(deletedNodes) {
+        const tbody = document.getElementById('kuka-deleted-nodes-list');
+        tbody.innerHTML = '';
+
+        if (deletedNodes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="has-text-centered">無刪除節點</td></tr>';
+            return;
+        }
+
+        deletedNodes.forEach(node => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="checkbox" class="node-checkbox" data-node-id="${node.id}"></td>
+                <td>${node.id}</td>
+                <td>${node.node_uuid}</td>
+                <td>${node.x_m.toFixed(2)} m</td>
+                <td>${node.y_m.toFixed(2)} m</td>
+                <td>${node.node_type_id || 'N/A'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function populateKukaMissingLocationsList(missingLocations) {
+        const tbody = document.getElementById('kuka-missing-locations-list');
+        tbody.innerHTML = '';
+
+        if (missingLocations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" class="has-text-centered has-text-success">✅ 所有節點的 location 記錄都已存在</td></tr>';
+            return;
+        }
+
+        missingLocations.forEach(locationId => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${locationId}</td>
+                <td><span class="tag is-warning">需要創建</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function setupKukaSyncModalEvents() {
+        // 標籤頁切換
+        document.querySelectorAll('#kuka-sync-tabs li').forEach(tab => {
+            tab.onclick = () => {
+                const tabName = tab.dataset.tab;
+
+                // 更新標籤狀態
+                document.querySelectorAll('#kuka-sync-tabs li').forEach(t => t.classList.remove('is-active'));
+                tab.classList.add('is-active');
+
+                // 顯示對應面板（修正：使用正確的選擇器和 ID）
+                document.querySelectorAll('#kuka-sync-modal .diff-panel').forEach(panel => {
+                    panel.style.display = 'none';
+                });
+
+                // 根據不同的 tab 構建正確的面板 ID
+                let panelId;
+                if (tabName === 'missing-locations') {
+                    panelId = 'kuka-missing-locations-panel';
+                } else {
+                    // new, modified, deleted → kuka-new-nodes-panel, kuka-modified-nodes-panel, kuka-deleted-nodes-panel
+                    panelId = `kuka-${tabName}-nodes-panel`;
+                }
+
+                const panel = document.getElementById(panelId);
+                if (panel) {
+                    panel.style.display = 'block';
+                }
+            };
+        });
+
+        // 全選/全不選
+        setupKukaCheckboxHandlers('new-nodes');
+        setupKukaCheckboxHandlers('modified-nodes');
+        setupKukaCheckboxHandlers('deleted-nodes');
+
+        // 關閉按鈕
+        const closeBtn = document.getElementById('close-kuka-sync-modal');
+        if (closeBtn) closeBtn.onclick = closeKukaSyncModal;
+
+        const cancelBtn = document.getElementById('kuka-cancel-sync');
+        if (cancelBtn) cancelBtn.onclick = closeKukaSyncModal;
+
+        // 執行同步按鈕
+        const executeBtn = document.getElementById('kuka-execute-sync');
+        if (executeBtn) executeBtn.onclick = executeKukaSync;
+    }
+
+    function setupKukaCheckboxHandlers(type) {
+        // 全選按鈕
+        const selectAllBtn = document.getElementById(`select-all-kuka-${type}`);
+        if (selectAllBtn) {
+            selectAllBtn.onclick = () => {
+                document.querySelectorAll(`#kuka-${type}-panel .node-checkbox`).forEach(cb => cb.checked = true);
+            };
+        }
+
+        // 全不選按鈕
+        const deselectAllBtn = document.getElementById(`deselect-all-kuka-${type}`);
+        if (deselectAllBtn) {
+            deselectAllBtn.onclick = () => {
+                document.querySelectorAll(`#kuka-${type}-panel .node-checkbox`).forEach(cb => cb.checked = false);
+            };
+        }
+
+        // 全選 checkbox
+        const checkAllBox = document.getElementById(`check-all-kuka-${type}`);
+        if (checkAllBox) {
+            checkAllBox.onchange = (e) => {
+                document.querySelectorAll(`#kuka-${type}-panel .node-checkbox`).forEach(cb => cb.checked = e.target.checked);
+            };
+        }
+    }
+
+    function closeKukaSyncModal() {
+        document.getElementById('kuka-sync-modal').classList.remove('is-active');
+        currentKukaData = null;
+    }
+
+    async function executeKukaSync() {
+        // 收集用戶選擇
+        const selectedNew = [];
+        const selectedModified = [];
+        const selectedDeleted = [];
+
+        document.querySelectorAll('#kuka-new-nodes-panel .node-checkbox:checked').forEach(cb => {
+            selectedNew.push(parseInt(cb.dataset.nodeId));
+        });
+
+        document.querySelectorAll('#kuka-modified-nodes-panel .node-checkbox:checked').forEach(cb => {
+            selectedModified.push(parseInt(cb.dataset.nodeId));
+        });
+
+        document.querySelectorAll('#kuka-deleted-nodes-panel .node-checkbox:checked').forEach(cb => {
+            selectedDeleted.push(parseInt(cb.dataset.nodeId));
+        });
+
+        // 保存 kukaData（關閉 Modal 前先保存）
+        const kukaDataToSend = currentKukaData;
+
+        // 關閉 Modal
+        closeKukaSyncModal();
+
+        // 顯示處理中訊息
+        notify.showNotifyMessage('正在執行 KUKA 路徑同步...', 'is-info');
+
+        try {
+            const response = await fetch('/path-nodes/api/kuka-sync/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    kuka_data: kukaDataToSend,
+                    selected_operations: {
+                        add_node_ids: selectedNew,
+                        update_node_ids: selectedModified,
+                        delete_node_ids: selectedDeleted
+                    },
+                    create_locations: true  // 自動創建缺失的 location 記錄
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                notify.showNotifyMessage(result.message, 'is-success');
+
+                // 重新載入節點列表和地圖
+                loadNodesList();
+                reloadMapNodes();
+            } else {
+                const error = await response.json();
+                console.error('KUKA sync execute error:', error);
+                notify.showErrorMessage(`執行失敗: ${error.detail}`);
+            }
+        } catch (error) {
+            console.error('KUKA sync execute error:', error);
+            notify.showErrorMessage('執行同步時發生錯誤');
+        }
+    }
+
     // 公開方法
     return {
         init,
         showPopup,
         closePopup,
+        schedulePopupClose,
+        cancelPopupClose,
         showSidebar,
         closeSidebar,
         updatePermissions,
@@ -1675,6 +2087,7 @@ export const mapInteraction = (() => {
         editNode,
         importLabVIEWPaths,
         showLabVIEWDiffModal,  // 導出 Modal 顯示函數供測試使用
+        syncKukaPathsFromFleet,  // 導出 KUKA 同步函數
         // 獨立節點切換控制
         toggleCtNodes,
         toggleKukaNodes,

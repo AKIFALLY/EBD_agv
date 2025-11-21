@@ -101,19 +101,19 @@ export class LineObject {
 
         // ✅ 點擊顯示彈出視窗 - 使用透明覆蓋層
         this.clickLayer.on('click', (e) => {
-            console.log('Edge clicked:', this.id);
-            console.log('Available globals:', {
-                mapObjectManager: !!window.mapObjectManager,
-                mapInteraction: !!window.mapInteraction,
-                handleEdgeClick: !!(window.mapObjectManager && window.mapObjectManager.handleEdgeClick)
-            });
+            // console.log('Edge clicked:', this.id);
+            // console.log('Available globals:', {
+            //     mapObjectManager: !!window.mapObjectManager,
+            //     mapInteraction: !!window.mapInteraction,
+            //     handleEdgeClick: !!(window.mapObjectManager && window.mapObjectManager.handleEdgeClick)
+            // });
             e.originalEvent.stopPropagation();
             this.showPopup(e);
         });
     }
 
     showPopup(e) {
-        console.log('showPopup called for edge:', this.id);
+        // console.log('showPopup called for edge:', this.id);
 
         // 直接創建和顯示彈出視窗，不依賴複雜的模組系統
         this.createAndShowPopup(e.latlng);
@@ -176,10 +176,37 @@ export class LineObject {
     }
 
     updatePoints(pointA, pointB) {
+        // console.log(`[updatePoints] 更新前 - 地图缩放级别: ${this.map.getZoom()}`);
+        // console.log(`[updatePoints] pointA:`, pointA, `pointB:`, pointB);
+
         // 如果需要手動更新，同時更新可見線條和透明覆蓋層
         const [start, end] = offsetLineEnds(this.map, pointA, pointB, 10);
+
+        // console.log(`[updatePoints] 计算后端点 - start:`, start, `end:`, end);
+        // console.log(`[updatePoints] 当前箭头大小: ${this.arrowSize}`);
+
         this.polyline.setLatLngs([start, end]);
         this.clickLayer.setLatLngs([start, end]);
+
+        // 强制箭头 decorator 基于新的线段位置重新绘制
+        this.arrow.setPatterns([
+            {
+                offset: '100%',
+                repeat: 0,
+                symbol: L.Symbol.arrowHead({
+                    pixelSize: this.arrowSize,
+                    polygon: true,
+                    pathOptions: {
+                        color: this.arrowColor,
+                        fillColor: this.arrowColor,
+                        opacity: this.opacity,
+                        fill: true
+                    }
+                })
+            }
+        ]);
+
+        // console.log(`[updatePoints] ✅ 箭头已重绘`);
     }
 
     updateWeight(newWeight) {
@@ -221,28 +248,45 @@ export class LineObject {
 
 //在終點 地圖0縮放時會偏移10px 箭頭會畫在這個位置
 function offsetLineEnds(map, pointA, pointB, offsetPx = 10) {
+    const zoom = map.getZoom();
+
+    // 根据缩放级别调整偏移，保持地图坐标距离不变
+    const scale = Math.pow(2, zoom);
+    const adjustedOffsetPx = offsetPx * scale;
+
+    // console.log(`[offsetLineEnds] zoom=${zoom}, scale=${scale.toFixed(3)}, offsetPx=${offsetPx}, adjustedOffsetPx=${adjustedOffsetPx.toFixed(2)}`);
+
     const pA = map.latLngToContainerPoint(pointA);
     const pB = map.latLngToContainerPoint(pointB);
+
+    // console.log(`[offsetLineEnds] 屏幕坐标 pA:`, pA, `pB:`, pB);
 
     const dx = pB.x - pA.x;
     const dy = pB.y - pA.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist <= 2 * offsetPx) {
-        // 線太短，無法偏移這麼多，直接返回原點或中點
-        return [pointA, pointB];
-    }
+    // console.log(`[offsetLineEnds] 屏幕距离: ${dist.toFixed(2)}px`);
 
     const ux = dx / dist;
     const uy = dy / dist;
 
+    // 对于太短的线段，按比例缩小偏移量
+    let finalOffsetPx = adjustedOffsetPx;
+    if (dist <= 2 * adjustedOffsetPx) {
+        // 使用线段长度的25%作为偏移，保证始终有空间
+        finalOffsetPx = dist * 0.25;
+        // console.log(`[offsetLineEnds] 线段较短，调整偏移: ${adjustedOffsetPx.toFixed(2)}px → ${finalOffsetPx.toFixed(2)}px`);
+    }
+
     //起點偏移20%
     const newPA = L.point(pA.x + ux * 0.2 * dist, pA.y + uy * 0.2 * dist);
-    //終點偏移10px
-    const newPB = L.point(pB.x - ux * offsetPx, pB.y - uy * offsetPx);
+    //終點偏移finalOffsetPx（调整后的像素）
+    const newPB = L.point(pB.x - ux * finalOffsetPx, pB.y - uy * finalOffsetPx);
 
-    return [
-        map.containerPointToLatLng(newPA),
-        map.containerPointToLatLng(newPB)
-    ];
+    const startLatLng = map.containerPointToLatLng(newPA);
+    const endLatLng = map.containerPointToLatLng(newPB);
+
+    // console.log(`[offsetLineEnds] 地图坐标 start:`, startLatLng, `end:`, endLatLng);
+
+    return [startLatLng, endLatLng];
 }

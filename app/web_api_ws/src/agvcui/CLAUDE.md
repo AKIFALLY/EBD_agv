@@ -1,5 +1,14 @@
 # agvcui - 車隊管理界面系統
 
+## ⚠️ TAFL Editor 已棄用
+
+**棄用日期**: 2025-11-18
+**影響範圍**: TAFL Editor 路由 (`/tafl/editor`) 和相關 API
+**原因**: TAFL WCS 系統已被 KUKA WCS 取代
+**遷移指南**: 參見 docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+
+---
+
 ## 📚 Context Loading
 ../../../../CLAUDE.md  # 引用根目錄系統文档
 ../../CLAUDE.md  # 引用上層 web_api_ws 工作空間文档

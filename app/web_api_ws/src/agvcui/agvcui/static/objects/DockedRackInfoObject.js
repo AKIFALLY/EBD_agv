@@ -8,8 +8,6 @@ export class DockedRackInfoObject extends BaseObject {
     <li></li>
     <li></li>
     <li></li>
-    <li></li>
-    <li></li>
   </ul>
 </div>
 `;
@@ -22,15 +20,24 @@ export class DockedRackInfoObject extends BaseObject {
 
   update(racks) {
     const rackListItems = this.rackListDom.querySelectorAll('li');
-    if (racks && racks.length > 0) {
-      rackListItems.forEach((li, index) => {
-        if (index < racks.length) {
-          li.textContent = racks[index].name;
-          li.style.display = 'list-item';
-        } else {
-          li.style.display = 'none';
-        }
+
+    // ✅ 支持空 rack 数组：显示空白列表
+    if (!racks || racks.length === 0) {
+      rackListItems.forEach((li) => {
+        li.textContent = '';
+        li.style.display = 'list-item';
       });
+      return;
     }
+
+    // 有 rack 数据：正常显示
+    rackListItems.forEach((li, index) => {
+      if (index < racks.length) {
+        li.textContent = racks[index].name;
+        li.style.display = 'list-item';
+      } else {
+        li.style.display = 'none';
+      }
+    });
   }
 }

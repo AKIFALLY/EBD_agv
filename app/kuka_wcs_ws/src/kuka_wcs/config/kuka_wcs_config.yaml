@@ -1,0 +1,118 @@
+# KUKA WCS 系統配置檔案
+# 用於設定各 room 的 rack 旋轉處理器參數
+
+kuka_wcs:
+  # Rack 旋轉處理器配置（每個 room 獨立配置）
+  rack_rotation:
+    # 每個 room 的專屬配置
+    rooms:
+      2:  # room_id
+        entrance_node_id: 27  # 入口位置節點 ID
+        exit_node_id: 26      # 出口位置節點 ID
+        entrance_rotation_nodes: [27, 87, 27]  # 入口旋轉路徑
+        exit_rotation_nodes: [26, 86, 26]      # 出口旋轉路徑
+        priority: 50          # 任務優先級
+
+      # 未來擴展 room_3 時新增配置：
+      # 3:
+      #   entrance_node_id: 30
+      #   exit_node_id: 29
+      #   rotation_nodes: [30, 88, 30]
+      #   priority: 50
+
+    # 共用參數（所有 room 共用）
+    work_id: 220001         # KUKA_RACK_MOVE 工作類型 ID
+    enabled: true           # 全域啟用開關
+
+    # 旋轉判斷閾值
+    b_side_threshold: 1    # B面至少需要多少格載具（共16格）
+    a_side_threshold: 0     # A面最多允許多少格載具
+
+    # 旋轉條件說明：
+    # 入口(27):
+    #   - 條件1: B面有貨(>0000) 且 A面空(=0000) 且 direction = 90°
+    #   - 條件2: B面空(=0000) 且 A面有貨(>0000) 且 direction = -90°
+    #   註：不需要滿載，只要有貨（非0000）即可旋轉
+    # 出口(26):
+    #   - 條件1: FFFF0000 且 direction = 90°
+    #   - 條件2: 0000FFFF 且 direction = -90°
+    #   註：必須滿載（FFFF）才旋轉
+
+    # 完成檢查配置（新增）
+    completion_check_enabled: true  # 啟用完成檢查
+    # 完成條件：
+    # - 入口(27): carrier_bitmap = 00000000 (空載)
+    # - 出口(26): carrier_bitmap = FFFFFFFF (滿載)
+
+  # 滿料回收處理器配置
+  full_rack_recycle:
+    enabled: true           # 全域啟用開關
+    work_id: 220001         # KUKA_RACK_MOVE 工作類型 ID
+    recycle_locations: [21, 22]  # 滿料回收區位置列表（可配置）
+
+    # 每個 room 的專屬配置
+    rooms:
+      2:  # room_id
+        exit_node_id: 26  # 房間出口節點 ID
+        priority: 50      # 任務優先級
+
+    # 觸發條件說明：
+    # 1. rack.location 在 room 的 exit 位置（從 rooms 配置讀取）
+    # 2. rack.carrier_bitmap = FFFFFFFF (滿載)
+    # 3. 回收區位置 (recycle_locations) 的 status = 2 (空閒可用)
+
+    # 任務創建說明：
+    # - work_id: 220001 (從 work 表讀取 name/description)
+    # - nodes: [exit_node_id, available_recycle_location_id]
+    # - priority: 從 room 配置讀取
+    # - location_id: exit location (用於防重複檢查)
+
+  # 系統區域監控處理器配置
+  system_area_monitor:
+    enabled: true           # 全域啟用開關
+    scan_interval: 2.0      # 掃描間隔（秒），預設 2 秒
+
+    # 區域定義（location_id 列表）
+    areas:
+      system_prepare:       # 系統準備區
+        location_ids: [2, 3, 4, 5, 6, 7, 8, 9]
+        description: "系統準備區"
+
+      room_entrance:        # 房間入口
+        location_ids: [27]
+        description: "房間入口"
+
+      room_exit:            # 房間出口
+        location_ids: [26]
+        description: "房間出口"
+
+      empty_rack_recycle:   # 空架回收區
+        location_ids: [11, 12, 13]
+        description: "空架回收區"
+
+      full_rack_recycle:    # 滿料回收區
+        location_ids: [21, 22]
+        description: "滿料回收區"
+
+      injection_work:       # 射出機作業區
+        location_ids: [15, 14, 25, 23, 46, 44, 47, 45]
+        description: "射出機作業區"
+
+    # 狀態編碼說明：
+    # 0: 無架（empty）
+    # 2: 有任務佔用（task_occupied）
+    # 5: 空架（empty_rack，carrier_bitmap = 00000000）
+    # 6: 滿架（full_rack，carrier_bitmap = FFFFFFFF）
+    # 7: 部分載貨（partial_rack，非 00000000 也非 FFFFFFFF）
+
+  # 特殊任務處理器配置
+  special_handler:
+    enabled: true           # 全域啟用開關
+    scan_interval: 5.0      # 掃描間隔（秒），預設 5 秒
+    work_id: 220001         # 監控的 work_id (KUKA_RACK_MOVE)
+    error_status_id: 6      # 錯誤狀態 ID
+
+    # 功能說明：
+    # 監控 task 表中 work_id=220001 且 status_id=6（錯誤狀態）的任務
+    # 每 5 秒掃描一次，物理刪除這些錯誤任務
+    # 刪除時記錄詳細日誌（Task ID, Rack ID, Location ID 等）

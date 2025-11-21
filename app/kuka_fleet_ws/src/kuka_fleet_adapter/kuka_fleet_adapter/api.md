@@ -758,15 +758,22 @@ Error responses include detailed error information:
 | 500 | Internal Server Error | System error |
 | 503 | Service Unavailable | System maintenance |
 
-### Job Status Codes
-| Status | Name | Description |
-|--------|------|-------------|
-| 0 | ALL | All statuses (query filter) |
-| 1 | PENDING | Job created, waiting for execution |
-| 2 | RUNNING | Job currently executing |
-| 3 | COMPLETED | Job finished successfully |
-| 4 | FAILED | Job execution failed |
-| 5 | CANCELLED | Job cancelled by user |
+### Job Status Codes (KUKA AMR Official)
+| Status | Name (CN) | Description |
+|--------|-----------|-------------|
+| 10 | 待執行 | Pending execution |
+| 20 | 執行中 | Currently executing |
+| 25 | 等待放行 | Waiting for release |
+| 28 | 取消中 | Cancelling |
+| 30 | 已完成 | Completed successfully |
+| 31 | 已取消 | Cancelled |
+| 35 | 手動完成 | Manually completed |
+| 50 | 告警 | Alarm/Warning |
+| 60 | 流程啟動異常 | Process startup error |
+
+**Note**:
+- Job status values: 10, 20, 25, 28, 30, 31, 35, 50, 60
+- Query parameter can use empty dict `{}` to get all jobs
 
 ### Robot Status Codes
 | Status | Name | Description |

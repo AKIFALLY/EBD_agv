@@ -171,8 +171,15 @@ ros2 topic echo /agv_status
 ```
 
 ### 測試任務分配
+
+> ⚠️ **過時範例警告**
+>
+> 以下範例使用已棄用的 TAFL WCS 介面（`tafl_wcs_interfaces`），僅供歷史參考。
+>
+> **當前建議**: 使用 KUKA WCS 系統進行任務管理。詳見 [KUKA WCS 整合文檔](../technical-details/kuka-integration.md)。
+
 ```bash
-# 發送測試任務
+# 發送測試任務（舊版 TAFL 範例，已棄用）
 ros2 service call /create_task tafl_wcs_interfaces/CreateTask "
 task: {
   task_id: 'test_task_001'

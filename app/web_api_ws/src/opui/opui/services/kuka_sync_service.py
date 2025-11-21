@@ -49,41 +49,44 @@ class OpuiKukaContainerSync:
             {"success": bool, "message": str, "kuka_uuid": str}
         """
         try:
+            logger.info(f"[KUKA_SYNC_ENTRY] 開始 | rack_id={rack.id} rack_name={rack.name} location_id={location_id} current_location_id={rack.location_id} is_in_map={rack.is_in_map}")
+
             # 检查 KUKA Client
             if not self.kuka_client:
+                logger.error(f"[KUKA_SYNC_ENTRY] KUKA Client 未初始化 | rack={rack.name}")
                 return {"success": False, "message": "KUKA API Client 未初始化"}
 
             # 获取 KUKA UUID
             kuka_uuid = self._get_kuka_node_uuid(location_id, session)
             if not kuka_uuid:
                 error_msg = f"无法获取 Location(id={location_id}) 的 KUKA UUID"
-                logger.warning(f"⚠️ {error_msg}")
+                logger.warning(f"[KUKA_SYNC_ENTRY] UUID 查詢失敗 | location_id={location_id}")
                 return {"success": False, "message": error_msg}
 
-            # 🆕 1. 先更新 rack.direction = 0（入场时重置角度）
-            old_direction = rack.direction
-            rack.direction = 0
-            session.add(rack)
-            session.commit()
-            logger.info(f"📐 重置料架角度: {rack.name} | direction {old_direction}° → 0° (入场前)")
+            logger.info(f"[KUKA_SYNC_ENTRY] UUID 查詢成功 | location_id={location_id} kuka_uuid={kuka_uuid}")
 
-            # 🆕 2. 构建 container_in DTO（添加 enterOrientation）
+            # 記錄 Rack 當前狀態
+            logger.info(f"[KUKA_SYNC_ENTRY] Rack 狀態 | rack_id={rack.id} rack_name={rack.name} location_id={rack.location_id} is_in_map={rack.is_in_map} direction={rack.direction}")
+
+            # 构建 container_in DTO（使用當前 rack.direction）
             container_dto = {
                 "requestId": str(uuid_module.uuid4()),
                 "containerCode": rack.name,
                 "position": kuka_uuid,
-                "enterOrientation": "0",  # 🔑 明确指定入场角度为 0
+                "enterOrientation": str(rack.direction),  # 使用調用者設定的方向
                 "isNew": False
             }
 
-            logger.info(f"📥 KUKA 容器入场: {rack.name} → Location(id={location_id}, uuid={kuka_uuid}) | enterOrientation=0°")
+            logger.info(f"[KUKA_SYNC_ENTRY] 調用 KUKA API | rack={rack.name} kuka_uuid={kuka_uuid} dto={container_dto}")
 
             # 调用 KUKA API
             result = self.kuka_client.container_in(container_dto)
 
+            logger.info(f"[KUKA_SYNC_ENTRY] KUKA API 回應 | rack={rack.name} result={result}")
+
             # 检查结果
             if result.get("success"):
-                logger.info(f"✅ KUKA 入场成功: {rack.name} → {kuka_uuid} | 已重置 direction=0°")
+                logger.info(f"[KUKA_SYNC_ENTRY] 成功 | rack={rack.name} kuka_uuid={kuka_uuid}")
                 return {
                     "success": True,
                     "message": "容器入场成功",
@@ -91,7 +94,7 @@ class OpuiKukaContainerSync:
                 }
             else:
                 error_msg = result.get("message", "未知错误")
-                logger.warning(f"⚠️ KUKA 入场失败: {rack.name} | 错误: {error_msg}")
+                logger.warning(f"[KUKA_SYNC_ENTRY] 失敗 | rack={rack.name} error={error_msg}")
                 return {
                     "success": False,
                     "message": f"KUKA API 返回失败: {error_msg}"
@@ -99,7 +102,7 @@ class OpuiKukaContainerSync:
 
         except Exception as e:
             error_msg = f"容器入场异常: {str(e)}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(f"[KUKA_SYNC_ENTRY] 異常 | rack={rack.name if rack else 'N/A'} error={str(e)}", exc_info=True)
             return {"success": False, "message": error_msg}
 
     def sync_container_exit(self, rack) -> Dict[str, Any]:

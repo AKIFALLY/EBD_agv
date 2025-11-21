@@ -72,4 +72,19 @@ def generate_launch_description():
            namespace=agv_id,
            parameters=[{"room_id": room_id}],
         ),
+
+        # ✅ SensorPart Publisher Node（Cargo AGV 專用）
+        # 負責接收 SensorPart 相機的 OCR 和 3D 定位資料
+        Node(
+            package='sensorpart',
+            executable='sensorpart_publisher_node',
+            name='sensorpart_publisher',
+            namespace=agv_id,
+            parameters=[{
+                'host': '192.168.2.111',  # SensorPart 相機 IP
+                'port': 2005,              # SensorPart 相機 Port
+                'debounce_seconds': 1.0,   # 防抖窗口（秒）
+            }],
+            output='screen',
+        ),
     ])

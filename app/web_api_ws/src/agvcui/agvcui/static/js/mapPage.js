@@ -1,4 +1,4 @@
-import { mapStore, signalsStore, roomsStore, machinesStore, racksStore, carriersStore, tasksStore, locationsStore } from '../store/index.js';
+import { mapStore, signalsStore, roomsStore, machinesStore, racksStore, carriersStore, tasksStore, locationsStore, trafficZonesStore } from '../store/index.js';
 import { notify } from './notify.js';
 
 // AGV 動畫配置（優化版 - 提升旋轉速度和精度）
@@ -26,40 +26,9 @@ const AGV_ANIMATION_CONFIG = {
 // 7: 最大緩衝，最平滑但響應較慢
 
 /**
- * 檢查 AGV alarm/warning 狀態
- * @param {Object} agv_status_json - AGV 狀態 JSON 數據
- * @returns {string} 'alarm' | 'warning' | 'normal'
- */
-function checkAgvAlarmStatus(agv_status_json) {
-    // 容錯處理：如果 agv_status_json 為 null 或 undefined，返回 normal
-    if (!agv_status_json) {
-        return 'normal';
-    }
-
-    // 檢查 alarm 狀態 (alarm1/2/3/4 任一 > 0)
-    const alarmFields = ['alarm1', 'alarm2', 'alarm3', 'alarm4'];
-    for (const field of alarmFields) {
-        if (agv_status_json[field] && agv_status_json[field] > 0) {
-            return 'alarm';
-        }
-    }
-
-    // 檢查 warning 狀態 (alarm5/6 任一 > 0)
-    const warningFields = ['alarm5', 'alarm6'];
-    for (const field of warningFields) {
-        if (agv_status_json[field] && agv_status_json[field] > 0) {
-            return 'warning';
-        }
-    }
-
-    // 無告警
-    return 'normal';
-}
-
-/**
- * 更新 AGV 的 alarm/warning 樣式（背景色 + 发光边框，不影响旋转）
+ * 更新 AGV 的 alarm/warning 樣式（背景色 + 發光邊框，不影響旋轉）
  * @param {Object} agvObject - AGV 物件
- * @param {Object} agv - AGV 數據（包含 agv_status_json）
+ * @param {Object} agv - AGV 數據（包含 status_id）
  */
 function updateAgvAlarmStyle(agvObject, agv) {
     // 獲取 AGV DOM 元素
@@ -69,19 +38,37 @@ function updateAgvAlarmStyle(agvObject, agv) {
     }
 
     // 移除所有狀態類
-    agvElement.classList.remove('agv-alarm-state', 'agv-warning-state');
+    agvElement.classList.remove('agv-alarm-state', 'agv-offline-state', 'agv-warning-state', 'agv-charging-state', 'agv-working-state', 'agv-waiting-state', 'agv-updating-state', 'agv-idle-state');
 
-    // 檢查狀態並添加對應的 CSS 類
-    const alarmStatus = checkAgvAlarmStatus(agv.agv_status_json);
+    // 🔧 統一邏輯：所有 AGV 使用 status_id 進行狀態判斷
+    const statusId = agv.status_id;
 
-    if (alarmStatus === 'alarm') {
-        // Alarm 状态：红色背景 + 发光边框
+    if (statusId === 2) {
+        // 離線(2) → 紅色 mdi-cancel 圖標和紅色文字
+        agvElement.classList.add('agv-offline-state');
+    } else if (statusId === 7) {
+        // 異常(7) → 紅色發光
         agvElement.classList.add('agv-alarm-state');
-    } else if (alarmStatus === 'warning') {
-        // Warning 状态：橘色背景 + 发光边框
+    } else if (statusId === 8) {
+        // 維護中狀態 → 橘色發光
         agvElement.classList.add('agv-warning-state');
+    } else if (statusId === 9) {
+        // 待機狀態 → 粉紅色發光
+        agvElement.classList.add('agv-waiting-state');
+    } else if (statusId === 5) {
+        // 充電中狀態 → 金黃色發光
+        agvElement.classList.add('agv-charging-state');
+    } else if (statusId === 4) {
+        // 任務中狀態 → 藍色發光
+        agvElement.classList.add('agv-working-state');
+    } else if (statusId === 6 || statusId === 10) {
+        // 更新中(6)、初始化(10) → 淡紫色發光（共用同一動畫）
+        agvElement.classList.add('agv-updating-state');
+    } else if (statusId === 3) {
+        // 空閒狀態 → 微微淡淡的綠光
+        agvElement.classList.add('agv-idle-state');
     }
-    // normal 狀態：移除所有效果，背景保持透明
+    // 離場(1)：無任何發光效果
 }
 import {
     RotatingMovingObject,
@@ -97,6 +84,7 @@ import {
     LineObject
 } from '../objects/index.js';
 import { DoorStatusObject } from '../objects/DoorStatusObject.js';
+import { TrafficZoneInfoObject } from '../objects/TrafficZoneInfoObject.js';
 import { MapChangehandler } from './mapUpdater.js';
 import { mapInteraction } from './mapInteraction.js';
 import { mapObjectManager } from './mapObjectManager.js';
@@ -104,6 +92,7 @@ import { mapTaskManager } from './mapTaskManager.js';
 import { mapDataSync } from './mapDataSync.js';
 import { mapPerformanceMonitor } from './mapPerformanceMonitor.js';
 import { mapDoorControlModal } from './mapDoorControlModal.js';
+import { mapTrafficZoneModal } from './mapTrafficZoneModal.js';
 
 // 門信號映射 (門ID -> 信號ID)
 const DOOR_SIGNAL_MAP = {
@@ -119,13 +108,43 @@ export const mapPage = (() => {
     const agvObjects = new Map();//所有地圖上的 agv 物件
     const rackObjects = new Map();//所有地圖上的 rack 物件
     const dockedRackObjects = new Map(); //所有停靠區的racks物件
+    const workspaceObjects = new Map(); //所有 workspace 货架分组物件 (key: '1_op1', value: DockedRackInfoObject)
     const nodeObjects = new Map();//所有地圖上的 node 物件
     const edgeObjects = new Map();//所有地圖上的 edge 物件
     const kukaNodeObjects = new Map();//所有地圖上的 KUKA node 物件
     const kukaEdgeObjects = new Map();//所有地圖上的 KUKA node 物件
     const eqpInfoCountObjects = [];//所有地圖上的 eqpInfoCount 物件
     const doorStatusObjects = new Map(); // 所有地圖上的門狀態物件
+    const trafficZoneObjects = new Map(); // 所有地圖上的交管區物件
     // nodePositions 預設你已經在別處定義了，是 Map，裡面存 node id => { latlng: L.LatLng, ... }
+
+    // Workspace 显示配置（硬编码坐标）
+    // ⚠️ 注意：这些坐标需要根据实际地图调整
+    const WORKSPACE_DISPLAY_CONFIG = {
+        // 射出机1
+        '1_op1': { machineId: 1, side: 'workspace_1', displayName: 'Machine 1-OP1', position: [5770,2890 ] },
+        '1_op2': { machineId: 1, side: 'workspace_2', displayName: 'Machine 1-OP2', position: [5540,2890 ] },
+
+        // Machine 2
+        '2_op1': { machineId: 2, side: 'workspace_1', displayName: 'Machine 2-OP1', position: [4970, 2890] },
+        '2_op2': { machineId: 2, side: 'workspace_2', displayName: 'Machine 2-OP2', position: [4740, 2890] },
+
+        // Machine 3
+        '3_op1': { machineId: 3, side: 'workspace_1', displayName: 'Machine 3-OP1', position: [4170, 2890] },
+        '3_op2': { machineId: 3, side: 'workspace_2', displayName: 'Machine 3-OP2', position: [3942, 2890] },
+
+        // Machine 4
+        '4_op1': { machineId: 4, side: 'workspace_1', displayName: 'Machine 4-OP1', position: [3370, 2890] },
+        '4_op2': { machineId: 4, side: 'workspace_2', displayName: 'Machine 4-OP2', position: [3140, 2890] }
+    };
+
+    // 交管区显示配置（硬编码坐标）
+    // ⚠️ 注意：这些坐标需要根据实际地图调整
+    // position: [x, y] - 地图坐标系统
+    const TRAFFIC_ZONE_DISPLAY_CONFIG = {
+        1: { position: [3700, 2180], name: '交管區1' },
+        // 可根据实际需要添加更多交管区
+    };
 
 
     function handleMapChange(newState) {
@@ -140,6 +159,13 @@ export const mapPage = (() => {
                 //console.log("Updating existing AGV:", latLng, agv.heading);
                 agvObject.setTargetPosition(latLng, agv.heading);
 
+                // 更新 AGV 資料（包含 status_id）
+                agvObject.setData({
+                    agvId: agv.id,
+                    name: agv.name,
+                    status_id: agv.status_id
+                });
+
                 // 更新 AGV alarm/warning 狀態樣式
                 updateAgvAlarmStyle(agvObject, agv);
             } else {
@@ -151,7 +177,7 @@ export const mapPage = (() => {
                 const newAgvObject = new RotatingMovingObject(map, latLng, agvName, className);
                 newAgvObject.id = agv.id;
                 newAgvObject.agvId = agv.id; // 添加資料庫 ID
-                newAgvObject.setData({ agvId: agv.id, name: agv.name }); // 設置資料
+                newAgvObject.setData({ agvId: agv.id, name: agv.name, status_id: agv.status_id }); // 設置資料
 
                 // 設定動畫模式
                 newAgvObject.setAnimationMode(
@@ -200,7 +226,7 @@ export const mapPage = (() => {
         // 確保地圖尺寸正確並強制更新
         if (map && map.invalidateSize) {
             map.invalidateSize();
-            console.log('Map size updated after data load');
+            //console.log('Map size updated after data load');
 
             // 檢查是否需要重試渲染
             const currentNodes = document.querySelectorAll('[id^="node-"]').length;
@@ -222,6 +248,13 @@ export const mapPage = (() => {
         if (!newState?.machines) return;
         const machines = newState.machines || [];
         console.debug('machines:', machines);
+
+        // 当 machines 配置更新后，触发 racks 重新渲染以应用 workspace 分组
+        const racksState = racksStore.getState();
+        if (racksState.racks && racksState.racks.length > 0) {
+            console.log('Machines 配置已更新，触发 racks 重新渲染');
+            handleRacksChange(racksState);
+        }
     }
     function handleSignalsChange(newState) {
         if (!newState?.signals) return;
@@ -378,6 +411,112 @@ export const mapPage = (() => {
         });
     }
 
+    /**
+     * 更新 Workspace 货架分组显示
+     * 根据 machine 的 workspace_1 和 workspace_2 配置，将多个 location 的货架合并显示
+     * @param {Array} allRacks - 所有 rack 数据
+     * @param {Array} machines - 所有 machine 配置
+     */
+    function updateWorkspaceRacks(allRacks, machines) {
+        // 构建 workspace 到 location 的映射
+        const workspaceLocationMap = new Map();
+
+        machines.forEach(machine => {
+            if (!machine.enable) return; // 跳过禁用的机台
+
+            // workspace_1 → OP1
+            if (machine.workspace_1 && machine.workspace_1.length > 0) {
+                workspaceLocationMap.set(`${machine.id}_op1`, {
+                    locationIds: machine.workspace_1,
+                    config: WORKSPACE_DISPLAY_CONFIG[`${machine.id}_op1`]
+                });
+            }
+
+            // workspace_2 → OP2
+            if (machine.workspace_2 && machine.workspace_2.length > 0) {
+                workspaceLocationMap.set(`${machine.id}_op2`, {
+                    locationIds: machine.workspace_2,
+                    config: WORKSPACE_DISPLAY_CONFIG[`${machine.id}_op2`]
+                });
+            }
+        });
+
+        // ✅ 第一步：先为所有启用的 workspace 创建显示对象（即使没有 rack）
+        workspaceLocationMap.forEach((workspace, workspaceKey) => {
+            if (!workspace.config) {
+                console.warn(`Workspace ${workspaceKey} 没有配置信息`);
+                return;
+            }
+
+            let workspaceObject = workspaceObjects.get(workspaceKey);
+
+            if (!workspaceObject) {
+                // 创建新的 DockedRackInfoObject
+                const [x, y] = workspace.config.position;
+                const latLng = L.latLng(y, x);
+
+                workspaceObject = new DockedRackInfoObject(
+                    map,
+                    latLng,
+                    workspaceKey,
+                    workspace.config.displayName
+                );
+
+                workspaceObjects.set(workspaceKey, workspaceObject);
+                console.log(`✅ 创建 workspace 对象: ${workspaceKey} at [${x}, ${y}]`);
+            }
+        });
+
+        // ✅ 第二步：按 workspace 分组货架
+        const racksByWorkspace = new Map();
+
+        allRacks.forEach(rack => {
+            // 只处理 docked 货架
+            if (rack.is_docked !== 1 || !rack.location_id) return;
+
+            // 查找该 rack 属于哪个 workspace
+            workspaceLocationMap.forEach((workspace, workspaceKey) => {
+                if (workspace.locationIds.includes(rack.location_id)) {
+                    if (!racksByWorkspace.has(workspaceKey)) {
+                        racksByWorkspace.set(workspaceKey, []);
+                    }
+                    racksByWorkspace.get(workspaceKey).push(rack);
+                }
+            });
+        });
+
+        // ✅ 第三步：更新每个 workspace 的 rack 数据（包括空 workspace）
+        workspaceObjects.forEach((workspaceObject, workspaceKey) => {
+            const racks = racksByWorkspace.get(workspaceKey) || [];
+
+            // 更新显示（最多 3 个货架，空数组也更新）
+            workspaceObject.update(racks.slice(0, 3));
+
+            // 移除这些 rack 的独立显示对象
+            racks.forEach(rack => {
+                if (rackObjects.has(rack.id)) {
+                    const rackObject = rackObjects.get(rack.id);
+                    if (rackObject.attachedAgvId) {
+                        const agv = agvObjects.get(rackObject.attachedAgvId);
+                        if (agv) agv.detachObject();
+                    }
+                    rackObject.remove();
+                    rackObjects.delete(rack.id);
+                }
+            });
+        });
+
+        // ✅ 第四步：清理不再配置的 workspace 对象
+        const activeWorkspaceKeys = new Set(workspaceLocationMap.keys());
+        workspaceObjects.forEach((workspaceObject, workspaceKey) => {
+            if (!activeWorkspaceKeys.has(workspaceKey)) {
+                workspaceObject.remove();
+                workspaceObjects.delete(workspaceKey);
+                console.log(`🗑️ 移除 workspace 对象: ${workspaceKey}`);
+            }
+        });
+    }
+
 
     function handleRacksChange(newState) {
         if (!newState?.racks) return;
@@ -387,6 +526,10 @@ export const mapPage = (() => {
         const { kukaNodes } = mapStore.getState();
         const kukaNodesMap = new Map(kukaNodes.map(node => [node.id, node]));
         const receivedRackIds = new Set(allRacks.map(r => r.id));
+
+        // 获取 machines 配置
+        const machinesState = machinesStore.getState();
+        const machines = machinesState.machines || [];
 
         // 🔧 修復：加強資料完整性驗證，避免處理不完整的資料
         const carriedRacks = allRacks.filter(r => r.is_carry === 1 && r.agv_id != null);
@@ -409,8 +552,12 @@ export const mapPage = (() => {
             updateCarriedRack(rack);
         });
 
-        // 2. 處理停靠的 Racks
-        updateDockedRackInfo(dockedRacks, kukaNodesMap);
+        // 2. 處理停靠的 Racks（使用 Workspace 分组显示）
+        if (machines.length > 0) {
+            updateWorkspaceRacks(allRacks, machines);
+        } else {
+            console.warn('尚未載入 machines 配置，跳過 workspace 显示');
+        }
 
         // 3. 處理靜置的 Racks
         stationaryRacks.forEach(rack => {
@@ -467,6 +614,52 @@ export const mapPage = (() => {
                     titleElement.textContent = locationName;
                     console.log(`更新 locationId ${locationId} 的標題為: ${locationName}`);
                 }
+            }
+        });
+    }
+
+    // 初始化交管区物件
+    function initTrafficZones() {
+        console.log('初始化交管区物件...');
+
+        Object.entries(TRAFFIC_ZONE_DISPLAY_CONFIG).forEach(([zoneId, config]) => {
+            const id = parseInt(zoneId);
+            const [x, y] = config.position;
+            const latLng = L.latLng(y, x);
+
+            const zoneObject = new TrafficZoneInfoObject(map, latLng, id, config.name);
+            trafficZoneObjects.set(id, zoneObject);
+
+            // 初始化为空闲状态
+            zoneObject.update({
+                status: 'free',
+                ownerAgvName: null,
+                enabled: true
+            });
+
+            console.log(`✅ 建立交管區物件: ${config.name} (ID: ${id}) at [${x}, ${y}]`);
+        });
+
+        console.log(`交管區物件初始化完成，共 ${trafficZoneObjects.size} 个`);
+    }
+
+    // 处理交管区数据更新
+    function handleTrafficZonesChange(newState) {
+        if (!newState?.trafficZones) return;
+
+        console.log('交管區資料更新:', newState.trafficZones);
+
+        newState.trafficZones.forEach(zone => {
+            const zoneObject = trafficZoneObjects.get(zone.id);
+            if (zoneObject) {
+                zoneObject.update({
+                    status: zone.status || 'free',
+                    ownerAgvName: zone.owner_agv_name || null,
+                    enabled: zone.enable !== false
+                });
+                console.log(`更新交管区 ${zone.id}: status=${zone.status}, owner=${zone.owner_agv_name}`);
+            } else {
+                console.warn(`找不到交管区物件: ID=${zone.id}`);
             }
         });
     }
@@ -678,15 +871,35 @@ export const mapPage = (() => {
             const newArrowSize = 3 * (3 + zoom);  // 箭頭大小也跟著縮放
 
             // 更新 CT 边線
-            edgeObjects.forEach(edge => {
+            edgeObjects.forEach((edge, edgeName) => {
                 edge.updateWeight(newWeight);
                 edge.updateArrowSize(newArrowSize);
+
+                // 重新计算端点位置，保持固定像素距离
+                const edgeData = mapStore.getState().edges?.find(e => e.name === edgeName);
+                if (edgeData) {
+                    const fromNode = nodeObjects.get(edgeData.from_id);
+                    const toNode = nodeObjects.get(edgeData.to_id);
+                    if (fromNode && toNode) {
+                        edge.updatePoints(fromNode.latlng, toNode.latlng);
+                    }
+                }
             });
 
             // 更新 KUKA 边線
-            kukaEdgeObjects.forEach(edge => {
+            kukaEdgeObjects.forEach((edge, edgeName) => {
                 edge.updateWeight(newWeight);
                 edge.updateArrowSize(newArrowSize);
+
+                // 重新计算端点位置
+                const edgeData = mapStore.getState().kukaEdges?.find(e => e.name === edgeName);
+                if (edgeData) {
+                    const fromNode = kukaNodeObjects.get(edgeData.from_id);
+                    const toNode = kukaNodeObjects.get(edgeData.to_id);
+                    if (fromNode && toNode) {
+                        edge.updatePoints(fromNode.latlng, toNode.latlng);
+                    }
+                }
             });
 
         });
@@ -795,8 +1008,8 @@ export const mapPage = (() => {
         const room2TransferboxOutInfo = new EqpInfoObject(map, L.latLng(1900, 2920), "202", "TransferboxOut");
         const room2SoakingInfo = new EqpInfoObject(map, L.latLng(1820, 3320), "204", "Soaking");
         const room2DryerInfo = new EqpInfoObject(map, L.latLng(1360, 3380), "205", "Dryer");
-        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(1260, 3620), "203", "Cleaner", true);//with counter
-        const room2OvenInfo = new EqpInfoObject(map, L.latLng(1260, 3100), "206", "Oven", true);//with counter
+        const room2CleanerInfo = new EqpInfoObject(map, L.latLng(1260, 3620), "203", "Cleaner");//with counter
+        const room2OvenInfo = new EqpInfoObject(map, L.latLng(1260, 3100), "206", "Oven");//with counter
 
         eqpInfoCountObjects.push(room2CleanerInfo);
         eqpInfoCountObjects.push(room2OvenInfo);
@@ -866,6 +1079,9 @@ export const mapPage = (() => {
         mapInteraction.init(map);
         mapObjectManager.init();
 
+        // 初始化交管区物件
+        initTrafficZones();
+
         // 初始化 4狀態節點切換控制
         if (mapInteraction.initializeNodeToggleControl) {
             mapInteraction.initializeNodeToggleControl();
@@ -878,6 +1094,10 @@ export const mapPage = (() => {
         // 初始化門控制 Modal
         mapDoorControlModal.setup();
         window.mapDoorControlModal = mapDoorControlModal;
+
+        // 初始化交管區控制 Modal
+        mapTrafficZoneModal.setup();
+        window.mapTrafficZoneModal = mapTrafficZoneModal;
 
         // 初始化資料同步
         mapDataSync.init();
@@ -924,6 +1144,7 @@ export const mapPage = (() => {
         carriersStore.on('change', handleCarriersChange);
         tasksStore.on('change', handleTasksChange);
         locationsStore.on('change', handleLocationsChange);
+        trafficZonesStore.on('change', handleTrafficZonesChange);
 
         // 檢查現有數據並渲染（必要的，因為Socket.IO可能不會再次推送）
         const currentState = mapStore.getState();

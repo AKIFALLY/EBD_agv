@@ -84,19 +84,48 @@
                             <div class="info-item"></div>
                             {% endif %}
                         </div>
-                        
-                        <button class="button-large" 
-                                onclick="confirmRemoveRack({{ location_data.location.id }}, '{{ location_data.location.name }}', '{{ location_data.rack.name }}')">
-                            <i class="mdi mdi-export mdi-48px" style="position: relative; z-index: 1;"></i>
-                            <span style="margin-left: 10px; font-size: 1.8rem; position: relative; z-index: 1;">Remove</span>
+
+                        <!-- 【修改】根據權限顯示按鈕，添加容器實現並排 -->
+                        <div class="button-group-horizontal">
+                            {% if permissions.get('can_edit_rack') %}
+                            <button class="button-medium button-edit"
+                                    onclick="openEditRackModal({{ location_data.location.id }}, '{{ location_data.location.name }}', {{ location_data.rack.id }}, '{{ location_data.rack.name }}')">
+                                <i class="mdi mdi-pencil mdi-36px"></i>
+                                <span style="font-size: 1.5rem;">Edit</span>
+                            </button>
+                            {% endif %}
+
+                            {% if permissions.get('can_remove_rack') %}
+                            <button class="button-medium button-remove"
+                                    onclick="confirmRemoveRack({{ location_data.location.id }}, '{{ location_data.location.name }}', '{{ location_data.rack.name }}')">
+                                <i class="mdi mdi-export mdi-36px"></i>
+                                <span style="font-size: 1.5rem;">Remove</span>
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        {% if not permissions.get('can_edit_rack') and not permissions.get('can_remove_rack') %}
+                        <button class="button-disabled" disabled>
+                            <span style="font-size: 1.5rem;">No Permission</span>
                         </button>
+                        {% endif %}
                         {% else %}
                         <div class="empty-location">
                             <p>No Rack</p>
                         </div>
+
+                        <!-- 【修改】根據權限顯示按鈕 -->
+                        {% if permissions.get('can_add_rack') %}
+                        <button class="button-large button-add"
+                                onclick="openAddRackModal({{ location_data.location.id }}, '{{ location_data.location.name }}')">
+                            <i class="mdi mdi-plus-circle mdi-48px"></i>
+                            <span style="font-size: 1.8rem;">Add Rack</span>
+                        </button>
+                        {% else %}
                         <button class="button-disabled" disabled>
                             <span style="font-size: 1.8rem;">Empty</span>
                         </button>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -118,7 +147,7 @@
                 </header>
                 <section class="dark-modal-body">
                     <p class="dark-modal-text">
-                        確定要從 <span class="highlight-text" id="locationName"></span> 移出 
+                        確定要從 <span class="highlight-text" id="locationName"></span> 移出
                         <span class="highlight-text" id="rackName"></span> 嗎？
                     </p>
                 </section>
@@ -135,7 +164,205 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Add Rack Modal -->
+    <div id="addRackModal" class="modal">
+        <div class="modal-background" onclick="closeAddRackModal()"></div>
+        <div class="modal-card">
+            <div class="dark-modal-content">
+                <header class="dark-modal-header">
+                    <h2 class="dark-modal-title">加入 Rack</h2>
+                    <button class="dark-modal-close" onclick="closeAddRackModal()">
+                        <i class="mdi mdi-close mdi-24px"></i>
+                    </button>
+                </header>
+                <section class="dark-modal-body">
+                    <p class="dark-modal-text">
+                        加入 Rack 到 <span class="highlight-text" id="addLocationName"></span>
+                    </p>
+
+                    <div class="field" style="margin-top: 20px;">
+                        <label class="label has-text-white">選擇 Rack</label>
+                        <div class="control">
+                            <div class="select is-fullwidth is-large">
+                                <select id="addRackSelect">
+                                    <option value="">-- 載入中 --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field" style="margin-top: 15px;">
+                        <label class="label has-text-white">或輸入 Rack 名稱</label>
+                        <div class="control">
+                            <input class="input is-large" type="text" id="addRackManualInput"
+                                   placeholder="手動輸入 Rack 名稱">
+                        </div>
+                    </div>
+                </section>
+                <footer class="dark-modal-footer">
+                    <button class="modal-button-confirm" onclick="executeAddRack()">
+                        <i class="mdi mdi-check mdi-24px"></i>
+                        <span>確認</span>
+                    </button>
+                    <button class="modal-button-cancel" onclick="closeAddRackModal()">
+                        <i class="mdi mdi-close mdi-24px"></i>
+                        <span>取消</span>
+                    </button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Rack Modal -->
+    <div id="editRackModal" class="modal">
+        <div class="modal-background" onclick="closeEditRackModal()"></div>
+        <div class="modal-card" style="width: 95%; max-width: 1200px;">
+            <div class="dark-modal-content">
+                <header class="dark-modal-header">
+                    <h2 class="dark-modal-title">編輯 Rack - <span id="editRackTitle"></span></h2>
+                    <button class="dark-modal-close" onclick="closeEditRackModal()">
+                        <i class="mdi mdi-close mdi-24px"></i>
+                    </button>
+                </header>
+                <section class="dark-modal-body">
+                    <!-- Tab Navigation -->
+                    <div class="tabs is-boxed is-large">
+                        <ul>
+                            <li class="is-active" id="tab-basic">
+                                <a onclick="switchEditTab('basic')">
+                                    <span class="icon"><i class="mdi mdi-information"></i></span>
+                                    <span>基本資料</span>
+                                </a>
+                            </li>
+                            <li id="tab-bitmap">
+                                <a onclick="switchEditTab('bitmap')">
+                                    <span class="icon"><i class="mdi mdi-grid"></i></span>
+                                    <span>格位管理</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Tab Content: Basic Info -->
+                    <div id="edit-content-basic" class="tab-content">
+                        <div class="columns">
+                            <div class="column">
+                                <div class="field">
+                                    <label class="label has-text-white">產品</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth is-large">
+                                            <select id="editProductSelect">
+                                                <option value="">-- 載入中 --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column">
+                                <div class="field">
+                                    <label class="label has-text-white">方向</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth is-large">
+                                            <select id="editDirectionSelect">
+                                                <option value="0">0 - 0°</option>
+                                                <option value="1">1 - 90°</option>
+                                                <option value="2">2 - 180°</option>
+                                                <option value="3">3 - 270°</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column">
+                                <div class="field">
+                                    <label class="label has-text-white">狀態</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth is-large">
+                                            <select id="editStatusSelect">
+                                                <option value="1">可用</option>
+                                                <option value="2">維修中</option>
+                                                <option value="3">報廢</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Bitmap -->
+                    <div id="edit-content-bitmap" class="tab-content" style="display: none;">
+                        <!-- Statistics -->
+                        <div class="box has-background-dark has-text-white" style="margin-bottom: 20px;">
+                            <div class="columns has-text-centered">
+                                <div class="column">
+                                    <p class="heading has-text-grey-light">有貨</p>
+                                    <p class="title has-text-success" id="bitmapOccupiedCount">0</p>
+                                </div>
+                                <div class="column">
+                                    <p class="heading has-text-grey-light">可用</p>
+                                    <p class="title has-text-info" id="bitmapEnabledCount">0</p>
+                                </div>
+                                <div class="column">
+                                    <p class="heading has-text-grey-light">空位</p>
+                                    <p class="title has-text-light" id="bitmapEmptyCount">0</p>
+                                </div>
+                                <div class="column">
+                                    <p class="heading has-text-grey-light">總數</p>
+                                    <p class="title has-text-white" id="bitmapTotalSlots">32</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Batch Operations -->
+                        <div class="buttons are-large" style="margin-bottom: 20px;">
+                            <button class="button is-danger" onclick="bitmapClearAll()">
+                                <i class="mdi mdi-delete-sweep"></i>
+                                <span>全部清空</span>
+                            </button>
+                            <button class="button is-success" onclick="bitmapEnableAll()">
+                                <i class="mdi mdi-check-all"></i>
+                                <span>全部啟用</span>
+                            </button>
+                            <button class="button is-warning" onclick="bitmapDisableAll()">
+                                <i class="mdi mdi-close-circle"></i>
+                                <span>全部禁用</span>
+                            </button>
+                        </div>
+
+                        <!-- Bitmap Grids -->
+                        <div class="columns">
+                            <div class="column">
+                                <h3 class="title is-4 has-text-white has-text-centered">A 面 (1-16)</h3>
+                                <div id="bitmapGridA" class="bitmap-grid"></div>
+                            </div>
+                            <div class="column">
+                                <h3 class="title is-4 has-text-white has-text-centered">B 面 (17-32)</h3>
+                                <div id="bitmapGridB" class="bitmap-grid"></div>
+                            </div>
+                        </div>
+
+                        <p class="help has-text-grey-light" style="margin-top: 15px;">
+                            <i class="mdi mdi-information"></i>
+                            點擊格位切換有貨/空，長按切換啟用/禁用
+                        </p>
+                    </div>
+                </section>
+                <footer class="dark-modal-footer">
+                    <button class="modal-button-confirm" onclick="executeSaveRack()">
+                        <i class="mdi mdi-content-save mdi-24px"></i>
+                        <span>儲存</span>
+                    </button>
+                    <button class="modal-button-cancel" onclick="closeEditRackModal()">
+                        <i class="mdi mdi-close mdi-24px"></i>
+                        <span>取消</span>
+                    </button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 全域變數
         let currentLocationId = null;
@@ -143,6 +370,24 @@
         let currentRackName = '';
         let socket = null;
         let isConnected = false;
+
+        // Add Rack相關變數
+        let addRackLocationId = null;
+        let addRackLocationName = '';
+
+        // Edit Rack相關變數
+        let editRackId = null;
+        let editRackLocationId = null;
+        let editRackName = '';
+        let editRackData = null;
+        let pressTimer = null; // 長按計時器
+
+        // 權限狀態
+        let hmiPermissions = {
+            can_add_rack: false,
+            can_edit_rack: false,
+            can_remove_rack: false
+        };
         
         // 獲取正確的 Socket.IO 連線 URL
         function getSocketUrl() {
@@ -220,7 +465,18 @@
             
             // 接收資料更新
             socket.on('hmi_data_update', function(data) {
-                console.log('Received HMI data update:', data);
+                const timestamp = new Date().toISOString();
+                console.log('[HMI_DATA_UPDATE]', 'Socket.IO 收到資料更新', {
+                    timestamp: timestamp,
+                    success: data.success,
+                    device_id: data.device_id,
+                    locations_count: data.locations ? data.locations.length : 0,
+                    racks: data.locations ? data.locations.map(loc => ({
+                        location_name: loc.location.name,
+                        rack_name: loc.rack ? loc.rack.name : null
+                    })) : [],
+                    data: data
+                });
                 updateHMIDisplay(data);
             });
             
@@ -229,13 +485,41 @@
                 console.log('Received location update:', data);
                 updateLocationDisplay(data);
             });
+
+            // 接收 HMI 位置變更事件（新增：多終端實時同步）
+            socket.on('hmi_location_changed', function(data) {
+                const timestamp = new Date().toISOString();
+                console.log('[HMI_LOCATION_CHANGED]', 'Rack 位置變更通知', {
+                    timestamp: timestamp,
+                    event_type: data.type,
+                    rack_id: data.rack_id,
+                    rack_name: data.rack_name,
+                    location_id: data.location_id,
+                    data: data
+                });
+
+                // 立即請求最新資料以更新顯示
+                requestLatestData();
+
+                // 可選：顯示通知訊息給用戶
+                const eventMessages = {
+                    'rack_added': `料架 ${data.rack_name || data.rack_id} 已加入工作區`,
+                    'rack_dispatched': `料架 ${data.rack_name || data.rack_id} 已派送到停車格`,
+                    'rack_removed': `料架 ${data.rack_name || data.rack_id} 已移除`,
+                    'location_changed': `位置已更新`
+                };
+                const message = eventMessages[data.type] || '位置已更新';
+                console.log('[HMI_LOCATION_CHANGED]', message);
+            });
         }
         
         // 請求最新資料
         function requestLatestData() {
             if (socket && isConnected) {
+                const timestamp = new Date().toISOString();
                 const urlParams = new URLSearchParams(window.location.search);
                 const deviceId = urlParams.get('deviceId');
+                console.log('[HMI_REQUEST_DATA]', '請求最新資料', { timestamp: timestamp, device_id: deviceId });
                 socket.emit('request_hmi_data', { device_id: deviceId });
             }
         }
@@ -243,7 +527,13 @@
         // 更新 HMI 顯示（局部更新，不重載頁面）
         function updateHMIDisplay(data) {
             if (!data || !data.locations) return;
-            
+
+            // 【新增】保存權限資訊
+            if (data.permissions) {
+                hmiPermissions = data.permissions;
+                console.log('Permissions updated:', hmiPermissions);
+            }
+
             // 更新每個位置的顯示
             data.locations.forEach(function(locationData, index) {
                 updateSingleLocation(index, locationData);
@@ -308,19 +598,19 @@
                             <div class="info-item"></div>`;
                     }
                     
-                    newHTML += `</div>
-                    <button class="button-large" onclick="confirmRemoveRack(${locationData.location.id}, '${locationData.location.name}', '${locationData.rack.name}')">
-                        <i class="mdi mdi-export mdi-48px" style="position: relative; z-index: 1;"></i>
-                        <span style="margin-left: 10px; font-size: 1.8rem; position: relative; z-index: 1;">Remove</span>
-                    </button>`;
+                    newHTML += `</div>`;
+
+                    // 【修改】使用 generateLocationButtons 生成權限控制的按鈕
+                    newHTML += generateLocationButtons(locationData);
                 } else {
+                    // 無 Rack
                     newHTML += `
                         <div class="empty-location">
                             <p>No Rack</p>
-                        </div>
-                        <button class="button-disabled" disabled>
-                            <span style="font-size: 1.8rem;">Empty</span>
-                        </button>`;
+                        </div>`;
+
+                    // 【修改】使用 generateLocationButtons 生成權限控制的按鈕
+                    newHTML += generateLocationButtons(locationData);
                 }
                 
                 content.innerHTML = newHTML;
@@ -429,6 +719,8 @@
             checkConnection();
             // 如果已連線，請求最新資料
             if (isConnected) {
+                const timestamp = new Date().toISOString();
+                console.log('[HMI_AUTO_REFRESH]', '自動刷新觸發', { timestamp: timestamp, interval: '5秒' });
                 requestLatestData();
             }
         }, 5000);
@@ -537,7 +829,636 @@
                 closeModal();
             }
         }
-        
+
+        // ===========================================================================
+        // Permission Control & Button Generation
+        // ===========================================================================
+
+        function generateLocationButtons(locationData) {
+            let buttonsHTML = '';
+
+            if (locationData.rack) {
+                // 有 Rack：顯示 Edit 和 Remove 按鈕
+                const hasEditPerm = hmiPermissions.can_edit_rack;
+                const hasRemovePerm = hmiPermissions.can_remove_rack;
+
+                if (hasEditPerm || hasRemovePerm) {
+                    // 【修改】添加容器包裹按鈕實現水平排列
+                    buttonsHTML += '<div class="button-group-horizontal">';
+
+                    if (hasEditPerm) {
+                        buttonsHTML += `
+                            <button class="button-medium button-edit"
+                                    onclick="openEditRackModal(${locationData.location.id}, '${locationData.location.name}', ${locationData.rack.id}, '${locationData.rack.name}')">
+                                <i class="mdi mdi-pencil mdi-36px"></i>
+                                <span style="font-size: 1.5rem;">Edit</span>
+                            </button>`;
+                    }
+
+                    if (hasRemovePerm) {
+                        buttonsHTML += `
+                            <button class="button-medium button-remove"
+                                    onclick="confirmRemoveRack(${locationData.location.id}, '${locationData.location.name}', '${locationData.rack.name}')">
+                                <i class="mdi mdi-export mdi-36px"></i>
+                                <span style="font-size: 1.5rem;">Remove</span>
+                            </button>`;
+                    }
+
+                    buttonsHTML += '</div>';
+                } else {
+                    // 無任何權限，顯示資訊按鈕
+                    buttonsHTML += `
+                        <button class="button-disabled" disabled>
+                            <span style="font-size: 1.5rem;">No Permission</span>
+                        </button>`;
+                }
+            } else {
+                // 無 Rack：根據 can_add_rack 顯示按鈕
+                if (hmiPermissions.can_add_rack) {
+                    buttonsHTML += `
+                        <button class="button-large button-add"
+                                onclick="openAddRackModal(${locationData.location.id}, '${locationData.location.name}')">
+                            <i class="mdi mdi-plus-circle mdi-48px"></i>
+                            <span style="font-size: 1.8rem;">Add Rack</span>
+                        </button>`;
+                } else {
+                    buttonsHTML += `
+                        <button class="button-disabled" disabled>
+                            <span style="font-size: 1.8rem;">Empty</span>
+                        </button>`;
+                }
+            }
+
+            return buttonsHTML;
+        }
+
+        // ===========================================================================
+        // Add Rack Modal Functions
+        // ===========================================================================
+
+        async function openAddRackModal(locationId, locationName) {
+            addRackLocationId = locationId;
+            addRackLocationName = locationName;
+
+            document.getElementById('addLocationName').textContent = locationName;
+            document.getElementById('addRackManualInput').value = '';
+
+            // 載入可用的 rack 列表
+            await loadAvailableRacks();
+
+            document.getElementById('addRackModal').classList.add('is-active');
+        }
+
+        function closeAddRackModal() {
+            document.getElementById('addRackModal').classList.remove('is-active');
+            addRackLocationId = null;
+            addRackLocationName = '';
+        }
+
+        async function loadAvailableRacks() {
+            const select = document.getElementById('addRackSelect');
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/available_racks?device_id=${deviceId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && Array.isArray(result.racks)) {
+                    if (result.racks.length === 0) {
+                        select.innerHTML = '<option value="">-- 無可用 Rack --</option>';
+                        return;
+                    }
+
+                    select.innerHTML = '<option value="">-- 選擇 Rack --</option>';
+                    result.racks.forEach(rack => {
+                        if (!rack.name) return;
+                        const option = document.createElement('option');
+                        option.value = rack.name;
+                        option.textContent = `${rack.name} (${rack.product_name || '無產品'})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    console.error('API 響應格式錯誤:', result);
+                    select.innerHTML = '<option value="">載入失敗：格式錯誤</option>';
+                }
+            } catch (error) {
+                console.error('加載 Rack 列表失敗:', error);
+                select.innerHTML = `<option value="">載入失敗：${error.message}</option>`;
+            }
+        }
+
+        async function executeAddRack() {
+            if (!addRackLocationId) return;
+
+            const selectValue = document.getElementById('addRackSelect').value;
+            const manualInput = document.getElementById('addRackManualInput').value.trim();
+
+            const rackName = manualInput || selectValue;
+
+            if (!rackName) {
+                alert('請選擇或輸入 Rack 名稱');
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            const timestamp = new Date().toISOString();
+            console.log('[HMI_ADD_RACK]', 'API 請求開始', {
+                timestamp: timestamp,
+                location_id: addRackLocationId,
+                rack_name: rackName,
+                device_id: deviceId
+            });
+
+            try {
+                const response = await fetch('/api/hmi/add_rack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        location_id: addRackLocationId,
+                        rack_name: rackName,
+                        device_id: deviceId
+                    })
+                });
+
+                const result = await response.json();
+                const responseTime = new Date().toISOString();
+
+                console.log('[HMI_ADD_RACK]', 'API 回應', {
+                    timestamp: responseTime,
+                    success: result.success,
+                    message: result.message,
+                    rack_id: result.rack_id,
+                    rack_name: result.rack_name,
+                    location_name: result.location_name,
+                    full_response: result
+                });
+
+                if (result.success) {
+                    console.log('[HMI_ADD_RACK]', '成功，請求資料更新', { timestamp: new Date().toISOString() });
+                    if (socket && isConnected) {
+                        socket.emit('request_hmi_data', { device_id: deviceId });
+                    }
+                } else {
+                    console.error('[HMI_ADD_RACK]', '失敗', { message: result.message });
+                    alert(`操作失敗：${result.message || '未知錯誤'}`);
+                }
+            } catch (error) {
+                console.error('[HMI_ADD_RACK]', '網路錯誤', { error: error });
+                alert('操作失敗：網路錯誤');
+            } finally {
+                closeAddRackModal();
+            }
+        }
+
+        // ===========================================================================
+        // Edit Rack Modal Functions
+        // ===========================================================================
+
+        async function openEditRackModal(locationId, locationName, rackId, rackName) {
+            editRackId = rackId;
+            editRackLocationId = locationId;
+            editRackName = rackName;
+
+            document.getElementById('editRackTitle').textContent = rackName;
+
+            // 切換到基本資料頁籤
+            switchEditTab('basic');
+
+            // 載入產品列表、狀態列表和 Rack 資料
+            await Promise.all([
+                loadProducts(),
+                loadRackStatuses(),
+                loadRackData(rackId)
+            ]);
+
+            document.getElementById('editRackModal').classList.add('is-active');
+        }
+
+        function closeEditRackModal() {
+            document.getElementById('editRackModal').classList.remove('is-active');
+            editRackId = null;
+            editRackLocationId = null;
+            editRackName = '';
+            editRackData = null;
+        }
+
+        function switchEditTab(tab) {
+            // 切換頁籤樣式
+            document.getElementById('tab-basic').classList.toggle('is-active', tab === 'basic');
+            document.getElementById('tab-bitmap').classList.toggle('is-active', tab === 'bitmap');
+
+            // 切換內容顯示
+            document.getElementById('edit-content-basic').style.display = tab === 'basic' ? 'block' : 'none';
+            document.getElementById('edit-content-bitmap').style.display = tab === 'bitmap' ? 'block' : 'none';
+
+            // 如果切換到 bitmap 頁籤，載入 bitmap 資料
+            if (tab === 'bitmap' && editRackId) {
+                loadBitmapData(editRackId);
+            }
+        }
+
+        async function loadProducts() {
+            const select = document.getElementById('editProductSelect');
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/products?device_id=${deviceId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && Array.isArray(result.products)) {
+                    if (result.products.length === 0) {
+                        select.innerHTML = '<option value="">-- 無產品 --</option>';
+                        return;
+                    }
+
+                    select.innerHTML = '<option value="">-- 選擇產品 --</option>';
+                    result.products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = `${product.name} (${product.size || 'N/A'})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    console.error('API 響應格式錯誤:', result);
+                    select.innerHTML = '<option value="">載入失敗：格式錯誤</option>';
+                }
+            } catch (error) {
+                console.error('加載產品列表失敗:', error);
+                select.innerHTML = `<option value="">載入失敗：${error.message}</option>`;
+            }
+        }
+
+        async function loadRackStatuses() {
+            const select = document.getElementById('editStatusSelect');
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/rack_statuses?device_id=${deviceId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && Array.isArray(result.statuses)) {
+                    if (result.statuses.length === 0) {
+                        select.innerHTML = '<option value="">-- 無狀態 --</option>';
+                        return;
+                    }
+
+                    select.innerHTML = '<option value="">-- 選擇狀態 --</option>';
+                    result.statuses.forEach(status => {
+                        const option = document.createElement('option');
+                        option.value = status.id;
+                        option.textContent = `${status.name} (${status.description})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    console.error('API 響應格式錯誤:', result);
+                    select.innerHTML = '<option value="">載入失敗：格式錯誤</option>';
+                }
+            } catch (error) {
+                console.error('加載狀態列表失敗:', error);
+                select.innerHTML = `<option value="">載入失敗：${error.message}</option>`;
+            }
+        }
+
+        async function loadRackData(rackId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/racks/${rackId}/bitmap-status?device_id=${deviceId}`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    editRackData = result.data;
+
+                    // 設定基本資料的當前值
+                    if (result.data.product_id) {
+                        document.getElementById('editProductSelect').value = result.data.product_id;
+                    }
+                    // direction 和 status 需要從其他地方獲取或預設
+                } else {
+                    alert('載入 Rack 資料失敗');
+                }
+            } catch (error) {
+                console.error('Failed to load rack data:', error);
+                alert('載入 Rack 資料時發生錯誤');
+            }
+        }
+
+        async function executeSaveRack() {
+            if (!editRackId || !editRackLocationId) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            const productId = document.getElementById('editProductSelect').value;
+            const direction = parseInt(document.getElementById('editDirectionSelect').value);
+            const statusId = parseInt(document.getElementById('editStatusSelect').value);
+
+            try {
+                const response = await fetch('/api/hmi/edit_rack', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rack_id: editRackId,
+                        location_id: editRackLocationId,
+                        device_id: deviceId,
+                        product_id: productId ? parseInt(productId) : null,
+                        direction: direction,
+                        status_id: statusId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('Rack updated successfully');
+                    if (socket && isConnected) {
+                        socket.emit('request_hmi_data', { device_id: deviceId });
+                    }
+                } else {
+                    alert(`操作失敗：${result.message || '未知錯誤'}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('操作失敗：網路錯誤');
+            } finally {
+                closeEditRackModal();
+            }
+        }
+
+        // ===========================================================================
+        // Bitmap Management Functions
+        // ===========================================================================
+
+        async function loadBitmapData(rackId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/racks/${rackId}/bitmap-status?device_id=${deviceId}`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    editRackData = result.data;
+                    updateBitmapStats(result.data);
+                    renderBitmapGrids(result.data);
+                } else {
+                    alert('載入格位資料失敗');
+                }
+            } catch (error) {
+                console.error('Failed to load bitmap data:', error);
+                alert('載入格位資料時發生錯誤');
+            }
+        }
+
+        function updateBitmapStats(data) {
+            document.getElementById('bitmapOccupiedCount').textContent = data.stats.occupied_count;
+            document.getElementById('bitmapEnabledCount').textContent = data.stats.enabled_count;
+            document.getElementById('bitmapEmptyCount').textContent = data.stats.empty_enabled_count;
+            document.getElementById('bitmapTotalSlots').textContent = data.max_slots;
+        }
+
+        function renderBitmapGrids(data) {
+            const gridA = document.getElementById('bitmapGridA');
+            const gridB = document.getElementById('bitmapGridB');
+
+            gridA.innerHTML = '';
+            gridB.innerHTML = '';
+
+            // A 面：格位 1-16
+            for (let i = 1; i <= 16; i++) {
+                const status = data.bitmap_status[String(i)];
+                const slot = createSlotButton(i, status);
+                gridA.appendChild(slot);
+            }
+
+            // B 面：格位 17-32
+            for (let i = 17; i <= 32; i++) {
+                const status = data.bitmap_status[String(i)];
+                const slot = createSlotButton(i, status);
+                gridB.appendChild(slot);
+            }
+        }
+
+        function createSlotButton(slotIndex, status) {
+            const button = document.createElement('button');
+            button.className = 'button is-large is-fullwidth bitmap-slot';
+            button.dataset.slotIndex = slotIndex;
+
+            // 設定樣式類別
+            if (!status.enabled) {
+                button.classList.add('slot-disabled');
+            }
+            if (status.occupied) {
+                button.classList.add('slot-occupied');
+            } else {
+                button.classList.add('slot-empty');
+            }
+
+            // 顯示內容
+            const statusIcon = status.occupied ? '✓' : '○';
+            const enabledBadge = !status.enabled ? '<span class="tag is-warning">禁用</span>' : '';
+
+            button.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: bold;">${slotIndex}</div>
+                    <div style="font-size: 2rem;">${statusIcon}</div>
+                    ${enabledBadge}
+                </div>
+            `;
+
+            // 綁定觸控事件（單擊切換占用，長按切換啟用）
+            button.addEventListener('touchstart', (e) => handleSlotTouchStart(e, slotIndex, status));
+            button.addEventListener('touchend', (e) => handleSlotTouchEnd(e, slotIndex, status));
+            button.addEventListener('touchcancel', () => clearPressTimer());
+
+            // 也支援滑鼠事件（開發測試用）
+            button.addEventListener('mousedown', (e) => handleSlotTouchStart(e, slotIndex, status));
+            button.addEventListener('mouseup', (e) => handleSlotTouchEnd(e, slotIndex, status));
+            button.addEventListener('mouseleave', () => clearPressTimer());
+
+            return button;
+        }
+
+        function handleSlotTouchStart(e, slotIndex, status) {
+            e.preventDefault();
+            pressTimer = setTimeout(() => {
+                // 長按：切換啟用/禁用
+                handleSlotToggleEnable(slotIndex, status);
+                pressTimer = null;
+            }, 800); // 800ms 判定為長按
+        }
+
+        function handleSlotTouchEnd(e, slotIndex, status) {
+            e.preventDefault();
+            if (pressTimer) {
+                // 短按：切換占用/空
+                clearTimeout(pressTimer);
+                handleSlotToggleOccupy(slotIndex, status);
+            }
+            pressTimer = null;
+        }
+
+        function clearPressTimer() {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        }
+
+        async function handleSlotToggleOccupy(slotIndex, status) {
+            if (!status.enabled) {
+                alert('此格位已禁用，請長按啟用');
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+            const action = status.occupied ? 'empty' : 'occupy';
+
+            try {
+                const response = await fetch(`/api/hmi/racks/${editRackId}/slot/${slotIndex}/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: deviceId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadBitmapData(editRackId);
+                } else {
+                    alert('操作失敗：' + (result.message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('Slot operation failed:', error);
+                alert('操作時發生錯誤');
+            }
+        }
+
+        async function handleSlotToggleEnable(slotIndex, status) {
+            const action = status.enabled ? '禁用' : '啟用';
+            if (!confirm(`確定要${action}格位 ${slotIndex} 嗎？`)) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/racks/${editRackId}/slot/${slotIndex}/toggle-enable`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: deviceId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadBitmapData(editRackId);
+                } else {
+                    alert('操作失敗：' + (result.message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('Slot toggle failed:', error);
+                alert('操作時發生錯誤');
+            }
+        }
+
+        async function bitmapClearAll() {
+            if (!confirm('確定要清空所有格位嗎？')) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/racks/${editRackId}/slots/clear-all`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: deviceId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadBitmapData(editRackId);
+                } else {
+                    alert('操作失敗：' + (result.message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('Clear all failed:', error);
+                alert('操作時發生錯誤');
+            }
+        }
+
+        async function bitmapEnableAll() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/racks/${editRackId}/slots/enable-all`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: deviceId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadBitmapData(editRackId);
+                } else {
+                    alert('操作失敗：' + (result.message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('Enable all failed:', error);
+                alert('操作時發生錯誤');
+            }
+        }
+
+        async function bitmapDisableAll() {
+            if (!confirm('確定要禁用所有格位嗎？')) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const deviceId = urlParams.get('deviceId');
+
+            try {
+                const response = await fetch(`/api/hmi/racks/${editRackId}/slots/disable-all`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: deviceId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadBitmapData(editRackId);
+                } else {
+                    alert('操作失敗：' + (result.message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('Disable all failed:', error);
+                alert('操作時發生錯誤');
+            }
+        }
+
         // 移除定期刷新頁面，改用 Socket.IO 即時更新
     </script>
 </body>

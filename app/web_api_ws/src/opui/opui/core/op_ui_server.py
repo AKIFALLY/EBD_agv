@@ -345,7 +345,8 @@ class OpUiServer:
                     "device_id": device_id,
                     "device_description": license_data.description,
                     "locations": locations_data,
-                    "layout": button_layout
+                    "layout": button_layout,
+                    "permissions": permissions  # 【新增】傳遞權限給模板
                 })
                 
             except HTTPException:

@@ -290,6 +290,7 @@
     height: 72px;
     background-image: url("/static/kuka-agv-icon.svg");
     background-position: center center;
+    border-radius: 20px;
     /* allow it to receive mouse events */
 }
 
@@ -894,29 +895,46 @@
 }
 
 .docked-rack-info {
+    /* ✅ 添加 flexbox 布局确保内容垂直排列和居中 */
+    display: flex;
+    flex-direction: column;
+
+    /* ✅ 移除 padding 避免视觉中心偏移（iconAnchor 基于几何中心） */
+    padding: 0;
+
+    /* 保留原有样式 */
     background-color: rgba(240, 240, 240, 1);
     border-radius: 0.5rem;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
-    padding: 0.5rem;
     backdrop-filter: blur(2px);
 }
 
 .docked-rack-title {
     font-weight: bold;
-    margin-bottom: 0.5rem;
     text-align: center;
     border-bottom: 1px solid #CCC;
-    padding-bottom: 0.25rem;
+    /* ✅ 使用对称 padding 保持视觉平衡 */
+    padding: 0.25rem 0;
 }
 
 .docked-rack-list {
+    /* ✅ 添加 flexbox 完整居中（模仿 DoorStatusObject 的成功模式） */
+    display: flex;
+    flex-direction: column;
+    align-items: center;      /* 水平居中 */
+    justify-content: center;  /* 垂直居中 */
+    flex: 1;                  /* 占满剩余空间 */
+
+    /* 保留原有样式 */
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
 .docked-rack-list li {
-    padding: 0.25rem 0.5rem;
+    /* ✅ 确保列表项文字居中对齐 */
+    text-align: center;
+    padding: 0.125rem 0.5rem;
     border-bottom: 1px solid #DDD;
 }
 
@@ -1213,9 +1231,9 @@
 /* 地圖圖例 */
 .map-legend {
     position: absolute;
-    bottom: 200px;
-    left: 20px;
-    right: auto;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(8px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -1224,13 +1242,16 @@
     z-index: 1000;
     border: 1px solid rgba(0, 0, 0, 0.1);
     transition: background 0.2s ease;
-    max-width: 250px;
+    min-width: 800px;
+    max-width: 900px;
 }
 
 .map-legend-title {
     font-weight: 600;
     margin-bottom: 0.5rem;
     color: #363636;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding-bottom: 0.5rem;
 }
 
 .map-legend-item {
@@ -1250,9 +1271,6 @@
 
 /* 節點類型圖例樣式 */
 .map-legend-section {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgba(219, 219, 219, 0.5);
 }
 
 .map-legend-section:first-child {
@@ -1266,6 +1284,8 @@
     margin-bottom: 0.5rem;
     color: #4a4a4a;
     font-size: 0.875rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding-bottom: 0.5rem;
 }
 
 .map-legend-node-icon {
@@ -1277,6 +1297,104 @@
     align-items: center;
     justify-content: center;
     font-weight: bold;
+}
+
+/* 節點類型 2x2 布局 */
+.map-legend-node-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* 左右分欄容器 */
+.map-legend-content-grid {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+/* 左欄（節點類型）固定寬度 */
+.map-legend-content-grid > .map-legend-section:first-child {
+    flex: 0 0 auto;
+    min-width: 150px;
+}
+
+/* 右欄（AGV 狀態）自動擴展 */
+.map-legend-content-grid > .map-legend-section:last-child {
+    flex: 1;
+}
+
+/* AGV 狀態圖例樣式 */
+.map-legend-agv-status-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.map-legend-agv-status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    min-width: 100px;
+    flex: 0 0 auto;
+}
+
+.map-legend-status-icon {
+    font-size: 18px;
+    color: #4a4a4a;
+    flex-shrink: 0;
+}
+
+.map-legend-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: #e0e0e0;
+}
+
+/* AGV 狀態發光效果 */
+.map-legend-status-indicator.status-idle {
+    background-color: rgba(72, 199, 116, 0.3);
+    box-shadow: 0 0 8px rgba(72, 199, 116, 0.6);
+}
+
+.map-legend-status-indicator.status-working {
+    background-color: rgba(50, 115, 220, 0.4);
+    box-shadow: 0 0 8px rgba(50, 115, 220, 0.7);
+}
+
+.map-legend-status-indicator.status-charging {
+    background-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+}
+
+.map-legend-status-indicator.status-updating {
+    background-color: rgba(177, 156, 217, 0.4);
+    box-shadow: 0 0 8px rgba(177, 156, 217, 0.7);
+}
+
+.map-legend-status-indicator.status-alarm {
+    background-color: rgba(255, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+}
+
+.map-legend-status-indicator.status-warning {
+    background-color: rgba(255, 165, 0, 0.4);
+    box-shadow: 0 0 8px rgba(255, 165, 0, 0.7);
+}
+
+.map-legend-status-indicator.status-waiting {
+    background-color: rgba(255, 105, 180, 0.4);
+    box-shadow: 0 0 8px rgba(255, 105, 180, 0.7);
+}
+
+.map-legend-status-indicator.status-initializing {
+    background-color: rgba(177, 156, 217, 0.4);
+    box-shadow: 0 0 8px rgba(177, 156, 217, 0.7);
 }
 
 /* ==================== 載具格位視覺化 ==================== */
@@ -1950,6 +2068,25 @@
     padding: 1.5rem;
 }
 
+/* KUKA 同步 Modal z-index 設定（與 LabVIEW Modal 相同） */
+#kuka-sync-modal {
+    z-index: 10000 !important;
+}
+
+#kuka-sync-modal .modal-background {
+    z-index: 9999;
+}
+
+#kuka-sync-modal .modal-card {
+    z-index: 10001;
+}
+
+#kuka-sync-modal .modal-card-body {
+    max-height: calc(95vh - 180px);
+    overflow-y: hidden; /* 外層不需要滾動，交給 diff-panel 處理 */
+    padding: 1.5rem;
+}
+
 /* 表格容器優化 */
 #labview-diff-modal .table-container {
     max-height: 100%;
@@ -1966,6 +2103,19 @@
 }
 
 #mapDoorControlModal .modal-card {
+    z-index: 10001;
+}
+
+/* ==================== 交管區控制 Modal z-index ==================== */
+#mapTrafficZoneModal {
+    z-index: 10000 !important; /* 確保顯示在地圖上方 */
+}
+
+#mapTrafficZoneModal .modal-background {
+    z-index: 9999;
+}
+
+#mapTrafficZoneModal .modal-card {
     z-index: 10001;
 }
 
@@ -2021,6 +2171,29 @@
 
 /* ==================== AGV Alarm/Warning 状态动画（背景 + 发光边框） ==================== */
 
+/* AGV 離線状态 - 紅色 mdi-cancel 圖標效果（不影響旋轉） */
+.agv-offline-state {
+    filter: grayscale(70%) brightness(0.7);
+    position: relative;
+}
+
+.agv-offline-state::before {
+    content: "\F073A";  /* mdi-cancel 圖標的 Unicode (禁止符號 ⊘) */
+    font-family: 'Material Design Icons';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: #FF0000;
+    text-shadow:
+        0 0 5px rgba(255, 0, 0, 0.8),
+        0 0 10px rgba(255, 0, 0, 0.6),
+        0 0 15px rgba(255, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: 10;
+}
+
 /* AGV Alarm 状态 - 红色发光效果（不影响旋转） */
 .agv-alarm-state {
     animation: agv-alarm-enhanced 1s infinite;
@@ -2067,4 +2240,233 @@
             0 0 36px rgba(255, 165, 0, 0.4),
             0 0 48px rgba(255, 165, 0, 0.3);
     }
+}
+
+/* AGV Charging 状态 - 金黄色发光效果（不影响旋转） */
+.agv-charging-state {
+    animation: agv-charging-enhanced 1s infinite;
+}
+
+@keyframes agv-charging-enhanced {
+    0%, 100% {
+        background-color: rgba(255, 215, 0, 0.3);
+        box-shadow:
+            0 0 8px rgba(255, 215, 0, 0.6),
+            0 0 16px rgba(255, 215, 0, 0.4),
+            0 0 24px rgba(255, 215, 0, 0.3),
+            0 0 32px rgba(255, 215, 0, 0.2);
+    }
+    50% {
+        background-color: rgba(255, 215, 0, 0.5);
+        box-shadow:
+            0 0 12px rgba(255, 215, 0, 0.8),
+            0 0 24px rgba(255, 215, 0, 0.6),
+            0 0 36px rgba(255, 215, 0, 0.4),
+            0 0 48px rgba(255, 215, 0, 0.3);
+    }
+}
+
+/* AGV 空閒状态 - 微微淡淡的绿光（能源待命感） */
+.agv-idle-state {
+    animation: agv-idle-soft 2s infinite;
+}
+
+@keyframes agv-idle-soft {
+    0%, 100% {
+        background-color: rgba(72, 199, 116, 0.08);
+        box-shadow:
+            0 0 6px rgba(72, 199, 116, 0.2),
+            0 0 12px rgba(72, 199, 116, 0.15),
+            0 0 18px rgba(72, 199, 116, 0.1);
+    }
+    50% {
+        background-color: rgba(72, 199, 116, 0.15);
+        box-shadow:
+            0 0 8px rgba(72, 199, 116, 0.3),
+            0 0 16px rgba(72, 199, 116, 0.2),
+            0 0 24px rgba(72, 199, 116, 0.12);
+    }
+}
+
+/* AGV 任務中状态 - 蓝色发光效果 */
+.agv-working-state {
+    animation: agv-working-enhanced 1s infinite;
+}
+
+@keyframes agv-working-enhanced {
+    0%, 100% {
+        background-color: rgba(50, 115, 220, 0.3);
+        box-shadow:
+            0 0 8px rgba(50, 115, 220, 0.6),
+            0 0 16px rgba(50, 115, 220, 0.4),
+            0 0 24px rgba(50, 115, 220, 0.3),
+            0 0 32px rgba(50, 115, 220, 0.2);
+    }
+    50% {
+        background-color: rgba(50, 115, 220, 0.5);
+        box-shadow:
+            0 0 12px rgba(50, 115, 220, 0.8),
+            0 0 24px rgba(50, 115, 220, 0.6),
+            0 0 36px rgba(50, 115, 220, 0.4),
+            0 0 48px rgba(50, 115, 220, 0.3);
+    }
+}
+
+/* AGV 等待状态 - 粉红色发光效果 */
+.agv-waiting-state {
+    animation: agv-waiting-enhanced 1s infinite;
+}
+
+@keyframes agv-waiting-enhanced {
+    0%, 100% {
+        background-color: rgba(255, 105, 180, 0.3);
+        box-shadow:
+            0 0 8px rgba(255, 105, 180, 0.6),
+            0 0 16px rgba(255, 105, 180, 0.4),
+            0 0 24px rgba(255, 105, 180, 0.3),
+            0 0 32px rgba(255, 105, 180, 0.2);
+    }
+    50% {
+        background-color: rgba(255, 105, 180, 0.5);
+        box-shadow:
+            0 0 12px rgba(255, 105, 180, 0.8),
+            0 0 24px rgba(255, 105, 180, 0.6),
+            0 0 36px rgba(255, 105, 180, 0.4),
+            0 0 48px rgba(255, 105, 180, 0.3);
+    }
+}
+
+/* AGV 更新中/初始化状态 - 淡紫色发光效果 */
+.agv-updating-state {
+    animation: agv-updating-enhanced 1s infinite;
+}
+
+@keyframes agv-updating-enhanced {
+    0%, 100% {
+        background-color: rgba(177, 156, 217, 0.3);
+        box-shadow:
+            0 0 8px rgba(177, 156, 217, 0.6),
+            0 0 16px rgba(177, 156, 217, 0.4),
+            0 0 24px rgba(177, 156, 217, 0.3),
+            0 0 32px rgba(177, 156, 217, 0.2);
+    }
+    50% {
+        background-color: rgba(177, 156, 217, 0.5);
+        box-shadow:
+            0 0 12px rgba(177, 156, 217, 0.8),
+            0 0 24px rgba(177, 156, 217, 0.6),
+            0 0 36px rgba(177, 156, 217, 0.4),
+            0 0 48px rgba(177, 156, 217, 0.3);
+    }
+}
+
+/* ============================================
+   交管区状态显示物件样式
+   ============================================ */
+
+/* 交管区容器 */
+.traffic-zone-info {
+    display: grid;
+    grid-template-columns: 7.5rem;
+    grid-template-rows: 2rem 3rem;
+    font-size: 1rem;
+    box-shadow: 0 0px 2px rgba(0, 0, 0, 0.2);
+    border-radius: 0.5rem;
+    background-color: #fff;
+}
+
+/* 交管区标题区域 */
+.traffic-zone-title {
+    width: 7.5rem;
+    height: 2rem;
+    color: #fff;
+    background-color: #444;
+    border-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    z-index: 10;
+}
+
+/* 交管区内容区域 */
+.traffic-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    border: 2px solid rgba(128, 128, 128, 0.2);
+    background-color: #fff;
+    padding: 0.25rem;
+}
+
+/* 交管区状态图标 */
+.traffic-zone-status-icon {
+    font-size: 1.25rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* 交管区占用者 AGV 名称 */
+.traffic-zone-owner {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    color: #4a4a4a;
+}
+
+/* 空闲状态 - 绿色 */
+.traffic-zone-content.status-free {
+    border-color: #48c774;
+    background-color: #f0fff4;
+}
+
+.traffic-zone-content.status-free .traffic-zone-status-icon {
+    color: #48c774;
+}
+
+/* 占用状态 - 橙色 */
+.traffic-zone-content.status-occupied {
+    border-color: #ffdd57;
+    background-color: #fffbf0;
+}
+
+.traffic-zone-content.status-occupied .traffic-zone-status-icon {
+    color: #ffdd57;
+}
+
+.traffic-zone-content.status-occupied .traffic-zone-owner {
+    color: #d97706;
+    font-weight: 600;
+}
+
+/* 控制/占用状态 - 橙色 (TrafficController 使用) */
+.traffic-zone-content.status-controlled {
+    border-color: #ffdd57;
+    background-color: #fffbf0;
+}
+
+.traffic-zone-content.status-controlled .traffic-zone-status-icon {
+    color: #ffdd57;
+}
+
+.traffic-zone-content.status-controlled .traffic-zone-owner {
+    color: #d97706;
+    font-weight: 600;
+}
+
+/* 禁用状态 - 灰色 */
+.traffic-zone-content.status-disabled {
+    border-color: #b5b5b5;
+    background-color: #f5f5f5;
+}
+
+.traffic-zone-content.status-disabled .traffic-zone-status-icon {
+    color: #b5b5b5;
+}
+
+.traffic-zone-content.status-disabled .traffic-zone-owner {
+    color: #888;
+    font-style: italic;
 }

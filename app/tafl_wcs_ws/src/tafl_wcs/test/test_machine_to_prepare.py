@@ -171,8 +171,8 @@ async def test_machine_to_prepare_success():
                         return False
                     print(f"   ✅ KUKA 參數完整 (nodes: {nodes}, model: KUKA400i)")
 
-                    # 驗證目標位置是否在準備區 (11-18)
-                    if target_loc_id and 11 <= target_loc_id <= 18:
+                    # 驗證目標位置是否在準備區 (2-9)
+                    if target_loc_id and 2 <= target_loc_id <= 9:
                         print(f"   ✅ 正確路由到系統準備區")
                         return True
                     elif target_loc_name and 'SystemPrepareArea' in target_loc_name:

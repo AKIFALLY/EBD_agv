@@ -126,10 +126,8 @@ wait_for_port_with_retry() {
             return 0  # 端口已開啟
         fi
 
-        # 顯示等待進度（每 2 秒顯示一次，避免刷屏）
-        if [ $((elapsed % 2)) -eq 0 ] || [ $elapsed -eq 0 ]; then
-            echo "⏳ 等待端口 $port 開啟... ($elapsed/$max_wait_seconds 秒)"
-        fi
+        # 顯示等待進度（每秒顯示一次）
+        echo "⏳ 等待端口 $port 開啟... [$elapsed/$max_wait_seconds]"
 
         sleep $retry_interval
         elapsed=$((elapsed + retry_interval))
@@ -713,36 +711,36 @@ manage_web_api_launch() {
                 echo "✅ Web API Launch 已啟動"
                 echo "   記錄的 PID: $(cat $WEB_API_PID_FILE | tr '\n' ' ')"
 
-                # 動態等待端口開啟（最多 30 秒，自動重試）
+                # 動態等待端口開啟（最多 15 秒，自動重試）
                 echo "🔍 等待 Web 服務端口開啟..."
 
                 local port_check_failed=false
 
                 # 檢查 Web API (8000)
-                if wait_for_port_with_retry 8000 30; then
+                if wait_for_port_with_retry 8000 15; then
                     echo "✅ Web API 端口 8000 已開啟"
                 else
-                    echo "❌ Web API 端口 8000 等待超時（30 秒）"
+                    echo "❌ Web API 端口 8000 等待超時（15 秒）"
                     port_check_failed=true
                 fi
 
                 # 檢查 AGVCUI (8001)
-                if wait_for_port_with_retry 8001 30; then
+                if wait_for_port_with_retry 8001 15; then
                     echo "✅ AGVCUI 端口 8001 已開啟"
                 else
-                    echo "❌ AGVCUI 端口 8001 等待超時（30 秒）"
+                    echo "❌ AGVCUI 端口 8001 等待超時（15 秒）"
                     port_check_failed=true
                 fi
 
                 # 檢查 OPUI (8002)
-                if wait_for_port_with_retry 8002 30; then
+                if wait_for_port_with_retry 8002 15; then
                     echo "✅ OPUI 端口 8002 已開啟"
                 else
-                    echo "❌ OPUI 端口 8002 等待超時（30 秒）"
+                    echo "❌ OPUI 端口 8002 等待超時（15 秒）"
                     port_check_failed=true
                 fi
 
-                # 如果有端口檢查失敗，提供詳細診斷資訊
+                # 如果有端口檢查失敗，提供詳細診斷資訊並返回錯誤
                 if [ "$port_check_failed" = true ]; then
                     echo ""
                     echo "💡 診斷建議:"
@@ -757,8 +755,9 @@ manage_web_api_launch() {
                     echo "      python3 /app/web_api_ws/src/web_api/web_api/api_server.py"
                     echo ""
                     echo "⚠️ 注意: 如果進程存在但端口未開啟，可能是服務啟動失敗"
+                    return 1  # 端口驗證失敗應返回錯誤
                 fi
-                
+
                 return 0
             else
                 echo "❌ Web API Launch 啟動失敗"
@@ -809,9 +808,9 @@ manage_web_api_launch() {
             else
                 # 確保停止所有與 Web API Launch 相關的進程
                 echo "🚨 Web API Launch PID 檔案未找到，檢查相關進程..."
-                if pgrep -f "web_api_launch" > /dev/null || pgrep -f "agvc_ui_server" > /dev/null || pgrep -f "op_ui_server" > /dev/null; then
+                if pgrep -f "ros2 launch web_api_launch" > /dev/null || pgrep -f "agvc_ui_server" > /dev/null || pgrep -f "op_ui_server" > /dev/null; then
                     echo "⏳ 停止 Web API Launch 相關進程..."
-                    pkill -f "web_api_launch"
+                    pkill -f "ros2 launch web_api_launch"
                     pkill -f "agvc_ui_server"
                     pkill -f "op_ui_server"
                     pkill -f "api_server"
@@ -838,9 +837,15 @@ manage_web_api_launch() {
             local found_residual=false
 
             for service in "agvc_ui_server" "op_ui_server" "api_server" "web_api_launch"; do
-                if pgrep -f "$service" > /dev/null; then
+                # 對 web_api_launch 使用精確匹配，避免誤殺執行者 (manage_web_api_launch)
+                local pattern="$service"
+                if [ "$service" = "web_api_launch" ]; then
+                    pattern="ros2 launch web_api_launch"
+                fi
+
+                if pgrep -f "$pattern" > /dev/null; then
                     echo "   發現殘留進程: $service"
-                    pkill -9 -f "$service" 2>/dev/null
+                    pkill -9 -f "$pattern" 2>/dev/null
                     found_residual=true
                 fi
             done
@@ -881,10 +886,30 @@ manage_web_api_launch() {
             ;;
 
         restart)
-            echo "🔄 重新啟動 Web API Launch..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "⏳ [RESTART] 開始重啟流程 (共 2 個步驟)"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            echo ""
+            echo "⏳ [RESTART 1/2] 停止服務中..."
             manage_web_api_launch stop
-            sleep 2
+            echo "   └─ 停止階段完成"
+
+            echo ""
+            echo "⏳ [RESTART 2/2] 啟動服務中..."
             manage_web_api_launch start
+            local start_result=$?
+            echo "   └─ 啟動階段完成"
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            if [ $start_result -eq 0 ]; then
+                echo "🎉 [RESTART] 完整重啟流程成功完成"
+            else
+                echo "❌ [RESTART] 重啟流程失敗 (退出碼: $start_result)"
+            fi
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            return $start_result
             ;;
 
         status)
@@ -992,10 +1017,9 @@ manage_web_api_launch() {
 
 # ===== Web AGV Launch 控制函式 (使用 ROS 2 Launch) =====
 manage_web_agv_launch() {
-    # 環境檢測：僅限 AGVC 容器
-    if ! is_agvc_environment; then
-        echo "❌ 此功能僅適用於 AGVC 環境"
-        echo "💡 AGV 容器請使用: check_agv_status"
+    # 環境檢測：僅限 AGV 容器
+    if ! is_agv_environment; then
+        echo "❌ 此功能僅適用於 AGV 環境"
         return 1
     fi
 
@@ -1167,9 +1191,9 @@ manage_web_agv_launch() {
             else
                 # 確保停止所有與 Web AGV Launch 相關的進程
                 echo "🚨 Web AGV Launch PID 檔案未找到，檢查相關進程..."
-                if pgrep -f "web_agv_launch" > /dev/null || pgrep -f "agv_ui_server" > /dev/null; then
+                if pgrep -f "ros2 launch web_agv_launch" > /dev/null || pgrep -f "agv_ui_server" > /dev/null; then
                     echo "⏳ 停止 Web AGV Launch 相關進程..."
-                    pkill -f "web_agv_launch"
+                    pkill -f "ros2 launch web_agv_launch"
                     pkill -f "agv_ui_server"
                     sleep 2
                     echo "✅ Web AGV Launch 相關進程已停止"
@@ -1194,9 +1218,15 @@ manage_web_agv_launch() {
             local found_residual=false
 
             for service in "agv_ui_server" "web_agv_launch"; do
-                if pgrep -f "$service" > /dev/null; then
+                # 對 web_agv_launch 使用精確匹配，避免誤殺執行者 (manage_web_agv_launch)
+                local pattern="$service"
+                if [ "$service" = "web_agv_launch" ]; then
+                    pattern="ros2 launch web_agv_launch"
+                fi
+
+                if pgrep -f "$pattern" > /dev/null; then
                     echo "   發現殘留進程: $service"
-                    pkill -9 -f "$service" 2>/dev/null
+                    pkill -9 -f "$pattern" 2>/dev/null
                     found_residual=true
                 fi
             done
@@ -2351,7 +2381,8 @@ manage_rcs_core() {
             # ========== 階段 3: 備用清理（無 PID 文件時） ==========
             if [ ! -f "$RCS_CORE_PID_FILE" ]; then
                 echo "🚨 PID 文件未找到，檢查相關進程..."
-                local service_patterns=("ros2 launch rcs" "rcs_launch.py" "rcs_core")
+                # 使用精確匹配避免誤殺執行者 (manage_rcs_core)
+                local service_patterns=("ros2 launch rcs" "python3.*rcs_launch.py" "python3.*rcs_core_node")
                 local found_process=false
 
                 for pattern in "${service_patterns[@]}"; do
@@ -2371,7 +2402,8 @@ manage_rcs_core() {
             # ========== 階段 4: 殘留進程清理 ==========
             echo "🔍 檢查並清理殘留進程..."
             local found_residual=false
-            local service_patterns=("ros2 launch rcs" "rcs_launch.py" "rcs_core")
+            # 使用精確匹配避免誤殺執行者 (manage_rcs_core)
+            local service_patterns=("ros2 launch rcs" "python3.*rcs_launch.py" "python3.*rcs_core_node")
 
             for pattern in "${service_patterns[@]}"; do
                 if pgrep -f "$pattern" > /dev/null; then
@@ -2636,9 +2668,10 @@ manage_agvc_database_node() {
             # ========== 階段 3: 備用清理 ==========
             if [ ! -f "$DB_NODE_PID_FILE" ]; then
                 echo "🚨 PID 文件未找到，檢查相關進程..."
-                if pgrep -f "agvc_database_node" > /dev/null; then
+                # 使用精確匹配避免誤殺執行者 (manage_agvc_database_node)
+                if pgrep -f "ros2 run db_proxy agvc_database_node" > /dev/null; then
                     echo "   發現進程: agvc_database_node"
-                    pkill -f "agvc_database_node"
+                    pkill -f "ros2 run db_proxy agvc_database_node"
                     sleep 2
                     echo "   相關進程已停止"
                 fi
@@ -2646,9 +2679,10 @@ manage_agvc_database_node() {
 
             # ========== 階段 4: 殘留進程清理 ==========
             echo "🔍 檢查並清理殘留進程..."
-            if pgrep -f "agvc_database_node" > /dev/null; then
+            # 使用精確匹配避免誤殺執行者 (manage_agvc_database_node)
+            if pgrep -f "ros2 run db_proxy agvc_database_node" > /dev/null; then
                 echo "   發現殘留進程: agvc_database_node"
-                pkill -9 -f "agvc_database_node" 2>/dev/null
+                pkill -9 -f "ros2 run db_proxy agvc_database_node" 2>/dev/null
                 sleep 2
                 echo "   殘留進程已清理"
             fi
@@ -2793,12 +2827,13 @@ manage_room_task_build() {
                 echo "💡 建議先啟動: manage_tafl_wcs start"
             fi
 
-            # 2.3 檢查工作空間建置
-            if [ ! -d "/app/tafl_wcs_ws/install" ]; then
-                echo "❌ Room Task Build 工作空間未建置"
+            # 2.3 檢查工作空間建置（alan_room_task_build 在 wcs_ws 中）
+            if [ ! -d "/app/wcs_ws/install/alan_room_task_build" ]; then
+                echo "❌ alan_room_task_build 套件未建置"
                 echo "💡 診斷建議："
-                echo "   1. 執行建置: cd /app/tafl_wcs_ws && colcon build"
-                echo "   2. 或使用快速建置: ba"
+                echo "   1. 執行建置: cd /app/wcs_ws && colcon build --packages-select alan_room_task_build"
+                echo "   2. 或建置整個工作空間: cd /app/wcs_ws && colcon build"
+                echo "   3. 或使用快速建置: ba"
                 return 1
             fi
 
@@ -3788,6 +3823,8 @@ manage() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     check_service_status "資料庫代理            " "agvc_database_node" "manage_agvc_database_node"
     check_service_status "Room Task Build       " "room_task_build_node" "manage_room_task_build"
+    check_service_status "Transfer Box Task Build" "transfer_box_task_build_node" "manage_transfer_box_task_build"
+    check_service_status "KUKA WCS              " "kuka_wcs_node" "manage_kuka_wcs"
     check_service_status "Cargo Move Task Build " "cargo_move_task_build_node" "manage_cargo_move_task_build"
     echo ""
 
@@ -3969,45 +4006,132 @@ manage_agv_launch() {
 
         stop)
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "  🛑 停止 AGV 本地 Launch 服務"
+            echo "  🛑 停止 AGV 本地 Launch 服務 (6 階段停止流程)"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+            # 階段 1: 優雅停止 (SIGTERM)
+            echo "📍 階段 1/6: 優雅停止 (SIGTERM)"
             if [ -f "$AGV_LAUNCH_PID_FILE" ]; then
                 local pid=$(cat "$AGV_LAUNCH_PID_FILE")
 
                 if kill -0 "$pid" 2>/dev/null; then
-                    echo "⏳ 停止進程 PID: $pid"
+                    echo "⏳ 停止主進程 PID: $pid"
 
-                    # 優雅停止：先發送 TERM 信號
-                    kill -TERM "$pid" 2>/dev/null
+                    # 獲取所有子進程（包括孫進程）
+                    local child_pids=$(pgrep -P "$pid" 2>/dev/null || true)
+                    local all_pids="$pid"
 
-                    # 等待 2 秒
-                    sleep 2
+                    # 遞迴獲取所有後代進程
+                    for child in $child_pids; do
+                        local grandchildren=$(pgrep -P "$child" 2>/dev/null || true)
+                        all_pids="$all_pids $child $grandchildren"
+                    done
 
-                    # 如果還在運行，強制終止
-                    if kill -0 "$pid" 2>/dev/null; then
-                        echo "⚠️  進程未響應 TERM 信號，強制終止..."
-                        kill -9 "$pid" 2>/dev/null || true
-                    fi
+                    echo "   找到進程樹: $all_pids"
 
-                    rm -f "$AGV_LAUNCH_PID_FILE"
-                    echo "✅ AGV Launch 已停止"
+                    # 發送 TERM 信號給所有進程
+                    for p in $all_pids; do
+                        kill -TERM "$p" 2>/dev/null || true
+                    done
+
+                    # 等待 3 秒
+                    sleep 3
                 else
-                    echo "⚠️  PID 文件存在但進程不存在"
+                    echo "⚠️  PID 文件存在但主進程不存在"
                     rm -f "$AGV_LAUNCH_PID_FILE"
                 fi
             else
                 echo "⚠️  未找到 PID 文件"
             fi
 
-            # 額外清理：確保沒有遺留的 launch 進程
-            local remaining_procs=$(pgrep -f "ros2 launch.*agv" || true)
-            if [ -n "$remaining_procs" ]; then
-                echo "🧹 清理遺留進程..."
-                pkill -f "ros2 launch.*agv" || true
-                echo "✅ 清理完成"
+            # 階段 2: 強制終止 (SIGKILL)
+            echo "📍 階段 2/6: 強制終止 (SIGKILL)"
+            if [ -f "$AGV_LAUNCH_PID_FILE" ]; then
+                local pid=$(cat "$AGV_LAUNCH_PID_FILE")
+
+                # 重新獲取所有子進程（可能有新的）
+                local child_pids=$(pgrep -P "$pid" 2>/dev/null || true)
+                local all_pids="$pid"
+
+                for child in $child_pids; do
+                    local grandchildren=$(pgrep -P "$child" 2>/dev/null || true)
+                    all_pids="$all_pids $child $grandchildren"
+                done
+
+                # 強制終止仍在運行的進程
+                local killed_count=0
+                for p in $all_pids; do
+                    if kill -0 "$p" 2>/dev/null; then
+                        kill -9 "$p" 2>/dev/null || true
+                        ((killed_count++))
+                    fi
+                done
+
+                if [ $killed_count -gt 0 ]; then
+                    echo "   強制終止 $killed_count 個進程"
+                else
+                    echo "   ✅ 無需強制終止"
+                fi
+
+                rm -f "$AGV_LAUNCH_PID_FILE"
             fi
 
+            # 階段 3: 僵屍進程清理
+            echo "📍 階段 3/6: 僵屍進程清理"
+            local zombie_count=$(ps aux | awk '$8=="Z"' | grep -E '(ros2|agv|launch)' | wc -l)
+            if [ "$zombie_count" -gt 0 ]; then
+                echo "   ⚠️  發現 $zombie_count 個僵屍進程"
+                # 僵屍進程無法直接終止，只能由父進程回收
+                echo "   💡 等待父進程回收..."
+                sleep 1
+            else
+                echo "   ✅ 無僵屍進程"
+            fi
+
+            # 階段 4: 殘留進程清理
+            echo "📍 階段 4/6: 殘留進程清理"
+            local cleanup_patterns=(
+                "ros2 launch.*(cargo_mover_agv|loader_agv|unloader_agv)"
+                "plc_service"
+                "joy_linux"
+                "agv_core"
+            )
+
+            local total_cleaned=0
+            for pattern in "${cleanup_patterns[@]}"; do
+                local remaining_pids=$(pgrep -f "$pattern" 2>/dev/null || true)
+                if [ -n "$remaining_pids" ]; then
+                    echo "   🧹 清理模式: $pattern"
+                    pkill -9 -f "$pattern" 2>/dev/null || true
+                    ((total_cleaned++))
+                fi
+            done
+
+            if [ $total_cleaned -gt 0 ]; then
+                echo "   清理了 $total_cleaned 類殘留進程"
+            else
+                echo "   ✅ 無殘留進程"
+            fi
+
+            # 階段 5: 端口資源釋放（AGV Launch 不使用固定端口，跳過）
+            echo "📍 階段 5/6: 端口資源釋放"
+            echo "   ⏭️  AGV Launch 不使用固定端口，跳過"
+
+            # 階段 6: 臨時文件清理
+            echo "📍 階段 6/6: 臨時文件清理"
+            if [ -f "$AGV_LAUNCH_PID_FILE" ]; then
+                rm -f "$AGV_LAUNCH_PID_FILE"
+                echo "   🗑️  清理 PID 文件"
+            fi
+            if [ -f "$AGV_LAUNCH_LOG_FILE" ]; then
+                # 保留日誌文件供查看，不刪除
+                echo "   📜 日誌文件保留: $AGV_LAUNCH_LOG_FILE"
+            fi
+            echo "   ✅ 臨時文件清理完成"
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  ✅ AGV Launch 停止完成"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             ;;
 
@@ -4237,16 +4361,17 @@ manage_kuka_wcs() {
                 return 1
             fi
             
-            # 檢查資料庫連接
-            if ! docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | grep -q "Up"; then
-                echo "❌ PostgreSQL 資料庫未運行"
+            # 檢查資料庫連接（使用 Python 測試連接而非 docker compose 命令）
+            if ! python3 -c "import psycopg2; psycopg2.connect('postgresql://agvc:password@192.168.100.254/agvc')" 2>/dev/null; then
+                echo "❌ PostgreSQL 資料庫連接失敗"
                 echo "💡 請先啟動資料庫: docker compose -f docker-compose.agvc.yml up -d postgres"
+                echo "💡 或檢查資料庫是否正常運行: docker compose -f docker-compose.agvc.yml ps postgres"
                 return 1
             fi
 
             # ===== 階段 3: 啟動服務 =====
             echo "🚀 啟動 KUKA WCS 節點..."
-            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 run kuka_wcs kuka_wcs_node" > "$KUKA_WCS_LOG_FILE" 2>&1 &
+            nohup bash -c "source /app/setup.bash && agvc_source > /dev/null 2>&1 && ros2 launch kuka_wcs kuka_wcs.launch.py" > "$KUKA_WCS_LOG_FILE" 2>&1 &
             local PARENT_PID=$!
             
             # 記錄父進程

@@ -174,7 +174,7 @@ class TrafficController:
         Acquire control of a traffic zone by its name.
         :param traffic_name: Name of the traffic zone.
         :param agv_name: Name of the AGV requesting control.
-        :return: True if acquisition is successful, False otherwise.
+        :return: dict with 'success' (bool), 'reason' (str), 'message' (str), and 'owner_agv_id' (int, optional)
         """
         try:
             with self.db_pool.get_session() as session:
@@ -184,67 +184,103 @@ class TrafficController:
                 agv = session.exec(
                     select(AGV).where(AGV.name == agv_name)
                 ).first()
-                if zone and agv:
-                    # 檢查交管區是否啟用
-                    if not zone.enable:
-                        self.logger.warning(
-                            f"[交管區禁用] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
-                            f"交管區已禁用 (enable=False) - 拒絕請求"
-                        )
-                        return False
 
-                    # 冪等性檢查：如果交管區已被該 AGV 佔用，返回成功
-                    if zone.status == "controlled" and zone.owner_agv_id == agv.id:
-                        self.logger.info(
-                            f"[交管區冪等] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
-                            f"狀態: {zone.status}, 當前擁有者: AGV {agv_name}(ID:{zone.owner_agv_id}) - "
-                            f"冪等操作，允許重複獲取"
-                        )
-                        return True
-                    # 交管區空閒，正常獲取
-                    if zone.status == "free":
-                        zone.status = "controlled"
-                        zone.owner_agv_id = agv.id
-                        session.add(zone)
-                        session.commit()
-                        session.refresh(zone)
-                        self.logger.info(
-                            f"[交管區獲取] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
-                            f"原狀態: free → 新狀態: controlled, 擁有者: AGV {agv_name}(ID:{agv.id}) - "
-                            f"成功獲取"
-                        )
-                        return True
-                    else:
-                        # KUKA400i 共享檢查：如果擁有者和請求者都是 KUKA400i，允許共享通行
-                        owner_agv = session.get(AGV, zone.owner_agv_id)
+                # 檢查交管區是否存在
+                if not zone:
+                    return {
+                        "success": False,
+                        "reason": "zone_not_found",
+                        "message": f"交管區 '{traffic_name}' 不存在"
+                    }
 
-                        if (owner_agv and
-                            owner_agv.model == "KUKA400i" and
-                            agv.model == "KUKA400i"):
-                            self.logger.info(
-                                f"[KUKA400i共享] AGV {agv_name}(ID:{agv.id}, KUKA400i) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
-                                f"當前擁有者: AGV ID {zone.owner_agv_id}(KUKA400i) - "
-                                f"允許KUKA400i共享通行，不改變擁有者"
-                            )
-                            return True
+                # 檢查 AGV 是否存在
+                if not agv:
+                    return {
+                        "success": False,
+                        "reason": "agv_not_found",
+                        "message": f"AGV '{agv_name}' 不存在"
+                    }
 
-                        # 非 KUKA400i 或只有一方是 KUKA400i，拒絕請求
-                        self.logger.warning(
-                            f"[交管區拒絕] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
-                            f"狀態: {zone.status}, 當前擁有者: AGV ID {zone.owner_agv_id} - "
-                            f"拒絕請求"
-                        )
-                return False
+                # 檢查交管區是否啟用
+                if not zone.enable:
+                    self.logger.warning(
+                        f"[交管區禁用] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
+                        f"交管區已禁用 (enable=False) - 拒絕請求"
+                    )
+                    return {
+                        "success": False,
+                        "reason": "zone_disabled",
+                        "message": f"交管區 '{traffic_name}' 已被禁用"
+                    }
+
+                # 冪等性檢查：如果交管區已被該 AGV 佔用，返回成功
+                if zone.status == "controlled" and zone.owner_agv_id == agv.id:
+                    self.logger.info(
+                        f"[交管區冪等] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
+                        f"狀態: {zone.status}, 當前擁有者: AGV {agv_name}(ID:{zone.owner_agv_id}) - "
+                        f"冪等操作，允許重複獲取"
+                    )
+                    return {"success": True, "message": "交管區已被本車持有"}
+
+                # 交管區空閒，正常獲取
+                if zone.status == "free":
+                    zone.status = "controlled"
+                    zone.owner_agv_id = agv.id
+                    session.add(zone)
+                    session.commit()
+                    session.refresh(zone)
+                    self.logger.info(
+                        f"[交管區獲取] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
+                        f"原狀態: free → 新狀態: controlled, 擁有者: AGV {agv_name}(ID:{agv.id}) - "
+                        f"成功獲取"
+                    )
+                    return {"success": True, "message": "成功獲取交管區使用權"}
+
+                # 交管區已被占用
+                # KUKA400i 共享檢查：如果擁有者和請求者都是 KUKA400i，允許共享通行
+                owner_agv = session.get(AGV, zone.owner_agv_id)
+
+                if (owner_agv and
+                    owner_agv.model == "KUKA400i" and
+                    agv.model == "KUKA400i"):
+                    self.logger.info(
+                        f"[KUKA400i共享] AGV {agv_name}(ID:{agv.id}, KUKA400i) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
+                        f"當前擁有者: AGV ID {zone.owner_agv_id}(KUKA400i) - "
+                        f"允許KUKA400i共享通行，不改變擁有者"
+                    )
+                    return {
+                        "success": True,
+                        "message": "KUKA400i共享通行",
+                        "owner_agv_id": zone.owner_agv_id
+                    }
+
+                # 非 KUKA400i 或只有一方是 KUKA400i，拒絕請求
+                self.logger.warning(
+                    f"[交管區拒絕] AGV {agv_name}(ID:{agv.id}) 請求交管區 '{traffic_name}'(ID:{zone.id}) - "
+                    f"狀態: {zone.status}, 當前擁有者: AGV ID {zone.owner_agv_id} - "
+                    f"拒絕請求"
+                )
+                return {
+                    "success": False,
+                    "reason": "zone_controlled",
+                    "message": f"交管區已被 AGV ID {zone.owner_agv_id} 占用",
+                    "owner_agv_id": zone.owner_agv_id
+                }
+
         except Exception as e:
             self.logger.error(f"Error acquiring traffic zone by name: {e}")
-            return False
+            return {
+                "success": False,
+                "reason": "database_error",
+                "message": f"資料庫錯誤: {str(e)}"
+            }
 
     def release_traffic_zone_by_name(self, traffic_name, agv_name):
         """
         Release control of a traffic zone by its name.
         :param traffic_name: Name of the traffic zone.
         :param agv_name: Name of the AGV releasing control.
-        :return: True if release is successful, False otherwise.
+        :return: dict with 'success' (bool), 'reason' (str), and 'message' (str)
         """
         try:
             with self.db_pool.get_session() as session:
@@ -255,9 +291,21 @@ class TrafficController:
                     select(AGV).where(AGV.name == agv_name)
                 ).first()
 
-                # 檢查交管區和 AGV 是否存在
-                if not zone or not agv:
-                    return False
+                # 檢查交管區是否存在
+                if not zone:
+                    return {
+                        "success": False,
+                        "reason": "zone_not_found",
+                        "message": f"交管區 '{traffic_name}' 不存在"
+                    }
+
+                # 檢查 AGV 是否存在
+                if not agv:
+                    return {
+                        "success": False,
+                        "reason": "agv_not_found",
+                        "message": f"AGV '{agv_name}' 不存在"
+                    }
 
                 # 情況 1: 擁有者釋放 → 真正釋放交管區
                 if zone.owner_agv_id == agv.id:
@@ -271,10 +319,10 @@ class TrafficController:
                             f"[交管區釋放] AGV {agv_name}(ID:{agv.id}) 釋放交管區 '{traffic_name}'(ID:{zone.id}) - "
                             f"原狀態: controlled → 新狀態: free - 成功釋放"
                         )
-                        return True
+                        return {"success": True, "message": "成功釋放交管區"}
                     else:
-                        # 交管區已經是 free 狀態，直接返回成功
-                        return True
+                        # 交管區已經是 free 狀態，直接返回成功（冪等性）
+                        return {"success": True, "message": "交管區已經是空閒狀態"}
 
                 # 情況 2: KUKA400i 共享者釋放 → 允許但不實際釋放
                 if zone.status == "controlled" and zone.owner_agv_id is not None:
@@ -288,15 +336,23 @@ class TrafficController:
                             f"當前擁有者: AGV ID {zone.owner_agv_id}(KUKA400i) - "
                             f"共享者釋放請求，保持擁有者不變"
                         )
-                        return True
+                        return {"success": True, "message": "KUKA400i共享釋放"}
 
                 # 情況 3: 其他情況 → 拒絕釋放
                 self.logger.warning(
                     f"[交管區釋放拒絕] AGV {agv_name}(ID:{agv.id}) 嘗試釋放交管區 '{traffic_name}'(ID:{zone.id}) - "
                     f"當前擁有者: AGV ID {zone.owner_agv_id} - 拒絕請求"
                 )
-                return False
+                return {
+                    "success": False,
+                    "reason": "not_owner",
+                    "message": f"無權釋放，當前擁有者為 AGV ID {zone.owner_agv_id}"
+                }
 
         except Exception as e:
             self.logger.error(f"Error releasing traffic zone by name: {e}")
-            return False
+            return {
+                "success": False,
+                "reason": "database_error",
+                "message": f"資料庫錯誤: {str(e)}"
+            }

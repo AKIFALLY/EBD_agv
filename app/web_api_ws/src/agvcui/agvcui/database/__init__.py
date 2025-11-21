@@ -96,5 +96,5 @@ __all__ = [
     'kuka_node_all', 'kuka_edge_all', 'node_type_all', 'agv_all',
     'modify_log_all', 'modify_log_all_objects', 'get_all_machines',
     'get_all_rooms', 'get_all_agvs', 'get_all_locations',
-    'agv_status_all', 'get_all_agv_statuses',
+    'agv_status_all', 'get_all_agv_statuses', 'traffic_zone_all',
 ]

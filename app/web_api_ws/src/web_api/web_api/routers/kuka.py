@@ -10,6 +10,7 @@ from db_proxy.models.modify_log import ModifyLog
 from db_proxy.crud.task_crud import task_crud
 from db_proxy.crud.agv_crud import agv_crud
 from sqlmodel import select
+from shared_constants.task_status import TaskStatus
 
 logger = logging.getLogger(__name__)
 
@@ -36,26 +37,48 @@ def create_kuka_router(db_pool: ConnectionPoolManager):
     """創建 Kuka API 路由器"""
     router = APIRouter(prefix="/interfaces/api/amr", tags=["Kuka"])
 
+    # KUKA 任務狀態到 TaskStatus 的映射
+    KUKA_STATUS_MAPPING = {
+        "MOVE_BEGIN": TaskStatus.EXECUTING,       # 3 - 開始移動
+        "ARRIVED": TaskStatus.EXECUTING,          # 3 - 到達節點
+        "UP_CONTAINER": TaskStatus.EXECUTING,     # 3 - 升箱完成
+        "DOWN_CONTAINER": TaskStatus.EXECUTING,   # 3 - 放下完成
+        "ROLLER_RECEIVE": TaskStatus.EXECUTING,   # 3 - 滾筒上料
+        "ROLLER_SEND": TaskStatus.EXECUTING,      # 3 - 滾筒下料
+        "PICKER_RECEIVE": TaskStatus.EXECUTING,   # 3 - 料箱取料
+        "PICKER_SEND": TaskStatus.EXECUTING,      # 3 - 料箱下料
+        "FORK_UP": TaskStatus.EXECUTING,          # 3 - 叉車叉取
+        "FORK_DOWN": TaskStatus.EXECUTING,        # 3 - 叉車放下
+        "COMPLETED": TaskStatus.COMPLETED,        # 4 - 任務完成
+        "CANCELED": TaskStatus.CANCELLED,         # 54 - 任務取消
+    }
+
     @router.post("/missionStateCallback")
     async def mission_state_callback(data: MissionStateCallbackData):
         """
         接收 Kuka 系統的任務狀態回報
 
-        將 Kuka 系統回報的狀態資訊存入 Task 的 parameters 欄位：
-        - MOVE_BEGIN: 開始移動
-        - ARRIVED: 到達任務節點
-        - UP_CONTAINER: 升箱完成
-        - DOWN_CONTAINER: 放下完成
-        - ROLLER_RECEIVE: 滾筒上料完成
-        - ROLLER_SEND: 滾筒下料完成
-        - PICKER_RECEIVE: 料箱取料完成
-        - PICKER_SEND: 料箱下料完成
-        - FORK_UP: 叉車叉取完成
-        - FORK_DOWN: 叉車放下完成
-        - COMPLETED: 任務完成
-        - CANCELED: 任務取消完成
+        將 Kuka 系統回報的狀態資訊存入 Task 的 parameters 欄位，
+        並根據 missionStatus 自動更新 Task 的 status_id：
 
-        注意：此 API 只更新 parameters 欄位，不會修改 Task 的 status_id
+        KUKA 狀態 → TaskStatus 映射：
+        - MOVE_BEGIN → EXECUTING (3) - 開始移動
+        - ARRIVED → EXECUTING (3) - 到達任務節點
+        - UP_CONTAINER → EXECUTING (3) - 升箱完成
+        - DOWN_CONTAINER → EXECUTING (3) - 放下完成
+        - ROLLER_RECEIVE → EXECUTING (3) - 滾筒上料完成
+        - ROLLER_SEND → EXECUTING (3) - 滾筒下料完成
+        - PICKER_RECEIVE → EXECUTING (3) - 料箱取料完成
+        - PICKER_SEND → EXECUTING (3) - 料箱下料完成
+        - FORK_UP → EXECUTING (3) - 叉車叉取完成
+        - FORK_DOWN → EXECUTING (3) - 叉車放下完成
+        - COMPLETED → COMPLETED (4) - 任務完成
+        - CANCELED → CANCELLED (54) - 任務取消完成
+
+        狀態轉換驗證：
+        - 避免倒退：已完成(4)或已取消(54)的任務不允許回到其他狀態
+        - 標準流程：PENDING(1) → EXECUTING(3) → COMPLETED(4)
+        - 取消流程：任何狀態 → CANCELLED(54)
         """
         logger.info(f"收到 Kuka 任務狀態回報: missionCode={data.missionCode}, "
                     f"missionStatus={data.missionStatus}, robotId={data.robotId}")
@@ -98,8 +121,7 @@ def create_kuka_router(db_pool: ConnectionPoolManager):
                     current_params.update(kuka_status_info)
                     logger.info(f"合併後的 parameters: {current_params}")
 
-                    # 簡化版本：只更新 parameters，不改變狀態
-                    # 狀態由 WCS 統一管理
+                    # 更新 parameters
                     existing_task.parameters = dict(current_params)
                     existing_task.updated_at = datetime.now(timezone.utc)
                     logger.info(

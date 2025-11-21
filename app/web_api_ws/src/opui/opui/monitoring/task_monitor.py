@@ -14,6 +14,7 @@ class TaskMonitor:
 
     def __init__(self):
         self.monitored_tasks: Dict[int, Dict] = {}  # task_id -> task_info
+        self.monitored_racks: Dict[int, Dict] = {}  # rack_id -> {machine_id, parking_space, sid}
         self.task_monitor_timer = None
         self.task_monitoring_started = False
         self.completion_callback: Optional[Callable] = None
@@ -49,6 +50,7 @@ class TaskMonitor:
             try:
                 await asyncio.sleep(1)  # 每秒檢查一次
                 await self._check_monitored_tasks()
+                await self._check_monitored_racks()  # 檢查監聽中的 rack 位置
             except Exception as e:
                 print(f"❌ 任務監聽錯誤: {e}")
 
@@ -407,3 +409,72 @@ class TaskMonitor:
         except Exception as e:
             print(f"❌ 解析任務參數失敗: {e}")
             return None, None
+
+    def add_rack_monitoring(self, rack_id: int, parking_space: int, machine_id: int, sid: str):
+        """添加 Rack 位置監聽（派滿車後調用）
+
+        當 rack 從停車格位置移走後，自動推送 parking_list 更新給前端
+
+        Args:
+            rack_id: 料架 ID
+            parking_space: 停車格 location_id
+            machine_id: 機台 ID
+            sid: Socket.IO 會話 ID
+        """
+        rack_info = {
+            'parking_space': parking_space,
+            'machine_id': machine_id,
+            'sid': sid,
+            'added_at': asyncio.get_event_loop().time()
+        }
+
+        self.monitored_racks[rack_id] = rack_info
+        print(f"🔍 開始監聽 Rack {rack_id} (停車格: {parking_space}, 機台: {machine_id})")
+
+    async def _check_monitored_racks(self):
+        """檢查監聽中的 rack 位置變化
+
+        當 rack.location_id 不再等於 parking_space 時，
+        表示 rack 已從停車格移走，觸發 parking_list 更新
+        """
+        if not self.monitored_racks:
+            return
+
+        print(f"🔍 檢查 {len(self.monitored_racks)} 個監聽中的 Rack")
+
+        try:
+            with connection_pool.get_session() as session:
+                from db_proxy.crud.rack_crud import rack_crud
+
+                for rack_id, rack_info in list(self.monitored_racks.items()):
+                    rack = rack_crud.get_by_id(session, rack_id)
+
+                    if not rack:
+                        print(f"❌ Rack {rack_id} 不存在，移除監聽")
+                        del self.monitored_racks[rack_id]
+                        continue
+
+                    parking_space = rack_info['parking_space']
+
+                    # 🔑 關鍵檢測：rack 已經不在停車格了
+                    if rack.location_id != parking_space:
+                        print(f"✅ Rack {rack_id} 已從停車格移走: {parking_space} → {rack.location_id}")
+
+                        # 觸發回調通知前端（推送 parking_list 更新）
+                        if self.completion_callback:
+                            await self.completion_callback(
+                                event_type='rack_moved',
+                                rack_id=rack_id,
+                                machine_id=rack_info['machine_id'],
+                                parking_space=parking_space,
+                                new_location=rack.location_id,
+                                sid=rack_info['sid']
+                            )
+
+                        # 移除監聽
+                        del self.monitored_racks[rack_id]
+                    else:
+                        print(f"🔄 Rack {rack_id} 仍在停車格 {parking_space}")
+
+        except Exception as e:
+            print(f"❌ 檢查 Rack 位置失敗: {e}")

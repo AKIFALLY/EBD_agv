@@ -5,7 +5,7 @@ const mapStore = createStore('mapState', {
     mapFile: '/static/alan-demo-map.drawio.svg',
     //mapFileBounds: [[0, 0], [3010, 5720]],//原圖(1505,2860)縮放比是 5cm = 1px , 圖放大2倍(3010,5720) (2.5cm = 1px)
     mapFileBounds: [[0, 0], [4488, 6968]],//實際地圖範圍(6968,4488)
-    mapInitBounds: [[1150, 2800], [2950, 6000]],//Room2 [[1005, 2660], [1805, 3260]]
+    mapInitBounds: [[1250, 3000], [3050, 6200]],//Room2 [[1005, 2660], [1805, 3260]]
     nodes: [],//CtNode
     edges: [],//CtEdge
     kukaNodes: [],//KukaNode節點
@@ -90,6 +90,10 @@ const locationsStore = createStore('locationsState', {
     error: null
 });
 
+const trafficZonesStore = createStore('trafficZonesState', {
+    trafficZones: []
+});
+
 // 為 locationsStore 添加額外方法
 locationsStore.getLocationName = function (locationId) {
     const state = this.getState();
@@ -122,6 +126,7 @@ export {
     productsStore,
     userStore,
     locationsStore,
+    trafficZonesStore,
 };
 
 // 🌐 全域暴露 stores 供其他模組使用
@@ -136,3 +141,4 @@ window.agvsStore = agvsStore;
 window.productsStore = productsStore;
 window.userStore = userStore;
 window.locationsStore = locationsStore;
+window.trafficZonesStore = trafficZonesStore;

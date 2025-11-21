@@ -99,6 +99,64 @@ class LabVIEWExecuteRequest(BaseModel):
     selected_operations: Dict[str, List[int]]  # {"add_node_ids": [...], "update_node_ids": [...], "delete_node_ids": [...]}
 
 
+# ========== KUKA 同步相關模型 ==========
+
+class KukaNodeDiffItem(BaseModel):
+    """KUKA 節點差異項目"""
+    id: int                              # nodeNumber
+    node_uuid: str
+    x: float                             # 像素座標
+    y: float                             # 像素座標
+    x_m: float                           # 原始座標（公尺）
+    y_m: float                           # 原始座標（公尺）
+    node_type_id: Optional[int] = None
+    types: Optional[List[int]] = None    # KUKA 節點類型陣列
+
+
+class KukaModifiedNodeDiff(BaseModel):
+    """KUKA 修改節點差異"""
+    id: int
+    old: KukaNodeDiffItem
+    new: KukaNodeDiffItem
+
+
+class KukaEdgeDiffItem(BaseModel):
+    """KUKA 邊差異項目"""
+    from_id: int
+    to_id: int
+    weight: Optional[float] = 1.0
+    edge_type: Optional[int] = 1  # 1=直線, 3=曲線
+
+
+class KukaSyncPreviewResponse(BaseModel):
+    """KUKA 同步預覽回應"""
+    new_nodes: List[KukaNodeDiffItem]
+    modified_nodes: List[KukaModifiedNodeDiff]
+    deleted_nodes: List[KukaNodeDiffItem]
+    new_edges: List[KukaEdgeDiffItem]
+    deleted_edges: List[KukaEdgeDiffItem]
+    missing_locations: List[int]          # 需要創建的 location ID
+    kuka_data: Dict[str, Any]             # 完整的 KUKA API 回應資料
+
+
+class KukaSyncExecuteRequest(BaseModel):
+    """KUKA 同步執行請求"""
+    kuka_data: Dict[str, Any]             # 完整的 KUKA API 回應
+    selected_operations: Dict[str, List[int]]  # 使用者選擇
+    create_locations: bool = True         # 是否自動創建 location
+
+
+class KukaSyncExecuteResponse(BaseModel):
+    """KUKA 同步執行回應"""
+    nodes_added: int
+    nodes_updated: int
+    nodes_deleted: int
+    edges_added: int
+    edges_deleted: int
+    locations_created: int
+    message: str
+
+
 def create_path_nodes_router(socket_instance=None) -> APIRouter:
     """創建並返回路徑節點管理路由器
 
@@ -1007,5 +1065,433 @@ def create_path_nodes_router(socket_instance=None) -> APIRouter:
         except Exception as e:
             logger.error(f"LabVIEW execute import failed: {e}")
             raise HTTPException(status_code=500, detail=f"執行匯入失敗: {str(e)}")
+
+    # ========== KUKA 同步 API 端點 ==========
+
+    @router.post("/api/kuka-sync/preview", response_model=KukaSyncPreviewResponse)
+    async def preview_kuka_sync():
+        """預覽 KUKA 地圖同步差異
+
+        流程：
+        1. 從 KUKA Fleet API 獲取地圖數據
+        2. 比對資料庫中的 kuka_node 和 kuka_edge
+        3. 檢測新增、修改、刪除的節點和邊
+        4. 檢查 location 表，找出缺失的記錄
+        5. 返回差異報告
+        """
+        try:
+            # 1. 調用 KUKA Fleet API
+            import sys
+            sys.path.append('/app/kuka_fleet_ws/install/kuka_fleet_adapter/lib/python3.12/site-packages')
+            from kuka_fleet_adapter.kuka_api_client import KukaApiClient
+
+            # 從配置讀取地圖資訊（目前使用硬編碼，之後可改為從配置檔讀取）
+            map_code = "AlanACT"
+            floor_number = "AlanSec1"
+
+            try:
+                client = KukaApiClient(
+                    base_url='http://192.168.10.3:10870',
+                    username='admin',
+                    password='Admin'
+                )
+            except Exception as e:
+                logger.error(f"Failed to create KUKA API client: {e}")
+                raise HTTPException(status_code=503, detail=f"無法連接 KUKA Fleet API: {str(e)}")
+
+            # 獲取地圖數據
+            kuka_response = client.get_map_floor(map_code, floor_number)
+
+            if not kuka_response.get('success'):
+                raise HTTPException(status_code=500, detail=f"KUKA API 錯誤: {kuka_response.get('message', '未知錯誤')}")
+
+            kuka_data = kuka_response.get('data', {})
+            kuka_nodes_raw = kuka_data.get('nodes', [])
+            kuka_edges_raw = kuka_data.get('edges', [])
+
+            # 2. 建立 KUKA ID → nodeNumber 映射
+            id_to_node_number = {
+                node['id']: node['nodeNumber']
+                for node in kuka_nodes_raw
+            }
+
+            # 3. 轉換 KUKA 節點為標準格式
+            kuka_nodes_dict = {}
+            for node in kuka_nodes_raw:
+                node_number = node['nodeNumber']
+                x_m = node['xCoordinate']
+                y_m = node['yCoordinate']
+                # 座標轉換：m → px（使用與現有系統一致的轉換公式）
+                x_px = x_m * 1000 / 12.5
+                y_px = y_m * 1000 / 12.5
+
+                kuka_nodes_dict[node_number] = {
+                    'id': node_number,
+                    'node_uuid': node['nodeUuid'],
+                    'x': x_px,
+                    'y': y_px,
+                    'x_m': x_m,
+                    'y_m': y_m,
+                    'node_type_id': node.get('types', [None])[0] if node.get('types') else node.get('nodeType'),
+                    'types': node.get('types', [])
+                }
+
+            # 4. 查詢資料庫現有節點
+            from agvcui.database import connection_pool
+            from db_proxy.models.agvc_kuka import KukaNode, KukaEdge
+            from db_proxy.models.agvc_location import Location
+
+            with connection_pool.get_session() as session:
+                # 獲取現有 KUKA 節點
+                from sqlmodel import select
+                db_kuka_nodes = session.exec(select(KukaNode)).all()
+                db_nodes_dict = {node.id: node for node in db_kuka_nodes}
+
+                # 5. 比對差異 - 節點
+                new_nodes = []
+                modified_nodes = []
+                deleted_nodes = []
+
+                # 新增和修改的節點
+                for node_id, kuka_node in kuka_nodes_dict.items():
+                    if node_id not in db_nodes_dict:
+                        # 新增的節點
+                        new_nodes.append(KukaNodeDiffItem(**kuka_node))
+                    else:
+                        # 檢查是否修改
+                        db_node = db_nodes_dict[node_id]
+                        is_modified = False
+
+                        # 精確比較座標（誤差容限 0.01 像素）
+                        if (abs(db_node.x - kuka_node['x']) > 0.01 or
+                            abs(db_node.y - kuka_node['y']) > 0.01 or
+                            db_node.uuid != kuka_node['node_uuid']):
+                            is_modified = True
+
+                        if is_modified:
+                            old_item = KukaNodeDiffItem(
+                                id=db_node.id,
+                                node_uuid=db_node.uuid or "",
+                                x=db_node.x,
+                                y=db_node.y,
+                                x_m=db_node.x / 1000 * 12.5,  # 反向轉換
+                                y_m=db_node.y / 1000 * 12.5,
+                                node_type_id=db_node.node_type_id,
+                                types=[]
+                            )
+                            new_item = KukaNodeDiffItem(**kuka_node)
+                            modified_nodes.append(
+                                KukaModifiedNodeDiff(id=node_id, old=old_item, new=new_item)
+                            )
+
+                # 刪除的節點（資料庫有，KUKA 沒有）
+                for node_id, db_node in db_nodes_dict.items():
+                    if node_id not in kuka_nodes_dict:
+                        deleted_nodes.append(KukaNodeDiffItem(
+                            id=db_node.id,
+                            node_uuid=db_node.uuid or "",
+                            x=db_node.x,
+                            y=db_node.y,
+                            x_m=db_node.x / 1000 * 12.5,
+                            y_m=db_node.y / 1000 * 12.5,
+                            node_type_id=db_node.node_type_id,
+                            types=[]
+                        ))
+
+                # 6. 處理邊的差異（忽略 edgeType 以避免誤判）
+                kuka_edges_set = set()
+                kuka_edges_dict = {}  # 用於保存 edgeType 資訊
+                for edge in kuka_edges_raw:
+                    begin_id = edge.get('beginNodeId')
+                    end_id = edge.get('endNodeId')
+
+                    # 將 KUKA 內部 ID 映射到 nodeNumber
+                    if begin_id in id_to_node_number and end_id in id_to_node_number:
+                        from_id = id_to_node_number[begin_id]
+                        to_id = id_to_node_number[end_id]
+                        kuka_edges_set.add((from_id, to_id))  # 移除 edgeType 比較
+                        kuka_edges_dict[(from_id, to_id)] = edge.get('edgeType', 1)
+
+                # 獲取資料庫現有邊
+                db_kuka_edges = session.exec(select(KukaEdge)).all()
+                db_edges_set = set((e.from_id, e.to_id) for e in db_kuka_edges)  # 移除硬編碼 edgeType
+
+                # 計算新增和刪除的邊
+                new_edges = [
+                    KukaEdgeDiffItem(
+                        from_id=f,
+                        to_id=t,
+                        weight=1.0,
+                        edge_type=kuka_edges_dict.get((f, t), 1)
+                    )
+                    for f, t in (kuka_edges_set - db_edges_set)
+                ]
+                deleted_edges = [
+                    KukaEdgeDiffItem(from_id=f, to_id=t, weight=1.0, edge_type=1)
+                    for f, t in (db_edges_set - kuka_edges_set)
+                ]
+
+                # 7. 檢查 location 表（優化：只查詢 IDs，不載入整張表）
+                existing_location_ids = set(session.exec(select(Location.id)).all())
+                missing_locations = [
+                    node_id for node_id in kuka_nodes_dict.keys()
+                    if node_id not in existing_location_ids
+                ]
+                logger.info(f"📊 Location 檢查: 缺失 {len(missing_locations)} 個 location")
+
+            logger.info(f"KUKA Sync Preview: {len(new_nodes)} new, {len(modified_nodes)} modified, {len(deleted_nodes)} deleted nodes")
+            logger.info(f"KUKA Sync Preview: {len(new_edges)} new, {len(deleted_edges)} deleted edges")
+            logger.info(f"KUKA Sync Preview: {len(missing_locations)} missing locations")
+
+            return KukaSyncPreviewResponse(
+                new_nodes=new_nodes,
+                modified_nodes=modified_nodes,
+                deleted_nodes=deleted_nodes,
+                new_edges=new_edges,
+                deleted_edges=deleted_edges,
+                missing_locations=missing_locations,
+                kuka_data=kuka_response  # 返回完整 KUKA API 回應，供 Execute 使用
+            )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"KUKA sync preview failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"預覽同步失敗: {str(e)}")
+
+    @router.post("/api/kuka-sync/execute", response_model=KukaSyncExecuteResponse)
+    async def execute_kuka_sync(request: KukaSyncExecuteRequest):
+        """執行 KUKA 地圖同步（根據使用者選擇）
+
+        流程：
+        1. 刪除選中的節點和邊
+        2. 新增/更新選中的節點
+        3. 新增選中的邊
+        4. 自動創建缺失的 location 記錄
+        5. 廣播地圖更新事件
+        """
+        try:
+            from agvcui.database import connection_pool
+            from db_proxy.models.agvc_kuka import KukaNode, KukaEdge
+            from db_proxy.models.agvc_location import Location, LocationStatus
+            from sqlmodel import select, delete
+            from datetime import datetime, timezone
+
+            # 解析 KUKA 數據（處理兩種可能的結構）
+            if 'data' in request.kuka_data:
+                # 完整的 KUKA API 回應 {success, message, data: {nodes, edges}}
+                kuka_data = request.kuka_data['data']
+                logger.info("📊 Execute API - 數據結構: 完整 KUKA API 回應")
+            else:
+                # 直接傳遞的數據對象 {nodes, edges}
+                kuka_data = request.kuka_data
+                logger.info("📊 Execute API - 數據結構: 直接數據對象")
+
+            kuka_nodes_raw = kuka_data.get('nodes', [])
+            kuka_edges_raw = kuka_data.get('edges', [])
+
+            logger.info(f"📊 Execute API - 收到數據: 節點數={len(kuka_nodes_raw)}, 邊數={len(kuka_edges_raw)}")
+
+            if not kuka_nodes_raw:
+                logger.warning("⚠️ Execute API - 警告：沒有收到任何節點資料！")
+            if not kuka_edges_raw:
+                logger.warning("⚠️ Execute API - 警告：沒有收到任何邊資料！")
+
+            # 建立 KUKA ID → nodeNumber 映射
+            id_to_node_number = {
+                node['id']: node['nodeNumber']
+                for node in kuka_nodes_raw
+            }
+
+            # 轉換 KUKA 節點為字典（以 nodeNumber 為 key）
+            kuka_nodes_dict = {}
+            for node in kuka_nodes_raw:
+                node_number = node['nodeNumber']
+                x_m = node['xCoordinate']
+                y_m = node['yCoordinate']
+                x_px = x_m * 1000 / 12.5
+                y_px = y_m * 1000 / 12.5
+
+                kuka_nodes_dict[node_number] = {
+                    'id': node_number,
+                    'node_uuid': node['nodeUuid'],
+                    'x': x_px,
+                    'y': y_px,
+                    'node_type_id': node.get('types', [None])[0] if node.get('types') else node.get('nodeType')
+                }
+
+            # 解析使用者選擇
+            add_node_ids = set(request.selected_operations.get('add_node_ids', []))
+            update_node_ids = set(request.selected_operations.get('update_node_ids', []))
+            delete_node_ids = set(request.selected_operations.get('delete_node_ids', []))
+
+            # 統計
+            nodes_added = 0
+            nodes_updated = 0
+            nodes_deleted = 0
+            edges_added = 0
+            edges_deleted = 0
+            locations_created = 0
+
+            with connection_pool.get_session() as session:
+                now = datetime.now(timezone.utc)
+
+                # ===== 階段 1: 刪除選中的節點和相關邊 =====
+                if delete_node_ids:
+                    logger.info(f"Deleting {len(delete_node_ids)} KUKA nodes...")
+
+                    for node_id in delete_node_ids:
+                        # 先刪除相關的邊
+                        edges_deleted += session.exec(
+                            delete(KukaEdge).where(
+                                (KukaEdge.from_id == node_id) | (KukaEdge.to_id == node_id)
+                            )
+                        ).rowcount
+
+                        # 再刪除節點
+                        session.exec(delete(KukaNode).where(KukaNode.id == node_id))
+                        nodes_deleted += 1
+
+                    session.commit()
+                    logger.info(f"✅ Deleted {nodes_deleted} nodes and {edges_deleted} edges")
+
+                # ===== 階段 2: 新增/更新選中的節點 =====
+                for node_number in kuka_nodes_raw:
+                    node_id = node_number['nodeNumber']
+
+                    # 跳過未選擇的節點
+                    if node_id not in add_node_ids and node_id not in update_node_ids:
+                        continue
+
+                    # 建立/更新節點
+                    kuka_node_data = kuka_nodes_dict[node_id]
+                    kuka_node = KukaNode(
+                        id=kuka_node_data['id'],
+                        uuid=kuka_node_data['node_uuid'],
+                        x=kuka_node_data['x'],
+                        y=kuka_node_data['y'],
+                        node_type_id=kuka_node_data['node_type_id'],
+                        created_at=now,
+                        updated_at=now
+                    )
+
+                    # 使用 merge 實現 UPSERT
+                    session.merge(kuka_node)
+
+                    if node_id in add_node_ids:
+                        nodes_added += 1
+                    if node_id in update_node_ids:
+                        nodes_updated += 1
+
+                session.commit()
+                logger.info(f"✅ Added {nodes_added} nodes, Updated {nodes_updated} nodes")
+
+                # ===== 階段 3: 重建邊 =====
+                # 先刪除所有涉及更新節點的邊
+                updated_node_ids = add_node_ids | update_node_ids
+                if updated_node_ids:
+                    from sqlmodel import or_
+                    old_edges_deleted = session.exec(
+                        delete(KukaEdge).where(
+                            or_(
+                                KukaEdge.from_id.in_(updated_node_ids),
+                                KukaEdge.to_id.in_(updated_node_ids)
+                            )
+                        )
+                    ).rowcount
+                    logger.info(f"Deleted {old_edges_deleted} old edges for updated nodes")
+
+                # 重新創建邊
+                for edge in kuka_edges_raw:
+                    begin_id = edge.get('beginNodeId')
+                    end_id = edge.get('endNodeId')
+
+                    # 映射到 nodeNumber
+                    if begin_id in id_to_node_number and end_id in id_to_node_number:
+                        from_id = id_to_node_number[begin_id]
+                        to_id = id_to_node_number[end_id]
+
+                        # 只處理涉及更新節點的邊
+                        if from_id in updated_node_ids or to_id in updated_node_ids:
+                            new_edge = KukaEdge(
+                                from_id=from_id,
+                                to_id=to_id,
+                                name=f"{from_id}-{to_id}",  # 參考 LabVIEW Import 的命名格式
+                                weight=1.0,
+                                created_at=now,
+                                updated_at=now
+                            )
+                            session.add(new_edge)
+                            edges_added += 1
+
+                session.commit()
+                logger.info(f"✅ Added {edges_added} new edges")
+
+                # ===== 階段 4: 創建缺失的 Location =====
+                if request.create_locations:
+                    # 檢查哪些節點缺少 location
+                    locations = session.exec(select(Location)).all()
+                    existing_location_ids = set(loc.id for loc in locations)
+
+                    for node_id in add_node_ids:
+                        if node_id not in existing_location_ids:
+                            new_location = Location(
+                                id=node_id,
+                                node_id=node_id,
+                                name=f"KUKA_{node_id}",
+                                type="kuka_auto",
+                                location_status_id=LocationStatus.UNOCCUPIED,  # UNOCCUPIED 已經是 int (值為 2)
+                                created_at=now,
+                                updated_at=now
+                            )
+                            session.add(new_location)
+                            locations_created += 1
+
+                    session.commit()
+                    logger.info(f"✅ Created {locations_created} locations")
+
+            # 廣播地圖更新
+            if socket_instance:
+                try:
+                    from agvcui.database import node_all, edge_all, kuka_node_all, kuka_edge_all, get_all_agvs
+                    from fastapi.encoders import jsonable_encoder
+                    import asyncio
+
+                    nodes = node_all()
+                    edges = edge_all()
+                    kuka_nodes = kuka_node_all()
+                    kuka_edges = kuka_edge_all()
+                    agvs = get_all_agvs()
+
+                    payload = {
+                        "nodes": nodes,
+                        "edges": edges,
+                        "kukaNodes": kuka_nodes,
+                        "kukaEdges": kuka_edges,
+                        "agvs": agvs
+                    }
+
+                    asyncio.create_task(
+                        socket_instance.emit("map_info", jsonable_encoder(payload))
+                    )
+                    logger.info("✅ 已廣播地圖更新事件")
+                except Exception as e:
+                    logger.warning(f"Failed to broadcast map update: {e}")
+
+            return KukaSyncExecuteResponse(
+                nodes_added=nodes_added,
+                nodes_updated=nodes_updated,
+                nodes_deleted=nodes_deleted,
+                edges_added=edges_added,
+                edges_deleted=edges_deleted,
+                locations_created=locations_created,
+                message=f"成功同步：新增 {nodes_added} 節點、更新 {nodes_updated} 節點、刪除 {nodes_deleted} 節點、新增 {edges_added} 邊、刪除 {edges_deleted} 邊、創建 {locations_created} 位置"
+            )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"KUKA sync execute failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"執行同步失敗: {str(e)}")
 
     return router

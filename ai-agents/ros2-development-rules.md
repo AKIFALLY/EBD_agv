@@ -1,15 +1,16 @@
 # AI Agent ROS2 開發原則
 
 ## 工作空間配置
-**AGV 工作空間 (9個)**
-- agv_ws, agv_cmd_service_ws, joystick_ws
-- sensorpart_ws, keyence_plc_ws, plc_proxy_ws
-- path_algorithm
+**AGV 工作空間 (11個含共用)**
+- 專用: agv_ws, agv_cmd_service_ws, joystick_ws, sensorpart_ws, uno_gpio_ws
+- 共用基礎: shared_constants_ws, keyence_plc_ws, plc_proxy_ws, path_algorithm
+- 共用應用: db_proxy_ws, web_api_ws (AGVUI), launch_ws
 
-**AGVC 工作空間 (11個)**
-- web_api_ws, db_proxy_ws, ecs_ws, rcs_ws
-- kuka_fleet_ws, tafl_ws, tafl_wcs_ws
-- 共用: keyence_plc_ws, plc_proxy_ws, path_algorithm
+**AGVC 工作空間 (13個含共用)**
+- 專用: web_api_ws, db_proxy_ws, ecs_ws, rcs_ws, kuka_wcs_ws, wcs_ws, kuka_fleet_ws
+- 共用基礎: shared_constants_ws, keyence_plc_ws, plc_proxy_ws, path_algorithm
+- 共用應用: agv_ws (監控用), launch_ws
+- ~~已棄用: tafl_ws, tafl_wcs_ws~~
 
 ## ROS2 指令執行
 ```bash

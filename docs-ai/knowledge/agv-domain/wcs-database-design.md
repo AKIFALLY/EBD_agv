@@ -305,9 +305,9 @@ class LocationStatus(SQLModel, table=True):
 
 **用途**: 管理系統中所有位置的佔用狀態
 **重要位置編號**:
-- 11-18: 系統準備區
-- 31-34: 系統空架區
-- 51-55: 人工收料區
+- 2-9: 系統準備區
+- 11-13: 系統空車停放區
+- 21-22: 人工收料區
 - 71-72: NG回收區 (🛑 已棄用 - OCR NG 改為房間入口即時處理，不再搬運到此區域)
 - 91-92: 人工回收空料架區 (🛑 已棄用 - 改為手動管理，不再透過 AGV 搬運)
 
@@ -476,5 +476,8 @@ ORDER BY w.name, task_count DESC;
 ## 🔗 交叉引用
 - WCS 系統設計: docs-ai/knowledge/agv-domain/wcs-system-design.md
 - Work ID 系統: docs-ai/knowledge/agv-domain/wcs-workid-system.md
-- TAFL WCS 實作: @app/tafl_wcs_ws/
+- **當前 WCS 實作**:
+  - KUKA WCS: @app/kuka_wcs_ws/CLAUDE.md（當前使用）
+  - WCS 工作空間: @app/wcs_ws/CLAUDE.md（流程控制邏輯）
+- **歷史參考**: ~~TAFL WCS 實作: @app/tafl_wcs_ws/~~（⚠️ 已棄用）
 - 資料庫操作: docs-ai/operations/development/database-operations.md

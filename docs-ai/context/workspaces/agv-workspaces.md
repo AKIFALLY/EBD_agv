@@ -7,19 +7,26 @@
 
 ## 📋 AGV 工作空間架構
 
-### 工作空間總覽 (9個)
-AGV 車載系統包含 9 個專用工作空間，每個工作空間負責特定的功能領域，形成完整的車載控制系統。
+### 工作空間總覽 (11個：6專用 + 4共用基礎 + 1共用應用)
+AGV 車載系統包含 11 個工作空間（含共用），每個工作空間負責特定的功能領域，形成完整的車載控制系統。
 
 ```
 AGV 車載系統工作空間
-├── agv_ws/                    # 核心 AGV 控制
-├── agv_cmd_service_ws/        # 手動指令服務
-├── joystick_ws/               # 搖桿控制整合
-├── sensorpart_ws/             # 感測器資料處理
-├── keyence_plc_ws/            # Keyence PLC 通訊
-├── plc_proxy_ws/              # PLC 代理服務
-├── path_algorithm/            # 路徑規劃演算法
-└── [2個預留工作空間]          # 未來擴展使用
+├── 專用工作空間 (6個)
+│   ├── agv_ws/                    # 核心 AGV 控制
+│   ├── agv_cmd_service_ws/        # 手動指令服務
+│   ├── joystick_ws/               # 搖桿控制整合
+│   ├── sensorpart_ws/             # 感測器資料處理
+│   ├── uno_gpio_ws/               # GPIO 控制服務
+│   └── web_api_ws/                # AGVUI 車載監控介面
+├── 共用基礎設施 (4個)
+│   ├── shared_constants_ws/       # 系統級常數定義
+│   ├── keyence_plc_ws/            # Keyence PLC 通訊
+│   ├── plc_proxy_ws/              # PLC 代理服務
+│   └── path_algorithm/            # 路徑規劃演算法
+└── 共用應用工作空間 (2個)
+    ├── db_proxy_ws/               # 本地資料存取
+    └── launch_ws/                 # ROS 2 啟動編排
 ```
 
 ## 🤖 核心控制工作空間

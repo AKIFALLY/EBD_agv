@@ -1,15 +1,19 @@
 # AI Agent Web API 開發原則
 
 ## Web 服務架構
+### AGVC 容器（主要 Web 服務）
 - **API 服務**: Port 8000 (FastAPI + Socket.IO)
 - **AGVCUI**: Port 8001 (管理員界面)
 - **OPUI**: Port 8002 (操作員界面)
-- **AGVUI**: Port 8003 (AGV 車載監控)
 - **反向代理**: Nginx (Port 80)
 
+### AGV 容器（車載監控）
+- **AGVUI**: Port 8003 (AGV 車載監控)
+
 ## 服務管理
+### AGVC 容器服務管理
 ```bash
-# 容器內管理（載入 setup.bash 後）
+# [AGVC 容器內] 管理 API/AGVCUI/OPUI（載入 setup.bash 後）
 manage_web_api_launch start     # 啟動服務群組
 manage_web_api_launch stop      # 停止服務
 manage_web_api_launch restart   # 重啟服務
@@ -18,6 +22,19 @@ manage_web_api_launch status    # 檢查狀態
 # 自動啟動控制
 AUTO_START_WEB_API_LAUNCH=true   # 啟用
 AUTO_START_WEB_API_LAUNCH=false  # 停用（測試用）
+```
+
+### AGV 容器服務管理
+```bash
+# [AGV 容器內] 管理 AGVUI 車載監控（載入 setup.bash 後）
+manage_web_agv_launch start     # 啟動 AGVUI
+manage_web_agv_launch stop      # 停止 AGVUI
+manage_web_agv_launch restart   # 重啟 AGVUI
+manage_web_agv_launch status    # 檢查狀態
+
+# 自動啟動控制
+AUTO_START_WEB_AGV_LAUNCH=true   # 啟用
+AUTO_START_WEB_AGV_LAUNCH=false  # 停用（測試用）
 ```
 
 ## FastAPI 基本架構

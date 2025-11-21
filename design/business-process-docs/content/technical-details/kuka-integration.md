@@ -27,7 +27,7 @@ KUKA AGV Fleet 在 RosAGV 生態中的角色
 ```
 整合架構圖
 RosAGV AGVC 系統
-├── TAFL WCS (任務決策引擎)
+├── KUKA WCS (倉儲控制系統)
 ├── kuka_fleet_ws (KUKA 整合工作空間)
 │   ├── KukaFleetAdapter (ROS 2 適配器)
 │   ├── KukaApiClient (API 客戶端)

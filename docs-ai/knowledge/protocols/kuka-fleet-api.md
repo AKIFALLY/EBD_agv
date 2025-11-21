@@ -111,13 +111,18 @@ POST /api/amr/jobQuery
 }
 ```
 
-**狀態碼對照**:
-- `0`: ALL (所有狀態)
-- `1`: PENDING (待執行)
-- `2`: RUNNING (執行中)
-- `3`: COMPLETED (已完成)
-- `4`: FAILED (失敗)
-- `5`: CANCELLED (已取消)
+**狀態碼對照** (KUKA AMR 官方):
+- `10`: 待執行
+- `20`: 執行中
+- `25`: 等待放行
+- `28`: 取消中
+- `30`: 已完成
+- `31`: 已取消
+- `35`: 手動完成
+- `50`: 告警
+- `60`: 流程啟動異常
+
+**注意**: jobQuery 參數可傳空字典 `{}` 查詢所有作業
 
 #### 任務控制操作
 ```json
@@ -426,15 +431,22 @@ POST /api/plugin/resend/{recordId}
 | 500 | Internal Server Error | 系統錯誤 |
 | 503 | Service Unavailable | 系統維護中 |
 
-### 作業狀態碼
-| 狀態 | 名稱 | 說明 |
-|------|------|------|
-| 0 | ALL | 所有狀態 (查詢過濾器) |
-| 1 | PENDING | 作業已創建，等待執行 |
-| 2 | RUNNING | 作業執行中 |
-| 3 | COMPLETED | 作業成功完成 |
-| 4 | FAILED | 作業執行失敗 |
-| 5 | CANCELLED | 作業被用戶取消 |
+### 作業狀態碼 (KUKA AMR 官方)
+| 狀態碼 | 中文名稱 | 說明 |
+|--------|---------|------|
+| 10 | 待執行 | 作業等待執行 (Pending) |
+| 20 | 執行中 | 作業正在執行 (Running) |
+| 25 | 等待放行 | 作業等待放行許可 (Waiting for release) |
+| 28 | 取消中 | 作業取消處理中 (Cancelling) |
+| 30 | 已完成 | 作業成功完成 (Completed) |
+| 31 | 已取消 | 作業已被取消 (Cancelled) |
+| 35 | 手動完成 | 作業手動完成 (Manually completed) |
+| 50 | 告警 | 作業異常告警 (Alarm/Warning) |
+| 60 | 流程啟動異常 | 流程無法啟動 (Process startup error) |
+
+**注意**:
+- jobQuery API 響應中的 `status` 字段值為: 10, 20, 25, 28, 30, 31, 35, 50, 60
+- jobQuery 查詢參數可傳空字典 `{}` 查詢所有作業
 
 ### 機器人狀態碼
 | 狀態 | 名稱 | 說明 |

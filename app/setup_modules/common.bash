@@ -47,6 +47,88 @@ log_header() {
 # 基礎工具函數
 # ============================================================================
 
+# ============================================================================
+# 日誌輪轉函數 - Log Rotation
+# ============================================================================
+# 功能：自動輪轉過大的日誌檔案，防止磁碟空間耗盡
+# 用法：rotate_log_file <log_file> [max_size_mb] [keep_count]
+# 參數：
+#   log_file     - 日誌檔案路徑（必要）
+#   max_size_mb  - 觸發輪轉的檔案大小（MB），預設 10
+#   keep_count   - 保留的輪轉份數，預設 5
+# 範例：
+#   rotate_log_file "/tmp/web_api.log" 10 5
+#   → 當 web_api.log 超過 10MB 時，輪轉為 web_api.log.1
+#   → 保留最近 5 個版本：.log.1 ~ .log.5
+# ============================================================================
+rotate_log_file() {
+    local log_file=$1
+    local max_size_mb=${2:-10}  # 預設 10 MB
+    local keep_count=${3:-5}    # 預設保留 5 個舊檔案
+
+    # 參數驗證
+    if [ -z "$log_file" ]; then
+        log_error "rotate_log_file: 缺少日誌檔案路徑參數"
+        return 1
+    fi
+
+    # 檢查檔案是否存在
+    if [ ! -f "$log_file" ]; then
+        # 檔案不存在不算錯誤，直接返回
+        return 0
+    fi
+
+    # 檢查檔案大小（使用 stat 指令，兼容 Linux）
+    # Linux 使用 stat -c%s，macOS 使用 stat -f%z
+    local file_size
+    if stat -c%s "$log_file" &>/dev/null; then
+        file_size=$(stat -c%s "$log_file" 2>/dev/null)
+    else
+        file_size=$(stat -f%z "$log_file" 2>/dev/null)
+    fi
+
+    # 檢查 stat 是否成功
+    if [ -z "$file_size" ]; then
+        log_error "rotate_log_file: 無法取得檔案大小: $log_file"
+        return 1
+    fi
+
+    # 轉換為 MB
+    local size_mb=$((file_size / 1024 / 1024))
+
+    # 如果檔案小於閾值，不需要輪轉
+    if [ $size_mb -lt $max_size_mb ]; then
+        log_debug "rotate_log_file: $log_file (${size_mb}MB) 小於閾值 ${max_size_mb}MB，跳過輪轉"
+        return 0
+    fi
+
+    # 執行輪轉
+    log_info "🔄 輪轉日誌: $(basename $log_file) (${size_mb}MB > ${max_size_mb}MB)"
+
+    # 刪除最舊的檔案（如 .log.5）
+    if [ -f "${log_file}.${keep_count}" ]; then
+        rm -f "${log_file}.${keep_count}"
+        log_debug "刪除最舊的輪轉檔案: ${log_file}.${keep_count}"
+    fi
+
+    # 輪轉現有檔案：.log.4 → .log.5, .log.3 → .log.4, ...
+    for i in $(seq $((keep_count - 1)) -1 1); do
+        if [ -f "${log_file}.${i}" ]; then
+            mv "${log_file}.${i}" "${log_file}.$((i + 1))"
+            log_debug "輪轉: ${log_file}.${i} → ${log_file}.$((i + 1))"
+        fi
+    done
+
+    # 輪轉當前檔案：.log → .log.1
+    mv "$log_file" "${log_file}.1"
+
+    # 建立新的空日誌檔案（保持原有權限）
+    touch "$log_file"
+
+    log_success "✅ 日誌輪轉完成: $(basename $log_file) → $(basename ${log_file}).1"
+    return 0
+}
+
 # 函式：檢查遠端主機是否可達
 ping_all() {
     # 定義要測試的 host
@@ -174,6 +256,16 @@ is_agvc_environment() {
     fi
 
     return 1  # 是 AGV 環境
+}
+
+is_agv_environment() {
+    # 主要檢測方法：檢查 Docker Compose 設定的 CONTAINER_TYPE 環境變數
+    # 這是最簡單、最可靠的檢測方式
+    if [ "$CONTAINER_TYPE" = "agv" ]; then
+        return 0  # 是 AGV 環境
+    fi
+
+    return 1  # 是 AGVC 環境
 }
 
 # ============================================================================

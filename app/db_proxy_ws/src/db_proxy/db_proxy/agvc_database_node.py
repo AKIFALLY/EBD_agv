@@ -82,7 +82,7 @@ class AGVCDatabaseNode(Node):
 
         # 新增: 用於控制發佈邏輯
         self.last_publish_time = {}
-        self.publish_interval = 5.0  # 5 秒
+        self.publish_interval = 1.0  # 5 秒
         self.force_publish_flags = {
             ros_msg_list.__name__: False
             for _, ros_msg_list, _ in self.pub_datas
@@ -587,6 +587,7 @@ class AGVCDatabaseNode(Node):
             # 檢查是否需要發佈
             if force_publish or (current_time - last_time >= self.publish_interval):
                 try:
+                    #self.get_logger().info(f"發佈 {sql_model.__name__}")
                     datas = self.query_all(sql_model, ros_msg)
                     self.publisher_list[pub_key].publish(
                         ros_msg_list(datas=datas))
@@ -632,6 +633,10 @@ def main(args=None):
     except KeyboardInterrupt:
         pass  # 捕獲 Ctrl+C 並且不輸出異常
     finally:
+        # ✅ 优雅关闭批次日志写入器（刷新剩余日志）
+        if hasattr(node, 'logger') and hasattr(node.logger, 'shutdown'):
+            node.logger.shutdown()
+
         node.shutdown()
         # rclpy.shutdown()
 

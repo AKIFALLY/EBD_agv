@@ -290,17 +290,19 @@ class KukaApiClient:
     def get_jobs_by_status(self, status: int):
         """根據狀態查詢作業 - 便利方法
         Args:
-            status: 0=All, 1=Pending, 2=Running, 3=Completed, 4=Failed, 5=Cancelled
+            status: KUKA AMR 官方狀態碼
+                   10=待執行, 20=執行中, 25=等待放行, 28=取消中,
+                   30=已完成, 31=已取消, 35=手動完成, 50=告警, 60=流程啟動異常
         """
         return self.job_query({"status": status})
     
     def get_running_jobs(self):
         """獲取運行中的作業 - 便利方法"""
-        return self.get_jobs_by_status(2)
+        return self.get_jobs_by_status(20)  # 20 = 執行中
     
     def get_pending_jobs(self):
         """獲取待執行的作業 - 便利方法"""
-        return self.get_jobs_by_status(1)
+        return self.get_jobs_by_status(10)  # 10 = 待執行
     
     def is_token_valid(self):
         """檢查 token 是否有效 - 便利方法"""
@@ -317,6 +319,42 @@ class KukaApiClient:
         """強制重新登入 - 便利方法"""
         self.token = None
         return self.login(username, password)
+
+    # --- 地圖資料相關接口 ---
+
+    def get_map_floor(self, map_code: str, floor_number: str):
+        """從 KUKA Fleet 獲取地圖樓層資料 - GET /api/v1/data/open-monitor/map-floor
+
+        Args:
+            map_code: 地圖代碼（如 "AlanACT"）
+            floor_number: 樓層編號（如 "AlanSec1"）
+
+        Returns:
+            完整的 KUKA API 回應，包含：
+            - floorInfo: 樓層資訊
+            - nodes: 節點陣列（id, nodeNumber, nodeUuid, xCoordinate, yCoordinate, types等）
+            - edges: 邊陣列（beginNodeId, endNodeId, edgeType等）
+
+        注意: 此 API 使用不同的端口 (7888) 而非標準 KUKA Fleet API 端口 (10870)
+        """
+        # KUKA Fleet 地圖 API 使用端口 7888
+        map_api_base_url = self.base_url.replace(':10870', ':7888')
+
+        try:
+            url = f"{map_api_base_url}/api/v1/data/open-monitor/map-floor"
+            params = {
+                'mapCode': map_code,
+                'floorNumber': floor_number
+            }
+            response = requests.get(
+                url,
+                params=params,
+                headers=self._get_headers(include_auth=True)
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {"success": False, "message": str(e)}
 
 
 if __name__ == "__main__":

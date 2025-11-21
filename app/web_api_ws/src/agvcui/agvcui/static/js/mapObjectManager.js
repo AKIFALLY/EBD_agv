@@ -9,6 +9,7 @@ import { mapRackManager } from './mapRackManager.js';
 import { mapTaskManager } from './mapTaskManager.js';
 import { mapAgvManager } from './mapAgvManager.js';
 import { mapAuditLogger } from './mapAuditLogger.js';
+import { getStatusInfo } from './agvStatus.js';
 
 export const mapObjectManager = (() => {
     // 初始化
@@ -20,75 +21,104 @@ export const mapObjectManager = (() => {
         mapAuditLogger.init();
     }
 
-    // 設置 AGV 物件互動
+    // 設置 AGV 物件互動 (改為 Hover 模式)
     function setupAgvInteraction(agvObject) {
-        console.debug('Setting up AGV interaction for:', agvObject.id, 'name:', agvObject.name, 'className:', agvObject.el?.className);
+        console.debug('Setting up AGV hover interaction for:', agvObject.id, 'name:', agvObject.name, 'className:', agvObject.el?.className);
 
-        // 檢查 AGV 物件是否有必要的屬性
-        if (!agvObject.addClickHandler) {
-            console.error('AGV object missing addClickHandler method:', agvObject);
+        // 檢查 AGV 物件是否有必要的方法
+        if (!agvObject.addHoverHandler) {
+            console.error('AGV object missing addHoverHandler method:', agvObject);
             return;
         }
 
-        agvObject.addClickHandler((obj, e) => {
-            console.debug('AGV clicked:', obj.id, 'name:', obj.name, 'agvId:', obj.agvId);
-            const agvData = obj.getData();
-            const agvId = obj.agvId || obj.id; // 使用 agvId 或 fallback 到 id
-            const title = `AGV: ${obj.name || 'Unknown'}`;
+        agvObject.addHoverHandler({
+            onEnter: (obj, e) => {
+                // 取消任何待執行的關閉定時器
+                mapInteraction.cancelPopupClose();
 
-            const content = `
-                <table class="table is-narrow is-fullwidth popup-table">
-                    <tbody>
-                        <tr>
-                            <td class="popup-label">AGV ID</td>
-                            <td><span class="tag is-info">${obj.id || 'N/A'}</span></td>
-                        </tr>
-                        <tr>
-                            <td class="popup-label">名稱</td>
-                            <td>${obj.name || 'N/A'}</td>
-                        </tr>
-                        <tr>
-                            <td class="popup-label">位置</td>
-                            <td>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td class="popup-label">狀態</td>
-                            <td>
-                                <span class="status-indicator">
-                                    <span class="status-dot is-success"></span>
-                                    運行中
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            `;
+                console.debug('AGV hover enter:', obj.id, 'name:', obj.name, 'agvId:', obj.agvId);
+                const agvData = obj.getData();
+                const agvId = obj.agvId || obj.id; // 使用 agvId 或 fallback 到 id
+                const title = `AGV: ${obj.name || 'Unknown'}`;
 
-            const actions = [];
+                // 取得 AGV 狀態資訊
+                const statusInfo = getStatusInfo(agvData.status_id);
 
-            actions.push({
-                text: '查看任務',
-                icon: 'mdi-format-list-checks',
-                class: 'is-primary',
-                onclick: `mapObjectManager.viewAgvTasks('${agvId}')`,
-                permission: 'view_tasks'
-            });
+                const content = `
+                    <table class="table is-narrow is-fullwidth popup-table">
+                        <tbody>
+                            <tr>
+                                <td class="popup-label">AGV ID</td>
+                                <td><span class="tag is-info">${obj.id || 'N/A'}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="popup-label">名稱</td>
+                                <td>${obj.name || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                                <td class="popup-label">位置</td>
+                                <td>X: ${obj.latlng.lng.toFixed(2)}, Y: ${obj.latlng.lat.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td class="popup-label">狀態</td>
+                                <td>
+                                    <span class="status-indicator">
+                                        <span class="status-dot ${statusInfo.color}"></span>
+                                        ${statusInfo.name}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
 
-            actions.push({
-                text: '分配任務',
-                icon: 'mdi-plus',
-                class: 'is-success',
-                onclick: `mapObjectManager.assignTaskToAgv('${agvId}')`,
-                permission: 'create_task'
-            });
+                const actions = [];
 
-            mapInteraction.showPopup(obj.latlng, title, content, actions);
+                actions.push({
+                    text: '查看任務',
+                    icon: 'mdi-format-list-checks',
+                    class: 'is-primary',
+                    onclick: `mapObjectManager.viewAgvTasks('${agvId}')`,
+                    permission: 'view_tasks'
+                });
 
-            // 記錄查看操作
-            mapAuditLogger.logView(mapAuditLogger.RESOURCE_TYPES.AGV, obj.id, {
-                agvName: obj.name,
-                location: { x: obj.latlng.lng, y: obj.latlng.lat }
-            });
+                actions.push({
+                    text: '分配任務',
+                    icon: 'mdi-plus',
+                    class: 'is-success',
+                    onclick: `mapObjectManager.assignTaskToAgv('${agvId}')`,
+                    permission: 'create_task'
+                });
+
+                // KUKA AGV 專用：移動功能按鈕
+                // 檢查是否為 KUKA AGV (根據 className 或其他識別方式)
+                const isKukaAgv = obj.el?.className?.includes('kuka-agv') ||
+                                  agvData?.type === 'kuka' ||
+                                  agvData?.model?.toLowerCase().includes('kuka');
+
+                if (isKukaAgv) {
+                    actions.push({
+                        text: '移動',
+                        icon: 'mdi-map-marker-path',
+                        class: 'is-link',
+                        onclick: `mapObjectManager.createMoveTaskForKukaAgv('${agvId}')`,
+                        permission: 'create_task'
+                    });
+                }
+
+                mapInteraction.showPopup(obj.latlng, title, content, actions);
+
+                // 記錄查看操作
+                mapAuditLogger.logView(mapAuditLogger.RESOURCE_TYPES.AGV, obj.id, {
+                    agvName: obj.name,
+                    location: { x: obj.latlng.lng, y: obj.latlng.lat }
+                });
+            },
+            onLeave: (obj, e) => {
+                console.debug('AGV hover leave:', obj.id);
+                // 延遲 300ms 關閉 popup，讓用戶有時間將鼠標移到 popup 上
+                mapInteraction.schedulePopupClose(300);
+            }
         });
     }
 
@@ -561,6 +591,262 @@ export const mapObjectManager = (() => {
         mapInteraction.editNode(nodeId);
     }
 
+    // ==================== KUKA AGV 移動功能 ====================
+
+    /**
+     * 為 KUKA AGV 創建移動任務
+     * @param {string} agvId - AGV ID
+     */
+    function createMoveTaskForKukaAgv(agvId) {
+        mapPermissions.executeWithPermission('create_task', () => {
+            console.log('Creating KUKA move task for AGV:', agvId);
+
+            // 1. 獲取 AGV 數據
+            const agvData = mapAgvManager.getAgvData(agvId);
+            if (!agvData) {
+                if (window.notify) {
+                    window.notify.showErrorMessage(`找不到 AGV ${agvId}`);
+                } else {
+                    alert(`找不到 AGV ${agvId}`);
+                }
+                return;
+            }
+
+            // 2. 顯示節點選擇提示
+            if (window.notify) {
+                window.notify.showNotifyMessage('請在地圖上選擇目標 KUKA 節點', 'is-info');
+            }
+
+            // 3. 啟用節點選擇模式
+            enableKukaNodeSelection(agvData, (selectedNode) => {
+                // 4. 顯示確認對話框
+                showMoveConfirmDialog(agvData, selectedNode);
+            });
+        });
+    }
+
+    /**
+     * 啟用 KUKA 節點選擇模式
+     * @param {object} agvData - AGV 數據
+     * @param {function} callback - 選擇節點後的回調函數
+     */
+    function enableKukaNodeSelection(agvData, callback) {
+        // 獲取 KUKA 節點列表
+        const mapState = window.mapStore?.getState();
+        const kukaNodes = mapState?.kukaNodes || [];
+
+        if (kukaNodes.length === 0) {
+            if (window.notify) {
+                window.notify.showErrorMessage('地圖上沒有可用的 KUKA 節點');
+            }
+            return;
+        }
+
+        console.log(`Found ${kukaNodes.length} KUKA nodes for selection`);
+
+        // 儲存原始的點擊處理器
+        const originalHandlers = new Map();
+        let isSelectionActive = true;
+
+        // 為每個 KUKA 節點設置臨時點擊處理器
+        kukaNodes.forEach(node => {
+            const nodeObj = window.kukaNodeObjects?.get(node.id);
+            if (nodeObj) {
+                // 保存原始處理器
+                if (nodeObj.clickHandler) {
+                    originalHandlers.set(node.id, nodeObj.clickHandler);
+                }
+
+                // 高亮節點（如果支持）
+                if (typeof nodeObj.highlight === 'function') {
+                    nodeObj.highlight();
+                }
+
+                // 設置臨時點擊處理器
+                nodeObj.addClickHandler((obj, e) => {
+                    if (!isSelectionActive) return;
+
+                    console.log('KUKA node selected:', node.id, node.name);
+
+                    // 取消選擇模式
+                    isSelectionActive = false;
+
+                    // 恢復所有節點的原始處理器和樣式
+                    restoreNodeHandlers(kukaNodes, originalHandlers);
+
+                    // 執行回調
+                    callback(node);
+
+                    // 關閉提示
+                    if (window.notify) {
+                        window.notify.showNotifyMessage(`已選擇節點: ${node.name || node.id}`, 'is-success');
+                    }
+                });
+            }
+        });
+
+        // 添加取消選擇的機制（ESC 鍵）
+        const escHandler = (e) => {
+            if (e.key === 'Escape' && isSelectionActive) {
+                isSelectionActive = false;
+                restoreNodeHandlers(kukaNodes, originalHandlers);
+                if (window.notify) {
+                    window.notify.showNotifyMessage('已取消節點選擇', 'is-warning');
+                }
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+    }
+
+    /**
+     * 恢復節點的原始處理器
+     * @param {array} nodes - 節點列表
+     * @param {Map} originalHandlers - 原始處理器映射
+     */
+    function restoreNodeHandlers(nodes, originalHandlers) {
+        nodes.forEach(node => {
+            const nodeObj = window.kukaNodeObjects?.get(node.id);
+            if (nodeObj) {
+                // 取消高亮（如果支持）
+                if (typeof nodeObj.unhighlight === 'function') {
+                    nodeObj.unhighlight();
+                }
+
+                // 恢復原始處理器
+                const originalHandler = originalHandlers.get(node.id);
+                if (originalHandler) {
+                    nodeObj.clickHandler = originalHandler;
+                } else {
+                    // 重新設置默認節點互動
+                    setupNodeInteraction(nodeObj);
+                }
+            }
+        });
+    }
+
+    /**
+     * 顯示移動任務確認對話框
+     * @param {object} agvData - AGV 數據
+     * @param {object} targetNode - 目標節點數據
+     */
+    function showMoveConfirmDialog(agvData, targetNode) {
+        const modal = document.getElementById('kuka-move-confirm-modal');
+        if (!modal) {
+            console.error('KUKA move confirm modal not found');
+            return;
+        }
+
+        // 更新對話框內容
+        document.getElementById('move-confirm-agv-name').textContent = agvData.name || agvData.id;
+        document.getElementById('move-confirm-agv-id').textContent = agvData.id;
+        document.getElementById('move-confirm-target-node').textContent = targetNode.name || targetNode.id;
+        document.getElementById('move-confirm-target-id').textContent = targetNode.id;
+
+        // 顯示對話框
+        modal.classList.add('is-active');
+
+        // 綁定確認按鈕事件
+        const confirmBtn = document.getElementById('move-confirm-submit');
+        const cancelBtn = document.getElementById('move-confirm-cancel');
+        const closeBtn = document.getElementById('move-confirm-close');
+
+        const closeModal = () => {
+            modal.classList.remove('is-active');
+        };
+
+        const submitTask = () => {
+            const taskData = {
+                name: `KUKA移動 - AGV${agvData.id} 至節點${targetNode.id}`,
+                description: `從當前位置移動到節點 ${targetNode.name || targetNode.id}`,
+                work_id: 210001,  // KUKA 移動任務
+                agv_id: agvData.id,
+                priority: 0,
+                parameters: {
+                    model: "KUKA400i",
+                    nodes: [targetNode.id],  // 僅目標節點
+                    agvId: agvData.id  // 🆕 在 parameters 中也添加 agvId，供 simple_kuka_manager 使用
+                }
+            };
+
+            closeModal();
+            submitKukaMoveTask(taskData);
+        };
+
+        // 移除舊的事件監聽器並添加新的
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        newConfirmBtn.addEventListener('click', submitTask);
+
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        newCancelBtn.addEventListener('click', closeModal);
+
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.addEventListener('click', closeModal);
+
+        // 記錄操作
+        mapAuditLogger.logCreate(mapAuditLogger.RESOURCE_TYPES.TASK, null, {
+            action: 'show_kuka_move_dialog',
+            agvId: agvData.id,
+            targetNodeId: targetNode.id,
+            source: 'map_kuka_agv_popup'
+        });
+    }
+
+    /**
+     * 提交 KUKA 移動任務到後端
+     * @param {object} taskData - 任務數據
+     */
+    async function submitKukaMoveTask(taskData) {
+        try {
+            console.log('Submitting KUKA move task:', taskData);
+
+            const response = await fetch('/api/tasks/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(taskData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Task created successfully:', result);
+
+                if (window.notify) {
+                    window.notify.showNotifyMessage(`任務創建成功: ${result.task_id || result.id}`, 'is-success');
+                } else {
+                    alert(`任務創建成功: ${result.task_id || result.id}`);
+                }
+
+                // 記錄成功操作
+                mapAuditLogger.logCreate(mapAuditLogger.RESOURCE_TYPES.TASK, result.task_id || result.id, {
+                    action: 'create_kuka_move_task',
+                    agvId: taskData.agv_id,
+                    targetNodeId: taskData.parameters.nodes[0],
+                    source: 'map_kuka_move_function'
+                });
+
+                // 刷新任務列表（如果存在）
+                if (window.tasksStore && typeof window.tasksStore.refresh === 'function') {
+                    window.tasksStore.refresh();
+                }
+            } else {
+                const errorData = await response.json().catch(() => ({ detail: '未知錯誤' }));
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Failed to create KUKA move task:', error);
+            if (window.notify) {
+                window.notify.showErrorMessage(`創建任務失敗: ${error.message}`);
+            } else {
+                alert(`創建任務失敗: ${error.message}`);
+            }
+        }
+    }
+
     // 公開方法
     const publicMethods = {
         init,
@@ -573,6 +859,7 @@ export const mapObjectManager = (() => {
         // AGV 相關操作
         viewAgvTasks,
         assignTaskToAgv,
+        createMoveTaskForKukaAgv,  // KUKA AGV 移動功能
 
         // 設備相關操作
         viewEquipmentDetails,

@@ -219,6 +219,7 @@ echo "  manage_zenoh <cmd>                - 管理 Zenoh Router"
 echo "  manage_agvc_database_node <cmd>   - 管理 AGVC 資料庫節點"
 echo "  manage_web_api_launch <cmd>       - 管理 Web API Launch"
 echo "  manage_tafl_wcs <cmd>             - 管理 TAFL WCS 節點"  # 新一代 WCS 系統
+echo "  manage_kuka_wcs <cmd>             - 管理 KUKA WCS 節點"
 echo "  manage_rcs_core <cmd>             - 管理 RCS 核心節點"
 echo "  manage_room_task_build <cmd>      - 管理 WCS 房間任務節點"
 echo "  manage_transfer_box_task_build <cmd> - 管理 WCS 傳送箱任務節點"

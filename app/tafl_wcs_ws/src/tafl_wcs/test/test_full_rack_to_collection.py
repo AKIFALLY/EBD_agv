@@ -26,7 +26,7 @@ async def test_full_rack_to_collection():
 
     test_rack_id = 701
     outlet_id = 10002  # 房間1出口
-    collection_location_id = 51  # 人工收料區第一位
+    collection_location_id = 21  # 人工收料區第一位
 
     try:
         # 清理舊資料
@@ -119,8 +119,8 @@ async def test_full_rack_to_collection():
                     print(f"   原因: {task.parameters.get('reason')}")
                     print(f"   載具數: {task.parameters.get('carrier_count')}")
                     print(f"   是否滿載: {task.parameters.get('is_full')}")
-                    # 驗證目的地是否在人工收料區 (51-55)
-                    if to_loc_id and 51 <= to_loc_id <= 55:
+                    # 驗證目的地是否在人工收料區 (21-22)
+                    if to_loc_id and 21 <= to_loc_id <= 22:
                         print(f"   ✅ 正確路由到人工收料區")
                         return True
                     elif to_loc_name and 'ManualCollectionArea' in to_loc_name:
@@ -161,7 +161,7 @@ async def test_last_batch_to_collection():
 
     test_rack_id = 702
     outlet_id = 10002
-    collection_location_id = 51
+    collection_location_id = 21
 
     try:
         # 清理舊資料
@@ -260,8 +260,8 @@ async def test_last_batch_to_collection():
                     print(f"   原因: {task.parameters.get('reason')}")
                     print(f"   載具數: {task.parameters.get('carrier_count')}")
                     print(f"   是否尾批: {task.parameters.get('is_last_batch')}")
-                    # 驗證目的地是否在人工收料區 (51-55)
-                    if to_loc_id and 51 <= to_loc_id <= 55:
+                    # 驗證目的地是否在人工收料區 (21-22)
+                    if to_loc_id and 21 <= to_loc_id <= 22:
                         print(f"   ✅ 正確路由到人工收料區")
                         return True
                     elif to_loc_name and 'ManualCollectionArea' in to_loc_name:

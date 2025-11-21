@@ -45,6 +45,15 @@ def load_registry():
 # 初始載入
 load_registry()
 
+# ============ AGV 狀態快取機制 ============
+# 遠端 AGV 狀態快取（快取 + 異步更新模式）
+import time
+
+agv_status_cache = {}  # AGV 狀態快取: {agv_name: status_dict}
+agv_cache_timestamps = {}  # 快取時間戳: {agv_name: timestamp}
+AGV_CACHE_TTL = 30  # 快取有效期 30 秒
+cache_update_lock = asyncio.Lock()  # 快取更新鎖，避免重複更新
+
 
 class NodeManager:
     """節點管理器類別"""
@@ -157,38 +166,11 @@ class NodeManager:
         node_info = node_registry.get("nodes", {}).get(node_name)
         if not node_info:
             raise HTTPException(status_code=404, detail=f"Node {node_name} not found")
-        
-        # 根據節點類型使用不同的啟動命令
-        if node_info.get("type") == "launch":
-            # Launch 類型使用 manage_ 函數
-            cmd = f"bash -c 'source /app/setup.bash >/dev/null 2>&1 && manage_{node_name} start'"
-        else:
-            # Node 類型使用 ros2 run
-            package = node_info.get("package")
-            executable = node_info.get("executable")
-            namespace = node_info.get("namespace", "")
-            if not package or not executable:
-                return {
-                    "success": False,
-                    "message": f"Missing package or executable for node {node_name}",
-                    "error": "Configuration incomplete"
-                }
 
-            # 構建命令（使用雙引號確保變數正確展開）
-            log_file = node_info.get("log_file", f"/tmp/{node_name}.log")
-            if namespace:
-                ns_param = f"--ros-args -r __ns:=/{namespace}"
-                cmd = f'bash -c "source /app/setup.bash >/dev/null 2>&1 && agvc_source >/dev/null 2>&1 && nohup ros2 run {package} {executable} {ns_param} > {log_file} 2>&1 &"'
-            else:
-                cmd = f'bash -c "source /app/setup.bash >/dev/null 2>&1 && agvc_source >/dev/null 2>&1 && nohup ros2 run {package} {executable} > {log_file} 2>&1 &"'
+        # 統一使用 manage_ 函數啟動節點（無論 type 是 launch 還是 node）
+        # 所有節點都已實現 manage_* 函數，包含完整的啟動邏輯和驗證
+        cmd = f"bash -c 'source /app/setup.bash >/dev/null 2>&1 && manage_{node_name} start'"
 
-            # 記錄啟動命令（用於調試）
-            logger.info(f"📝 啟動節點 {node_name}:")
-            logger.info(f"   - package: {package}")
-            logger.info(f"   - executable: {executable}")
-            logger.info(f"   - namespace: {namespace if namespace else 'None'}")
-            logger.info(f"   - 完整命令: {cmd}")
-        
         result = await NodeManager.run_command(cmd, timeout=10)
 
         if result["success"]:
@@ -214,20 +196,9 @@ class NodeManager:
         if not node_info:
             raise HTTPException(status_code=404, detail=f"Node {node_name} not found")
 
-        # 根據節點類型使用不同的停止命令
-        if node_info.get("type") == "launch":
-            # Launch 類型使用 manage_ 函數
-            cmd = f"bash -c 'source /app/setup.bash >/dev/null 2>&1 && manage_{node_name} stop'"
-        else:
-            # Node 類型使用 pkill 停止進程
-            executable = node_info.get("executable")
-            if not executable:
-                return {
-                    "success": False,
-                    "message": f"Missing executable for node {node_name}",
-                    "error": "Configuration incomplete"
-                }
-            cmd = f"bash -c 'pkill -f {executable}'"
+        # 統一使用 manage_ 函數停止節點（無論 type 是 launch 還是 node）
+        # 所有節點都已實現 manage_* 函數，並已修復 pkill 安全性
+        cmd = f"bash -c 'source /app/setup.bash >/dev/null 2>&1 && manage_{node_name} stop'"
 
         # 執行停止命令 (增加超時時間以適應 Launch 類型節點的清理時間)
         result = await NodeManager.run_command(cmd, timeout=15)
@@ -350,6 +321,136 @@ async def check_pid_file_valid(pid_file: str) -> bool:
     except Exception as e:
         logger.error(f"PID file check failed for {pid_file}: {e}")
         return False
+
+
+# ============ AGV 狀態管理函數 ============
+
+async def update_single_agv_status(agv_name: str, agv_info: Dict) -> Dict:
+    """
+    更新單個 AGV 狀態（非阻塞，5秒超時）
+
+    透過 SSH 連接到遠端 AGV 並執行狀態檢查命令。
+
+    Args:
+        agv_name: AGV 名稱
+        agv_info: AGV 配置資訊（包含 ip, port, type 等）
+
+    Returns:
+        AGV 狀態字典，包含 name, type, ip, status, details
+    """
+    status = {
+        "name": agv_name,
+        "type": agv_info.get("type"),
+        "ip": agv_info.get("ip"),
+        "status": "unknown",
+        "details": {}
+    }
+
+    try:
+        # 5 秒超時保護
+        async with asyncio.timeout(5):
+            # 使用 manage_remote_agv_launch 檢查狀態
+            cmd = f"bash -c 'source /app/setup.bash && manage_remote_agv_launch {agv_name} status'"
+            result = await NodeManager.run_command(cmd, timeout=5)
+
+            if result["success"]:
+                output = result["stdout"]
+
+                # 解析輸出判斷狀態
+                if "運行中" in output or "✅ AGV 節點運行中" in output:
+                    status["status"] = "running"
+                elif "未檢測到 AGV 節點" in output or "⚠️" in output:
+                    status["status"] = "stopped"
+                elif "SSH 连接失败" in output or "❌" in output:
+                    status["status"] = "unknown"  # SSH 失敗保持 unknown
+
+                # 只儲存前 200 字元避免日誌過大
+                status["details"]["output"] = output[:200] if output else ""
+            else:
+                # 命令執行失敗，保持 unknown
+                status["details"]["error"] = result.get("error", "Unknown error")[:100]
+
+            logger.debug(f"AGV {agv_name} 狀態更新: {status['status']}")
+            return status
+
+    except asyncio.TimeoutError:
+        # SSH 超時，保持 unknown
+        logger.warning(f"AGV {agv_name} 狀態檢查超時")
+        status["details"]["error"] = "SSH timeout"
+        return status
+    except Exception as e:
+        # 其他錯誤，保持 unknown
+        logger.error(f"AGV {agv_name} 狀態檢查錯誤: {e}")
+        status["details"]["error"] = str(e)[:100]
+        return status
+
+
+async def refresh_agv_cache(agv_name: str, agv_info: Dict):
+    """
+    背景更新 AGV 狀態快取（使用鎖避免重複更新）
+
+    Args:
+        agv_name: AGV 名稱
+        agv_info: AGV 配置資訊
+    """
+    async with cache_update_lock:
+        # 檢查是否已有其他更新正在進行（雙重檢查）
+        current_time = time.time()
+        if (agv_name in agv_cache_timestamps and
+            current_time - agv_cache_timestamps[agv_name] < 2):
+            # 2 秒內已更新，跳過
+            return
+
+        logger.debug(f"開始背景更新 AGV {agv_name} 狀態快取")
+        status = await update_single_agv_status(agv_name, agv_info)
+        agv_status_cache[agv_name] = status
+        agv_cache_timestamps[agv_name] = time.time()
+        logger.info(f"AGV {agv_name} 快取已更新: {status['status']}")
+
+
+async def get_cached_agv_status(agv_name: str, agv_info: Dict) -> Dict:
+    """
+    獲取快取的 AGV 狀態，過期時觸發背景更新（混合模式）
+
+    快取策略：
+    - 快取有效期 30 秒
+    - 快取命中：立即返回快取狀態
+    - 快取過期：觸發背景更新，返回舊快取或預設值
+    - 首次查詢：返回預設 unknown，同時觸發背景更新
+
+    Args:
+        agv_name: AGV 名稱
+        agv_info: AGV 配置資訊
+
+    Returns:
+        AGV 狀態字典
+    """
+    current_time = time.time()
+
+    # 檢查快取是否有效
+    if (agv_name in agv_status_cache and
+        current_time - agv_cache_timestamps.get(agv_name, 0) < AGV_CACHE_TTL):
+        # 快取命中且有效
+        logger.debug(f"AGV {agv_name} 快取命中")
+        return agv_status_cache[agv_name]
+
+    # 快取未命中或過期，觸發背景更新（非阻塞）
+    asyncio.create_task(refresh_agv_cache(agv_name, agv_info))
+
+    # 立即返回舊快取（如果存在）或預設值
+    if agv_name in agv_status_cache:
+        logger.debug(f"AGV {agv_name} 快取過期，返回舊快取並觸發背景更新")
+        return agv_status_cache[agv_name]
+    else:
+        # 首次查詢，返回預設值
+        logger.debug(f"AGV {agv_name} 首次查詢，返回預設值並觸發背景更新")
+        return {
+            "name": agv_name,
+            "type": agv_info.get("type"),
+            "ip": agv_info.get("ip"),
+            "status": "unknown",
+            "details": {}
+        }
 
 
 @router.get("/status")
@@ -475,18 +576,23 @@ async def get_all_status():
             status["running"] = False
 
         status_list.append(status)
-    
-    # 獲取遠端 AGV 狀態 - 簡化版本
+
+    # 過濾隱藏的節點（hidden: true）
+    # 這些節點通常是舊版本或僅在特定環境使用的節點
+    status_list = [
+        s for s in status_list
+        if not node_registry.get("nodes", {})
+            .get(s["name"], {})
+            .get("hidden", False)
+    ]
+
+    # 獲取遠端 AGV 狀態 - 快取 + 異步更新版本
     agv_status_list = []
     for agv_name, agv_info in node_registry.get("remote_agvs", {}).items():
-        agv_status_list.append({
-            "name": agv_name,
-            "type": agv_info.get("type"),
-            "ip": agv_info.get("ip"),
-            "status": "unknown",  # 預設為 unknown
-            "details": {}
-        })
-    
+        # 使用快取機制獲取 AGV 狀態（快速響應 + 背景更新）
+        status = await get_cached_agv_status(agv_name, agv_info)
+        agv_status_list.append(status)
+
     return {
         "timestamp": datetime.now().isoformat(),
         "nodes": status_list,
@@ -644,3 +750,55 @@ async def health_check():
         "service": "node_management",
         "timestamp": datetime.now().isoformat()
     }
+
+
+# ============ AGV 快取預熱函數 ============
+
+async def warmup_agv_cache():
+    """
+    預熱遠端 AGV 狀態快取（可選）
+
+    在服務啟動時並行更新所有 AGV 的狀態快取。
+    這是可選的優化，即使不調用此函數，系統也會在首次請求時自動初始化快取。
+
+    使用方式：
+    在 api_server.py 中的 startup 事件中調用：
+
+    ```python
+    from web_api.routers.nodes import warmup_agv_cache
+
+    @app.on_event("startup")
+    async def startup_event():
+        await warmup_agv_cache()
+    ```
+    """
+    logger.info("🔄 開始預熱遠端 AGV 狀態快取...")
+
+    remote_agvs = node_registry.get("remote_agvs", {})
+    if not remote_agvs:
+        logger.info("沒有配置遠端 AGV，跳過預熱")
+        return
+
+    # 並行更新所有 AGV 快取（避免阻塞）
+    tasks = [
+        refresh_agv_cache(agv_name, agv_info)
+        for agv_name, agv_info in remote_agvs.items()
+    ]
+
+    # 等待所有更新完成（容許失敗）
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # 統計成功和失敗
+    success_count = sum(1 for r in results if not isinstance(r, Exception))
+    fail_count = len(results) - success_count
+
+    logger.info(
+        f"✅ AGV 狀態快取預熱完成：成功 {success_count}/{len(remote_agvs)}，"
+        f"失敗 {fail_count}"
+    )
+
+    # 記錄失敗的 AGV
+    for idx, result in enumerate(results):
+        if isinstance(result, Exception):
+            agv_name = list(remote_agvs.keys())[idx]
+            logger.warning(f"AGV {agv_name} 預熱失敗: {result}")

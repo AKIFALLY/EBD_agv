@@ -1,3 +1,14 @@
+# ⚠️ 已棄用 (DEPRECATED)
+
+**棄用日期**: 2025-11-18
+**原因**: TAFL WCS 系統已被 KUKA WCS 取代
+**替代方案**: 使用 `kuka_wcs_ws` 進行倉儲控制
+**遷移指南**: 參見 docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+
+本文檔保留僅供歷史參考。
+
+---
+
 # TAFL Parser Workspace CLAUDE.md
 
 ## 📚 Context Loading

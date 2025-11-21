@@ -9,12 +9,12 @@ export const AGV_STATUS = {
     DISCONNECTED: { id: 2, name: '離線', description: 'AGV 離線或無法通訊', color: 'is-danger' },
     IDLE: { id: 3, name: '空閒', description: 'AGV 空閒，可接受新任務', color: 'is-success' },
     WORKING: { id: 4, name: '任務中', description: 'AGV 正在執行任務', color: 'is-info' },
-    CHARGING: { id: 5, name: '充電中', description: 'AGV 正在充電', color: 'is-warning' },
-    UPDATING: { id: 6, name: '更新中', description: 'AGV 正在進行軟體更新', color: 'is-link' },
+    CHARGING: { id: 5, name: '充電中', description: 'AGV 正在充電', color: 'is-gold' },
+    UPDATING: { id: 6, name: '更新中', description: 'AGV 正在進行軟體更新', color: 'is-purple-light' },
     ERROR: { id: 7, name: '異常', description: 'AGV 發生異常或錯誤', color: 'is-danger' },
     MAINTENANCE: { id: 8, name: '維護中', description: 'AGV 正在進行維護', color: 'is-warning' },
-    STANDBY: { id: 9, name: '待機', description: 'AGV 待機狀態', color: 'is-light' },
-    INITIALIZING: { id: 10, name: '初始化', description: 'AGV 正在初始化', color: 'is-info' }
+    STANDBY: { id: 9, name: '等待', description: 'AGV 等待狀態', color: 'is-pink' },
+    INITIALIZING: { id: 10, name: '初始化', description: 'AGV 正在初始化', color: 'is-purple-light' }
 };
 
 /**

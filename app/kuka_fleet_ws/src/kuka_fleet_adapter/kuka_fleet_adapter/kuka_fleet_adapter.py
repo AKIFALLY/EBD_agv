@@ -189,9 +189,10 @@ class KukaFleetAdapter:
             self.logger.warn(f"查詢 AGV 失敗: {res.get('message', '未知錯誤')}")
         return agvs
 
-    def workflow(self, workflow: str, robot_id: int, kuka_mission_code: str):
+    def workflow(self, workflow: str, kuka_mission_code: str, robot_id: int = None):
         """
         執行指定的 workflow
+        robot_id: 可選參數，若不指定則由 KUKA Fleet Manager 自動分配車輛
         """
         kuka_mission = {
             "orgId": "Ching-Tech",
@@ -201,22 +202,24 @@ class KukaFleetAdapter:
             "robotModels": [
                 "KMP 400i diffDrive"
             ],
-            "robotIds": [
-                robot_id
-            ],
             "robotType": "LIFT",
             "templateCode": workflow,
             "missionData": []  # <--- 用你組裝的 mission_data
         }
 
+        # 只在 robot_id 不為 None 時添加 robotIds 字段
+        if robot_id is not None:
+            kuka_mission["robotIds"] = [robot_id]
+
         res = self.api_client.submit_mission(kuka_mission)
 
         return res
 
-    def move(self, nodes: list, robot_id: int, kuka_mission_code: str):
+    def move(self, nodes: list, kuka_mission_code: str, robot_id: int = None):
         """
         根據指定的 points 移動
         nodes: 可以是 int list 或 str list
+        robot_id: 可選參數，若不指定則由 KUKA Fleet Manager 自動分配車輛
         """
         mission_data = []
         for idx, node in enumerate(nodes):
@@ -240,22 +243,24 @@ class KukaFleetAdapter:
             "robotModels": [
                 "KMP 400i diffDrive"
             ],
-            "robotIds": [
-                robot_id
-            ],
             "robotType": "LIFT",
             "priority": 1,
             "missionData": mission_data
         }
 
+        # 只在 robot_id 不為 None 時添加 robotIds 字段
+        if robot_id is not None:
+            kuka_mission["robotIds"] = [robot_id]
+
         res = self.api_client.submit_mission(kuka_mission)
 
         return res
 
-    def rack_move(self, nodes: list, robot_id: int, kuka_mission_code: str):
+    def rack_move(self, nodes: list, kuka_mission_code: str, robot_id: int = None):
         """
         根據指定的 points 移動
         nodes: 可以是 int list 或 str list
+        robot_id: 可選參數，若不指定則由 KUKA Fleet Manager 自動分配車輛
         """
         mission_data = []
         for idx, node in enumerate(nodes):
@@ -278,13 +283,14 @@ class KukaFleetAdapter:
             "robotModels": [
                 "KMP 400i diffDrive"
             ],
-            "robotIds": [
-                robot_id
-            ],
             "robotType": "LIFT",
             "priority": 1,
             "missionData": mission_data
         }
+
+        # 只在 robot_id 不為 None 時添加 robotIds 字段
+        if robot_id is not None:
+            kuka_mission["robotIds"] = [robot_id]
 
         res = self.api_client.submit_mission(kuka_mission)
 

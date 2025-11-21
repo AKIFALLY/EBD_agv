@@ -149,8 +149,9 @@ agvc_source() {
     local agvc_app_workspaces=(
         "/app/ecs_ws/install"
         "/app/rcs_ws/install"
-        "/app/tafl_ws/install"       # TAFL parser and executor (新一代 WCS 基礎)
-        "/app/tafl_wcs_ws/install"   # TAFL WCS integration (目前使用的 WCS 實作)
+        #"/app/tafl_ws/install"       # TAFL parser and executor (新一代 WCS 基礎)
+        #"/app/tafl_wcs_ws/install"   # TAFL WCS integration (目前使用的 WCS 實作)
+        "/app/kuka_wcs_ws/install"   # KUKA WCS (純 Python 實作，專注於 KUKA rack 業務邏輯)
         "/app/web_api_ws/install"
         "/app/kuka_fleet_ws/install"
         "/app/launch_ws/install"

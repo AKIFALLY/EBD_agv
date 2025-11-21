@@ -302,4 +302,91 @@ def get_router(templates: Jinja2Templates) -> APIRouter:
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"刪除任務失敗: {str(e)}")
 
+    @router.post("/api/tasks/create")
+    async def api_task_create(request: Request):
+        """
+        API 方式創建任務（支持 JSON 請求）
+        用於前端 JavaScript 直接調用，例如 KUKA AGV 移動功能
+        """
+        from agvcui.middleware import get_current_user_from_request
+        current_user = get_current_user_from_request(request)
+
+        # 檢查權限
+        if not can_create(request):
+            raise HTTPException(status_code=403, detail="權限不足")
+
+        try:
+            # 解析 JSON 請求體
+            import json
+            task_data = await request.json()
+
+            # 驗證必要字段
+            if not task_data.get('name'):
+                raise HTTPException(status_code=400, detail="任務名稱為必填項")
+
+            # 處理參數字段
+            parameters = task_data.get('parameters')
+
+            # 🔥 智能補充 KUKA 任務參數
+            work_id = task_data.get('work_id')
+            if work_id:
+                # KUKA 支援的工作 ID
+                KUKA_WORK_IDS = [210001, 220001, 230001]
+
+                if work_id in KUKA_WORK_IDS:
+                    # 如果是 KUKA 任務，確保有 parameters
+                    if parameters is None:
+                        parameters = {}
+
+                    # 自動添加 model 字段（如果缺少）
+                    if "model" not in parameters:
+                        parameters["model"] = "KUKA400i"
+
+                    # 驗證必要的參數結構
+                    if work_id == 210001 or work_id == 220001:
+                        # KUKA 移動和移動貨架任務需要 nodes 列表
+                        if "nodes" not in parameters:
+                            parameters["nodes"] = []
+                    elif work_id == 230001:
+                        # KUKA 工作流任務需要 templateCode
+                        if "templateCode" not in parameters:
+                            parameters["templateCode"] = ""
+
+            # 構建完整的任務數據
+            complete_task_data = {
+                "name": task_data.get('name'),
+                "description": task_data.get('description'),
+                "mission_code": task_data.get('mission_code'),
+                "work_id": work_id,
+                "status_id": task_data.get('status_id'),
+                "room_id": task_data.get('room_id'),
+                "node_id": task_data.get('node_id'),
+                "agv_id": task_data.get('agv_id'),
+                "parent_task_id": task_data.get('parent_task_id'),
+                "priority": task_data.get('priority', 0),
+                "parameters": parameters
+            }
+
+            # 創建任務
+            new_task = create_task(complete_task_data)
+
+            if not new_task:
+                raise HTTPException(status_code=500, detail="創建任務失敗")
+
+            # 返回成功響應
+            return {
+                "success": True,
+                "message": "任務創建成功",
+                "task_id": new_task.id,
+                "id": new_task.id,  # 兼容不同的前端調用
+                "name": new_task.name
+            }
+
+        except HTTPException:
+            raise
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="無效的 JSON 格式")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"創建任務失敗: {str(e)}")
+
     return router

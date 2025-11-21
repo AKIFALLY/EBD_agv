@@ -3,6 +3,7 @@ from rclpy.node import Node
 from plc_proxy.plc_client import PlcClient
 from db_proxy.agvc_database_client import AGVCDatabaseClient
 from shared_constants.task_status import TaskStatus
+from std_msgs.msg import String
 
 class WaitRobotState(State):
     def __init__(self, node: Node):
@@ -18,6 +19,27 @@ class WaitRobotState(State):
         self.completion_retry_count = 0  # 完成重試次數
         self.max_completion_retries = 5  # 最大重試次數
         self.completion_update_sent = False  # 是否已發送完成更新
+
+        # OCR 相關變數（條件性訂閱：只有 cargo AGV）
+        self.ocr_enabled = self._is_cargo_agv()
+        self.latest_ocr_result = None
+        self.ocr_received_time = None
+        self.ocr_timeout_seconds = 10.0
+        self._pending_ocr_verification = None  # 待驗證的 OCR 結果
+
+        if self.ocr_enabled:
+            # 建立 OCR 訂閱
+            self.ocr_subscription = self.node.create_subscription(
+                String,
+                'sensor/ocr',  # namespace 會自動加上
+                self._ocr_callback,
+                10
+            )
+            self.node.get_logger().info("=" * 80)
+            self.node.get_logger().info("📡 Cargo AGV OCR 整合已啟用")
+            self.node.get_logger().info(f"   - 訂閱 Topic: {self.node.get_namespace()}/sensor/ocr")
+            self.node.get_logger().info(f"   - 超時設定: {self.ocr_timeout_seconds} 秒")
+            self.node.get_logger().info("=" * 80)
 
     def enter(self):
         self.node.get_logger().info("🤖 AGV 進入: WaitRobot 狀態")
@@ -276,3 +298,347 @@ class WaitRobotState(State):
             self.node.get_logger().info(f"✅ 任務更新成功，訊息: {response.message}")
         else:
             self.node.get_logger().error(f"⚠️ 任務更新失敗，訊息: {response.message}")
+
+    # ==================== OCR 整合功能（Cargo AGV 專用）====================
+
+    def _is_cargo_agv(self) -> bool:
+        """
+        判斷是否為 Cargo AGV
+
+        Returns:
+            bool: True 表示為 Cargo AGV，False 表示其他車型
+        """
+        namespace = self.node.get_namespace().lstrip('/')
+
+        # 方法1：namespace 判斷（推薦）
+        if 'cargo' in namespace.lower():
+            return True
+
+        # 方法2：節點名稱判斷
+        node_name = self.node.get_name()
+        if 'cargo' in node_name.lower():
+            return True
+
+        return False
+
+    def _ocr_callback(self, msg: String):
+        """
+        OCR 資料回調處理
+
+        Args:
+            msg: OCR 識別結果 (std_msgs/String)
+        """
+        self.latest_ocr_result = msg.data
+        self.ocr_received_time = self.node.get_clock().now()
+
+        self.node.get_logger().info(f"📄 收到 OCR 識別結果: {msg.data}")
+
+        # 記錄到任務日誌（未來可擴展寫入資料庫）
+        self._log_ocr_to_task(msg.data)
+
+        # 發送到 PLC/HMI 顯示
+        self._send_ocr_to_plc(msg.data)
+
+    def _log_ocr_to_task(self, ocr_result: str):
+        """
+        記錄 OCR 結果到任務日誌
+
+        Args:
+            ocr_result: OCR 識別結果
+        """
+        # TODO: 未來可擴展寫入資料庫
+        # 例如：self.agvdbclient.async_update_task_log(...)
+
+        self.node.get_logger().info(
+            f"📝 OCR 已記錄: {ocr_result} (task_id={self.node.task.id if self.node.task else 'N/A'})"
+        )
+
+    def _send_ocr_to_plc(self, ocr_result: str):
+        """
+        發送 OCR 結果到 PLC DM 暫存器供 HMI 顯示
+
+        Args:
+            ocr_result: OCR 識別結果（最多 20 個字元）
+
+        Note:
+            將 OCR 字串轉換為 ASCII 碼陣列寫入 DM8000~DM8019
+            每個 DM word 儲存 1 個字元的 ASCII 碼
+        """
+        try:
+            # 將字串填充到 20 個字元（不足補空格）
+            ocr_padded = ocr_result.ljust(20, ' ')[:20]
+
+            # 轉換為 ASCII 碼陣列
+            ascii_values = [str(ord(c)) for c in ocr_padded]
+
+            # 寫入 PLC DM8000~DM8019（20 個 word）
+            self.plc_client.async_write_continuous_data(
+                device_type='DM',
+                start_address='8000',
+                values=ascii_values,
+                callback=self._plc_ocr_write_callback
+            )
+
+            self.node.get_logger().info(
+                f"📤 OCR 已發送到 PLC (DM8000~DM8019): {ocr_result}"
+            )
+
+            # ✅ 步驟2：解析房間 ID 並執行產品驗證
+            room_id = self._extract_room_id_from_workid()
+            if room_id is not None:
+                self._query_room_products(room_id, ocr_result)
+
+        except Exception as e:
+            self.node.get_logger().error(f"❌ 發送 OCR 到 PLC 失敗: {e}")
+
+    def _plc_ocr_write_callback(self, response):
+        """PLC OCR 寫入回調"""
+        if response.success:
+            self.node.get_logger().info("✅ OCR PLC 寫入成功")
+        else:
+            self.node.get_logger().error(f"❌ OCR PLC 寫入失敗: {response.message}")
+
+    def check_ocr_available(self) -> bool:
+        """
+        檢查是否有 OCR 資料（供 Robot 狀態調用）
+
+        Returns:
+            bool: True 表示有資料或已超時，False 表示等待中
+
+        Note:
+            超時後返回 True 並記錄警告，但不阻塞任務執行
+        """
+        if not self.ocr_enabled:
+            # 非 cargo AGV，直接返回 True（不需要 OCR）
+            return True
+
+        if self.latest_ocr_result is None:
+            if self.ocr_received_time is None:
+                # 還沒開始等待 OCR
+                return False
+
+            # 檢查超時
+            current_time = self.node.get_clock().now()
+            elapsed = (current_time - self.ocr_received_time).nanoseconds / 1e9
+
+            if elapsed > self.ocr_timeout_seconds:
+                self.node.get_logger().warn(
+                    f"⏰ OCR 超時 ({elapsed:.1f}秒 > {self.ocr_timeout_seconds}秒)，"
+                    f"繼續執行任務"
+                )
+                return True  # 超時，不阻塞
+
+            return False  # 等待中
+
+        return True  # 有資料
+
+    # ========================================================================
+    # 🔍 產品驗證相關方法（Cargo AGV 專用）
+    # ========================================================================
+
+    def _extract_room_id_from_workid(self) -> int:
+        """
+        從 work_id 第1位數取得房間編號
+
+        Returns:
+            int | None: 房間編號，如果無法取得則返回 None
+
+        Note:
+            Work ID 格式：2060502 → 房間2
+            房間編號 = work_id // 1000000（整除百萬）
+        """
+        if not self.node.task or not self.node.task.work_id:
+            self.node.get_logger().warn("⚠️ 無任務或 work_id，跳過產品驗證")
+            return None
+
+        work_id = self.node.task.work_id
+        room_id = work_id // 1000000  # 整除百萬取第1位
+
+        self.node.get_logger().info(
+            f"📍 Work ID 解析\n"
+            f"  - work_id: {work_id}\n"
+            f"  - room_id: {room_id}"
+        )
+        return room_id
+
+    def _query_room_products(self, room_id: int, ocr_result: str):
+        """
+        查詢房間產品清單（非同步）
+
+        Args:
+            room_id: 房間編號
+            ocr_result: OCR 識別結果
+
+        Note:
+            透過 SqlQuery service 查詢房間正在生產的產品名稱清單
+            查詢 SQL: SELECT p.name FROM product p JOIN room r
+                     ON p.process_settings_id = r.process_settings_id
+                     WHERE r.id = {room_id}
+        """
+        from db_proxy_interfaces.srv import SqlQuery
+
+        # 建立 service client（延遲初始化）
+        if not hasattr(self, 'sql_query_client'):
+            self.sql_query_client = self.node.create_client(
+                SqlQuery, '/agvc/sql_query'
+            )
+
+        # 等待 service 可用
+        if not self.sql_query_client.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().error(
+                "❌ SqlQuery service 不可用，無法驗證產品\n"
+                "  - 寫入驗證 Fail"
+            )
+            self._write_verification_fail()
+            return
+
+        # 建立查詢請求
+        request = SqlQuery.Request()
+        request.query_string = f"""
+            SELECT p.name
+            FROM product p
+            JOIN room r ON p.process_settings_id = r.process_settings_id
+            WHERE r.id = {room_id}
+        """
+
+        # 儲存 OCR 結果供回調使用
+        self._pending_ocr_verification = ocr_result
+
+        self.node.get_logger().info(
+            f"🔍 查詢房間產品清單\n"
+            f"  - 房間: {room_id}\n"
+            f"  - OCR: {ocr_result}"
+        )
+
+        # 非同步呼叫
+        future = self.sql_query_client.call_async(request)
+        future.add_done_callback(self._handle_product_verification_response)
+
+    def _handle_product_verification_response(self, future):
+        """
+        處理產品查詢回應並執行比對
+
+        Args:
+            future: SQL 查詢 future 物件
+
+        Note:
+            比對 OCR 識別結果與資料庫產品名稱清單
+            Pass → 寫入 MR7101=1, MR7102=0
+            Fail → 寫入 MR7101=0, MR7102=1
+        """
+        import json
+
+        try:
+            response = future.result()
+
+            # 檢查查詢是否成功
+            if not response.success:
+                self.node.get_logger().error(
+                    f"❌ 產品查詢失敗: {response.message}\n"
+                    f"  - 寫入驗證 Fail"
+                )
+                self._write_verification_fail()
+                return
+
+            # 解析查詢結果
+            result = json.loads(response.json_result)
+
+            # 檢查是否有產品資料
+            if not result or len(result) == 0:
+                self.node.get_logger().warn(
+                    "⚠️ 查無產品資料\n"
+                    f"  - 請確認房間配置是否正確\n"
+                    f"  - 寫入驗證 Fail"
+                )
+                self._write_verification_fail()
+                return
+
+            # 取得產品名稱清單
+            product_names = [row['name'] for row in result]
+            ocr_result = self._pending_ocr_verification
+
+            # 比對 OCR 與產品名稱
+            if ocr_result in product_names:
+                self.node.get_logger().info(
+                    f"✅ 產品驗證通過\n"
+                    f"  - OCR 識別: {ocr_result}\n"
+                    f"  - 產品清單: {product_names}\n"
+                    f"  - 寫入 Pass 到 PLC"
+                )
+                self._write_verification_pass()
+            else:
+                self.node.get_logger().error(
+                    f"❌ 產品驗證失敗\n"
+                    f"  - OCR 識別: {ocr_result}\n"
+                    f"  - 產品清單: {product_names}\n"
+                    f"  - 停留在 WaitRobot 等待人工處理\n"
+                    f"  - 寫入 Fail 到 PLC"
+                )
+                self._write_verification_fail()
+
+        except Exception as e:
+            self.node.get_logger().error(
+                f"❌ 驗證回應處理異常: {e}\n"
+                f"  - 寫入驗證 Fail"
+            )
+            self._write_verification_fail()
+
+    def _write_verification_pass(self):
+        """
+        寫入驗證 Pass 到 PLC
+
+        Note:
+            MR7101 = 1 (ON)  → Pass
+            MR7102 = 0 (OFF) → Not Fail
+        """
+        self.plc_client.async_write_bit(
+            device_type='MR',
+            address='7101',
+            value=1,  # ON
+            callback=self._plc_pass_callback
+        )
+        self.plc_client.async_write_bit(
+            device_type='MR',
+            address='7102',
+            value=0,  # OFF
+            callback=self._plc_fail_callback
+        )
+
+    def _write_verification_fail(self):
+        """
+        寫入驗證 Fail 到 PLC
+
+        Note:
+            MR7101 = 0 (OFF) → Not Pass
+            MR7102 = 1 (ON)  → Fail
+        """
+        self.plc_client.async_write_bit(
+            device_type='MR',
+            address='7101',
+            value=0,  # OFF
+            callback=self._plc_pass_callback
+        )
+        self.plc_client.async_write_bit(
+            device_type='MR',
+            address='7102',
+            value=1,  # ON
+            callback=self._plc_fail_callback
+        )
+
+    def _plc_pass_callback(self, response):
+        """PLC Pass 位元寫入回調"""
+        if response.success:
+            self.node.get_logger().info("✅ MR7101 Pass 位元寫入成功")
+        else:
+            self.node.get_logger().error(
+                f"❌ MR7101 寫入失敗: {response.message}"
+            )
+
+    def _plc_fail_callback(self, response):
+        """PLC Fail 位元寫入回調"""
+        if response.success:
+            self.node.get_logger().info("✅ MR7102 Fail 位元寫入成功")
+        else:
+            self.node.get_logger().error(
+                f"❌ MR7102 寫入失敗: {response.message}"
+            )

@@ -520,6 +520,49 @@ html, body {
 }
 
 /* 呼吸燈動畫 */
+/* 綠色呼吸灯動畫（用於 Add Rack） */
+@keyframes breathing-green {
+    0%, 100% {
+        box-shadow: 0 2px 15px rgba(0, 214, 143, 0.3),
+                   inset 0 0 20px rgba(255, 255, 255, 0.1);
+        border-color: rgba(0, 214, 143, 0.3);
+    }
+    50% {
+        box-shadow: 0 6px 35px rgba(0, 214, 143, 0.8),
+                   inset 0 0 40px rgba(255, 255, 255, 0.3);
+        border-color: rgba(0, 214, 143, 0.6);
+    }
+}
+
+/* 藍色呼吸灯動畫（用於 Edit） */
+@keyframes breathing-blue {
+    0%, 100% {
+        box-shadow: 0 2px 15px rgba(50, 115, 220, 0.3),
+                   inset 0 0 20px rgba(255, 255, 255, 0.1);
+        border-color: rgba(50, 115, 220, 0.3);
+    }
+    50% {
+        box-shadow: 0 6px 35px rgba(50, 115, 220, 0.8),
+                   inset 0 0 40px rgba(255, 255, 255, 0.3);
+        border-color: rgba(50, 115, 220, 0.6);
+    }
+}
+
+/* 紅色呼吸灯動畫（用於 Remove） */
+@keyframes breathing-red {
+    0%, 100% {
+        box-shadow: 0 2px 15px rgba(241, 70, 104, 0.3),
+                   inset 0 0 20px rgba(255, 255, 255, 0.1);
+        border-color: rgba(241, 70, 104, 0.3);
+    }
+    50% {
+        box-shadow: 0 6px 35px rgba(241, 70, 104, 0.8),
+                   inset 0 0 40px rgba(255, 255, 255, 0.3);
+        border-color: rgba(241, 70, 104, 0.6);
+    }
+}
+
+/* 保留原 breathing 動畫作為 green 的別名 */
 @keyframes breathing {
     0%, 100% {
         box-shadow: 0 2px 15px rgba(0, 214, 143, 0.3),
@@ -690,6 +733,8 @@ html, body {
 .dark-modal-body {
     padding: 25px 20px;
     text-align: center;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
 }
 
 .dark-modal-text {
@@ -795,4 +840,203 @@ button::-moz-focus-inner {
 
 .mdi-wifi.is-disconnected {
     color: #f14668 !important;
+}
+/* ===========================================================================
+   Add/Edit/Remove Rack 按鈕樣式
+   =========================================================================== */
+
+/* 按鈕並排容器 */
+.button-group-horizontal {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px;
+    width: 100%;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+/* 中等大小按鈕（Edit 和 Remove 並排） */
+.button-medium {
+    flex: 1;
+    min-height: 100px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.button-medium:active {
+    transform: translateY(2px);
+}
+
+.button-edit {
+    background: linear-gradient(135deg, #3273dc 0%, #2366d1 100%);
+    color: white;
+    border: 2px solid rgba(50, 115, 220, 0.3);
+    animation: breathing-blue 3s ease-in-out infinite;
+}
+
+.button-edit:hover {
+    background: linear-gradient(135deg, #2366d1 0%, #1f5bb7 100%);
+}
+
+.button-remove {
+    background: linear-gradient(135deg, #f14668 0%, #e03854 100%);
+    color: white;
+    border: 2px solid rgba(241, 70, 104, 0.3);
+    animation: breathing-red 3s ease-in-out infinite;
+}
+
+.button-remove:hover {
+    background: linear-gradient(135deg, #e0395b 0%, #c92e4e 100%);
+}
+
+.button-add {
+    background: linear-gradient(135deg, #48c774 0%, #3eba65 100%);
+    color: white;
+}
+
+.button-add:hover {
+    background: linear-gradient(135deg, #3eba65 0%, #34a856 100%);
+}
+
+/* ===========================================================================
+   Bitmap Grid 格位網格樣式
+   =========================================================================== */
+
+.bitmap-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 10px;
+    margin-top: 15px;
+}
+
+.bitmap-slot {
+    min-height: 70px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: 3px solid #363636;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.bitmap-slot:active {
+    transform: scale(0.95);
+}
+
+/* 格位狀態樣式 */
+.slot-occupied {
+    background: linear-gradient(135deg, #48c774 0%, #3eba65 100%);
+    color: white;
+    border-color: #3eba65;
+}
+
+.slot-occupied:hover {
+    background: linear-gradient(135deg, #3eba65 0%, #34a856 100%);
+}
+
+.slot-empty {
+    background: linear-gradient(135deg, #dbdbdb 0%, #c0c0c0 100%);
+    color: #363636;
+    border-color: #b5b5b5;
+}
+
+.slot-empty:hover {
+    background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);
+}
+
+.slot-disabled {
+    background: linear-gradient(135deg, #ffdd57 0%, #f1c40f 100%);
+    color: #363636;
+    border-color: #f1c40f;
+    opacity: 0.7;
+}
+
+.slot-disabled:hover {
+    background: linear-gradient(135deg, #f1c40f 0%, #d4a70a 100%);
+}
+
+.slot-disabled.slot-occupied {
+    background: linear-gradient(135deg, #ff7043 0%, #e64a19 100%);
+    color: white;
+    border-color: #e64a19;
+}
+
+/* ===========================================================================
+   Tab 頁籤樣式
+   =========================================================================== */
+
+.tabs.is-boxed.is-large a {
+    font-size: 1.3rem;
+    padding: 1rem 1.5rem;
+}
+
+.tabs.is-boxed.is-large li.is-active a {
+    background-color: #363636;
+    border-color: #363636;
+    color: white;
+}
+
+.tab-content {
+    padding: 20px 0;
+}
+
+/* ===========================================================================
+   Modal 調整
+   =========================================================================== */
+
+.dark-modal-body .field {
+    margin-bottom: 1.5rem;
+}
+
+.dark-modal-body .label {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.dark-modal-body .select.is-large select,
+.dark-modal-body .input.is-large {
+    font-size: 1.2rem;
+    min-height: 50px;
+}
+
+/* ===========================================================================
+   響應式調整
+   =========================================================================== */
+
+@media screen and (max-width: 768px) {
+    .bitmap-grid {
+        grid-gap: 5px;
+    }
+
+    .bitmap-slot {
+        min-height: 80px;
+        font-size: 1rem;
+    }
+
+    .button-medium {
+        width: calc(50% - 5px);
+        min-height: 80px;
+        margin: 2.5px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .bitmap-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .button-medium {
+        width: 100%;
+        margin: 5px 0;
+    }
 }

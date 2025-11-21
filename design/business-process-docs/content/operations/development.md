@@ -149,16 +149,25 @@ all_source  # 或簡寫: sa
 
 ### 工作空間管理
 
-#### AGV 工作空間 (9個)
+#### AGV 工作空間 (11個含共用)
 ```bash
-# AGV 工作空間列表
+# AGV 專用工作空間 (6個)
 agv_ws/                    # 核心 AGV 控制
 agv_cmd_service_ws/        # 手動指令服務
 joystick_ws/               # 搖桿控制
 sensorpart_ws/             # 感測器處理
+uno_gpio_ws/               # GPIO 控制服務
+web_api_ws/                # AGVUI 車載監控介面
+
+# 共用基礎設施 (4個)
+shared_constants_ws/       # 系統級常數定義
 keyence_plc_ws/            # PLC 通訊
 plc_proxy_ws/              # PLC 代理
 path_algorithm/            # 路徑規劃
+
+# 共用應用 (2個)
+db_proxy_ws/               # 本地資料存取
+launch_ws/                 # ROS 2 啟動編排
 
 # 建置特定工作空間
 cd /app/agv_ws
@@ -166,15 +175,30 @@ colcon build --packages-select agv_base
 source install/setup.bash
 ```
 
-#### AGVC 工作空間 (11個)
+#### AGVC 工作空間 (13個含共用)
 ```bash
-# AGVC 工作空間列表
+# AGVC 專用工作空間 (7個)
 web_api_ws/                # Web API 服務
 db_proxy_ws/               # 資料庫代理
 ecs_ws/                    # 設備控制系統
 rcs_ws/                    # 機器人控制系統
-tafl_wcs_ws/               # TAFL 流程執行引擎
+kuka_wcs_ws/               # KUKA WCS 系統（當前使用）
+wcs_ws/                    # WCS 工作空間（流程控制邏輯）
 kuka_fleet_ws/             # KUKA Fleet 整合
+
+# 共用基礎設施 (4個)
+shared_constants_ws/       # 系統級常數定義（共用）
+keyence_plc_ws/            # PLC 通訊（共用）
+plc_proxy_ws/              # PLC 代理（共用）
+path_algorithm/            # 路徑規劃（共用）
+
+# 共用應用 (2個)
+agv_ws/                    # AGV 介面定義（監控用）
+launch_ws/                 # ROS 2 啟動編排
+
+# 已棄用 (2個)
+# ~~tafl_ws/~~             # ⚠️ 已棄用 - TAFL 語言核心實作
+# ~~tafl_wcs_ws/~~         # ⚠️ 已棄用（已被 kuka_wcs_ws 取代）
 
 # 建置特定工作空間
 cd /app/web_api_ws

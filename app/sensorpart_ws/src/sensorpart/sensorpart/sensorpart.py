@@ -5,7 +5,8 @@ import threading
 
 
 class SensorPart:
-    def __init__(self, host='192.168.2.100', port=2005):
+    def __init__(self, host='192.168.2.100', port=2005,
+                 on_ocr_callback=None, on_position_callback=None):
         self.host = host
         self.port = port
         self.client_socket = None
@@ -14,6 +15,10 @@ class SensorPart:
         self.ocr_result = None     # To store OCR result
         self.thread = None
         self.stop_event = threading.Event()
+
+        # 回調函數（事件驅動）
+        self.on_ocr_callback = on_ocr_callback
+        self.on_position_callback = on_position_callback
 
     def connect(self):
         while not self.is_connected and not self.stop_event.is_set():
@@ -50,12 +55,20 @@ class SensorPart:
                     'rz': float(rz)
                 }
                 print(f"3D Positioning Data Updated: {self.position_data}")
+
+                # 觸發回調（事件驅動）
+                if self.on_position_callback:
+                    self.on_position_callback(self.position_data.copy())
             else:
                 print("3D Positioning Data Invalid.")
         elif match := re.match(ocr_pattern, message):
             _, ocr_string = match.groups()  # Updated to match new pattern
             self.ocr_result = ocr_string
             print(f"OCR Result Updated: {self.ocr_result}")
+
+            # 觸發回調（事件驅動）
+            if self.on_ocr_callback:
+                self.on_ocr_callback(ocr_string)
         else:
             print("Unrecognized message format. Ignoring.")
 

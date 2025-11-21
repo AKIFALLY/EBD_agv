@@ -226,18 +226,22 @@
                 </div>
             </div>
 
-            <!-- 格位可視化 -->
-            <div class="box">
-                <h2 class="subtitle">A 面 (格位 1-16)</h2>
-                <div class="rack-grid" id="rack-grid-a" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
-                    <!-- 格位 1-16 將由 JavaScript 生成 -->
+            <!-- 格位可視化：左右两区布局 -->
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                <!-- A面（左区） -->
+                <div class="box" style="flex: 1; min-width: 320px;">
+                    <h2 class="subtitle has-text-centered">Slot 1-16 (A面)</h2>
+                    <div class="rack-grid" id="rack-grid-a" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                        <!-- 格位 1-16 將由 JavaScript 生成 -->
+                    </div>
                 </div>
-            </div>
 
-            <div class="box">
-                <h2 class="subtitle">B 面 (格位 17-32)</h2>
-                <div class="rack-grid" id="rack-grid-b" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
-                    <!-- 格位 17-32 將由 JavaScript 生成 -->
+                <!-- B面（右区） -->
+                <div class="box" style="flex: 1; min-width: 320px;">
+                    <h2 class="subtitle has-text-centered">Slot 17-32 (B面)</h2>
+                    <div class="rack-grid" id="rack-grid-b" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                        <!-- 格位 17-32 將由 JavaScript 生成 -->
+                    </div>
                 </div>
             </div>
         </section>

@@ -46,10 +46,20 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /a
 
 ## 服務管理
 ```bash
-# [容器內] 服務管理（載入 setup.bash 後可用）
-manage_web_api_launch {start|stop|restart|status}
-manage_zenoh {start|stop|restart|status}
+# [AGVC 容器內] Web 服務管理（載入 setup.bash 後可用）
+manage_web_api_launch {start|stop|restart|status}  # API/AGVCUI/OPUI (8000/8001/8002)
+manage_zenoh {start|stop|restart|status}            # Zenoh Router
+
+# [AGV 容器內] Web 服務管理
+manage_web_agv_launch {start|stop|restart|status}   # AGVUI 車載監控 (8003)
 ```
+
+### 服務管理環境對照表
+| 函數 | 環境 | 管理服務 | 端口 |
+|------|------|---------|------|
+| `manage_web_api_launch` | **AGVC 容器** | api_server, agvcui, opui | 8000, 8001, 8002 |
+| `manage_web_agv_launch` | **AGV 容器** | agv_ui_server | 8003 |
+| `manage_zenoh` | **AGVC 容器** | Zenoh Router | 7447 |
 
 ## 工具使用
 ```bash

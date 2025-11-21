@@ -78,11 +78,11 @@ for pid_file in /tmp/*.pid; do
     fi
 done
 
-# 清理 7 天前的日誌文件 (保留最近的日誌)
-OLD_LOGS=$(find /tmp -maxdepth 1 -name '*.log' -type f -mtime +7 2>/dev/null | wc -l)
+# 清理 7 天前的日誌文件（包含原始日誌和輪轉日誌）
+OLD_LOGS=$(find /tmp -maxdepth 1 \( -name '*.log' -o -name '*.log.*' \) -type f -mtime +7 2>/dev/null | wc -l)
 if [ "$OLD_LOGS" -gt 0 ]; then
-    find /tmp -maxdepth 1 -name '*.log' -type f -mtime +7 -delete 2>/dev/null
-    echo "  ✅ 清理 $OLD_LOGS 個過期的日誌文件"
+    find /tmp -maxdepth 1 \( -name '*.log' -o -name '*.log.*' \) -type f -mtime +7 -delete 2>/dev/null
+    echo "  ✅ 清理 $OLD_LOGS 個過期的日誌文件（含輪轉檔案）"
 fi
 
 echo "✅ 臨時文件清理完成"
@@ -158,7 +158,9 @@ AUTO_START_PLC_SERVICE_AGVC=true       # PLC 服務（硬體接口層）
 AUTO_START_ECS_CORE=true               # ECS 核心服務（設備控制層）
 AUTO_START_RCS_CORE=true               # RCS 核心服務（機器人控制層）
 AUTO_START_TAFL_WCS=false              # TAFL WCS 節點（流程控制層，已停用）
+AUTO_START_KUKA_WCS=true               # KUKA WCS 節點（KUKA 任務自動化層）
 AUTO_START_ROOM_TASK_BUILD=true        # 房間任務構建節點（任務構建層）
+AUTO_START_TRANSFER_BOX_TASK_BUILD=true # 傳送箱任務構建節點（任務構建層）
 AUTO_START_WEB_API_LAUNCH=true         # Web API Launch 服務群組（用戶界面層）
 
 # =============================================================================
@@ -244,6 +246,17 @@ if [ "$AUTO_START_TAFL_WCS" = "true" ]; then
     echo ""
 fi
 
+# KUKA WCS
+if [ "$AUTO_START_KUKA_WCS" = "true" ]; then
+    echo "🏭 啟動 KUKA WCS 節點..."
+    if manage_kuka_wcs start; then
+        echo "✅ KUKA WCS 啟動成功"
+    else
+        echo "⚠️ KUKA WCS 啟動失敗"
+    fi
+    echo ""
+fi
+
 # Room Task Build
 if [ "$AUTO_START_ROOM_TASK_BUILD" = "true" ]; then
     echo "🏗️ 啟動房間任務構建節點..."
@@ -251,6 +264,17 @@ if [ "$AUTO_START_ROOM_TASK_BUILD" = "true" ]; then
         echo "✅ 房間任務啟動成功"
     else
         echo "⚠️ 房間任務啟動失敗"
+    fi
+    echo ""
+fi
+
+# Transfer Box Task Build
+if [ "$AUTO_START_TRANSFER_BOX_TASK_BUILD" = "true" ]; then
+    echo "📦 啟動傳送箱任務構建節點..."
+    if manage_transfer_box_task_build start; then
+        echo "✅ 傳送箱任務啟動成功"
+    else
+        echo "⚠️ 傳送箱任務啟動失敗"
     fi
     echo ""
 fi
@@ -265,6 +289,35 @@ if [ "$AUTO_START_WEB_API_LAUNCH" = "true" ]; then
     fi
     echo ""
 fi
+
+# =============================================================================
+# 🧹 啟動日誌清理守護進程
+# =============================================================================
+echo "🧹 啟動日誌清理守護進程..."
+if [ -f "/app/setup_modules/log-cleanup-daemon.bash" ]; then
+    # 在背景啟動守護進程，輸出重定向到 /dev/null
+    nohup bash /app/setup_modules/log-cleanup-daemon.bash > /dev/null 2>&1 &
+    DAEMON_PID=$!
+
+    # 等待 1 秒確保守護進程成功啟動
+    sleep 1
+
+    # 檢查守護進程是否仍在運行
+    if kill -0 $DAEMON_PID 2>/dev/null; then
+        echo "✅ 日誌清理守護進程已啟動 (PID: $DAEMON_PID)"
+        echo "   📋 守護進程日誌: /tmp/log-cleanup-daemon.log"
+        echo "   ⚙️ 輪轉策略: 每個檔案最大 10MB，保留 5 個版本"
+        echo "   ⏰ 執行頻率: 每 6 小時自動檢查並輪轉"
+        echo "   📝 查看日誌: tail -f /tmp/log-cleanup-daemon.log"
+    else
+        echo "⚠️ 日誌清理守護進程啟動後立即退出，請檢查日誌"
+        echo "   查看錯誤: cat /tmp/log-cleanup-daemon.log"
+    fi
+else
+    echo "⚠️ 日誌清理守護腳本不存在: /app/setup_modules/log-cleanup-daemon.bash"
+    echo "   日誌清理功能未啟動，請手動管理日誌大小"
+fi
+echo ""
 
 # =============================================================================
 # 📖 使用說明

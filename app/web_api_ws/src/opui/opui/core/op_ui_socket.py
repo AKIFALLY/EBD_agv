@@ -1,10 +1,12 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi.encoders import jsonable_encoder
 from typing import Dict, Set
 from opui.database.operations import get_or_create_or_update_client, get_client, create_or_update_product, product_all, machine_all, room_all
 from opui.monitoring.task_monitor import TaskMonitor
 from opui.core.task_service import TaskService
+from db_proxy.models import RuntimeLog
+from db_proxy.crud.runtime_log_crud import runtime_log_crud
 
 
 class OpUiSocket:
@@ -94,6 +96,34 @@ class OpUiSocket:
                 print(f"⚠️ 未知的資料類型: {data_type}")
         except Exception as e:
             print(f"❌ 廣播資料更新失敗: {e}")
+
+    async def _broadcast_hmi_location_change(self, event_type="location_changed", extra_data=None):
+        """向所有連線的 HMI 客戶端廣播位置變更事件
+
+        Args:
+            event_type: 事件類型（location_changed, rack_added, rack_removed）
+            extra_data: 額外的事件數據（可選）
+        """
+        if not self.user_sid_map:
+            print(f"⚠️ 沒有連線的客戶端，跳過廣播 HMI 位置變更")
+            return
+
+        print(f"📢 廣播 HMI 位置變更事件 ({event_type}) 給 {len(self.user_sid_map)} 個客戶端")
+
+        try:
+            event_data = {
+                "type": event_type,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            if extra_data:
+                event_data.update(extra_data)
+
+            # 向所有連線的客戶端發送事件
+            for sid in self.user_sid_map.values():
+                await self.sio.emit('hmi_location_changed', event_data, room=sid)
+                print(f"  ✅ 已通知客戶端 {sid}")
+        except Exception as e:
+            print(f"❌ 廣播 HMI 位置變更失敗: {e}")
 
     @staticmethod
     def calculate_carrier_bitmap(count: int, product_size: str = "S") -> str:
@@ -719,6 +749,18 @@ class OpUiSocket:
                     return {"success": False, "message": f"料架 {rack_name} 不存在於系統中，請先在料架管理中新增此料架"}
 
                 await self.notify_parking_list(sid)
+
+                # 廣播 HMI 位置變更事件給所有客戶端
+                await self._broadcast_hmi_location_change(
+                    event_type="rack_added",
+                    extra_data={
+                        "rack_id": rack_id,
+                        "rack_name": rack_name,
+                        "location_id": available_location,
+                        "side": side
+                    }
+                )
+
                 return {"success": True, "message": f"料架 {rack_name} [{rack_id}] 已{action}成功（位置：{available_location}）"}
             except Exception as e:
                 print(f"❌ 新增料架時發生錯誤: {e}")
@@ -772,6 +814,16 @@ class OpUiSocket:
                 print(f"✅ 料架刪除成功: {rack.name}")
 
                 await self.notify_parking_list(sid)
+
+                # 廣播 HMI 位置變更事件給所有客戶端
+                await self._broadcast_hmi_location_change(
+                    event_type="rack_removed",
+                    extra_data={
+                        "rack_id": rack.id,
+                        "rack_name": rack.name
+                    }
+                )
+
                 return {"success": True, "message": f"料架 {rack.name} 已從停車格移除"}
             except Exception as e:
                 print(f"❌ 刪除料架時發生錯誤: {e}")
@@ -859,10 +911,12 @@ class OpUiSocket:
             return {"success": False, "message": f"叫車失敗: {str(e)}"}
 
     async def dispatch_full(self, sid, data):
-        """派滿車任務（從工作區移動到停車格）"""
+        """派滿車任務（從工作區移動到停車格）- 僅更新 Rack 狀態，不創建任務"""
         try:
-            from opui.database.operations import create_task, get_dispatch_full_work_id, rack_crud, machine_crud, connection_pool, product_crud
-            from shared_constants.task_status import TaskStatus
+            # 註解：不再創建任務，保留程式碼以便未來恢復
+            # from opui.database.operations import create_task, get_dispatch_full_work_id, rack_crud, machine_crud, connection_pool, product_crud
+            from opui.database.operations import rack_crud, machine_crud, connection_pool, product_crud
+            # from shared_constants.task_status import TaskStatus
 
             # 獲取任務參數
             side = data.get("side")  # "left" 或 "right"
@@ -933,6 +987,9 @@ class OpUiSocket:
                     carrier_enable_bitmap = "FFFFFFFF" if product_size == "S" else "0F0F0F0F"
                     rack.carrier_enable_bitmap = carrier_enable_bitmap
 
+                    # 🔑 OPUI 派滿車時設定方向為 0 度
+                    rack.direction = 0
+
                     # 一次性更新所有修改
                     rack = rack_crud.update(session, rack.id, rack)
                     print(f"✅ 派滿車更新 Rack {rack_id}:")
@@ -955,6 +1012,34 @@ class OpUiSocket:
                         print(f"⚠️ KUKA 同步異常（不影響派車流程）: {str(kuka_error)}")
 
                     print(f"✅ 料架已移動到停車格")
+
+                    # 🆕 添加 Rack 位置監聽
+                    self.task_monitor.add_rack_monitoring(
+                        rack_id=rack.id,
+                        parking_space=parking_space,
+                        machine_id=machine_id,
+                        sid=sid
+                    )
+                    print(f"🔍 已添加 Rack {rack.id} 位置監聽")
+
+                    # 🆕 添加 runtime log 記錄
+                    try:
+                        with connection_pool.get_session() as log_session:
+                            log_entry = RuntimeLog(
+                                timestamp=datetime.now(timezone.utc),
+                                level=20,  # INFO 等級
+                                name="opui_dispatch_full",
+                                message=f"派滿車任務: rack_id={rack.id}, machine_id={machine_id}, "
+                                        f"product={product_name}, count={count}, room={room}, "
+                                        f"parking_space={parking_space}, direction=0",
+                                file=__file__,
+                                function="dispatch_full",
+                                line=None
+                            )
+                            runtime_log_crud.create(log_session, log_entry)
+                            print(f"✅ Runtime log 已記錄: 派滿車 rack_id={rack.id}")
+                    except Exception as log_error:
+                        print(f"⚠️ Runtime log 記錄失敗（不影響派車流程）: {log_error}")
             finally:
                 session.close()
 
@@ -968,54 +1053,139 @@ class OpUiSocket:
                 return {"success": False, "message": msg}
 
             # 準備任務資料
-            task_data = {
-                "name": f"派滿車 - {product_name} x{count} 從停車位 [{node_id}]",
-                "description": f"操作員從機台 {machine_id} 派滿車，產品: {product_name}，數量: {count}，來源停車位: [{node_id}]",
-                "work_id": get_dispatch_full_work_id(),
-                "status_id": TaskStatus.REQUESTING,
-                "priority": 2,
-                "node_id": node_id,
-                "parameters": {
-                    "node_id": node_id,
-                    "product_name": product_name,
-                    "count": count,
-                    "rack_id": rack_id,
-                    "room": room,
-                    "side": side,
-                    "machine_id": machine_id,
-                    "client_id": clientId,
-                    "task_type": "dispatch_full"
-                }
-            }
-            created_task = create_task(task_data)
-            task_id = created_task['id']
-            print(f"[dispatchFull] 任務已創建: ID={task_id}, 名稱={created_task['name']}")
+            #task_data = {
+            #    "name": f"派滿車 - {product_name} x{count} 從停車位 [{node_id}]",
+            #    "description": f"操作員從機台 {machine_id} 派滿車，產品: {product_name}，數量: {count}，來源停車位: [{node_id}]",
+            #    "work_id": get_dispatch_full_work_id(),
+            #    "status_id": TaskStatus.REQUESTING,
+            #    "priority": 2,
+            #    "node_id": node_id,
+            #    "parameters": {
+            #        "node_id": node_id,
+            #        "product_name": product_name,
+            #        "count": count,
+            #        "rack_id": rack_id,
+            #        "room": room,
+            #        "side": side,
+            #        "machine_id": machine_id,
+            #        "client_id": clientId,
+            #        "task_type": "dispatch_full"
+            #    }
+            #}
+            #created_task = create_task(task_data)
+            #task_id = created_task['id']
+            #print(f"[dispatchFull] 任務已創建: ID={task_id}, 名稱={created_task['name']}")
 
             # 開始監聽這個派車任務
-            self.task_monitor.add_task(task_id, machine_id, node_id,
-                                       TaskStatus.REQUESTING, "dispatch_full")
+            #self.task_monitor.add_task(task_id, machine_id, node_id,
+            #                           TaskStatus.REQUESTING, "dispatch_full")
 
             self._update_machine_parking_status(machine_id, node_id, 1)
             await self.notify_machines(sid)
-            return {"success": True, "message": f"派車成功，任務 ID: {task_id}"}
+
+            # 廣播 HMI 位置變更事件給所有客戶端
+            await self._broadcast_hmi_location_change(
+                event_type="rack_dispatched",
+                extra_data={
+                    "rack_id": rack_id,
+                    "rack_name": rack.name,
+                    "location_id": parking_space,
+                    "node_id": node_id,
+                    "side": side,
+                    "product_name": product_name,
+                    "count": count
+                }
+            )
+
+            return {"success": True, "message": f"派滿車狀態更新成功，料架已移至停車格 {node_id}"}
         except Exception as e:
             print(f"[dispatchFull] 錯誤: {str(e)}")
             return {"success": False, "message": f"派車失敗: {str(e)}"}
 
     async def cancel_task(self, sid, data):
-        """取消任務"""
+        """取消任務並將料架移回工作區"""
         from opui.database.operations import delete_task_by_parking, connection_pool, machine_crud
+        from opui.services.kuka_sync_service import OpuiKukaContainerSync
+        from db_proxy.crud.rack_crud import rack_crud
 
         # 獲取側邊和機台資訊
         side = data.get("side")  # "left" 或 "right"
+        side_name = "左側" if side == "left" else "右側"
         clientId, machine_id, err = self._require_client_and_machine(sid)
         if err:
             return err
 
-        # 根據機台和側邊獲取正確的 node_id
+        # 根據機台和側邊獲取正確的 node_id（停車格）
         node_id = self._get_parking_space_node_id(machine_id, side)
         if not node_id:
             return {"success": False, "message": f"找不到機台 {machine_id} 的 {side} 側停車格"}
+
+        session = connection_pool.get_session()
+        try:
+            # 查詢停車格上的料架
+            rack = rack_crud.get_by_field(session, "location_id", node_id)
+
+            if rack:
+                print(f"🔍 發現停車格 {node_id} 上的料架: {rack.name} (ID: {rack.id})")
+
+                # 獲取對應的工作區配置
+                machine = machine_crud.get_by_id(session, machine_id)
+                if not machine:
+                    print(f"❌ 找不到機台 {machine_id}")
+                else:
+                    # 根據側邊選擇工作區
+                    workspace_locations = machine.workspace_1 if side == "left" else machine.workspace_2
+                    workspace_locations = workspace_locations or []
+
+                    if workspace_locations:
+                        print(f"📋 {side_name}工作區配置: {workspace_locations}")
+
+                        # 查詢工作區第一個空閒位置
+                        available_location = None
+                        for location_id in workspace_locations:
+                            existing_rack = rack_crud.get_by_field(session, "location_id", location_id)
+                            if not existing_rack:
+                                available_location = location_id
+                                break
+
+                        if available_location:
+                            print(f"✅ 找到可用工作區位置: {available_location}")
+
+                            # 移回工作區並更新狀態
+                            rack.location_id = available_location
+                            rack.is_in_map = 0                  # 標記為離場（觸發 KUKA 離場）
+                            rack.is_docked = 1                  # 已對接到工作區
+                            rack.carrier_bitmap = "00000000"     # 清空格位佔用
+                            rack.carrier_enable_bitmap = "FFFFFFFF"  # 恢復預設全啟用
+                            rack_crud.update(session, rack.id, rack)
+
+                            print(f"✅ 取消派車：料架 {rack.name} 移回工作區位置 {available_location}")
+                            print(f"   - location_id: {available_location}")
+                            print(f"   - is_in_map: 0 (離場)")
+                            print(f"   - is_docked: 1 (對接)")
+                            print(f"   - carrier_bitmap: 00000000")
+                            print(f"   - carrier_enable_bitmap: FFFFFFFF")
+
+                            # 觸發 KUKA Fleet 容器離場
+                            try:
+                                kuka_sync = OpuiKukaContainerSync()
+                                sync_result = kuka_sync.sync_container_exit(rack)
+                                if sync_result.get("success"):
+                                    print(f"✅ KUKA 容器離場成功: {rack.name}")
+                                else:
+                                    print(f"⚠️ KUKA 容器離場失敗: {sync_result.get('message')}")
+                            except Exception as kuka_error:
+                                print(f"⚠️ KUKA 同步異常（不影響取消流程）: {str(kuka_error)}")
+                        else:
+                            # 工作區已滿，保持在停車格
+                            print(f"⚠️ {side_name}工作區已滿，料架 {rack.name} 保持在停車格 {node_id}")
+                    else:
+                        print(f"⚠️ 機台 {machine_id} 的 {side_name}工作區未配置")
+            else:
+                print(f"ℹ️ 停車格 {node_id} 上沒有料架")
+
+        finally:
+            session.close()
 
         # 刪除任務
         deleted = delete_task_by_parking(node_id)
@@ -1116,9 +1286,56 @@ class OpUiSocket:
 
     # ==================== 任務完成處理 ====================
 
-    async def _handle_task_completion(self, task, task_info):
-        """處理任務完成"""
+    async def _handle_task_completion(self, task=None, task_info=None, **kwargs):
+        """處理任務完成或 Rack 移動事件
+
+        支持兩種調用方式：
+        1. 任務完成：_handle_task_completion(task, task_info)
+        2. Rack 移動：_handle_task_completion(event_type='rack_moved', rack_id=..., ...)
+        """
         try:
+            # 檢查是否為 rack 移動事件
+            event_type = kwargs.get('event_type')
+
+            if event_type == 'rack_moved':
+                # 🆕 處理 Rack 移動事件
+                rack_id = kwargs.get('rack_id')
+                machine_id = kwargs.get('machine_id')
+                parking_space = kwargs.get('parking_space')
+                new_location = kwargs.get('new_location')
+                sid = kwargs.get('sid')
+
+                print(f"🎉 Rack {rack_id} 已從停車格 {parking_space} 移走到 {new_location}")
+
+                # 🆕 添加 runtime log 記錄
+                try:
+                    with connection_pool.get_session() as log_session:
+                        log_entry = RuntimeLog(
+                            timestamp=datetime.now(timezone.utc),
+                            level=20,  # INFO 等級
+                            name="opui_rack_moved",
+                            message=f"Rack移走自動恢復按鈕: rack_id={rack_id}, machine_id={machine_id}, "
+                                    f"parking_space={parking_space}, new_location={new_location}",
+                            file=__file__,
+                            function="_handle_task_completion",
+                            line=None
+                        )
+                        runtime_log_crud.create(log_session, log_entry)
+                        print(f"✅ Runtime log 已記錄: Rack移走 rack_id={rack_id}")
+                except Exception as log_error:
+                    print(f"⚠️ Runtime log 記錄失敗（不影響按鈕恢復流程）: {log_error}")
+
+                # 推送 parking_list 更新給前端
+                await self.notify_parking_list(sid)
+
+                print(f"✅ 已推送 parking_list 更新，前端按鈕將自動恢復")
+                return
+
+            # 原有的任務完成處理邏輯
+            if task is None or task_info is None:
+                print("⚠️ 任務完成處理缺少必要參數")
+                return
+
             node_id = task.node_id
             machine_id = task_info['machine_id']
             task_type = task_info.get('task_type', 'call_empty')
@@ -1533,6 +1750,9 @@ class OpUiSocket:
     async def request_hmi_data(self, sid, data):
         """HMI 請求資料 - 發送 HMI 顯示所需的位置和料架資料"""
         try:
+            from datetime import datetime, timezone
+            request_time = datetime.now(timezone.utc)
+
             device_id = data.get('device_id')
             if not device_id:
                 print("❌ HMI 請求缺少 device_id")
@@ -1541,52 +1761,57 @@ class OpUiSocket:
                     'message': 'Missing device_id'
                 }, to=sid)
                 return
-            
+
             print(f"📡 HMI 請求資料: device_id={device_id}")
-            
+            print(f"[HMI_DATA_QUERY] 開始查詢 | device_id={device_id} sid={sid} timestamp={request_time.isoformat()}")
+
             # 從資料庫獲取 HMI 資料
             from opui.database.operations import connection_pool
             from sqlmodel import select
             import json
-            
+
             with connection_pool.get_session() as session:
                 # 1. 查詢 license 獲取權限配置
                 from db_proxy.models import License
                 license_data = session.exec(
                     select(License).where(License.device_id == device_id)
                 ).first()
-                
+
                 if not license_data:
                     print(f"❌ 找不到 device_id {device_id} 的授權資料")
+                    print(f"[HMI_DATA_QUERY] License 不存在 | device_id={device_id}")
                     await self.sio.emit('hmi_data_update', {
                         'success': False,
                         'message': 'Device not authorized'
                     }, to=sid)
                     return
-                
+
                 if license_data.device_type != "hmi_terminal":
                     print(f"❌ Device {device_id} 不是 HMI 終端")
+                    print(f"[HMI_DATA_QUERY] 設備類型錯誤 | device_id={device_id} type={license_data.device_type}")
                     await self.sio.emit('hmi_data_update', {
                         'success': False,
                         'message': 'Not an HMI terminal'
                     }, to=sid)
                     return
-                
+
                 # 2. 解析權限配置
                 permissions = license_data.permissions or {}
                 location_names = permissions.get("locations", [])
                 layout = permissions.get("layout", "2x2")
-                
+                print(f"[HMI_DATA_QUERY] 權限配置 | device_id={device_id} locations={location_names} layout={layout}")
+
                 # 3. 查詢位置資料
                 from db_proxy.models import Location, Rack, Product
                 from agvcui.database.rack_ops import count_occupied_slots
                 locations_data = []
-                
+                rack_count = 0
+
                 for location_name in location_names:
                     location = session.exec(
                         select(Location).where(Location.name == location_name)
                     ).first()
-                    
+
                     if location:
                         location_info = {
                             "location": {
@@ -1597,21 +1822,25 @@ class OpUiSocket:
                             "product": None,
                             "carrier_count": 0
                         }
-                        
-                        # 查詢該位置的料架（只查询在地图中的 Rack）
+
+                        # 查詢該位置的料架（显示所有 Rack，不过滤 is_in_map）
                         rack = session.exec(
-                            select(Rack).where(
-                                (Rack.location_id == location.id) &
-                                (Rack.is_in_map == 1)
-                            )
+                            select(Rack).where(Rack.location_id == location.id)
                         ).first()
-                        
+
+                        # 【新增診斷日誌】檢查是否有不符合條件的 Rack
+                        all_racks_at_location = session.exec(
+                            select(Rack).where(Rack.location_id == location.id)
+                        ).all()
+
                         if rack:
+                            rack_count += 1
                             location_info["rack"] = {
                                 "id": rack.id,
                                 "name": rack.name
                             }
-                            
+                            print(f"[HMI_DATA_QUERY] 找到 Rack | location_id={location.id} location_name={location.name} rack_id={rack.id} rack_name={rack.name} is_in_map={rack.is_in_map}")
+
                             # 查詢產品資訊
                             if rack.product_id:
                                 product = session.exec(
@@ -1623,21 +1852,35 @@ class OpUiSocket:
                                         "name": product.name,
                                         "size": product.size
                                     }
-                            
+
                             # 計算已佔用格位數量（使用 carrier_bitmap）
                             location_info["carrier_count"] = count_occupied_slots(rack.carrier_bitmap)
-                        
+                        else:
+                            # 記錄為何沒有找到 Rack
+                            if all_racks_at_location:
+                                filtered_out_racks = [r for r in all_racks_at_location if r.is_in_map != 1]
+                                if filtered_out_racks:
+                                    print(f"[HMI_DATA_QUERY] Rack 被篩選 | location_id={location.id} location_name={location.name} filtered_racks={[(r.id, r.name, r.is_in_map) for r in filtered_out_racks]}")
+                            else:
+                                print(f"[HMI_DATA_QUERY] 無 Rack | location_id={location.id} location_name={location.name}")
+
                         locations_data.append(location_info)
-                
-                # 4. 發送資料給 HMI
+                    else:
+                        print(f"[HMI_DATA_QUERY] Location 不存在 | location_name={location_name}")
+
+                # 4. 發送資料給 HMI（包含權限資訊）
                 response_data = {
                     'success': True,
                     'device_id': device_id,
                     'layout': layout,
+                    'permissions': permissions,  # 【新增】包含完整權限配置
                     'locations': locations_data
                 }
-                
-                print(f"✅ 發送 HMI 資料: {len(locations_data)} 個位置")
+
+                response_time = datetime.now(timezone.utc)
+                elapsed_ms = (response_time - request_time).total_seconds() * 1000
+                print(f"✅ 發送 HMI 資料: {len(locations_data)} 個位置，權限: {permissions}")
+                print(f"[HMI_DATA_QUERY] 完成 | device_id={device_id} locations_count={len(locations_data)} racks_count={rack_count} elapsed_ms={elapsed_ms:.2f} timestamp={response_time.isoformat()}")
                 await self.sio.emit('hmi_data_update', response_data, to=sid)
                 
         except Exception as e:
