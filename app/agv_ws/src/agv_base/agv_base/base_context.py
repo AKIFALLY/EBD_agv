@@ -8,7 +8,36 @@ from rclpy.node import Node
 class BaseContext(ContextABC):
     """ 實作完整邏輯的狀態機 Context """
 
+    # 状态类引用（类变量，子类可覆写以实现多态）
+    IdleState = None
+    MissionSelectState = None
+    WritePathState = None
+    RunningState = None
+    WaitRobotState = None
+
     def __init__(self, initial_state: State):
+        # 🔧 延迟导入并设置默认状态类（避免循环导入）
+        # 子类可在 __init__ 中覆写这些类变量以实现多态
+        if self.__class__.IdleState is None:
+            from agv_base.agv_states.idle_state import IdleState
+            self.__class__.IdleState = IdleState
+
+        if self.__class__.MissionSelectState is None:
+            from agv_base.agv_states.mission_select_state import MissionSelectState
+            self.__class__.MissionSelectState = MissionSelectState
+
+        if self.__class__.WritePathState is None:
+            from agv_base.agv_states.write_path_state import WritePathState
+            self.__class__.WritePathState = WritePathState
+
+        if self.__class__.RunningState is None:
+            from agv_base.agv_states.Running_state import RunningState
+            self.__class__.RunningState = RunningState
+
+        if self.__class__.WaitRobotState is None:
+            from agv_base.agv_states.wait_robot_state import WaitRobotState
+            self.__class__.WaitRobotState = WaitRobotState
+
         self.node = initial_state.node
         self.state = initial_state
         self.last_state = initial_state

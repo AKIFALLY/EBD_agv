@@ -3,17 +3,16 @@ from rclpy.node import Node
 from astar_algorithm.astar_algorithm import AStarAlgorithm
 from db_proxy_interfaces.msg import Task as TaskMsg
 from db_proxy.agvc_database_client import AGVCDatabaseClient
-from plc_proxy.plc_client import PlcClient
 import time
 
 
 class WritePathState(State):
     def __init__(self, node: Node):
         super().__init__(node)
+        self.plc_client = node.plc_client  # 引用 node 的 plc_client
         self.StationID = None  # 站點ID
         self.TagNo = None  # TAG No
         self.path = []  # 路徑資料
-        self.plc_client = PlcClient(node)
         self.agvdbclient = AGVCDatabaseClient(node)
         self.source_data = None  # 初始點位資料
         self.cantomove_tag = None  # 可移動標籤
@@ -80,8 +79,7 @@ class WritePathState(State):
                     "❌ 任務更新失敗，回到任務選擇狀態"
                 )
                 self.waiting_for_task_update = False
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
                 return
 
         #self.node.get_logger().info(f"路徑資料:{self.node.agv_status.AGV_PATH}")
@@ -90,16 +88,14 @@ class WritePathState(State):
         if self.count > 5:
             self.node.get_logger().error("❌ 路徑資料寫入失敗過多，寫入異常到PLC")
             self.plc_client.async_force_on('MR', '3204', self.force_callback)  # PLC寫入異常
-            from agv_base.agv_states.mission_select_state import MissionSelectState
-            context.set_state(MissionSelectState(self.node))  # 切換狀態
+            context.set_state(context.MissionSelectState(self.node))  # 切換狀態
 
         # 檢查是否已經有路徑資料
         # 如果已經有路徑資料，則直接切換到下一個狀態
         if self.node.agv_status.AGV_PATH:
             self.node.get_logger().info("AGV 已有路徑資料，離開 WritePathState-->RunningState ")
             # 跳過寫入路徑狀態，直接切換到下一個狀態
-            from agv_base.agv_states.Running_state import RunningState
-            context.set_state(RunningState(self.node))  # 切換狀態
+            context.set_state(context.RunningState(self.node))  # 切換狀態
             return
 
         if self.step >= 3:

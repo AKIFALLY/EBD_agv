@@ -73,8 +73,7 @@ class RunningState(State):
 
             # 重置機器人完成狀態，進入 WaitRobot 統一判斷
             self.node.robot_finished = False
-            from agv_base.agv_states.wait_robot_state import WaitRobotState
-            context.set_state(WaitRobotState(self.node))
+            context.set_state(context.WaitRobotState(self.node))
         # 如果有路徑資料，則持續運行狀態
         if self.node.agv_status.AGV_PATH:
 
@@ -104,8 +103,7 @@ class RunningState(State):
             # 檢查 task id，如果為 0 則不進入 waitrobot
             if task_found and hasattr(self.node, 'task') and self.node.task and self.node.task.id != 0:
                 self.node.robot_finished = False  # 重置機器人完成狀態
-                from agv_base.agv_states.wait_robot_state import WaitRobotState
-                context.set_state(WaitRobotState(self.node))
+                context.set_state(context.WaitRobotState(self.node))
             else:
                 # 沒有找到有效任務，回到任務選擇狀態重新評估
                 self.node.get_logger().warn(
@@ -122,8 +120,7 @@ class RunningState(State):
                         )
 
                 # 跳轉回任務選擇狀態
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
 
          
 

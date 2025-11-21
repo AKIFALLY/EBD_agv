@@ -1,6 +1,5 @@
 from agv_base.states.state import State
 from db_proxy_interfaces.msg._tasks import Tasks
-from agv_base.agv_states.write_path_state import WritePathState
 import json
 from std_msgs.msg import String
 from rclpy.node import Node
@@ -104,8 +103,7 @@ class MissionSelectState(State):
                     hasattr(self.node.task, 'id') and self.node.task.id != 0):
                     self.node.get_logger().info(f"✅ AGV 已有路徑資料且有任務資料 (task_id={self.node.task.id})，離開 Mission Select 狀態")
 
-                    from agv_base.agv_states.Running_state import RunningState
-                    context.set_state(RunningState(self.node))  # 切換狀態
+                    context.set_state(context.RunningState(self.node))  # 切換狀態
                 else:
                     self.node.get_logger().warn("⚠️ AGV 有路徑但無有效任務資料（task_id=0 或無任務），等待任務分配")
 
@@ -121,25 +119,24 @@ class MissionSelectState(State):
                         self.node.get_logger().info(
                             f"🔄 任務取消標記啟動 (task_id={task.id}, MISSION_CANCEL=1)，進入 WritePathState 重新規劃路徑"
                         )
-                        context.set_state(WritePathState(self.node))
+                        context.set_state(context.WritePathState(self.node))
                     else:
                         # MISSION_CANCEL≠1，進入 WaitRobot 統一判斷
                         self.node.get_logger().info(
                             f"⚠️ 任務執行中但無路徑 (task_id={task.id}, status=3)，進入 WaitRobot 統一判斷"
                         )
                         self.node.robot_finished = False  # 重置機器人完成狀態
-                        from agv_base.agv_states.wait_robot_state import WaitRobotState
-                        context.set_state(WaitRobotState(self.node))
+                        context.set_state(context.WaitRobotState(self.node))
                 else:
                     # status=1,2 或其他情況 → 正常寫路徑
                     self.node.get_logger().info(f"✅ 選擇任務 (status={task.status_id}): {task}")
-                    context.set_state(WritePathState(self.node))  # 切換狀態
+                    context.set_state(context.WritePathState(self.node))  # 切換狀態
 
             # 如果HMI有設定Magic跟終點設定
             elif self.localMission and not self.node.agv_status.AGV_PATH:
                 self.node.get_logger().info(
                     f"✅ HMI任務下達---  Magic:{self.node.agv_status.MAGIC}  Dest.:{self.node.agv_status.AGV_END_POINT}")
-                context.set_state(WritePathState(self.node))  # 切換狀態
+                context.set_state(context.WritePathState(self.node))  # 切換狀態
 
         self.count += 1
 

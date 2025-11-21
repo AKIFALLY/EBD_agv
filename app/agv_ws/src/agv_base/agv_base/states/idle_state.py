@@ -3,7 +3,6 @@ from agv_base.states.state import State
 import astar_algorithm.data_tool
 from rclpy.node import Node
 from agv_base.agv_status import AgvStatus
-from plc_proxy.plc_client import PlcClient
 from astar_algorithm.astar_algorithm import AStarAlgorithm
 import astar_algorithm.astar_algorithm
 
@@ -12,8 +11,8 @@ class IdleState(State):
     def __init__(self, node: Node):
         super().__init__(node)
         self.node = node
+        self.plc_client = node.plc_client  # 引用 node 的 plc_client
         self.enter_time = time.time()  # 記錄進入 Idle 狀態的時間
-        self.plc_client = PlcClient(node)
         self.bt_trigger = False  # 按鈕觸發上微分
 
     def enter(self):

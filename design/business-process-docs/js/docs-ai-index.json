@@ -7,8 +7,17 @@
     "total_references": 588,
     "avg_strong_refs": 2.57,
     "avg_weak_refs": 4.52,
+    "total_docs": 83,
+    "total_strong_refs": 213,
+    "total_weak_refs": 375,
+    "total_references": 588,
+    "avg_strong_refs": 2.57,
+    "avg_weak_refs": 4.52,
     "critical_docs": 10,
     "important_docs": 18,
+    "common_docs": 20,
+    "weakly_referenced_docs": 10,
+    "unreferenced_docs": 22,
     "common_docs": 20,
     "weakly_referenced_docs": 10,
     "unreferenced_docs": 22,
@@ -23,14 +32,24 @@
           "operations/guides/troubleshooting.md",
           "operations/guides/system-diagnostics.md",
           "operations/development/core/documentation-standards.md"
+          "operations/development/docker-development.md",
+          "operations/tools/unified-tools.md",
+          "operations/guides/troubleshooting.md",
+          "operations/guides/system-diagnostics.md",
+          "operations/development/core/documentation-standards.md"
         ]
       },
       "layer2": {
         "name": "🔧 工作空間層",
         "description": "領域知識、開發流程、通用協議",
         "count": 72,
+        "count": 72,
         "docs": [
           "README.md",
+          "guides/migration-from-tafl-to-kuka-wcs.md",
+          "operations/deployment/docker-compose-configuration.md",
+          "operations/deployment/nginx-configuration.md",
+          "operations/deployment/container-management.md"
           "guides/migration-from-tafl-to-kuka-wcs.md",
           "operations/deployment/docker-compose-configuration.md",
           "operations/deployment/nginx-configuration.md",
@@ -65,10 +84,12 @@
         "name": "📖 操作指南",
         "description": "開發和運維指導",
         "count": 19
+        "count": 19
       },
       "knowledge": {
         "name": "🏷️ 領域知識",
         "description": "業務和技術知識",
+        "count": 44
         "count": 44
       }
     },
@@ -377,8 +398,14 @@
       ],
       "size": 16790,
       "modified": 1759308621.5221908,
+      "modified": 1759308621.5221908,
       "importance": "referenced"
     },
+    "guides/migration-from-tafl-to-kuka-wcs.md": {
+      "path": "guides/migration-from-tafl-to-kuka-wcs.md",
+      "title": "TAFL WCS 到 KUKA WCS 遷移指南",
+      "description": "",
+      "category": "other",
     "guides/migration-from-tafl-to-kuka-wcs.md": {
       "path": "guides/migration-from-tafl-to-kuka-wcs.md",
       "title": "TAFL WCS 到 KUKA WCS 遷移指南",
@@ -390,7 +417,19 @@
       "total_weighted_refs": 2.1,
       "references": 7,
       "strong_referenced_by": [],
+      "strong_references": 0,
+      "weak_references": 7,
+      "total_weighted_refs": 2.1,
+      "references": 7,
+      "strong_referenced_by": [],
       "weak_referenced_by": [
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_ws/CLAUDE.md",
+        "app/web_api_ws/src/agvcui/CLAUDE.md",
+        "docs-ai/knowledge/system/archived/tafl/tafl-api-reference.md",
+        "docs-ai/knowledge/system/archived/tafl/tafl-user-guide.md",
+        "docs-ai/knowledge/system/archived/tafl/tafl-language-specification.md",
+        "docs-ai/knowledge/system/archived/tafl/tafl-editor-specification.md"
         "app/tafl_wcs_ws/CLAUDE.md",
         "app/tafl_ws/CLAUDE.md",
         "app/web_api_ws/src/agvcui/CLAUDE.md",
@@ -412,25 +451,45 @@
         "layer1": [],
         "layer2": [],
         "layer3": []
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
       },
       "references_to": [
         {
           "doc": "knowledge/protocols/kuka-fleet-api.md",
-          "type": "weak"
-        },
-        {
-          "doc": "knowledge/protocols/kuka-fleet-callback.md",
-          "type": "weak"
-        },
-        {
           "doc": "knowledge/protocols/kuka-fleet-api.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/protocols/kuka-fleet-callback.md",
+          "doc": "knowledge/protocols/kuka-fleet-callback.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/protocols/kuka-fleet-callback.md",
+          "doc": "knowledge/protocols/kuka-fleet-callback.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/system/archived/tafl/tafl-language-specification.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/system/archived/tafl/tafl-editor-specification.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/system/archived/tafl/tafl-api-reference.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/system/archived/tafl/tafl-user-guide.md",
           "doc": "knowledge/system/archived/tafl/tafl-language-specification.md",
           "type": "weak"
         },
@@ -456,15 +515,29 @@
       "title": "Docker Compose 配置詳解",
       "description": "理解 RosAGV 的容器化部署架構",
       "category": "operations",
+    "operations/deployment/docker-compose-configuration.md": {
+      "path": "operations/deployment/docker-compose-configuration.md",
+      "title": "Docker Compose 配置詳解",
+      "description": "理解 RosAGV 的容器化部署架構",
+      "category": "operations",
       "layer": "layer2",
+      "strong_references": 1,
+      "weak_references": 4,
+      "total_weighted_refs": 2.2,
+      "references": 5,
       "strong_references": 1,
       "weak_references": 4,
       "total_weighted_refs": 2.2,
       "references": 5,
       "strong_referenced_by": [
         "README.md"
+        "README.md"
       ],
       "weak_referenced_by": [
+        "README.md",
+        "docs-ai/context/system/dual-environment.md",
+        "docs-ai/context/system/rosagv-overview.md",
+        "docs-ai/context/system/technology-stack.md"
         "README.md",
         "docs-ai/context/system/dual-environment.md",
         "docs-ai/context/system/rosagv-overview.md",
@@ -480,21 +553,32 @@
         "layer1": [],
         "layer2": [],
         "layer3": []
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
       },
       "references_to": [
         {
+          "doc": "context/system/dual-environment.md",
           "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
         {
           "doc": "operations/deployment/nginx-configuration.md",
+          "doc": "operations/deployment/nginx-configuration.md",
           "type": "weak"
         },
         {
           "doc": "operations/deployment/container-management.md",
+          "doc": "operations/deployment/container-management.md",
           "type": "weak"
         },
         {
+          "doc": "context/system/technology-stack.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/guides/system-diagnostics.md",
           "doc": "context/system/technology-stack.md",
           "type": "weak"
         },
@@ -505,8 +589,15 @@
       ],
       "size": 7602,
       "modified": 1758273184.3336773,
+      "size": 7602,
+      "modified": 1758273184.3336773,
       "importance": "common"
     },
+    "operations/deployment/nginx-configuration.md": {
+      "path": "operations/deployment/nginx-configuration.md",
+      "title": "Nginx 反向代理配置詳解",
+      "description": "理解 RosAGV 的 Nginx 反向代理架構",
+      "category": "operations",
     "operations/deployment/nginx-configuration.md": {
       "path": "operations/deployment/nginx-configuration.md",
       "title": "Nginx 反向代理配置詳解",
@@ -517,12 +608,19 @@
       "weak_references": 3,
       "total_weighted_refs": 1.9,
       "references": 4,
+      "strong_references": 1,
+      "weak_references": 3,
+      "total_weighted_refs": 1.9,
+      "references": 4,
       "strong_referenced_by": [
+        "README.md"
         "README.md"
       ],
       "weak_referenced_by": [
         "CLAUDE.md",
+        "CLAUDE.md",
         "README.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md"
         "docs-ai/operations/deployment/docker-compose-configuration.md"
       ],
       "referenced_by": [
@@ -534,17 +632,31 @@
         "layer1": [],
         "layer2": [],
         "layer3": []
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
       },
       "references_to": [
         {
+          "doc": "context/system/dual-environment.md",
           "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
         {
           "doc": "context/system/technology-stack.md",
+          "doc": "context/system/technology-stack.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/web/web-development.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/deployment/container-management.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/guides/system-diagnostics.md",
           "doc": "operations/development/web/web-development.md",
           "type": "weak"
         },
@@ -619,32 +731,59 @@
       "title": "開發建置測試工具 Prompt",
       "description": "ROS 2 工作空間快速建置",
       "category": "operations",
+    "operations/development/build-and-test.md": {
+      "path": "operations/development/build-and-test.md",
+      "title": "開發建置測試工具 Prompt",
+      "description": "ROS 2 工作空間快速建置",
+      "category": "operations",
       "layer": "layer2",
       "strong_references": 2,
+      "weak_references": 1,
+      "total_weighted_refs": 2.3,
+      "references": 3,
       "weak_references": 1,
       "total_weighted_refs": 2.3,
       "references": 3,
       "strong_referenced_by": [
         "README.md",
         "app/keyence_plc_ws/CLAUDE.md"
+        "README.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md"
+        "README.md"
       ],
       "referenced_by": [
+        "README.md",
+        "app/keyence_plc_ws/CLAUDE.md"
         "README.md",
         "app/keyence_plc_ws/CLAUDE.md"
       ],
       "layer_references": {
         "layer2": [
           "app/keyence_plc_ws/CLAUDE.md"
+          "app/keyence_plc_ws/CLAUDE.md"
         ]
       },
       "references_to": [],
       "size": 9356,
       "modified": 1759308621.5229008,
+      "references_to": [],
+      "size": 9356,
+      "modified": 1759308621.5229008,
       "importance": "common"
     },
+    "operations/development/docker-development.md": {
+      "path": "operations/development/docker-development.md",
+      "title": "Docker 容器開發指導",
+      "description": "在 Docker 容器內進行 ROS 2 開發",
+      "category": "operations",
+      "layer": "layer1",
+      "strong_references": 7,
+      "weak_references": 16,
+      "total_weighted_refs": 11.8,
+      "references": 23,
     "operations/development/docker-development.md": {
       "path": "operations/development/docker-development.md",
       "title": "Docker 容器開發指導",
@@ -663,8 +802,31 @@
         "app/path_algorithm/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md"
+        "README.md",
+        "README.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md"
       ],
       "weak_referenced_by": [
+        "CLAUDE.md",
+        "README.md",
+        "README.md",
+        ".github/copilot-instructions.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/tools/unified-tools.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/operations/development/testing/testing-standards.md",
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md"
         "CLAUDE.md",
         "README.md",
         "README.md",
@@ -704,20 +866,27 @@
         "layer2": [
           "app/rcs_ws/CLAUDE.md"
         ],
+        "layer2": [
+          "app/rcs_ws/CLAUDE.md"
+        ],
         "layer3": [
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md"
           "app/agv_ws/src/agv_interfaces/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "context/system/dual-environment.md",
+          "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/ros2/ros2-development.md",
+          "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
         {
+          "doc": "operations/deployment/container-management.md",
           "doc": "operations/deployment/container-management.md",
           "type": "weak"
         },
@@ -727,9 +896,13 @@
         },
         {
           "doc": "context/system/technology-stack.md",
+          "doc": "context/system/technology-stack.md",
           "type": "weak"
         }
       ],
+      "size": 12470,
+      "modified": 1762828301.5924506,
+      "importance": "critical"
       "size": 12470,
       "modified": 1762828301.5924506,
       "importance": "critical"
@@ -739,15 +912,28 @@
       "title": "資料庫 Schema 修改操作指南",
       "description": "修改現有資料表結構時的完整操作流程",
       "category": "operations",
+    "operations/development/database-schema-modification-guide.md": {
+      "path": "operations/development/database-schema-modification-guide.md",
+      "title": "資料庫 Schema 修改操作指南",
+      "description": "修改現有資料表結構時的完整操作流程",
+      "category": "operations",
       "layer": "layer2",
+      "strong_references": 0,
       "strong_references": 0,
       "weak_references": 0,
       "total_weighted_refs": 0.0,
       "references": 0,
       "strong_referenced_by": [],
+      "total_weighted_refs": 0.0,
+      "references": 0,
+      "strong_referenced_by": [],
       "weak_referenced_by": [],
       "referenced_by": [],
+      "referenced_by": [],
       "layer_references": {
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
         "layer1": [],
         "layer2": [],
         "layer3": []
@@ -761,7 +947,15 @@
       "size": 7804,
       "modified": 1761696730.7158196,
       "importance": "unreferenced"
+      "size": 7804,
+      "modified": 1761696730.7158196,
+      "importance": "unreferenced"
     },
+    "operations/development/database-operations.md": {
+      "path": "operations/development/database-operations.md",
+      "title": "資料庫操作指導",
+      "description": "RosAGV 系統中的 PostgreSQL 資料庫操作",
+      "category": "operations",
     "operations/development/database-operations.md": {
       "path": "operations/development/database-operations.md",
       "title": "資料庫操作指導",
@@ -772,8 +966,19 @@
       "weak_references": 17,
       "total_weighted_refs": 13.1,
       "references": 25,
+      "strong_references": 8,
+      "weak_references": 17,
+      "total_weighted_refs": 13.1,
+      "references": 25,
       "strong_referenced_by": [
         "README.md",
+        "README.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
         "README.md",
         "app/db_proxy_ws/CLAUDE.md",
         "app/db_proxy_ws/CLAUDE.md",
@@ -793,8 +998,22 @@
         "docs-ai/operations/guides/system-diagnostics.md",
         "docs-ai/operations/development/web/web-development.md",
         "docs-ai/operations/development/testing/testing-procedures.md",
+        "README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/development/database-schema-modification-guide.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/operations/guides/troubleshooting.md",
+        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/operations/development/web/web-development.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
         "docs-ai/context/structure/module-index.md",
         "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/knowledge/agv-domain/license-table-design.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md"
         "docs-ai/context/workspaces/agvc-workspaces.md",
         "docs-ai/knowledge/agv-domain/wcs-database-design.md",
         "docs-ai/knowledge/agv-domain/license-table-design.md",
@@ -807,6 +1026,8 @@
         "docs-ai/operations/development/web/web-development.md",
         "docs-ai/operations/guides/performance-monitoring.md",
         "docs-ai/context/structure/module-index.md",
+        "docs-ai/operations/development/web/web-development.md",
+        "docs-ai/operations/development/database-schema-modification-guide.md",
         "README.md",
         "docs-ai/operations/development/testing/testing-procedures.md",
         "docs-ai/operations/guides/system-diagnostics.md",
@@ -827,22 +1048,32 @@
           "app/db_proxy_ws/CLAUDE.md",
           "app/db_proxy_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "context/system/technology-stack.md",
+          "doc": "context/system/technology-stack.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/web/web-development.md",
           "doc": "operations/development/web/web-development.md",
           "type": "weak"
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "doc": "operations/guides/system-diagnostics.md",
           "type": "weak"
         },
         {
+          "doc": "context/workspaces/agvc-workspaces.md",
           "doc": "context/workspaces/agvc-workspaces.md",
           "type": "weak"
         }
@@ -850,7 +1081,15 @@
       "size": 19044,
       "modified": 1759246630.7357578,
       "importance": "critical"
+      "size": 19044,
+      "modified": 1759246630.7357578,
+      "importance": "critical"
     },
+    "operations/tools/cargo-mover-agv-architecture-analysis.md": {
+      "path": "operations/tools/cargo-mover-agv-architecture-analysis.md",
+      "title": "Cargo Mover AGV 完整架構分析報告",
+      "description": "",
+      "category": "other",
     "operations/tools/cargo-mover-agv-architecture-analysis.md": {
       "path": "operations/tools/cargo-mover-agv-architecture-analysis.md",
       "title": "Cargo Mover AGV 完整架構分析報告",
@@ -864,7 +1103,17 @@
       "strong_referenced_by": [],
       "weak_referenced_by": [],
       "referenced_by": [],
+      "strong_references": 0,
+      "weak_references": 0,
+      "total_weighted_refs": 0.0,
+      "references": 0,
+      "strong_referenced_by": [],
+      "weak_referenced_by": [],
+      "referenced_by": [],
       "layer_references": {
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
         "layer1": [],
         "layer2": [],
         "layer3": []
@@ -907,8 +1156,23 @@
       "weak_references": 8,
       "total_weighted_refs": 8.4,
       "references": 14,
+    "operations/tools/unified-tools.md": {
+      "path": "operations/tools/unified-tools.md",
+      "title": "統一工具系統",
+      "description": "系統診斷、容器管理、開發工作流程的統一工具使用",
+      "category": "core",
+      "layer": "layer1",
+      "strong_references": 6,
+      "weak_references": 8,
+      "total_weighted_refs": 8.4,
+      "references": 14,
       "strong_referenced_by": [
         "README.md",
+        "README.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md"
         "README.md",
         "app/launch_ws/CLAUDE.md",
         "app/launch_ws/CLAUDE.md",
@@ -917,7 +1181,14 @@
       ],
       "weak_referenced_by": [
         "CLAUDE.md",
+        "CLAUDE.md",
         "README.md",
+        "README.md",
+        ".github/copilot-instructions.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md",
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/operations/development/core/core-principles.md"
         "README.md",
         ".github/copilot-instructions.md",
         "docs-ai/operations/development/web/web-api-launch-management.md",
@@ -941,30 +1212,45 @@
           "app/launch_ws/CLAUDE.md",
           "app/launch_ws/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md"
+          "app/launch_ws/CLAUDE.md",
+          "app/launch_ws/CLAUDE.md",
+          "app/launch_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "doc": "operations/guides/system-diagnostics.md",
           "type": "weak"
         },
         {
+          "doc": "operations/deployment/container-management.md",
           "doc": "operations/deployment/container-management.md",
           "type": "weak"
         },
         {
           "doc": "operations/guides/troubleshooting.md",
+          "doc": "operations/guides/troubleshooting.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/docker-development.md",
           "doc": "operations/development/docker-development.md",
           "type": "weak"
         }
       ],
       "size": 9320,
       "modified": 1759308621.5229008,
+      "size": 9320,
+      "modified": 1759308621.5229008,
       "importance": "important"
     },
+    "operations/guides/performance-monitoring.md": {
+      "path": "operations/guides/performance-monitoring.md",
+      "title": "效能監控操作指導",
+      "description": "系統效能監控和分析",
+      "category": "operations",
     "operations/guides/performance-monitoring.md": {
       "path": "operations/guides/performance-monitoring.md",
       "title": "效能監控操作指導",
@@ -976,7 +1262,14 @@
       "total_weighted_refs": 0.6,
       "references": 2,
       "strong_referenced_by": [],
+      "strong_references": 0,
+      "weak_references": 2,
+      "total_weighted_refs": 0.6,
+      "references": 2,
+      "strong_referenced_by": [],
       "weak_referenced_by": [
+        "docs-ai/operations/guides/troubleshooting.md",
+        "docs-ai/operations/guides/system-diagnostics.md"
         "docs-ai/operations/guides/troubleshooting.md",
         "docs-ai/operations/guides/system-diagnostics.md"
       ],
@@ -988,21 +1281,28 @@
         "layer1": [],
         "layer2": [],
         "layer3": []
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
       },
       "references_to": [
         {
+          "doc": "operations/development/database-operations.md",
           "doc": "operations/development/database-operations.md",
           "type": "weak"
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "doc": "operations/guides/system-diagnostics.md",
           "type": "weak"
         },
         {
           "doc": "operations/guides/troubleshooting.md",
+          "doc": "operations/guides/troubleshooting.md",
           "type": "weak"
         },
         {
+          "doc": "operations/deployment/container-management.md",
           "doc": "operations/deployment/container-management.md",
           "type": "weak"
         },
@@ -1014,7 +1314,20 @@
       "size": 16068,
       "modified": 1759246630.736758,
       "importance": "referenced"
+      "size": 16068,
+      "modified": 1759246630.736758,
+      "importance": "referenced"
     },
+    "operations/guides/troubleshooting.md": {
+      "path": "operations/guides/troubleshooting.md",
+      "title": "故障排除操作指導",
+      "description": "系統故障的快速診斷和解決",
+      "category": "operations",
+      "layer": "layer1",
+      "strong_references": 6,
+      "weak_references": 12,
+      "total_weighted_refs": 9.6,
+      "references": 18,
     "operations/guides/troubleshooting.md": {
       "path": "operations/guides/troubleshooting.md",
       "title": "故障排除操作指導",
@@ -1032,13 +1345,28 @@
         "app/path_algorithm/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md"
+        "README.md",
+        "README.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "docs-ai/operations/development/core/documentation-standards.md"
       ],
       "weak_referenced_by": [
         "CLAUDE.md",
         "README.md",
         "README.md",
+        "CLAUDE.md",
+        "README.md",
+        "README.md",
         "README.md",
         "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/tools/unified-tools.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/operations/development/core/documentation-standards.md"
         "docs-ai/README.md",
         "docs-ai/README.md",
         "docs-ai/README.md",
@@ -1061,6 +1389,7 @@
       "layer_references": {
         "layer2": [
           "app/rcs_ws/CLAUDE.md"
+          "app/rcs_ws/CLAUDE.md"
         ]
       },
       "references_to": [
@@ -1070,7 +1399,11 @@
         },
         {
           "doc": "operations/guides/performance-monitoring.md",
+          "doc": "operations/guides/performance-monitoring.md",
           "type": "weak"
+        },
+        {
+          "doc": "operations/development/database-operations.md",
         },
         {
           "doc": "operations/development/database-operations.md",
@@ -1078,13 +1411,18 @@
         },
         {
           "doc": "operations/guides/log-analysis.md",
+          "doc": "operations/guides/log-analysis.md",
           "type": "weak"
+        },
+        {
+          "doc": "operations/deployment/container-management.md",
         },
         {
           "doc": "operations/deployment/container-management.md",
           "type": "weak"
         },
         {
+          "doc": "context/system/dual-environment.md",
           "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
@@ -1096,20 +1434,38 @@
       "size": 17750,
       "modified": 1759246630.736758,
       "importance": "important"
+      "size": 17750,
+      "modified": 1759246630.736758,
+      "importance": "important"
     },
     "operations/guides/rack-management-guide.md": {
       "path": "operations/guides/rack-management-guide.md",
       "title": "Rack 管理操作手冊",
+    "operations/guides/rack-management-guide.md": {
+      "path": "operations/guides/rack-management-guide.md",
+      "title": "Rack 管理操作手冊",
       "description": "",
+      "category": "operations",
       "category": "operations",
       "layer": "layer2",
       "strong_references": 2,
       "weak_references": 4,
       "total_weighted_refs": 3.2,
       "references": 6,
+      "weak_references": 4,
+      "total_weighted_refs": 3.2,
+      "references": 6,
       "strong_referenced_by": [
         "README.md",
         "app/agv_ws/CLAUDE.md"
+        "README.md",
+        "app/agv_ws/CLAUDE.md"
+      ],
+      "weak_referenced_by": [
+        "README.md",
+        "docs-ai/knowledge/agv-domain/license-table-design.md",
+        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
+        "docs-ai/knowledge/system/manual-rack-management.md"
       ],
       "weak_referenced_by": [
         "README.md",
@@ -1127,14 +1483,21 @@
       "layer_references": {
         "layer2": [
           "app/agv_ws/CLAUDE.md"
+          "app/agv_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/system/manual-rack-management.md",
+          "doc": "knowledge/system/manual-rack-management.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/business/eyewear-production-process.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
           "doc": "knowledge/business/eyewear-production-process.md",
           "type": "weak"
         },
@@ -1145,8 +1508,20 @@
       ],
       "size": 14358,
       "modified": 1762828301.5934505,
+      "size": 14358,
+      "modified": 1762828301.5934505,
       "importance": "common"
     },
+    "operations/guides/system-diagnostics.md": {
+      "path": "operations/guides/system-diagnostics.md",
+      "title": "系統診斷操作指導",
+      "description": "日常系統健康檢查",
+      "category": "operations",
+      "layer": "layer1",
+      "strong_references": 10,
+      "weak_references": 25,
+      "total_weighted_refs": 17.5,
+      "references": 35,
     "operations/guides/system-diagnostics.md": {
       "path": "operations/guides/system-diagnostics.md",
       "title": "系統診斷操作指導",
@@ -1163,7 +1538,14 @@
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/path_algorithm/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md"
         "app/launch_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
@@ -1182,7 +1564,28 @@
         "docs-ai/operations/development/database-operations.md",
         "docs-ai/operations/tools/unified-tools.md",
         "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/deployment/docker-compose-configuration.md",
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "docs-ai/operations/development/docker-development.md",
+        "docs-ai/operations/development/database-operations.md",
+        "docs-ai/operations/tools/unified-tools.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
         "docs-ai/operations/guides/troubleshooting.md",
+        "docs-ai/operations/development/web/web-development.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/knowledge/protocols/keyence-plc-protocol.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md",
+        "docs-ai/knowledge/system/archived/tafl/tafl-user-guide.md"
         "docs-ai/operations/development/web/web-development.md",
         "docs-ai/operations/development/web/web-api-launch-management.md",
         "docs-ai/operations/development/ros2/plc-communication.md",
@@ -1229,7 +1632,15 @@
         "layer2": [
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md",
+          "app/launch_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
+        ],
+        "layer3": [
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md"
           "app/launch_ws/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
@@ -1241,13 +1652,20 @@
       "references_to": [
         {
           "doc": "operations/guides/troubleshooting.md",
+          "doc": "operations/guides/troubleshooting.md",
           "type": "weak"
         },
         {
           "doc": "operations/guides/log-analysis.md",
+          "doc": "operations/guides/log-analysis.md",
           "type": "weak"
         },
         {
+          "doc": "operations/guides/performance-monitoring.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/database-operations.md",
           "doc": "operations/guides/performance-monitoring.md",
           "type": "weak"
         },
@@ -1261,13 +1679,22 @@
         },
         {
           "doc": "knowledge/protocols/zenoh-rmw.md",
+          "doc": "knowledge/protocols/zenoh-rmw.md",
           "type": "weak"
         }
       ],
       "size": 18224,
       "modified": 1759308621.5229008,
       "importance": "critical"
+      "size": 18224,
+      "modified": 1759308621.5229008,
+      "importance": "critical"
     },
+    "operations/guides/log-analysis.md": {
+      "path": "operations/guides/log-analysis.md",
+      "title": "日誌分析工具 Prompt",
+      "description": "系統錯誤日誌掃描和分析",
+      "category": "operations",
     "operations/guides/log-analysis.md": {
       "path": "operations/guides/log-analysis.md",
       "title": "日誌分析工具 Prompt",
@@ -1278,12 +1705,19 @@
       "weak_references": 4,
       "total_weighted_refs": 2.2,
       "references": 5,
+      "strong_references": 1,
+      "weak_references": 4,
+      "total_weighted_refs": 2.2,
+      "references": 5,
       "strong_referenced_by": [
+        "README.md"
         "README.md"
       ],
       "weak_referenced_by": [
         "README.md",
         "docs-ai/README.md",
+        "docs-ai/operations/guides/troubleshooting.md",
+        "docs-ai/operations/guides/system-diagnostics.md"
         "docs-ai/operations/guides/troubleshooting.md",
         "docs-ai/operations/guides/system-diagnostics.md"
       ],
@@ -1297,7 +1731,14 @@
         "layer1": [],
         "layer2": [],
         "layer3": []
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
       },
+      "references_to": [],
+      "size": 8554,
+      "modified": 1762828301.5934505,
+      "importance": "common"
       "references_to": [],
       "size": 8554,
       "modified": 1762828301.5934505,
@@ -1308,7 +1749,15 @@
       "title": "Web 開發操作指導",
       "description": "FastAPI Web API 開發",
       "category": "operations",
+    "operations/development/web/web-development.md": {
+      "path": "operations/development/web/web-development.md",
+      "title": "Web 開發操作指導",
+      "description": "FastAPI Web API 開發",
+      "category": "operations",
       "layer": "layer2",
+      "strong_references": 4,
+      "weak_references": 10,
+      "total_weighted_refs": 7.0,
       "strong_references": 4,
       "weak_references": 10,
       "total_weighted_refs": 7.0,
@@ -1318,10 +1767,20 @@
         "README.md",
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
         "README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/deployment/nginx-configuration.md",
+        "docs-ai/operations/development/database-operations.md",
+        "docs-ai/operations/development/web/leaflet-map-objects-best-practices.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "docs-ai/knowledge/system/hmi-system-design.md"
         "docs-ai/README.md",
         "docs-ai/README.md",
         "docs-ai/operations/deployment/nginx-configuration.md",
@@ -1346,30 +1805,43 @@
         "layer2": [
           "app/web_api_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/web_api_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "operations/development/database-operations.md",
+          "doc": "operations/development/database-operations.md",
           "type": "weak"
         },
         {
+          "doc": "context/workspaces/agvc-workspaces.md",
           "doc": "context/workspaces/agvc-workspaces.md",
           "type": "weak"
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "doc": "operations/guides/system-diagnostics.md",
           "type": "weak"
         },
         {
+          "doc": "context/system/technology-stack.md",
           "doc": "context/system/technology-stack.md",
           "type": "weak"
         }
       ],
       "size": 15745,
       "modified": 1758273184.335284,
+      "size": 15745,
+      "modified": 1758273184.335284,
       "importance": "important"
     },
+    "operations/development/web/leaflet-map-objects-best-practices.md": {
+      "path": "operations/development/web/leaflet-map-objects-best-practices.md",
+      "title": "Leaflet 地圖物件開發最佳實踐",
+      "description": "",
+      "category": "operations",
     "operations/development/web/leaflet-map-objects-best-practices.md": {
       "path": "operations/development/web/leaflet-map-objects-best-practices.md",
       "title": "Leaflet 地圖物件開發最佳實踐",
@@ -1380,7 +1852,12 @@
       "weak_references": 0,
       "total_weighted_refs": 0.0,
       "references": 0,
+      "weak_references": 0,
+      "total_weighted_refs": 0.0,
+      "references": 0,
       "strong_referenced_by": [],
+      "weak_referenced_by": [],
+      "referenced_by": [],
       "weak_referenced_by": [],
       "referenced_by": [],
       "layer_references": {
@@ -1407,14 +1884,23 @@
       "title": "Web 服務統一管理機制",
       "description": "",
       "category": "operations",
+    "operations/development/web/web-api-launch-management.md": {
+      "path": "operations/development/web/web-api-launch-management.md",
+      "title": "Web 服務統一管理機制",
+      "description": "",
+      "category": "operations",
       "layer": "layer2",
       "strong_references": 3,
+      "strong_references": 3,
       "weak_references": 3,
+      "total_weighted_refs": 3.9,
+      "references": 6,
       "total_weighted_refs": 3.9,
       "references": 6,
       "strong_referenced_by": [
         "README.md",
         "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
         "app/web_api_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
@@ -1424,8 +1910,7 @@
       ],
       "referenced_by": [
         "docs-ai/context/structure/module-index.md",
-        "README.md",
-        "app/web_api_ws/CLAUDE.md"
+        "README.md"
       ],
       "layer_references": {
         "layer2": [
@@ -1436,6 +1921,7 @@
       "references_to": [
         {
           "doc": "operations/tools/unified-tools.md",
+          "doc": "operations/tools/unified-tools.md",
           "type": "weak"
         },
         {
@@ -1444,6 +1930,10 @@
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "type": "weak"
+        },
+        {
+          "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
         {
@@ -1460,7 +1950,16 @@
       "title": "ROS 2 開發操作指導",
       "description": "ROS 2 節點和套件開發",
       "category": "operations",
+    "operations/development/ros2/ros2-development.md": {
+      "path": "operations/development/ros2/ros2-development.md",
+      "title": "ROS 2 開發操作指導",
+      "description": "ROS 2 節點和套件開發",
+      "category": "operations",
       "layer": "layer2",
+      "strong_references": 10,
+      "weak_references": 17,
+      "total_weighted_refs": 15.1,
+      "references": 27,
       "strong_references": 10,
       "weak_references": 17,
       "total_weighted_refs": 15.1,
@@ -1476,9 +1975,34 @@
         "app/sensorpart_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md"
+        "README.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
+        "app/sensorpart_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/development/docker-development.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/operations/development/testing/testing-standards.md",
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/context/workspaces/agv-workspaces.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md"
         "README.md",
         "docs-ai/README.md",
         "docs-ai/README.md",
@@ -1524,22 +2048,36 @@
           "app/sensorpart_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md"
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/sensorpart_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "context/workspaces/agv-workspaces.md",
+          "doc": "context/workspaces/agv-workspaces.md",
           "type": "weak"
         },
         {
+          "doc": "context/workspaces/agvc-workspaces.md",
           "doc": "context/workspaces/agvc-workspaces.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/testing/testing-procedures.md",
+          "doc": "operations/development/testing/testing-procedures.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/docker-development.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/protocols/ros2-interfaces.md",
           "doc": "operations/development/docker-development.md",
           "type": "weak"
         },
@@ -1551,13 +2089,25 @@
       "size": 10278,
       "modified": 1759308621.5229008,
       "importance": "critical"
+      "size": 10278,
+      "modified": 1759308621.5229008,
+      "importance": "critical"
     },
     "operations/development/ros2/plc-communication.md": {
       "path": "operations/development/ros2/plc-communication.md",
       "title": "PLC 通訊開發最佳實踐",
       "description": "PLC 通訊模組的開發和整合",
       "category": "operations",
+    "operations/development/ros2/plc-communication.md": {
+      "path": "operations/development/ros2/plc-communication.md",
+      "title": "PLC 通訊開發最佳實踐",
+      "description": "PLC 通訊模組的開發和整合",
+      "category": "operations",
       "layer": "layer2",
+      "strong_references": 11,
+      "weak_references": 6,
+      "total_weighted_refs": 12.8,
+      "references": 17,
       "strong_references": 11,
       "weak_references": 6,
       "total_weighted_refs": 12.8,
@@ -1574,9 +2124,24 @@
         "app/keyence_plc_ws/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md"
+        "README.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "README.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+        "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
         "README.md",
         "docs-ai/context/structure/module-index.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
@@ -1603,20 +2168,35 @@
           "app/keyence_plc_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md"
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "context/structure/module-index.md",
+          "doc": "context/structure/module-index.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/docker-development.md",
           "doc": "operations/development/docker-development.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/testing/testing-procedures.md",
+          "doc": "operations/development/testing/testing-procedures.md",
           "type": "weak"
+        },
+        {
+          "doc": "operations/guides/system-diagnostics.md",
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
@@ -1624,11 +2204,16 @@
         },
         {
           "doc": "knowledge/protocols/keyence-plc-protocol.md",
+          "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/ros2/ros2-development.md",
+          "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
+        },
+        {
+          "doc": "operations/development/docker-development.md",
         },
         {
           "doc": "operations/development/docker-development.md",
@@ -1636,9 +2221,11 @@
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "doc": "operations/guides/system-diagnostics.md",
           "type": "weak"
         },
         {
+          "doc": "context/structure/module-index.md",
           "doc": "context/structure/module-index.md",
           "type": "weak"
         }
@@ -1646,18 +2233,34 @@
       "size": 10672,
       "modified": 1758273184.3345022,
       "importance": "critical"
+      "size": 10672,
+      "modified": 1758273184.3345022,
+      "importance": "critical"
     },
     "operations/development/ros2/manage-function-template.md": {
       "path": "operations/development/ros2/manage-function-template.md",
       "title": "ROS2 管理函数标准化模板",
+    "operations/development/ros2/manage-function-template.md": {
+      "path": "operations/development/ros2/manage-function-template.md",
+      "title": "ROS2 管理函数标准化模板",
       "description": "",
+      "category": "operations",
       "category": "operations",
       "layer": "layer2",
       "strong_references": 0,
       "weak_references": 1,
       "total_weighted_refs": 0.3,
       "references": 1,
+      "weak_references": 1,
+      "total_weighted_refs": 0.3,
+      "references": 1,
       "strong_referenced_by": [],
+      "weak_referenced_by": [
+        "CLAUDE.md"
+      ],
+      "referenced_by": [
+        "CLAUDE.md"
+      ],
       "weak_referenced_by": [
         "CLAUDE.md"
       ],
@@ -1673,18 +2276,34 @@
       "size": 23697,
       "modified": 1762828301.5924506,
       "importance": "referenced"
+      "size": 23697,
+      "modified": 1762828301.5924506,
+      "importance": "referenced"
     },
     "operations/development/ros2/manage-function-standard.md": {
       "path": "operations/development/ros2/manage-function-standard.md",
       "title": "ROS2 服務管理函數開發標準",
+    "operations/development/ros2/manage-function-standard.md": {
+      "path": "operations/development/ros2/manage-function-standard.md",
+      "title": "ROS2 服務管理函數開發標準",
       "description": "",
+      "category": "operations",
       "category": "operations",
       "layer": "layer2",
       "strong_references": 0,
       "weak_references": 1,
       "total_weighted_refs": 0.3,
       "references": 1,
+      "weak_references": 1,
+      "total_weighted_refs": 0.3,
+      "references": 1,
       "strong_referenced_by": [],
+      "weak_referenced_by": [
+        "CLAUDE.md"
+      ],
+      "referenced_by": [
+        "CLAUDE.md"
+      ],
       "weak_referenced_by": [
         "CLAUDE.md"
       ],
@@ -1700,7 +2319,15 @@
       "size": 12775,
       "modified": 1762828301.5924506,
       "importance": "referenced"
+      "size": 12775,
+      "modified": 1762828301.5924506,
+      "importance": "referenced"
     },
+    "operations/development/testing/test-file-management.md": {
+      "path": "operations/development/testing/test-file-management.md",
+      "title": "測試檔案管理規範",
+      "description": "AI Agent 創建臨時測試檔案時的存放位置指導",
+      "category": "testing",
     "operations/development/testing/test-file-management.md": {
       "path": "operations/development/testing/test-file-management.md",
       "title": "測試檔案管理規範",
@@ -1752,11 +2379,36 @@
       "size": 5426,
       "modified": 1759246630.7357578,
       "importance": "common"
+      "references_to": [
+        {
+          "doc": "operations/development/testing/ros2-workspace-test-structure.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/testing/testing-standards.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/testing/testing-procedures.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/core/core-principles.md",
+          "type": "weak"
+        }
+      ],
+      "size": 5426,
+      "modified": 1759246630.7357578,
+      "importance": "common"
     },
     "operations/development/testing/tafl-flow-testing-guide.md": {
       "path": "operations/development/testing/tafl-flow-testing-guide.md",
       "title": "TAFL Flow 測試指南",
+    "operations/development/testing/tafl-flow-testing-guide.md": {
+      "path": "operations/development/testing/tafl-flow-testing-guide.md",
+      "title": "TAFL Flow 測試指南",
       "description": "",
+      "category": "testing",
       "category": "testing",
       "layer": "layer2",
       "strong_references": 0,
@@ -1783,8 +2435,25 @@
       ],
       "size": 12384,
       "modified": 1761696730.7162485,
+      "references_to": [
+        {
+          "doc": "operations/development/testing/ros2-workspace-test-structure.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/testing/testing-standards.md",
+          "type": "weak"
+        }
+      ],
+      "size": 12384,
+      "modified": 1761696730.7162485,
       "importance": "unreferenced"
     },
+    "operations/development/testing/testing-standards.md": {
+      "path": "operations/development/testing/testing-standards.md",
+      "title": "RosAGV 測試標準規範",
+      "description": "為所有 RosAGV 模組提供統一的測試框架標準",
+      "category": "testing",
     "operations/development/testing/testing-standards.md": {
       "path": "operations/development/testing/testing-standards.md",
       "title": "RosAGV 測試標準規範",
@@ -1795,16 +2464,29 @@
       "weak_references": 6,
       "total_weighted_refs": 7.8,
       "references": 12,
+      "strong_references": 6,
+      "weak_references": 6,
+      "total_weighted_refs": 7.8,
+      "references": 12,
       "strong_referenced_by": [
         "README.md",
         "app/tafl_wcs_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
         "app/tafl_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/operations/development/testing/test-file-management.md",
+        "docs-ai/operations/development/testing/tafl-flow-testing-guide.md",
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/context/structure/module-index.md"
         "docs-ai/operations/development/testing/test-file-management.md",
         "docs-ai/operations/development/testing/tafl-flow-testing-guide.md",
         "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
@@ -1826,7 +2508,11 @@
       "layer_references": {
         "layer2": [
           "app/tafl_wcs_ws/CLAUDE.md",
+          "app/tafl_wcs_ws/CLAUDE.md",
           "app/tafl_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
           "app/rcs_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
@@ -1835,13 +2521,24 @@
       "references_to": [
         {
           "doc": "operations/development/testing/ros2-workspace-test-structure.md",
+          "doc": "operations/development/testing/ros2-workspace-test-structure.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/testing/test-file-management.md",
+          "doc": "operations/development/testing/test-file-management.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/ros2/ros2-development.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/docker-development.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/core/core-principles.md",
           "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
@@ -1857,7 +2554,15 @@
       "size": 10881,
       "modified": 1759246630.736758,
       "importance": "important"
+      "size": 10881,
+      "modified": 1759246630.736758,
+      "importance": "important"
     },
+    "operations/development/testing/ros2-workspace-test-structure.md": {
+      "path": "operations/development/testing/ros2-workspace-test-structure.md",
+      "title": "ROS 2 工作空間測試結構規範",
+      "description": "ROS 2 工作空間中測試檔案的標準組織結構",
+      "category": "testing",
     "operations/development/testing/ros2-workspace-test-structure.md": {
       "path": "operations/development/testing/ros2-workspace-test-structure.md",
       "title": "ROS 2 工作空間測試結構規範",
@@ -1868,11 +2573,18 @@
       "weak_references": 3,
       "total_weighted_refs": 2.9,
       "references": 5,
+      "strong_references": 2,
+      "weak_references": 3,
+      "total_weighted_refs": 2.9,
+      "references": 5,
       "strong_referenced_by": [
         "app/tafl_wcs_ws/CLAUDE.md",
         "app/tafl_wcs_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
+        "docs-ai/operations/development/testing/test-file-management.md",
+        "docs-ai/operations/development/testing/tafl-flow-testing-guide.md",
+        "docs-ai/operations/development/testing/testing-standards.md"
         "docs-ai/operations/development/testing/test-file-management.md",
         "docs-ai/operations/development/testing/tafl-flow-testing-guide.md",
         "docs-ai/operations/development/testing/testing-standards.md"
@@ -1892,13 +2604,20 @@
       "references_to": [
         {
           "doc": "operations/development/testing/test-file-management.md",
+          "doc": "operations/development/testing/test-file-management.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/testing/testing-standards.md",
+          "doc": "operations/development/testing/testing-standards.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/ros2/ros2-development.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/core/core-principles.md",
           "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
@@ -1910,7 +2629,15 @@
       "size": 9447,
       "modified": 1759246630.7357578,
       "importance": "common"
+      "size": 9447,
+      "modified": 1759246630.7357578,
+      "importance": "common"
     },
+    "operations/development/testing/testing-procedures.md": {
+      "path": "operations/development/testing/testing-procedures.md",
+      "title": "ROS 2 測試程序最佳實踐",
+      "description": "ROS 2 套件的測試開發和執行",
+      "category": "testing",
     "operations/development/testing/testing-procedures.md": {
       "path": "operations/development/testing/testing-procedures.md",
       "title": "ROS 2 測試程序最佳實踐",
@@ -1921,13 +2648,26 @@
       "weak_references": 9,
       "total_weighted_refs": 5.699999999999999,
       "references": 12,
+      "strong_references": 3,
+      "weak_references": 9,
+      "total_weighted_refs": 5.699999999999999,
+      "references": 12,
       "strong_referenced_by": [
+        "README.md",
         "README.md",
         "README.md",
         "app/tafl_wcs_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/operations/development/testing/test-file-management.md"
         "README.md",
         "docs-ai/README.md",
         "docs-ai/README.md",
@@ -1953,13 +2693,16 @@
       "references_to": [
         {
           "doc": "operations/development/ros2/ros2-development.md",
+          "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/web/web-development.md",
+          "doc": "operations/development/web/web-development.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/database-operations.md",
           "doc": "operations/development/database-operations.md",
           "type": "weak"
         },
@@ -1968,6 +2711,8 @@
           "type": "weak"
         }
       ],
+      "size": 21644,
+      "modified": 1758273184.3349786,
       "size": 21644,
       "modified": 1758273184.3349786,
       "importance": "important"
@@ -1982,11 +2727,24 @@
       "weak_references": 3,
       "total_weighted_refs": 1.9,
       "references": 4,
+    "operations/development/core/documentation-standards.md": {
+      "path": "operations/development/core/documentation-standards.md",
+      "title": "文檔撰寫標準與規範",
+      "description": "AI Agent 撰寫技術文檔、README、報告時的必要規範",
+      "category": "core",
+      "layer": "layer1",
+      "strong_references": 1,
+      "weak_references": 3,
+      "total_weighted_refs": 1.9,
+      "references": 4,
       "strong_referenced_by": [
+        "README.md"
         "README.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/development/core/core-principles.md"
         "docs-ai/README.md",
         "docs-ai/operations/development/core/core-principles.md"
       ],
@@ -1996,6 +2754,9 @@
         "docs-ai/operations/development/core/core-principles.md"
       ],
       "layer_references": {
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
         "layer1": [],
         "layer2": [],
         "layer3": []
@@ -2043,9 +2804,53 @@
         },
         {
           "doc": "context/system/language-configuration.md",
+          "doc": "context/system/dual-environment.md",
+          "type": "strong"
+        },
+        {
+          "doc": "operations/guides/troubleshooting.md",
+          "type": "strong"
+        },
+        {
+          "doc": "context/system/rosagv-overview.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/guides/troubleshooting.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/protocols/ros2-interfaces.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/docker-development.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/agv-domain/vehicle-types.md",
+          "type": "weak"
+        },
+        {
+          "doc": "context/system/dual-environment.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/core/core-principles.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/testing/testing-standards.md",
+          "type": "weak"
+        },
+        {
+          "doc": "context/system/language-configuration.md",
           "type": "weak"
         }
       ],
+      "size": 8674,
+      "modified": 1758273184.3345022,
+      "importance": "referenced"
       "size": 8674,
       "modified": 1758273184.3345022,
       "importance": "referenced"
@@ -2060,18 +2865,35 @@
       "weak_references": 2,
       "total_weighted_refs": 1.6,
       "references": 3,
+    "operations/development/core/linus-torvalds-ai-agent-principles.md": {
+      "path": "operations/development/core/linus-torvalds-ai-agent-principles.md",
+      "title": "Linus Torvalds 式 AI Agent 核心開發準則",
+      "description": "AI Agent 進行程式碼開發和審查時的核心指導原則",
+      "category": "core",
+      "layer": "layer1",
+      "strong_references": 1,
+      "weak_references": 2,
+      "total_weighted_refs": 1.6,
+      "references": 3,
       "strong_referenced_by": [
+        "README.md"
         "README.md"
       ],
       "weak_referenced_by": [
+        "CLAUDE.md",
+        "README.md"
         "CLAUDE.md",
         "README.md"
       ],
       "referenced_by": [
         "README.md",
         "CLAUDE.md"
+        "CLAUDE.md"
       ],
       "layer_references": {
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
         "layer1": [],
         "layer2": [],
         "layer3": []
@@ -2079,13 +2901,18 @@
       "references_to": [
         {
           "doc": "operations/development/core/core-principles.md",
+          "doc": "operations/development/core/core-principles.md",
           "type": "weak"
         },
         {
           "doc": "operations/tools/unified-tools.md",
+          "doc": "operations/tools/unified-tools.md",
           "type": "weak"
         }
       ],
+      "size": 7555,
+      "modified": 1758273184.3345022,
+      "importance": "referenced"
       "size": 7555,
       "modified": 1758273184.3345022,
       "importance": "referenced"
@@ -2100,14 +2927,36 @@
       "weak_references": 11,
       "total_weighted_refs": 6.3,
       "references": 14,
+    "operations/development/core/core-principles.md": {
+      "path": "operations/development/core/core-principles.md",
+      "title": "核心開發原則",
+      "description": "AI Agent 進行代碼開發和修改時的核心指導原則",
+      "category": "core",
+      "layer": "layer1",
+      "strong_references": 3,
+      "weak_references": 11,
+      "total_weighted_refs": 6.3,
+      "references": 14,
       "strong_referenced_by": [
         "README.md",
+        "README.md",
+        "README.md"
         "README.md",
         "README.md"
       ],
       "weak_referenced_by": [
         "CLAUDE.md",
+        "CLAUDE.md",
         "README.md",
+        "README.md",
+        "README.md",
+        "docs-ai/operations/development/testing/test-file-management.md",
+        "docs-ai/operations/development/testing/testing-standards.md",
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md",
+        "docs-ai/context/system/language-configuration.md",
+        "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
         "README.md",
         "README.md",
         "docs-ai/operations/development/testing/test-file-management.md",
@@ -2133,10 +2982,19 @@
         "layer1": [],
         "layer2": [],
         "layer3": []
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
       },
       "references_to": [
         {
           "doc": "operations/development/core/documentation-standards.md",
+          "doc": "operations/development/core/documentation-standards.md",
+          "type": "weak"
+        },
+        {
+          "doc": "README.md",
+          "doc": "README.md",
           "type": "weak"
         },
         {
@@ -2144,6 +3002,19 @@
           "type": "weak"
         },
         {
+          "doc": "operations/development/docker-development.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/tools/unified-tools.md",
+          "type": "weak"
+        },
+        {
+          "doc": "context/system/dual-environment.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/tools/unified-tools.md",
           "doc": "README.md",
           "type": "weak"
         },
@@ -2166,6 +3037,8 @@
       ],
       "size": 17687,
       "modified": 1758273184.3336773,
+      "size": 17687,
+      "modified": 1758273184.3336773,
       "importance": "important"
     },
     "context/structure/module-index.md": {
@@ -2184,6 +3057,8 @@
       "weak_referenced_by": [
         "README.md",
         "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/context/system/language-configuration.md"
         "docs-ai/operations/development/ros2/plc-communication.md",
         "docs-ai/context/system/language-configuration.md"
       ],
@@ -2296,6 +3171,7 @@
         }
       ],
       "size": 8087,
+      "modified": 1759281825.381663,
       "modified": 1759281825.381663,
       "importance": "common"
     },
@@ -2439,6 +3315,7 @@
       ],
       "size": 2299,
       "modified": 1759281825.3819444,
+      "modified": 1759281825.3819444,
       "importance": "referenced"
     },
     "context/system/rosagv-overview.md": {
@@ -2456,6 +3333,8 @@
         "app/path_algorithm/CLAUDE.md",
         "app/path_algorithm/CLAUDE.md",
         "app/shared_constants_ws/CLAUDE.md"
+        "app/path_algorithm/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "CLAUDE.md",
@@ -2463,8 +3342,11 @@
         "docs-ai/README.md",
         "docs-ai/README.md",
         "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/development/core/documentation-standards.md",
         "docs-ai/context/structure/module-index.md",
         "docs-ai/context/system/language-configuration.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md"
         "docs-ai/knowledge/business/eyewear-production-process.md",
         "docs-ai/knowledge/business/eyewear-production-process.md"
       ],
@@ -2475,6 +3357,7 @@
         "docs-ai/context/system/language-configuration.md",
         "CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/context/system/language-configuration.md",
         "docs-ai/knowledge/business/eyewear-production-process.md",
         "app/path_algorithm/CLAUDE.md",
         "app/shared_constants_ws/CLAUDE.md"
@@ -2508,8 +3391,13 @@
       ],
       "size": 6093,
       "modified": 1759308621.5222685,
+      "modified": 1759308621.5222685,
       "importance": "important"
     },
+    "context/system/technology-stack.md": {
+      "path": "context/system/technology-stack.md",
+      "title": "RosAGV 技術棧和依賴關係",
+      "description": "理解 RosAGV 技術選型的背景和原因",
     "context/system/technology-stack.md": {
       "path": "context/system/technology-stack.md",
       "title": "RosAGV 技術棧和依賴關係",
@@ -2520,8 +3408,13 @@
       "weak_references": 16,
       "total_weighted_refs": 6.8,
       "references": 18,
+      "strong_references": 2,
+      "weak_references": 16,
+      "total_weighted_refs": 6.8,
+      "references": 18,
       "strong_referenced_by": [
         "README.md",
+        "app/joystick_ws/CLAUDE.md"
         "app/joystick_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
@@ -2531,6 +3424,16 @@
         "docs-ai/README.md",
         "docs-ai/operations/deployment/docker-compose-configuration.md",
         "docs-ai/operations/deployment/nginx-configuration.md",
+        "docs-ai/operations/development/docker-development.md",
+        "docs-ai/operations/development/database-operations.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/operations/development/web/web-development.md",
+        "docs-ai/context/system/dual-environment.md",
+        "docs-ai/context/system/rosagv-overview.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md"
         "docs-ai/operations/development/docker-development.md",
         "docs-ai/operations/development/database-operations.md",
         "docs-ai/operations/guides/performance-monitoring.md",
@@ -2563,10 +3466,12 @@
       "layer_references": {
         "layer2": [
           "app/joystick_ws/CLAUDE.md"
+          "app/joystick_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
+          "doc": "context/system/dual-environment.md",
           "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
@@ -2582,12 +3487,24 @@
       "size": 9615,
       "modified": 1759281825.3821294,
       "importance": "important"
+      "size": 9615,
+      "modified": 1759281825.3821294,
+      "importance": "important"
     },
     "context/workspaces/agvc-workspaces.md": {
       "path": "context/workspaces/agvc-workspaces.md",
       "title": "AGVC 管理工作空間概覽",
       "description": "理解 AGVC 管理系統的工作空間結構和職責分工",
+    "context/workspaces/agvc-workspaces.md": {
+      "path": "context/workspaces/agvc-workspaces.md",
+      "title": "AGVC 管理工作空間概覽",
+      "description": "理解 AGVC 管理系統的工作空間結構和職責分工",
       "category": "architecture",
+      "layer": "layer2",
+      "strong_references": 6,
+      "weak_references": 10,
+      "total_weighted_refs": 9.0,
+      "references": 16,
       "layer": "layer2",
       "strong_references": 6,
       "weak_references": 10,
@@ -2600,11 +3517,23 @@
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
         "docs-ai/README.md",
         "docs-ai/operations/development/database-operations.md",
+        "docs-ai/operations/development/web/web-development.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/system/dual-environment.md",
+        "docs-ai/context/system/rosagv-overview.md",
+        "docs-ai/context/workspaces/agv-workspaces.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md"
         "docs-ai/operations/development/web/web-development.md",
         "docs-ai/operations/development/ros2/ros2-development.md",
         "docs-ai/context/structure/module-index.md",
@@ -2636,18 +3565,30 @@
           "app/rcs_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/shared_constants_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "context/workspaces/agv-workspaces.md",
+          "doc": "context/workspaces/agv-workspaces.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/web/web-development.md",
+          "doc": "operations/development/web/web-development.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/database-operations.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
           "doc": "operations/development/database-operations.md",
           "type": "weak"
         },
@@ -2665,7 +3606,16 @@
       "title": "AGV 車載工作空間概覽",
       "description": "理解 AGV 車載系統的工作空間結構和職責分工",
       "category": "architecture",
+    "context/workspaces/agv-workspaces.md": {
+      "path": "context/workspaces/agv-workspaces.md",
+      "title": "AGV 車載工作空間概覽",
+      "description": "理解 AGV 車載系統的工作空間結構和職責分工",
+      "category": "architecture",
       "layer": "layer2",
+      "strong_references": 4,
+      "weak_references": 13,
+      "total_weighted_refs": 7.9,
+      "references": 17,
       "strong_references": 4,
       "weak_references": 13,
       "total_weighted_refs": 7.9,
@@ -2675,9 +3625,24 @@
         "app/agv_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md",
         "app/shared_constants_ws/CLAUDE.md"
+        "app/agv_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/system/dual-environment.md",
+        "docs-ai/context/system/rosagv-overview.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "docs-ai/knowledge/protocols/ros2-interfaces.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+        "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
         "docs-ai/README.md",
         "docs-ai/README.md",
         "docs-ai/README.md",
@@ -2711,18 +3676,24 @@
           "app/agv_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md",
           "app/shared_constants_ws/CLAUDE.md"
+          "app/agv_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/shared_constants_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "context/workspaces/agvc-workspaces.md",
+          "doc": "context/workspaces/agvc-workspaces.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/ros2/ros2-development.md",
+          "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/agv-domain/vehicle-types.md",
           "doc": "knowledge/agv-domain/vehicle-types.md",
           "type": "weak"
         }
@@ -2741,12 +3712,25 @@
       "weak_references": 1,
       "total_weighted_refs": 3.3,
       "references": 4,
+    "knowledge/protocols/plc-ros2-interfaces.md": {
+      "path": "knowledge/protocols/plc-ros2-interfaces.md",
+      "title": "PLC ROS 2 服務介面規範",
+      "description": "PLC 設備的 ROS 2 服務介面設計",
+      "category": "knowledge",
+      "layer": "layer2",
+      "strong_references": 3,
+      "weak_references": 1,
+      "total_weighted_refs": 3.3,
+      "references": 4,
       "strong_referenced_by": [
         "README.md",
         "app/plc_proxy_ws/CLAUDE.md",
         "app/agv_cmd_service_ws/CLAUDE.md"
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
+        "README.md"
         "README.md"
       ],
       "referenced_by": [
@@ -2758,30 +3742,40 @@
         "layer2": [
           "app/plc_proxy_ws/CLAUDE.md",
           "app/agv_cmd_service_ws/CLAUDE.md"
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/protocols/ros2-interfaces.md",
+          "doc": "knowledge/protocols/ros2-interfaces.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/ros2/plc-communication.md",
+          "doc": "operations/development/ros2/plc-communication.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/ros2/ros2-development.md",
           "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
         {
           "doc": "context/system/technology-stack.md",
+          "doc": "context/system/technology-stack.md",
           "type": "weak"
         }
       ],
+      "size": 12029,
+      "modified": 1758273184.3321311,
+      "importance": "common"
       "size": 12029,
       "modified": 1758273184.3321311,
       "importance": "common"
@@ -2791,7 +3785,16 @@
       "title": "KUKA Fleet 任務狀態回調規格",
       "description": "理解 KUKA Fleet 系統的任務狀態回調機制",
       "category": "knowledge",
+    "knowledge/protocols/kuka-fleet-callback.md": {
+      "path": "knowledge/protocols/kuka-fleet-callback.md",
+      "title": "KUKA Fleet 任務狀態回調規格",
+      "description": "理解 KUKA Fleet 系統的任務狀態回調機制",
+      "category": "knowledge",
       "layer": "layer2",
+      "strong_references": 8,
+      "weak_references": 7,
+      "total_weighted_refs": 10.1,
+      "references": 15,
       "strong_references": 8,
       "weak_references": 7,
       "total_weighted_refs": 10.1,
@@ -2805,9 +3808,23 @@
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/src/web_api/CLAUDE.md",
         "app/web_api_ws/src/web_api/CLAUDE.md"
+        "README.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/kuka_fleet_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/src/web_api/CLAUDE.md",
+        "app/web_api_ws/src/web_api/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/protocols/kuka-fleet-api.md",
+        "docs-ai/knowledge/system/rack-rotation-logic.md"
         "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
         "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
         "docs-ai/context/structure/module-index.md",
@@ -2837,7 +3854,31 @@
           "app/web_api_ws/src/web_api/CLAUDE.md",
           "app/web_api_ws/src/web_api/CLAUDE.md"
         ]
+        "layer2": [
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
+        ],
+        "layer3": [
+          "app/web_api_ws/src/web_api/CLAUDE.md",
+          "app/web_api_ws/src/web_api/CLAUDE.md"
+        ]
       },
+      "references_to": [
+        {
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
+          "type": "weak"
+        }
+      ],
+      "size": 15824,
+      "modified": 1758273184.3321311,
+      "importance": "critical"
       "references_to": [
         {
           "doc": "knowledge/protocols/kuka-fleet-api.md",
@@ -2858,7 +3899,16 @@
       "description": "ROS 2 自定義訊息、服務、動作設計",
       "category": "knowledge",
       "layer": "layer2",
+    "knowledge/protocols/ros2-interfaces.md": {
+      "path": "knowledge/protocols/ros2-interfaces.md",
+      "title": "ROS 2 介面設計和協定",
+      "description": "ROS 2 自定義訊息、服務、動作設計",
+      "category": "knowledge",
+      "layer": "layer2",
       "strong_references": 10,
+      "weak_references": 5,
+      "total_weighted_refs": 11.5,
+      "references": 15,
       "weak_references": 5,
       "total_weighted_refs": 11.5,
       "references": 15,
@@ -2868,7 +3918,14 @@
         "app/agv_cmd_service_ws/CLAUDE.md",
         "app/db_proxy_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
@@ -2876,6 +3933,10 @@
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/keyence-plc-protocol.md"
         "docs-ai/operations/development/ros2/ros2-development.md",
         "docs-ai/operations/development/core/documentation-standards.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
@@ -2901,8 +3962,16 @@
           "app/db_proxy_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/ecs_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ],
         "layer3": [
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md",
@@ -2912,17 +3981,21 @@
       "references_to": [
         {
           "doc": "operations/development/ros2/ros2-development.md",
+          "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
         {
+          "doc": "context/workspaces/agv-workspaces.md",
           "doc": "context/workspaces/agv-workspaces.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/protocols/zenoh-rmw.md",
+          "doc": "knowledge/protocols/zenoh-rmw.md",
           "type": "weak"
         },
         {
+          "doc": "context/system/technology-stack.md",
           "doc": "context/system/technology-stack.md",
           "type": "weak"
         }
@@ -2997,6 +4070,7 @@
       "references_to": [
         {
           "doc": "knowledge/protocols/kuka-fleet-callback.md",
+          "doc": "knowledge/protocols/kuka-fleet-callback.md",
           "type": "weak"
         }
       ],
@@ -3004,6 +4078,11 @@
       "modified": 1763685485.1873355,
       "importance": "critical"
     },
+    "knowledge/protocols/zenoh-rmw.md": {
+      "path": "knowledge/protocols/zenoh-rmw.md",
+      "title": "Zenoh RMW 通訊機制",
+      "description": "理解 RosAGV 中 Zenoh RMW 的通訊機制",
+      "category": "knowledge",
     "knowledge/protocols/zenoh-rmw.md": {
       "path": "knowledge/protocols/zenoh-rmw.md",
       "title": "Zenoh RMW 通訊機制",
@@ -3021,11 +4100,27 @@
         "app/agv_ws/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md"
       ],
+      "strong_references": 5,
+      "weak_references": 6,
+      "total_weighted_refs": 6.8,
+      "references": 11,
+      "strong_referenced_by": [
+        "README.md",
+        "README.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
+      ],
       "weak_referenced_by": [
         "README.md",
         "README.md",
         "docs-ai/README.md",
+        "README.md",
+        "README.md",
+        "docs-ai/README.md",
         "docs-ai/operations/guides/troubleshooting.md",
+        "docs-ai/operations/guides/system-diagnostics.md",
+        "docs-ai/knowledge/protocols/ros2-interfaces.md"
         "docs-ai/operations/guides/system-diagnostics.md",
         "docs-ai/knowledge/protocols/ros2-interfaces.md"
       ],
@@ -3045,9 +4140,15 @@
           "app/agv_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md"
         ]
+        "layer2": [
+          "app/ecs_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md"
+        ]
       },
       "references_to": [
         {
+          "doc": "context/system/dual-environment.md",
           "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
@@ -3056,6 +4157,7 @@
           "type": "weak"
         },
         {
+          "doc": "operations/development/ros2/ros2-development.md",
           "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
         },
@@ -3071,7 +4173,15 @@
       "size": 8996,
       "modified": 1758273184.3321311,
       "importance": "important"
+      "size": 8996,
+      "modified": 1758273184.3321311,
+      "importance": "important"
     },
+    "knowledge/protocols/kuka-agv-rack-rotation.md": {
+      "path": "knowledge/protocols/kuka-agv-rack-rotation.md",
+      "title": "KUKA AGV Rack Rotation Integration",
+      "description": "",
+      "category": "knowledge",
     "knowledge/protocols/kuka-agv-rack-rotation.md": {
       "path": "knowledge/protocols/kuka-agv-rack-rotation.md",
       "title": "KUKA AGV Rack Rotation Integration",
@@ -3082,12 +4192,20 @@
       "weak_references": 0,
       "total_weighted_refs": 2.0,
       "references": 2,
+      "strong_references": 2,
+      "weak_references": 0,
+      "total_weighted_refs": 2.0,
+      "references": 2,
       "strong_referenced_by": [
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [],
+      "weak_referenced_by": [],
       "referenced_by": [
+        "app/rcs_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
       ],
@@ -3095,14 +4213,18 @@
         "layer2": [
           "app/rcs_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/rcs_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/protocols/kuka-fleet-api.md",
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/agv-domain/wcs-database-design.md",
           "doc": "knowledge/agv-domain/wcs-database-design.md",
           "type": "weak"
         }
@@ -3110,7 +4232,15 @@
       "size": 6904,
       "modified": 1762828301.5924506,
       "importance": "common"
+      "size": 6904,
+      "modified": 1762828301.5924506,
+      "importance": "common"
     },
+    "knowledge/protocols/keyence-plc-protocol.md": {
+      "path": "knowledge/protocols/keyence-plc-protocol.md",
+      "title": "Keyence PLC 通訊協議",
+      "description": "理解 Keyence PLC 通訊協議規範和指令格式",
+      "category": "knowledge",
     "knowledge/protocols/keyence-plc-protocol.md": {
       "path": "knowledge/protocols/keyence-plc-protocol.md",
       "title": "Keyence PLC 通訊協議",
@@ -3121,8 +4251,21 @@
       "weak_references": 9,
       "total_weighted_refs": 13.7,
       "references": 20,
+      "strong_references": 11,
+      "weak_references": 9,
+      "total_weighted_refs": 13.7,
+      "references": 20,
       "strong_referenced_by": [
         "README.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md",
         "app/ecs_ws/CLAUDE.md",
         "app/plc_proxy_ws/CLAUDE.md",
         "app/plc_proxy_ws/CLAUDE.md",
@@ -3144,6 +4287,15 @@
         "docs-ai/knowledge/agv-domain/agv-state-machine.md",
         "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
+        "README.md",
+        "docs-ai/README.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
       ],
       "referenced_by": [
         "docs-ai/README.md",
@@ -3161,6 +4313,15 @@
       ],
       "layer_references": {
         "layer2": [
+          "app/ecs_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md",
           "app/ecs_ws/CLAUDE.md",
           "app/plc_proxy_ws/CLAUDE.md",
           "app/plc_proxy_ws/CLAUDE.md",
@@ -3186,7 +4347,30 @@
       "size": 4551,
       "modified": 1758273184.3321311,
       "importance": "critical"
+      "references_to": [
+        {
+          "doc": "operations/guides/system-diagnostics.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/protocols/ros2-interfaces.md",
+          "type": "weak"
+        }
+      ],
+      "size": 4551,
+      "modified": 1758273184.3321311,
+      "importance": "critical"
     },
+    "knowledge/agv-domain/vehicle-types.md": {
+      "path": "knowledge/agv-domain/vehicle-types.md",
+      "title": "AGV 車型特性和應用場景",
+      "description": "理解不同 AGV 車型的特性和應用場景",
+      "category": "knowledge",
+      "layer": "layer2",
+      "strong_references": 6,
+      "weak_references": 11,
+      "total_weighted_refs": 9.3,
+      "references": 17,
     "knowledge/agv-domain/vehicle-types.md": {
       "path": "knowledge/agv-domain/vehicle-types.md",
       "title": "AGV 車型特性和應用場景",
@@ -3200,7 +4384,11 @@
       "strong_referenced_by": [
         "README.md",
         "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
         "app/path_algorithm/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md"
         "app/agv_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md"
@@ -3211,7 +4399,14 @@
         "docs-ai/README.md",
         "docs-ai/README.md",
         "docs-ai/README.md",
+        "docs-ai/README.md",
+        "docs-ai/README.md",
         "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/context/workspaces/agv-workspaces.md",
+        "docs-ai/knowledge/agv-domain/loader-unloader-task-execution-comparison.md",
+        "docs-ai/knowledge/agv-domain/agv-state-machine.md",
+        "docs-ai/knowledge/agv-domain/robot-pgno-rules.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md"
         "docs-ai/context/workspaces/agv-workspaces.md",
         "docs-ai/knowledge/agv-domain/loader-unloader-task-execution-comparison.md",
         "docs-ai/knowledge/agv-domain/agv-state-machine.md",
@@ -3237,10 +4432,15 @@
           "app/agv_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md"
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
+          "doc": "context/workspaces/agv-workspaces.md",
           "doc": "context/workspaces/agv-workspaces.md",
           "type": "weak"
         },
@@ -3250,9 +4450,11 @@
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "doc": "operations/guides/system-diagnostics.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/docker-development.md",
           "doc": "operations/development/docker-development.md",
           "type": "weak"
         },
@@ -3264,7 +4466,15 @@
       "size": 11649,
       "modified": 1761696730.7139084,
       "importance": "important"
+      "size": 11649,
+      "modified": 1761696730.7139084,
+      "importance": "important"
     },
+    "knowledge/agv-domain/loader-unloader-task-execution-comparison.md": {
+      "path": "knowledge/agv-domain/loader-unloader-task-execution-comparison.md",
+      "title": "Loader vs Unloader AGV 任務執行邏輯對比",
+      "description": "",
+      "category": "knowledge",
     "knowledge/agv-domain/loader-unloader-task-execution-comparison.md": {
       "path": "knowledge/agv-domain/loader-unloader-task-execution-comparison.md",
       "title": "Loader vs Unloader AGV 任務執行邏輯對比",
@@ -3290,6 +4500,11 @@
         },
         {
           "doc": "knowledge/agv-domain/wcs-system-design.md",
+          "doc": "knowledge/agv-domain/vehicle-types.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
           "type": "weak"
         }
       ],
@@ -3302,7 +4517,16 @@
       "title": "WCS 資料庫設計",
       "description": "理解 RosAGV 系統的完整資料庫架構",
       "category": "knowledge",
+    "knowledge/agv-domain/wcs-database-design.md": {
+      "path": "knowledge/agv-domain/wcs-database-design.md",
+      "title": "WCS 資料庫設計",
+      "description": "理解 RosAGV 系統的完整資料庫架構",
+      "category": "knowledge",
       "layer": "layer2",
+      "strong_references": 5,
+      "weak_references": 7,
+      "total_weighted_refs": 7.1,
+      "references": 12,
       "strong_references": 5,
       "weak_references": 7,
       "total_weighted_refs": 7.1,
@@ -3313,9 +4537,20 @@
         "app/tafl_wcs_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md"
+        "README.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
+        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
+        "docs-ai/knowledge/agv-domain/wcs-system-design.md",
+        "docs-ai/knowledge/system/rack-rotation-logic.md",
+        "docs-ai/knowledge/system/hmi-system-design.md"
         "docs-ai/context/structure/module-index.md",
         "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
         "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
@@ -3342,17 +4577,26 @@
           "app/rcs_ws/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md"
         ]
+        "layer2": [
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/tafl_wcs_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md"
+        ]
       },
       "references_to": [
         {
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
           "doc": "knowledge/agv-domain/wcs-system-design.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/agv-domain/wcs-workid-system.md",
+          "doc": "knowledge/agv-domain/wcs-workid-system.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/database-operations.md",
           "doc": "operations/development/database-operations.md",
           "type": "weak"
         }
@@ -3402,9 +4646,16 @@
         },
         {
           "doc": "knowledge/protocols/keyence-plc-protocol.md",
+          "doc": "knowledge/agv-domain/vehicle-types.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "type": "weak"
         }
       ],
+      "size": 12436,
+      "modified": 1759308621.5222685,
       "size": 12436,
       "modified": 1759308621.5222685,
       "importance": "common"
@@ -3414,7 +4665,15 @@
       "title": "MAGIC 值系統分析",
       "description": "理解 MAGIC 值在 AGV 狀態機中的作用和工作機制",
       "category": "knowledge",
+    "knowledge/agv-domain/magic-value-analysis.md": {
+      "path": "knowledge/agv-domain/magic-value-analysis.md",
+      "title": "MAGIC 值系統分析",
+      "description": "理解 MAGIC 值在 AGV 狀態機中的作用和工作機制",
+      "category": "knowledge",
       "layer": "layer2",
+      "strong_references": 2,
+      "weak_references": 2,
+      "total_weighted_refs": 2.6,
       "strong_references": 2,
       "weak_references": 2,
       "total_weighted_refs": 2.6,
@@ -3422,9 +4681,12 @@
       "strong_referenced_by": [
         "README.md",
         "app/agv_ws/src/agv_base/CLAUDE.md"
+        "README.md",
+        "app/agv_ws/src/agv_base/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md"
       ],
       "referenced_by": [
@@ -3436,17 +4698,23 @@
         "layer3": [
           "app/agv_ws/src/agv_base/CLAUDE.md"
         ]
+        "layer3": [
+          "app/agv_ws/src/agv_base/CLAUDE.md"
+        ]
       },
       "references_to": [
         {
+          "doc": "knowledge/agv-domain/agv-state-machine.md",
           "doc": "knowledge/agv-domain/agv-state-machine.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/agv-domain/write-path-state-analysis.md",
+          "doc": "knowledge/agv-domain/write-path-state-analysis.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "type": "weak"
         },
@@ -3458,7 +4726,15 @@
       "size": 6865,
       "modified": 1758273184.3311312,
       "importance": "common"
+      "size": 6865,
+      "modified": 1758273184.3311312,
+      "importance": "common"
     },
+    "knowledge/agv-domain/license-table-design.md": {
+      "path": "knowledge/agv-domain/license-table-design.md",
+      "title": "License 資料表設計文檔",
+      "description": "本文檔詳細說明 License 資料表的設計理念、結構定義、關聯關係和使用方式，為資料庫設計和 API 開發提供技術指導。",
+      "category": "knowledge",
     "knowledge/agv-domain/license-table-design.md": {
       "path": "knowledge/agv-domain/license-table-design.md",
       "title": "License 資料表設計文檔",
@@ -3469,7 +4745,14 @@
       "weak_references": 0,
       "total_weighted_refs": 2.0,
       "references": 2,
+      "weak_references": 0,
+      "total_weighted_refs": 2.0,
+      "references": 2,
       "strong_referenced_by": [
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "weak_referenced_by": [],
         "app/db_proxy_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
       ],
@@ -3482,18 +4765,23 @@
         "layer2": [
           "app/db_proxy_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/system/hmi-system-design.md",
+          "doc": "knowledge/system/hmi-system-design.md",
           "type": "weak"
         },
         {
           "doc": "operations/guides/rack-management-guide.md",
+          "doc": "operations/guides/rack-management-guide.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/database-operations.md",
           "doc": "operations/development/database-operations.md",
           "type": "weak"
         }
@@ -3501,7 +4789,15 @@
       "size": 12085,
       "modified": 1762828301.5904505,
       "importance": "common"
+      "size": 12085,
+      "modified": 1762828301.5904505,
+      "importance": "common"
     },
+    "knowledge/agv-domain/wcs-workid-system.md": {
+      "path": "knowledge/agv-domain/wcs-workid-system.md",
+      "title": "WCS Work ID 分類系統",
+      "description": "理解 RosAGV 系統中 Work ID 的分類和用途",
+      "category": "knowledge",
     "knowledge/agv-domain/wcs-workid-system.md": {
       "path": "knowledge/agv-domain/wcs-workid-system.md",
       "title": "WCS Work ID 分類系統",
@@ -3512,14 +4808,24 @@
       "weak_references": 4,
       "total_weighted_refs": 5.2,
       "references": 8,
+      "strong_references": 4,
+      "weak_references": 4,
+      "total_weighted_refs": 5.2,
+      "references": 8,
       "strong_referenced_by": [
         "README.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/tafl_wcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md"
         "app/db_proxy_ws/CLAUDE.md",
         "app/tafl_wcs_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/knowledge/agv-domain/wcs-system-design.md"
         "docs-ai/context/structure/module-index.md",
         "docs-ai/knowledge/agv-domain/wcs-database-design.md",
         "docs-ai/knowledge/agv-domain/wcs-system-design.md"
@@ -3538,22 +4844,29 @@
           "app/db_proxy_ws/CLAUDE.md",
           "app/tafl_wcs_ws/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md"
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/tafl_wcs_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/agv-domain/wcs-system-design.md",
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/agv-domain/wcs-database-design.md",
           "doc": "knowledge/agv-domain/wcs-database-design.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/system/manual-rack-management.md",
+          "doc": "knowledge/system/manual-rack-management.md",
           "type": "weak"
         },
         {
+          "doc": "operations/guides/rack-management-guide.md",
           "doc": "operations/guides/rack-management-guide.md",
           "type": "weak"
         }
@@ -3567,7 +4880,16 @@
       "title": "WritePathState 功能分析",
       "description": "理解 WritePathState 在 AGV 狀態機中的核心功能和實作細節",
       "category": "knowledge",
+    "knowledge/agv-domain/write-path-state-analysis.md": {
+      "path": "knowledge/agv-domain/write-path-state-analysis.md",
+      "title": "WritePathState 功能分析",
+      "description": "理解 WritePathState 在 AGV 狀態機中的核心功能和實作細節",
+      "category": "knowledge",
       "layer": "layer2",
+      "strong_references": 3,
+      "weak_references": 1,
+      "total_weighted_refs": 3.3,
+      "references": 4,
       "strong_references": 3,
       "weak_references": 1,
       "total_weighted_refs": 3.3,
@@ -3576,8 +4898,12 @@
         "app/agv_ws/src/unloader_agv/CLAUDE.md",
         "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
         "app/agv_ws/src/loader_agv/CLAUDE.md"
+        "app/agv_ws/src/unloader_agv/CLAUDE.md",
+        "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
+        "app/agv_ws/src/loader_agv/CLAUDE.md"
       ],
       "weak_referenced_by": [
+        "docs-ai/knowledge/agv-domain/magic-value-analysis.md"
         "docs-ai/knowledge/agv-domain/magic-value-analysis.md"
       ],
       "referenced_by": [
@@ -3591,22 +4917,30 @@
           "app/agv_ws/src/unloader_agv/CLAUDE.md",
           "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
           "app/agv_ws/src/loader_agv/CLAUDE.md"
+        "layer3": [
+          "app/agv_ws/src/unloader_agv/CLAUDE.md",
+          "app/agv_ws/src/cargo_mover_agv/CLAUDE.md",
+          "app/agv_ws/src/loader_agv/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/agv-domain/agv-state-machine.md",
+          "doc": "knowledge/agv-domain/agv-state-machine.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "doc": "knowledge/protocols/keyence-plc-protocol.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/ros2/plc-communication.md",
+          "doc": "operations/development/ros2/plc-communication.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/database-operations.md",
           "doc": "operations/development/database-operations.md",
           "type": "weak"
         },
@@ -3616,9 +4950,17 @@
         },
         {
           "doc": "knowledge/agv-domain/magic-value-analysis.md",
+          "doc": "operations/guides/system-diagnostics.md",
+          "type": "weak"
+        },
+        {
+          "doc": "knowledge/agv-domain/magic-value-analysis.md",
           "type": "weak"
         }
       ],
+      "size": 16670,
+      "modified": 1758273184.3311312,
+      "importance": "common"
       "size": 16670,
       "modified": 1758273184.3311312,
       "importance": "common"
@@ -3633,12 +4975,32 @@
       "weak_references": 10,
       "total_weighted_refs": 5.0,
       "references": 12,
+    "knowledge/agv-domain/wcs-system-design.md": {
+      "path": "knowledge/agv-domain/wcs-system-design.md",
+      "title": "WCS 系統架構設計",
+      "description": "",
+      "category": "knowledge",
+      "layer": "layer2",
+      "strong_references": 2,
+      "weak_references": 10,
+      "total_weighted_refs": 5.0,
+      "references": 12,
       "strong_referenced_by": [
         "README.md",
+        "app/tafl_wcs_ws/CLAUDE.md"
         "app/tafl_wcs_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/operations/guides/rack-management-guide.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/protocols/kuka-fleet-callback.md",
+        "docs-ai/knowledge/agv-domain/loader-unloader-task-execution-comparison.md",
+        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
+        "docs-ai/knowledge/system/manual-rack-management.md",
+        "docs-ai/knowledge/system/rack-management-architecture.md"
         "docs-ai/operations/guides/rack-management-guide.md",
         "docs-ai/context/structure/module-index.md",
         "docs-ai/context/structure/module-index.md",
@@ -3665,17 +5027,23 @@
         "layer2": [
           "app/tafl_wcs_ws/CLAUDE.md"
         ]
+        "layer2": [
+          "app/tafl_wcs_ws/CLAUDE.md"
+        ]
       },
       "references_to": [
         {
+          "doc": "knowledge/agv-domain/wcs-database-design.md",
           "doc": "knowledge/agv-domain/wcs-database-design.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/agv-domain/wcs-workid-system.md",
+          "doc": "knowledge/agv-domain/wcs-workid-system.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/business/eyewear-production-process.md",
           "doc": "knowledge/business/eyewear-production-process.md",
           "type": "weak"
         },
@@ -3697,8 +5065,19 @@
       "strong_references": 2,
       "weak_references": 1,
       "total_weighted_refs": 2.3,
+    "knowledge/agv-domain/robot-pgno-rules.md": {
+      "path": "knowledge/agv-domain/robot-pgno-rules.md",
+      "title": "Robot PGNO 參數規則",
+      "description": "AGV 機械臂控制的 PGNO 參數配置",
+      "category": "knowledge",
+      "layer": "layer2",
+      "strong_references": 2,
+      "weak_references": 1,
+      "total_weighted_refs": 2.3,
       "references": 3,
       "strong_referenced_by": [
+        "README.md",
+        "app/agv_ws/CLAUDE.md"
         "README.md",
         "app/agv_ws/CLAUDE.md"
       ],
@@ -3708,8 +5087,12 @@
       "referenced_by": [
         "README.md",
         "app/agv_ws/CLAUDE.md"
+        "app/agv_ws/CLAUDE.md"
       ],
       "layer_references": {
+        "layer2": [
+          "app/agv_ws/CLAUDE.md"
+        ]
         "layer2": [
           "app/agv_ws/CLAUDE.md"
         ]
@@ -3717,9 +5100,19 @@
       "references_to": [
         {
           "doc": "knowledge/agv-domain/vehicle-types.md",
+          "doc": "knowledge/agv-domain/vehicle-types.md",
           "type": "weak"
         },
         {
+          "doc": "context/workspaces/agv-workspaces.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/ros2/plc-communication.md",
+          "type": "weak"
+        },
+        {
+          "doc": "operations/development/core/core-principles.md",
           "doc": "context/workspaces/agv-workspaces.md",
           "type": "weak"
         },
@@ -3735,7 +5128,20 @@
       "size": 3036,
       "modified": 1758273184.3311312,
       "importance": "common"
+      "size": 3036,
+      "modified": 1758273184.3311312,
+      "importance": "common"
     },
+    "knowledge/business/eyewear-production-process.md": {
+      "path": "knowledge/business/eyewear-production-process.md",
+      "title": "眼鏡生產業務流程",
+      "description": "理解 RosAGV 在眼鏡（防風鏡、面罩、護目鏡）生產工廠中的實際應用",
+      "category": "knowledge",
+      "layer": "layer2",
+      "strong_references": 7,
+      "weak_references": 7,
+      "total_weighted_refs": 9.1,
+      "references": 14,
     "knowledge/business/eyewear-production-process.md": {
       "path": "knowledge/business/eyewear-production-process.md",
       "title": "眼鏡生產業務流程",
@@ -3754,9 +5160,22 @@
         "app/sensorpart_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/src/opui/CLAUDE.md"
+        "README.md",
+        "README.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/sensorpart_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/src/opui/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
+        "README.md",
+        "docs-ai/operations/guides/rack-management-guide.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/knowledge/agv-domain/wcs-system-design.md",
+        "docs-ai/knowledge/system/manual-rack-management.md",
+        "docs-ai/knowledge/system/rack-management-architecture.md"
         "README.md",
         "docs-ai/operations/guides/rack-management-guide.md",
         "docs-ai/context/structure/module-index.md",
@@ -3786,6 +5205,15 @@
         "layer3": [
           "app/web_api_ws/src/opui/CLAUDE.md"
         ]
+        "layer2": [
+          "app/ecs_ws/CLAUDE.md",
+          "app/ecs_ws/CLAUDE.md",
+          "app/sensorpart_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md"
+        ],
+        "layer3": [
+          "app/web_api_ws/src/opui/CLAUDE.md"
+        ]
       },
       "references_to": [
         {
@@ -3793,6 +5221,7 @@
           "type": "weak"
         },
         {
+          "doc": "context/system/dual-environment.md",
           "doc": "context/system/dual-environment.md",
           "type": "weak"
         },
@@ -3802,17 +5231,21 @@
         },
         {
           "doc": "knowledge/protocols/kuka-fleet-api.md",
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
           "type": "weak"
         },
         {
+          "doc": "context/system/rosagv-overview.md",
           "doc": "context/system/rosagv-overview.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/protocols/kuka-fleet-api.md",
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
           "type": "weak"
         },
         {
+          "doc": "operations/development/database-operations.md",
           "doc": "operations/development/database-operations.md",
           "type": "weak"
         }
@@ -3853,7 +5286,16 @@
       "title": "架台旋轉邏輯和 Task Parameters 資料流",
       "description": "理解房間入口架台旋轉的觸發條件",
       "category": "knowledge",
+    "knowledge/system/rack-rotation-logic.md": {
+      "path": "knowledge/system/rack-rotation-logic.md",
+      "title": "架台旋轉邏輯和 Task Parameters 資料流",
+      "description": "理解房間入口架台旋轉的觸發條件",
+      "category": "knowledge",
       "layer": "layer2",
+      "strong_references": 2,
+      "weak_references": 2,
+      "total_weighted_refs": 2.6,
+      "references": 4,
       "strong_references": 2,
       "weak_references": 2,
       "total_weighted_refs": 2.6,
@@ -3861,12 +5303,14 @@
       "strong_referenced_by": [
         "README.md",
         "app/rcs_ws/CLAUDE.md"
+        "app/rcs_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
         "docs-ai/context/structure/module-index.md"
       ],
       "referenced_by": [
+        "app/rcs_ws/CLAUDE.md",
         "docs-ai/context/structure/module-index.md",
         "README.md",
         "app/rcs_ws/CLAUDE.md"
@@ -3874,22 +5318,28 @@
       "layer_references": {
         "layer2": [
           "app/rcs_ws/CLAUDE.md"
+          "app/rcs_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/protocols/kuka-fleet-api.md",
+          "doc": "knowledge/protocols/kuka-fleet-api.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/protocols/kuka-fleet-callback.md",
           "doc": "knowledge/protocols/kuka-fleet-callback.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/agv-domain/wcs-database-design.md",
+          "doc": "knowledge/agv-domain/wcs-database-design.md",
           "type": "weak"
         }
       ],
+      "size": 6204,
+      "modified": 1758273184.3321311,
       "size": 6204,
       "modified": 1758273184.3321311,
       "importance": "common"
@@ -3899,7 +5349,16 @@
       "title": "HMI 系統設計文檔",
       "description": "HMI（Human-Machine Interface）終端介面系統的架構說明",
       "category": "knowledge",
+    "knowledge/system/hmi-system-design.md": {
+      "path": "knowledge/system/hmi-system-design.md",
+      "title": "HMI 系統設計文檔",
+      "description": "HMI（Human-Machine Interface）終端介面系統的架構說明",
+      "category": "knowledge",
       "layer": "layer2",
+      "strong_references": 3,
+      "weak_references": 2,
+      "total_weighted_refs": 3.6,
+      "references": 5,
       "strong_references": 3,
       "weak_references": 2,
       "total_weighted_refs": 3.6,
@@ -3911,6 +5370,7 @@
       ],
       "weak_referenced_by": [
         "README.md",
+        "docs-ai/knowledge/agv-domain/license-table-design.md"
         "docs-ai/knowledge/agv-domain/license-table-design.md"
       ],
       "referenced_by": [
@@ -3927,13 +5387,16 @@
       "references_to": [
         {
           "doc": "knowledge/agv-domain/wcs-database-design.md",
+          "doc": "knowledge/agv-domain/wcs-database-design.md",
           "type": "weak"
         },
         {
           "doc": "operations/development/web/web-development.md",
+          "doc": "operations/development/web/web-development.md",
           "type": "weak"
         },
         {
+          "doc": "context/system/dual-environment.md",
           "doc": "context/system/dual-environment.md",
           "type": "weak"
         }
@@ -3941,7 +5404,15 @@
       "size": 11953,
       "modified": 1758273184.3321311,
       "importance": "common"
+      "size": 11953,
+      "modified": 1758273184.3321311,
+      "importance": "common"
     },
+    "knowledge/system/manual-rack-management.md": {
+      "path": "knowledge/system/manual-rack-management.md",
+      "title": "手動 Rack 管理系統",
+      "description": "理解新的手動 Rack 管理模式",
+      "category": "knowledge",
     "knowledge/system/manual-rack-management.md": {
       "path": "knowledge/system/manual-rack-management.md",
       "title": "手動 Rack 管理系統",
@@ -3952,12 +5423,23 @@
       "weak_references": 4,
       "total_weighted_refs": 4.2,
       "references": 7,
+      "strong_references": 3,
+      "weak_references": 4,
+      "total_weighted_refs": 4.2,
+      "references": 7,
       "strong_referenced_by": [
+        "README.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md"
         "README.md",
         "app/agv_cmd_service_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
+        "README.md",
+        "docs-ai/operations/guides/rack-management-guide.md",
+        "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
+        "docs-ai/knowledge/system/rack-management-architecture.md"
         "README.md",
         "docs-ai/operations/guides/rack-management-guide.md",
         "docs-ai/knowledge/agv-domain/wcs-workid-system.md",
@@ -3975,26 +5457,38 @@
         "layer2": [
           "app/agv_cmd_service_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md"
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md"
         ]
       },
       "references_to": [
         {
           "doc": "knowledge/business/eyewear-production-process.md",
+          "doc": "knowledge/business/eyewear-production-process.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/agv-domain/wcs-system-design.md",
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
           "type": "weak"
         },
         {
+          "doc": "operations/guides/rack-management-guide.md",
           "doc": "operations/guides/rack-management-guide.md",
           "type": "weak"
         }
       ],
       "size": 10548,
       "modified": 1759246630.7357578,
+      "size": 10548,
+      "modified": 1759246630.7357578,
       "importance": "common"
     },
+    "knowledge/system/agvui-monitoring-system.md": {
+      "path": "knowledge/system/agvui-monitoring-system.md",
+      "title": "AGVUI 監控系統架構與實作",
+      "description": "理解 AGV UI (AGVUI) 監控系統的架構和功能",
+      "category": "knowledge",
     "knowledge/system/agvui-monitoring-system.md": {
       "path": "knowledge/system/agvui-monitoring-system.md",
       "title": "AGVUI 監控系統架構與實作",
@@ -4005,16 +5499,23 @@
       "weak_references": 4,
       "total_weighted_refs": 5.2,
       "references": 8,
+      "strong_references": 4,
+      "weak_references": 4,
+      "total_weighted_refs": 5.2,
+      "references": 8,
       "strong_referenced_by": [
         "README.md",
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/src/agvcui/CLAUDE.md"
+        "app/web_api_ws/src/agvcui/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
         "docs-ai/operations/development/web/leaflet-map-objects-best-practices.md",
+        "docs-ai/operations/development/web/leaflet-map-objects-best-practices.md",
         "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/structure/module-index.md"
         "docs-ai/context/structure/module-index.md"
       ],
       "referenced_by": [
@@ -4031,10 +5532,15 @@
         ],
         "layer3": [
           "app/web_api_ws/src/agvcui/CLAUDE.md"
+          "app/web_api_ws/CLAUDE.md"
+        ],
+        "layer3": [
+          "app/web_api_ws/src/agvcui/CLAUDE.md"
         ]
       },
       "references_to": [
         {
+          "doc": "context/workspaces/agvc-workspaces.md",
           "doc": "context/workspaces/agvc-workspaces.md",
           "type": "weak"
         },
@@ -4044,13 +5550,21 @@
         },
         {
           "doc": "operations/guides/system-diagnostics.md",
+          "doc": "operations/guides/system-diagnostics.md",
           "type": "weak"
         }
       ],
       "size": 5259,
       "modified": 1758273184.3321311,
+      "size": 5259,
+      "modified": 1758273184.3321311,
       "importance": "important"
     },
+    "knowledge/system/rack-management-architecture.md": {
+      "path": "knowledge/system/rack-management-architecture.md",
+      "title": "Rack 管理系統架構說明",
+      "description": "",
+      "category": "knowledge",
     "knowledge/system/rack-management-architecture.md": {
       "path": "knowledge/system/rack-management-architecture.md",
       "title": "Rack 管理系統架構說明",
@@ -4061,11 +5575,18 @@
       "weak_references": 1,
       "total_weighted_refs": 2.3,
       "references": 3,
+      "strong_references": 2,
+      "weak_references": 1,
+      "total_weighted_refs": 2.3,
+      "references": 3,
       "strong_referenced_by": [
+        "README.md",
+        "app/rcs_ws/CLAUDE.md"
         "README.md",
         "app/rcs_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
+        "README.md"
         "README.md"
       ],
       "referenced_by": [
@@ -4076,29 +5597,43 @@
         "layer2": [
           "app/rcs_ws/CLAUDE.md"
         ]
+        "layer2": [
+          "app/rcs_ws/CLAUDE.md"
+        ]
       },
       "references_to": [
         {
+          "doc": "knowledge/system/manual-rack-management.md",
           "doc": "knowledge/system/manual-rack-management.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/business/eyewear-production-process.md",
+          "doc": "knowledge/business/eyewear-production-process.md",
           "type": "weak"
         },
         {
           "doc": "knowledge/agv-domain/wcs-system-design.md",
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
           "type": "weak"
         },
         {
+          "doc": "knowledge/business/workspace-configuration.md",
           "doc": "knowledge/business/workspace-configuration.md",
           "type": "weak"
         }
       ],
       "size": 5899,
       "modified": 1759246630.7357578,
+      "size": 5899,
+      "modified": 1759246630.7357578,
       "importance": "common"
     },
+    "knowledge/agv-domain/tafl-flows/README.md": {
+      "path": "knowledge/agv-domain/tafl-flows/README.md",
+      "title": "~~TAFL Flows~~ - AGV 自動化流程設計（歷史文檔）",
+      "description": "",
+      "category": "knowledge",
     "knowledge/agv-domain/tafl-flows/README.md": {
       "path": "knowledge/agv-domain/tafl-flows/README.md",
       "title": "~~TAFL Flows~~ - AGV 自動化流程設計（歷史文檔）",
@@ -4480,17 +6015,23 @@
       "strong_referenced_by": [],
       "weak_referenced_by": [
         "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md"
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md"
       ],
       "referenced_by": [
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md"
         "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md"
       ],
       "layer_references": {
         "layer1": [],
         "layer2": [],
         "layer3": []
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
       },
       "references_to": [
         {
+          "doc": "guides/migration-from-tafl-to-kuka-wcs.md",
           "doc": "guides/migration-from-tafl-to-kuka-wcs.md",
           "type": "weak"
         }
@@ -4538,14 +6079,27 @@
     "knowledge/system/archived/tafl/tafl-language-specification.md": {
       "path": "knowledge/system/archived/tafl/tafl-language-specification.md",
       "title": "⚠️ 已棄用並歸檔 (DEPRECATED & ARCHIVED)",
+    "knowledge/system/archived/tafl/tafl-language-specification.md": {
+      "path": "knowledge/system/archived/tafl/tafl-language-specification.md",
+      "title": "⚠️ 已棄用並歸檔 (DEPRECATED & ARCHIVED)",
       "description": "",
+      "category": "knowledge",
       "category": "knowledge",
       "layer": "layer2",
       "strong_references": 0,
       "weak_references": 1,
       "total_weighted_refs": 0.3,
       "references": 1,
+      "weak_references": 1,
+      "total_weighted_refs": 0.3,
+      "references": 1,
       "strong_referenced_by": [],
+      "weak_referenced_by": [
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md"
+      ],
+      "referenced_by": [
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md"
+      ],
       "weak_referenced_by": [
         "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md"
       ],
@@ -4559,6 +6113,7 @@
       },
       "references_to": [
         {
+          "doc": "guides/migration-from-tafl-to-kuka-wcs.md",
           "doc": "guides/migration-from-tafl-to-kuka-wcs.md",
           "type": "weak"
         }
@@ -4592,6 +6147,7 @@
       "references_to": [
         {
           "doc": "guides/migration-from-tafl-to-kuka-wcs.md",
+          "doc": "guides/migration-from-tafl-to-kuka-wcs.md",
           "type": "weak"
         }
       ],
@@ -4617,8 +6173,11 @@
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/path_algorithm/CLAUDE.md",
+        "app/path_algorithm/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md",
         "app/launch_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md"
@@ -4634,7 +6193,13 @@
         "docs-ai/operations/deployment/nginx-configuration.md",
         "docs-ai/operations/development/docker-development.md",
         "docs-ai/operations/development/database-operations.md",
+        "docs-ai/operations/development/docker-development.md",
+        "docs-ai/operations/development/database-operations.md",
         "docs-ai/operations/tools/unified-tools.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/operations/guides/troubleshooting.md",
+        "docs-ai/operations/development/web/web-development.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
         "docs-ai/operations/guides/performance-monitoring.md",
         "docs-ai/operations/guides/troubleshooting.md",
         "docs-ai/operations/development/web/web-development.md",
@@ -4687,6 +6252,9 @@
           "app/launch_ws/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/launch_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ],
         "layer3": [
           "app/agv_ws/src/agv_interfaces/CLAUDE.md"
@@ -4720,6 +6288,7 @@
       ],
       "size": 18224,
       "modified": 1759308621.5229008,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     {
@@ -4729,17 +6298,24 @@
       "category": "operations",
       "layer": "layer2",
       "strong_references": 10,
+      "strong_references": 10,
       "weak_references": 17,
+      "total_weighted_refs": 15.1,
+      "references": 27,
       "total_weighted_refs": 15.1,
       "references": 27,
       "strong_referenced_by": [
         "README.md",
         "README.md",
         "app/plc_proxy_ws/CLAUDE.md",
+        "app/plc_proxy_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/path_algorithm/CLAUDE.md",
         "app/path_algorithm/CLAUDE.md",
+        "app/sensorpart_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
         "app/sensorpart_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md"
@@ -4755,6 +6331,13 @@
         "docs-ai/operations/development/docker-development.md",
         "docs-ai/operations/development/ros2/plc-communication.md",
         "docs-ai/operations/development/testing/testing-standards.md",
+        "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/context/workspaces/agv-workspaces.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/zenoh-rmw.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md"
         "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
         "docs-ai/operations/development/testing/testing-procedures.md",
         "docs-ai/context/workspaces/agv-workspaces.md",
@@ -4786,10 +6369,13 @@
       "layer_references": {
         "layer2": [
           "app/plc_proxy_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/sensorpart_ws/CLAUDE.md",
+          "app/sensorpart_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md"
           "app/keyence_plc_ws/CLAUDE.md"
         ]
       },
@@ -4817,6 +6403,7 @@
       ],
       "size": 10278,
       "modified": 1759308621.5229008,
+      "modified": 1759308621.5229008,
       "importance": "critical"
     },
     {
@@ -4838,13 +6425,17 @@
         "app/plc_proxy_ws/CLAUDE.md",
         "app/agv_cmd_service_ws/CLAUDE.md",
         "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md",
         "app/keyence_plc_ws/CLAUDE.md",
+        "app/keyence_plc_ws/CLAUDE.md"
         "app/keyence_plc_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
         "docs-ai/README.md",
+        "docs-ai/operations/development/ros2/plc-communication.md",
         "docs-ai/operations/development/ros2/plc-communication.md",
         "docs-ai/context/structure/module-index.md",
         "docs-ai/context/structure/module-index.md",
@@ -4876,8 +6467,11 @@
           "app/plc_proxy_ws/CLAUDE.md",
           "app/agv_cmd_service_ws/CLAUDE.md",
           "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md"
           "app/keyence_plc_ws/CLAUDE.md"
         ]
       },
@@ -4892,6 +6486,7 @@
         }
       ],
       "size": 4551,
+      "modified": 1758273184.3321311,
       "modified": 1758273184.3321311,
       "importance": "critical"
     },
@@ -4912,6 +6507,8 @@
         "app/path_algorithm/CLAUDE.md",
         "app/launch_ws/CLAUDE.md",
         "app/shared_constants_ws/CLAUDE.md",
+        "app/launch_ws/CLAUDE.md",
+        "app/shared_constants_ws/CLAUDE.md",
         "docs-ai/operations/development/core/documentation-standards.md"
       ],
       "weak_referenced_by": [
@@ -4925,6 +6522,9 @@
         "docs-ai/README.md",
         "docs-ai/operations/deployment/docker-compose-configuration.md",
         "docs-ai/operations/deployment/nginx-configuration.md",
+        "docs-ai/operations/development/docker-development.md",
+        "docs-ai/operations/guides/troubleshooting.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
         "docs-ai/operations/development/docker-development.md",
         "docs-ai/operations/guides/troubleshooting.md",
         "docs-ai/operations/development/web/web-api-launch-management.md",
@@ -4965,6 +6565,8 @@
         "layer2": [
           "app/launch_ws/CLAUDE.md",
           "app/shared_constants_ws/CLAUDE.md"
+          "app/launch_ws/CLAUDE.md",
+          "app/shared_constants_ws/CLAUDE.md"
         ]
       },
       "references_to": [
@@ -4991,6 +6593,7 @@
       ],
       "size": 8860,
       "modified": 1759308621.5222685,
+      "modified": 1759308621.5222685,
       "importance": "critical"
     },
     {
@@ -5012,6 +6615,8 @@
         "app/db_proxy_ws/CLAUDE.md",
         "app/db_proxy_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
       ],
       "weak_referenced_by": [
         "README.md",
@@ -5020,9 +6625,19 @@
         "docs-ai/README.md",
         "docs-ai/operations/development/database-schema-modification-guide.md",
         "docs-ai/operations/guides/performance-monitoring.md",
+        "docs-ai/operations/development/database-schema-modification-guide.md",
+        "docs-ai/operations/guides/performance-monitoring.md",
         "docs-ai/operations/guides/troubleshooting.md",
         "docs-ai/operations/guides/system-diagnostics.md",
         "docs-ai/operations/development/web/web-development.md",
+        "docs-ai/operations/development/testing/testing-procedures.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md",
+        "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+        "docs-ai/knowledge/agv-domain/license-table-design.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+        "docs-ai/knowledge/business/eyewear-production-process.md"
         "docs-ai/operations/development/testing/testing-procedures.md",
         "docs-ai/context/structure/module-index.md",
         "docs-ai/context/structure/module-index.md",
@@ -5058,6 +6673,8 @@
           "app/db_proxy_ws/CLAUDE.md",
           "app/db_proxy_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ]
       },
       "references_to": [
@@ -5079,6 +6696,7 @@
         }
       ],
       "size": 19044,
+      "modified": 1759246630.7357578,
       "modified": 1759246630.7357578,
       "importance": "critical"
     },
@@ -5109,7 +6727,10 @@
         "README.md",
         "README.md",
         "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/structure/module-index.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+        "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
         "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
         "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
       ],
@@ -5175,6 +6796,7 @@
       ],
       "size": 10672,
       "modified": 1758273184.3345022,
+      "modified": 1758273184.3345022,
       "importance": "critical"
     },
     {
@@ -5187,11 +6809,16 @@
       "weak_references": 12,
       "total_weighted_refs": 12.6,
       "references": 21,
+      "weak_references": 12,
+      "total_weighted_refs": 12.6,
+      "references": 21,
       "strong_referenced_by": [
         "README.md",
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
         "app/kuka_fleet_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
         "app/web_api_ws/src/web_api/CLAUDE.md",
@@ -5206,10 +6833,16 @@
         "docs-ai/context/structure/module-index.md",
         "docs-ai/context/structure/module-index.md",
         "docs-ai/context/workspaces/agvc-workspaces.md",
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
+        "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/structure/module-index.md",
+        "docs-ai/context/workspaces/agvc-workspaces.md",
         "docs-ai/knowledge/protocols/kuka-fleet-callback.md",
         "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
         "docs-ai/knowledge/business/eyewear-production-process.md",
         "docs-ai/knowledge/business/eyewear-production-process.md",
+        "docs-ai/knowledge/system/rack-rotation-logic.md"
         "docs-ai/knowledge/system/rack-rotation-logic.md"
       ],
       "referenced_by": [
@@ -5230,6 +6863,9 @@
         "layer2": [
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
@@ -5267,6 +6903,7 @@
         "app/path_algorithm/CLAUDE.md",
         "app/path_algorithm/CLAUDE.md",
         "app/rcs_ws/CLAUDE.md",
+        "app/rcs_ws/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md"
       ],
       "weak_referenced_by": [
@@ -5279,10 +6916,16 @@
         "docs-ai/operations/tools/unified-tools.md",
         "docs-ai/operations/development/web/web-api-launch-management.md",
         "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/development/web/web-api-launch-management.md",
+        "docs-ai/operations/development/ros2/ros2-development.md",
         "docs-ai/operations/development/ros2/plc-communication.md",
         "docs-ai/operations/development/ros2/plc-communication.md",
         "docs-ai/operations/development/testing/testing-standards.md",
+        "docs-ai/operations/development/testing/testing-standards.md",
         "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/operations/development/core/core-principles.md",
+        "docs-ai/knowledge/agv-domain/vehicle-types.md",
+        "docs-ai/knowledge/system/agvui-monitoring-system.md"
         "docs-ai/operations/development/core/core-principles.md",
         "docs-ai/knowledge/agv-domain/vehicle-types.md",
         "docs-ai/knowledge/system/agvui-monitoring-system.md"
@@ -5337,6 +6980,7 @@
       ],
       "size": 12470,
       "modified": 1762828301.5924506,
+      "modified": 1762828301.5924506,
       "importance": "critical"
     },
     {
@@ -5344,7 +6988,15 @@
       "title": "ROS 2 介面設計和協定",
       "description": "ROS 2 自定義訊息、服務、動作設計",
       "category": "knowledge",
+      "path": "knowledge/protocols/ros2-interfaces.md",
+      "title": "ROS 2 介面設計和協定",
+      "description": "ROS 2 自定義訊息、服務、動作設計",
+      "category": "knowledge",
       "layer": "layer2",
+      "strong_references": 10,
+      "weak_references": 5,
+      "total_weighted_refs": 11.5,
+      "references": 15,
       "strong_references": 10,
       "weak_references": 5,
       "total_weighted_refs": 11.5,
@@ -5355,7 +7007,15 @@
         "app/agv_cmd_service_ws/CLAUDE.md",
         "app/db_proxy_ws/CLAUDE.md",
         "app/agv_ws/CLAUDE.md",
+        "app/ecs_ws/CLAUDE.md",
+        "app/agv_cmd_service_ws/CLAUDE.md",
+        "app/db_proxy_ws/CLAUDE.md",
+        "app/agv_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+        "app/agv_ws/src/agv_interfaces/CLAUDE.md"
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
         "app/agv_ws/src/agv_interfaces/CLAUDE.md",
@@ -5364,6 +7024,9 @@
       "weak_referenced_by": [
         "README.md",
         "docs-ai/operations/development/ros2/ros2-development.md",
+        "docs-ai/operations/development/core/documentation-standards.md",
+        "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+        "docs-ai/knowledge/protocols/keyence-plc-protocol.md"
         "docs-ai/operations/development/core/documentation-standards.md",
         "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
         "docs-ai/knowledge/protocols/keyence-plc-protocol.md"
@@ -5394,9 +7057,24 @@
           "app/agv_ws/src/agv_interfaces/CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md"
+          "app/ecs_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
+        ],
+        "layer3": [
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md",
+          "app/agv_ws/src/agv_interfaces/CLAUDE.md"
         ]
       },
       "references_to": [
+        {
+          "doc": "operations/development/ros2/ros2-development.md",
+          "type": "weak"
+        },
         {
           "doc": "operations/development/ros2/ros2-development.md",
           "type": "weak"
@@ -5407,9 +7085,11 @@
         },
         {
           "doc": "knowledge/protocols/zenoh-rmw.md",
+          "doc": "knowledge/protocols/zenoh-rmw.md",
           "type": "weak"
         },
         {
+          "doc": "context/system/technology-stack.md",
           "doc": "context/system/technology-stack.md",
           "type": "weak"
         }
@@ -5478,8 +7158,14 @@
         {
           "doc": "knowledge/agv-domain/wcs-system-design.md",
           "type": "weak"
+        },
+        {
+          "doc": "knowledge/agv-domain/wcs-system-design.md",
+          "type": "weak"
         }
       ],
+      "size": 15824,
+      "modified": 1758273184.3321311,
       "size": 15824,
       "modified": 1758273184.3321311,
       "importance": "critical"
@@ -5497,6 +7183,11 @@
       "total_weighted_refs": 2.0,
       "references": 2,
       "strong_referenced_by": [
+        "app/rcs_ws/CLAUDE.md",
+        "app/web_api_ws/CLAUDE.md"
+      ],
+      "weak_referenced_by": [],
+      "referenced_by": [
         "app/rcs_ws/CLAUDE.md",
         "app/web_api_ws/CLAUDE.md"
       ],
@@ -5524,7 +7215,9 @@
       "size": 6904,
       "modified": 1762828301.5924506,
       "importance": "common"
-    },
+    }
+  ],
+  "weak_only": [
     {
       "path": "knowledge/agv-domain/license-table-design.md",
       "title": "License 資料表設計文檔",
@@ -5853,6 +7546,7 @@
       ],
       "size": 16790,
       "modified": 1759308621.5221908,
+      "modified": 1759308621.5221908,
       "importance": "referenced"
     },
     {
@@ -5903,11 +7597,45 @@
       ],
       "size": 16068,
       "modified": 1759246630.736758,
+      "modified": 1759246630.736758,
       "importance": "referenced"
     },
     {
       "path": "operations/development/ros2/manage-function-template.md",
       "title": "ROS2 管理函数标准化模板",
+      "description": "",
+      "category": "operations",
+      "path": "operations/development/ros2/manage-function-template.md",
+      "title": "ROS2 管理函数标准化模板",
+      "description": "",
+      "category": "operations",
+      "layer": "layer2",
+      "strong_references": 0,
+      "weak_references": 1,
+      "total_weighted_refs": 0.3,
+      "references": 1,
+      "strong_referenced_by": [],
+      "weak_referenced_by": [
+        "CLAUDE.md"
+        "CLAUDE.md"
+      ],
+      "referenced_by": [
+        "CLAUDE.md"
+        "CLAUDE.md"
+      ],
+      "layer_references": {
+        "layer1": [],
+        "layer2": [],
+        "layer3": []
+      },
+      "references_to": [],
+      "size": 23697,
+      "modified": 1762828301.5924506,
+      "importance": "referenced"
+    },
+    {
+      "path": "operations/development/ros2/manage-function-standard.md",
+      "title": "ROS2 服務管理函數開發標準",
       "description": "",
       "category": "operations",
       "layer": "layer2",
@@ -5928,6 +7656,8 @@
         "layer3": []
       },
       "references_to": [],
+      "size": 12775,
+      "modified": 1762828301.5924506,
       "size": 23697,
       "modified": 1762828301.5924506,
       "importance": "referenced"
@@ -5978,8 +7708,11 @@
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/path_algorithm/CLAUDE.md",
+          "app/path_algorithm/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md",
           "app/launch_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md"
@@ -5995,7 +7728,13 @@
           "docs-ai/operations/deployment/nginx-configuration.md",
           "docs-ai/operations/development/docker-development.md",
           "docs-ai/operations/development/database-operations.md",
+          "docs-ai/operations/development/docker-development.md",
+          "docs-ai/operations/development/database-operations.md",
           "docs-ai/operations/tools/unified-tools.md",
+          "docs-ai/operations/guides/performance-monitoring.md",
+          "docs-ai/operations/guides/troubleshooting.md",
+          "docs-ai/operations/development/web/web-development.md",
+          "docs-ai/operations/development/web/web-api-launch-management.md",
           "docs-ai/operations/guides/performance-monitoring.md",
           "docs-ai/operations/guides/troubleshooting.md",
           "docs-ai/operations/development/web/web-development.md",
@@ -6048,6 +7787,9 @@
             "app/launch_ws/CLAUDE.md",
             "app/rcs_ws/CLAUDE.md",
             "app/web_api_ws/CLAUDE.md"
+            "app/launch_ws/CLAUDE.md",
+            "app/rcs_ws/CLAUDE.md",
+            "app/web_api_ws/CLAUDE.md"
           ],
           "layer3": [
             "app/agv_ws/src/agv_interfaces/CLAUDE.md"
@@ -6081,6 +7823,7 @@
         ],
         "size": 18224,
         "modified": 1759308621.5229008,
+        "modified": 1759308621.5229008,
         "importance": "critical"
       },
       {
@@ -6100,6 +7843,8 @@
           "app/path_algorithm/CLAUDE.md",
           "app/launch_ws/CLAUDE.md",
           "app/shared_constants_ws/CLAUDE.md",
+          "app/launch_ws/CLAUDE.md",
+          "app/shared_constants_ws/CLAUDE.md",
           "docs-ai/operations/development/core/documentation-standards.md"
         ],
         "weak_referenced_by": [
@@ -6113,6 +7858,9 @@
           "docs-ai/README.md",
           "docs-ai/operations/deployment/docker-compose-configuration.md",
           "docs-ai/operations/deployment/nginx-configuration.md",
+          "docs-ai/operations/development/docker-development.md",
+          "docs-ai/operations/guides/troubleshooting.md",
+          "docs-ai/operations/development/web/web-api-launch-management.md",
           "docs-ai/operations/development/docker-development.md",
           "docs-ai/operations/guides/troubleshooting.md",
           "docs-ai/operations/development/web/web-api-launch-management.md",
@@ -6153,6 +7901,8 @@
           "layer2": [
             "app/launch_ws/CLAUDE.md",
             "app/shared_constants_ws/CLAUDE.md"
+            "app/launch_ws/CLAUDE.md",
+            "app/shared_constants_ws/CLAUDE.md"
           ]
         },
         "references_to": [
@@ -6179,6 +7929,7 @@
         ],
         "size": 8860,
         "modified": 1759308621.5222685,
+        "modified": 1759308621.5222685,
         "importance": "critical"
       },
       {
@@ -6198,6 +7949,7 @@
           "app/path_algorithm/CLAUDE.md",
           "app/path_algorithm/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
           "app/agv_ws/src/agv_interfaces/CLAUDE.md"
         ],
         "weak_referenced_by": [
@@ -6210,10 +7962,16 @@
           "docs-ai/operations/tools/unified-tools.md",
           "docs-ai/operations/development/web/web-api-launch-management.md",
           "docs-ai/operations/development/ros2/ros2-development.md",
+          "docs-ai/operations/development/web/web-api-launch-management.md",
+          "docs-ai/operations/development/ros2/ros2-development.md",
           "docs-ai/operations/development/ros2/plc-communication.md",
           "docs-ai/operations/development/ros2/plc-communication.md",
           "docs-ai/operations/development/testing/testing-standards.md",
+          "docs-ai/operations/development/testing/testing-standards.md",
           "docs-ai/operations/development/core/documentation-standards.md",
+          "docs-ai/operations/development/core/core-principles.md",
+          "docs-ai/knowledge/agv-domain/vehicle-types.md",
+          "docs-ai/knowledge/system/agvui-monitoring-system.md"
           "docs-ai/operations/development/core/core-principles.md",
           "docs-ai/knowledge/agv-domain/vehicle-types.md",
           "docs-ai/knowledge/system/agvui-monitoring-system.md"
@@ -6268,6 +8026,7 @@
         ],
         "size": 12470,
         "modified": 1762828301.5924506,
+        "modified": 1762828301.5924506,
         "importance": "critical"
       },
       {
@@ -6286,6 +8045,7 @@
           "README.md",
           "app/path_algorithm/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md",
           "docs-ai/operations/development/core/documentation-standards.md"
         ],
         "weak_referenced_by": [
@@ -6298,6 +8058,8 @@
           "docs-ai/README.md",
           "docs-ai/README.md",
           "docs-ai/operations/tools/unified-tools.md",
+          "docs-ai/operations/guides/performance-monitoring.md",
+          "docs-ai/operations/guides/system-diagnostics.md",
           "docs-ai/operations/guides/performance-monitoring.md",
           "docs-ai/operations/guides/system-diagnostics.md",
           "docs-ai/operations/development/core/documentation-standards.md"
@@ -6350,6 +8112,7 @@
         ],
         "size": 17750,
         "modified": 1759246630.736758,
+        "modified": 1759246630.736758,
         "importance": "important"
       },
       {
@@ -6369,6 +8132,8 @@
           "app/launch_ws/CLAUDE.md",
           "app/launch_ws/CLAUDE.md",
           "app/rcs_ws/CLAUDE.md"
+          "app/launch_ws/CLAUDE.md",
+          "app/rcs_ws/CLAUDE.md"
         ],
         "weak_referenced_by": [
           "CLAUDE.md",
@@ -6376,7 +8141,10 @@
           "README.md",
           ".github/copilot-instructions.md",
           "docs-ai/operations/development/web/web-api-launch-management.md",
+          "docs-ai/operations/development/web/web-api-launch-management.md",
           "docs-ai/operations/development/core/linus-torvalds-ai-agent-principles.md",
+          "docs-ai/operations/development/core/core-principles.md",
+          "docs-ai/operations/development/core/core-principles.md"
           "docs-ai/operations/development/core/core-principles.md",
           "docs-ai/operations/development/core/core-principles.md"
         ],
@@ -6394,6 +8162,8 @@
           "layer2": [
             "app/launch_ws/CLAUDE.md",
             "app/launch_ws/CLAUDE.md",
+            "app/launch_ws/CLAUDE.md",
+            "app/rcs_ws/CLAUDE.md"
             "app/launch_ws/CLAUDE.md",
             "app/rcs_ws/CLAUDE.md"
           ]
@@ -6418,6 +8188,7 @@
         ],
         "size": 9320,
         "modified": 1759308621.5229008,
+        "modified": 1759308621.5229008,
         "importance": "important"
       }
     ],
@@ -6429,17 +8200,24 @@
         "category": "operations",
         "layer": "layer2",
         "strong_references": 10,
+        "strong_references": 10,
         "weak_references": 17,
+        "total_weighted_refs": 15.1,
+        "references": 27,
         "total_weighted_refs": 15.1,
         "references": 27,
         "strong_referenced_by": [
           "README.md",
           "README.md",
           "app/plc_proxy_ws/CLAUDE.md",
+          "app/plc_proxy_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/path_algorithm/CLAUDE.md",
           "app/path_algorithm/CLAUDE.md",
+          "app/sensorpart_ws/CLAUDE.md",
+          "app/agv_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md"
           "app/sensorpart_ws/CLAUDE.md",
           "app/agv_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md"
@@ -6455,6 +8233,13 @@
           "docs-ai/operations/development/docker-development.md",
           "docs-ai/operations/development/ros2/plc-communication.md",
           "docs-ai/operations/development/testing/testing-standards.md",
+          "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
+          "docs-ai/operations/development/testing/testing-procedures.md",
+          "docs-ai/context/workspaces/agv-workspaces.md",
+          "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+          "docs-ai/knowledge/protocols/ros2-interfaces.md",
+          "docs-ai/knowledge/protocols/zenoh-rmw.md",
+          "docs-ai/knowledge/agv-domain/vehicle-types.md"
           "docs-ai/operations/development/testing/ros2-workspace-test-structure.md",
           "docs-ai/operations/development/testing/testing-procedures.md",
           "docs-ai/context/workspaces/agv-workspaces.md",
@@ -6486,10 +8271,13 @@
         "layer_references": {
           "layer2": [
             "app/plc_proxy_ws/CLAUDE.md",
+            "app/plc_proxy_ws/CLAUDE.md",
             "app/kuka_fleet_ws/CLAUDE.md",
             "app/kuka_fleet_ws/CLAUDE.md",
             "app/sensorpart_ws/CLAUDE.md",
+            "app/sensorpart_ws/CLAUDE.md",
             "app/agv_ws/CLAUDE.md",
+            "app/keyence_plc_ws/CLAUDE.md"
             "app/keyence_plc_ws/CLAUDE.md"
           ]
         },
@@ -6517,6 +8305,7 @@
         ],
         "size": 10278,
         "modified": 1759308621.5229008,
+        "modified": 1759308621.5229008,
         "importance": "critical"
       },
       {
@@ -6538,13 +8327,17 @@
           "app/plc_proxy_ws/CLAUDE.md",
           "app/agv_cmd_service_ws/CLAUDE.md",
           "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
+          "app/agv_cmd_service_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md",
           "app/keyence_plc_ws/CLAUDE.md",
+          "app/keyence_plc_ws/CLAUDE.md"
           "app/keyence_plc_ws/CLAUDE.md"
         ],
         "weak_referenced_by": [
           "README.md",
           "docs-ai/README.md",
+          "docs-ai/operations/development/ros2/plc-communication.md",
           "docs-ai/operations/development/ros2/plc-communication.md",
           "docs-ai/context/structure/module-index.md",
           "docs-ai/context/structure/module-index.md",
@@ -6576,8 +8369,11 @@
             "app/plc_proxy_ws/CLAUDE.md",
             "app/agv_cmd_service_ws/CLAUDE.md",
             "app/agv_cmd_service_ws/CLAUDE.md",
+            "app/agv_cmd_service_ws/CLAUDE.md",
+            "app/agv_cmd_service_ws/CLAUDE.md",
             "app/keyence_plc_ws/CLAUDE.md",
             "app/keyence_plc_ws/CLAUDE.md",
+            "app/keyence_plc_ws/CLAUDE.md"
             "app/keyence_plc_ws/CLAUDE.md"
           ]
         },
@@ -6592,6 +8388,7 @@
           }
         ],
         "size": 4551,
+        "modified": 1758273184.3321311,
         "modified": 1758273184.3321311,
         "importance": "critical"
       },
@@ -6614,6 +8411,8 @@
           "app/db_proxy_ws/CLAUDE.md",
           "app/db_proxy_ws/CLAUDE.md",
           "app/web_api_ws/CLAUDE.md"
+          "app/db_proxy_ws/CLAUDE.md",
+          "app/web_api_ws/CLAUDE.md"
         ],
         "weak_referenced_by": [
           "README.md",
@@ -6622,9 +8421,19 @@
           "docs-ai/README.md",
           "docs-ai/operations/development/database-schema-modification-guide.md",
           "docs-ai/operations/guides/performance-monitoring.md",
+          "docs-ai/operations/development/database-schema-modification-guide.md",
+          "docs-ai/operations/guides/performance-monitoring.md",
           "docs-ai/operations/guides/troubleshooting.md",
           "docs-ai/operations/guides/system-diagnostics.md",
           "docs-ai/operations/development/web/web-development.md",
+          "docs-ai/operations/development/testing/testing-procedures.md",
+          "docs-ai/context/structure/module-index.md",
+          "docs-ai/context/structure/module-index.md",
+          "docs-ai/context/workspaces/agvc-workspaces.md",
+          "docs-ai/knowledge/agv-domain/wcs-database-design.md",
+          "docs-ai/knowledge/agv-domain/license-table-design.md",
+          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+          "docs-ai/knowledge/business/eyewear-production-process.md"
           "docs-ai/operations/development/testing/testing-procedures.md",
           "docs-ai/context/structure/module-index.md",
           "docs-ai/context/structure/module-index.md",
@@ -6660,6 +8469,8 @@
             "app/db_proxy_ws/CLAUDE.md",
             "app/db_proxy_ws/CLAUDE.md",
             "app/web_api_ws/CLAUDE.md"
+            "app/db_proxy_ws/CLAUDE.md",
+            "app/web_api_ws/CLAUDE.md"
           ]
         },
         "references_to": [
@@ -6681,6 +8492,7 @@
           }
         ],
         "size": 19044,
+        "modified": 1759246630.7357578,
         "modified": 1759246630.7357578,
         "importance": "critical"
       },
@@ -6711,7 +8523,10 @@
           "README.md",
           "README.md",
           "docs-ai/context/structure/module-index.md",
+          "docs-ai/context/structure/module-index.md",
           "docs-ai/knowledge/protocols/plc-ros2-interfaces.md",
+          "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
+          "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
           "docs-ai/knowledge/agv-domain/write-path-state-analysis.md",
           "docs-ai/knowledge/agv-domain/robot-pgno-rules.md"
         ],
@@ -6777,9 +8592,13 @@
         ],
         "size": 10672,
         "modified": 1758273184.3345022,
+        "modified": 1758273184.3345022,
         "importance": "critical"
       },
       {
+        "path": "knowledge/protocols/kuka-fleet-api.md",
+        "title": "KUKA Fleet Manager API 整合協定",
+        "description": "理解 KUKA Fleet Manager API 的完整規格和使用方式",
         "path": "knowledge/protocols/kuka-fleet-api.md",
         "title": "KUKA Fleet Manager API 整合協定",
         "description": "理解 KUKA Fleet Manager API 的完整規格和使用方式",
@@ -6789,8 +8608,15 @@
         "weak_references": 12,
         "total_weighted_refs": 12.6,
         "references": 21,
+        "strong_references": 9,
+        "weak_references": 12,
+        "total_weighted_refs": 12.6,
+        "references": 21,
         "strong_referenced_by": [
           "README.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
+          "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
           "app/kuka_fleet_ws/CLAUDE.md",
@@ -6799,9 +8625,24 @@
           "app/web_api_ws/src/web_api/CLAUDE.md",
           "app/web_api_ws/src/web_api/CLAUDE.md",
           "app/web_api_ws/src/web_api/CLAUDE.md"
+          "app/web_api_ws/CLAUDE.md",
+          "app/web_api_ws/src/web_api/CLAUDE.md",
+          "app/web_api_ws/src/web_api/CLAUDE.md",
+          "app/web_api_ws/src/web_api/CLAUDE.md"
         ],
         "weak_referenced_by": [
           "README.md",
+          "docs-ai/README.md",
+          "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
+          "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
+          "docs-ai/context/structure/module-index.md",
+          "docs-ai/context/structure/module-index.md",
+          "docs-ai/context/workspaces/agvc-workspaces.md",
+          "docs-ai/knowledge/protocols/kuka-fleet-callback.md",
+          "docs-ai/knowledge/protocols/kuka-agv-rack-rotation.md",
+          "docs-ai/knowledge/business/eyewear-production-process.md",
+          "docs-ai/knowledge/business/eyewear-production-process.md",
+          "docs-ai/knowledge/system/rack-rotation-logic.md"
           "docs-ai/README.md",
           "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
           "docs-ai/guides/migration-from-tafl-to-kuka-wcs.md",
@@ -6833,10 +8674,17 @@
             "app/kuka_fleet_ws/CLAUDE.md",
             "app/kuka_fleet_ws/CLAUDE.md",
             "app/kuka_fleet_ws/CLAUDE.md",
+            "app/kuka_fleet_ws/CLAUDE.md",
+            "app/kuka_fleet_ws/CLAUDE.md",
+            "app/kuka_fleet_ws/CLAUDE.md",
             "app/web_api_ws/CLAUDE.md",
+            "app/web_api_ws/CLAUDE.md"
             "app/web_api_ws/CLAUDE.md"
           ],
           "layer3": [
+            "app/web_api_ws/src/web_api/CLAUDE.md",
+            "app/web_api_ws/src/web_api/CLAUDE.md",
+            "app/web_api_ws/src/web_api/CLAUDE.md"
             "app/web_api_ws/src/web_api/CLAUDE.md",
             "app/web_api_ws/src/web_api/CLAUDE.md",
             "app/web_api_ws/src/web_api/CLAUDE.md"
@@ -6844,6 +8692,7 @@
         },
         "references_to": [
           {
+            "doc": "knowledge/protocols/kuka-fleet-callback.md",
             "doc": "knowledge/protocols/kuka-fleet-callback.md",
             "type": "weak"
           }

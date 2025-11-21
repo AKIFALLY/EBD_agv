@@ -83,37 +83,11 @@ class CargoRunningState(RunningState):
         """
         覆寫 handle 方法
 
-        攔截轉換到 WaitRobotState，確保使用 CargoWaitRobotState
+        所有狀態轉換會透過 context 類變數自動替換為 Cargo 版本
         """
-        # 使用猴子補丁（Monkey Patch）攔截 set_state
-        original_set_state = context.set_state
-
-        def patched_set_state(new_state):
-            """
-            攔截 set_state，替換狀態為 Cargo 專屬版本
-            - WaitRobotState → CargoWaitRobotState
-            """
-            from agv_base.agv_states.wait_robot_state import WaitRobotState
-            from cargo_mover_agv.states.cargo_wait_robot_state import CargoWaitRobotState
-
-            # 攔截 WaitRobotState
-            if isinstance(new_state, WaitRobotState) and not isinstance(new_state, CargoWaitRobotState):
-                self.node.get_logger().info(
-                    "[Cargo] 🔄 攔截狀態轉換：WaitRobotState → CargoWaitRobotState"
-                )
-                original_set_state(CargoWaitRobotState(self.node))
-            else:
-                original_set_state(new_state)
-
-        # 暫時替換 set_state 方法
-        context.set_state = patched_set_state
-
-        try:
-            # 呼叫父類的 handle 邏輯
-            super().handle(context)
-        finally:
-            # 恢復原始的 set_state 方法
-            context.set_state = original_set_state
+        # ✅ 直接呼叫父類的 handle 邏輯
+        # 所有狀態轉換會透過 context.WaitRobotState 自動替換為 CargoWaitRobotState
+        super().handle(context)
 
     def _trigger_plc_stop(self):
         """

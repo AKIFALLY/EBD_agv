@@ -1,6 +1,5 @@
 from agv_base.states.state import State
 from rclpy.node import Node
-from plc_proxy.plc_client import PlcClient
 from db_proxy.agvc_database_client import AGVCDatabaseClient
 from shared_constants.task_status import TaskStatus
 from std_msgs.msg import String
@@ -8,7 +7,6 @@ from std_msgs.msg import String
 class WaitRobotState(State):
     def __init__(self, node: Node):
         super().__init__(node)
-        self.plc_client = PlcClient(node)
         self.agvdbclient = AGVCDatabaseClient(node)
         self.count = 0
         self.test = 0
@@ -47,6 +45,15 @@ class WaitRobotState(State):
     def leave(self):
         self.node.get_logger().info("🚪 AGV 離開 WaitRobot 狀態")
 
+        # 清理 SqlQuery service client
+        if hasattr(self, 'sql_query_client') and self.sql_query_client:
+            try:
+                self.node.destroy_client(self.sql_query_client)
+                self.sql_query_client = None
+                self.node.get_logger().info("✅ SqlQuery client 已清理")
+            except Exception as e:
+                self.node.get_logger().warn(f"⚠️ SqlQuery client 清理失敗: {e}")
+
     def handle(self, context):
 
         if self.count > 100:
@@ -59,8 +66,7 @@ class WaitRobotState(State):
         # 🔍 檢查訂閱任務數量，若為 0 則回到 mission_select
         if len(self.node.latest_tasks) == 0:
             self.node.get_logger().warn("⚠️ 訂閱任務數量為 0，回到 mission select 狀態")
-            from agv_base.agv_states.mission_select_state import MissionSelectState
-            context.set_state(MissionSelectState(self.node))
+            context.set_state(context.MissionSelectState(self.node))
             return
 
         # 🔍 完成驗證邏輯：如果已發送完成更新，立即開始驗證（之後每 5 秒重試）
@@ -80,8 +86,7 @@ class WaitRobotState(State):
         if not self.node.agv_status.AGV_PATH:
             self.node.get_logger().info("⚠️ AGV 在 WaitRobot 狀態下沒有路徑資料，回到 mission select 狀態")
             try:
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
                 return  # 立即返回，避免繼續執行後續邏輯
             except Exception as e:
                 self.node.get_logger().error(f"❌狀態轉換失敗 (WaitRobot → MissionSelect 無路徑): {str(e)}")
@@ -192,8 +197,7 @@ class WaitRobotState(State):
 
                 # 轉換到 MissionSelect
                 self.node.get_logger().info("✅ AGV 機器人已完成工作，回到 mission select 狀態")
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
                 return
 
             task_data = result[0]
@@ -211,8 +215,7 @@ class WaitRobotState(State):
                 )
                 self.completion_verified = True
                 self.node.robot_finished = False
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
                 return
 
             # 檢查任務是否仍屬於當前 AGV
@@ -224,8 +227,7 @@ class WaitRobotState(State):
                 )
                 self.completion_verified = True
                 self.node.robot_finished = False
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
                 return
 
             # 檢查任務 work_id 是否被修改（異常情況）
@@ -237,8 +239,7 @@ class WaitRobotState(State):
                 )
                 self.completion_verified = True
                 self.node.robot_finished = False
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
                 return
 
             if current_status == TaskStatus.COMPLETED:
@@ -253,8 +254,7 @@ class WaitRobotState(State):
 
                 # 轉換到 MissionSelect
                 self.node.get_logger().info("✅ AGV 機器人已完成工作，回到 mission select 狀態")
-                from agv_base.agv_states.mission_select_state import MissionSelectState
-                context.set_state(MissionSelectState(self.node))
+                context.set_state(context.MissionSelectState(self.node))
             else:
                 # ❌ 驗證失敗，重試
                 self.completion_retry_count += 1

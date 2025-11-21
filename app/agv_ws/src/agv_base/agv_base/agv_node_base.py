@@ -35,6 +35,20 @@ class AgvNodebase(Node):
         self.agv_status = AgvStatus()  # 初始化 AGV 狀態
         # 等待服務可用
 
+        # ✅ 初始化 BaseContext 的狀態類變數（如果尚未初始化）
+        if BaseContext.IdleState is None:
+            from agv_base.agv_states.idle_state import IdleState as IdleStateClass
+            from agv_base.agv_states.mission_select_state import MissionSelectState
+            from agv_base.agv_states.write_path_state import WritePathState
+            from agv_base.agv_states.Running_state import RunningState
+            from agv_base.agv_states.wait_robot_state import WaitRobotState
+
+            BaseContext.IdleState = IdleStateClass
+            BaseContext.MissionSelectState = MissionSelectState
+            BaseContext.WritePathState = WritePathState
+            BaseContext.RunningState = RunningState
+            BaseContext.WaitRobotState = WaitRobotState
+
         # 創建 BaseContext 並傳入初始狀態 (IdleState)
         self.base_context = BaseContext(IdleState(self))  # 初始狀態為 Idle
         # 50ms 執行一次主迴圈(read plc data , context.handle)
@@ -154,7 +168,7 @@ class AgvNodebase(Node):
             self.read_plc_data()
 
             # 🔄 檢查訂閱超時並啟用資料庫備援
-            self._check_subscription_timeout_and_fallback()
+            #self._check_subscription_timeout_and_fallback() #直連資料庫的方式在insert或update操作時不正常斷開(斷電之類的)的情況可能造成資料表鎖無法釋放,先不使用,建議改成web api task 備援
 
             self.context_handle()
 

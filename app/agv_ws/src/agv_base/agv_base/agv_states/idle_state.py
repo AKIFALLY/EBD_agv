@@ -1,16 +1,12 @@
 from agv_base.states.state import State
 from rclpy.node import Node
-from agv_base.agv_states.mission_select_state import MissionSelectState
-from agv_base.agv_states.Running_state import RunningState
 from astar_algorithm.astar_algorithm import AStarAlgorithm
-from plc_proxy.plc_client import PlcClient
 import time
 
 #AGV狀態機的空閒狀態
 class IdleState(State):
     def __init__(self, node: Node):
         super().__init__(node)
-        self.plc_client = PlcClient(node)
     def enter(self):
         self.node.get_logger().info("AGV 進入: Idle")
 
@@ -25,12 +21,12 @@ class IdleState(State):
         if self.pathdata == 0:
             #轉換到mission_select狀態
             self.node.get_logger().info("AGV 轉換到: Mission Select")
-            context.set_state(MissionSelectState(self.node))
+            context.set_state(context.MissionSelectState(self.node))
 
         if self.pathdata == 1:
             #轉換到Running狀態
             self.node.get_logger().info("AGV 轉換到: Running")
-            context.set_state(RunningState(self.node))
+            context.set_state(context.RunningState(self.node))
            
         #處理TAG座標請求
         self.node.get_logger().info(f"self.node.agv_status.TAG_REQ{self.node.agv_status.TAG_REQ}")

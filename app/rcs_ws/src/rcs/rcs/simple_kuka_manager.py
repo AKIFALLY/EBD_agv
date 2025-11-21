@@ -1002,7 +1002,10 @@ class KukaManager:
         # 🤖 AGV 當前狀態
         self.get_logger().error("")
         self.get_logger().error("🤖 AGV 當前狀態:")
+<<<<<<< HEAD
         agv_status = None  # 初始化變數，避免未定義錯誤
+=======
+>>>>>>> main-unloader
         if agv_id is not None:
             agv_status = self._get_agv_status_info(session, agv_id)
             for line in agv_status.split('\n'):
@@ -1216,11 +1219,19 @@ class KukaManager:
                     suggestions.append("⚠️ Rack 已綁定到 AGV，可能存在狀態同步問題")
 
         # AGV 狀態相關建議
+<<<<<<< HEAD
         if agv_status and "任務中 (RUNNING)" in agv_status:
             suggestions.append("AGV 當前正在執行任務，無法接受新任務")
         elif agv_status and "錯誤 (ERROR)" in agv_status:
             suggestions.append("AGV 處於錯誤狀態，需先處理 AGV 錯誤")
         elif agv_status and "離線 (OFFLINE)" in agv_status:
+=======
+        if "任務中 (RUNNING)" in agv_status:
+            suggestions.append("AGV 當前正在執行任務，無法接受新任務")
+        elif "錯誤 (ERROR)" in agv_status:
+            suggestions.append("AGV 處於錯誤狀態，需先處理 AGV 錯誤")
+        elif "離線 (OFFLINE)" in agv_status:
+>>>>>>> main-unloader
             suggestions.append("AGV 離線，檢查 AGV 與 Fleet Manager 的連接")
 
         # 通用建議
