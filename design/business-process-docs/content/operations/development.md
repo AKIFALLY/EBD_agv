@@ -75,7 +75,7 @@ code --install-extension redhat.vscode-yaml
 #### 3. 統一工具配置
 ```bash
 # 設定 RosAGV 工具路徑
-echo 'export PATH="/home/ct/RosAGV:$PATH"' >> ~/.bashrc
+echo 'export PATH="/home/ct/EBD_agv:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
 # 驗證工具可用性

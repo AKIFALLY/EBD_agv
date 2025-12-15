@@ -156,8 +156,8 @@ Multi-stage Build
   - `op.ui` → :8002 (OPUI)
   - `/docs/` → 動態文檔系統
 - **掛載目錄**:
-  - 配置檔案: `/home/ct/RosAGV/nginx`
-  - 文檔檔案: `/home/ct/RosAGV/design/business-process-docs`
+  - 配置檔案: `/home/ct/EBD_agv/nginx`
+  - 文檔檔案: `/home/ct/EBD_agv/design/business-process-docs`
 
 ## 🏭 工業通訊技術
 

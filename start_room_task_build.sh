@@ -5,7 +5,7 @@
 #   ./start_room_task_build.sh          # 只啟動 room_task_build (推薦)
 #   ./start_room_task_build.sh full     # 啟動所有三個節點
 
-cd ~/RosAGV
+cd ~/EBD_agv
 
 MODE=${1:-standalone}
 

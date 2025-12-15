@@ -3,7 +3,7 @@
 **棄用日期**: 2025-11-18
 **歸檔原因**: TAFL Editor 和 TAFL WCS 系統已被 KUKA WCS 完全取代
 **替代方案**: 使用 `kuka_wcs_ws` 進行倉儲控制系統開發
-**遷移指南**: 參見 /home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+**遷移指南**: 參見 /home/ct/EBD_agv/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
 
 本文檔已移至 archived 目錄，僅供歷史參考。不應再用於新的開發工作。
 
@@ -14,7 +14,7 @@
 ## 📋 文件資訊
 - **版本**: v3.1
 - **更新日期**: 2025-09-03
-- **實作位置**: `/home/ct/RosAGV/app/web_api_ws/src/agvcui/agvcui/static/js/tafl-editor.js`
+- **實作位置**: `/home/ct/EBD_agv/app/web_api_ws/src/agvcui/agvcui/static/js/tafl-editor.js`
 - **套件歸屬**: agvcui (車隊管理界面系統)
 - **服務端口**: 8001 (AGVCUI 管理界面)
 - **檔案大小**: 2606 行 (單體架構，計劃模組化)
@@ -516,13 +516,13 @@ tafl-editor/
 - **miniStore 整合**: 計劃中（待實作後補充文件）
 
 ### 實作位置
-- **主程式**: `/home/ct/RosAGV/app/web_api_ws/src/agvcui/agvcui/static/js/tafl-editor.js`
-- **樣式表**: `/home/ct/RosAGV/app/web_api_ws/src/agvcui/agvcui/static/css/tafl-editor.css`
-- **後端 API**: `/home/ct/RosAGV/app/web_api_ws/src/agvcui/agvcui/routers/tafl.py`
+- **主程式**: `/home/ct/EBD_agv/app/web_api_ws/src/agvcui/agvcui/static/js/tafl-editor.js`
+- **樣式表**: `/home/ct/EBD_agv/app/web_api_ws/src/agvcui/agvcui/static/css/tafl-editor.css`
+- **後端 API**: `/home/ct/EBD_agv/app/web_api_ws/src/agvcui/agvcui/routers/tafl.py`
 
 ### 測試檔案
-- **整合測試**: `/home/ct/RosAGV/agents/test_tafl_editor_*.py`
-- **UI 測試**: `/home/ct/RosAGV/agents/test_tafl_editor_*.html`
+- **整合測試**: `/home/ct/EBD_agv/agents/test_tafl_editor_*.py`
+- **UI 測試**: `/home/ct/EBD_agv/agents/test_tafl_editor_*.html`
 
 ## 🔄 版本歷史
 

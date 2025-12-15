@@ -711,7 +711,7 @@ declare -A char_map=(
 
 # 查找所有 JavaScript 文件
 echo "📁 搜尋 JavaScript 檔案..."
-js_files=$(find /home/ct/RosAGV -name "*.js" -type f | grep -v node_modules | grep -v .git | head -100)
+js_files=$(find /home/ct/EBD_agv -name "*.js" -type f | grep -v node_modules | grep -v .git | head -100)
 
 file_count=0
 total_replacements=0

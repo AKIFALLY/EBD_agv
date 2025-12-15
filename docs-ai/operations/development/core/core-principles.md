@@ -43,7 +43,7 @@ cat /path/to/config.yaml               # 確認配置項確實存在
 ```
 
 ### 環境識別和工具使用
-- **環境確認**: 透過 `pwd` 命令輸出判斷當前環境（`/home/ct/RosAGV` 為宿主機，`/app` 為容器內）
+- **環境確認**: 透過 `pwd` 命令輸出判斷當前環境（`/home/ct/EBD_agv` 為宿主機，`/app` 為容器內）
 - **統一工具**: 在宿主機使用 `r` 命令進行系統診斷和容器管理
 - **專業工具**: 在容器內使用專業工具集進行開發和測試
 
@@ -263,7 +263,7 @@ echo "結果: $matches"
 ```bash
 # ✅ 建議：複雜指令建立臨時腳本檔案執行
 # 在宿主機 agents 目錄下建立臨時腳本
-cat > ~/RosAGV/agents/temp.sh << 'EOF'
+cat > ~/EBD_agv/agents/temp.sh << 'EOF'
 #!/bin/bash
 # 複雜的命令序列
 echo "開始執行複雜操作..."
@@ -274,15 +274,15 @@ echo "操作完成"
 EOF
 
 # 在宿主機執行
-chmod +x ~/RosAGV/agents/temp.sh
-bash ~/RosAGV/agents/temp.sh
+chmod +x ~/EBD_agv/agents/temp.sh
+bash ~/EBD_agv/agents/temp.sh
 
 # 在容器內執行 (對應路徑: /app/agents/temp.sh)
 docker exec -it container_name bash /app/agents/temp.sh
 ```
 
 #### 臨時腳本的目錄對應關係
-- **宿主機路徑**: `~/RosAGV/agents/temp.sh`
+- **宿主機路徑**: `~/EBD_agv/agents/temp.sh`
 - **容器內路徑**: `/app/agents/temp.sh`
 - **統一管理**: 所有臨時檔案都放在 agents/ 目錄，便於管理和清理
 - **使用場景**: 複雜的多行指令、需要錯誤處理的腳本、重複執行的操作
@@ -417,7 +417,7 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "source /app/
 - **限制**: AI Agent 無法主動"識別"環境，只能被動推斷
 - **方法**: 透過命令輸出判斷（如 `pwd` 結果）
 - **判斷標準**:
-  - `/home/ct/RosAGV` = 宿主機環境
+  - `/home/ct/EBD_agv` = 宿主機環境
   - `/app` = 容器內環境
 
 #### 3. Bash Tool 語法限制

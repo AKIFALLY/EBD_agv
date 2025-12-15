@@ -3,7 +3,7 @@
 **棄用日期**: 2025-11-18
 **歸檔原因**: TAFL Editor 已停用，TAFL 系統已被 KUKA WCS 完全取代
 **替代方案**: 使用 `kuka_wcs_ws` 進行倉儲控制系統開發
-**遷移指南**: 參見 [TAFL 到 KUKA WCS 遷移指南](/home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md)
+**遷移指南**: 參見 [TAFL 到 KUKA WCS 遷移指南](/home/ct/EBD_agv/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md)
 
 本文檔已移至 archived 目錄，僅供歷史參考。不應再用於新的開發工作。
 

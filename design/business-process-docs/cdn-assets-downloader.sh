@@ -9,7 +9,7 @@
 # - 檔案大小約 404KB，是完整的 Tailwind CSS 編譯器和運行時
 
 # Define the base directory for your local paths
-BASE_DIR="/home/ct/RosAGV/design/business-process-docs"
+BASE_DIR="/home/ct/EBD_agv/design/business-process-docs"
 
 # Create directories if they don't exist
 mkdir -p "$BASE_DIR/css/vendors"

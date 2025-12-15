@@ -207,7 +207,7 @@ class AgvcUiServer:
 
         # ⚠️ TAFL Editor 已棄用 (2025-11-18) - 使用 KUKA WCS 替代
         # TAFL WCS 系統已被 KUKA WCS 完全取代
-        # 遷移指南: /home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+        # 遷移指南: /home/ct/EBD_agv/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
 
         # # Add TAFL Editor routers
         # # tafl_editor provides the page route (/tafl/editor) and basic API

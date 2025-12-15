@@ -83,7 +83,7 @@ def initialize_nodes(session):
 **⚠️ 關鍵步驟：必須重新建置以更新安裝的模型**
 
 ```bash
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash && agvc_source &&
 cd /app/db_proxy_ws &&
@@ -103,7 +103,7 @@ source install/setup.bash
 **⚠️ 危險操作：會刪除所有現有資料**
 
 ```bash
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash && agvc_source &&
 cd /app/db_proxy_ws &&
@@ -134,7 +134,7 @@ pool_manager.shutdown()
 
 ### 第六步：執行初始化
 ```bash
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash && agvc_source &&
 cd /app/db_proxy_ws &&
@@ -159,7 +159,7 @@ pool_agvc.shutdown()
 
 ### 第七步：驗證表結構和資料
 ```bash
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash && agvc_source &&
 cd /app/db_proxy_ws &&

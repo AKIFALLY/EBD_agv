@@ -9,8 +9,8 @@
 
 ## 容器進入
 ```bash
-# [宿主機] 必須在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# [宿主機] 必須在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 
 # [宿主機] 進入 AGV 容器
 docker compose -f docker-compose.yml exec rosagv bash
@@ -86,7 +86,7 @@ check_zenoh_status
 ## 環境識別
 ```bash
 pwd
-# /home/ct/RosAGV = 宿主機
+# /home/ct/EBD_agv = 宿主機
 # /app = 容器內
 ```
 
@@ -127,6 +127,6 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /a
 ## 關鍵規則
 1. **ROS2 只在容器內**: 宿主機無 ROS2 環境
 2. **使用 bash -i**: 解決 alias 載入和超時
-3. **工作目錄**: 必須在 ~/RosAGV 執行 docker compose
+3. **工作目錄**: 必須在 ~/EBD_agv 執行 docker compose
 4. **環境載入**: 進入容器後先執行 `all_source`
 5. **跨容器通訊**: 確保 Zenoh Router 運行 (Port 7447)

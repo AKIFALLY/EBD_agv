@@ -7,13 +7,13 @@ RosAGV 提供強大的統一工具系統，只需記住一個字母 `r` 即可�
 ### 環境設定
 ```bash
 # 在 ~/.bashrc 中添加
-export PATH="/home/ct/RosAGV:$PATH"
+export PATH="/home/ct/EBD_agv:$PATH"
 
 # 重新載入環境
 source ~/.bashrc
 
 # 驗證配置
-which r                    # 應該顯示 /home/ct/RosAGV/r
+which r                    # 應該顯示 /home/ct/EBD_agv/r
 r                          # 顯示工具選單
 ```
 
@@ -208,17 +208,17 @@ watch -n 5 'r containers-status'
 echo $PATH | grep RosAGV
 
 # 手動執行
-/home/ct/RosAGV/r
+/home/ct/EBD_agv/r
 
 # 重新設定 PATH
-export PATH="/home/ct/RosAGV:$PATH"
+export PATH="/home/ct/EBD_agv:$PATH"
 ```
 
 #### 權限問題
 ```bash
 # 確保執行權限
-chmod +x /home/ct/RosAGV/r
-chmod +x /home/ct/RosAGV/rosagv-tools.sh
+chmod +x /home/ct/EBD_agv/r
+chmod +x /home/ct/EBD_agv/rosagv-tools.sh
 
 # Docker 權限
 sudo usermod -aG docker $USER

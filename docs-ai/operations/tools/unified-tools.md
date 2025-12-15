@@ -15,15 +15,15 @@
 ### ⚠️ 執行前提
 **使用 `r` 工具集之前，必須將 RosAGV 目錄加入 PATH 環境變數**
 
-- **[宿主機]** 在 `~/RosAGV` 目錄執行
-- **[宿主機]** 確保 `/home/ct/RosAGV` 已加入 PATH
+- **[宿主機]** 在 `~/EBD_agv` 目錄執行
+- **[宿主機]** 確保 `/home/ct/EBD_agv` 已加入 PATH
 - **[宿主機]** 對應容器必須已啟動
 
 #### PATH 配置
 在 `~/.bashrc` 中添加以下設定：
 ```bash
 # [宿主機] RosAGV 工具路徑配置
-export PATH="/home/ct/RosAGV:$PATH"
+export PATH="/home/ct/EBD_agv:$PATH"
 
 # 或者根據您的實際安裝路徑調整
 # export PATH="/path/to/your/RosAGV:$PATH"
@@ -38,7 +38,7 @@ source ~/.bashrc
 驗證配置是否正確：
 ```bash
 # [宿主機] 驗證配置
-which r                    # 應該顯示 /home/ct/RosAGV/r
+which r                    # 應該顯示 /home/ct/EBD_agv/r
 r menu                     # 應該顯示工具選單
 ```
 
@@ -164,7 +164,7 @@ yq '.services.agvc_server.ports' /path/to/compose.yml
 ### 系統診斷工作流
 ```bash
 # 步驟1: [宿主機] 快速診斷
-cd ~/RosAGV
+cd ~/EBD_agv
 r quick-diag
 
 # 步驟2: [宿主機] 檢查容器狀態
@@ -177,7 +177,7 @@ r agvc-check              # 或 r network-check, r zenoh-check
 ### 服務重啟工作流
 ```bash
 # 步驟1: [宿主機] 載入專業工具
-cd ~/RosAGV
+cd ~/EBD_agv
 source scripts/docker-tools/docker-tools.sh
 
 # 步驟2: [宿主機] 停止和啟動服務
@@ -191,7 +191,7 @@ agvc_health
 ### 開發工作流
 ```bash
 # 步驟1: [宿主機] 進入容器
-cd ~/RosAGV
+cd ~/EBD_agv
 source scripts/docker-tools/docker-tools.sh
 agvc_enter
 
@@ -208,7 +208,7 @@ manage_web_api_launch restart   # 重啟 Web 服務
 ### 複雜指令執行（bash -i 模式）
 ```bash
 # [宿主機] 一次性執行複雜容器內指令
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash &&
 agvc_source &&
@@ -269,7 +269,7 @@ r tafl-validate help        # 顯示使用說明
 ```
 
 **TAFL 檔案位置**:
-- **正式配置**: `/home/ct/RosAGV/app/config/tafl/flows/` - TAFL 流程檔案存放位置
+- **正式配置**: `/home/ct/EBD_agv/app/config/tafl/flows/` - TAFL 流程檔案存放位置
 
 ## 📊 問題診斷對照表
 | 問題類型 | 執行環境 | 使用工具 | 檔案位置 |

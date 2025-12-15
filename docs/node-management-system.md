@@ -162,7 +162,7 @@ curl -X POST http://localhost:8000/api/nodes/group/web_services/start
 
 ```bash
 # 執行完整測試
-/home/ct/RosAGV/scripts/test-node-management.sh
+/home/ct/EBD_agv/scripts/test-node-management.sh
 ```
 
 測試涵蓋:
@@ -228,12 +228,12 @@ firefox http://localhost:8001/nodes
 
 - `/app/config/node_registry.yaml` - 節點註冊表配置
 - `/app/setup.bash` - 容器管理函數定義
-- `/home/ct/RosAGV/rosagv-tools.sh` - 宿主機工具腳本
+- `/home/ct/EBD_agv/rosagv-tools.sh` - 宿主機工具腳本
 - `/app/web_api_ws/src/web_api/web_api/routers/nodes.py` - Web API 實現
 - `/app/web_api_ws/src/agvcui/agvcui/routers/nodes.py` - AGVCUI 節點管理路由
 - `/app/web_api_ws/src/agvcui/agvcui/templates/nodes.html` - AGVCUI 節點管理模板
-- `/home/ct/RosAGV/scripts/test-node-management.sh` - 完整測試腳本
-- `/home/ct/RosAGV/scripts/test-agvcui-node-integration.sh` - AGVCUI 整合測試
+- `/home/ct/EBD_agv/scripts/test-node-management.sh` - 完整測試腳本
+- `/home/ct/EBD_agv/scripts/test-agvcui-node-integration.sh` - AGVCUI 整合測試
 
 ---
 

@@ -29,7 +29,7 @@ business-process-docs/
 在 `~/.bashrc` 中添加以下設定：
 ```bash
 # RosAGV 工具路徑配置
-export PATH="/home/ct/RosAGV:$PATH"
+export PATH="/home/ct/EBD_agv:$PATH"
 ```
 
 設定完成後，重新載入環境：
@@ -39,7 +39,7 @@ source ~/.bashrc
 
 驗證配置是否正確：
 ```bash
-which r                    # 應該顯示 /home/ct/RosAGV/r
+which r                    # 應該顯示 /home/ct/EBD_agv/r
 r menu                     # 顯示工具選單
 r agvc-check              # 執行 AGVC 健康檢查
 ```

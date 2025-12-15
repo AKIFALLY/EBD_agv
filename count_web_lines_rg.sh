@@ -81,7 +81,7 @@ echo "=== 統計 Web API 工作空間 (app/web_api_ws/src/) ==="
 echo "============================================================"
 echo ""
 
-WEB_API_PATH="/home/ct/RosAGV/app/web_api_ws/src"
+WEB_API_PATH="/home/ct/EBD_agv/app/web_api_ws/src"
 
 # HTML 檔案（排除 build 和 install 目錄）
 count_lines_by_extension "html" "$WEB_API_PATH" \
@@ -112,7 +112,7 @@ echo "=== 統計業務流程文檔系統 (design/business-process-docs/) ==="
 echo "============================================================"
 echo ""
 
-DOCS_PATH="/home/ct/RosAGV/design/business-process-docs"
+DOCS_PATH="/home/ct/EBD_agv/design/business-process-docs"
 
 # HTML 檔案
 count_lines_by_extension "html" "$DOCS_PATH"

@@ -3,7 +3,7 @@
 sleep 10  # 延遲 10 秒再執行
 
 TARGET_IP="192.168.10.3"
-LOG_FILE="/home/ct/RosAGV/check_network.log"
+LOG_FILE="/home/ct/EBD_agv/check_network.log"
 
 echo "$(date): Checking connectivity to $TARGET_IP" >> "$LOG_FILE"
 

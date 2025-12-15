@@ -37,18 +37,18 @@ echo ""
 # 1. 檢查 Docker 容器狀態
 echo -e "${BLUE}1. Docker 容器狀態${NC}"
 echo "PostgreSQL 容器:"
-if docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | rg -q "Up"; then
+if docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml ps postgres | rg -q "Up"; then
     echo -e "${GREEN}✅ postgres_container 運行中${NC}"
-    docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | tail -n +2
+    docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml ps postgres | tail -n +2
 else
     echo -e "${RED}❌ postgres_container 未運行${NC}"
 fi
 
 echo ""
 echo "pgAdmin4 容器:"
-if docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps pgadmin | rg -q "Up"; then
+if docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml ps pgadmin | rg -q "Up"; then
     echo -e "${GREEN}✅ pgadmin_container 運行中${NC}"
-    docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps pgadmin | tail -n +2
+    docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml ps pgadmin | tail -n +2
 else
     echo -e "${RED}❌ pgadmin_container 未運行${NC}"
 fi
@@ -188,7 +188,7 @@ echo "檢查完成時間: $(date)"
 # 提供建議
 echo ""
 echo -e "${BLUE}建議操作:${NC}"
-echo "- 如果容器未運行: docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml up -d postgres pgadmin"
-echo "- 如果需要重啟服務: docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml restart postgres"
-echo "- 如果需要檢查日誌: docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml logs postgres"
+echo "- 如果容器未運行: docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml up -d postgres pgadmin"
+echo "- 如果需要重啟服務: docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml restart postgres"
+echo "- 如果需要檢查日誌: docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml logs postgres"
 echo "- pgAdmin4 Web 介面: http://localhost:5050/"

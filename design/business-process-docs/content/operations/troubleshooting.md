@@ -510,7 +510,7 @@ services=("rosagv" "agvc_server" "postgres" "nginx")
 for service in "${services[@]}"; do
     if ! docker ps | grep -q "$service"; then
         echo "$(date): 重啟服務 $service" >> /var/log/rosagv-recovery.log
-        docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml restart "$service"
+        docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml restart "$service"
     fi
 done
 EOF

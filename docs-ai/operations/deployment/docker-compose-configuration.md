@@ -49,7 +49,7 @@ environment:
 #### 掛載目錄
 ```yaml
 volumes:
-  - ~/RosAGV/app:/app  # 主要應用程式目錄
+  - ~/EBD_agv/app:/app  # 主要應用程式目錄
 ```
 
 #### 互動設定
@@ -87,8 +87,8 @@ nginx:
   ports:
     - "80:80"
   volumes:
-    - ~/RosAGV/nginx:/etc/nginx/conf.d:ro
-    - ~/RosAGV/design/business-process-docs:/usr/share/nginx/html/docs:ro
+    - ~/EBD_agv/nginx:/etc/nginx/conf.d:ro
+    - ~/EBD_agv/design/business-process-docs:/usr/share/nginx/html/docs:ro
   restart: always
   networks:
     bridge_network:
@@ -132,12 +132,12 @@ environment:
 **掛載目錄**:
 ```yaml
 volumes:
-  - ~/RosAGV/app:/app:rw  # 主程式目錄
-  - ~/RosAGV/docker-compose.agvc.yml:/app/host/docker-compose.agvc.yml:ro
-  - ~/RosAGV/docker-compose.yml:/app/host/docker-compose.yml:ro
-  - ~/RosAGV/Dockerfile:/app/host/Dockerfile:ro
-  - ~/RosAGV/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
-  - ~/RosAGV/README.md:/app/host/README.md:rw
+  - ~/EBD_agv/app:/app:rw  # 主程式目錄
+  - ~/EBD_agv/docker-compose.agvc.yml:/app/host/docker-compose.agvc.yml:ro
+  - ~/EBD_agv/docker-compose.yml:/app/host/docker-compose.yml:ro
+  - ~/EBD_agv/Dockerfile:/app/host/Dockerfile:ro
+  - ~/EBD_agv/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
+  - ~/EBD_agv/README.md:/app/host/README.md:rw
   - /tmp/.X11-unix:/tmp/.X11-unix:rw  # X11 顯示支援
 ```
 
@@ -214,9 +214,9 @@ volumes:
 ```
 
 ### Bind Mounts
-- **程式碼目錄**: `~/RosAGV/app:/app`
-- **Nginx 配置**: `~/RosAGV/nginx:/etc/nginx/conf.d`
-- **文檔目錄**: `~/RosAGV/design/business-process-docs:/usr/share/nginx/html/docs`
+- **程式碼目錄**: `~/EBD_agv/app:/app`
+- **Nginx 配置**: `~/EBD_agv/nginx:/etc/nginx/conf.d`
+- **文檔目錄**: `~/EBD_agv/design/business-process-docs:/usr/share/nginx/html/docs`
 
 ## 🔧 部署和管理
 

@@ -83,7 +83,7 @@ self.node.task        (當前執行任務)
 
 ### 3.1 啟動配置 (launch/launch.py)
 
-**文件位置**: `/home/ct/RosAGV/app/agv_ws/src/cargo_mover_agv/launch/launch.py`
+**文件位置**: `/home/ct/EBD_agv/app/agv_ws/src/cargo_mover_agv/launch/launch.py`
 
 ```python
 # 動態讀取 AGV 配置
@@ -103,7 +103,7 @@ room_id = int(agv_id[-2:])                    # 從 ID 提取房間號
 
 ### 3.2 AGV 核心節點 (agv_core_node.py)
 
-**文件位置**: `/home/ct/RosAGV/app/agv_ws/src/cargo_mover_agv/cargo_mover_agv/agv_core_node.py`
+**文件位置**: `/home/ct/EBD_agv/app/agv_ws/src/cargo_mover_agv/cargo_mover_agv/agv_core_node.py`
 
 #### 初始化流程
 ```python
@@ -160,7 +160,7 @@ def _handle_non_auto_state(self, base_state_name):
 
 ### 3.3 任務選擇狀態 (mission_select_state.py)
 
-**文件位置**: `/home/ct/RosAGV/app/agv_ws/src/agv_base/agv_base/agv_states/mission_select_state.py`
+**文件位置**: `/home/ct/EBD_agv/app/agv_ws/src/agv_base/agv_base/agv_states/mission_select_state.py`
 
 #### 最關鍵部分：latest_tasks 的使用
 
@@ -235,7 +235,7 @@ class MissionSelectState(State):
 
 ### 3.4 運行狀態 (Running_state.py)
 
-**文件位置**: `/home/ct/RosAGV/app/agv_ws/src/agv_base/agv_base/agv_states/Running_state.py`
+**文件位置**: `/home/ct/EBD_agv/app/agv_ws/src/agv_base/agv_base/agv_states/Running_state.py`
 
 ```python
 class RunningState(State):
@@ -274,7 +274,7 @@ class RunningState(State):
 
 ### 3.5 Cargo 上下文 (cargo_context.py)
 
-**文件位置**: `/home/ct/RosAGV/app/agv_ws/src/cargo_mover_agv/cargo_mover_agv/cargo_context.py`
+**文件位置**: `/home/ct/EBD_agv/app/agv_ws/src/cargo_mover_agv/cargo_mover_agv/cargo_context.py`
 
 ```python
 class CargoContext(BaseContext):

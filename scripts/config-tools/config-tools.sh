@@ -196,7 +196,7 @@ validate_all_configs() {
     echo ""
     
     echo -e "${BLUE}3. 檢查 AGV 配置檔案...${NC}"
-    local agv_configs=(/home/ct/RosAGV/app/config/agv/*_config.yaml)
+    local agv_configs=(/home/ct/EBD_agv/app/config/agv/*_config.yaml)
     local agv_errors=0
     for config_file in "${agv_configs[@]}"; do
         if [ -f "$config_file" ] && [[ "$(basename "$config_file")" != "base_config.yaml" ]]; then
@@ -237,11 +237,11 @@ config_status_overview() {
     
     # 檢查各配置檔案是否存在
     local config_files=(
-        "/home/ct/RosAGV/app/config/hardware_mapping.yaml:硬體映射配置"
-        "/home/ct/RosAGV/app/routerconfig.json5:Zenoh 路由配置"
-        "/home/ct/RosAGV/app/config/agvc/agvc01_config.yaml:AGVC 主節點配置" 
-        "/home/ct/RosAGV/app/config/web_api_config.yaml:Web API 配置"
-        "/home/ct/RosAGV/app/config/ecs_config.yaml:ECS 設備控制配置" 
+        "/home/ct/EBD_agv/app/config/hardware_mapping.yaml:硬體映射配置"
+        "/home/ct/EBD_agv/app/routerconfig.json5:Zenoh 路由配置"
+        "/home/ct/EBD_agv/app/config/agvc/agvc01_config.yaml:AGVC 主節點配置" 
+        "/home/ct/EBD_agv/app/config/web_api_config.yaml:Web API 配置"
+        "/home/ct/EBD_agv/app/config/ecs_config.yaml:ECS 設備控制配置" 
     )
     
     for config_info in "${config_files[@]}"; do
@@ -262,7 +262,7 @@ config_status_overview() {
     done
     
     # 統計 AGV 配置檔案數量
-    local agv_config_count=$(ls /home/ct/RosAGV/app/config/agv/*_config.yaml 2>/dev/null | grep -v base_config | wc -l)
+    local agv_config_count=$(ls /home/ct/EBD_agv/app/config/agv/*_config.yaml 2>/dev/null | grep -v base_config | wc -l)
     echo -e "${CYAN}📱 AGV 配置檔案: $agv_config_count 個${NC}"
     
     # 顯示可用的工具

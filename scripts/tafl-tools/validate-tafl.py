@@ -8,7 +8,7 @@ import sys
 import os
 
 # 添加 tafl 模組路徑
-sys.path.insert(0, '/home/ct/RosAGV/app/tafl_ws/src/tafl')
+sys.path.insert(0, '/home/ct/EBD_agv/app/tafl_ws/src/tafl')
 
 from tafl.parser import TAFLParser
 from tafl.validator import TAFLValidator
@@ -20,7 +20,7 @@ def find_tafl_file(filepath):
         return filepath if os.path.exists(filepath) else None
 
     # 在 config/tafl 目錄（包含子目錄）尋找
-    config_dir = "/home/ct/RosAGV/app/config/tafl"
+    config_dir = "/home/ct/EBD_agv/app/config/tafl"
     if os.path.exists(config_dir):
         for root, dirs, files in os.walk(config_dir):
             if filepath in files:
@@ -42,7 +42,7 @@ def validate_tafl_file(filepath):
     if not actual_path:
         print(f"❌ 檔案不存在: {filepath}")
         print("   嘗試的位置:")
-        print("   - /home/ct/RosAGV/app/config/tafl/")
+        print("   - /home/ct/EBD_agv/app/config/tafl/")
         print("   - ./當前目錄")
         return False
     
@@ -99,7 +99,7 @@ def main():
         print("  python3 validate_tafl.py my_flow.tafl.yaml")
         print("  python3 validate_tafl.py flows/rack_rotation_outlet.yaml")
         print("\n檔案搜尋順序:")
-        print("  1. /home/ct/RosAGV/app/config/tafl/")
+        print("  1. /home/ct/EBD_agv/app/config/tafl/")
         print("  2. ./當前目錄")
         sys.exit(1)
     

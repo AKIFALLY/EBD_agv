@@ -3,7 +3,7 @@
 **棄用日期**: 2025-11-18
 **歸檔原因**: TAFL 系統已被 KUKA WCS 完全取代
 **替代方案**: 使用 `kuka_wcs_ws` 進行倉儲控制系統開發
-**遷移指南**: 參見 /home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+**遷移指南**: 參見 /home/ct/EBD_agv/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
 
 本文檔已移至 archived 目錄，僅供歷史參考。不應再用於新的開發工作。
 
@@ -49,7 +49,7 @@ flow:
 
 所有測試檔案位於：
 ```
-/home/ct/RosAGV/app/config/tafl/flows/
+/home/ct/EBD_agv/app/config/tafl/flows/
 ```
 
 ### 推薦測試順序
@@ -186,13 +186,13 @@ $system.execution_time # 執行時間
 ### 創建自定義流程
 1. 複製範例檔案
 ```bash
-cp /home/ct/RosAGV/app/config/tafl/flows/test_simple_query.yaml \
-   /home/ct/RosAGV/app/config/tafl/flows/my_custom_flow.yaml
+cp /home/ct/EBD_agv/app/config/tafl/flows/test_simple_query.yaml \
+   /home/ct/EBD_agv/app/config/tafl/flows/my_custom_flow.yaml
 ```
 
 2. 編輯檔案
 ```bash
-vim /home/ct/RosAGV/app/config/tafl/flows/my_custom_flow.yaml
+vim /home/ct/EBD_agv/app/config/tafl/flows/my_custom_flow.yaml
 ```
 
 3. 在 Editor 中載入測試
@@ -310,7 +310,7 @@ ModuleNotFoundError: No module named 'tafl'
 #### 解決步驟
 ```bash
 # 1. 確認在容器內
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
 
 # 2. 載入環境
@@ -455,7 +455,7 @@ def execute_with_trace(flow_data, mode):
 
 ### 完整重啟流程
 ```bash
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
   source /app/setup.bash &&
   agvc_source &&
@@ -488,8 +488,8 @@ curl -X POST http://localhost:8001/tafl/execute \
 
 ## 📞 支援資源
 
-- **測試腳本**: `/home/ct/RosAGV/agents/test_api_debug.py`
-- **測試流程**: `/home/ct/RosAGV/app/config/tafl/flows/`
+- **測試腳本**: `/home/ct/EBD_agv/agents/test_api_debug.py`
+- **測試流程**: `/home/ct/EBD_agv/app/config/tafl/flows/`
 - **API 端點**: `http://localhost:8001/tafl/`
 - **Web UI**: `http://localhost:8001/tafl/editor`
 

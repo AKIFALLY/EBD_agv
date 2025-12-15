@@ -21,7 +21,7 @@ def validate_tafl_files():
     validator = TAFLValidator()
 
     # 獲取所有 TAFL 檔案
-    config_dir = "/home/ct/RosAGV/app/config/tafl"
+    config_dir = "/home/ct/EBD_agv/app/config/tafl"
     if not os.path.exists(config_dir):
         print(f"❌ 找不到目錄: {config_dir}")
         return

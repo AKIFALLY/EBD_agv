@@ -6,11 +6,11 @@ services:
       - "80:80"
     volumes:
   #    - ~/agvc/nginx:/etc/nginx/conf.d:ro
-      - ~/RosAGV/nginx:/etc/nginx/conf.d:ro
+      - ~/EBD_agv/nginx:/etc/nginx/conf.d:ro
       # 新增：直接掛載說明文件目錄
-      - ~/RosAGV/design/business-process-docs:/usr/share/nginx/html/docs:ro
+      - ~/EBD_agv/design/business-process-docs:/usr/share/nginx/html/docs:ro
       # 新增：掛載 docs-ai 目錄供 AI 知識庫使用
-      - ~/RosAGV/docs-ai:/usr/share/nginx/html/docs-ai:ro
+      - ~/EBD_agv/docs-ai:/usr/share/nginx/html/docs-ai:ro
     restart: always
     networks:
       bridge_network:
@@ -32,18 +32,18 @@ services:
       ZENOH_ROUTER_CONFIG_URI: "/app/routerconfig.agvc.json5" # 這個檔案內要設定zenoh router的連線目標 "tcp/192.168.100.100:7447"
       RMW_IMPLEMENTATION: "rmw_zenoh_cpp" # 設定 ros rmw 使用 zenoh
     volumes:
-      - ~/RosAGV/app:/app:rw # RosAGV 將宿主機的 C:/RosAGV/app 掛載到容器的 /app 目錄
+      - ~/EBD_agv/app:/app:rw # 將宿主機的專案 app 目錄掛載到容器的 /app 目錄
       #- ~/agvc:/app/agvc:rw # agvc 將宿主機的 C:/agvc 掛載到容器的 /agvc 目錄
       #- ~/agvc/opui/dist:/app/ui/opui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
       #- ~/agvc/agvcui/dist:/app/ui/agvcui:rw # Wopui-client/dist 將宿主機的 C:/opui/opui-client/dist 掛載到容器的 /app/opui 目錄
       # 掛載測試目錄到容器內
-      - ~/RosAGV/agents:/app/agents:rw # 掛載測試腳本目錄
+      - ~/EBD_agv/agents:/app/agents:rw # 掛載測試腳本目錄
       # 掛載重要配置檔案到容器內的 /app/host 目錄 (唯讀模式)
-      - ~/RosAGV/docker-compose.agvc.yml:/app/host/docker-compose.agvc.yml:ro
-      - ~/RosAGV/docker-compose.yml:/app/host/docker-compose.yml:ro
-      - ~/RosAGV/Dockerfile:/app/host/Dockerfile:ro
-      - ~/RosAGV/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
-      - ~/RosAGV/README.md:/app/host/README.md:rw
+      - ~/EBD_agv/docker-compose.agvc.yml:/app/host/docker-compose.agvc.yml:ro
+      - ~/EBD_agv/docker-compose.yml:/app/host/docker-compose.yml:ro
+      - ~/EBD_agv/Dockerfile:/app/host/Dockerfile:ro
+      - ~/EBD_agv/Dockerfile.agvc:/app/host/Dockerfile.agvc:ro
+      - ~/EBD_agv/README.md:/app/host/README.md:rw
       - /tmp/.X11-unix:/tmp/.X11-unix:rw # (ubuntu 需要)將宿主機的 /tmp/.X11-unix 掛載到容器的 /tmp/.X11-unix 目錄 宿主機需要執行 xhost +local:
     ports:
       - 7447:7447 # 7447 zenoh router

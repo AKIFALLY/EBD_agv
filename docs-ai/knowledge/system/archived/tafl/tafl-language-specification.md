@@ -3,7 +3,7 @@
 **棄用日期**: 2025-11-18
 **歸檔原因**: TAFL WCS 系統已被 KUKA WCS 完全取代
 **替代方案**: 使用 `kuka_wcs_ws` 進行倉儲控制系統開發
-**遷移指南**: 參見 /home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+**遷移指南**: 參見 /home/ct/EBD_agv/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
 
 本文檔已移至 archived 目錄，僅供歷史參考。不應再用於新的開發工作。
 
@@ -893,8 +893,8 @@ flow:
 
 ### 實作狀態
 - **當前版本**: TAFL v1.1 基礎功能實作
-- **實作程式碼**: `/home/ct/RosAGV/app/tafl_ws/`
-- **文檔位置**: `/home/ct/RosAGV/app/tafl_ws/docs/`
+- **實作程式碼**: `/home/ct/EBD_agv/app/tafl_ws/`
+- **文檔位置**: `/home/ct/EBD_agv/app/tafl_ws/docs/`
 - **測試狀態**: 基本功能可運行，部分高級功能待完善
 - **驗證工具**: `r tafl-validate` 支援基礎格式驗證
 

@@ -2,7 +2,7 @@
 # 原因: TAFL Editor 已被 KUKA WCS 取代
 # 狀態: 路由已在 agvc_ui_server.py 中註解停用，代碼保留作為歷史參考
 # 替代方案: 使用 KUKA WCS 系統進行倉儲控制和任務管理
-# 遷移指南: /home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
+# 遷移指南: /home/ct/EBD_agv/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md
 
 """
 TAFL Editor Router (⚠️ DEPRECATED)

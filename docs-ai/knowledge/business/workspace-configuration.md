@@ -245,7 +245,7 @@ machine_2 = {
 ## 🔗 相關文檔
 - OPUI 系統文檔：/app/web_api_ws/src/opui/CLAUDE.md
 - 資料庫設計：/app/db_proxy_ws/CLAUDE.md
-- 測試腳本：/home/ct/RosAGV/agents/test_workspace_config.py
+- 測試腳本：/home/ct/EBD_agv/agents/test_workspace_config.py
 
 ---
 

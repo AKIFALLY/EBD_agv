@@ -20,7 +20,7 @@ TEST_DB_URL = 'postgresql+psycopg2://agvc:password@192.168.100.254/test_db'
 ## 資料庫初始化
 ```bash
 # 1. 創建用戶和資料庫（宿主機執行）
-cd /home/ct/RosAGV/app/db_proxy_ws/scripts
+cd /home/ct/EBD_agv/app/db_proxy_ws/scripts
 ./init_database.sh
 
 # 2. 創建資料表（容器內執行）

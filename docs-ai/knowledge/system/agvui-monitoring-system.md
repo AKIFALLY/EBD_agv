@@ -66,7 +66,7 @@ AGVUI 會根據環境自動決定載入模式：
 ## 🚀 測試工具
 
 ### 模擬資料產生腳本
-**位置**: `/home/ct/RosAGV/scripts/test-agvui-multi.sh`
+**位置**: `/home/ct/EBD_agv/scripts/test-agvui-multi.sh`
 
 **功能**:
 - 生成 6 台 AGV 的測試狀態檔案
@@ -77,7 +77,7 @@ AGVUI 會根據環境自動決定載入模式：
 **使用方式**:
 ```bash
 # 生成測試資料
-bash /home/ct/RosAGV/scripts/test-agvui-multi.sh
+bash /home/ct/EBD_agv/scripts/test-agvui-multi.sh
 
 # 訪問測試頁面
 http://localhost:8003/test       # 選擇要監控的 AGV
@@ -85,7 +85,7 @@ http://localhost:8003/?agv_id=loader01  # 直接監控特定 AGV
 ```
 
 ### 單機測試腳本
-**位置**: `/home/ct/RosAGV/scripts/test-agvui.sh`
+**位置**: `/home/ct/EBD_agv/scripts/test-agvui.sh`
 - 生成單一 AGV 狀態檔案
 - 適用於單機部署測試
 
@@ -123,7 +123,7 @@ http://localhost:8003/?agv_id=loader01  # 直接監控特定 AGV
 ### 啟動服務
 ```bash
 # 在 AGVC 容器內
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
 source /app/setup.bash && agvc_source
 
@@ -156,7 +156,7 @@ docker compose -f docker-compose.agvc.yml exec agvc_server ls -la /tmp/agv_statu
 
 2. 執行測試腳本生成資料：
 ```bash
-bash /home/ct/RosAGV/scripts/test-agvui-multi.sh
+bash /home/ct/EBD_agv/scripts/test-agvui-multi.sh
 ```
 
 #### 服務無法啟動

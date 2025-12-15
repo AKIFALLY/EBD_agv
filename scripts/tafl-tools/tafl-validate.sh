@@ -11,13 +11,13 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # TAFL 工作目錄
-TAFL_DIR="/home/ct/RosAGV/app/tafl_ws"
-TAFL_TOOLS_DIR="/home/ct/RosAGV/scripts/tafl-tools"
+TAFL_DIR="/home/ct/EBD_agv/app/tafl_ws"
+TAFL_TOOLS_DIR="/home/ct/EBD_agv/scripts/tafl-tools"
 TAFL_VALIDATOR="$TAFL_TOOLS_DIR/validate-tafl.py"
 TAFL_BATCH_VALIDATOR="$TAFL_TOOLS_DIR/validate-all-tafl.py"
 
 # TAFL 檔案位置
-CONFIG_TAFL_DIR="/home/ct/RosAGV/app/config/tafl"  # TAFL 配置目錄
+CONFIG_TAFL_DIR="/home/ct/EBD_agv/app/config/tafl"  # TAFL 配置目錄
 
 # 顯示使用說明
 show_usage() {

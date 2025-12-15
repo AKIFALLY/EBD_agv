@@ -106,7 +106,7 @@ tafl_wcs_ws/src/tafl_wcs/test/
 ### 方法 1: 執行所有業務流程測試（推薦）
 
 ```bash
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c \
   "source /app/setup.bash && agvc_source && \
    cd /app/tafl_wcs_ws/src/tafl_wcs/test && python3 run_all_tests.py"
@@ -392,7 +392,7 @@ TEST_SCRIPTS = [
 
 ### agents/ 目錄不是測試位置
 
-`/home/ct/RosAGV/agents/` 目錄用於**暫時性測試和實驗代碼**，不是正式測試套件。
+`/home/ct/EBD_agv/agents/` 目錄用於**暫時性測試和實驗代碼**，不是正式測試套件。
 
 正式測試必須：
 1. ✅ 放在對應的工作空間 `test/` 目錄

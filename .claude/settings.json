@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/RosAGV/.claude/hooks/current-time.sh"
+            "command": "~/EBD_agv/.claude/hooks/current-time.sh"
           }
         ]
       }

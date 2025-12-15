@@ -14,7 +14,7 @@
 在 `~/.bashrc` 中添加以下設定：
 ```bash
 # RosAGV 工具路徑配置
-export PATH="/home/ct/RosAGV:$PATH"
+export PATH="/home/ct/EBD_agv:$PATH"
 ```
 
 設定完成後，重新載入環境：
@@ -25,7 +25,7 @@ source ~/.bashrc
 驗證配置是否正確：
 ```bash
 # [宿主機] 驗證配置
-which r                    # 應該顯示 /home/ct/RosAGV/r
+which r                    # 應該顯示 /home/ct/EBD_agv/r
 r agvc-check              # 測試 AGVC 健康檢查功能
 ```
 
@@ -119,8 +119,8 @@ r quick-diag && r log-errors && r zenoh-check
 r containers-status
 
 # [宿主機] 詳細容器資訊
-# 前提：在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# 前提：在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml ps
 docker compose -f docker-compose.yml ps
 
@@ -128,15 +128,15 @@ docker compose -f docker-compose.yml ps
 docker stats
 
 # [宿主機] 執行容器內健康檢查
-# 前提：在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# 前提：在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "check_system_status"
 ```
 
 ### 容器日誌檢查
 ```bash
-# [宿主機] 前提：在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# [宿主機] 前提：在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 
 # [宿主機] 查看容器日誌
 docker compose -f docker-compose.agvc.yml logs -f agvc_server
@@ -154,8 +154,8 @@ docker network ls
 docker network inspect rosagv_agvc_network
 
 # [宿主機] 容器間連接測試
-# 前提：在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# 前提：在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server ping postgres
 docker compose -f docker-compose.agvc.yml exec agvc_server ping nginx
 ```

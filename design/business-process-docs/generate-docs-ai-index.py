@@ -17,7 +17,7 @@ from collections import defaultdict
 from datetime import datetime
 
 # 基礎路徑配置
-ROSAGV_ROOT = Path("/home/ct/RosAGV")
+ROSAGV_ROOT = Path("/home/ct/EBD_agv")
 DOCS_AI_PATH = ROSAGV_ROOT / "docs-ai"
 OUTPUT_PATH = ROSAGV_ROOT / "design/business-process-docs/js/docs-ai-index.json"
 

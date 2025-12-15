@@ -199,7 +199,7 @@ AGVC 管理 (Bridge 網路: 192.168.100.0/24) - 企業級隔離模式
 ### 環境識別
 ```bash
 # 檢查當前環境
-pwd                    # /home/ct/RosAGV (宿主機)
+pwd                    # /home/ct/EBD_agv (宿主機)
                       # /app (容器內)
 
 # 環境特徵

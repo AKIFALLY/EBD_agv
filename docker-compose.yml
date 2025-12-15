@@ -17,6 +17,6 @@ services:
       RMW_IMPLEMENTATION: "rmw_zenoh_cpp"
       SDL_AUDIODRIVER: dummy # 避免 pygame 的 ALSA 錯誤
     volumes:
-      - ~/RosAGV/app:/app
+      - ~/EBD_agv/app:/app
     tty: true # 允許互動式終端
     stdin_open: true # 保持 STDIN 開啟

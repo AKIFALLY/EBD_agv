@@ -39,11 +39,11 @@ echo ""
 
 # 1. 檢查 PostgreSQL 容器狀態
 echo -e "${BLUE}1. 檢查 PostgreSQL 容器狀態${NC}"
-if docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml ps postgres | rg -q "Up"; then
+if docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml ps postgres | rg -q "Up"; then
     echo -e "${GREEN}✅ PostgreSQL 容器運行中${NC}"
 else
     echo -e "${RED}❌ PostgreSQL 容器未運行${NC}"
-    echo "請執行: docker compose -f /home/ct/RosAGV/docker-compose.agvc.yml up -d postgres"
+    echo "請執行: docker compose -f /home/ct/EBD_agv/docker-compose.agvc.yml up -d postgres"
     exit 1
 fi
 

@@ -314,7 +314,7 @@ class TaskManager(Node):
 ### 開發環境部署
 ```bash
 # 單機開發：在同一台機器上運行兩個環境
-cd /home/ct/RosAGV
+cd /home/ct/EBD_agv
 
 # 啟動 AGVC 管理系統
 docker compose -f docker-compose.agvc.yml up -d

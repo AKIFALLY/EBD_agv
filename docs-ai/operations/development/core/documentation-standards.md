@@ -222,7 +222,7 @@ system:
 ### 創建新文檔時的檢查清單
 ```bash
 # 1. 確定文檔位置
-ls -la /home/ct/RosAGV/docs-ai/operations/development/
+ls -la /home/ct/EBD_agv/docs-ai/operations/development/
 
 # 2. 取得當前時間
 current_time=$(TZ='Asia/Taipei' date '+%Y-%m-%d %H:%M:%S')

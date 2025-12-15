@@ -43,7 +43,7 @@ async def favicon():
     return FileResponse("static/favicon.ico")
 
 # 配置設定
-AGV_STATUS_DIR = "/home/ct/RosAGV/app/agv_status_json"  # AGV 狀態文件目錄
+AGV_STATUS_DIR = "/home/ct/EBD_agv/app/agv_status_json"  # AGV 狀態文件目錄
 AGV_STATUS_FILE = "current_status.json"  # 通用狀態文件名
 UPDATE_INTERVAL = 1.0  # 更新間隔 (秒)
 MAX_HISTORY = 100  # 最大歷史記錄數量

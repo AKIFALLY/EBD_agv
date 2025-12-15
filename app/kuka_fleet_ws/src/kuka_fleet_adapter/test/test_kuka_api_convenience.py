@@ -9,7 +9,7 @@ from datetime import datetime
 
 # 支援容器和宿主機路徑
 container_path = '/app/kuka_fleet_ws/src/kuka_fleet_adapter/kuka_fleet_adapter'
-host_path = '/home/ct/RosAGV/app/kuka_fleet_ws/src/kuka_fleet_adapter/kuka_fleet_adapter'
+host_path = '/home/ct/EBD_agv/app/kuka_fleet_ws/src/kuka_fleet_adapter/kuka_fleet_adapter'
 
 if os.path.exists(container_path):
     sys.path.append(container_path)

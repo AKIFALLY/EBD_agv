@@ -19,11 +19,11 @@ docker --version          # 應顯示 Docker 版本
 docker compose version    # 應顯示 Compose V2 版本
 
 # 2. 設定 RosAGV 工具路徑 (重要！)
-echo 'export PATH="/home/ct/RosAGV:$PATH"' >> ~/.bashrc
+echo 'export PATH="/home/ct/EBD_agv:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
 # 3. 驗證工具可用性
-which r                   # 應顯示 /home/ct/RosAGV/r
+which r                   # 應顯示 /home/ct/EBD_agv/r
 r                        # 顯示可用工具列表
 ```
 
@@ -32,7 +32,7 @@ r                        # 顯示可用工具列表
 ### 啟動 AGVC 管理系統
 ```bash
 # 進入 RosAGV 目錄
-cd /home/ct/RosAGV
+cd /home/ct/EBD_agv
 
 # 啟動 AGVC 管理系統（包含資料庫、Web 服務）
 docker compose -f docker-compose.agvc.yml up -d

@@ -5,7 +5,7 @@
 ### 容器操作基礎
 ```bash
 # 進入 AGVC 容器（從宿主機）
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash
 source /app/setup.bash && agvc_source
 
@@ -155,11 +155,11 @@ docs-ai/operations/guides/troubleshooting.md           # 故障排除與診斷
 - **使用**: `source .venv/bin/activate` 啟動環境
 
 ### 📁 測試檔案管理
-- **專用目錄**: `~/RosAGV/agents/` - 所有暫時性測試檔案必須存放於此
+- **專用目錄**: `~/EBD_agv/agents/` - 所有暫時性測試檔案必須存放於此
 # 詳細規範: docs-ai/operations/development/testing/test-file-management.md
 
 ## 📚 業務流程文檔系統
-- **文檔目錄**: `~/RosAGV/design/business-process-docs/` - RosAGV 業務流程文檔中心
+- **文檔目錄**: `~/EBD_agv/design/business-process-docs/` - RosAGV 業務流程文檔中心
 - **Web 訪問**: `http://agvc.ui/docs/index.html` (動態 Markdown 載入系統)
   - ⚠️ 注意：`http://agvc.ui/docs` 是 FastAPI 自動文檔，不是業務文檔
 - **內容結構**: 使用 Markdown 檔案動態載入（`content/` 目錄）
@@ -197,7 +197,7 @@ git commit -m "docs: 更新文檔"
 ### 手動更新（備用）
 如需手動更新索引（例如測試或疑難排解）：
 ```bash
-cd ~/RosAGV/design/business-process-docs
+cd ~/EBD_agv/design/business-process-docs
 ./update-indexes.sh
 
 # 檢視更新統計

@@ -27,13 +27,13 @@ RosAGV 採用雙容器架構，每個容器有不同的開發環境和工具：
 
 ### 容器進入方式
 
-**⚠️ 前提條件**：Docker Compose 檔案位於 `~/RosAGV/` 目錄
-- AGV 容器: `~/RosAGV/docker-compose.yml`
-- AGVC 容器: `~/RosAGV/docker-compose.agvc.yml`
+**⚠️ 前提條件**：Docker Compose 檔案位於 `~/EBD_agv/` 目錄
+- AGV 容器: `~/EBD_agv/docker-compose.yml`
+- AGVC 容器: `~/EBD_agv/docker-compose.agvc.yml`
 
 ```bash
 # 進入工作目錄（若不在此目錄）
-cd ~/RosAGV
+cd ~/EBD_agv
 
 # 進入 AGV 車載容器
 docker compose -f docker-compose.yml exec rosagv bash
@@ -304,8 +304,8 @@ netstat -i                  # 網路介面統計 (ss 無法替代此功能)
 
 #### 解決方案: bash -i 參數
 ```bash
-# 前提：在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# 前提：在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 
 # ✅ 推薦方式：使用 bash -i (interactive flag)
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "source /app/setup.bash && agvc_source && manage_web_api_launch stop"
@@ -327,8 +327,8 @@ docker compose -f docker-compose.agvc.yml exec agvc_server bash -c "manage_web_a
 #### 最佳實踐模式
 ```bash
 # 標準容器指令執行模式
-# 前提：在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# 前提：在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash && 
 agvc_source && 

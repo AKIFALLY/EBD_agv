@@ -182,8 +182,8 @@ echo ""
 echo "8. 檢查目錄掛載..."
 
 mount_dirs=(
-    "~/RosAGV/app"
-    "~/RosAGV/nginx"
+    "~/EBD_agv/app"
+    "~/EBD_agv/nginx"
 )
 
 for dir in "${mount_dirs[@]}"; do

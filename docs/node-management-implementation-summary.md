@@ -25,7 +25,7 @@
 - ✅ `manage_web_api_launch` - Web API 服務群組
 
 ### 3. 宿主機工具擴展
-**檔案**: `/home/ct/RosAGV/rosagv-tools.sh`
+**檔案**: `/home/ct/EBD_agv/rosagv-tools.sh`
 - ✅ `r node-status` - 查看所有節點狀態
 - ✅ `r node-start [name]` - 啟動節點
 - ✅ `r node-stop [name]` - 停止節點
@@ -94,10 +94,10 @@
 ## 測試工具
 
 ### 完整系統測試
-- `/home/ct/RosAGV/scripts/test-node-management.sh` - 測試所有層級功能
+- `/home/ct/EBD_agv/scripts/test-node-management.sh` - 測試所有層級功能
 
 ### AGVCUI 整合測試
-- `/home/ct/RosAGV/scripts/test-agvcui-node-integration.sh` - 測試 AGVCUI 界面整合
+- `/home/ct/EBD_agv/scripts/test-agvcui-node-integration.sh` - 測試 AGVCUI 界面整合
 
 ## 使用指南
 
@@ -170,11 +170,11 @@ r agv-nodes cargo02 status
 
 ## 文件清單
 
-- `/home/ct/RosAGV/docs/node-management-system.md` - 系統文檔
-- `/home/ct/RosAGV/docs/node-management-implementation-summary.md` - 實施總結（本文檔）
+- `/home/ct/EBD_agv/docs/node-management-system.md` - 系統文檔
+- `/home/ct/EBD_agv/docs/node-management-implementation-summary.md` - 實施總結（本文檔）
 - `/app/config/node_registry.yaml` - 節點註冊表
 - `/app/setup.bash` - 容器管理函數
-- `/home/ct/RosAGV/rosagv-tools.sh` - 宿主機工具
+- `/home/ct/EBD_agv/rosagv-tools.sh` - 宿主機工具
 - `/app/web_api_ws/src/web_api/web_api/routers/nodes.py` - Web API 實現
 - `/app/web_api_ws/src/agvcui/agvcui/routers/nodes.py` - AGVCUI 路由
 - `/app/web_api_ws/src/agvcui/agvcui/templates/nodes.html` - AGVCUI 模板

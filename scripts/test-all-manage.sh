@@ -68,7 +68,7 @@ test_service() {
 }
 
 # 進入正確目錄
-cd ~/RosAGV
+cd ~/EBD_agv
 
 # 測試各個服務
 echo "1️⃣ RCS 服務"

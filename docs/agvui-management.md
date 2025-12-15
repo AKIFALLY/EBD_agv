@@ -81,7 +81,7 @@ AUTO_START_AGVUI=true  # 設定為 true 啟用自動啟動，false 停用
 - 讀取 `/tmp/agv_status_*.json`
 - 使用測試腳本產生：
 ```bash
-/home/ct/RosAGV/scripts/test-agvui-multi.sh
+/home/ct/EBD_agv/scripts/test-agvui-multi.sh
 ```
 
 ## 故障排除
@@ -105,7 +105,7 @@ docker compose -f docker-compose.agvc.yml exec agvc_server kill <PID>
 docker compose -f docker-compose.agvc.yml exec agvc_server ls -la /tmp/agv_status*.json
 
 # 產生測試資料
-/home/ct/RosAGV/scripts/test-agvui-multi.sh
+/home/ct/EBD_agv/scripts/test-agvui-multi.sh
 
 # 複製到容器
 docker cp /tmp/agv_status_loader01.json agvc_server:/tmp/
@@ -124,4 +124,4 @@ docker cp /tmp/agv_status_loader01.json agvc_server:/tmp/
 - 前端邏輯：`/app/web_api_ws/src/agvui/agvui/static/js/agvPage.js`
 - 管理函數：`/app/setup.bash` 中的 `manage_agvui`
 - 自動啟動：`/app/startup.agv.bash`
-- 測試腳本：`/home/ct/RosAGV/scripts/test-agvui-multi.sh`
+- 測試腳本：`/home/ct/EBD_agv/scripts/test-agvui-multi.sh`

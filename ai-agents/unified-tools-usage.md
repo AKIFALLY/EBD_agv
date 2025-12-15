@@ -8,8 +8,8 @@
 ## 🖥️ 第一部分：宿主機工具（統一入口）
 
 ### ⚠️ 執行前提
-- **[宿主機]** 在 `~/RosAGV` 目錄執行
-- **[宿主機]** 確保 `/home/ct/RosAGV` 已加入 PATH
+- **[宿主機]** 在 `~/EBD_agv` 目錄執行
+- **[宿主機]** 確保 `/home/ct/EBD_agv` 已加入 PATH
 - **[宿主機]** 對應容器必須已啟動
 
 ### 系統診斷工具
@@ -118,7 +118,7 @@ yq '.services.agvc_server.ports' /path/to/compose.yml
 ### 系統診斷工作流
 ```bash
 # 步驟1: [宿主機] 快速診斷
-cd ~/RosAGV
+cd ~/EBD_agv
 r quick-diag
 
 # 步驟2: [宿主機] 檢查容器狀態
@@ -131,7 +131,7 @@ r agvc-check              # 或 r network-check, r zenoh-check
 ### 服務重啟工作流
 ```bash
 # 步驟1: [宿主機] 載入專業工具
-cd ~/RosAGV
+cd ~/EBD_agv
 source scripts/docker-tools/docker-tools.sh
 
 # 步驟2: [宿主機] 停止和啟動服務
@@ -145,7 +145,7 @@ agvc_health
 ### 開發工作流
 ```bash
 # 步驟1: [宿主機] 進入容器
-cd ~/RosAGV
+cd ~/EBD_agv
 source scripts/docker-tools/docker-tools.sh
 agvc_enter
 
@@ -162,7 +162,7 @@ manage_web_api_launch restart   # 重啟 Web 服務
 ### 複雜指令執行（bash -i 模式）
 ```bash
 # [宿主機] 一次性執行複雜容器內指令
-cd ~/RosAGV
+cd ~/EBD_agv
 docker compose -f docker-compose.agvc.yml exec agvc_server bash -i -c "
 source /app/setup.bash &&
 agvc_source &&

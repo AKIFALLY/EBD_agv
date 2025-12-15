@@ -169,10 +169,10 @@ sudo systemctl restart docker
 ```bash
 # 備份當前版本
 docker compose -f docker-compose.agvc.yml down
-cp -r /home/ct/RosAGV /home/ct/RosAGV.backup.$(date +%Y%m%d)
+cp -r /home/ct/EBD_agv /home/ct/EBD_agv.backup.$(date +%Y%m%d)
 
 # 更新程式碼
-cd /home/ct/RosAGV
+cd /home/ct/EBD_agv
 git fetch origin
 git checkout main
 git pull origin main
@@ -231,7 +231,7 @@ docker compose -f docker-compose.agvc.yml exec postgres psql -U agvc -d agvc_tes
 # 設定自動備份
 cat << 'EOF' > /etc/cron.daily/rosagv-backup
 #!/bin/bash
-cd /home/ct/RosAGV
+cd /home/ct/EBD_agv
 docker compose -f docker-compose.agvc.yml exec postgres pg_dump -U agvc agvc > /backup/rosagv_$(date +%Y%m%d).sql
 find /backup -name "rosagv_*.sql" -mtime +30 -delete
 EOF
@@ -279,7 +279,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
   aquasec/trivy image rosagv:latest
 
 # 檢查檔案權限
-find /home/ct/RosAGV -type f -perm /o+w 2>/dev/null
+find /home/ct/EBD_agv -type f -perm /o+w 2>/dev/null
 ```
 
 #### 憑證和密鑰管理
@@ -364,7 +364,7 @@ docker compose -f docker-compose.agvc.yml down
 docker compose -f docker-compose.agvc.yml up -d --force-recreate
 
 # 回復到備份版本
-cd /home/ct/RosAGV.backup.20241201
+cd /home/ct/EBD_agv.backup.20241201
 docker compose -f docker-compose.agvc.yml up -d
 ```
 

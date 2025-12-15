@@ -9,7 +9,7 @@ echo "Running TAFL Test Suite"
 echo "================================"
 
 # Change to the test directory
-cd /home/ct/RosAGV/app/tafl_ws/src/tafl/test
+cd /home/ct/EBD_agv/app/tafl_ws/src/tafl/test
 
 # Run the comprehensive verb tests
 echo ""

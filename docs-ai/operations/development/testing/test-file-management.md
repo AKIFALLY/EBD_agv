@@ -8,10 +8,10 @@
 ## 📋 測試檔案存放規範
 
 ### 專用測試目錄
-**所有臨時性測試檔案必須存放在 `~/RosAGV/agents/` 目錄**
+**所有臨時性測試檔案必須存放在 `~/EBD_agv/agents/` 目錄**
 
 ```bash
-~/RosAGV/
+~/EBD_agv/
 ├── agents/                    # 臨時檔案統一管理目錄
 │   ├── test_*.py             # Python 測試腳本
 │   ├── test_*.html           # HTML 測試頁面
@@ -24,7 +24,7 @@
 ```
 
 ### 路徑對應關係
-- **宿主機路徑**: `~/RosAGV/agents/`
+- **宿主機路徑**: `~/EBD_agv/agents/`
 - **容器內路徑**: `/app/agents/` (通過 Docker volume 掛載)
 - **統一管理**: 所有臨時檔案（測試腳本、temp.sh、測試頁面等）都在此目錄
 
@@ -69,22 +69,22 @@ result.txt
 
 ### Python 測試腳本
 - **用途**: Playwright 自動化測試、功能驗證腳本
-- **位置**: `~/RosAGV/agents/test_*.py`
+- **位置**: `~/EBD_agv/agents/test_*.py`
 - **範例**: `test_tafl_editor_simple.py`
 
 ### HTML 測試頁面
 - **用途**: 獨立的前端功能測試頁面
-- **位置**: `~/RosAGV/agents/*.html`
+- **位置**: `~/EBD_agv/agents/*.html`
 - **範例**: `tafl_editor_unified_dark_theme_fix.html`
 
 ### 測試截圖
 - **用途**: 自動化測試產生的截圖證據
-- **位置**: `~/RosAGV/agents/*.png`
+- **位置**: `~/EBD_agv/agents/*.png`
 - **範例**: `test_drag_drop_debug.png`
 
 ### 測試報告
 - **用途**: 測試結果記錄和分析報告
-- **位置**: `~/RosAGV/agents/*.md` 或 `*.json`
+- **位置**: `~/EBD_agv/agents/*.md` 或 `*.json`
 - **範例**: `test_report_final.md`, `tafl_editor_interaction_report.json`
 
 ## ⚠️ 禁止事項
@@ -92,18 +92,18 @@ result.txt
 ### 不可在以下目錄創建臨時檔案
 ```bash
 # ❌ 禁止位置（包括但不限於）
-/home/ct/RosAGV/app/                    # 生產代碼根目錄
-/home/ct/RosAGV/app/*/src/              # 工作空間源碼目錄
-/home/ct/RosAGV/docs-ai/                # 文檔目錄
-/home/ct/RosAGV/scripts/                # 系統腳本目錄
+/home/ct/EBD_agv/app/                    # 生產代碼根目錄
+/home/ct/EBD_agv/app/*/src/              # 工作空間源碼目錄
+/home/ct/EBD_agv/docs-ai/                # 文檔目錄
+/home/ct/EBD_agv/scripts/                # 系統腳本目錄
 ```
 
 ### 正確做法
 ```bash
 # ✅ 統一放在 agents 目錄
-~/RosAGV/agents/temp.sh                 # 臨時 Shell 腳本
-~/RosAGV/agents/test_feature.py         # 測試腳本
-~/RosAGV/agents/experiment.html         # 實驗頁面
+~/EBD_agv/agents/temp.sh                 # 臨時 Shell 腳本
+~/EBD_agv/agents/test_feature.py         # 測試腳本
+~/EBD_agv/agents/experiment.html         # 實驗頁面
 ```
 
 ### 避免的行為
@@ -117,13 +117,13 @@ result.txt
 ### 定期清理
 ```bash
 # 查看 agents 目錄大小
-du -sh ~/RosAGV/agents/
+du -sh ~/EBD_agv/agents/
 
 # 列出超過 7 天的測試檔案
-find ~/RosAGV/agents/ -type f -mtime +7 -name "test_*"
+find ~/EBD_agv/agents/ -type f -mtime +7 -name "test_*"
 
 # 清理特定模式的檔案（謹慎使用）
-# rm ~/RosAGV/agents/test_old_*.py
+# rm ~/EBD_agv/agents/test_old_*.py
 ```
 
 ### 保留原則
@@ -162,7 +162,7 @@ agents/
 ## 💡 最佳實踐
 
 ### AI Agent 創建測試檔案時
-1. **確認目錄**: 始終在 `~/RosAGV/agents/` 創建測試檔案
+1. **確認目錄**: 始終在 `~/EBD_agv/agents/` 創建測試檔案
 2. **明確命名**: 使用描述性的檔案名稱
 3. **添加註解**: 在測試檔案開頭說明用途
 4. **記錄結果**: 生成對應的測試報告

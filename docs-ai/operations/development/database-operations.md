@@ -51,7 +51,7 @@ RosAGV 提供兩種資料庫初始化方式：
 #### 步驟1: 創建用戶和資料庫
 ```bash
 # 在宿主機執行
-cd /home/ct/RosAGV/app/db_proxy_ws/scripts
+cd /home/ct/EBD_agv/app/db_proxy_ws/scripts
 ./init_database.sh
 ```
 

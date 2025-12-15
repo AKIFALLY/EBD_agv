@@ -3,7 +3,7 @@
 **棄用日期**: 2025-11-18
 **歸檔原因**: TAFL 系統已被 KUKA WCS 完全取代
 **替代方案**: 使用 `kuka_wcs_ws` 進行倉儲控制系統開發
-**遷移指南**: 參見 [TAFL 到 KUKA WCS 遷移指南](/home/ct/RosAGV/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md)
+**遷移指南**: 參見 [TAFL 到 KUKA WCS 遷移指南](/home/ct/EBD_agv/docs-ai/guides/migration-from-tafl-to-kuka-wcs.md)
 
 本文檔已移至 archived 目錄，僅供歷史參考。不應再用於新的開發工作。
 
@@ -226,8 +226,8 @@ flow:
 ## 🔧 開發者資訊
 
 ### TAFL 檔案位置
-- **正式配置**: `/home/ct/RosAGV/app/config/tafl/flows/`
-- **工作空間**: `/home/ct/RosAGV/app/tafl_ws/`
+- **正式配置**: `/home/ct/EBD_agv/app/config/tafl/flows/`
+- **工作空間**: `/home/ct/EBD_agv/app/tafl_ws/`
 
 ### 相關工作空間
 - **tafl_ws**: TAFL 核心語言實作
@@ -250,7 +250,7 @@ r tafl-validate list
 ```python
 #!/usr/bin/env python3
 import sys
-sys.path.insert(0, '/home/ct/RosAGV/app/tafl_ws/src/tafl')
+sys.path.insert(0, '/home/ct/EBD_agv/app/tafl_ws/src/tafl')
 
 from tafl.parser import TAFLParser
 from tafl.executor import TAFLExecutor

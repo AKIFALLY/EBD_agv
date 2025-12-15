@@ -28,16 +28,16 @@ Nginx 在 RosAGV AGVC 管理系統中扮演反向代理伺服器的角色，負�
 ## 🔧 配置檔案結構
 
 ### 檔案位置
-- **宿主機配置目錄**: `/home/ct/RosAGV/nginx/`
+- **宿主機配置目錄**: `/home/ct/EBD_agv/nginx/`
 - **容器內映射路徑**: `/etc/nginx/conf.d/`
 - **主配置檔案**: `default.conf`
-- **文檔目錄**: `/home/ct/RosAGV/design/business-process-docs/`
+- **文檔目錄**: `/home/ct/EBD_agv/design/business-process-docs/`
 
 ### 掛載配置
 ```yaml
 volumes:
-  - /home/ct/RosAGV/nginx:/etc/nginx/conf.d:ro
-  - /home/ct/RosAGV/design/business-process-docs:/usr/share/nginx/html/docs:ro
+  - /home/ct/EBD_agv/nginx:/etc/nginx/conf.d:ro
+  - /home/ct/EBD_agv/design/business-process-docs:/usr/share/nginx/html/docs:ro
 ```
 
 ## 🌐 虛擬主機配置
@@ -235,7 +235,7 @@ netstat -tulpn | grep -E "8000|8001|8002"
 ### 配置備份
 ```bash
 # 備份 Nginx 配置
-cp -r /home/ct/RosAGV/nginx /home/ct/RosAGV/nginx.backup.$(date +%Y%m%d)
+cp -r /home/ct/EBD_agv/nginx /home/ct/EBD_agv/nginx.backup.$(date +%Y%m%d)
 ```
 
 ### 更新流程

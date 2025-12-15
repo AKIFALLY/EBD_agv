@@ -14,8 +14,8 @@
 
 ## ROS2 指令執行
 ```bash
-# ⚠️ 必須在 ~/RosAGV 目錄執行
-cd ~/RosAGV
+# ⚠️ 必須在 ~/EBD_agv 目錄執行
+cd ~/EBD_agv
 
 # ❌ 錯誤：宿主機無 ROS2
 ros2 topic list
@@ -191,7 +191,7 @@ echo "$PARENT_PID" > "$PID_FILE"
 ## 關鍵規則
 1. **ROS2 只在容器內**: 宿主機無 ROS2 環境
 2. **載入環境優先**: 執行前必須 `source /app/setup.bash`
-3. **工作目錄**: 在 ~/RosAGV 執行 docker compose
+3. **工作目錄**: 在 ~/EBD_agv 執行 docker compose
 4. **Zenoh 通訊**: 跨容器通訊依賴 Zenoh Router
 5. **自動載入**: 使用 `all_source` 自動檢測環境
 6. **服務管理標準化**: 所有 `manage_*` 函數必須遵循 4+6 階段標準

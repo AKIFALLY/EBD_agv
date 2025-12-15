@@ -88,7 +88,7 @@
 
 - **init_database.sh** - 資料庫用戶和資料庫初始化
   - 功能: 創建 agvc 用戶、agvc 資料庫、test_db 資料庫
-  - 使用: `cd /home/ct/RosAGV/app/db_proxy_ws/scripts && ./init_database.sh`
+  - 使用: `cd /home/ct/EBD_agv/app/db_proxy_ws/scripts && ./init_database.sh`
   - 注意: 在宿主機執行，自動檢查和驗證
 
 - **check_db_status.sh** - 資料庫狀態檢查
