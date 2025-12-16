@@ -1,0 +1,15 @@
+
+AGV03:
+  agv_core_node:
+    ros__parameters:
+      device_id: "AGV03"
+      device_type: "loader"
+      description: "貨物搬運型 AGV #2"
+      max_speed: 1.5
+      max_payload: 500
+      safety_distance: 0.5
+
+  plc_service:
+    ros__parameters:
+      plc_ip: "192.168.2.100"
+      plc_port: 8501

@@ -18,21 +18,21 @@ def load_yaml_config(yaml_path, agv_id):
 
 def generate_launch_description():
     # 🔧 從環境變數動態讀取 AGV 配置
-    agv_id = os.environ.get('AGV_ID', 'unloader01')
-    ros_namespace = os.environ.get('ROS_NAMESPACE', f'/{agv_id}')
-    device_config_file = os.environ.get('DEVICE_CONFIG_FILE', f'/app/config/agv/{agv_id}_config.yaml')
-    
-    # 從 AGV ID 提取 room_id
-    try:
-        room_id = int(agv_id[-2:])  # 取出最後兩位數字
-    except (ValueError, IndexError):
-        room_id = 1  # 預設值
+    # AGV_NAME 為新統一識別變量，AGV_ID 為向後兼容
+    agv_name = os.environ.get('AGV_NAME') or os.environ.get('AGV_ID', 'unloader01')
+    ros_namespace = f'/{agv_name}'  # 直接從 AGV_NAME 衍生
+    device_config_file = os.environ.get('DEVICE_CONFIG_FILE', f'/app/config/agv/{agv_name}_config.yaml')
+
+    # 從 AGV_NAME 提取 room_id（取末尾數字）
+    import re
+    match = re.search(r'(\d+)$', agv_name)
+    room_id = int(match.group(1)) if match else 1
 
     agv_command_file = "/app/agv_cmd_service_ws/src/agv_cmd_service/config/agv_cmd_service.yaml"
     agv_base_config = "/app/config/agv/base_config.yaml"
 
-    print(f"� Loader AGV Launch 配置:")
-    print(f"  AGV_ID: {agv_id}")
+    print(f"🚛 Unloader AGV Launch 配置:")
+    print(f"  AGV_NAME: {agv_name}")
     print(f"  ROS_NAMESPACE: {ros_namespace}")
     print(f"  DEVICE_CONFIG_FILE: {device_config_file}")
     print(f"  ROOM_ID: {room_id}")
@@ -58,7 +58,7 @@ def generate_launch_description():
             package='plc_proxy',
             executable='plc_service',
             name='plc_service',
-            namespace=agv_id,
+            namespace=agv_name,
             parameters=[device_config_file],
         ),
 
@@ -66,7 +66,7 @@ def generate_launch_description():
             package='joy_linux',
             executable='joy_linux_node',
             name='joy_linux_node',
-            namespace=agv_id,
+            namespace=agv_name,
             parameters=[{"dev": "/dev/input/js0"}],
         ),
 
@@ -74,7 +74,7 @@ def generate_launch_description():
            package='unloader_agv',
            executable='unloader_agv_node',
            name='agv_core_node',
-           namespace=agv_id,
+           namespace=agv_name,
            parameters=[{"room_id": room_id}],
         ),
     ])

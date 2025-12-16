@@ -1,6 +1,5 @@
 from agv_base.base_context import BaseContext
 from agv_base.states.state import State
-from loader_agv.robot_states.loader_robot_parameter import LoaderRobotParameter
 from agv_base.robot import Robot
 
 
@@ -24,8 +23,8 @@ class RobotContext(BaseContext):
     def __init__(self, initial_state: State):
         super().__init__(initial_state)
 
-        # Robot 狀態機參數
-        self.robot_parameter = LoaderRobotParameter()
+        # Robot 狀態機參數 (robot_states 已移除)
+        self.robot_parameter = None
         self.robot = Robot(self.node, self.robot_parameter)
 
         # BOXIN狀態
@@ -99,21 +98,8 @@ class RobotContext(BaseContext):
         self.take_cleaner_continue = False  # take cleaner 是否可以繼續
 
     def update_port_parameters(self):
-        """更新 RACK PORT 並同步參數"""
-        self.robot_parameter.loader_agv_port_front = self.get_loader_agv_port_front  # 更新 loader_agv_port_front
-        self.robot_parameter.loader_agv_port_side = self.get_loader_agv_port_side  # 更新 loader_agv_port_side
-        self.robot_parameter.boxin_port = self.get_boxin_port  # 更新 box_port
-        self.robot_parameter.soaker_port = self.get_soaker_port  # 更新 soaker_port
-        self.robot_parameter.cleaner_port = self.get_cleaner_port  # 更新 cleaner_port
-        self.robot_parameter.pre_dryer_port = self.get_pre_dryer_port  # 更新 pre_dryer_port
-        self.node.get_logger().debug(
-            f"更新參數: loader_agv_port_front={self.robot_parameter.loader_agv_port_front}, "
-            f"loader_agv_port_side={self.robot_parameter.loader_agv_port_side}, "
-            f"boxin_port={self.robot_parameter.boxin_port}, "
-            f"soaker_port={self.robot_parameter.soaker_port}, "
-            f"cleaner_port={self.robot_parameter.cleaner_port}, "
-            f"pre_dryer_port={self.robot_parameter.pre_dryer_port}"
-        )
-        # 同步更新參數
-        self.robot_parameter.calculate_parameter()  # 同步更新參數
-        self.robot.update_parameter()
+        """更新 RACK PORT 並同步參數 (robot_states 已移除，此方法保留但不執行)"""
+        if self.robot_parameter is None:
+            return
+        # robot_states 已移除，以下代碼不再執行
+        pass

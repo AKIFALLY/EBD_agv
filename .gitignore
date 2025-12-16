@@ -38,6 +38,9 @@ app/.agvc_identity
 app/.device_identity
 .env
 
+# 忽略本地設備配置目錄（每台設備獨立維護，不追蹤到 git）
+app/config/local/
+
 # 忽略 Node.js 依賴
 node_modules/
 

@@ -3,6 +3,32 @@
 # 包含設備識別、MAC 地址檢測和配置生成函數
 
 # ============================================================================
+# 自動載入設備身份（每次 source setup.bash 時自動執行）
+# ============================================================================
+_load_device_identity() {
+    # 優先載入 AGV 身份
+    if [ -f "/app/.agv_identity" ]; then
+        source /app/.agv_identity
+        export AGV_NAME AGV_ID AGV_TYPE ROS_NAMESPACE AGV_LAUNCH_PACKAGE DEVICE_CONFIG_FILE
+    fi
+
+    # 載入 AGVC 身份
+    if [ -f "/app/.agvc_identity" ]; then
+        source /app/.agvc_identity
+        export AGVC_ID AGVC_TYPE AGVC_ROLE ROS_NAMESPACE DEVICE_CONFIG_FILE AGVC_WORKSPACES
+    fi
+
+    # 載入通用設備身份
+    if [ -f "/app/.device_identity" ]; then
+        source /app/.device_identity
+        export DEVICE_ID CONTAINER_TYPE
+    fi
+}
+
+# 自動執行載入
+_load_device_identity
+
+# ============================================================================
 # 設備身份識別函數
 # ============================================================================
 

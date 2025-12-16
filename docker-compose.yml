@@ -5,6 +5,7 @@ services:
   rosagv:
     image: yazelin/agv:latest
     container_name: rosagv
+    entrypoint: []  # 覆蓋 image 的 ENTRYPOINT，避免與 command 衝突
     init: true  # 使用 Docker 的 init 進程，自動回收殭屍進程
     privileged: true # 給予容器完整的裝置存取權限
     devices:
@@ -20,3 +21,4 @@ services:
       - ~/EBD_agv/app:/app
     tty: true # 允許互動式終端
     stdin_open: true # 保持 STDIN 開啟
+    command: ["/bin/bash", "-c", "source /app/startup.agv.bash && exec /bin/bash"]

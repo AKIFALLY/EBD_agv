@@ -3910,51 +3910,59 @@ manage_agv_launch() {
                 fi
             fi
 
-            # 檢查 AGV_ID 是否已設置
-            if [[ -z "${AGV_ID}" ]]; then
-                echo "❌ 錯誤：AGV_ID 環境變數未設置"
+            # 檢查 AGV_NAME 或 AGV_ID 是否已設置
+            # AGV_NAME 為新統一識別變量，AGV_ID 保留向後兼容
+            local agv_name="${AGV_NAME:-${AGV_ID}}"
+            if [[ -z "$agv_name" ]]; then
+                echo "❌ 錯誤：AGV_NAME 或 AGV_ID 環境變數未設置"
                 echo ""
-                echo "📋 AGV_ID 必須明確設置才能啟動 AGV Launch 服務，以策安全。"
+                echo "📋 AGV_NAME（或 AGV_ID）必須明確設置才能啟動 AGV Launch 服務，以策安全。"
                 echo ""
                 echo "💡 解決方案："
-                echo "   1. 手動設置環境變數："
-                echo "      export AGV_ID=cargo01    # 或 loader02, unloader02"
+                echo "   1. 創建本地配置文件（推薦）："
+                echo "      mkdir -p /app/config/local"
+                echo "      echo 'agv_name: \"loader02\"' > /app/config/local/device.yaml"
                 echo ""
-                echo "   2. 檢查設備硬體配置："
-                echo "      cat /home/ct/RosAGV/app/config/device_mappings.yaml"
+                echo "   2. 手動設置環境變數："
+                echo "      export AGV_NAME=cargo01    # 或 loader02, unloader02"
                 echo ""
-                echo "   3. 支援的 AGV_ID 值："
+                echo "   3. 支援的設備名稱："
                 echo "      - cargo*     → cargo_mover_agv"
                 echo "      - loader*    → loader_agv"
                 echo "      - unloader*  → unloader_agv"
                 echo ""
-                echo "📚 詳細文檔: /home/ct/RosAGV/docs/node-management-system.md"
+                echo "📚 詳細文檔: /app/config/local.example/README.md"
                 return 1
             fi
 
-            # 讀取 AGV_ID 環境變數（必須）
-            local agv_id="${AGV_ID}"
+            # 使用統一的 agv_name 變量
+            local agv_id="$agv_name"
             local package_name=""
 
-            # 根據 agv_id 確定 package
-            case "$agv_id" in
-                cargo*)
-                    package_name="cargo_mover_agv"
-                    ;;
-                loader*)
-                    package_name="loader_agv"
-                    ;;
-                unloader*)
-                    package_name="unloader_agv"
-                    ;;
-                *)
-                    echo "❌ 未知的 AGV_ID: $agv_id"
-                    echo "💡 請設置環境變數 AGV_ID 為: cargo01, loader02, 或 unloader02"
-                    return 1
-                    ;;
-            esac
+            # 優先使用環境變數 AGV_LAUNCH_PACKAGE（由設備識別腳本設置）
+            if [[ -n "${AGV_LAUNCH_PACKAGE}" ]]; then
+                package_name="${AGV_LAUNCH_PACKAGE}"
+            else
+                # 否則根據 agv_name 確定 package
+                case "$agv_id" in
+                    cargo*)
+                        package_name="cargo_mover_agv"
+                        ;;
+                    loader*)
+                        package_name="loader_agv"
+                        ;;
+                    unloader*)
+                        package_name="unloader_agv"
+                        ;;
+                    *)
+                        # 預設使用 loader_agv
+                        package_name="loader_agv"
+                        echo "⚠️ 未匹配標準命名，預設使用 loader_agv"
+                        ;;
+                esac
+            fi
 
-            echo "📍 AGV ID: $agv_id"
+            echo "📍 AGV_NAME: $agv_name"
             echo "📦 Package: $package_name"
             echo "🎯 Action: ros2 launch $package_name launch.py"
             echo ""
@@ -4236,8 +4244,9 @@ manage_agv_launch() {
             echo "  logs    - 查看實時日誌（tail -f）"
             echo ""
             echo "環境需求:"
-            echo "  - AGV_ID 環境變數必須設置（cargo01/loader02/unloader02）"
-            echo "  - 當前 AGV_ID: ${AGV_ID:-未設置}"
+            echo "  - AGV_NAME（或 AGV_ID）環境變數必須設置"
+            echo "  - 推薦使用本地配置文件: /app/config/local/device.yaml"
+            echo "  - 當前 AGV_NAME: ${AGV_NAME:-${AGV_ID:-未設置}}"
             echo ""
             echo "示例:"
             echo "  manage_agv_launch start    # 啟動服務"

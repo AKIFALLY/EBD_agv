@@ -3,12 +3,12 @@
 # debugpy.listen(("0.0.0.0", 5678))  # 監聽 Debug 連線
 # debugpy.wait_for_client()  # 等待 VS Code 連線
 # print("Debugger attached!")
+import os
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter  # Import Parameter class
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import SingleThreadedExecutor
-from agv_base.hokuyo_dms_8bit import HokuyoDMS8Bit
 import agv_base.states.auto_state
 import agv_base.states.error_state
 import agv_base.states.idle_state
@@ -20,7 +20,6 @@ from agv_base.agv_node_base import AgvNodebase
 from agv_base.base_context import BaseContext
 from loader_agv.loader_context import LoaderContext
 from loader_agv.robot_context import RobotContext
-import loader_agv.robot_states.idle_state
 from loader_agv.status_json_recorder import LoaderAgvStatusJsonRecorder
 # AGVs 和 TaskMsg 現在由 AgvNodebase 提供
 
@@ -34,14 +33,12 @@ class AgvCoreNode(AgvNodebase):
         self.setup_agv_subscription()
 
         self.robot = Robot(self, parameter=None)
-        self.hokuyo_dms_8bit_1 = HokuyoDMS8Bit(
-            self, "/app/config/hokuyo_dms_config.yaml", "hokuyo_dms_loader02")
 
         self.base_context = BaseContext(
             agv_base.states.idle_state.IdleState(self))
         self.loader_context = LoaderContext(MissionSelectState(self))
         self.robot_context = RobotContext(
-            loader_agv.robot_states.idle_state.IdleState(self))
+            agv_base.states.idle_state.IdleState(self))
 
         # 🔍 [DEBUG] 验證 Context 類型 - 诊斷 context_name 问題
         self.get_logger().info(
@@ -141,7 +138,7 @@ class AgvCoreNode(AgvNodebase):
             pass
 
     def robot_after_handle(self, state):
-        if isinstance(state, loader_agv.robot_states.idle_state.IdleState):
+        if isinstance(state, agv_base.states.idle_state.IdleState):
             # self.get_logger().info("[Robot]-Idle")
             # self.robot_context.handle()
             pass
@@ -154,7 +151,8 @@ class AgvCoreNode(AgvNodebase):
             
         try:
             # 使用包含 AGV ID 的檔案名稱，統一格式
-            agv_id = self.agv_id if hasattr(self, 'agv_id') and self.agv_id else "loader01"
+            default_agv_name = os.environ.get('AGV_NAME') or os.environ.get('AGV_ID', 'loader01')
+            agv_id = self.agv_id if hasattr(self, 'agv_id') and self.agv_id else default_agv_name
             filename = f"agv_status_{agv_id}.json"
 
             # 靜默更新 JSON 狀態文件

@@ -1,0 +1,55 @@
+# RosAGV 設備本地配置範本
+#
+# 使用方式：
+# 1. 複製此文件到 /app/config/local/device.yaml
+#    mkdir -p /app/config/local
+#    cp /app/config/local.example/device.yaml /app/config/local/device.yaml
+#
+# 2. 編輯 agv_name 為實際設備名稱
+#
+# 3. 重新啟動容器使配置生效
+#
+# 注意：/app/config/local/ 目錄不被 git 追蹤，每台設備獨立維護
+
+# =============================================================================
+# 核心識別變量（必填）
+# =============================================================================
+# 支援的 AGV 名稱：
+#   - loader01, loader02     → 裝載型 AGV
+#   - cargo01, cargo02       → 貨物搬運型 AGV
+#   - unloader01, unloader02 → 卸載型 AGV
+#   - agvc01                 → AGVC 控制系統
+#
+agv_name: "AGV03"
+
+# =============================================================================
+# 可選覆蓋項（一般情況下無需修改，系統會自動衍生）
+# =============================================================================
+# 取消註釋以覆蓋自動衍生值
+#
+# overrides:
+#   # ROS2 啟動套件名稱
+#   # 自動衍生規則：loader* → loader_agv, cargo* → cargo_mover_agv, unloader* → unloader_agv
+#   launch_package: "loader_agv"
+#
+#   # 設備配置文件名稱（不含路徑）
+#   # 自動衍生規則：${agv_name}_config.yaml
+#   config_file: "loader02_config.yaml"
+#
+#   # 房間 ID
+#   # 自動衍生規則：從 agv_name 末兩位數字提取（如 loader02 → 2）
+#   room_id: 2
+
+# =============================================================================
+# AGVC 專用配置（僅 AGVC 容器需要）
+# =============================================================================
+# 若 agv_name 為 agvc* 開頭，以下配置生效
+#
+# agvc_settings:
+#   role: "primary"          # primary / secondary
+#   workspaces:              # 載入的工作空間列表
+#     - "db_proxy_ws"
+#     - "web_api_ws"
+#     - "ecs_ws"
+#     - "rcs_ws"
+#     - "kuka_wcs_ws"
