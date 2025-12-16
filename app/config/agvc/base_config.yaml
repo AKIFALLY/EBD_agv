@@ -10,6 +10,7 @@ base_agvc_parameters:
     timeout_threshold: 30.0          # 超時閾值 (s)
     
   network:
+    agvc_server_ip: "192.168.12.99"   # AGVC 伺服器 IP 位址
     zenoh_router_port: 7447          # Zenoh Router 端口
     web_api_port: 8000               # Web API 端口
 

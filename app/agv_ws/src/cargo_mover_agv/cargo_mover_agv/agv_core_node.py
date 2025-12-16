@@ -34,9 +34,8 @@ import cargo_mover_agv.robot_states.idle_state
 class AgvCoreNode(AgvNodebase):
     def __init__(self, node_name='agv_node_base', **kwargs):
         super().__init__(node_name=node_name, **kwargs)
-        # 使用共用方法設置參數和訂閱
+        # 使用共用方法設置參數
         self.setup_common_parameters()
-        self.setup_agv_subscription()
 
         self.robot = Robot(self, parameter=None)
         self.hokuyo_dms_8bit_1 = HokuyoDMS8Bit(
@@ -161,8 +160,6 @@ class AgvCoreNode(AgvNodebase):
             # self.get_logger().info("[Robot]-Idle")
             # self.robot_context.handle()
             pass
-
-    # agvs_callback 現在由 AgvNodebase 提供
 
     # ==================== JSON 狀態記錄功能 ====================
 

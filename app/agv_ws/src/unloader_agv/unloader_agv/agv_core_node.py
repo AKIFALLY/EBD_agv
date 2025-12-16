@@ -31,9 +31,8 @@ class AgvCoreNode(AgvNodebase):
     def __init__(self, node_name='agv_node_base', **kwargs):
         super().__init__(node_name=node_name, **kwargs)
 
-        # 使用共用方法設置參數和訂閱
+        # 使用共用方法設置參數
         self.setup_common_parameters()
-        self.setup_agv_subscription()
 
         self.robot = Robot(self, parameter=None)
         self.hokuyo_dms_8bit_1 = HokuyoDMS8Bit(
@@ -151,8 +150,6 @@ class AgvCoreNode(AgvNodebase):
             self.get_logger().error(f"❌ 定時更新 Unloader AGV JSON 狀態文件失敗: {e}")
             import traceback
             self.get_logger().error(f"❌ 錯誤詳細堆疊: {traceback.format_exc()}")
-
-    # agvs_callback 現在由 AgvNodebase 提供
 
 
 def main():
