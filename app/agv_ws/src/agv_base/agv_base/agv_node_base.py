@@ -37,14 +37,13 @@ class AgvNodebase(Node):
         # 等待服務可用
 
         # ✅ 初始化 BaseContext 的狀態類變數（如果尚未初始化）
-        if BaseContext.IdleState is None:
-            from agv_base.agv_states.idle_state import IdleState as IdleStateClass
+        # 注意：AGV 層不使用 IdleState，直接從 MissionSelectState 開始
+        if BaseContext.MissionSelectState is None:
             from agv_base.agv_states.mission_select_state import MissionSelectState
             from agv_base.agv_states.write_path_state import WritePathState
             from agv_base.agv_states.Running_state import RunningState
             from agv_base.agv_states.wait_robot_state import WaitRobotState
 
-            BaseContext.IdleState = IdleStateClass
             BaseContext.MissionSelectState = MissionSelectState
             BaseContext.WritePathState = WritePathState
             BaseContext.RunningState = RunningState
@@ -76,13 +75,15 @@ class AgvNodebase(Node):
         self.pathdata = None  # 路徑資料
         self.mission_id = None  # 任務ID (已廢棄，保留向後兼容，請使用 self.task.id)
         self.node_id = None  # 任務目標節點
-        self.agv_id = 0  # AGV ID (數據庫 agv 表主键)
+        self.agv_id = 0  # AGV ID (數據庫 agv 表主键，已廢棄)
+        self.agv_name = self.get_namespace().lstrip('/')  # AGV 名稱 (例如 "loader01")
         self.robot_finished = False  # 機器人是否完成動作
         self.task = TaskMsg()
 
         # 全局 tasks 相關變數（使用 Web API 輪詢）
         self.latest_tasks = []  # 全局任務列表（所有狀態共享）
         self.last_tasks_fetch_time = None  # 最後取得 tasks 的時間
+        self.last_tasks_callback_time = None  # 向後兼容：MissionSelectState 使用此變數名稱
         self.last_tasks_log_time = None  # 最後輸出 tasks 日誌的時間
         self.tasks_api_interval = 2.0  # Web API 輪詢間隔（秒）
 
@@ -576,8 +577,30 @@ class AgvNodebase(Node):
         )
 
     def _fetch_tasks_from_api(self):
-        """從 AGVC Web API 取得任務列表"""
+        """從 AGVC Web API 取得任務列表
+
+        只在 Base=AutoState 且 AGV=MissionSelectState 時才執行查詢
+        """
         import time
+        from agv_base.states.auto_state import AutoState
+        from agv_base.agv_states.mission_select_state import MissionSelectState
+
+        # 🔒 狀態檢查：只在特定狀態下才查詢 task
+        # 檢查 Base 層是否為 AutoState
+        if not isinstance(self.base_context.state, AutoState):
+            return
+
+        # 檢查 AGV 層是否為 MissionSelectState
+        agv_context = None
+        if hasattr(self, 'loader_context'):
+            agv_context = self.loader_context
+        elif hasattr(self, 'unloader_context'):
+            agv_context = self.unloader_context
+        elif hasattr(self, 'cargo_context'):
+            agv_context = self.cargo_context
+
+        if agv_context is None or not isinstance(agv_context.state, MissionSelectState):
+            return
 
         try:
             # 取得當前 AGV 的 namespace 作為 agv_name
@@ -593,6 +616,7 @@ class AgvNodebase(Node):
                 tasks_data = response.json()
                 self._handle_api_tasks_response(tasks_data)
                 self.last_tasks_fetch_time = time.time()
+                self.last_tasks_callback_time = self.last_tasks_fetch_time  # 同步更新（向後兼容）
 
                 # 每 5 秒輸出一次日誌
                 current_time = time.time()
