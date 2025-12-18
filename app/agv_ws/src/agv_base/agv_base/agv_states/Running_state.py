@@ -29,16 +29,20 @@ class RunningState(State):
     def leave(self):
         self.node.get_logger().info("🚪 AGV 離開 Running 狀態")
 
-        # 離開前將訂閱到的task表利用agv_id搜尋到當前執行的整個任務欄位丟進self.node.task
+        # 離開前將訂閱到的task表利用agv_name搜尋到當前執行的整個任務欄位丟進self.node.task
         # 新增 status_id 為 2 (READY_TO_EXECUTE) 或 3 (EXECUTING) 的判斷條件
+        # 注意：tasks 現在是 dict 列表
         if self.node.latest_tasks:
             from shared_constants.task_status import TaskStatus
             for task in self.node.latest_tasks:
-                if (task.agv_id == self.node.agv_id and
-                    (task.status_id == TaskStatus.READY_TO_EXECUTE or
-                     task.status_id == TaskStatus.EXECUTING)):
+                task_agv_name = task.get('agv_name') if isinstance(task, dict) else getattr(task, 'agv_name', '')
+                task_status_id = task.get('status_id') if isinstance(task, dict) else getattr(task, 'status_id', 0)
+                if (task_agv_name == self.node.agv_name and
+                    (task_status_id == TaskStatus.READY_TO_EXECUTE or
+                     task_status_id == TaskStatus.EXECUTING)):
                     self.node.task = task
-                    self.node.get_logger().info(f"⚠️ 離開前印出當前任務 (status_id={task.status_id}): " + str(self.node.task))
+                    task_id = task.get('id') if isinstance(task, dict) else getattr(task, 'id', 0)
+                    self.node.get_logger().info(f"⚠️ 離開前印出當前任務 (status_id={task_status_id}): task_id={task_id}")
                     break
 
         # 全局訂閱不需移除，由 agv_node_base 管理
@@ -61,14 +65,18 @@ class RunningState(State):
 
             # 在跳轉前先抓取 task，避免因為直接跳出而沒抓到
             # 新增 status_id 為 2 (READY_TO_EXECUTE) 或 3 (EXECUTING) 的判斷條件
+            # 注意：tasks 現在是 dict 列表
             if self.node.latest_tasks:
                 from shared_constants.task_status import TaskStatus
                 for task in self.node.latest_tasks:
-                    if (task.agv_id == self.node.agv_id and
-                        (task.status_id == TaskStatus.READY_TO_EXECUTE or
-                         task.status_id == TaskStatus.EXECUTING)):
+                    task_agv_name = task.get('agv_name') if isinstance(task, dict) else getattr(task, 'agv_name', '')
+                    task_status_id = task.get('status_id') if isinstance(task, dict) else getattr(task, 'status_id', 0)
+                    if (task_agv_name == self.node.agv_name and
+                        (task_status_id == TaskStatus.READY_TO_EXECUTE or
+                         task_status_id == TaskStatus.EXECUTING)):
                         self.node.task = task
-                        self.node.get_logger().info(f"✅ 進入 WaitRobot 前抓取任務 (status_id={task.status_id}): " + str(task.id))
+                        task_id = task.get('id') if isinstance(task, dict) else getattr(task, 'id', 0)
+                        self.node.get_logger().info(f"✅ 進入 WaitRobot 前抓取任務 (status_id={task_status_id}): task_id={task_id}")
                         break
 
             # 重置機器人完成狀態，進入 WaitRobot 統一判斷
@@ -85,23 +93,30 @@ class RunningState(State):
 
         if self.node.agv_status.AGV_2POSITION:
             self.node.get_logger().info("✅ AGV 到達目標位置")
-            
+
             # 在跳轉前先抓取 task，避免因為直接跳出而沒抓到
             # 新增 status_id 為 2 (READY_TO_EXECUTE) 或 3 (EXECUTING) 的判斷條件
+            # 注意：tasks 現在是 dict 列表
             task_found = False
+            found_task_id = 0
             if self.node.latest_tasks:
                 from shared_constants.task_status import TaskStatus
                 for task in self.node.latest_tasks:
-                    if (task.agv_id == self.node.agv_id and
-                        (task.status_id == TaskStatus.READY_TO_EXECUTE or
-                         task.status_id == TaskStatus.EXECUTING)):
+                    task_agv_name = task.get('agv_name') if isinstance(task, dict) else getattr(task, 'agv_name', '')
+                    task_status_id = task.get('status_id') if isinstance(task, dict) else getattr(task, 'status_id', 0)
+                    if (task_agv_name == self.node.agv_name and
+                        (task_status_id == TaskStatus.READY_TO_EXECUTE or
+                         task_status_id == TaskStatus.EXECUTING)):
                         self.node.task = task
-                        self.node.get_logger().info(f"✅ 跳轉前抓取任務 (status_id={task.status_id}): " + str(task.id))
+                        found_task_id = task.get('id') if isinstance(task, dict) else getattr(task, 'id', 0)
+                        self.node.get_logger().info(f"✅ 跳轉前抓取任務 (status_id={task_status_id}): task_id={found_task_id}")
                         task_found = True
                         break
-            
+
             # 檢查 task id，如果為 0 則不進入 waitrobot
-            if task_found and hasattr(self.node, 'task') and self.node.task and self.node.task.id != 0:
+            # 注意：task 現在是 dict 格式
+            current_task_id = self.node.task.get('id', 0) if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
+            if task_found and hasattr(self.node, 'task') and self.node.task and current_task_id != 0:
                 self.node.robot_finished = False  # 重置機器人完成狀態
                 context.set_state(context.WaitRobotState(self.node))
             else:
@@ -109,14 +124,17 @@ class RunningState(State):
                 self.node.get_logger().warn(
                     f"⚠️ 任務 ID 為 0 或沒有找到有效任務，回到任務選擇狀態"
                     f"\n  - latest_tasks 數量: {len(self.node.latest_tasks)}"
-                    f"\n  - 當前 AGV ID: {self.node.agv_id}"
+                    f"\n  - 當前 AGV Name: {self.node.agv_name}"
                     f"\n  - task_found: {task_found}"
                 )
                 # 增加診斷資訊：顯示前3個任務狀態
                 if self.node.latest_tasks:
                     for idx, t in enumerate(self.node.latest_tasks[:3]):
+                        t_id = t.get('id') if isinstance(t, dict) else getattr(t, 'id', 0)
+                        t_agv_name = t.get('agv_name') if isinstance(t, dict) else getattr(t, 'agv_name', '')
+                        t_status_id = t.get('status_id') if isinstance(t, dict) else getattr(t, 'status_id', 0)
                         self.node.get_logger().warn(
-                            f"  - Task[{idx}] id={t.id}, agv_id={t.agv_id}, status_id={t.status_id}"
+                            f"  - Task[{idx}] id={t_id}, agv_name={t_agv_name}, status_id={t_status_id}"
                         )
 
                 # 跳轉回任務選擇狀態
@@ -134,8 +152,12 @@ class RunningState(State):
         if not self.node.latest_tasks or not hasattr(self.node, 'task') or not self.node.task:
             return None
 
+        # 取得當前任務 ID（支援 dict 格式）
+        current_task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
+
         for task in self.node.latest_tasks:
-            if task.id == self.node.task.id:
+            task_id = task.get('id') if isinstance(task, dict) else getattr(task, 'id', 0)
+            if task_id == current_task_id:
                 return task
         return None
 
@@ -148,11 +170,15 @@ class RunningState(State):
         if not current_task:
             return
 
+        # 取得任務屬性（支援 dict 格式）
+        task_status_id = current_task.get('status_id') if isinstance(current_task, dict) else getattr(current_task, 'status_id', 0)
+        task_id = current_task.get('id') if isinstance(current_task, dict) else getattr(current_task, 'id', 0)
+
         # 檢查狀態是否一致，不一致則直接修正
-        if current_task.status_id != TaskStatus.EXECUTING:
+        if task_status_id != TaskStatus.EXECUTING:
             self.node.get_logger().warn(
-                f"⚠️ 狀態不一致！Running 狀態但 task.status={current_task.status_id}，應為 3 (EXECUTING)\n"
-                f"  - task_id: {current_task.id}\n"
+                f"⚠️ 狀態不一致！Running 狀態但 task.status={task_status_id}，應為 3 (EXECUTING)\n"
+                f"  - task_id: {task_id}\n"
                 f"  - 立即執行修正"
             )
             self._correct_task_status()
@@ -161,13 +187,19 @@ class RunningState(State):
         """修正任務狀態為 EXECUTING (3)"""
         from shared_constants.task_status import TaskStatus
 
-        self.node.task.status_id = TaskStatus.EXECUTING
+        # 更新任務狀態（支援 dict 格式）
+        if isinstance(self.node.task, dict):
+            self.node.task['status_id'] = TaskStatus.EXECUTING
+        else:
+            self.node.task.status_id = TaskStatus.EXECUTING
+
         self.agvdbclient.async_update_task(
             self.node.task,
             self._status_correction_callback
         )
+        task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
         self.node.get_logger().info(
-            f"🔧 自動修正任務狀態為 EXECUTING (task_id={self.node.task.id})"
+            f"🔧 自動修正任務狀態為 EXECUTING (task_id={task_id})"
         )
 
     def _status_correction_callback(self, response):

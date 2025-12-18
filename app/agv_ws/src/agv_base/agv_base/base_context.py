@@ -9,7 +9,7 @@ class BaseContext(ContextABC):
     """ 實作完整邏輯的狀態機 Context """
 
     # 状态类引用（类变量，子类可覆写以实现多态）
-    IdleState = None
+    # 注意：AGV 層不使用 IdleState，直接從 MissionSelectState 開始
     MissionSelectState = None
     WritePathState = None
     RunningState = None
@@ -18,10 +18,6 @@ class BaseContext(ContextABC):
     def __init__(self, initial_state: State):
         # 🔧 延迟导入并设置默认状态类（避免循环导入）
         # 子类可在 __init__ 中覆写这些类变量以实现多态
-        if self.__class__.IdleState is None:
-            from agv_base.agv_states.idle_state import IdleState
-            self.__class__.IdleState = IdleState
-
         if self.__class__.MissionSelectState is None:
             from agv_base.agv_states.mission_select_state import MissionSelectState
             self.__class__.MissionSelectState = MissionSelectState

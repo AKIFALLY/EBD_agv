@@ -164,7 +164,9 @@ class WritePathState(State):
 
                         # 如果是最後一個點，則使用站點ID，否則使用act[0]
                         if y:  # 最後一個點
-                            if self.node.agv_status.MAGIC == 21 or self.node.task.work_id == 21:
+                            # 取得 work_id（支援 dict 格式）
+                            task_work_id = self.node.task.get('work_id', 0) if isinstance(self.node.task, dict) else getattr(self.node.task, 'work_id', 0)
+                            if self.node.agv_status.MAGIC == 21 or task_work_id == 21:
                                 self.dataValue[i*20+2] = 21  # MAGIC=21 或 work_id=21 特殊處理：最後一個點直接給21
                                 reason = "MAGIC=21" if self.node.agv_status.MAGIC == 21 else "work_id=21"
                                 self.node.get_logger().info(f"✅ {reason} 特殊模式：最後一個點設定 dataValue[{i*20+2}] = 21")
@@ -217,8 +219,13 @@ class WritePathState(State):
             # 更新tasks table的狀態
             # MAGIC=21 或 work_id=21 特殊處理：不更改 task status 為 3
             if self.node.agv_status.MAGIC != 21 :
-                self.node.task.status_id = 3  # 更新狀態為執行中
-                self.node.task.agv_id = self.node.agv_id  # 更新AGV ID (数据库外键)
+                # 更新任務狀態（支援 dict 格式）
+                if isinstance(self.node.task, dict):
+                    self.node.task['status_id'] = 3  # 更新狀態為執行中
+                    self.node.task['agv_name'] = self.node.agv_name  # 更新 AGV Name
+                else:
+                    self.node.task.status_id = 3  # 更新狀態為執行中
+                    self.node.task.agv_name = self.node.agv_name  # 更新 AGV Name
 
                 # 設置等待狀態
                 self.waiting_for_task_update = True
@@ -230,8 +237,10 @@ class WritePathState(State):
                     self.node.task, self.task_update_callback
                 )
 
+                # 取得 task_id（支援 dict 格式）
+                task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
                 self.node.get_logger().info(
-                    f"⏳ 開始更新任務狀態 (task_id={self.node.task.id})，等待回應..."
+                    f"⏳ 開始更新任務狀態 (task_id={task_id})，等待回應..."
                 )
 
                 # 創建超時計時器（3秒）

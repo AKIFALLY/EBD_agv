@@ -4,6 +4,7 @@ import json
 from std_msgs.msg import String
 from rclpy.node import Node
 import time
+import requests
 
 
 class MissionSelectState(State):
@@ -77,14 +78,21 @@ class MissionSelectState(State):
         if self.count > 30:
             self.count = 0
 
+            # 🔍 診斷：檢查 latest_tasks 狀態
+            self.node.get_logger().info(
+                f"🔍 [診斷] latest_tasks 狀態: "
+                f"exists={self.node.latest_tasks is not None}, "
+                f"len={len(self.node.latest_tasks) if self.node.latest_tasks else 0}"
+            )
+
             # 🔍 【新增】在檢查離開條件之前，先確保從 task table 中搜尋該 AGV 的任務資料
             if self.node.latest_tasks and len(self.node.latest_tasks) > 0:
                 has_task = self._process_tasks(self.node.latest_tasks)
                 if not has_task and not hasattr(self.node, 'task'):
                     # 沒有找到任務且 node.task 也不存在，記錄警告
-                    self.node.get_logger().debug("🔍 未找到屬於該 AGV 的任務")
+                    self.node.get_logger().info("🔍 未找到屬於該 AGV 的任務")
                 elif has_task:
-                    self.node.get_logger().debug(f"🔍 確認任務資料: task_id={getattr(self.node.task, 'id', 'None')}")
+                    self.node.get_logger().info(f"🔍 確認任務資料: task_id={getattr(self.node.task, 'id', 'None')}")
 
             # 🔒 【狀態轉換守衛】檢查 Base 層狀態，只有在 Auto 狀態時才允許 AGV 層狀態轉換
             if not self._is_base_auto_state():
@@ -99,9 +107,10 @@ class MissionSelectState(State):
             # 如果已經有路徑
             if self.node.agv_status.AGV_PATH:
                 # ⚠️ 【改善】檢查是否有有效任務資料（task_id 不能為 0）
-                if (hasattr(self.node, 'task') and self.node.task and
-                    hasattr(self.node.task, 'id') and self.node.task.id != 0):
-                    self.node.get_logger().info(f"✅ AGV 已有路徑資料且有任務資料 (task_id={self.node.task.id})，離開 Mission Select 狀態")
+                # 注意：task 現在是 dict 格式
+                task_id = self.node.task.get('id', 0) if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
+                if hasattr(self.node, 'task') and self.node.task and task_id != 0:
+                    self.node.get_logger().info(f"✅ AGV 已有路徑資料且有任務資料 (task_id={task_id})，離開 Mission Select 狀態")
 
                     context.set_state(context.RunningState(self.node))  # 切換狀態
                 else:
@@ -112,25 +121,36 @@ class MissionSelectState(State):
                 task = self.highest_priority_task
                 from shared_constants.task_status import TaskStatus
 
-                # 檢查任務狀態：status=3 且無路徑 → 根據 MISSION_CANCEL 決定行為
-                if task.status_id == TaskStatus.EXECUTING and not self.node.agv_status.AGV_PATH:
-                    # 如果 MISSION_CANCEL=1，進入 WritePathState 重新規劃路徑
+                # 取得任務狀態和 ID（支援 dict 格式）
+                task_status_id = task.get('status_id') if isinstance(task, dict) else getattr(task, 'status_id', 0)
+                task_id = task.get('id') if isinstance(task, dict) else getattr(task, 'id', 0)
+
+                # 檢查任務狀態：判斷是否為「任務開始」狀態
+                if TaskStatus.is_task_start_status(task_status_id):
+                    # status=1, 11, 13, 21 → 任務開始，進入 WritePathState 寫入路徑
+                    self.node.get_logger().info(
+                        f"✅ 任務開始 (status={task_status_id}): task_id={task_id}，進入 WritePathState"
+                    )
+                    context.set_state(context.WritePathState(self.node))
+                elif TaskStatus.is_task_executing_status(task_status_id) and not self.node.agv_status.AGV_PATH:
+                    # 執行中狀態但無路徑 → 根據 MISSION_CANCEL 決定行為
                     if self.node.agv_status.MISSION_CANCEL == 1:
                         self.node.get_logger().info(
-                            f"🔄 任務取消標記啟動 (task_id={task.id}, MISSION_CANCEL=1)，進入 WritePathState 重新規劃路徑"
+                            f"🔄 任務取消標記啟動 (task_id={task_id}, MISSION_CANCEL=1)，進入 WritePathState 重新規劃路徑"
                         )
                         context.set_state(context.WritePathState(self.node))
                     else:
                         # MISSION_CANCEL≠1，進入 WaitRobot 統一判斷
                         self.node.get_logger().info(
-                            f"⚠️ 任務執行中但無路徑 (task_id={task.id}, status=3)，進入 WaitRobot 統一判斷"
+                            f"⚠️ 任務執行中但無路徑 (task_id={task_id}, status={task_status_id})，進入 WaitRobot 統一判斷"
                         )
                         self.node.robot_finished = False  # 重置機器人完成狀態
                         context.set_state(context.WaitRobotState(self.node))
                 else:
-                    # status=1,2 或其他情況 → 正常寫路徑
-                    self.node.get_logger().info(f"✅ 選擇任務 (status={task.status_id}): {task}")
-                    context.set_state(context.WritePathState(self.node))  # 切換狀態
+                    # 其他情況（不應該發生）
+                    self.node.get_logger().warn(
+                        f"⚠️ 未預期的任務狀態 (status={task_status_id}): task_id={task_id}"
+                    )
 
             # 如果HMI有設定Magic跟終點設定
             elif self.localMission and not self.node.agv_status.AGV_PATH:
@@ -150,34 +170,139 @@ class MissionSelectState(State):
         from agv_base.states.auto_state import AutoState
         return isinstance(self.node.base_context.state, AutoState)
 
+    def _get_node_id_from_port(self, to_port: str) -> int:
+        """
+        透過 to_port 查詢對應的 node_id（用於 A* 路徑規劃）
 
+        API: GET /api/v1/eqp_port/by-name/{name}
+        回應格式: {"id": 0, "name": "string", "eqp_name": "string", "node": "string", ...}
+
+        Args:
+            to_port: 目標端口名稱 (例如: "2011", "3021")
+
+        Returns:
+            int: 對應的 node_id，查詢失敗時返回 0
+        """
+        if not to_port or to_port == 'na':
+            self.node.get_logger().warn(f"⚠️ _get_node_id_from_port: to_port 為空或無效 ({to_port})")
+            return 0
+
+        try:
+            # 使用 eqp_port API 查詢
+            url = f"{self.node.agvc_api_base_url}/api/v1/eqp_port/by-name/{to_port}"
+            response = requests.get(url, timeout=5.0)
+
+            if response.status_code == 200:
+                result = response.json()
+                # API 回應包含 "node" 欄位（字串型別）
+                node_str = result.get('node', '')
+                if node_str:
+                    try:
+                        node_id = int(node_str)
+                        self.node.get_logger().info(
+                            f"✅ _get_node_id_from_port: to_port={to_port} → node_id={node_id}"
+                        )
+                        return node_id
+                    except ValueError:
+                        self.node.get_logger().warn(
+                            f"⚠️ _get_node_id_from_port: node 值無法轉換為整數 (node={node_str})"
+                        )
+                        return 0
+                else:
+                    self.node.get_logger().warn(
+                        f"⚠️ _get_node_id_from_port: 回應中無 node 欄位 (to_port={to_port})"
+                    )
+                    return 0
+            elif response.status_code == 404:
+                self.node.get_logger().warn(
+                    f"⚠️ _get_node_id_from_port: 查無 eqp_port (to_port={to_port})"
+                )
+                return 0
+            else:
+                self.node.get_logger().error(
+                    f"❌ _get_node_id_from_port: API 查詢失敗 HTTP {response.status_code}"
+                )
+                return 0
+
+        except requests.exceptions.Timeout:
+            self.node.get_logger().warn(f"⚠️ _get_node_id_from_port: 查詢逾時 (to_port={to_port})")
+            return 0
+        except requests.exceptions.ConnectionError:
+            self.node.get_logger().warn(f"⚠️ _get_node_id_from_port: 連接失敗 ({self.node.agvc_api_base_url})")
+            return 0
+        except Exception as e:
+            self.node.get_logger().error(f"❌ _get_node_id_from_port: 查詢異常 - {e}")
+            return 0
 
     # tasks_callback 已移除，改用 agv_node_base 的全局訂閱
     # 全局回調會自動更新 self.node.latest_tasks 和 self.node.last_tasks_callback_time
         
     def _process_tasks(self, tasks):
-        """處理任務篩選邏輯"""
-        # 篩選已執行卻未完成的任務 或是未執行但AGV已選擇
-        # 新增 status_id 為 2 (READY_TO_EXECUTE) 或 3 (EXECUTING) 的判斷條件
+        """處理任務篩選邏輯（適配新任務表結構）
+
+        篩選條件:
+        - agv_name 匹配本 AGV
+        - status_id 為任務開始或執行中狀態（非完成狀態）
+
+        任務開始狀態 (需要寫入路徑):
+        - 1: FROM_TO_START (From->To 任務開始)
+        - 11: FROM_ONLY_START (僅 From 任務開始)
+        - 13: TO_ONLY_START (僅 To 任務開始)
+        - 21: PATH_START (Path 任務開始)
+
+        執行中狀態:
+        - 2, 3, 4: FROM_EXECUTING, FROM_COMPLETE, TO_EXECUTING
+        - 12: FROM_ONLY_EXECUTING
+        - 14: TO_ONLY_EXECUTING
+        - 22: PATH_EXECUTING
+        """
         from shared_constants.task_status import TaskStatus
+
+        # 🔍 顯示每個任務的判斷過程
+        self.node.get_logger().info(f"🔍 任務篩選開始 (共 {len(tasks)} 筆)")
+        for idx, t in enumerate(tasks):
+            task_id = t.get('id', 0)
+            task_agv_name = t.get('agv_name', '')
+            task_status_id = t.get('status_id', 0)
+            is_start = TaskStatus.is_task_start_status(task_status_id)
+            is_executing = TaskStatus.is_task_executing_status(task_status_id)
+            agv_match = (task_agv_name == self.node.agv_name)
+            status_match = is_start or is_executing
+
+            self.node.get_logger().info(
+                f"   [{idx}] task_id={task_id}, agv_name={task_agv_name}, status_id={task_status_id} | "
+                f"agv_match={agv_match}, is_start={is_start}, is_executing={is_executing} → {'✅ 符合' if (agv_match and status_match) else '❌ 不符合'}"
+            )
+
+        # 篩選分配給本 AGV 且非完成狀態的任務
         running_tasks = [
             t for t in tasks
-            if (t.status_id == TaskStatus.READY_TO_EXECUTE or
-                t.status_id == TaskStatus.EXECUTING or
-                t.status_id == TaskStatus.PENDING) and t.agv_id == self.node.agv_id
+            if t.get('agv_name') == self.node.agv_name and
+               (TaskStatus.is_task_start_status(t.get('status_id', 0)) or
+                TaskStatus.is_task_executing_status(t.get('status_id', 0)))
         ]
+
+        self.node.get_logger().info(f"🔍 篩選結果: {len(running_tasks)} 筆符合條件")
 
         if len(running_tasks) > 0:
             self.node.get_logger().info("⚠️ 有正在執行的任務")
-            self.node.node_id = running_tasks[0].node_id
-            self.highest_priority_task = running_tasks[0]
-            self.node.task = running_tasks[0]
-            self.node.get_logger().info(f"✅ 任務ID: {running_tasks[0].id}, "
-                                        f"WORK ID: {running_tasks[0].work_id}, "
-                                        f"Status: {running_tasks[0].status_id}, "
-                                        f"優先級: {running_tasks[0].priority}, "
-                                        f"名稱: {running_tasks[0].name}, "
-                                        f"目標節點: {running_tasks[0].node_id}")
+            task = running_tasks[0]
+
+            # 透過 to_port 查詢 node_id（新任務表不再直接包含 node_id）
+            to_port = task.get('to_port', '')
+            self.node.node_id = self._get_node_id_from_port(to_port)
+
+            self.highest_priority_task = task
+            self.node.task = task  # 現在是 dict 格式
+            self.node.get_logger().info(
+                f"✅ 任務ID: {task.get('id')}, "
+                f"WORK ID: {task.get('work_id')}, "
+                f"Status: {task.get('status_id')}, "
+                f"優先級: {task.get('priority')}, "
+                f"from_port: {task.get('from_port')}, "
+                f"to_port: {to_port}, "
+                f"目標節點: {self.node.node_id}"
+            )
             return True  # 找到任務
 
         else:

@@ -99,13 +99,21 @@ class WaitRobotState(State):
         Returns:
             bool: 如果機器人已完成返回 True，否則返回 False
         """
+        # 輔助函數：取得任務屬性（支援 dict 格式）
+        def get_task_attr(attr, default=None):
+            if isinstance(self.node.task, dict):
+                return self.node.task.get(attr, default)
+            return getattr(self.node.task, attr, default)
+
         # 第1層：work_id=21 特殊手動路徑模式（最高優先級）
         # 條件：work_id=21（手動模式）且沒有路徑（手動操作已完成）
+        task_work_id = get_task_attr('work_id', 0)
+        task_id = get_task_attr('id', 0)
         if (self.node.task and
-            self.node.task.work_id == 21 and
+            task_work_id == 21 and
             not self.node.agv_status.AGV_PATH):
             self.node.get_logger().info(
-                f"🎯 work_id=21 純手動路徑任務完成（task_id={self.node.task.id}）"
+                f"🎯 work_id=21 純手動路徑任務完成（task_id={task_id}）"
             )
             self._complete_task(context)
             return True
@@ -113,7 +121,7 @@ class WaitRobotState(State):
         # 第2層：明確的 robot_finished 標誌
         if self.node.robot_finished:
             self.node.get_logger().info(
-                f"✅ 檢測到 robot_finished 標誌（work_id={self.node.task.work_id}）"
+                f"✅ 檢測到 robot_finished 標誌（work_id={task_work_id}）"
             )
             self._complete_task(context)
             return True
@@ -121,7 +129,7 @@ class WaitRobotState(State):
         # 第3層：PLC AGV_LD_COMPLETE 信號
         if self.node.agv_status.AGV_LD_COMPLETE:
             self.node.get_logger().info(
-                f"✅ 檢測到 AGV_LD_COMPLETE 信號（work_id={self.node.task.work_id}）"
+                f"✅ 檢測到 AGV_LD_COMPLETE 信號（work_id={task_work_id}）"
             )
             self._complete_task(context)
             return True
@@ -131,8 +139,12 @@ class WaitRobotState(State):
     def _complete_task(self, context):
         """執行任務完成邏輯（加入驗證機制）"""
         try:
-            # 1. 更新任務狀態
-            self.node.task.status_id = TaskStatus.COMPLETED
+            # 1. 更新任務狀態（支援 dict 格式）
+            if isinstance(self.node.task, dict):
+                self.node.task['status_id'] = TaskStatus.COMPLETED
+            else:
+                self.node.task.status_id = TaskStatus.COMPLETED
+
             self.agvdbclient.async_update_task(
                 self.node.task,
                 self.task_update_callback
@@ -144,8 +156,10 @@ class WaitRobotState(State):
             self.completion_retry_count = 0
             self.completion_check_counter = 0
 
+            # 取得 task_id（支援 dict 格式）
+            task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
             self.node.get_logger().info(
-                f"📤 已發送任務完成更新 (task_id={self.node.task.id})，等待驗證..."
+                f"📤 已發送任務完成更新 (task_id={task_id})，等待驗證..."
             )
 
         except Exception as e:
@@ -167,9 +181,12 @@ class WaitRobotState(State):
             self.node.get_logger().warn("⚠️ SqlQuery service 不可用，無法驗證任務完成狀態")
             return
 
-        # 查詢當前任務狀態（包含 agv_id 和 work_id 用於驗證）
+        # 取得 task_id（支援 dict 格式）
+        task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
+
+        # 查詢當前任務狀態（包含 agv_name 和 work_id 用於驗證）
         request = SqlQuery.Request()
-        request.query_string = f"SELECT id, status_id, agv_id, work_id FROM task WHERE id = {self.node.task.id}"
+        request.query_string = f"SELECT id, status_id, agv_name, work_id FROM task WHERE id = {task_id}"
 
         # 同步呼叫 service
         future = self.sql_query_client.call_async(request)
@@ -187,10 +204,19 @@ class WaitRobotState(State):
             import json
             result = json.loads(response.json_result)
 
+            # 輔助函數：取得任務屬性（支援 dict 格式）
+            def get_task_attr(attr, default=None):
+                if isinstance(self.node.task, dict):
+                    return self.node.task.get(attr, default)
+                return getattr(self.node.task, attr, default)
+
+            task_id = get_task_attr('id', 0)
+            task_work_id = get_task_attr('work_id', 0)
+
             if not result or len(result) == 0:
                 # 查不到任務資料，可能是任務已被刪除（表示已完成並清除）
                 self.node.get_logger().info(
-                    f"✅ 任務已不存在於資料庫 (task_id={self.node.task.id})，視為已完成"
+                    f"✅ 任務已不存在於資料庫 (task_id={task_id})，視為已完成"
                 )
                 self.completion_verified = True
                 self.node.robot_finished = False
@@ -202,15 +228,15 @@ class WaitRobotState(State):
 
             task_data = result[0]
             current_status = task_data.get('status_id')
-            current_agv_id = task_data.get('agv_id')
+            current_agv_name = task_data.get('agv_name')
             current_work_id = task_data.get('work_id')
 
-            # 檢查任務資料完整性（agv_id 或 work_id 為 None 表示任務已被修改/刪除）
-            if current_agv_id is None or current_work_id is None:
+            # 檢查任務資料完整性（agv_name 或 work_id 為 None 表示任務已被修改/刪除）
+            if current_agv_name is None or current_work_id is None:
                 self.node.get_logger().warn(
-                    f"⚠️ 任務資料不完整，可能已被刪除或修改 (task_id={self.node.task.id})\n"
-                    f"  - agv_id: {current_agv_id} (原為 {self.node.agv_id})\n"
-                    f"  - work_id: {current_work_id} (原為 {self.node.task.work_id})\n"
+                    f"⚠️ 任務資料不完整，可能已被刪除或修改 (task_id={task_id})\n"
+                    f"  - agv_name: {current_agv_name} (原為 {self.node.agv_name})\n"
+                    f"  - work_id: {current_work_id} (原為 {task_work_id})\n"
                     f"  - 視為任務已結束，回到 mission select"
                 )
                 self.completion_verified = True
@@ -219,10 +245,10 @@ class WaitRobotState(State):
                 return
 
             # 檢查任務是否仍屬於當前 AGV
-            if current_agv_id != self.node.agv_id:
+            if current_agv_name != self.node.agv_name:
                 self.node.get_logger().warn(
-                    f"⚠️ 任務 AGV 已變更 (task_id={self.node.task.id}, "
-                    f"原 agv_id={self.node.agv_id}, 現 agv_id={current_agv_id})，"
+                    f"⚠️ 任務 AGV 已變更 (task_id={task_id}, "
+                    f"原 agv_name={self.node.agv_name}, 現 agv_name={current_agv_name})，"
                     f"視為已完成，回到 mission select"
                 )
                 self.completion_verified = True
@@ -231,10 +257,10 @@ class WaitRobotState(State):
                 return
 
             # 檢查任務 work_id 是否被修改（異常情況）
-            if current_work_id != self.node.task.work_id:
+            if current_work_id != task_work_id:
                 self.node.get_logger().warn(
-                    f"⚠️ 任務 work_id 已變更 (task_id={self.node.task.id}, "
-                    f"原 work_id={self.node.task.work_id}, 現 work_id={current_work_id})，"
+                    f"⚠️ 任務 work_id 已變更 (task_id={task_id}, "
+                    f"原 work_id={task_work_id}, 現 work_id={current_work_id})，"
                     f"這可能是資料異常，視為已完成，回到 mission select"
                 )
                 self.completion_verified = True
@@ -245,7 +271,7 @@ class WaitRobotState(State):
             if current_status == TaskStatus.COMPLETED:
                 # ✅ 驗證成功，可以離開
                 self.node.get_logger().info(
-                    f"✅ 任務完成已驗證 (task_id={self.node.task.id}, status=4)"
+                    f"✅ 任務完成已驗證 (task_id={task_id}, status=4)"
                 )
                 self.completion_verified = True
 
@@ -260,13 +286,16 @@ class WaitRobotState(State):
                 self.completion_retry_count += 1
                 self.node.get_logger().warn(
                     f"⚠️ 任務完成驗證失敗 (當前 status={current_status}，應為 4)\n"
-                    f"  - task_id: {self.node.task.id}\n"
+                    f"  - task_id: {task_id}\n"
                     f"  - 重試: {self.completion_retry_count}/{self.max_completion_retries}"
                 )
 
                 if self.completion_retry_count < self.max_completion_retries:
-                    # 重新發送更新
-                    self.node.task.status_id = TaskStatus.COMPLETED
+                    # 重新發送更新（支援 dict 格式）
+                    if isinstance(self.node.task, dict):
+                        self.node.task['status_id'] = TaskStatus.COMPLETED
+                    else:
+                        self.node.task.status_id = TaskStatus.COMPLETED
                     self.agvdbclient.async_update_task(
                         self.node.task,
                         self.task_update_callback
@@ -349,8 +378,13 @@ class WaitRobotState(State):
         # TODO: 未來可擴展寫入資料庫
         # 例如：self.agvdbclient.async_update_task_log(...)
 
+        # 取得 task_id（支援 dict 格式）
+        task_id = 'N/A'
+        if self.node.task:
+            task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 'N/A')
+
         self.node.get_logger().info(
-            f"📝 OCR 已記錄: {ocr_result} (task_id={self.node.task.id if self.node.task else 'N/A'})"
+            f"📝 OCR 已記錄: {ocr_result} (task_id={task_id})"
         )
 
     def _send_ocr_to_plc(self, ocr_result: str):
@@ -447,11 +481,15 @@ class WaitRobotState(State):
             Work ID 格式：2060502 → 房間2
             房間編號 = work_id // 1000000（整除百萬）
         """
-        if not self.node.task or not self.node.task.work_id:
+        # 取得 work_id（支援 dict 格式）
+        work_id = None
+        if self.node.task:
+            work_id = self.node.task.get('work_id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'work_id', None)
+
+        if not self.node.task or not work_id:
             self.node.get_logger().warn("⚠️ 無任務或 work_id，跳過產品驗證")
             return None
 
-        work_id = self.node.task.work_id
         room_id = work_id // 1000000  # 整除百萬取第1位
 
         self.node.get_logger().info(
