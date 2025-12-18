@@ -3,6 +3,7 @@ from rclpy.node import Node
 from db_proxy.agvc_database_client import AGVCDatabaseClient
 from shared_constants.task_status import TaskStatus
 from std_msgs.msg import String
+import requests
 
 class WaitRobotState(State):
     def __init__(self, node: Node):
@@ -17,6 +18,7 @@ class WaitRobotState(State):
         self.completion_retry_count = 0  # 完成重試次數
         self.max_completion_retries = 5  # 最大重試次數
         self.completion_update_sent = False  # 是否已發送完成更新
+        self.expected_next_status = None  # 期望的下一個狀態
 
         # OCR 相關變數（條件性訂閱：只有 cargo AGV）
         self.ocr_enabled = self._is_cargo_agv()
@@ -94,7 +96,12 @@ class WaitRobotState(State):
 
     def _check_robot_completed(self, context) -> bool:
         """
-        檢查機器人是否完成工作（3層防禦）
+        檢查機器人是否完成工作（3 種完成條件）
+
+        完成條件：
+        1. AGV_LD_COMPLETE + status_id=[2,12] → Load 流程完成
+        2. AGV_UD_COMPLETE + status_id=[4,14] → Unload 流程完成
+        3. status_id=22 + 無路徑 → Path 執行完成
 
         Returns:
             bool: 如果機器人已完成返回 True，否則返回 False
@@ -105,31 +112,39 @@ class WaitRobotState(State):
                 return self.node.task.get(attr, default)
             return getattr(self.node.task, attr, default)
 
-        # 第1層：work_id=21 特殊手動路徑模式（最高優先級）
-        # 條件：work_id=21（手動模式）且沒有路徑（手動操作已完成）
         task_work_id = get_task_attr('work_id', 0)
         task_id = get_task_attr('id', 0)
-        if (self.node.task and
-            task_work_id == 21 and
+        task_status_id = get_task_attr('status_id', 0)
+
+        # 第1層：AGV_LD_COMPLETE + status_id=[2,12] → Load 流程完成
+        # status 2=FROM_EXECUTING, 12=FROM_ONLY_EXECUTING
+        if (self.node.agv_status.AGV_LD_COMPLETE and
+            task_status_id in (2, 12)):
+            self.node.get_logger().info(
+                f"✅ Load 完成（AGV_LD_COMPLETE + status={task_status_id}）"
+                f"（task_id={task_id}, work_id={task_work_id}）"
+            )
+            self._complete_task(context)
+            return True
+
+        # 第2層：AGV_UD_COMPLETE + status_id=[4,14] → Unload 流程完成
+        # status 4=TO_EXECUTING, 14=TO_ONLY_EXECUTING
+        if (self.node.agv_status.AGV_UD_COMPLETE and
+            task_status_id in (4, 14)):
+            self.node.get_logger().info(
+                f"✅ Unload 完成（AGV_UD_COMPLETE + status={task_status_id}）"
+                f"（task_id={task_id}, work_id={task_work_id}）"
+            )
+            self._complete_task(context)
+            return True
+
+        # 第3層：status_id=22 + 無路徑 → Path 執行完成
+        # status 22=PATH_EXECUTING
+        if (task_status_id == 22 and
             not self.node.agv_status.AGV_PATH):
             self.node.get_logger().info(
-                f"🎯 work_id=21 純手動路徑任務完成（task_id={task_id}）"
-            )
-            self._complete_task(context)
-            return True
-
-        # 第2層：明確的 robot_finished 標誌
-        if self.node.robot_finished:
-            self.node.get_logger().info(
-                f"✅ 檢測到 robot_finished 標誌（work_id={task_work_id}）"
-            )
-            self._complete_task(context)
-            return True
-
-        # 第3層：PLC AGV_LD_COMPLETE 信號
-        if self.node.agv_status.AGV_LD_COMPLETE:
-            self.node.get_logger().info(
-                f"✅ 檢測到 AGV_LD_COMPLETE 信號（work_id={task_work_id}）"
+                f"✅ Path 執行完成（status=22 + 無路徑）"
+                f"（task_id={task_id}, work_id={task_work_id}）"
             )
             self._complete_task(context)
             return True
@@ -137,35 +152,106 @@ class WaitRobotState(State):
         return False
 
     def _complete_task(self, context):
-        """執行任務完成邏輯（加入驗證機制）"""
+        """執行任務完成邏輯（透過 Web API 更新狀態）
+
+        根據當前 status_id 計算下一個狀態：
+        - 2 (FROM_EXECUTING) → 3 (FROM_COMPLETE)
+        - 12 (FROM_ONLY_EXECUTING) → 15 (FROM_ONLY_COMPLETE)
+        - 4 (TO_EXECUTING) → 5 (FROM_TO_COMPLETE)
+        - 14 (TO_ONLY_EXECUTING) → 15 (TO_ONLY_COMPLETE)
+        - 22 (PATH_EXECUTING) → 25 (PATH_COMPLETE)
+        """
         try:
-            # 1. 更新任務狀態（支援 dict 格式）
+            # 取得任務屬性（支援 dict 格式）
+            task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
+            current_status = self.node.task.get('status_id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'status_id', 0)
+
+            # 根據當前狀態計算下一個狀態
+            status_transition = {
+                2: 3,    # FROM_EXECUTING → FROM_COMPLETE
+                12: 15,  # FROM_ONLY_EXECUTING → FROM_ONLY_COMPLETE
+                4: 5,    # TO_EXECUTING → FROM_TO_COMPLETE
+                14: 15,  # TO_ONLY_EXECUTING → TO_ONLY_COMPLETE
+                22: 25,  # PATH_EXECUTING → PATH_COMPLETE
+            }
+
+            next_status = status_transition.get(current_status)
+            if next_status is None:
+                self.node.get_logger().error(
+                    f"❌ 無法計算下一個狀態：當前 status_id={current_status} 不在轉換表中"
+                )
+                return
+
+            # 透過 Web API 更新任務狀態
+            update_success = self._update_task_status_via_api(task_id, next_status)
+
+            if not update_success:
+                self.node.get_logger().error("❌ 任務狀態更新失敗")
+                return
+
+            # 更新本地任務狀態
             if isinstance(self.node.task, dict):
-                self.node.task['status_id'] = TaskStatus.COMPLETED
+                self.node.task['status_id'] = next_status
             else:
-                self.node.task.status_id = TaskStatus.COMPLETED
+                self.node.task.status_id = next_status
 
-            self.agvdbclient.async_update_task(
-                self.node.task,
-                self.task_update_callback
-            )
-
-            # 2. 設置完成檢查標記（不立即離開，等待驗證）
+            # 設置完成檢查標記（等待驗證）
             self.completion_update_sent = True
             self.completion_verified = False
             self.completion_retry_count = 0
             self.completion_check_counter = 0
+            self.expected_next_status = next_status  # 儲存期望的下一個狀態
 
-            # 取得 task_id（支援 dict 格式）
-            task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
             self.node.get_logger().info(
-                f"📤 已發送任務完成更新 (task_id={task_id})，等待驗證..."
+                f"📤 已發送任務完成更新 (task_id={task_id}, {current_status}→{next_status})，等待驗證..."
             )
 
         except Exception as e:
             self.node.get_logger().error(
                 f"❌ 任務完成邏輯異常: {e}"
             )
+
+    def _update_task_status_via_api(self, task_id: int, status_id: int) -> bool:
+        """透過 Web API 更新任務狀態
+
+        API: PUT /api/v1/task/{task_id}/status
+        Body: {"status_id": <status_id>}
+
+        Args:
+            task_id: 任務 ID
+            status_id: 新的狀態 ID
+
+        Returns:
+            bool: 更新成功返回 True，失敗返回 False
+        """
+        try:
+            url = f"{self.node.agvc_api_base_url}/api/v1/task/{task_id}/status"
+            payload = {"status_id": status_id}
+
+            self.node.get_logger().info(f"⏳ 更新任務狀態: task_id={task_id}, status_id={status_id}")
+
+            response = requests.put(url, json=payload, timeout=5.0)
+
+            if response.status_code == 200:
+                self.node.get_logger().info(f"✅ 任務狀態更新成功: task_id={task_id} → status_id={status_id}")
+                return True
+            else:
+                self.node.get_logger().error(
+                    f"❌ 任務狀態更新失敗: HTTP {response.status_code}, {response.text}"
+                )
+                return False
+
+        except requests.exceptions.Timeout:
+            self.node.get_logger().error(f"❌ 任務狀態更新逾時: task_id={task_id}")
+            return False
+        except requests.exceptions.ConnectionError:
+            self.node.get_logger().error(
+                f"❌ 無法連接 AGVC API: {self.node.agvc_api_base_url}"
+            )
+            return False
+        except Exception as e:
+            self.node.get_logger().error(f"❌ 任務狀態更新異常: {e}")
+            return False
 
     def _verify_task_completion_by_service(self, context):
         """使用 service 驗證任務是否真的完成（status=4）"""
@@ -268,10 +354,13 @@ class WaitRobotState(State):
                 context.set_state(context.MissionSelectState(self.node))
                 return
 
-            if current_status == TaskStatus.COMPLETED:
+            # 取得期望的下一個狀態
+            expected_status = getattr(self, 'expected_next_status', None)
+
+            if current_status == expected_status:
                 # ✅ 驗證成功，可以離開
                 self.node.get_logger().info(
-                    f"✅ 任務完成已驗證 (task_id={task_id}, status=4)"
+                    f"✅ 任務完成已驗證 (task_id={task_id}, status={current_status})"
                 )
                 self.completion_verified = True
 
@@ -285,27 +374,21 @@ class WaitRobotState(State):
                 # ❌ 驗證失敗，重試
                 self.completion_retry_count += 1
                 self.node.get_logger().warn(
-                    f"⚠️ 任務完成驗證失敗 (當前 status={current_status}，應為 4)\n"
+                    f"⚠️ 任務完成驗證失敗 (當前 status={current_status}，應為 {expected_status})\n"
                     f"  - task_id: {task_id}\n"
                     f"  - 重試: {self.completion_retry_count}/{self.max_completion_retries}"
                 )
 
                 if self.completion_retry_count < self.max_completion_retries:
-                    # 重新發送更新（支援 dict 格式）
-                    if isinstance(self.node.task, dict):
-                        self.node.task['status_id'] = TaskStatus.COMPLETED
-                    else:
-                        self.node.task.status_id = TaskStatus.COMPLETED
-                    self.agvdbclient.async_update_task(
-                        self.node.task,
-                        self.task_update_callback
-                    )
-                    self.node.get_logger().info(f"🔄 重新發送任務完成更新 (第 {self.completion_retry_count} 次)")
+                    # 重新發送更新（透過 API）
+                    if expected_status is not None:
+                        self._update_task_status_via_api(task_id, expected_status)
+                        self.node.get_logger().info(f"🔄 重新發送任務完成更新 (第 {self.completion_retry_count} 次)")
                 else:
                     self.node.get_logger().error(
                         f"❌ 任務完成更新失敗超過 {self.max_completion_retries} 次\n"
                         f"  - 停留在 WaitRobot 等待人工介入\n"
-                        f"  - 請檢查 agvc_database_node 是否正常運行"
+                        f"  - 請檢查 AGVC API 是否正常運行"
                     )
         except Exception as e:
             self.node.get_logger().error(f"❌ 處理驗證回應異常: {e}")

@@ -3,7 +3,6 @@ from db_proxy_interfaces.msg._tasks import Tasks
 import json
 from std_msgs.msg import String
 from rclpy.node import Node
-import time
 import requests
 
 
@@ -21,18 +20,9 @@ class MissionSelectState(State):
         self.localMission = False  # 觸發Local端任務旗標
         # self.latest_tasks 已移至 node (全局共享)
         self.status_log_count = 0  # 狀態日誌計數器（每5秒輸出一次）
-        # self.last_callback_time 已移至 node (全局共享)
-        self.callback_timeout_s = 10.0  # tasks_callback 超時時間（秒）
-        self.timeout_warning_shown = False  # 是否已顯示超時警告（避免重複輸出）
-        self.enter_state_time = None  # 進入狀態的時間
 
     def enter(self):
         self.node.get_logger().info("🎯 AGV 進入: Mission Select")
-
-        # 初始化超時檢測機制（使用全局時間戳）
-        self.timeout_warning_shown = False
-        self.enter_state_time = time.time()  # 記錄進入狀態時間
-        self.node.get_logger().info("📡 使用全局 /agvc/tasks 訂閱（已在 agv_node_base 建立）")
 
         # 建立 local mission timer
         self.locamissiontimer = self.node.create_timer(1.0, self.local_mission)
@@ -45,35 +35,6 @@ class MissionSelectState(State):
     def handle(self, context):
         #self.node.get_logger().info("AGV Mission Select 狀態")
         #self.node.get_logger().info(f"Task列表:{self.latest_tasks}")
-
-        # ⏱️ 檢查 tasks_callback 超時（使用全局時間戳）
-        current_time = time.time()
-
-        if self.node.last_tasks_callback_time is not None:
-            # 情況 1: 曾經收到過訂閱，檢查是否超時
-            elapsed_time = current_time - self.node.last_tasks_callback_time
-            if elapsed_time > self.callback_timeout_s:
-                if not self.timeout_warning_shown:
-                    self.node.get_logger().error(
-                        f"❌ tasks_callback 超時！已經 {elapsed_time:.1f} 秒未收到任務資料回應\n"
-                        f"  - 超時閾值: {self.callback_timeout_s} 秒\n"
-                        f"  - 訂閱 Topic: /agvc/tasks (全局訂閱)\n"
-                        f"  - 建議檢查: agvc_database_node 是否正常運行"
-                    )
-                    self.timeout_warning_shown = True  # 設置標記，避免重複輸出
-        elif self.enter_state_time is not None:
-            # 情況 2: 從未收到過訂閱，檢查進入狀態後是否超時
-            elapsed_since_enter = current_time - self.enter_state_time
-            if elapsed_since_enter > self.callback_timeout_s:
-                if not self.timeout_warning_shown:
-                    self.node.get_logger().error(
-                        f"❌ tasks_callback 超時！進入 MissionSelect 後 {elapsed_since_enter:.1f} 秒從未收到任務資料\n"
-                        f"  - 超時閾值: {self.callback_timeout_s} 秒\n"
-                        f"  - 訂閱 Topic: /agvc/tasks (全局訂閱)\n"
-                        f"  - 建議檢查: agvc_database_node 是否正常運行"
-                    )
-                    self.timeout_warning_shown = True  # 設置標記，避免重複輸出
-
 
         if self.count > 30:
             self.count = 0
@@ -132,22 +93,14 @@ class MissionSelectState(State):
                         f"✅ 任務開始 (status={task_status_id}): task_id={task_id}，進入 WritePathState"
                     )
                     context.set_state(context.WritePathState(self.node))
-                elif TaskStatus.is_task_executing_status(task_status_id) and not self.node.agv_status.AGV_PATH:
-                    # 執行中狀態但無路徑 → 根據 MISSION_CANCEL 決定行為
-                    if self.node.agv_status.MISSION_CANCEL == 1:
-                        self.node.get_logger().info(
-                            f"🔄 任務取消標記啟動 (task_id={task_id}, MISSION_CANCEL=1)，進入 WritePathState 重新規劃路徑"
-                        )
-                        context.set_state(context.WritePathState(self.node))
-                    else:
-                        # MISSION_CANCEL≠1，進入 WaitRobot 統一判斷
-                        self.node.get_logger().info(
-                            f"⚠️ 任務執行中但無路徑 (task_id={task_id}, status={task_status_id})，進入 WaitRobot 統一判斷"
-                        )
-                        self.node.robot_finished = False  # 重置機器人完成狀態
-                        context.set_state(context.WaitRobotState(self.node))
+                elif task_status_id == TaskStatus.FROM_COMPLETE and not self.node.agv_status.AGV_PATH:
+                    # status=3 (FROM_COMPLETE) 且無路徑 → From 完成，需寫入 To 路徑
+                    self.node.get_logger().info(
+                        f"✅ From 完成，準備 To 流程 (status={task_status_id}): task_id={task_id}，進入 WritePathState"
+                    )
+                    context.set_state(context.WritePathState(self.node))
                 else:
-                    # 其他情況（不應該發生）
+                    # 其他情況：執行中或未預期狀態，記錄警告
                     self.node.get_logger().warn(
                         f"⚠️ 未預期的任務狀態 (status={task_status_id}): task_id={task_id}"
                     )
@@ -234,9 +187,8 @@ class MissionSelectState(State):
             self.node.get_logger().error(f"❌ _get_node_id_from_port: 查詢異常 - {e}")
             return 0
 
-    # tasks_callback 已移除，改用 agv_node_base 的全局訂閱
-    # 全局回調會自動更新 self.node.latest_tasks 和 self.node.last_tasks_callback_time
-        
+    # tasks 改用 agv_node_base 的 Web API 輪詢取得
+
     def _process_tasks(self, tasks):
         """處理任務篩選邏輯（適配新任務表結構）
 
@@ -250,11 +202,14 @@ class MissionSelectState(State):
         - 13: TO_ONLY_START (僅 To 任務開始)
         - 21: PATH_START (Path 任務開始)
 
-        執行中狀態:
-        - 2, 3, 4: FROM_EXECUTING, FROM_COMPLETE, TO_EXECUTING
+        執行中狀態 (AGV Running):
+        - 2, 4: FROM_EXECUTING, TO_EXECUTING
         - 12: FROM_ONLY_EXECUTING
         - 14: TO_ONLY_EXECUTING
         - 22: PATH_EXECUTING
+
+        過渡狀態 (需重新規劃路徑):
+        - 3: FROM_COMPLETE (From 完成，準備 To 流程)
         """
         from shared_constants.task_status import TaskStatus
 
@@ -266,20 +221,23 @@ class MissionSelectState(State):
             task_status_id = t.get('status_id', 0)
             is_start = TaskStatus.is_task_start_status(task_status_id)
             is_executing = TaskStatus.is_task_executing_status(task_status_id)
+            is_from_complete = (task_status_id == TaskStatus.FROM_COMPLETE)  # status=3
             agv_match = (task_agv_name == self.node.agv_name)
-            status_match = is_start or is_executing
+            status_match = is_start or is_executing or is_from_complete
 
             self.node.get_logger().info(
                 f"   [{idx}] task_id={task_id}, agv_name={task_agv_name}, status_id={task_status_id} | "
-                f"agv_match={agv_match}, is_start={is_start}, is_executing={is_executing} → {'✅ 符合' if (agv_match and status_match) else '❌ 不符合'}"
+                f"agv_match={agv_match}, is_start={is_start}, is_executing={is_executing}, is_from_complete={is_from_complete} → {'✅ 符合' if (agv_match and status_match) else '❌ 不符合'}"
             )
 
         # 篩選分配給本 AGV 且非完成狀態的任務
+        # 包含: 開始狀態 (1,11,13,21) + 執行中狀態 (2,4,12,14,22) + 過渡狀態 (3)
         running_tasks = [
             t for t in tasks
             if t.get('agv_name') == self.node.agv_name and
                (TaskStatus.is_task_start_status(t.get('status_id', 0)) or
-                TaskStatus.is_task_executing_status(t.get('status_id', 0)))
+                TaskStatus.is_task_executing_status(t.get('status_id', 0)) or
+                t.get('status_id', 0) == TaskStatus.FROM_COMPLETE)
         ]
 
         self.node.get_logger().info(f"🔍 篩選結果: {len(running_tasks)} 筆符合條件")
@@ -288,20 +246,34 @@ class MissionSelectState(State):
             self.node.get_logger().info("⚠️ 有正在執行的任務")
             task = running_tasks[0]
 
-            # 透過 to_port 查詢 node_id（新任務表不再直接包含 node_id）
+            # 根據 status_id 決定使用 from_port 或 to_port 查詢 node_id
+            # status=1 (FROM_TO_START), 11 (FROM_ONLY_START) → from_port
+            # status=3 (FROM_COMPLETE), 13 (TO_ONLY_START), 21 (PATH_START) → to_port
+            task_status_id = task.get('status_id', 0)
+            from_port = task.get('from_port', '')
             to_port = task.get('to_port', '')
-            self.node.node_id = self._get_node_id_from_port(to_port)
+
+            if task_status_id in (1, 11):
+                # 任務開始，目標是 From 位置
+                target_port = from_port
+                port_type = "from_port"
+            else:
+                # status=3, 13, 21 等，目標是 To 位置
+                target_port = to_port
+                port_type = "to_port"
+
+            self.node.node_id = self._get_node_id_from_port(target_port)
 
             self.highest_priority_task = task
             self.node.task = task  # 現在是 dict 格式
             self.node.get_logger().info(
                 f"✅ 任務ID: {task.get('id')}, "
                 f"WORK ID: {task.get('work_id')}, "
-                f"Status: {task.get('status_id')}, "
+                f"Status: {task_status_id}, "
                 f"優先級: {task.get('priority')}, "
-                f"from_port: {task.get('from_port')}, "
+                f"from_port: {from_port}, "
                 f"to_port: {to_port}, "
-                f"目標節點: {self.node.node_id}"
+                f"目標節點: {self.node.node_id} (使用 {port_type}={target_port})"
             )
             return True  # 找到任務
 

@@ -1,9 +1,7 @@
 from agv_base.states.state import State
 from rclpy.node import Node
 from astar_algorithm.astar_algorithm import AStarAlgorithm
-from db_proxy_interfaces.msg import Task as TaskMsg
-from db_proxy.agvc_database_client import AGVCDatabaseClient
-import time
+import requests
 
 
 class WritePathState(State):
@@ -13,7 +11,6 @@ class WritePathState(State):
         self.StationID = None  # 站點ID
         self.TagNo = None  # TAG No
         self.path = []  # 路徑資料
-        self.agvdbclient = AGVCDatabaseClient(node)
         self.source_data = None  # 初始點位資料
         self.cantomove_tag = None  # 可移動標籤
         self.act = []  # 動作
@@ -26,13 +23,7 @@ class WritePathState(State):
         self.dataValue = [0] * 2000
         self.count = 0  # 計數器，用於執行次數
         self.step = 0  # 步驟計數器
-
-        # 任務更新等待狀態
-        self.waiting_for_task_update = False  # 是否在等待任務更新回應
-        self.task_update_result = None        # 任務更新結果 (True/False/None)
-        self.task_update_timer = None         # 超時計時器
-        self.task_update_start_time = 0       # 開始時間
-        self.path_calculated = False          # 路徑是否已計算完成並準備好 dataValue
+        self.path_calculated = False  # 路徑是否已計算完成並準備好 dataValue
 
     def enter(self):
         self.node.get_logger().info("AGV 進入: WritePathState 狀態")
@@ -41,49 +32,6 @@ class WritePathState(State):
         self.node.get_logger().info("AGV 離開 WritePathState 狀態")
 
     def handle(self, context):
-        # ⚠️ 優先檢查：是否在等待任務更新回應
-        if self.waiting_for_task_update:
-            # 檢查是否已有結果
-            if self.task_update_result is None:
-                # 還在等待，不執行後續邏輯
-                return
-
-            # 已有結果，取消計時器
-            if self.task_update_timer:
-                self.task_update_timer.cancel()
-                self.task_update_timer = None
-
-            # 檢查結果
-            if self.task_update_result:
-                # ✅ 成功：直接寫入 PLC
-                self.node.get_logger().info("✅ 任務更新成功，繼續寫入 PLC 路徑")
-                self.waiting_for_task_update = False
-                self.step = 1  # ⚠️ 重要：避免重新計算路徑
-
-                # 將路徑資料寫入 PLC
-                string_values = [str(v) for v in self.dataValue]
-                string_values_1 = string_values[:1000]    # 前 1000 筆
-                string_values_2 = string_values[1000:2000]  # 後 1000 筆
-
-                self.plc_client.async_write_continuous_data(
-                    'DM', '3000', string_values_1, self.write_path_callback)  # PLC寫入路徑
-                self.plc_client.async_write_continuous_data(
-                    'DM', '4000', string_values_2, self.write_path_callback)
-
-                self.count += 1  # 增加計數器
-                self.node.get_logger().info(f"✅ PLC 路徑資料寫入, 執行次數: {self.count}")
-                return  # 完成後返回，等待下次 handle() 檢查寫入結果
-            else:
-                # ❌ 失敗：回到 mission_select
-                self.node.get_logger().error(
-                    "❌ 任務更新失敗，回到任務選擇狀態"
-                )
-                self.waiting_for_task_update = False
-                context.set_state(context.MissionSelectState(self.node))
-                return
-
-        #self.node.get_logger().info(f"路徑資料:{self.node.agv_status.AGV_PATH}")
-        #self.node.get_logger().info("AGV WritePathState 狀態")
         # 檢查寫入次數是否超過5次
         if self.count > 5:
             self.node.get_logger().error("❌ 路徑資料寫入失敗過多，寫入異常到PLC")
@@ -217,37 +165,29 @@ class WritePathState(State):
             self.path_calculated = True
 
             # 更新tasks table的狀態
-            # MAGIC=21 或 work_id=21 特殊處理：不更改 task status 為 3
-            if self.node.agv_status.MAGIC != 21 :
-                # 更新任務狀態（支援 dict 格式）
-                if isinstance(self.node.task, dict):
-                    self.node.task['status_id'] = 3  # 更新狀態為執行中
-                    self.node.task['agv_name'] = self.node.agv_name  # 更新 AGV Name
-                else:
-                    self.node.task.status_id = 3  # 更新狀態為執行中
-                    self.node.task.agv_name = self.node.agv_name  # 更新 AGV Name
-
-                # 設置等待狀態
-                self.waiting_for_task_update = True
-                self.task_update_result = None
-                self.task_update_start_time = time.time()
-
-                # 非同步調用
-                self.agvdbclient.async_update_task(
-                    self.node.task, self.task_update_callback
-                )
-
-                # 取得 task_id（支援 dict 格式）
+            # MAGIC=21 或 work_id=21 特殊處理：不更改 task status
+            if self.node.agv_status.MAGIC != 21:
+                # 取得 task_id 和當前 status_id（支援 dict 格式）
                 task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
-                self.node.get_logger().info(
-                    f"⏳ 開始更新任務狀態 (task_id={task_id})，等待回應..."
-                )
+                current_status = self.node.task.get('status_id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'status_id', 0)
 
-                # 創建超時計時器（3秒）
-                self.task_update_timer = self.node.create_timer(3.0, self.on_task_update_timeout)
+                # 根據當前狀態決定下一個狀態（開始 → 執行中）
+                # 1→2, 11→12, 13→14, 21→22
+                next_status = current_status + 1
 
-                # 暫停執行，等待 callback
-                return
+                # 透過 Web API 更新任務狀態
+                update_success = self._update_task_status_via_api(task_id, status_id=next_status)
+
+                if not update_success:
+                    self.node.get_logger().error("❌ 任務狀態更新失敗，回到任務選擇狀態")
+                    context.set_state(context.MissionSelectState(self.node))
+                    return
+
+                # 更新本地任務狀態
+                if isinstance(self.node.task, dict):
+                    self.node.task['status_id'] = next_status
+                else:
+                    self.node.task.status_id = next_status
             else:
                 reason = "MAGIC=21" if self.node.agv_status.MAGIC == 21 else "work_id=21"
                 self.node.get_logger().info(f"🎯 {reason} 特殊模式：跳過任務狀態更新，維持原始狀態")
@@ -263,25 +203,47 @@ class WritePathState(State):
             self.step = 1  # 增加步驟計數器
             # 做完延遲兩
 
-    def task_update_callback(self, response):
-        """任務更新回調：設置結果狀態"""
-        if response is None:
-            self.node.get_logger().error(
-                "❌ 任務更新失敗：未收到回應（可能逾時或錯誤）"
-            )
-            self.task_update_result = False
-            return
+    def _update_task_status_via_api(self, task_id: int, status_id: int) -> bool:
+        """透過 Web API 更新任務狀態
 
-        if response.success:
-            self.node.get_logger().info(
-                f"✅ 任務更新回應成功：{response.message}"
-            )
-            self.task_update_result = True
-        else:
+        API: PUT /api/v1/task/{task_id}/status
+        Body: {"status_id": <status_id>}
+
+        Args:
+            task_id: 任務 ID
+            status_id: 新的狀態 ID
+
+        Returns:
+            bool: 更新成功返回 True，失敗返回 False
+        """
+        try:
+            url = f"{self.node.agvc_api_base_url}/api/v1/task/{task_id}/status"
+            payload = {"status_id": status_id}
+
+            self.node.get_logger().info(f"⏳ 更新任務狀態: task_id={task_id}, status_id={status_id}")
+
+            response = requests.put(url, json=payload, timeout=5.0)
+
+            if response.status_code == 200:
+                self.node.get_logger().info(f"✅ 任務狀態更新成功: task_id={task_id} → status_id={status_id}")
+                return True
+            else:
+                self.node.get_logger().error(
+                    f"❌ 任務狀態更新失敗: HTTP {response.status_code}, {response.text}"
+                )
+                return False
+
+        except requests.exceptions.Timeout:
+            self.node.get_logger().error(f"❌ 任務狀態更新逾時: task_id={task_id}")
+            return False
+        except requests.exceptions.ConnectionError:
             self.node.get_logger().error(
-                f"❌ 任務更新回應失敗：{response.message}"
+                f"❌ 無法連接 AGVC API: {self.node.agvc_api_base_url}"
             )
-            self.task_update_result = False
+            return False
+        except Exception as e:
+            self.node.get_logger().error(f"❌ 任務狀態更新異常: {e}")
+            return False
 
     # 將 32 位元整數分割成兩個 16 位元整數
 
@@ -309,20 +271,6 @@ class WritePathState(State):
             self.node.get_logger().info("✅ PLC force寫入成功")
         else:
             self.node.get_logger().warn("⚠️ PLC force寫入失敗")
-
-    def on_task_update_timeout(self):
-        """任務更新超時處理"""
-        if self.waiting_for_task_update and self.task_update_result is None:
-            elapsed = time.time() - self.task_update_start_time
-            self.node.get_logger().error(
-                f"❌ 任務更新超時 (等待 {elapsed:.1f}秒)，設置為失敗"
-            )
-            self.task_update_result = False
-
-        # 取消計時器
-        if self.task_update_timer:
-            self.task_update_timer.cancel()
-            self.task_update_timer = None
 
 
 """

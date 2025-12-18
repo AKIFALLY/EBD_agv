@@ -201,13 +201,16 @@ class TaskStatus:
 
     @classmethod
     def is_task_executing_status(cls, status_code: int) -> bool:
-        """檢查是否為「執行中」狀態
+        """檢查是否為「執行中」狀態（AGV Running 狀態對應）
 
         執行中狀態包含:
-        - 2, 3, 4: FROM_EXECUTING, FROM_COMPLETE, TO_EXECUTING
-        - 12: FROM_ONLY_EXECUTING
-        - 14: TO_ONLY_EXECUTING
-        - 22: PATH_EXECUTING
+        - 2: FROM_EXECUTING (From 流程執行中)
+        - 4: TO_EXECUTING (To 流程執行中)
+        - 12: FROM_ONLY_EXECUTING (僅 From 執行中)
+        - 14: TO_ONLY_EXECUTING (僅 To 執行中)
+        - 22: PATH_EXECUTING (Path 執行中)
+
+        注意: status=3 (FROM_COMPLETE) 是過渡狀態，不屬於執行中
 
         Args:
             status_code: 狀態碼
@@ -215,7 +218,7 @@ class TaskStatus:
         Returns:
             如果是執行中狀態則返回 True
         """
-        return status_code in (2, 3, 4, 12, 14, 22)
+        return status_code in (2, 4, 12, 14, 22)
 
     @classmethod
     def is_task_complete_status(cls, status_code: int) -> bool:

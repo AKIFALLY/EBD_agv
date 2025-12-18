@@ -83,7 +83,6 @@ class AgvNodebase(Node):
         # 全局 tasks 相關變數（使用 Web API 輪詢）
         self.latest_tasks = []  # 全局任務列表（所有狀態共享）
         self.last_tasks_fetch_time = None  # 最後取得 tasks 的時間
-        self.last_tasks_callback_time = None  # 向後兼容：MissionSelectState 使用此變數名稱
         self.last_tasks_log_time = None  # 最後輸出 tasks 日誌的時間
         self.tasks_api_interval = 2.0  # Web API 輪詢間隔（秒）
 
@@ -613,7 +612,6 @@ class AgvNodebase(Node):
                 tasks_data = response.json()
                 self._handle_api_tasks_response(tasks_data)
                 self.last_tasks_fetch_time = time.time()
-                self.last_tasks_callback_time = self.last_tasks_fetch_time  # 同步更新（向後兼容）
 
                 # 每 5 秒輸出一次日誌
                 current_time = time.time()
