@@ -24,18 +24,12 @@ def generate_launch_description():
     ros_namespace = f'/{agv_name}'  # 直接從 AGV_NAME 衍生
     device_config_file = os.environ.get('DEVICE_CONFIG_FILE', f'/app/config/agv/{agv_name}_config.yaml')
 
-    # 從 AGV_NAME 提取 room_id（取末尾數字）
-    import re
-    match = re.search(r'(\d+)$', agv_name)
-    room_id = int(match.group(1)) if match else 1
-
     agv_command_file = "/app/agv_cmd_service_ws/src/agv_cmd_service/config/agv_cmd_service.yaml"
 
     print(f"🚛 Cargo AGV Launch 配置:")
     print(f"  AGV_NAME: {agv_name}")
     print(f"  ROS_NAMESPACE: {ros_namespace}")
     print(f"  DEVICE_CONFIG_FILE: {device_config_file}")
-    print(f"  ROOM_ID: {room_id}")
 
     if not os.path.exists(agv_command_file):
         print(f"⚠️ agv_command_file 設定檔不存在: {agv_command_file}")
@@ -70,7 +64,6 @@ def generate_launch_description():
            executable='cargo_agv_node',
            name='agv_core_node',
            namespace=agv_name,
-           parameters=[{"room_id": room_id}],
         ),
 
         # ✅ SensorPart Publisher Node（Cargo AGV 專用）

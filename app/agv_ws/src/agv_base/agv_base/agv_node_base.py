@@ -535,11 +535,8 @@ class AgvNodebase(Node):
 
     # 共用方法
     def setup_common_parameters(self):
-        """設置共用參數"""
-        self.declare_parameter("room_id", 0)  # 預設房間ID為0
-        self.room_id = self.get_parameter(
-            "room_id").get_parameter_value().integer_value  # 取得room_id參數值
-        self.get_logger().info(f"✅ 已接收 room_id: {self.room_id}")
+        """設置共用參數 (已清理 room_id，此專案不使用)"""
+        pass  # room_id 已移除，保留方法避免子類別呼叫錯誤
 
     def common_state_changed(self, old_state, new_state):
         """共用的狀態變更日誌"""
