@@ -70,7 +70,20 @@ class MissionSelectState(State):
                 # ⚠️ 【改善】檢查是否有有效任務資料（task_id 不能為 0）
                 # 注意：task 現在是 dict 格式
                 task_id = self.node.task.get('id', 0) if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
-                if hasattr(self.node, 'task') and self.node.task and task_id != 0:
+                task_status_id = self.node.task.get('status_id', 0) if isinstance(self.node.task, dict) else getattr(self.node.task, 'status_id', 0)
+
+                # 🔍 檢查任務是否為完成狀態（5, 15, 25）
+                from shared_constants.task_status import TaskStatus
+                if TaskStatus.is_task_complete_status(task_status_id):
+                    # 任務已完成，清除任務資料，繼續等待新任務
+                    self.node.get_logger().info(
+                        f"⚠️ 任務已完成 (task_id={task_id}, status={task_status_id})，"
+                        f"清除任務資料並繼續等待新任務"
+                    )
+                    self.node.task = None
+                    self.highest_priority_task = []
+                    # 不進行狀態轉換，繼續在 MissionSelectState 等待
+                elif hasattr(self.node, 'task') and self.node.task and task_id != 0:
                     self.node.get_logger().info(f"✅ AGV 已有路徑資料且有任務資料 (task_id={task_id})，離開 Mission Select 狀態")
 
                     context.set_state(context.RunningState(self.node))  # 切換狀態
@@ -99,8 +112,27 @@ class MissionSelectState(State):
                         f"✅ From 完成，準備 To 流程 (status={task_status_id}): task_id={task_id}，進入 WritePathState"
                     )
                     context.set_state(context.WritePathState(self.node))
+                elif TaskStatus.is_task_executing_status(task_status_id) and not self.node.agv_status.AGV_PATH:
+                    # status=2,4,12,14,22 且無路徑 → 進入 WritePathState 重算路徑
+                    # 根據 status 決定目標端口
+                    if task_status_id in (2, 12):
+                        # FROM 執行中：目標是 from_port
+                        target_port = task.get('from_port', '')
+                        port_type = "from_port"
+                    else:
+                        # TO/PATH 執行中 (4, 14, 22)：目標是 to_port
+                        target_port = task.get('to_port', '')
+                        port_type = "to_port"
+
+                    self.node.node_id = self._get_node_id_from_port(target_port)
+
+                    self.node.get_logger().info(
+                        f"⚠️ 執行中狀態但無路徑 (status={task_status_id}): task_id={task_id}，"
+                        f"目標節點: {self.node.node_id} (使用 {port_type}={target_port})，重新計算路徑"
+                    )
+                    context.set_state(context.WritePathState(self.node))
                 else:
-                    # 其他情況：執行中或未預期狀態，記錄警告
+                    # 其他情況：未預期狀態，記錄警告
                     self.node.get_logger().warn(
                         f"⚠️ 未預期的任務狀態 (status={task_status_id}): task_id={task_id}"
                     )

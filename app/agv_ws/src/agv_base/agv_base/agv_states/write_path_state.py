@@ -171,23 +171,31 @@ class WritePathState(State):
                 task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
                 current_status = self.node.task.get('status_id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'status_id', 0)
 
-                # 根據當前狀態決定下一個狀態（開始 → 執行中）
-                # 1→2, 11→12, 13→14, 21→22
-                next_status = current_status + 1
-
-                # 透過 Web API 更新任務狀態
-                update_success = self._update_task_status_via_api(task_id, status_id=next_status)
-
-                if not update_success:
-                    self.node.get_logger().error("❌ 任務狀態更新失敗，回到任務選擇狀態")
-                    context.set_state(context.MissionSelectState(self.node))
-                    return
-
-                # 更新本地任務狀態
-                if isinstance(self.node.task, dict):
-                    self.node.task['status_id'] = next_status
+                # 檢查是否為執行中狀態（2,4,12,14,22）
+                from shared_constants.task_status import TaskStatus
+                if TaskStatus.is_task_executing_status(current_status):
+                    # 執行中狀態：跳過狀態更新，僅重算路徑
+                    self.node.get_logger().info(
+                        f"🔄 執行中狀態 (status={current_status})：跳過狀態更新，僅重算路徑"
+                    )
                 else:
-                    self.node.task.status_id = next_status
+                    # 開始狀態：正常更新 status+1
+                    # 1→2, 11→12, 13→14, 21→22, 3→4
+                    next_status = current_status + 1
+
+                    # 透過 Web API 更新任務狀態
+                    update_success = self._update_task_status_via_api(task_id, status_id=next_status)
+
+                    if not update_success:
+                        self.node.get_logger().error("❌ 任務狀態更新失敗，回到任務選擇狀態")
+                        context.set_state(context.MissionSelectState(self.node))
+                        return
+
+                    # 更新本地任務狀態
+                    if isinstance(self.node.task, dict):
+                        self.node.task['status_id'] = next_status
+                    else:
+                        self.node.task.status_id = next_status
             else:
                 reason = "MAGIC=21" if self.node.agv_status.MAGIC == 21 else "work_id=21"
                 self.node.get_logger().info(f"🎯 {reason} 特殊模式：跳過任務狀態更新，維持原始狀態")
