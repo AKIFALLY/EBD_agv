@@ -222,48 +222,13 @@ class MissionSelectState(State):
     # tasks 改用 agv_node_base 的 Web API 輪詢取得
 
     def _process_tasks(self, tasks):
-        """處理任務篩選邏輯（適配新任務表結構）
+        """處理任務篩選邏輯
 
-        篩選條件:
-        - agv_name 匹配本 AGV
-        - status_id 為任務開始或執行中狀態（非完成狀態）
-
-        任務開始狀態 (需要寫入路徑):
-        - 1: FROM_TO_START (From->To 任務開始)
-        - 11: FROM_ONLY_START (僅 From 任務開始)
-        - 13: TO_ONLY_START (僅 To 任務開始)
-        - 21: PATH_START (Path 任務開始)
-
-        執行中狀態 (AGV Running):
-        - 2, 4: FROM_EXECUTING, TO_EXECUTING
-        - 12: FROM_ONLY_EXECUTING
-        - 14: TO_ONLY_EXECUTING
-        - 22: PATH_EXECUTING
-
-        過渡狀態 (需重新規劃路徑):
-        - 3: FROM_COMPLETE (From 完成，準備 To 流程)
+        篩選: agv_name 匹配 + status_id 為開始/執行中/過渡狀態
         """
         from shared_constants.task_status import TaskStatus
 
-        # 🔍 顯示每個任務的判斷過程
-        self.node.get_logger().info(f"🔍 任務篩選開始 (共 {len(tasks)} 筆)")
-        for idx, t in enumerate(tasks):
-            task_id = t.get('id', 0)
-            task_agv_name = t.get('agv_name', '')
-            task_status_id = t.get('status_id', 0)
-            is_start = TaskStatus.is_task_start_status(task_status_id)
-            is_executing = TaskStatus.is_task_executing_status(task_status_id)
-            is_from_complete = (task_status_id == TaskStatus.FROM_COMPLETE)  # status=3
-            agv_match = (task_agv_name == self.node.agv_name)
-            status_match = is_start or is_executing or is_from_complete
-
-            self.node.get_logger().info(
-                f"   [{idx}] task_id={task_id}, agv_name={task_agv_name}, status_id={task_status_id} | "
-                f"agv_match={agv_match}, is_start={is_start}, is_executing={is_executing}, is_from_complete={is_from_complete} → {'✅ 符合' if (agv_match and status_match) else '❌ 不符合'}"
-            )
-
         # 篩選分配給本 AGV 且非完成狀態的任務
-        # 包含: 開始狀態 (1,11,13,21) + 執行中狀態 (2,4,12,14,22) + 過渡狀態 (3)
         running_tasks = [
             t for t in tasks
             if t.get('agv_name') == self.node.agv_name and
@@ -272,7 +237,7 @@ class MissionSelectState(State):
                 t.get('status_id', 0) == TaskStatus.FROM_COMPLETE)
         ]
 
-        self.node.get_logger().info(f"🔍 篩選結果: {len(running_tasks)} 筆符合條件")
+        self.node.get_logger().info(f"🔍 任務篩選: {len(tasks)} 筆 → {len(running_tasks)} 筆符合")
 
         if len(running_tasks) > 0:
             self.node.get_logger().info("⚠️ 有正在執行的任務")
@@ -326,34 +291,3 @@ class MissionSelectState(State):
         if magic > 0 and end_point > 0 and auto == 1 and local == 1:
             self.node.node_id = end_point
             self.localMission = True
-
-
-"""
-uint64 id
-uint64 work_id
-uint64 status_id
-uint64 room_id
-string name
-string description
-uint64 agv_id
-string agv_name
-uint8 priority
-string parameters  # JSON string
-string created_at
-string updated_at
-"""
-
-
-
-
-"""
-task_status
-id	name	description
-0	請求中	UI-請求執行任務
-1	待處理	WCS-任務已接受，待處理
-2	待執行	RCS-任務已派發，待執行
-3	執行中	AGV-任務正在執行
-4	已完成	AGV-任務已完成
-5	取消中	任務取消中
-6	錯誤	錯誤
-"""
