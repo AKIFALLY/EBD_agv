@@ -20,6 +20,10 @@ class WaitRobotState(State):
         self.completion_update_sent = False  # 是否已發送完成更新
         self.expected_next_status = None  # 期望的下一個狀態
 
+        # 無路徑超時檢測（防止卡死）
+        self.no_path_start_time = None  # 無路徑開始時間
+        self.no_path_timeout_seconds = 10.0  # 無路徑超時秒數
+
         # OCR 相關變數（條件性訂閱：只有 cargo AGV）
         self.ocr_enabled = self._is_cargo_agv()
         self.latest_ocr_result = None
@@ -43,6 +47,8 @@ class WaitRobotState(State):
 
     def enter(self):
         self.node.get_logger().info("🤖 AGV 進入: WaitRobot 狀態")
+        # 重置無路徑計時器
+        self.no_path_start_time = None
 
     def leave(self):
         self.node.get_logger().info("🚪 AGV 離開 WaitRobot 狀態")
@@ -72,6 +78,34 @@ class WaitRobotState(State):
             )
             context.set_state(context.MissionSelectState(self.node))
             return
+
+        # 🔍 無路徑超時檢測（防止卡死）
+        # 正常情況下，無路徑會伴隨 COMPLETE 訊號同時發生
+        # 如果無路徑超過 10 秒且沒有 COMPLETE 訊號，則判定異常
+        if not self.node.agv_status.AGV_PATH:
+            if self.no_path_start_time is None:
+                # 開始計時
+                self.no_path_start_time = self.node.get_clock().now()
+            else:
+                # 檢查是否超時
+                elapsed = (self.node.get_clock().now() - self.no_path_start_time).nanoseconds / 1e9
+                if elapsed > self.no_path_timeout_seconds:
+                    # 超時且沒有收到 COMPLETE 訊號，判定異常
+                    task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
+                    self.node.get_logger().warn(
+                        f"⏰ 無路徑超時 ({elapsed:.1f}秒 > {self.no_path_timeout_seconds}秒)，"
+                        f"且未收到 COMPLETE 訊號\n"
+                        f"  - task_id: {task_id}\n"
+                        f"  - status_id: {task_status_id}\n"
+                        f"  - AGV_LD_COMPLETE: {self.node.agv_status.AGV_LD_COMPLETE}\n"
+                        f"  - AGV_UD_COMPLETE: {self.node.agv_status.AGV_UD_COMPLETE}\n"
+                        f"  - 回到 mission select 重新評估"
+                    )
+                    context.set_state(context.MissionSelectState(self.node))
+                    return
+        else:
+            # 有路徑，重置計時器
+            self.no_path_start_time = None
 
         # 🔍 完成驗證邏輯：如果已發送完成更新，立即開始驗證（之後每 5 秒重試）
         if self.completion_update_sent and not self.completion_verified:
