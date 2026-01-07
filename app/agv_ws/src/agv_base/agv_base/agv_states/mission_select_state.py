@@ -124,11 +124,11 @@ class MissionSelectState(State):
                         target_port = task.get('to_port', '')
                         port_type = "to_port"
 
-                    self.node.node_id = self._get_node_id_from_port(target_port)
+                    self.node.node_id, self.node.task_layer = self._get_node_id_from_port(target_port)
 
                     self.node.get_logger().info(
                         f"⚠️ 執行中狀態但無路徑 (status={task_status_id}): task_id={task_id}，"
-                        f"目標節點: {self.node.node_id} (使用 {port_type}={target_port})，重新計算路徑"
+                        f"目標節點: {self.node.node_id}, Layer: {self.node.task_layer} (使用 {port_type}={target_port})，重新計算路徑"
                     )
                     context.set_state(context.WritePathState(self.node))
                 else:
@@ -155,22 +155,22 @@ class MissionSelectState(State):
         from agv_base.states.auto_state import AutoState
         return isinstance(self.node.base_context.state, AutoState)
 
-    def _get_node_id_from_port(self, to_port: str) -> int:
+    def _get_node_id_from_port(self, to_port: str) -> tuple:
         """
-        透過 to_port 查詢對應的 node_id（用於 A* 路徑規劃）
+        透過 to_port 查詢對應的 node_id 和 layer（用於 A* 路徑規劃）
 
         API: GET /api/v1/eqp_port/by-name/{name}
-        回應格式: {"id": 0, "name": "string", "eqp_name": "string", "node": "string", ...}
+        回應格式: {"id": 0, "name": "string", "eqp_name": "string", "node": "string", "parameter": {"layer": "2"}, ...}
 
         Args:
             to_port: 目標端口名稱 (例如: "2011", "3021")
 
         Returns:
-            int: 對應的 node_id，查詢失敗時返回 0
+            tuple: (node_id, layer)，查詢失敗時返回 (0, 0)
         """
         if not to_port or to_port == 'na':
             self.node.get_logger().warn(f"⚠️ _get_node_id_from_port: to_port 為空或無效 ({to_port})")
-            return 0
+            return 0, 0
 
         try:
             # 使用 eqp_port API 查詢
@@ -179,45 +179,62 @@ class MissionSelectState(State):
 
             if response.status_code == 200:
                 result = response.json()
-                # API 回應包含 "node" 欄位（字串型別）
+                node_id = 0
+                layer = 0
+
+                # 解析 node_id
                 node_str = result.get('node', '')
                 if node_str:
                     try:
                         node_id = int(node_str)
-                        self.node.get_logger().info(
-                            f"✅ _get_node_id_from_port: to_port={to_port} → node_id={node_id}"
-                        )
-                        return node_id
                     except ValueError:
                         self.node.get_logger().warn(
                             f"⚠️ _get_node_id_from_port: node 值無法轉換為整數 (node={node_str})"
                         )
-                        return 0
+
+                # 解析 layer（從 parameter 欄位）
+                parameter_raw = result.get('parameter')
+                if isinstance(parameter_raw, str):
+                    try:
+                        parameter = json.loads(parameter_raw) if parameter_raw else {}
+                    except json.JSONDecodeError:
+                        parameter = {}
+                elif isinstance(parameter_raw, dict):
+                    parameter = parameter_raw
                 else:
-                    self.node.get_logger().warn(
-                        f"⚠️ _get_node_id_from_port: 回應中無 node 欄位 (to_port={to_port})"
-                    )
-                    return 0
+                    parameter = {}
+
+                layer_str = parameter.get('layer', '0')
+                try:
+                    layer = int(layer_str)
+                except (ValueError, TypeError):
+                    layer = 0
+
+                self.node.get_logger().info(
+                    f"✅ _get_node_id_from_port: to_port={to_port} → node_id={node_id}, layer={layer}"
+                )
+                return node_id, layer
+
             elif response.status_code == 404:
                 self.node.get_logger().warn(
                     f"⚠️ _get_node_id_from_port: 查無 eqp_port (to_port={to_port})"
                 )
-                return 0
+                return 0, 0
             else:
                 self.node.get_logger().error(
                     f"❌ _get_node_id_from_port: API 查詢失敗 HTTP {response.status_code}"
                 )
-                return 0
+                return 0, 0
 
         except requests.exceptions.Timeout:
             self.node.get_logger().warn(f"⚠️ _get_node_id_from_port: 查詢逾時 (to_port={to_port})")
-            return 0
+            return 0, 0
         except requests.exceptions.ConnectionError:
             self.node.get_logger().warn(f"⚠️ _get_node_id_from_port: 連接失敗 ({self.node.agvc_api_base_url})")
-            return 0
+            return 0, 0
         except Exception as e:
             self.node.get_logger().error(f"❌ _get_node_id_from_port: 查詢異常 - {e}")
-            return 0
+            return 0, 0
 
     # tasks 改用 agv_node_base 的 Web API 輪詢取得
 
@@ -259,10 +276,12 @@ class MissionSelectState(State):
                 target_port = to_port
                 port_type = "to_port"
 
-            self.node.node_id = self._get_node_id_from_port(target_port)
+            # 從 eqp_port API 取得 node_id 和 layer
+            self.node.node_id, self.node.task_layer = self._get_node_id_from_port(target_port)
 
             self.highest_priority_task = task
             self.node.task = task  # 現在是 dict 格式
+
             self.node.get_logger().info(
                 f"✅ 任務ID: {task.get('id')}, "
                 f"WORK ID: {task.get('work_id')}, "
@@ -270,7 +289,7 @@ class MissionSelectState(State):
                 f"優先級: {task.get('priority')}, "
                 f"from_port: {from_port}, "
                 f"to_port: {to_port}, "
-                f"目標節點: {self.node.node_id} (使用 {port_type}={target_port})"
+                f"目標節點: {self.node.node_id}, Layer: {self.node.task_layer} (使用 {port_type}={target_port})"
             )
             return True  # 找到任務
 
@@ -288,6 +307,16 @@ class MissionSelectState(State):
         end_point = self.node.agv_status.AGV_END_POINT if self.node.agv_status.AGV_END_POINT is not None else 0
         auto = self.node.agv_status.AGV_Auto if self.node.agv_status.AGV_Auto is not None else 0
         local = self.node.agv_status.AGV_LOCAL if self.node.agv_status.AGV_LOCAL is not None else 0
+
+        # 當 LOCAL 模式啟用時，印出條件狀態
+        if local == 1:
+            self.node.get_logger().info(
+                f"🔧 [Local Mode] 條件檢查: "
+                f"MAGIC={magic} (>0: {'✓' if magic > 0 else '✗'}), "
+                f"END_POINT={end_point} (>0: {'✓' if end_point > 0 else '✗'}), "
+                f"AUTO={auto} (=1: {'✓' if auto == 1 else '✗'})"
+            )
+
         if magic > 0 and end_point > 0 and auto == 1 and local == 1:
             self.node.node_id = end_point
             self.localMission = True

@@ -24,6 +24,7 @@ class WritePathState(State):
         self.count = 0  # 計數器，用於執行次數
         self.step = 0  # 步驟計數器
         self.path_calculated = False  # 路徑是否已計算完成並準備好 dataValue
+        self.status_updated = False  # 狀態是否已更新（確保只更新一次）
 
     def enter(self):
         self.node.get_logger().info("AGV 進入: WritePathState 狀態")
@@ -38,10 +39,18 @@ class WritePathState(State):
             self.plc_client.async_force_on('MR', '3204', self.force_callback)  # PLC寫入異常
             context.set_state(context.MissionSelectState(self.node))  # 切換狀態
 
-        # 檢查是否已經有路徑資料
-        # 如果已經有路徑資料，則直接切換到下一個狀態
-        if self.node.agv_status.AGV_PATH:
-            self.node.get_logger().info("AGV 已有路徑資料，離開 WritePathState-->RunningState ")
+        # 檢查是否已經有路徑資料且 LAYER 已確認
+        # 如果已經有路徑資料且 AGV_LAYER > 0，則更新狀態並切換到下一個狀態
+        if self.node.agv_status.AGV_PATH and self.node.agv_status.AGV_LAYER > 0:
+            # 在確認 AGV_PATH=1 && AGV_LAYER>0 時才更新任務狀態（只更新一次）
+            if not self.status_updated:
+                self._update_task_status_on_path_confirmed(context)
+                self.status_updated = True
+
+            self.node.get_logger().info(
+                f"AGV 已有路徑資料且 LAYER={self.node.agv_status.AGV_LAYER}，"
+                f"離開 WritePathState-->RunningState"
+            )
             # 跳過寫入路徑狀態，直接切換到下一個狀態
             context.set_state(context.RunningState(self.node))  # 切換狀態
             return
@@ -164,41 +173,15 @@ class WritePathState(State):
             # ⚠️ 路徑計算和 dataValue 準備完成
             self.path_calculated = True
 
-            # 更新tasks table的狀態
-            # MAGIC=21 或 work_id=21 特殊處理：不更改 task status
-            if self.node.agv_status.MAGIC != 21:
-                # 取得 task_id 和當前 status_id（支援 dict 格式）
-                task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
-                current_status = self.node.task.get('status_id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'status_id', 0)
-
-                # 檢查是否為執行中狀態（2,4,12,14,22）
-                from shared_constants.task_status import TaskStatus
-                if TaskStatus.is_task_executing_status(current_status):
-                    # 執行中狀態：跳過狀態更新，僅重算路徑
-                    self.node.get_logger().info(
-                        f"🔄 執行中狀態 (status={current_status})：跳過狀態更新，僅重算路徑"
-                    )
-                else:
-                    # 開始狀態：正常更新 status+1
-                    # 1→2, 11→12, 13→14, 21→22, 3→4
-                    next_status = current_status + 1
-
-                    # 透過 Web API 更新任務狀態
-                    update_success = self._update_task_status_via_api(task_id, status_id=next_status)
-
-                    if not update_success:
-                        self.node.get_logger().error("❌ 任務狀態更新失敗，回到任務選擇狀態")
-                        context.set_state(context.MissionSelectState(self.node))
-                        return
-
-                    # 更新本地任務狀態
-                    if isinstance(self.node.task, dict):
-                        self.node.task['status_id'] = next_status
-                    else:
-                        self.node.task.status_id = next_status
-            else:
-                reason = "MAGIC=21" if self.node.agv_status.MAGIC == 21 else "work_id=21"
-                self.node.get_logger().info(f"🎯 {reason} 特殊模式：跳過任務狀態更新，維持原始狀態")
+            # 寫入 layer 到 DM7645（在路徑資料之前）
+            layer_value = getattr(self.node, 'task_layer', 0)
+            self.plc_client.async_write_data(
+                device_type='DM',
+                address='7645',
+                value=str(layer_value),
+                callback=self._write_layer_callback
+            )
+            self.node.get_logger().info(f"📤 寫入 LAYER={layer_value} 到 DM7645")
 
             # 將路徑資料寫入PLC
             self.plc_client.async_write_continuous_data(
@@ -210,6 +193,53 @@ class WritePathState(State):
             self.node.get_logger().info(f"✅ PLC 路徑資料寫入, 執行次數: {self.count}")
             self.step = 1  # 增加步驟計數器
             # 做完延遲兩
+
+    def _update_task_status_on_path_confirmed(self, context):
+        """當 AGV_PATH=1 且 AGV_LAYER>0 時更新任務狀態
+
+        條件：
+        - MAGIC != 21（特殊模式不更新）
+        - 非執行中狀態（2,4,12,14,22）才更新
+        - 狀態更新為 current_status + 1
+        """
+        # MAGIC=21 特殊處理：不更改 task status
+        if self.node.agv_status.MAGIC == 21:
+            self.node.get_logger().info("🎯 MAGIC=21 特殊模式：跳過任務狀態更新，維持原始狀態")
+            return
+
+        # 取得 task_id 和當前 status_id（支援 dict 格式）
+        task_id = self.node.task.get('id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'id', 0)
+        current_status = self.node.task.get('status_id') if isinstance(self.node.task, dict) else getattr(self.node.task, 'status_id', 0)
+
+        # 檢查是否為執行中狀態（2,4,12,14,22）
+        from shared_constants.task_status import TaskStatus
+        if TaskStatus.is_task_executing_status(current_status):
+            # 執行中狀態：跳過狀態更新，僅重算路徑
+            self.node.get_logger().info(
+                f"🔄 執行中狀態 (status={current_status})：跳過狀態更新，僅重算路徑"
+            )
+            return
+
+        # 開始狀態：正常更新 status+1
+        # 1→2, 11→12, 13→14, 21→22, 3→4
+        next_status = current_status + 1
+
+        self.node.get_logger().info(
+            f"📤 路徑確認完成 (AGV_PATH=1, LAYER={self.node.agv_status.AGV_LAYER})，更新任務狀態 {current_status} → {next_status}"
+        )
+
+        # 透過 Web API 更新任務狀態
+        update_success = self._update_task_status_via_api(task_id, status_id=next_status)
+
+        if not update_success:
+            self.node.get_logger().error("❌ 任務狀態更新失敗")
+            return
+
+        # 更新本地任務狀態
+        if isinstance(self.node.task, dict):
+            self.node.task['status_id'] = next_status
+        else:
+            self.node.task.status_id = next_status
 
     def _update_task_status_via_api(self, task_id: int, status_id: int) -> bool:
         """透過 Web API 更新任務狀態
@@ -279,6 +309,13 @@ class WritePathState(State):
             self.node.get_logger().info("✅ PLC force寫入成功")
         else:
             self.node.get_logger().warn("⚠️ PLC force寫入失敗")
+
+    def _write_layer_callback(self, response):
+        """Layer 寫入回調"""
+        if response.success:
+            self.node.get_logger().info("✅ DM7645 LAYER 寫入成功")
+        else:
+            self.node.get_logger().warn(f"⚠️ DM7645 LAYER 寫入失敗: {response.message}")
 
 
 """
