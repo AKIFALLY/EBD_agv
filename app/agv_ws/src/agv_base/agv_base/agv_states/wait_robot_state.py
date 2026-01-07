@@ -227,6 +227,12 @@ class WaitRobotState(State):
             if response.status_code == 200:
                 self.node.get_logger().info(f"✅ 任務狀態更新成功: task_id={task_id} → status_id={status_id}")
                 return True
+            elif response.status_code == 404:
+                # 任務已被刪除，視為已完成（避免無限重試）
+                self.node.get_logger().warn(
+                    f"⚠️ 任務已不存在 (task_id={task_id})，視為已完成"
+                )
+                return True
             else:
                 self.node.get_logger().error(
                     f"❌ 任務狀態更新失敗: HTTP {response.status_code}, {response.text}"
