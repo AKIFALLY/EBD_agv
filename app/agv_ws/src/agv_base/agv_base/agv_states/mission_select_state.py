@@ -143,6 +143,15 @@ class MissionSelectState(State):
                     f"✅ HMI任務下達---  Magic:{self.node.agv_status.MAGIC}  Dest.:{self.node.agv_status.AGV_END_POINT}")
                 context.set_state(context.WritePathState(self.node))  # 切換狀態
 
+            # 【新增】Local 模式下有路徑但需要重新寫入路徑的情況
+            # 條件：LOCAL=1, MAGIC>0, PATH=1 → 覆蓋現有路徑，重新進入 WritePathState
+            elif self._should_rewrite_path_in_local_mode():
+                self.node.get_logger().info(
+                    f"✅ Local 模式路徑重寫---  Magic:{self.node.agv_status.MAGIC}  "
+                    f"Dest.:{self.node.agv_status.AGV_END_POINT}  PATH=1 → 重新寫入路徑"
+                )
+                context.set_state(context.WritePathState(self.node))  # 切換狀態
+
         self.count += 1
 
     def _is_base_auto_state(self) -> bool:
@@ -154,6 +163,30 @@ class MissionSelectState(State):
         """
         from agv_base.states.auto_state import AutoState
         return isinstance(self.node.base_context.state, AutoState)
+
+    def _should_rewrite_path_in_local_mode(self) -> bool:
+        """
+        檢查是否應在 Local 模式下重新寫入路徑
+
+        條件：LOCAL=1, MAGIC>0, PATH=1
+        當滿足這些條件時，即使已有路徑也需要重新進入 WritePathState
+
+        Returns:
+            bool: 需要重新寫入路徑時返回 True
+        """
+        local = self.node.agv_status.AGV_LOCAL if self.node.agv_status.AGV_LOCAL is not None else 0
+        magic = self.node.agv_status.MAGIC if self.node.agv_status.MAGIC is not None else 0
+        has_path = self.node.agv_status.AGV_PATH
+
+        # 條件：LOCAL=1, MAGIC>0, PATH=1
+        if local == 1 and magic > 0 and has_path:
+            # 設定目標節點為 HMI 指定的終點
+            end_point = self.node.agv_status.AGV_END_POINT if self.node.agv_status.AGV_END_POINT is not None else 0
+            if end_point > 0:
+                self.node.node_id = end_point
+                return True
+
+        return False
 
     def _get_node_id_from_port(self, to_port: str) -> tuple:
         """

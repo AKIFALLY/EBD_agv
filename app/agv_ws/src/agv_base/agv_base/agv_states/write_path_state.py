@@ -57,15 +57,28 @@ class WritePathState(State):
 
         # 條件2: LOCAL 模式跳轉 (LOCAL=1 && MAGIC>0 && AGV_PATH=1)
         # 當 AGV 處於 LOCAL 模式且有有效 MAGIC 值時，可直接跳轉到 RunningState
-        if (self.node.agv_status.LOCAL == 1 and
+        if (self.node.agv_status.AGV_LOCAL == 1 and
                 self.node.agv_status.MAGIC > 0 and
                 self.node.agv_status.AGV_PATH):
             self.node.get_logger().info(
-                f"LOCAL 模式跳轉: LOCAL={self.node.agv_status.LOCAL}, "
+                f"LOCAL 模式跳轉: LOCAL={self.node.agv_status.AGV_LOCAL}, "
                 f"MAGIC={self.node.agv_status.MAGIC}, AGV_PATH={self.node.agv_status.AGV_PATH}，"
                 f"離開 WritePathState-->RunningState"
             )
             context.set_state(context.RunningState(self.node))  # 切換狀態
+            return
+
+        # 條件3: LOCAL 模式下無路徑且無終點 → 跳回 MissionSelectState
+        # 當 LOCAL=1, PATH=0, END_POINT=0 時，無法計算路徑，返回等待
+        end_point = self.node.agv_status.AGV_END_POINT if self.node.agv_status.AGV_END_POINT is not None else 0
+        if (self.node.agv_status.AGV_LOCAL == 1 and
+                not self.node.agv_status.AGV_PATH and
+                end_point == 0):
+            self.node.get_logger().warn(
+                f"⚠️ LOCAL 模式無終點: LOCAL=1, PATH=0, END_POINT=0，"
+                f"跳回 MissionSelectState 等待終點設定"
+            )
+            context.set_state(context.MissionSelectState(self.node))  # 切換狀態
             return
 
         if self.step >= 3:
