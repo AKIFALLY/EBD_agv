@@ -39,7 +39,7 @@ class WritePathState(State):
             self.plc_client.async_force_on('MR', '3204', self.force_callback)  # PLC寫入異常
             context.set_state(context.MissionSelectState(self.node))  # 切換狀態
 
-        # 檢查是否已經有路徑資料且 LAYER 已確認
+        # 條件1: 檢查是否已經有路徑資料且 LAYER 已確認
         # 如果已經有路徑資料且 AGV_LAYER > 0，則更新狀態並切換到下一個狀態
         if self.node.agv_status.AGV_PATH and self.node.agv_status.AGV_LAYER > 0:
             # 在確認 AGV_PATH=1 && AGV_LAYER>0 時才更新任務狀態（只更新一次）
@@ -52,6 +52,19 @@ class WritePathState(State):
                 f"離開 WritePathState-->RunningState"
             )
             # 跳過寫入路徑狀態，直接切換到下一個狀態
+            context.set_state(context.RunningState(self.node))  # 切換狀態
+            return
+
+        # 條件2: LOCAL 模式跳轉 (LOCAL=1 && MAGIC>0 && AGV_PATH=1)
+        # 當 AGV 處於 LOCAL 模式且有有效 MAGIC 值時，可直接跳轉到 RunningState
+        if (self.node.agv_status.LOCAL == 1 and
+                self.node.agv_status.MAGIC > 0 and
+                self.node.agv_status.AGV_PATH):
+            self.node.get_logger().info(
+                f"LOCAL 模式跳轉: LOCAL={self.node.agv_status.LOCAL}, "
+                f"MAGIC={self.node.agv_status.MAGIC}, AGV_PATH={self.node.agv_status.AGV_PATH}，"
+                f"離開 WritePathState-->RunningState"
+            )
             context.set_state(context.RunningState(self.node))  # 切換狀態
             return
 
