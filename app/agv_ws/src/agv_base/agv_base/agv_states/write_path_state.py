@@ -147,11 +147,11 @@ class WritePathState(State):
 
                         # 如果是最後一個點，則使用站點ID，否則使用act[0]
                         if y:  # 最後一個點
-                            # 取得 work_id（支援 dict 格式）
-                            task_work_id = self.node.task.get('work_id', 0) if isinstance(self.node.task, dict) else getattr(self.node.task, 'work_id', 0)
-                            if self.node.agv_status.MAGIC == 21 or task_work_id == 21:
-                                self.dataValue[i*20+2] = 21  # MAGIC=21 或 work_id=21 特殊處理：最後一個點直接給21
-                                reason = "MAGIC=21" if self.node.agv_status.MAGIC == 21 else "work_id=21"
+                            # 取得 status_id（支援 dict 格式）
+                            task_status_id = self.node.task.get('status_id', 0) if isinstance(self.node.task, dict) else getattr(self.node.task, 'status_id', 0)
+                            if self.node.agv_status.MAGIC == 21 or task_status_id == 21:
+                                self.dataValue[i*20+2] = 21  # MAGIC=21 或 status_id=21 特殊處理：最後一個點直接給21
+                                reason = "MAGIC=21" if self.node.agv_status.MAGIC == 21 else "status_id=21"
                                 self.node.get_logger().info(f"✅ {reason} 特殊模式：最後一個點設定 dataValue[{i*20+2}] = 21")
                             else:
                                 self.dataValue[i*20+2] = tag.get('Station')+20  # 正常情況：Station_Index=2
