@@ -138,7 +138,7 @@ class MissionSelectState(State):
                     )
 
             # 如果HMI有設定Magic跟終點設定
-            elif self.localMission and not self.node.agv_status.AGV_PATH:
+            elif self.localMission and not self.node.agv_status.AGV_PATH and self.node.agv_status.MAGIC !=0:
                 self.node.get_logger().info(
                     f"✅ HMI任務下達---  Magic:{self.node.agv_status.MAGIC}  Dest.:{self.node.agv_status.AGV_END_POINT}")
                 context.set_state(context.WritePathState(self.node))  # 切換狀態
